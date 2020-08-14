@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -177,14 +178,14 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     assertEquals("sanity check of update to X from write_X user",
                  0,
                  (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER)
-                  .add(sdoc("id", "1_from_write_X_user"))
+                  .add(SolrTestCaseJ4.sdoc("id", "1_from_write_X_user"))
                   .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
 
     assertEquals("sanity check of update to X from read only user",
                  500, // should be 403, but CloudSolrClient lies on updates for now: SOLR-14222 
                  expectThrows(SolrException.class, () -> {
                      final int ignored = (setBasicAuthCredentials(new UpdateRequest(), READ_ONLY_USER)
-                                          .add(sdoc("id", "2_from_read_only_user"))
+                                          .add(SolrTestCaseJ4.sdoc("id", "2_from_read_only_user"))
                                           .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus();
                    }).code());
     
@@ -192,14 +193,14 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
                  500, // should be 403, but CloudSolrClient lies on updates for now: SOLR-14222 
                  expectThrows(SolrException.class, () -> {
                      final int ignored = (setBasicAuthCredentials(new UpdateRequest(), WRITE_Y_USER)
-                                          .add(sdoc("id", "3_from_write_Y_user"))
+                                          .add(SolrTestCaseJ4.sdoc("id", "3_from_write_Y_user"))
                                           .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus();
                    }).code());
     
     assertEquals("sanity check of update to Y from write_Y user",
                  0,
                  (setBasicAuthCredentials(new UpdateRequest(), WRITE_Y_USER)
-                  .add(sdoc("id", "1_from_write_Y_user"))
+                  .add(SolrTestCaseJ4.sdoc("id", "1_from_write_Y_user"))
                   .commit(cluster.getSolrClient(), COLLECTION_Y)).getStatus());
     
     for (String user : Arrays.asList(READ_ONLY_USER, WRITE_Y_USER, WRITE_X_USER)) {
@@ -308,7 +309,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     { // Now add some "real" docs directly to Y...
       final UpdateRequest update = setBasicAuthCredentials(new UpdateRequest(), WRITE_Y_USER);
       for (int i = 1; i <= 42; i++) {
-        update.add(sdoc("id",i+"y","foo_i",""+i));
+        update.add(SolrTestCaseJ4.sdoc("id",i+"y","foo_i",""+i));
       }
       assertEquals("initial docs in Y",
                    0, update.commit(cluster.getSolrClient(), COLLECTION_Y).getStatus());
@@ -562,7 +563,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   public void testSimpleDeleteStream() throws Exception {
     assertEquals(0,
                  (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER)
-                  .add(sdoc("id", "42"))
+                  .add(SolrTestCaseJ4.sdoc("id", "42"))
                   .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
     assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
     
@@ -584,7 +585,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     { // Put some "real" docs directly to both X...
       final UpdateRequest update = setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER);
       for (int i = 1; i <= 42; i++) {
-        update.add(sdoc("id",i+"x","foo_i",""+i));
+        update.add(SolrTestCaseJ4.sdoc("id",i+"x","foo_i",""+i));
       }
       assertEquals("initial docs in X",
                    0, update.commit(cluster.getSolrClient(), COLLECTION_X).getStatus());
@@ -619,7 +620,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   public void testSimpleDeleteStreamInvalidCredentials() throws Exception {
     assertEquals(0,
                  (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER)
-                  .add(sdoc("id", "42"))
+                  .add(SolrTestCaseJ4.sdoc("id", "42"))
                   .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
     assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
     
@@ -642,7 +643,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   public void testSimpleDeleteStreamInsufficientCredentials() throws Exception {
     assertEquals(0,
                  (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER)
-                  .add(sdoc("id", "42"))
+                  .add(SolrTestCaseJ4.sdoc("id", "42"))
                   .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
     assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
     
@@ -670,8 +671,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final UpdateRequest xxx_Update = setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER);
       final UpdateRequest yyy_Update = setBasicAuthCredentials(new UpdateRequest(), WRITE_Y_USER);
       for (int i = 1; i <= 42; i++) {
-        xxx_Update.add(sdoc("id",i+"z","foo_i",""+i));
-        yyy_Update.add(sdoc("id",i+"z","foo_i",""+i));
+        xxx_Update.add(SolrTestCaseJ4.sdoc("id",i+"z","foo_i",""+i));
+        yyy_Update.add(SolrTestCaseJ4.sdoc("id",i+"z","foo_i",""+i));
       }
       assertEquals("initial docs in X",
                    0, xxx_Update.commit(cluster.getSolrClient(), COLLECTION_X).getStatus());
@@ -757,7 +758,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   public void testIndirectDeleteStreamInsufficientCredentials() throws Exception {
     assertEquals(0,
                  (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER)
-                  .add(sdoc("id", "42"))
+                  .add(SolrTestCaseJ4.sdoc("id", "42"))
                   .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
     assertEquals(1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
     

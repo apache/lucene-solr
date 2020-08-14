@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -41,7 +41,7 @@ import org.junit.Test;
  *   
  *  
  */
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSearchTestCase {
   private static int numVersions = 100;  // number of versions to use when syncing
   private final String FROM_LEADER = DistribPhase.FROMLEADER.toString();

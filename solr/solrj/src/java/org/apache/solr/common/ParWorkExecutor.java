@@ -6,14 +6,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
+public class ParWorkExecutor extends ThreadPoolExecutor {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
   public static final int KEEP_ALIVE_TIME = 1;
@@ -21,17 +23,17 @@ public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
   private static AtomicInteger threadNumber = new AtomicInteger(0);
 
   public ParWorkExecutor(String name, int maxPoolsSize) {
-    this(name, 0, maxPoolsSize, KEEP_ALIVE_TIME);
+    this(name, 0, maxPoolsSize, KEEP_ALIVE_TIME, new SynchronousQueue<>());
   }
 
   public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize) {
-    this(name, corePoolsSize, maxPoolsSize, KEEP_ALIVE_TIME);
+    this(name, corePoolsSize, maxPoolsSize, KEEP_ALIVE_TIME,     new SynchronousQueue<>());
   }
 
   public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize,
-      int keepalive) {
-    super(corePoolsSize, maxPoolsSize, keepalive, TimeUnit.MILLISECONDS,
-        new SynchronousQueue<>(), new ThreadFactory() {
+      int keepalive, BlockingQueue<Runnable> workQueue) {
+    super(corePoolsSize, maxPoolsSize, keepalive, TimeUnit.MILLISECONDS, workQueue
+    , new ThreadFactory() {
 
           ThreadGroup group;
 

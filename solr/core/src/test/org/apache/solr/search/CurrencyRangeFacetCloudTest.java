@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -89,7 +90,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
       // (that way if we want ot filter by id later, it's an independent variable)
       final String x = STR_VALS.get(id % STR_VALS.size());
       final String val = VALUES.get(id % VALUES.size());
-      assertEquals(0, (new UpdateRequest().add(sdoc("id", "" + id,
+      assertEquals(0, (new UpdateRequest().add(SolrTestCaseJ4.sdoc("id", "" + id,
                                                     "x_s", x,
                                                     FIELD, val))
                        ).process(cluster.getSolrClient()).getStatus());
@@ -301,7 +302,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     
   public void testFacetRangeCleanErrorOnMissmatchCurrency() {
     final String expected = "Cannot compare CurrencyValues when their currencies are not equal";
-    ignoreException(expected);
+    SolrTestCaseJ4.ignoreException(expected);
     
     // test to check clean error when start/end have diff currency (facet.range)
     final SolrQuery solrQuery = new SolrQuery("q", "*:*", "rows", "0", "facet", "true", "facet.range", FIELD,
@@ -317,7 +318,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
   public void testJsonFacetCleanErrorOnMissmatchCurrency() {
     final String expected = "Cannot compare CurrencyValues when their currencies are not equal";
-    ignoreException(expected);
+    SolrTestCaseJ4.ignoreException(expected);
     
     // test to check clean error when start/end have diff currency (json.facet)
     final SolrQuery solrQuery = new SolrQuery("q", "*:*", "json.facet",

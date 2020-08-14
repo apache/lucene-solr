@@ -28,6 +28,7 @@ import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -85,24 +86,25 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(SolrTestCaseJ4
+          .getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
     // index some docs...
     CLOUD_CLIENT.add
-      (sdoc("id", "42",
+      (SolrTestCaseJ4.sdoc("id", "42",
             "title","Tale of the Brown Fox: was he lazy?",
             "body", "No. The quick brown fox was a very brown fox who liked to get into trouble."));
     CLOUD_CLIENT.add
-      (sdoc("id", "43",
+      (SolrTestCaseJ4.sdoc("id", "43",
             "title","A fable in two acts",
             "body", "The brOwn fOx jumped. The lazy dog did not"));
     CLOUD_CLIENT.add
-      (sdoc("id", "44",
+      (SolrTestCaseJ4.sdoc("id", "44",
             "title","Why the LazY dog was lazy",
             "body", "News flash: Lazy Dog was not actually lazy, it just seemd so compared to Fox"));
     CLOUD_CLIENT.add
-      (sdoc("id", "45",
+      (SolrTestCaseJ4.sdoc("id", "45",
             "title","Why Are We Lazy?",
             "body", "Because we are. that's why"));
     CLOUD_CLIENT.commit();

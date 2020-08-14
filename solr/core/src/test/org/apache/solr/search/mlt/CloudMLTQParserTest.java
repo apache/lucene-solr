@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -56,38 +57,38 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     String FIELD2 = "lowerfilt1_u" ;
 
     new UpdateRequest()
-        .add(sdoc(id, "1", FIELD1, "toyota"))
-        .add(sdoc(id, "2", FIELD1, "chevrolet"))
-        .add(sdoc(id, "3", FIELD1, "bmw usa"))
-        .add(sdoc(id, "4", FIELD1, "ford"))
-        .add(sdoc(id, "5", FIELD1, "ferrari"))
-        .add(sdoc(id, "6", FIELD1, "jaguar"))
-        .add(sdoc(id, "7", FIELD1, "mclaren moon or the moon and moon moon shine and the moon but moon was good foxes too"))
-        .add(sdoc(id, "8", FIELD1, "sonata"))
-        .add(sdoc(id, "9", FIELD1, "The quick red fox jumped over the lazy big and large brown dogs."))
-        .add(sdoc(id, "10", FIELD1, "blue"))
-        .add(sdoc(id, "12", FIELD1, "glue"))
-        .add(sdoc(id, "13", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "14", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "15", FIELD1, "The fat red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "16", FIELD1, "The slim red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "17", FIELD1,
+        .add(SolrTestCaseJ4.sdoc(id, "1", FIELD1, "toyota"))
+        .add(SolrTestCaseJ4.sdoc(id, "2", FIELD1, "chevrolet"))
+        .add(SolrTestCaseJ4.sdoc(id, "3", FIELD1, "bmw usa"))
+        .add(SolrTestCaseJ4.sdoc(id, "4", FIELD1, "ford"))
+        .add(SolrTestCaseJ4.sdoc(id, "5", FIELD1, "ferrari"))
+        .add(SolrTestCaseJ4.sdoc(id, "6", FIELD1, "jaguar"))
+        .add(SolrTestCaseJ4.sdoc(id, "7", FIELD1, "mclaren moon or the moon and moon moon shine and the moon but moon was good foxes too"))
+        .add(SolrTestCaseJ4.sdoc(id, "8", FIELD1, "sonata"))
+        .add(SolrTestCaseJ4.sdoc(id, "9", FIELD1, "The quick red fox jumped over the lazy big and large brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "10", FIELD1, "blue"))
+        .add(SolrTestCaseJ4.sdoc(id, "12", FIELD1, "glue"))
+        .add(SolrTestCaseJ4.sdoc(id, "13", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "14", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "15", FIELD1, "The fat red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "16", FIELD1, "The slim red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "17", FIELD1,
             "The quote red fox jumped moon over the lazy brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon"))
-        .add(sdoc(id, "18", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "19", FIELD1, "The hose red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "20", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "21", FIELD1, "The court red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "22", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "23", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "24", FIELD1, "The file red fox jumped over the lazy brown dogs."))
-        .add(sdoc(id, "25", FIELD1, "rod fix"))
-        .add(sdoc(id, "26", FIELD1, "bmw usa 328i"))
-        .add(sdoc(id, "27", FIELD1, "bmw usa 535i"))
-        .add(sdoc(id, "28", FIELD1, "bmw 750Li"))
-        .add(sdoc(id, "29", FIELD1, "bmw usa", FIELD2, "red green blue"))
-        .add(sdoc(id, "30", FIELD1, "The quote red fox jumped over the lazy brown dogs.", FIELD2, "red green yellow"))
-        .add(sdoc(id, "31", FIELD1, "The fat red fox jumped over the lazy brown dogs.", FIELD2, "green blue yellow"))
-        .add(sdoc(id, "32", FIELD1, "The slim red fox jumped over the lazy brown dogs.", FIELD2, "yellow white black"))
+        .add(SolrTestCaseJ4.sdoc(id, "18", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "19", FIELD1, "The hose red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "20", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "21", FIELD1, "The court red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "22", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "23", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "24", FIELD1, "The file red fox jumped over the lazy brown dogs."))
+        .add(SolrTestCaseJ4.sdoc(id, "25", FIELD1, "rod fix"))
+        .add(SolrTestCaseJ4.sdoc(id, "26", FIELD1, "bmw usa 328i"))
+        .add(SolrTestCaseJ4.sdoc(id, "27", FIELD1, "bmw usa 535i"))
+        .add(SolrTestCaseJ4.sdoc(id, "28", FIELD1, "bmw 750Li"))
+        .add(SolrTestCaseJ4.sdoc(id, "29", FIELD1, "bmw usa", FIELD2, "red green blue"))
+        .add(SolrTestCaseJ4.sdoc(id, "30", FIELD1, "The quote red fox jumped over the lazy brown dogs.", FIELD2, "red green yellow"))
+        .add(SolrTestCaseJ4.sdoc(id, "31", FIELD1, "The fat red fox jumped over the lazy brown dogs.", FIELD2, "green blue yellow"))
+        .add(SolrTestCaseJ4.sdoc(id, "32", FIELD1, "The slim red fox jumped over the lazy brown dogs.", FIELD2, "yellow white black"))
         .commit(client, COLLECTION);
   }
   

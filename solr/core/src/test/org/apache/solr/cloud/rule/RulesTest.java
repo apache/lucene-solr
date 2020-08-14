@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -314,7 +315,8 @@ public class RulesTest extends SolrCloudTestCase {
   @Ignore // nocommit debug
   public void testInvokeApi() throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+    try (SolrClient client = SolrTestCaseJ4
+        .getHttpSolrClient(jetty.getBaseUrl().toString())) {
       GenericSolrRequest req =  new GenericSolrRequest(GET, "/____v2/node/invoke", new ModifiableSolrParams()
           .add("class", ImplicitSnitch.class.getName())
           .add("cores", "1")

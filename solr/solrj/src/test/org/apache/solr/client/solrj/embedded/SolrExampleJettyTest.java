@@ -16,28 +16,13 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.InputStreamEntity;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -48,6 +33,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * TODO? perhaps use:
@@ -55,7 +48,7 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
  * rather then open a real connection?
  * 
  */
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @Ignore // nocommit debug
 public class SolrExampleJettyTest extends SolrExampleTests {
 

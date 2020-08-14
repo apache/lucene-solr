@@ -26,14 +26,13 @@ import java.lang.annotation.Target;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 
 
 /**
  * Marker annotation indicating when SSL Randomization should be used for a test class, and if so what 
  * the typical odds of using SSL should for that test class.
  * @see SSLRandomizer#getSSLRandomizerForClass
- * @see SuppressSSL
+ * @see SolrTestCase.SuppressSSL
  */
 @Documented
 @Inherited
@@ -140,7 +139,8 @@ public @interface RandomizeSSL {
      */
     public static final SSLRandomizer getSSLRandomizerForClass(Class clazz) {
 
-      final SuppressSSL suppression = (SuppressSSL) clazz.getAnnotation(SuppressSSL.class);
+      final SolrTestCase.SuppressSSL suppression = (SolrTestCase.SuppressSSL) clazz.getAnnotation(
+          SolrTestCase.SuppressSSL.class);
       if (null != suppression) {
         // Even if this class has a RandomizeSSL annotation, any usage of SuppressSSL -- even in a
         // super class -- overrules that.

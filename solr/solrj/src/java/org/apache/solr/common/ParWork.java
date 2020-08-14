@@ -40,10 +40,10 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,7 +69,8 @@ public class ParWork implements Closeable {
 
   private static volatile ThreadPoolExecutor EXEC;
 
-  private static ThreadPoolExecutor getEXEC() {
+  // pretty much don't use it
+  public static ThreadPoolExecutor getEXEC() {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
@@ -171,7 +172,7 @@ public class ParWork implements Closeable {
 
   private List<WorkUnit> workUnits = Collections.synchronizedList(new ArrayList<>());
 
-  private final TimeTracker tracker;
+  private volatile TimeTracker tracker;
 
   private final boolean ignoreExceptions;
 
@@ -244,7 +245,7 @@ public class ParWork implements Closeable {
   public ParWork(Object object, boolean ignoreExceptions, boolean requireAnotherThread) {
     this.ignoreExceptions = ignoreExceptions;
     this.requireAnotherThread = requireAnotherThread;
-    tracker = new TimeTracker(object, object == null ? "NullObject" : object.getClass().getName());
+    assert (tracker = new TimeTracker(object, object == null ? "NullObject" : object.getClass().getName())) != null;
     // constructor must stay very light weight
   }
 
@@ -276,7 +277,7 @@ public class ParWork implements Closeable {
 
   public void addCollect(String label) {
     if (collectSet.isEmpty()) {
-      log.info("No work collected to submit");
+      if (log.isDebugEnabled()) log.debug("No work collected to submit");
       return;
     }
     try {
@@ -512,13 +513,24 @@ public class ParWork implements Closeable {
       throw new IllegalStateException("addCollect must be called to add any objects collected!");
     }
 
-    ParWorkExecService executor = (ParWorkExecService) getExecutor();
+    boolean needExec = false;
+    for (WorkUnit workUnit : workUnits) {
+      if (workUnit.objects.size() > 1) {
+        needExec = true;
+      }
+    }
+
+    ParWorkExecService executor = null;
+    if (needExec) {
+      executor = (ParWorkExecService) getExecutor();
+    }
     //initExecutor();
     AtomicReference<Throwable> exception = new AtomicReference<>();
     try {
       for (WorkUnit workUnit : workUnits) {
-        //log.info("Process workunit {} {}", workUnit.label, workUnit.objects);
-        final TimeTracker workUnitTracker = workUnit.tracker.startSubClose(workUnit.label);
+        log.info("Process workunit {} {}", workUnit.label, workUnit.objects);
+        TimeTracker workUnitTracker = null;
+        assert (workUnitTracker = workUnit.tracker.startSubClose(workUnit.label)) != null;
         try {
           List<Object> objects = workUnit.objects;
 
@@ -526,32 +538,51 @@ public class ParWork implements Closeable {
             handleObject(workUnit.label, exception, workUnitTracker, objects.get(0));
           } else {
 
-            List<Callable<Object>> closeCalls = new ArrayList<Callable<Object>>(objects.size());
+            List<Callable<Object>> closeCalls = new ArrayList<>(objects.size());
 
             for (Object object : objects) {
 
               if (object == null)
                 continue;
 
-              closeCalls.add(() -> {
-                try {
-                  handleObject(workUnit.label, exception, workUnitTracker,
-                      object);
-                } catch (Throwable t) {
-                  log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
-                  if (exception.get() == null) {
-                    exception.set(t);
+              TimeTracker finalWorkUnitTracker = workUnitTracker;
+              if (requireAnotherThread) {
+                closeCalls.add(new NoLimitsCallable<Object>() {
+                  @Override
+                  public Object call() throws Exception {
+                    try {
+                      handleObject(workUnit.label, exception, finalWorkUnitTracker,
+                          object);
+                    } catch (Throwable t) {
+                      log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
+                      if (exception.get() == null) {
+                        exception.set(t);
+                      }
+                    }
+                    return object;
                   }
-                }
-                return object;
-              });
+                });
+              } else {
+                closeCalls.add(() -> {
+                  try {
+                    handleObject(workUnit.label, exception, finalWorkUnitTracker,
+                        object);
+                  } catch (Throwable t) {
+                    log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
+                    if (exception.get() == null) {
+                      exception.set(t);
+                    }
+                  }
+                  return object;
+                });
+              }
 
             }
             if (closeCalls.size() > 0) {
 
                 List<Future<Object>> results = new ArrayList<>(closeCalls.size());
                 for (Callable<Object> call : closeCalls) {
-                    Future<Object> future = executor.doSubmit(call, requireAnotherThread);
+                    Future<Object> future = executor.submit(call);
                     results.add(future);
                 }
 
@@ -560,7 +591,7 @@ public class ParWork implements Closeable {
                 for (Future<Object> future : results) {
                   try {
                     future.get(
-                        Integer.getInteger("solr.parwork.task_timeout", 60000),
+                        Integer.getInteger("solr.parwork.task_timeout", 10000),
                         TimeUnit.MILLISECONDS); // nocommit
                     if (!future.isDone() || future.isCancelled()) {
                       log.warn("A task did not finish isDone={} isCanceled={}",
@@ -592,7 +623,7 @@ public class ParWork implements Closeable {
       }
     } finally {
 
-      tracker.doneClose();
+      assert tracker.doneClose();
       
       //System.out.println("DONE:" + tracker.getElapsedMS());
 
@@ -638,7 +669,7 @@ public class ParWork implements Closeable {
   public static ExecutorService getParExecutorService(int corePoolSize, int keepAliveTime) {
     ThreadPoolExecutor exec;
     exec = new ParWorkExecutor("ParWork-" + Thread.currentThread().getName(),
-            corePoolSize, Integer.MAX_VALUE, keepAliveTime);
+            corePoolSize, Integer.MAX_VALUE, keepAliveTime, new SynchronousQueue<>());
 
     return exec;
   }
@@ -661,7 +692,8 @@ public class ParWork implements Closeable {
     }
 
     Object returnObject = null;
-    TimeTracker subTracker = workUnitTracker.startSubClose(object);
+    TimeTracker subTracker = null;
+    assert (subTracker = workUnitTracker.startSubClose(object)) != null;
     try {
       boolean handled = false;
       if (object instanceof OrderedExecutor) {
@@ -722,8 +754,7 @@ public class ParWork implements Closeable {
         }
       }
     } finally {
-      subTracker.doneClose(returnObject instanceof String ? (String) returnObject
-          : (returnObject == null ? "" : returnObject.getClass().getName()));
+      assert subTracker.doneClose(returnObject instanceof String ? (String) returnObject : (returnObject == null ? "" : returnObject.getClass().getName()));
     }
 
     if (log.isDebugEnabled()) {
@@ -744,7 +775,7 @@ public class ParWork implements Closeable {
 
   public static void close(Object object) {
     try (ParWork dw = new ParWork(object)) {
-      dw.add(object != null ? object.getClass().getSimpleName() : "null", object);
+      dw.add(object != null ? "Close " + object.getClass().getSimpleName() : "null", object);
     }
   }
 
@@ -829,4 +860,14 @@ public class ParWork implements Closeable {
     }
   }
 
+  public static abstract class NoLimitsCallable<V> implements Callable {
+    @Override
+    public abstract Object call() throws Exception;
+  }
+
+  public static class SolrFutureTask extends FutureTask {
+    public SolrFutureTask(Callable callable) {
+      super(callable);
+    }
+  }
 }

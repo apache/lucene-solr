@@ -36,7 +36,7 @@ import java.util.Random;
 
 import com.google.common.collect.Maps;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
@@ -94,7 +94,7 @@ import static org.hamcrest.core.StringContains.containsString;
  *
  * @since solr 1.3
  */
-@SuppressSSL
+@SolrTestCase.SuppressSSL
 abstract public class SolrExampleTests extends SolrExampleTestsBase
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

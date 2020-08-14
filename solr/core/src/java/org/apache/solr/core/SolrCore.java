@@ -53,6 +53,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -82,6 +83,7 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.ParWorkExecService;
+import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -1089,10 +1091,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       resourceLoader.inform(this); // last call before the latch is released.
       latch.countDown();
     } catch (Throwable e) {
+      log.error("Error while creating SolrCore", e);
       // release the latch, otherwise we block trying to do the close. This
       // should be fine, since counting down on a latch of 0 is still fine
       latch.countDown();
-      ParWork.propegateInterrupt("Error while creating SolrCore", e);
+      ParWork.propegateInterrupt(e);
 
       try {
         // close down the searcher and any other resources, if it exists, as this
@@ -1867,8 +1870,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
-  final ExecutorService searcherExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
-      new SolrNamedThreadFactory("searcherExecutor"));
+  final ExecutorService searcherExecutor = new ParWorkExecutor("searcherExecutor", 1, 1, 0, new LinkedBlockingQueue<>());
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private final Object searcherLock = new Object();  // the sync object for the searcher

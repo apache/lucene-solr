@@ -19,11 +19,10 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.SolrInputDocument;
@@ -34,7 +33,7 @@ import org.junit.Test;
 
 @Slow
 @Nightly
-@SuppressSSL
+@SolrTestCase.SuppressSSL
 public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTestBase {
 
   private List<StoppableIndexingThread> threads;

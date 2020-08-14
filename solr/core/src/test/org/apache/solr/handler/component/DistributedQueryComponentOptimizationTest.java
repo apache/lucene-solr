@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -36,6 +37,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -46,6 +48,7 @@ import org.junit.Test;
  *
  * @see QueryComponent
  */
+@Ignore // nocommit
 public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "optimize";
@@ -66,21 +69,21 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
         .process(cluster.getSolrClient());
 
     new UpdateRequest()
-        .add(sdoc(id, "1", "text", "a", "test_sS", "21", "payload", ByteBuffer.wrap(new byte[]{0x12, 0x62, 0x15})))
-        .add(sdoc(id, "2", "text", "b", "test_sS", "22", "payload", ByteBuffer.wrap(new byte[]{0x25, 0x21, 0x16})))                  //  5
-        .add(sdoc(id, "3", "text", "a", "test_sS", "23", "payload", ByteBuffer.wrap(new byte[]{0x35, 0x32, 0x58})))                  //  8
-        .add(sdoc(id, "4", "text", "b", "test_sS", "24", "payload", ByteBuffer.wrap(new byte[]{0x25, 0x21, 0x15})))                    //  4
-        .add(sdoc(id, "5", "text", "a", "test_sS", "25", "payload", ByteBuffer.wrap(new byte[]{0x35, 0x35, 0x10, 0x00})))              //  9
-        .add(sdoc(id, "6", "text", "c", "test_sS", "26", "payload", ByteBuffer.wrap(new byte[]{0x1a, 0x2b, 0x3c, 0x00, 0x00, 0x03})))  //  3
-        .add(sdoc(id, "7", "text", "c", "test_sS", "27", "payload", ByteBuffer.wrap(new byte[]{0x00, 0x3c, 0x73})))                    //  1
-        .add(sdoc(id, "8", "text", "c", "test_sS", "28", "payload", ByteBuffer.wrap(new byte[]{0x59, 0x2d, 0x4d})))                    // 11
-        .add(sdoc(id, "9", "text", "a", "test_sS", "29", "payload", ByteBuffer.wrap(new byte[]{0x39, 0x79, 0x7a})))                    // 10
-        .add(sdoc(id, "10", "text", "b", "test_sS", "30", "payload", ByteBuffer.wrap(new byte[]{0x31, 0x39, 0x7c})))                   //  6
-        .add(sdoc(id, "11", "text", "d", "test_sS", "31", "payload", ByteBuffer.wrap(new byte[]{(byte) 0xff, (byte) 0xaf, (byte) 0x9c}))) // 13
-        .add(sdoc(id, "12", "text", "d", "test_sS", "32", "payload", ByteBuffer.wrap(new byte[]{0x34, (byte) 0xdd, 0x4d})))             //  7
-        .add(sdoc(id, "13", "text", "d", "test_sS", "33", "payload", ByteBuffer.wrap(new byte[]{(byte) 0x80, 0x11, 0x33})))             // 12
+        .add(SolrTestCaseJ4.sdoc(id, "1", "text", "a", "test_sS", "21", "payload", ByteBuffer.wrap(new byte[]{0x12, 0x62, 0x15})))
+        .add(SolrTestCaseJ4.sdoc(id, "2", "text", "b", "test_sS", "22", "payload", ByteBuffer.wrap(new byte[]{0x25, 0x21, 0x16})))                  //  5
+        .add(SolrTestCaseJ4.sdoc(id, "3", "text", "a", "test_sS", "23", "payload", ByteBuffer.wrap(new byte[]{0x35, 0x32, 0x58})))                  //  8
+        .add(SolrTestCaseJ4.sdoc(id, "4", "text", "b", "test_sS", "24", "payload", ByteBuffer.wrap(new byte[]{0x25, 0x21, 0x15})))                    //  4
+        .add(SolrTestCaseJ4.sdoc(id, "5", "text", "a", "test_sS", "25", "payload", ByteBuffer.wrap(new byte[]{0x35, 0x35, 0x10, 0x00})))              //  9
+        .add(SolrTestCaseJ4.sdoc(id, "6", "text", "c", "test_sS", "26", "payload", ByteBuffer.wrap(new byte[]{0x1a, 0x2b, 0x3c, 0x00, 0x00, 0x03})))  //  3
+        .add(SolrTestCaseJ4.sdoc(id, "7", "text", "c", "test_sS", "27", "payload", ByteBuffer.wrap(new byte[]{0x00, 0x3c, 0x73})))                    //  1
+        .add(SolrTestCaseJ4.sdoc(id, "8", "text", "c", "test_sS", "28", "payload", ByteBuffer.wrap(new byte[]{0x59, 0x2d, 0x4d})))                    // 11
+        .add(SolrTestCaseJ4.sdoc(id, "9", "text", "a", "test_sS", "29", "payload", ByteBuffer.wrap(new byte[]{0x39, 0x79, 0x7a})))                    // 10
+        .add(SolrTestCaseJ4.sdoc(id, "10", "text", "b", "test_sS", "30", "payload", ByteBuffer.wrap(new byte[]{0x31, 0x39, 0x7c})))                   //  6
+        .add(SolrTestCaseJ4.sdoc(id, "11", "text", "d", "test_sS", "31", "payload", ByteBuffer.wrap(new byte[]{(byte) 0xff, (byte) 0xaf, (byte) 0x9c}))) // 13
+        .add(SolrTestCaseJ4.sdoc(id, "12", "text", "d", "test_sS", "32", "payload", ByteBuffer.wrap(new byte[]{0x34, (byte) 0xdd, 0x4d})))             //  7
+        .add(SolrTestCaseJ4.sdoc(id, "13", "text", "d", "test_sS", "33", "payload", ByteBuffer.wrap(new byte[]{(byte) 0x80, 0x11, 0x33})))             // 12
         // SOLR-6545, wild card field list
-        .add(sdoc(id, "19", "text", "d", "cat_a_sS", "1", "dynamic_s", "2", "payload", ByteBuffer.wrap(new byte[]{(byte) 0x80, 0x11, 0x34})))
+        .add(SolrTestCaseJ4.sdoc(id, "19", "text", "d", "cat_a_sS", "1", "dynamic_s", "2", "payload", ByteBuffer.wrap(new byte[]{(byte) 0x80, 0x11, 0x34})))
         .commit(cluster.getSolrClient(), COLLECTION);
 
   }
@@ -94,10 +97,10 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
     QueryResponse rsp;
     rsp = cluster.getSolrClient().query(COLLECTION,
         new SolrQuery("q", "*:*", "fl", "id,test_sS,score", "sort", "payload asc", "rows", "20"));
-    assertFieldValues(rsp.getResults(), id, "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "19", "11");
-    assertFieldValues(rsp.getResults(), "test_sS", "27", "21", "26", "24", "22", "30", "32", "23", "25", "29", "28", "33", null, "31");
+    SolrTestCaseJ4.assertFieldValues(rsp.getResults(), id, "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "19", "11");
+    SolrTestCaseJ4.assertFieldValues(rsp.getResults(), "test_sS", "27", "21", "26", "24", "22", "30", "32", "23", "25", "29", "28", "33", null, "31");
     rsp = cluster.getSolrClient().query(COLLECTION, new SolrQuery("q", "*:*", "fl", "id,score", "sort", "payload desc", "rows", "20"));
-    assertFieldValues(rsp.getResults(), id, "11", "19", "13", "8", "9", "5", "3", "12", "10", "2", "4", "6", "1", "7");
+    SolrTestCaseJ4.assertFieldValues(rsp.getResults(), id, "11", "19", "13", "8", "9", "5", "3", "12", "10", "2", "4", "6", "1", "7");
 
   }
 
@@ -108,11 +111,11 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
     // works with just fl=id as well
     QueryResponse rsp = cluster.getSolrClient().query(COLLECTION,
         new SolrQuery("q", "*:*", "fl", "id", "sort", "payload desc", "rows", "20"));
-    assertFieldValues(rsp.getResults(), id, "11", "19", "13", "8", "9", "5", "3", "12", "10", "2", "4", "6", "1", "7");
+    SolrTestCaseJ4.assertFieldValues(rsp.getResults(), id, "11", "19", "13", "8", "9", "5", "3", "12", "10", "2", "4", "6", "1", "7");
 
     rsp = cluster.getSolrClient().query(COLLECTION,
         new SolrQuery("q", "*:*", "fl", "id,score", "sort", "payload asc", "rows", "20"));
-    assertFieldValues(rsp.getResults(), id, "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "19", "11");
+    SolrTestCaseJ4.assertFieldValues(rsp.getResults(), id, "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "19", "11");
   }
 
   @Test
@@ -120,8 +123,8 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
 
     QueryResponse rsp = cluster.getSolrClient().query(COLLECTION,
         new SolrQuery("q", "*:*", "fl", "id,test_sS,score", "sort", "payload asc", "rows", "20", "distrib.singlePass", "true"));
-    assertFieldValues(rsp.getResults(), id, "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "19", "11");
-    assertFieldValues(rsp.getResults(), "test_sS", "27", "21", "26", "24", "22", "30", "32", "23", "25", "29", "28", "33", null, "31");
+    SolrTestCaseJ4.assertFieldValues(rsp.getResults(), id, "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "19", "11");
+    SolrTestCaseJ4.assertFieldValues(rsp.getResults(), "test_sS", "27", "21", "26", "24", "22", "30", "32", "23", "25", "29", "28", "33", null, "31");
 
 
     QueryResponse nonDistribRsp = cluster.getSolrClient().query(COLLECTION,
@@ -152,13 +155,13 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
     QueryResponse nonDistribRsp = queryWithAsserts("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc");
     QueryResponse rsp = queryWithAsserts("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc", "distrib.singlePass", "true");
 
-    assertFieldValues(nonDistribRsp.getResults(), "id", "19");
-    assertFieldValues(rsp.getResults(), "id", "19");
+    SolrTestCaseJ4.assertFieldValues(nonDistribRsp.getResults(), "id", "19");
+    SolrTestCaseJ4.assertFieldValues(rsp.getResults(), "id", "19");
 
     nonDistribRsp = queryWithAsserts("q", "id:19", "fl", "id,dynamic_s,cat*", "sort", "payload asc");
     rsp = queryWithAsserts("q", "id:19", "fl", "id,dynamic_s,cat*", "sort", "payload asc", "distrib.singlePass", "true");
-    assertFieldValues(nonDistribRsp.getResults(), "id", "19");
-    assertFieldValues(rsp.getResults(), "id", "19");
+    SolrTestCaseJ4.assertFieldValues(nonDistribRsp.getResults(), "id", "19");
+    SolrTestCaseJ4.assertFieldValues(rsp.getResults(), "id", "19");
 
     queryWithAsserts("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc", "distrib.singlePass", "true");
     queryWithAsserts("q", "id:19", "fl", "id,dynamic_s,cat*", "sort", "payload asc", "distrib.singlePass", "true");

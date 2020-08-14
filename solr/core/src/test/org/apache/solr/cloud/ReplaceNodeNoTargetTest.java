@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -118,7 +119,7 @@ public class ReplaceNodeNoTargetTest extends SolrCloudTestCase {
   private CoreAdminResponse getCoreStatusForNamedNode(final CloudHttp2SolrClient cloudClient,
                                                       final String nodeName) throws Exception {
     
-    try (Http2SolrClient coreclient = getHttpSolrClient
+    try (Http2SolrClient coreclient = SolrTestCaseJ4.getHttpSolrClient
          (cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
       return CoreAdminRequest.getStatus(null, coreclient);
     }

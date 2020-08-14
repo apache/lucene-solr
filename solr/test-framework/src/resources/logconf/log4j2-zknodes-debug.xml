@@ -42,7 +42,7 @@
 
         <AsyncRoot level="INFO">
             <AppenderRef ref="STDERR_COLOR"/>
-            <AppenderRef ref="FILE"/>
+            <!--   <AppenderRef ref="FILE"/> -->
         </AsyncRoot>
     </Loggers>
 </Configuration>

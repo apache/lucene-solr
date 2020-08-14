@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -51,13 +52,11 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Ignore;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -188,7 +187,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   }
 
   void assertRouting(int numShards, List<UpdateCommand> updateCommands) throws IOException {
-    try (CloudSolrClient cloudSolrClient = getCloudSolrClient(cluster)) {
+    try (CloudSolrClient cloudSolrClient = SolrTestCaseJ4.getCloudSolrClient(cluster)) {
       ClusterStateProvider clusterStateProvider = cloudSolrClient.getClusterStateProvider();
       clusterStateProvider.connect();
       Set<String> leaders = getLeaderCoreNames(clusterStateProvider.getClusterState());
@@ -271,7 +270,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     if (random().nextBoolean()) {
       // Send in separate threads. Choose random collection & solrClient
       ExecutorService exec = null;
-      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
+      try (CloudSolrClient solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster)) {
         try {
           exec = testExecutor;
           List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
@@ -293,7 +292,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     } else {
       // send in a batch.
       String col = collections.get(random().nextInt(collections.size()));
-      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
+      try (CloudSolrClient solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster)) {
         assertUpdateResponse(solrClient.add(col, Arrays.asList(solrInputDocuments), commitWithin));
       }
     }
@@ -331,7 +330,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   }
 
   private int queryNumDocs(String q) throws SolrServerException, IOException {
-    return (int) getSolrClient().query(getAlias(), params("q", q, "rows", "0")).getResults().getNumFound();
+    return (int) getSolrClient().query(getAlias(), SolrTestCaseJ4.params("q", q, "rows", "0")).getResults().getNumFound();
   }
 
   /** Adds the docs to Solr via {@link #getSolrClient()} with the params */

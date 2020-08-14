@@ -145,14 +145,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       OverseerCollectionConfigSetProcessor {
     
 
-    public OverseerCollectionConfigSetProcessorToBeTested(ZkStateReader zkStateReader,
+    public OverseerCollectionConfigSetProcessorToBeTested(CoreContainer cc, ZkStateReader zkStateReader,
         String myId, HttpShardHandlerFactory shardHandlerFactory,
         String adminPath,
         OverseerTaskQueue workQueue, DistributedMap runningMap,
         Overseer overseer,
         DistributedMap completedMap,
         DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory, null), workQueue, runningMap, completedMap, failureMap);
+      super(cc, zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory, null), workQueue, runningMap, completedMap, failureMap);
     }
     
   }
@@ -720,7 +720,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     
     if (random().nextBoolean()) Collections.shuffle(createNodeList, random());
 
-    underTest = new OverseerCollectionConfigSetProcessorToBeTested(zkStateReaderMock,
+    underTest = new OverseerCollectionConfigSetProcessorToBeTested(coreContainerMock, zkStateReaderMock,
         "1234", shardHandlerFactoryMock, ADMIN_PATH, workQueueMock, runningMapMock,
         overseerMock, completedMapMock, failureMapMock);
 

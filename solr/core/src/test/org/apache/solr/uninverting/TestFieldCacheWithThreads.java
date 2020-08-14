@@ -54,7 +54,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     final List<Long> numbers = new ArrayList<>();
     final List<BytesRef> binary = new ArrayList<>();
     final List<BytesRef> sorted = new ArrayList<>();
-    final int numDocs = atLeast(100);
+    final int numDocs = TEST_NIGHTLY ? atLeast(100) : 20;
     for(int i=0;i<numDocs;i++) {
       Document d = new Document();
       long number = random().nextLong();
@@ -76,7 +76,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     assertEquals(1, r.leaves().size());
     final LeafReader ar = r.leaves().get(0).reader();
 
-    int numThreads = TestUtil.nextInt(random(), 2, 5);
+    int numThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 2, 5) : 2;
     List<Thread> threads = new ArrayList<>();
     final CountDownLatch startingGun = new CountDownLatch(1);
     for(int t=0;t<numThreads;t++) {
@@ -147,7 +147,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
   
   public void test2() throws Exception {
     Random random = random();
-    final int NUM_DOCS = atLeast(100);
+    final int NUM_DOCS = TEST_NIGHTLY ? atLeast(100) : 20;
     final Directory dir = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     final boolean allowDups = random.nextBoolean();
@@ -200,7 +200,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
 
     final long END_TIME = System.nanoTime() + TimeUnit.NANOSECONDS.convert((TEST_NIGHTLY ? 30 : 1), TimeUnit.SECONDS);
 
-    final int NUM_THREADS = TestUtil.nextInt(random(), 1, 10);
+    final int NUM_THREADS = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, 10) : 2;
     Thread[] threads = new Thread[NUM_THREADS];
     for(int thread=0;thread<NUM_THREADS;thread++) {
       threads[thread] = new Thread() {
@@ -230,7 +230,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
               }
             }
             while(System.nanoTime() < END_TIME) {
-              for(int iter=0;iter<100;iter++) {
+              for(int iter=0;iter<(TEST_NIGHTLY ? 100 : 10);iter++) {
                 final int docID = random.nextInt(sr.maxDoc());
                 try {
                   SortedDocValues dvs = sr.getSortedDocValues("stringdv");

@@ -69,6 +69,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -162,7 +163,7 @@ public class Overseer implements SolrCloseable {
   private volatile boolean closeAndDone;
 
   public boolean isDone() {
-    return  closeAndDone;
+    return closeAndDone;
   }
 
   /**
@@ -222,14 +223,14 @@ public class Overseer implements SolrCloseable {
               // the state queue, items would have been left in the
               // work queue so let's process those first
               byte[] data = fallbackQueue.peek();
+              clusterState = getZkStateReader().getClusterState();
               while (fallbackQueueSize > 0 && data != null) {
                 final ZkNodeProps message = ZkNodeProps.load(data);
                 if (log.isDebugEnabled()) log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
                 try {
-                  clusterState = processQueueItem(message, reader.getClusterState(), zkStateWriter, false, null);
-                  assert clusterState != null;
+                  processQueueItem(message, getZkStateReader().getClusterState(), zkStateWriter, false, null);
                 } catch (InterruptedException | AlreadyClosedException e) {
                   ParWork.propegateInterrupt(e);
                   return;
@@ -258,7 +259,7 @@ public class Overseer implements SolrCloseable {
                 fallbackQueueSize--;
               }
               // force flush at the end of the loop, if there are no pending updates, this is a no op call
-              //clusterState = zkStateWriter.writePendingUpdates(clusterState);
+              clusterState = zkStateWriter.writePendingUpdates(clusterState);
               assert clusterState != null;
               // the workQueue is empty now, use stateUpdateQueue as fallback queue
               fallbackQueue = stateUpdateQueue;
@@ -282,7 +283,14 @@ public class Overseer implements SolrCloseable {
           LinkedList<Pair<String, byte[]>> queue = null;
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
-            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 2000L, (x) -> true));
+
+            long wait = 10000;
+//            if (zkStateWriter.getUpdatesToWrite().isEmpty()) {
+//              wait = 100;
+//            } else {
+//              wait = 0;
+//            }
+            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> true));
           } catch (InterruptedException | AlreadyClosedException e) {
             ParWork.propegateInterrupt(e, true);
             return;
@@ -314,19 +322,26 @@ public class Overseer implements SolrCloseable {
                 processedNodes.add(head.first());
                 fallbackQueueSize = processedNodes.size();
                 // The callback always be called on this thread
-                clusterState = processQueueItem(message, clusterState, zkStateWriter, true, () -> {
+                  processQueueItem(message, getZkStateReader().getClusterState(), zkStateWriter, true, () -> {
                   stateUpdateQueue.remove(processedNodes);
                   processedNodes.clear();
                 });
               }
               if (isClosed()) return;
-              // if an event comes in the next 100ms batch it together
-              queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, 100, node -> !processedNodes.contains(node)));
+              // if an event comes in the next *ms batch it together
+              int wait = 0;
+//              if (zkStateWriter.getUpdatesToWrite().isEmpty()) {
+//                wait = 10000;
+//              } else {
+//                wait = 0;
+//              }
+              queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, node -> !processedNodes.contains(node)));
             }
             fallbackQueueSize = processedNodes.size();
             // we should force write all pending updates because the next iteration might sleep until there
             // are more items in the main queue
-           // clusterState = zkStateWriter.writePendingUpdates(clusterState);
+            clusterState = zkStateWriter.writePendingUpdates(clusterState);
+
             // clean work queue
             stateUpdateQueue.remove(processedNodes);
             processedNodes.clear();
@@ -346,7 +361,7 @@ public class Overseer implements SolrCloseable {
       } finally {
         log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
 
-        if (!isClosed()) {
+        if (!isClosed() && !zkController.getCoreContainer().isShutDown()) {
           Overseer.this.close();
         }
       }
@@ -390,9 +405,19 @@ public class Overseer implements SolrCloseable {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Message missing " + QUEUE_OPERATION + ":" + message);
         }
 
-        List<ZkWriteCommand> zkWriteOps = processMessage(clusterState, message, operation);
-        ZkStateWriter zkStateWriter1 = new ZkStateWriter(zkController.getZkStateReader(), new Stats());
-        cs = zkStateWriter1.enqueueUpdate(clusterState, zkWriteOps,
+      ClusterState state = reader.getClusterState();
+      LinkedHashMap collStates = new LinkedHashMap<>();
+
+      Map<String,DocCollection> updatesToWrite = zkStateWriter
+          .getUpdatesToWrite();
+      for (DocCollection docCollection : updatesToWrite.values()) {
+        collStates.put(docCollection.getName(), new ClusterState.CollectionRef(docCollection));
+      }
+      ClusterState prevState = new ClusterState(state.getLiveNodes(),
+          collStates, state.getZNodeVersion());
+        List<ZkWriteCommand> zkWriteOps = processMessage(updatesToWrite.isEmpty() ? state : prevState, message, operation);
+
+        cs = zkStateWriter.enqueueUpdate(clusterState, zkWriteOps,
                 () -> {
                   // log.info("on write callback");
                 });
@@ -615,8 +640,10 @@ public class Overseer implements SolrCloseable {
           if (Event.EventType.None.equals(event.getType())) {
             return;
           }
-          log.info("Overseer leader has changed, closing ...");
-          Overseer.this.close();
+          if (!isClosed()) {
+            log.info("Overseer leader has changed, closing ...");
+            Overseer.this.close();
+          }
         }});
     } catch (KeeperException.SessionExpiredException e) {
       log.warn("ZooKeeper session expired");
@@ -641,7 +668,7 @@ public class Overseer implements SolrCloseable {
 
     // nocommit - I don't know about this guy..
     OverseerNodePrioritizer overseerPrioritizer = null; // new OverseerNodePrioritizer(reader, getStateUpdateQueue(), adminPath, shardHandler.getShardHandlerFactory(), updateShardHandler.getUpdateOnlyHttpClient());
-    overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
+    overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(zkController.getCoreContainer(), reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
     ccThread = new OverseerThread(ccTg, overseerCollectionConfigSetProcessor, "OverseerCollectionConfigSetProcessor-" + id);
     ccThread.setDaemon(true);
 
@@ -817,20 +844,15 @@ public class Overseer implements SolrCloseable {
 
   public void closeAndDone() {
     this.closeAndDone = true;
+    this.closed = true;
   }
   
-  public synchronized void close() {
+  public void close() {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);
     }
-    this.closed = true;
-    try (ParWork closer = new ParWork(this)) {
-      closer.collect(context);
-      closer.collect(()->{
-         doClose();
-      });
-      closer.addCollect("OverseerClose");
-    }
+
+
     if (zkController.getZkClient().isConnected()) {
       try {
         context.cancelElection();
@@ -840,6 +862,10 @@ public class Overseer implements SolrCloseable {
         log.error("Exception canceling election for overseer");
       }
     }
+
+    doClose();
+
+    ParWork.close(context);
   }
 
   @Override
@@ -848,6 +874,10 @@ public class Overseer implements SolrCloseable {
   }
 
   void doClose() {
+    if (closed) {
+      return;
+    }
+    closed = true;
     if (log.isDebugEnabled()) {
       log.debug("doClose() - start");
     }
@@ -894,7 +924,7 @@ public class Overseer implements SolrCloseable {
    *
    * @return a {@link ZkDistributedQueue} object
    */
-  ZkDistributedQueue getStateUpdateQueue() {
+  public ZkDistributedQueue getStateUpdateQueue() {
     return getStateUpdateQueue(new Stats());
   }
 

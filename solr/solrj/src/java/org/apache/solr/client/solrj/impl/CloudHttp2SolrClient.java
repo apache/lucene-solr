@@ -93,8 +93,8 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
   @Override
   public void close() throws IOException {
-    try (ParWork closer = new ParWork(this, true)) {
-      closer.add("CloudHttp2SolrClient#close", stateProvider, zkStateReader, lbClient);
+    try (ParWork closer = new ParWork(this, true, true)) {
+      closer.add("CloudHttp2SolrClient#close", stateProvider, lbClient, zkStateReader);
       if (clientIsInternal && myClient!=null) {
         closer.add("http2Client", myClient);
       }

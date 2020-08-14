@@ -17,11 +17,10 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -37,7 +36,7 @@ import java.util.Iterator;
  * @since solr 1.4
  *
  */
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBatchUpdate extends SolrJettyTestBase {
 
   @BeforeClass

@@ -31,14 +31,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -142,9 +141,10 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     assertEquals(0, cloudClient.query(params("q","*:*")).getResults().getNumFound());
     
     // add a doc that we will then delete later after adding two other docs (all before next commit).
-    assertEquals(0, cloudClient.add(sdoc("id", "doc4", "content_s", "will_delete_later")).getStatus());
-    assertEquals(0, cloudClient.add(sdocs(sdoc("id", "doc5"),
-                                          sdoc("id", "doc6"))).getStatus());
+    assertEquals(0, cloudClient.add(
+        SolrTestCaseJ4.sdoc("id", "doc4", "content_s", "will_delete_later")).getStatus());
+    assertEquals(0, cloudClient.add(SolrTestCaseJ4.sdocs(SolrTestCaseJ4.sdoc("id", "doc5"),
+        SolrTestCaseJ4.sdoc("id", "doc6"))).getStatus());
     assertEquals(0, cloudClient.deleteById("doc4").getStatus());
     assertEquals(0, cloudClient.commit(collectionName).getStatus());
 
@@ -216,12 +216,12 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         }
         
         // create client to send our updates to...
-        try (Http2SolrClient indexClient = getHttpSolrClient(indexingUrl)) {
+        try (Http2SolrClient indexClient = SolrTestCaseJ4.getHttpSolrClient(indexingUrl)) {
           
           // Sanity check: we should be able to send a bunch of updates that work right now...
           for (int i = 0; i < 100; i++) {
             final UpdateResponse rsp = indexClient.add
-              (sdoc("id", i, "text_t", TestUtil.randomRealisticUnicodeString(random(), 200)));
+              (SolrTestCaseJ4.sdoc("id", i, "text_t", TestUtil.randomRealisticUnicodeString(random(), 200)));
             assertEquals(0, rsp.getStatus());
           }
 
@@ -235,7 +235,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
                 // Except we know the hashing algorithm isn't purely random,
                 // So the actual odds are "0" unless the hashing algorithm is changed to suck badly...
                 final UpdateResponse rsp = indexClient.add
-                (sdoc("id", i, "text_t", TestUtil.randomRealisticUnicodeString(random(), 200)));
+                (SolrTestCaseJ4.sdoc("id", i, "text_t", TestUtil.randomRealisticUnicodeString(random(), 200)));
                 // if the update didn't throw an exception, it better be a success..
                 assertEquals(0, rsp.getStatus());
               }
@@ -255,8 +255,8 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   private void addTwoDocsInOneRequest(String docIdA, String docIdB) throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
-    assertEquals(0, cloudClient.add(sdocs(sdoc("id", docIdA),
-                                          sdoc("id", docIdB))).getStatus());
+    assertEquals(0, cloudClient.add(SolrTestCaseJ4.sdocs(SolrTestCaseJ4.sdoc("id", docIdA),
+        SolrTestCaseJ4.sdoc("id", docIdB))).getStatus());
     assertEquals(0, cloudClient.commit().getStatus());
     
     assertEquals(2, cloudClient.query(params("q","id:(" + docIdA + " OR " + docIdB + ")")
@@ -270,7 +270,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     // add the doc, confirm we can query it...
-    assertEquals(0, cloudClient.add(sdoc("id", docId, "content_t", "originalcontent")).getStatus());
+    assertEquals(0, cloudClient.add(SolrTestCaseJ4.sdoc("id", docId, "content_t", "originalcontent")).getStatus());
     assertEquals(0, cloudClient.commit().getStatus());
     
     assertEquals(1, cloudClient.query(params("q", "id:" + docId)).getResults().getNumFound());
@@ -282,7 +282,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     checkShardConsistency(params("q","id:" + docId, "rows", "99","_trace","original_doc"));
     
     // update doc
-    assertEquals(0, cloudClient.add(sdoc("id", docId, "content_t", "updatedcontent")).getStatus());
+    assertEquals(0, cloudClient.add(SolrTestCaseJ4.sdoc("id", docId, "content_t", "updatedcontent")).getStatus());
     assertEquals(0, cloudClient.commit().getStatus());
     
     // confirm we can query the doc by updated content and not original...
@@ -393,7 +393,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       UpdateRequest uReq;
       uReq = new UpdateRequest();
       assertEquals(0, cloudClient.add
-                   (sdoc("id", i, "text_t", TestUtil.randomRealisticUnicodeString(random(), 200))).getStatus());
+                   (SolrTestCaseJ4.sdoc("id", i, "text_t", TestUtil.randomRealisticUnicodeString(random(), 200))).getStatus());
     }
     assertEquals(0, cloudClient.commit(collectionName).getStatus());
     assertEquals(numDocs, cloudClient.query(params("q","*:*")).getResults().getNumFound());
@@ -427,7 +427,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             final UpdateRequest req = new UpdateRequest();
             for (int docId = 0; docId < numDocsPerBatch && keepGoing(); docId++) {
               expectedDocCount.incrementAndGet();
-              req.add(sdoc("id", "indexer" + name + "_" + batchId + "_" + docId,
+              req.add(SolrTestCaseJ4.sdoc("id", "indexer" + name + "_" + batchId + "_" + docId,
                            "test_t", TestUtil.randomRealisticUnicodeString(LuceneTestCase.random(), 200)));
             }
             assertEquals(0, req.process(cloudClient).getStatus());
@@ -468,11 +468,11 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final int numDocs = TEST_NIGHTLY ? atLeast(500) : 59;
     final JettySolrRunner nodeToUpdate = cluster.getRandomJetty(random());
     try (ConcurrentUpdateSolrClient indexClient
-         = getConcurrentUpdateSolrClient(nodeToUpdate.getBaseUrl() + "/" + collectionName, 10, 2)) {
+         = SolrTestCaseJ4.getConcurrentUpdateSolrClient(nodeToUpdate.getBaseUrl() + "/" + collectionName, 10, 2)) {
       
       for (int i = 0; i < numDocs; i++) {
         log.info("add doc {}", i);
-        indexClient.add(sdoc("id", i, "text_t",
+        indexClient.add(SolrTestCaseJ4.sdoc("id", i, "text_t",
                              TestUtil.randomRealisticUnicodeString(random(), 200)));
       }
       indexClient.blockUntilFinished();
@@ -509,11 +509,11 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       final Slice slice = entry.getValue();
       log.info("Checking: {} -> {}", shardName, slice);
       final Replica leader = entry.getValue().getLeader();
-      try (Http2SolrClient leaderClient = getHttpSolrClient(leader.getCoreUrl())) {
+      try (Http2SolrClient leaderClient = SolrTestCaseJ4.getHttpSolrClient(leader.getCoreUrl())) {
         final SolrDocumentList leaderResults = leaderClient.query(perReplicaParams).getResults();
         log.debug("Shard {}: Leader results: {}", shardName, leaderResults);
         for (Replica replica : slice) {
-          try (Http2SolrClient replicaClient = getHttpSolrClient(replica.getCoreUrl())) {
+          try (Http2SolrClient replicaClient = SolrTestCaseJ4.getHttpSolrClient(replica.getCoreUrl())) {
             final SolrDocumentList replicaResults = replicaClient.query(perReplicaParams).getResults();
             if (log.isDebugEnabled()) {
               log.debug("Shard {}: Replica ({}) results: {}", shardName, replica.getCoreName(), replicaResults);

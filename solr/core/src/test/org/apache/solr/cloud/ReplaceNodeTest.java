@@ -26,10 +26,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -108,7 +107,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
       Thread.sleep(500);
     }
     assertTrue(success);
-    try (Http2SolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(node2bdecommissioned))) {
+    try (Http2SolrClient coreclient = SolrTestCaseJ4.getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(node2bdecommissioned))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       assertTrue(status.getCoreStatus().size() == 0);
     }
@@ -139,7 +138,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
       Thread.sleep(500);
     }
     assertTrue(success);
-    try (Http2SolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(emptyNode))) {
+    try (Http2SolrClient coreclient = SolrTestCaseJ4.getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(emptyNode))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       assertEquals("Expecting no cores but found some: " + status.getCoreStatus(), 0, status.getCoreStatus().size());
     }

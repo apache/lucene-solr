@@ -57,15 +57,10 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     try {
       log.info("Create our collection");
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
-      
-      log.info("Sanity check that our collection has come online");
-      cluster.getSolrClient().waitForState(col_name, 30, TimeUnit.SECONDS, clusterShape(1, 1));
                                            
       log.info("Shutdown 1 node");
       final JettySolrRunner nodeToStop = cluster.getJettySolrRunner(0);
       nodeToStop.stop();
-      log.info("Wait to confirm our node is fully shutdown");
-      cluster.waitForJettyToStop(nodeToStop);
 
       log.info("Now check if waitForState will recognize we already have the exepcted state");
       cluster.waitForActiveCollection(col_name, 5000, TimeUnit.MILLISECONDS, 1, 0);

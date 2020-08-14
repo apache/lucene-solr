@@ -25,10 +25,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -77,7 +77,7 @@ import static org.apache.solr.common.params.FacetParams.FACET_SORT;
  *
  *
  */
-@SuppressSSL // Too Slow
+@SolrTestCase.SuppressSSL // Too Slow
 @Ignore // nocommit - flakey - i think this is races with dynamic schema? Its been a while, don't fully recall...
 public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
 
@@ -97,7 +97,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
 
   public TestCloudPivotFacet() {
     // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    if (Boolean.getBoolean(SolrTestCaseJ4.NUMERIC_POINTS_SYSPROP)) System.setProperty(SolrTestCaseJ4.NUMERIC_DOCVALUES_SYSPROP,"true");
     useFieldRandomizedFactor = TestUtil.nextInt(random(), 2, 30);
     log.info("init'ing useFieldRandomizedFactor = {}", useFieldRandomizedFactor);
   }
@@ -543,72 +543,72 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
    * @see #buildRandomPivot
    */
   private static SolrInputDocument buildRandomDocument(int id) {
-    SolrInputDocument doc = sdoc("id", id);
+    SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", id);
     // most fields are in most docs
     // if field is in a doc, then "skewed" chance val is from a dense range
     // (hopefully with lots of duplication)
     for (String prefix : new String[] { "pivot_i", "pivot_ti" }) {
       if (useField()) {
-        doc.addField(prefix+"1", skewed(TestUtil.nextInt(random(), 20, 50),
+        doc.addField(prefix+"1", SolrTestCaseJ4.skewed(TestUtil.nextInt(random(), 20, 50),
                                         random().nextInt()));
                                         
       }
       if (useField()) {
         int numMulti = atLeast(1);
         while (0 < numMulti--) {
-          doc.addField(prefix, skewed(TestUtil.nextInt(random(), 20, 50), 
+          doc.addField(prefix, SolrTestCaseJ4.skewed(TestUtil.nextInt(random(), 20, 50),
                                       random().nextInt()));
         }
       }
     }
     for (String prefix : new String[] { "pivot_l", "pivot_tl" }) {
       if (useField()) {
-        doc.addField(prefix+"1", skewed(TestUtil.nextInt(random(), 5000, 5100),
+        doc.addField(prefix+"1", SolrTestCaseJ4.skewed(TestUtil.nextInt(random(), 5000, 5100),
                                         random().nextLong()));
       }
       if (useField()) {
         int numMulti = atLeast(1);
         while (0 < numMulti--) {
-          doc.addField(prefix, skewed(TestUtil.nextInt(random(), 5000, 5100), 
+          doc.addField(prefix, SolrTestCaseJ4.skewed(TestUtil.nextInt(random(), 5000, 5100),
                                       random().nextLong()));
         }
       }
     }
     for (String prefix : new String[] { "pivot_f", "pivot_tf" }) {
       if (useField()) {
-        doc.addField(prefix+"1", skewed(1.0F / random().nextInt(13),
+        doc.addField(prefix+"1", SolrTestCaseJ4.skewed(1.0F / random().nextInt(13),
                                         random().nextFloat() * random().nextInt()));
       }
       if (useField()) {
         int numMulti = atLeast(1);
         while (0 < numMulti--) {
-          doc.addField(prefix, skewed(1.0F / random().nextInt(13),
+          doc.addField(prefix, SolrTestCaseJ4.skewed(1.0F / random().nextInt(13),
                                       random().nextFloat() * random().nextInt()));
         }
       }
     }
     for (String prefix : new String[] { "pivot_d", "pivot_td" }) {
       if (useField()) {
-        doc.addField(prefix+"1", skewed(1.0D / random().nextInt(19),
+        doc.addField(prefix+"1", SolrTestCaseJ4.skewed(1.0D / random().nextInt(19),
                                         random().nextDouble() * random().nextInt()));
       }
       if (useField()) {
         int numMulti = atLeast(1);
         while (0 < numMulti--) {
-          doc.addField(prefix, skewed(1.0D / random().nextInt(19),
+          doc.addField(prefix, SolrTestCaseJ4.skewed(1.0D / random().nextInt(19),
                                       random().nextDouble() * random().nextInt()));
         }
       }
     }
     for (String prefix : new String[] { "pivot_dt", "pivot_tdt" }) {
       if (useField()) {
-        doc.addField(prefix+"1", skewed(randomSkewedDate(), randomDate()));
+        doc.addField(prefix+"1", SolrTestCaseJ4.skewed(SolrTestCaseJ4.randomSkewedDate(), SolrTestCaseJ4.randomDate()));
                                         
       }
       if (useField()) {
         int numMulti = atLeast(1);
         while (0 < numMulti--) {
-          doc.addField(prefix, skewed(randomSkewedDate(), randomDate()));
+          doc.addField(prefix, SolrTestCaseJ4.skewed(SolrTestCaseJ4.randomSkewedDate(), SolrTestCaseJ4.randomDate()));
                                       
         }
       }
@@ -627,14 +627,14 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
     }
     for (String prefix : new String[] { "pivot_x_s", "pivot_y_s", "pivot_z_s"}) {
       if (useField()) {
-        doc.addField(prefix+"1", skewed(TestUtil.randomSimpleString(random(), 1, 1),
-                                        randomXmlUsableUnicodeString()));
+        doc.addField(prefix+"1", SolrTestCaseJ4.skewed(TestUtil.randomSimpleString(random(), 1, 1),
+            SolrTestCaseJ4.randomXmlUsableUnicodeString()));
       }
       if (useField()) {
         int numMulti = atLeast(1);
         while (0 < numMulti--) {
-          doc.addField(prefix, skewed(TestUtil.randomSimpleString(random(), 1, 1),
-                                      randomXmlUsableUnicodeString()));
+          doc.addField(prefix, SolrTestCaseJ4.skewed(TestUtil.randomSimpleString(random(), 1, 1),
+              SolrTestCaseJ4.randomXmlUsableUnicodeString()));
         }
       }
     }

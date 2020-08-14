@@ -224,11 +224,12 @@ public class Http2SolrClient extends SolrClient {
       httpClient = new HttpClient(transport, sslContextFactory);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     }
-    httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(3, ParWork.PROC_COUNT), 3, idleTimeout);
+   // httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(12, ParWork.PROC_COUNT), 6, idleTimeout);
+   // httpClientExecutor.setReservedThreads(0);
 
     httpClient.setIdleTimeout(idleTimeout);
     try {
-      httpClient.setExecutor(httpClientExecutor);
+    //  httpClient.setExecutor(httpClientExecutor);
       httpClient.setStrictEventOrdering(false);
       httpClient.setConnectBlocking(false);
       httpClient.setFollowRedirects(false);
@@ -247,7 +248,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   public void close() {
-    closeTracker.close();
+   // closeTracker.close();
     asyncTracker.waitForComplete();
     if (closeClient) {
       try {
@@ -263,13 +264,17 @@ public class Http2SolrClient extends SolrClient {
               });
 
           closer.collect(() -> {
-
+           // httpClientExecutor.stopReserveExecutor();
             try {
-              // will fill queue with NOOPS and wake sleeping threads
-              httpClientExecutor.waitForStopping();
-            } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              httpClient.getScheduler().stop();
+            } catch (Exception e) {
+              e.printStackTrace();
             }
+            // will fill queue with NOOPS and wake sleeping threads
+//              httpClientExecutor.fillWithNoops();
+//            httpClientExecutor.fillWithNoops();
+//            httpClientExecutor.fillWithNoops();
+//            httpClientExecutor.fillWithNoops();
 
           });
           closer.addCollect("httpClientExecutor");
@@ -876,7 +881,7 @@ public class Http2SolrClient extends SolrClient {
   private class AsyncTracker {
 
     // nocommit - look at outstanding max again
-    private static final int MAX_OUTSTANDING_REQUESTS = 20;
+    private static final int MAX_OUTSTANDING_REQUESTS = 30;
 
     private final Semaphore available;
 

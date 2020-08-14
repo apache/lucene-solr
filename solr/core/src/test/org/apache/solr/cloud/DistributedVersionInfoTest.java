@@ -30,12 +30,12 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -62,7 +62,7 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRI
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 @Slow
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -111,7 +111,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     assertEquals("leader and replica should have same max version: " + maxOnLeader, maxOnLeader, maxOnReplica);
 
     // send the same doc but with a lower version than the max in the index
-    try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient client = SolrTestCaseJ4.getHttpSolrClient(replica.getCoreUrl())) {
       String docId = String.valueOf(1);
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id", docId);
@@ -143,8 +143,8 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     // now start sending docs while collection is reloading
 
-    delQ("*:*");
-    commit();
+    SolrTestCaseJ4.delQ("*:*");
+    SolrTestCaseJ4.commit();
 
     final Set<Integer> deletedDocs = new HashSet<>();
     final AtomicInteger docsSent = new AtomicInteger(0);
@@ -208,7 +208,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
           if (ds > 0) {
             int docToDelete = rand.nextInt(ds) + 1;
             if (!deletedDocs.contains(docToDelete)) {
-              delI(String.valueOf(docToDelete));
+              SolrTestCaseJ4.delI(String.valueOf(docToDelete));
               deletedDocs.add(docToDelete);
             }
           }
@@ -278,7 +278,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     query.addSort(new SolrQuery.SortClause("_version_", SolrQuery.ORDER.desc));
     query.setParam("distrib", false);
 
-    try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient client = SolrTestCaseJ4.getHttpSolrClient(replica.getCoreUrl())) {
       QueryResponse qr = client.query(query);
       SolrDocumentList hits = qr.getResults();
       if (hits.isEmpty())
@@ -326,7 +326,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
   }
 
   protected Http2SolrClient getHttpSolrClient(Replica replica) throws Exception {
-    return getHttpSolrClient(replica.getCoreUrl());
+    return SolrTestCaseJ4.getHttpSolrClient(replica.getCoreUrl());
   }
 
   protected void sendDoc(int docId) throws Exception {
@@ -361,7 +361,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = coreProps.getCoreName();
     boolean reloadedOk = false;
-    try (Http2SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

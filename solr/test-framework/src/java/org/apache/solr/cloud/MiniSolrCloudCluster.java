@@ -302,7 +302,7 @@ public class MiniSolrCloudCluster {
 
         this.zkServer.run(formatZk);
         SolrZkClient zkClient = this.zkServer.getZkClient();
-        zkClient.start();
+
         log.info("Using zkClient host={} to create solr.xml", zkClient.getZkServerAddress());
         zkClient.mkdir("/solr" + SOLR_XML, solrXml.getBytes(Charset.defaultCharset()));
 
@@ -660,7 +660,7 @@ public class MiniSolrCloudCluster {
       throw new AlreadyClosedException("This MiniSolrCloudCluster has already been shutdown");
     }
     this.isShutDown = true;
-    if (zkServer.getZkClient().isConnected()) {
+//    if (zkServer.getZkClient().isConnected()) {
 //      try {
 //        log.info("creating cluster shutdown zk node");
 //
@@ -704,7 +704,7 @@ public class MiniSolrCloudCluster {
 //      } catch (Exception e) {
 //        log.error("Exception on proper shutdown", e);
 //      }
-    }
+//    }
 
     try {
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
@@ -713,7 +713,7 @@ public class MiniSolrCloudCluster {
       }
       jettys.clear();
 
-      try (ParWork parWork = new ParWork(this, true)) {
+      try (ParWork parWork = new ParWork(this, false)) {
         parWork.collect(shutdowns);
         parWork.addCollect("jetties");
         parWork.collect(solrClient);

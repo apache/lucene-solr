@@ -21,12 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -84,8 +84,8 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     // create control core & client
     System.setProperty("solr.statsCache", getImplementationName());
     System.setProperty("solr.similarity", CustomSimilarityFactory.class.getName());
-    initCore("solrconfig-minimal.xml", "schema-tiny.xml");
-    control = new EmbeddedSolrServer(h.getCore());
+    SolrTestCaseJ4.initCore("solrconfig-minimal.xml", "schema-tiny.xml");
+    control = new EmbeddedSolrServer(SolrTestCaseJ4.h.getCore());
     // create cluster
     configureCluster(numNodes) // 2 + random().nextInt(3)
         .addConfig("conf", configset(configset))
@@ -130,7 +130,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     // check cache metrics
     StatsCache.StatsCacheMetrics statsCacheMetrics = new StatsCache.StatsCacheMetrics();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      try (SolrClient client = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+      try (SolrClient client = SolrTestCaseJ4.getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
         NamedList<Object> metricsRsp = client.request(
             new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params("group", "solr.core", "prefix", "CACHE.searcher.statsCache")));
         assertNotNull(metricsRsp);

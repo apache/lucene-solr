@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.ParWorkExecutor;
@@ -97,9 +98,9 @@ public class SolrZkClient implements Closeable {
 
   private final ConnectionManager connManager;
 
-  private final ExecutorService zkCallbackExecutor = ParWork.getExecutorService( 1);
+  private final ExecutorService zkCallbackExecutor = ParWork.getEXEC();
 
-  private final ExecutorService zkConnManagerCallbackExecutor = ParWork.getExecutorService( 1);
+  final ExecutorService zkConnManagerCallbackExecutor = ParWork.getEXEC();
 
   private volatile boolean isClosed = false;
 
@@ -714,9 +715,15 @@ public class SolrZkClient implements Closeable {
     try {
       ZooKeeper keeper = connManager.getKeeper();
       results = keeper.multi(ops);
+    } catch (KeeperException.SessionExpiredException e) {
+      throw e;
     } catch (KeeperException e) {
       ex = e;
       results = e.getResults();
+    }
+
+    if (results == null) {
+      throw new AlreadyClosedException();
     }
 
     Iterator<Op> it = ops.iterator();
@@ -771,7 +778,7 @@ public class SolrZkClient implements Closeable {
     string.append(dent).append(path).append(" (c=").append(children.size()).append(",v=" + (stat == null ? "?" : stat.getVersion()) + ")").append(NEWL);
     if (data != null) {
       String dataString = new String(data, StandardCharsets.UTF_8);
-      if ((stat != null && stat.getDataLength() < MAX_BYTES_FOR_ZK_LAYOUT_DATA_SHOW && dataString.split("\\r\\n|\\r|\\n").length < 6) || path.endsWith("state.json")) {
+      if ((stat != null && stat.getDataLength() < MAX_BYTES_FOR_ZK_LAYOUT_DATA_SHOW && dataString.split("\\r\\n|\\r|\\n").length < 12) || path.endsWith("state.json")) {
         if (path.endsWith(".xml")) {
           // this is the cluster state in xml format - lets pretty print
           dataString = prettyPrint(path, dataString);
@@ -844,13 +851,14 @@ public class SolrZkClient implements Closeable {
 
   public void close() {
     log.info("Closing {} instance {}", SolrZkClient.class.getSimpleName(), this);
-    closeTracker.close();
+
     isClosed = true;
-    zkCallbackExecutor.shutdown();
+  //  zkCallbackExecutor.shutdownNow();
     try (ParWork worker = new ParWork(this, true)) {
       worker.add("connectionManager", connManager);
-      worker.add("zkCallbackExecutor", zkConnManagerCallbackExecutor, zkCallbackExecutor);
+    //  worker.add("zkCallbackExecutor", zkConnManagerCallbackExecutor, zkCallbackExecutor);
     }
+    closeTracker.close();
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -1036,11 +1044,7 @@ public class SolrZkClient implements Closeable {
       }
       if (log.isDebugEnabled()) log.debug("Submitting job to respond to event {}", event);
       try {
-        if (watcher instanceof ConnectionManager) {
-          zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
-        } else {
-          zkCallbackExecutor.submit(() -> watcher.process(event));
-        }
+        zkCallbackExecutor.submit(() -> watcher.process(event));
       } catch (RejectedExecutionException e) {
         log.info("Rejected from executor", e);
       }

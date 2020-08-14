@@ -20,21 +20,15 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
-import org.apache.solr.client.solrj.response.RequestStatusState;
 
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 
-import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -142,7 +136,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     // add some documents
     final int numDocs = atLeast(TEST_NIGHTLY ? 1000 : 15);
     for (int id = 1; id <= numDocs; id++) {
-      cloudSolrClient.add(sdoc("id", id, updateField, random().nextInt(60) + 60));
+      cloudSolrClient.add(SolrTestCaseJ4.sdoc("id", id, updateField, random().nextInt(60) + 60));
                                
     }
     cloudSolrClient.commit();
@@ -153,11 +147,12 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       final int iterSize = atLeast((TEST_NIGHTLY ? 20 : 6));
       for (int i = 0; i < iterSize; i++) {
         // replace
-        cloudSolrClient.add(sdoc("id", TestUtil.nextInt(random(), 1, numDocs),
+        cloudSolrClient.add(
+            SolrTestCaseJ4.sdoc("id", TestUtil.nextInt(random(), 1, numDocs),
                                  updateField, random().nextInt(60)));
         // atomic update
-        cloudSolrClient.add(sdoc("id", TestUtil.nextInt(random(), 1, numDocs),
-                                 updateField, map("set", random().nextInt(60))));
+        cloudSolrClient.add(SolrTestCaseJ4.sdoc("id", TestUtil.nextInt(random(), 1, numDocs),
+                                 updateField, SolrTestCaseJ4.map("set", random().nextInt(60))));
       }
       cloudSolrClient.commit();
     }
@@ -168,7 +163,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     final int id = TestUtil.nextInt(random(), 1, numDocs);
     final int oldDocId = (Integer) cloudSolrClient.getById("" + id, params("fl", "[docid]")).get("[docid]");
 
-    cloudSolrClient.add(sdoc("id", id, updateField, map("inc", "666")));
+    cloudSolrClient.add(SolrTestCaseJ4.sdoc("id", id, updateField, SolrTestCaseJ4.map("inc", "666")));
     cloudSolrClient.commit();
 
     // nocommit fix this check

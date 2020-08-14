@@ -34,13 +34,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -71,7 +70,7 @@ import org.slf4j.LoggerFactory;
  * "inc" operations at a numeric field and check that the math works out at the end.
  */
 @Slow
-@SuppressSSL(bugUrl="SSL overhead seems to cause OutOfMemory when stress testing")
+@SolrTestCase.SuppressSSL(bugUrl="SSL overhead seems to cause OutOfMemory when stress testing")
 @Ignore // nocommit - debug these dependent updates - I don't do synchronous at the moment
 public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
@@ -140,14 +139,15 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       assertNotNull("Cluster contains null jetty?", jetty);
       final String baseUrl = jetty.getBaseUrl();
       assertNotNull("Jetty has null baseUrl: " + jetty.toString(), baseUrl);
-      CLIENTS.add(getHttpSolrClient(baseUrl + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(
+          SolrTestCaseJ4.getHttpSolrClient(baseUrl + "/" + COLLECTION_NAME + "/"));
     }
 
-    final boolean usingPoints = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
+    final boolean usingPoints = Boolean.getBoolean(SolrTestCaseJ4.NUMERIC_POINTS_SYSPROP);
 
     // sanity check no one broke the assumptions we make about our schema
-    checkExpectedSchemaType( map("name","long",
-                                 "class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Long.class),
+    checkExpectedSchemaType(SolrTestCaseJ4.map("name","long",
+                                 "class", SolrTestCaseJ4.RANDOMIZED_NUMERIC_FIELDTYPES.get(Long.class),
                                  "multiValued",Boolean.FALSE,
                                  "indexed",Boolean.FALSE,
                                  "stored",Boolean.FALSE,
@@ -203,7 +203,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   @Test
   public void test_dv() throws Exception {
     String field = "long_dv";
-    checkExpectedSchemaField(map("name", field,
+    checkExpectedSchemaField(SolrTestCaseJ4.map("name", field,
                                  "type","long",
                                  "stored",Boolean.FALSE,
                                  "indexed",Boolean.FALSE,
@@ -215,7 +215,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   @Test
   public void test_dv_stored() throws Exception {
     String field = "long_dv_stored";
-    checkExpectedSchemaField(map("name", field,
+    checkExpectedSchemaField(SolrTestCaseJ4.map("name", field,
                                  "type","long",
                                  "stored",Boolean.TRUE,
                                  "indexed",Boolean.FALSE,
@@ -226,7 +226,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
   public void test_dv_stored_idx() throws Exception {
     String field = "long_dv_stored_idx";
-    checkExpectedSchemaField(map("name", field,
+    checkExpectedSchemaField(SolrTestCaseJ4.map("name", field,
                                  "type","long",
                                  "stored",Boolean.TRUE,
                                  "indexed",Boolean.TRUE,
@@ -237,7 +237,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
   public void test_dv_idx() throws Exception {
     String field = "long_dv_idx";
-    checkExpectedSchemaField(map("name", field,
+    checkExpectedSchemaField(SolrTestCaseJ4.map("name", field,
                                  "type","long",
                                  "stored",Boolean.FALSE,
                                  "indexed",Boolean.TRUE,
@@ -247,7 +247,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   }
   public void test_stored_idx() throws Exception {
     String field = "long_stored_idx";
-    checkExpectedSchemaField(map("name", field,
+    checkExpectedSchemaField(SolrTestCaseJ4.map("name", field,
                                  "type","long",
                                  "stored",Boolean.TRUE,
                                  "indexed",Boolean.TRUE,

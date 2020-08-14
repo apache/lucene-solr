@@ -1,5 +1,10 @@
 package org.apache.solr.common;
 
+import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,28 +14,100 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class ParWorkExecService implements ExecutorService {
+public class ParWorkExecService extends AbstractExecutorService {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int MAX_AVAILABLE = Math.max(ParWork.PROC_COUNT / 2, 3);
+  private static final int MAX_AVAILABLE = Math.max(ParWork.PROC_COUNT, 3);
   private final Semaphore available = new Semaphore(MAX_AVAILABLE, false);
 
   private final ExecutorService service;
   private final int maxSize;
   private volatile boolean terminated;
   private volatile boolean shutdown;
+
+  private final BlockingArrayQueue<Runnable> workQueue = new BlockingArrayQueue<>(30, 0);
+  private volatile Worker worker;
+  private volatile Future<?> workerFuture;
+
+  private class Worker extends Thread {
+
+    Worker() {
+      setName("ParExecWorker");
+    }
+
+    @Override
+    public void run() {
+      while (!terminated) {
+        Runnable runnable = null;
+        try {
+          runnable = workQueue.poll(5, TimeUnit.SECONDS);
+          //System.out.println("get " + runnable + " " + workQueue.size());
+        } catch (InterruptedException e) {
+//          ParWork.propegateInterrupt(e);
+           continue;
+        }
+        if (runnable == null) {
+          continue;
+        }
+        //        boolean success = checkLoad();
+//        if (success) {
+//          success = available.tryAcquire();
+//        }
+//        if (!success) {
+//          runnable.run();
+//          return;
+//        }
+        if (runnable instanceof ParWork.SolrFutureTask) {
+
+        } else {
+
+          try {
+            available.acquire();
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+
+        }
+
+        Runnable finalRunnable = runnable;
+        service.execute(new Runnable() {
+          @Override
+          public void run() {
+            try {
+              finalRunnable.run();
+            } finally {
+              try {
+                if (finalRunnable instanceof ParWork.SolrFutureTask) {
+
+                } else {
+                  available.release();
+                }
+              } finally {
+                ParWork.closeExecutor();
+              }
+            }
+          }
+        });
+      }
+    }
+  }
 
   public ParWorkExecService(ExecutorService service) {
     this(service, -1);
@@ -39,6 +116,7 @@ public class ParWorkExecService implements ExecutorService {
 
   public ParWorkExecService(ExecutorService service, int maxSize) {
     assert service != null;
+    assert ObjectReleaseTracker.track(this);
     if (maxSize == -1) {
       this.maxSize = MAX_AVAILABLE;
     } else {
@@ -48,13 +126,54 @@ public class ParWorkExecService implements ExecutorService {
   }
 
   @Override
+  protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
+    return new FutureTask(runnable, value);
+  }
+
+  @Override
+  protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
+    if (callable instanceof ParWork.NoLimitsCallable) {
+      return (RunnableFuture) new ParWork.SolrFutureTask(callable);
+    }
+    return new FutureTask(callable);
+  }
+
+  @Override
   public void shutdown() {
+
     this.shutdown = true;
+   // worker.interrupt();
+  //  workQueue.clear();
+//    try {
+//      workQueue.offer(new Runnable() {
+//        @Override
+//        public void run() {
+//          // noop to wake from take
+//        }
+//      });
+//      workQueue.offer(new Runnable() {
+//        @Override
+//        public void run() {
+//          // noop to wake from take
+//        }
+//      });
+//      workQueue.offer(new Runnable() {
+//        @Override
+//        public void run() {
+//          // noop to wake from take
+//        }
+//      });
+
+
+   //   workerFuture.cancel(true);
+//    } catch (NullPointerException e) {
+//      // okay
+//    }
   }
 
   @Override
   public List<Runnable> shutdownNow() {
-    this.shutdown = true;
+    shutdown();
     return Collections.emptyList();
   }
 
@@ -65,194 +184,64 @@ public class ParWorkExecService implements ExecutorService {
 
   @Override
   public boolean isTerminated() {
-    return terminated;
+    return !available.hasQueuedThreads() && shutdown;
   }
 
   @Override
   public boolean awaitTermination(long l, TimeUnit timeUnit)
       throws InterruptedException {
-    while (available.hasQueuedThreads()) {
-      Thread.sleep(100);
+    assert ObjectReleaseTracker.release(this);
+    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (available.hasQueuedThreads() || workQueue.peek() != null) {
+      if (timeout.hasTimedOut()) {
+        throw new RuntimeException("Timeout");
+      }
+
+     //zaa System.out.println("WAIT : " + workQueue.size() + " " + available.getQueueLength() + " " + workQueue.toString());
+      Thread.sleep(10);
     }
+//    workQueue.clear();
+
+//    workerFuture.cancel(true);
     terminated = true;
+    worker.interrupt();
+    worker.join();
+
+   // worker.interrupt();
     return true;
   }
 
-  @Override
-  public <T> Future<T> submit(Callable<T> callable) {
-    return doSubmit(callable, false);
-  }
-
-
-  public <T> Future<T> doSubmit(Callable<T> callable, boolean requiresAnotherThread) {
-    try {
-      if (!requiresAnotherThread) {
-        boolean success = checkLoad();
-        if (success) {
-          success = available.tryAcquire();
-        }
-        if (!success) {
-          return CompletableFuture.completedFuture(callable.call());
-        }
-      } else {
-        return service.submit(new Callable<T>() {
-          @Override
-          public T call() throws Exception {
-            try {
-              return callable.call();
-            } finally {
-              available.release();
-            }
-          }
-        });
-      }
-      Future<T> future = service.submit(callable);
-      return future;
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-  @Override
-  public <T> Future<T> submit(Runnable runnable, T t) {
-    boolean success = checkLoad();
-    if (success) {
-      success = available.tryAcquire();
-    }
-    if (!success) {
-      runnable.run();
-      return CompletableFuture.completedFuture(null);
-    }
-    return service.submit(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          runnable.run();
-        } finally {
-          available.release();
-        }
-      }
-    }, t);
-
-  }
-
-  @Override
-  public Future<?> submit(Runnable runnable) {
-    return doSubmit(runnable, false);
-  }
-
-  public Future<?> doSubmit(Runnable runnable, boolean requiresAnotherThread) {
-    try {
-      if (!requiresAnotherThread) {
-        boolean success = checkLoad();
-        if (success) {
-          success = available.tryAcquire();
-        }
-        if (!success) {
-          runnable.run();
-          return CompletableFuture.completedFuture(null);
-        }
-      } else {
-        return service.submit(runnable);
-      }
-      Future<?> future = service.submit(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            runnable.run();
-          } finally {
-            available.release();
-          }
-        }
-      });
-
-      return future;
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-  @Override
-  public <T> List<Future<T>> invokeAll(
-      Collection<? extends Callable<T>> collection)
-      throws InterruptedException {
-
-    List<Future<T>> futures = new ArrayList<>(collection.size());
-    for (Callable c : collection) {
-      futures.add(submit(c));
-    }
-    Exception exception = null;
-    for (Future<T> future : futures) {
-      try {
-        future.get();
-      } catch (ExecutionException e) {
-        log.error("invokeAll execution exception", e);
-        if (exception == null) {
-          exception = e;
-        } else {
-          exception.addSuppressed(e);
-        }
-      }
-    }
-    if (exception != null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, exception);
-    return futures;
-  }
-
-  @Override
-  public <T> List<Future<T>> invokeAll(
-      Collection<? extends Callable<T>> collection, long l, TimeUnit timeUnit)
-      throws InterruptedException {
-    // nocommit
-    return invokeAll(collection);
-  }
-
-  @Override
-  public <T> T invokeAny(Collection<? extends Callable<T>> collection)
-      throws InterruptedException, ExecutionException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public <T> T invokeAny(Collection<? extends Callable<T>> collection, long l,
-      TimeUnit timeUnit)
-      throws InterruptedException, ExecutionException, TimeoutException {
-    throw new UnsupportedOperationException();
-  }
 
   @Override
   public void execute(Runnable runnable) {
-    execute(runnable, false);
-  }
 
+//    if (shutdown) {
+//      runnable.run();
+//      return;
+//    }
 
-  public void execute(Runnable runnable, boolean requiresAnotherThread) {
-    if (requiresAnotherThread) {
-       service.submit(runnable);
-       return;
-    }
-
-    boolean success = checkLoad();
-    if (success) {
-      success = available.tryAcquire();
-    }
-    if (!success) {
-      runnable.run();
+    if (runnable instanceof ParWork.SolrFutureTask) {
+      ParWork.getEXEC().execute(runnable);
       return;
     }
-    service.execute(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          runnable.run();
-        } finally {
-          available.release();
+
+    boolean success = this.workQueue.offer(runnable);
+    if (!success) {
+     // log.warn("No room in the queue, running in caller thread {} {} {} {}", workQueue.size(), isShutdown(), isTerminated(), worker.isAlive());
+      runnable.run();
+    } else {
+      if (worker == null) {
+        synchronized (this) {
+          if (worker == null) {
+            worker = new Worker();
+            worker.setDaemon(true);
+            worker.start();
+          }
         }
       }
-    });
-
+    }
   }
+
 
   public Integer getMaximumPoolSize() {
     return maxSize;

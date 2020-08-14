@@ -71,6 +71,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ScheduledThreadPoolExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -132,7 +133,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String PATH = "/replication";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  SolrCore core;
+  volatile SolrCore core;
   
   private volatile boolean closed = false;
 
@@ -172,30 +173,29 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private IndexFetcher pollingIndexFetcher;
+  private volatile  IndexFetcher pollingIndexFetcher;
 
-  private ReentrantLock indexFetchLock = new ReentrantLock();
+  private final ReentrantLock indexFetchLock = new ReentrantLock();
 
-  private final ExecutorService restoreExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(
-      new SolrNamedThreadFactory("restoreExecutor"));
+  private final ExecutorService restoreExecutor = ParWork.getExecutor();
 
   private volatile Future<Boolean> restoreFuture;
 
   private volatile String currentRestoreName;
 
-  private String includeConfFiles;
+  private volatile String includeConfFiles;
 
-  private NamedList<String> confFileNameAlias = new NamedList<>();
+  private final NamedList<String> confFileNameAlias = new NamedList<>();
 
-  private boolean isMaster = false;
+  private volatile boolean isMaster = false;
 
-  private boolean isSlave = false;
+  private volatile boolean isSlave = false;
 
-  private boolean replicateOnOptimize = false;
+  private volatile boolean replicateOnOptimize = false;
 
-  private boolean replicateOnCommit = false;
+  private volatile boolean replicateOnCommit = false;
 
-  private boolean replicateOnStart = false;
+  private volatile boolean replicateOnStart = false;
 
   private volatile ScheduledExecutorService executorService;
 
@@ -502,7 +502,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       MDC.put("RestoreCore.core", core.getName());
       MDC.put("RestoreCore.backupLocation", location);
       MDC.put("RestoreCore.backupName", name);
-      restoreFuture = restoreExecutor.submit(restoreCore);
+      // nocommit - whats up with using the virt? we prob need to disable run in own thread at the least
+      restoreFuture = ParWork.getEXEC().submit(restoreCore);
       currentRestoreName = name;
       rsp.add(STATUS, OK_STATUS);
     } finally {
@@ -1228,6 +1229,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         log.error("Exception in fetching index", e);
       }
     };
+    //executorService = new ScheduledThreadPoolExecutor("IndexFetcher");
     executorService = Executors.newSingleThreadScheduledExecutor(
         new SolrNamedThreadFactory("indexFetcher"));
     // Randomize initial delay, with a minimum of 1ms
@@ -1415,8 +1417,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     core.addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {
-        restoreExecutor.shutdown();
-        restoreFuture.cancel(false);
+        //restoreExecutor.shutdown();
+        //restoreFuture.cancel(false);
         ParWork.close(restoreExecutor);
       }
 

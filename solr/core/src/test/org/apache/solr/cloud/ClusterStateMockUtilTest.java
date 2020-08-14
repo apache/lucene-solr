@@ -24,11 +24,13 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests for {@link ClusterStateMockUtil}
  */
+@Ignore
 public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
 
   @Test

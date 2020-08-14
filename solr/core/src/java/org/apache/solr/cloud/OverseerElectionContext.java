@@ -19,10 +19,15 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.util.Pair;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +53,20 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
       return;
     }
 
+    if (!weAreReplacement) {
+      // kills the queues
+      ZkDistributedQueue queue = new ZkDistributedQueue(
+          overseer.getZkController().getZkStateReader().getZkClient(),
+          "/overseer/queue", new Stats(), 0, new ConnectionManager.IsClosed() {
+        public boolean isClosed() {
+          return overseer.isClosed() || overseer.getZkController()
+              .getCoreContainer().isShutDown();
+        }
+      });
+      clearQueue(queue);
+      clearQueue(Overseer.getInternalWorkQueue(zkClient, new Stats()));
+    }
+
     super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
 
     synchronized (this) {
@@ -55,7 +74,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
         log.info("Bailing on becoming leader, we are closed");
         return;
       }
-      if (!this.isClosed && !overseer.getZkController().getCoreContainer().isShutDown() && !overseer.isDone() && (overseer.getUpdaterThread() == null || !overseer.getUpdaterThread().isAlive())) {
+      if (!isClosed() && !overseer.getZkController().getCoreContainer().isShutDown() && !overseer.isDone() && (overseer.getUpdaterThread() == null || !overseer.getUpdaterThread().isAlive())) {
         try {
           overseer.start(id, context);
         } finally {
@@ -64,6 +83,21 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
           }
         }
       }
+    }
+  }
+
+  private void clearQueue(ZkDistributedQueue queue)
+      throws KeeperException, InterruptedException {
+    while (true) {
+      Collection<Pair<String,byte[]>> items = queue.peekElements(1000, 0, null);
+      List<String> paths = new ArrayList<>(items.size());
+      if (items.size() == 0) {
+        break;
+      }
+      for (Pair<String,byte[]> item : items) {
+        paths.add(item.first());
+      }
+      queue.remove(paths);
     }
   }
 

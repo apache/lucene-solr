@@ -29,6 +29,7 @@ import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -89,14 +90,15 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(SolrTestCaseJ4.getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "42", "val_i", "1", "ssto", "X", "subject", "aaa")).getStatus());
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "43", "val_i", "9", "ssto", "X", "subject", "bbb")).getStatus());
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "44", "val_i", "4", "ssto", "X", "subject", "aaa")).getStatus());
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "45", "val_i", "6", "ssto", "X", "subject", "aaa")).getStatus());
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg")).getStatus());
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4
+        .sdoc("id", "42", "val_i", "1", "ssto", "X", "subject", "aaa")).getStatus());
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4.sdoc("id", "43", "val_i", "9", "ssto", "X", "subject", "bbb")).getStatus());
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4.sdoc("id", "44", "val_i", "4", "ssto", "X", "subject", "aaa")).getStatus());
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4.sdoc("id", "45", "val_i", "6", "ssto", "X", "subject", "aaa")).getStatus());
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4.sdoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg")).getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());;
     
   }
@@ -106,7 +108,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // uncommitted doc in transaction log at start of every test
     // Even if an RTG causes ulog to re-open realtime searcher, next test method
     // will get another copy of doc 99 in the ulog
-    assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "99", "val_i", "1", "ssto", "X",
+    assertEquals(0, CLOUD_CLIENT.add(SolrTestCaseJ4.sdoc("id", "99", "val_i", "1", "ssto", "X",
                                           "subject", "uncommitted")).getStatus());
   }
   

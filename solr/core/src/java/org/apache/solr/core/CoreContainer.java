@@ -1086,7 +1086,7 @@ public class CoreContainer implements Closeable {
         replayUpdatesExecutor.shutdown();
       }
 
-      closer.add("workExecutor & replayUpdateExec", () -> {
+      closer.add("replayUpdateExec", () -> {
         replayUpdatesExecutor.shutdownAndAwaitTermination();
         return replayUpdatesExecutor;
       });

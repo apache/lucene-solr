@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -86,7 +87,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
   public void setupSystemCollection() throws Exception {
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
-    solrClient = new CloudSolrClientBuilder(Collections.singletonList(zkController.getZkServerAddress()),
+    solrClient = new SolrTestCaseJ4.CloudSolrClientBuilder(Collections.singletonList(zkController.getZkServerAddress()),
         Optional.empty()).build();
     CollectionAdminRequest.OverseerStatus status = new CollectionAdminRequest.OverseerStatus();
     CollectionAdminResponse adminResponse = status.process(solrClient);

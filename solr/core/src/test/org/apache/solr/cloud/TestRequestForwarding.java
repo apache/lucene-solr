@@ -20,16 +20,12 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLEncoder;
 
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
-@SuppressSSL
 public class TestRequestForwarding extends SolrTestCaseJ4 {
 
   private MiniSolrCloudCluster solrCluster;

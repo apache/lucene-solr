@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -58,7 +59,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster);
     solrClient.connect(1000, TimeUnit.MILLISECONDS);
     httpClient = (CloseableHttpClient) solrClient.getHttpClient();
   }

@@ -53,16 +53,16 @@
 
         <AsyncRoot level="INFO">
             <AppenderRef ref="STDERR_COLOR"/>
-            <AppenderRef ref="FILE"/>
-        </AsyncRoot>
-    </Loggers>
-</Configuration>
+            <!--   <AppenderRef ref="FILE"/> -->
+          </AsyncRoot>
+      </Loggers>
+  </Configuration>
 
-        <!-- Configuration for synchronous logging
-             there _may_ be a very small window where log messages will not be flushed
-             to the log file on abnormal shutdown. If even this risk is unacceptable, use
-             the configuration below
-        -->
+          <!-- Configuration for synchronous logging
+               there _may_ be a very small window where log messages will not be flushed
+               to the log file on abnormal shutdown. If even this risk is unacceptable, use
+               the configuration below
+          -->
         <!--Configuration>
         <Appenders>
           <Console name="STDERR" target="SYSTEM_ERR">

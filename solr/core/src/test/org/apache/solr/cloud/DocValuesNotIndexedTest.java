@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -145,11 +146,11 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         fieldsToTestMulti.size() + fieldsToTestGroupSortFirst.size() + fieldsToTestGroupSortLast.size() +
         4);
 
-    updateList.add(getType("name", "float", "class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Float.class)));
+    updateList.add(getType("name", "float", "class", SolrTestCaseJ4.RANDOMIZED_NUMERIC_FIELDTYPES.get(Float.class)));
 
-    updateList.add(getType("name", "double", "class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Double.class)));
+    updateList.add(getType("name", "double", "class", SolrTestCaseJ4.RANDOMIZED_NUMERIC_FIELDTYPES.get(Double.class)));
 
-    updateList.add(getType("name", "date", "class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Date.class)));
+    updateList.add(getType("name", "date", "class", SolrTestCaseJ4.RANDOMIZED_NUMERIC_FIELDTYPES.get(Date.class)));
 
     updateList.add(getType("name", "boolean", "class", "solr.BoolField"));
 

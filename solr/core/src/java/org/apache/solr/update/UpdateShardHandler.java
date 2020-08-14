@@ -32,6 +32,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CloseTracker;
@@ -126,10 +127,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 //      recoveryExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(cfg.getMaxRecoveryThreads(), recoveryThreadFactory);
 //    } else {
       log.debug("Creating recoveryExecutor with unbounded pool");
-      recoveryExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
-              5L, TimeUnit.SECONDS,
-              new SynchronousQueue<>(),
-              recoveryThreadFactory);
+      recoveryExecutor = new ParWorkExecutor("recoveryExecutor", 100);
  //   }
   }
 
@@ -212,7 +210,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   public void close() {
-    closeTracker.close();
+  //  closeTracker.close();
     if (recoveryExecutor != null) {
       recoveryExecutor.shutdownNow();
     }

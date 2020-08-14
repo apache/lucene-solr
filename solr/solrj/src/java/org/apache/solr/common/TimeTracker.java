@@ -65,7 +65,7 @@ public class TimeTracker {
     }
   }
 
-  public void doneClose() {
+  public boolean doneClose() {
     if (log.isDebugEnabled()) {
       log.debug("doneClose() - start");
     }
@@ -76,9 +76,10 @@ public class TimeTracker {
     if (log.isDebugEnabled()) {
       log.debug("doneClose() - end");
     }
+    return true;
   }
   
-  public void doneClose(String label) {
+  public boolean doneClose(String label) {
     if (log.isDebugEnabled()) {
       log.debug("doneClose(String label={}) - start", label);
     }
@@ -103,6 +104,7 @@ public class TimeTracker {
     if (log.isDebugEnabled()) {
       log.debug("doneClose(String) - end");
     }
+    return true;
   }
 
   public long getElapsedNS() {
@@ -169,7 +171,7 @@ public class TimeTracker {
       return "";
     }
 
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(1024);
 //    if (trackedObject != null) {
 //      if (trackedObject instanceof String) {
 //        sb.append(label + trackedObject.toString() + " " + getElapsedMS() + "ms");

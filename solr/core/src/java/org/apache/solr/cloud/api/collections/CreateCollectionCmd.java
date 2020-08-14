@@ -184,6 +184,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       }
 
+      if (log.isDebugEnabled()) log.debug("Offer create operation to Overseer queue");
       ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
 
 
@@ -228,8 +229,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       if (replicaPositions.isEmpty()) {
-        log.debug("Finished create command for collection: {}", collectionName);
-        return;
+        if (log.isDebugEnabled()) log.debug("Finished create command for collection: {}", collectionName);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "No positions found to place replicas " + replicaPositions);
       }
 
       final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(async);
@@ -330,7 +331,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       if(!isLegacyCloud) {
         // wait for all replica entries to be created
         Map<String,Replica> replicas = new HashMap<>();
-        zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, expectedReplicas(coresToCreate.size(), replicas)); // nocommit - timeout - keep this below containing timeouts - need central timeout stuff
+        zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, expectedReplicas(coresToCreate.size(), replicas)); // nocommit - timeout - keep this below containing timeouts - need central timeout stuff
        // nocommit, what if replicas comes back wrong?
         if (replicas.size() > 0) {
           for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
@@ -439,7 +440,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     int numSlices = shardNames.size();
     int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
     if (maxShardsPerNode == -1) maxShardsPerNode = Integer.MAX_VALUE;
-
+    int totalNumReplicas = numNrtReplicas + numTlogReplicas + numPullReplicas;
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
     // but (for now) require that each core goes on a distinct node.
@@ -451,7 +452,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       replicaPositions = new ArrayList<>();
     } else {
-      int totalNumReplicas = numNrtReplicas + numTlogReplicas + numPullReplicas;
+
       if (totalNumReplicas > nodeList.size()) {
         log.warn("Specified number of replicas of "
                 + totalNumReplicas
@@ -496,6 +497,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     if (log.isDebugEnabled()) {
       log.debug("buildReplicaPositions(SolrCloudManager, ClusterState, DocCollection, ZkNodeProps, List<String>, AtomicReference<PolicyHelper.SessionWrapper>) - end");
+    }
+    if (replicaPositions.size() != (totalNumReplicas * numSlices)) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Did not get a position assigned for every replica " + replicaPositions.size() + "/" + (totalNumReplicas * numSlices));
     }
     return replicaPositions;
   }
@@ -809,9 +813,13 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     log.info("Wait for expectedReplicas={}", expectedReplicas);
 
     return (liveNodes, collectionState) -> {
-      if (collectionState == null)
+    //  log.info("Updated state {}", collectionState);
+      if (collectionState == null) {
+         System.out.println("coll is null");
         return false;
+      }
       if (collectionState.getSlices() == null) {
+        System.out.println("slices is null");
         return false;
       }
 
@@ -823,9 +831,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
       if (replicas == expectedReplicas) {
+        System.out.println("found replicas  " + expectedReplicas + " " + replicas);
         return true;
       }
-
+      System.out.println("replica count is  " + expectedReplicas + " " + replicas);
       return false;
     };
   }

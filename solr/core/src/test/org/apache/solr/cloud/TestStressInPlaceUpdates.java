@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.math3.primes.Primes;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -60,14 +61,14 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
     schemaString = "schema-inplace-updates.xml";
-    configString = "solrconfig-tlog.xml";
+    SolrTestCaseJ4.configString = "solrconfig-tlog.xml";
 
     // sanity check that autocommits are disabled
-    initCore(configString, schemaString);
-    assertEquals(-1, h.getCore().getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxTime);
-    assertEquals(-1, h.getCore().getSolrConfig().getUpdateHandlerInfo().autoSoftCommmitMaxTime);
-    assertEquals(-1, h.getCore().getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxDocs);
-    assertEquals(-1, h.getCore().getSolrConfig().getUpdateHandlerInfo().autoSoftCommmitMaxDocs);
+    SolrTestCaseJ4.initCore(SolrTestCaseJ4.configString, schemaString);
+    assertEquals(-1, SolrTestCaseJ4.h.getCore().getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxTime);
+    assertEquals(-1, SolrTestCaseJ4.h.getCore().getSolrConfig().getUpdateHandlerInfo().autoSoftCommmitMaxTime);
+    assertEquals(-1, SolrTestCaseJ4.h.getCore().getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxDocs);
+    assertEquals(-1, SolrTestCaseJ4.h.getCore().getSolrConfig().getUpdateHandlerInfo().autoSoftCommmitMaxDocs);
   }
 
   public TestStressInPlaceUpdates() {
@@ -271,7 +272,7 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
                   // PARTIAL
                   nextVal2 = val2 + val1;
                   try {
-                    returnedVersion = addDocAndGetVersion("id", id, "val2_l_dvo", map("inc", String.valueOf(val1)), "_version_", info.version);
+                    returnedVersion = addDocAndGetVersion("id", id, "val2_l_dvo", SolrTestCaseJ4.map("inc", String.valueOf(val1)), "_version_", info.version);
                     log.info("PARTIAL: Writing id={}, val=[{},{}], version={}, Prev was=[{},{}].  Returned version={}"
                         ,id, nextVal1, nextVal2, info.version, val1, val2,  returnedVersion);
                   } catch (RuntimeException e) {

@@ -5,6 +5,7 @@
 
 package org.apache.solr.handler.component;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.ParWorkExecService;
 
 import java.util.concurrent.BlockingQueue;
@@ -61,7 +62,7 @@ public class SolrExecutorCompletionService<V> implements CompletionService<V> {
       throw new NullPointerException();
     } else {
       RunnableFuture<V> f = this.newTaskFor(task, result);
-      this.executor.doSubmit(new SolrExecutorCompletionService.QueueingFuture(f, this.completionQueue), true);
+      this.executor.submit(new SolrExecutorCompletionService.QueueingFuture(f, this.completionQueue)); // nocommit - dont limit thread usage as much
       return f;
     }
   }

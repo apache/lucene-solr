@@ -63,7 +63,7 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     // add a document
-    final SolrInputDocument doc1 = sdoc(id, "1",
+    final SolrInputDocument doc1 = SolrTestCaseJ4.sdoc(id, "1",
         "title_s", "Here comes the sun",
         "artist_s", "The Beatles",
         "popularity_i", "123");

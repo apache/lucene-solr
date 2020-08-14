@@ -52,12 +52,12 @@ public class FieldTypeXmlAdapter {
   static {
     dbf = new DocumentBuilderFactoryImpl();
     try {
-      dbf.setXIncludeAware(true);
+   //   dbf.setXIncludeAware(true);
       dbf.setNamespaceAware(true);
       dbf.setValidating(false);
-      trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
+    //  trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
     } catch(UnsupportedOperationException e) {
-      log.warn("XML parser doesn't support XInclude option");
+      log.warn("XML parser doesn't support XInclude option", e);
     }
   }
 

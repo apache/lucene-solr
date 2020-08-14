@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -61,7 +62,7 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(COLLECTION, 1, 1);
 
-    final SolrInputDocument doc1 = sdoc(
+    final SolrInputDocument doc1 = SolrTestCaseJ4.sdoc(
         "id", "1",
         "title_s", "title_1", "title_s", "title_2",
         "tv_mv_text", "text_1", "tv_mv_text", "text_2",

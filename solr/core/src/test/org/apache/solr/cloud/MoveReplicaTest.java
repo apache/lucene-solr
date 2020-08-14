@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -311,7 +312,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   }
 
   private int getNumOfCores(CloudHttp2SolrClient cloudClient, String nodeName, String collectionName, String replicaType) throws IOException, SolrServerException {
-    try (Http2SolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
+    try (Http2SolrClient coreclient = SolrTestCaseJ4
+        .getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       if (status.getCoreStatus().size() == 0) {
         return 0;

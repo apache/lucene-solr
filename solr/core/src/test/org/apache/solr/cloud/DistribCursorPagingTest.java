@@ -19,7 +19,8 @@ package org.apache.solr.cloud;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.CursorPagingTest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.LukeRequest;
@@ -61,7 +62,7 @@ import java.util.Map;
  * @see CursorPagingTest 
  */
 @Slow
-@SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
+@SolrTestCase.SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
 @Ignore // nocommit finish compare query impl
 public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
 
@@ -70,7 +71,7 @@ public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
 
 
   public DistribCursorPagingTest() {
-    configString = CursorPagingTest.TEST_SOLRCONFIG_NAME;
+    SolrTestCaseJ4.configString = CursorPagingTest.TEST_SOLRCONFIG_NAME;
     schemaString = CursorPagingTest.TEST_SCHEMAXML_NAME;
   }
 
@@ -112,8 +113,8 @@ public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
   private void doBadInputTest() throws Exception {
     // sometimes seed some data, other times use an empty index
     if (random().nextBoolean()) {
-      indexDoc(sdoc("id", "42", "str", "z", "float", "99.99", "int", "42"));
-      indexDoc(sdoc("id", "66", "str", "x", "float", "22.00", "int", "-66"));
+      indexDoc(SolrTestCaseJ4.sdoc("id", "42", "str", "z", "float", "99.99", "int", "42"));
+      indexDoc(SolrTestCaseJ4.sdoc("id", "66", "str", "x", "float", "22.00", "int", "-66"));
     } else {
       del("*:*");
     }
@@ -176,16 +177,17 @@ public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
 
     // don't add in order of either field to ensure we aren't inadvertantly 
     // counting on internal docid ordering
-    indexDoc(sdoc("id", "9", "str", "c", "float", "-3.2", "int", "42"));
-    indexDoc(sdoc("id", "7", "str", "c", "float", "-3.2", "int", "-1976"));
-    indexDoc(sdoc("id", "2", "str", "c", "float", "-3.2", "int", "666"));
-    indexDoc(sdoc("id", "0", "str", "b", "float", "64.5", "int", "-42"));
-    indexDoc(sdoc("id", "5", "str", "b", "float", "64.5", "int", "2001"));
-    indexDoc(sdoc("id", "8", "str", "b", "float", "64.5", "int", "4055"));
-    indexDoc(sdoc("id", "6", "str", "a", "float", "64.5", "int", "7"));
-    indexDoc(sdoc("id", "1", "str", "a", "float", "64.5", "int", "7"));
-    indexDoc(sdoc("id", "4", "str", "a", "float", "11.1", "int", "6"));
-    indexDoc(sdoc("id", "3", "str", "a", "float", "11.1")); // int is missing
+    indexDoc(
+        SolrTestCaseJ4.sdoc("id", "9", "str", "c", "float", "-3.2", "int", "42"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "7", "str", "c", "float", "-3.2", "int", "-1976"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "2", "str", "c", "float", "-3.2", "int", "666"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "0", "str", "b", "float", "64.5", "int", "-42"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "5", "str", "b", "float", "64.5", "int", "2001"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "8", "str", "b", "float", "64.5", "int", "4055"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "6", "str", "a", "float", "64.5", "int", "7"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "1", "str", "a", "float", "64.5", "int", "7"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "4", "str", "a", "float", "11.1", "int", "6"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "3", "str", "a", "float", "11.1")); // int is missing
     commit();
 
     // base case: ensure cursorMark that matches no docs doesn't blow up
@@ -506,7 +508,7 @@ public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
     assertDocList(rsp, 5, 8);
     cursorMark = assertHashNextCursorMark(rsp);
     // update a doc we've already seen so it repeats
-    indexDoc(sdoc("id", "5", "str", "c"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "5", "str", "c"));
     commit();
     rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
     assertNumFound(8, rsp);
@@ -514,7 +516,7 @@ public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
     assertDocList(rsp, 2, 5);
     cursorMark = assertHashNextCursorMark(rsp);
     // update the next doc we expect so it's now in the past
-    indexDoc(sdoc("id", "7", "str", "a"));
+    indexDoc(SolrTestCaseJ4.sdoc("id", "7", "str", "a"));
     commit();
     rsp = query(p(params, CURSOR_MARK_PARAM, cursorMark));
     assertDocList(rsp, 9);
@@ -637,7 +639,7 @@ public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
     throws Exception {
 
     try {
-      ignoreException(expSubstr);
+      SolrTestCaseJ4.ignoreException(expSubstr);
       query(p);
       fail("no exception matching expected: " + expCode.code + ": " + expSubstr);
     } catch (SolrException e) {
@@ -645,7 +647,7 @@ public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
       assertTrue("Expected substr not found: " + expSubstr + " <!< " + e.getMessage(),
                  e.getMessage().contains(expSubstr));
     } finally {
-      unIgnoreException(expSubstr);
+      SolrTestCaseJ4.unIgnoreException(expSubstr);
     }
 
   }

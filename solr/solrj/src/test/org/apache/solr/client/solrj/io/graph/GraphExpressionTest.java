@@ -31,6 +31,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -861,13 +862,13 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .add(id, "5", "from_s", "jim",  "to_s", "ann", "message_t", "Hello steve")
         .commit(cluster.getSolrClient(), COLLECTION);
 
-    commit();
+    SolrTestCaseJ4.commit();
 
     List<JettySolrRunner> runners = cluster.getJettySolrRunners();
     JettySolrRunner runner = runners.get(0);
     String url = runner.getBaseUrl().toString();
 
-    Http2SolrClient client = getHttpSolrClient(url);
+    Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(url);
     ModifiableSolrParams params = new ModifiableSolrParams();
 
 
@@ -890,7 +891,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
     String xml = readString(reader);
     //Validate the nodes
-    String error = h.validateXPath(xml,
+    String error = SolrTestCaseJ4.h.validateXPath(xml,
         "//graph/node[1][@id ='jim']",
         "//graph/node[2][@id ='max']",
         "//graph/node[3][@id ='sam']");
@@ -898,7 +899,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
       throw new Exception(error + "\n" + xml);
     }
     //Validate the edges
-    error = h.validateXPath(xml,
+    error = SolrTestCaseJ4.h.validateXPath(xml,
         "//graph/edge[1][@source ='bill']",
         "//graph/edge[1][@target ='jim']",
         "//graph/edge[2][@source ='bill']",

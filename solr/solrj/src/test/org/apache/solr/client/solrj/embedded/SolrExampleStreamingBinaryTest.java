@@ -16,11 +16,8 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
@@ -33,8 +30,11 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Slow
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @Ignore // nocommit flakey
 public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 

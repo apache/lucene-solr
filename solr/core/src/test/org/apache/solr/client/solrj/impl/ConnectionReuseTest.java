@@ -16,12 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpConnectionMetrics;
 import org.apache.http.HttpException;
@@ -36,19 +30,24 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHttpRequest;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@SuppressSSL
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+@SolrTestCase.SuppressSSL
 @Ignore // nocommit look at this again later
 public class ConnectionReuseTest extends SolrCloudTestCase {
   
@@ -72,11 +71,11 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     switch (random().nextInt(3)) {
       case 0:
         // currently only testing with 1 thread
-        return getConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1);
+        return SolrTestCaseJ4.getConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1);
       case 1:
-        return getHttpSolrClient(url + "/" + COLLECTION);
+        return SolrTestCaseJ4.getHttpSolrClient(url + "/" + COLLECTION);
       case 2:
-        CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean(), httpClient, 30000, 60000);
+        CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean(), httpClient, 30000, 60000);
         client.setDefaultCollection(COLLECTION);
         return client;
     }
@@ -110,7 +109,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         boolean done = false;
         for (int i = 0; i < cnt2; i++) {
           AddUpdateCommand c = new AddUpdateCommand(null);
-          c.solrDoc = sdoc("id", id.incrementAndGet());
+          c.solrDoc = SolrTestCaseJ4.sdoc("id", id.incrementAndGet());
           try {
             client.add(c.solrDoc);
           } catch (Exception e) {

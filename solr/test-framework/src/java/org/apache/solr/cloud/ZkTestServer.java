@@ -398,15 +398,17 @@ public class ZkTestServer implements Closeable {
 //        zooKeeperServer.shutdown(true);
   //      ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
     //    if (zkDb != null) zkDb.clear();
-        try (ParWork worker = new ParWork(this, true)) {
+        try (ParWork worker = new ParWork(this, true, true)) {
           worker.add("ZkTestInternals", () -> {
             zooKeeperServer.shutdown(false);
 
             return zooKeeperServer;
           }, () -> {
-            zkServer.zooKeeperServer.getSessionTracker().shutdown();
+
             cnxnFactory.shutdown();
+
             cnxnFactory.join();
+
          //   ((Thread)zkServer.zooKeeperServer.getSessionTracker()).interrupt();
             ((Thread)zkServer.zooKeeperServer.getSessionTracker()).join();
             return cnxnFactory;
@@ -467,7 +469,7 @@ public class ZkTestServer implements Closeable {
   }
 
   private void init(boolean solrFormat) throws Exception {
-    chRootClient = new SolrZkClient(getZkHost(), AbstractZkTestCase.TIMEOUT, 30000);
+    chRootClient = new SolrZkClient(getZkHost(), AbstractZkTestCase.TIMEOUT, 10000);
     chRootClient.start();
     if (solrFormat) {
       makeSolrZkNode();
@@ -619,7 +621,7 @@ public class ZkTestServer implements Closeable {
 
   public synchronized void shutdown() throws IOException, InterruptedException {
     log.info("Shutting down ZkTestServer.");
-    closeTracker.close();
+  //  closeTracker.close();
     try {
       if (chRootClient != null) {
         chRootClient.printLayout();
@@ -636,13 +638,10 @@ public class ZkTestServer implements Closeable {
     }
 
    // zooThread.interrupt();
-    try (ParWork worker = new ParWork(this, true)) {
-      worker.add("zkClients", timer, chRootClient);
-      worker.add("zkServer", () -> {
-        if (zkServer != null) zkServer.shutdown();
-        return zkServer;
-      });
-    }
+    timer.cancel();
+    ParWork.close(chRootClient);
+
+    if (zkServer != null) zkServer.shutdown();
 
     startupWait = new CountDownLatch(1);
     if (zooThread != null) {
@@ -855,7 +854,7 @@ public class ZkTestServer implements Closeable {
     // this workaround is acceptable until we remove legacyCloud because we just init a single core here
     String defaultClusterProps = "{\"" + ZkStateReader.LEGACY_CLOUD + "\":\"false\"}";
     chRootClient.makePath("/solr" + ZkStateReader.CLUSTER_PROPS, defaultClusterProps.getBytes(StandardCharsets.UTF_8),
-            CreateMode.PERSISTENT, true);
+            CreateMode.PERSISTENT, false);
   }
 
   public void makeSolrZkNode() throws Exception {

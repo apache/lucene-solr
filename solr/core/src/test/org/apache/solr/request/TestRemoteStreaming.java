@@ -29,7 +29,7 @@ import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -47,7 +47,8 @@ import org.junit.Test;
 /**
  * See SOLR-2854.
  */
-@SuppressSSL     // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
+@SolrTestCase.SuppressSSL
+// does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
 @Ignore // nocommit flakey
 public class TestRemoteStreaming extends SolrJettyTestBase {
   private static File solrHomeDirectory;

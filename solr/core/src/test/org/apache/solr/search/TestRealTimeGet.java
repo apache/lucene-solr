@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -506,164 +507,186 @@ public class TestRealTimeGet extends TestRTGBase {
     List<Thread> threads = new ArrayList<>();
 
     for (int i=0; i<nWriteThreads; i++) {
-      Thread thread = new Thread("WRITER"+i) {
+      Thread thread = new Thread("WRITER" + i) {
         Random rand = new Random(random().nextInt());
 
         @Override
         public void run() {
           try {
-          while (operations.get() > 0) {
-            int oper = rand.nextInt(100);
+            while (operations.get() > 0) {
+              int oper = rand.nextInt(100);
 
-            if (oper < commitPercent) {
-              if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
-                Map<Integer,DocInfo> newCommittedModel;
-                long version;
+              if (oper < commitPercent) {
+                if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
+                  Map<Integer,DocInfo> newCommittedModel;
+                  long version;
 
-                synchronized(TestRealTimeGet.this) {
-                  newCommittedModel = new HashMap<>(model);  // take a snapshot
-                  version = snapshotCount++;
-                  verbose("took snapshot version=",version);
-                }
+                  synchronized (TestRealTimeGet.this) {
+                    newCommittedModel = new HashMap<>(
+                        model);  // take a snapshot
+                    version = snapshotCount++;
+                    verbose("took snapshot version=", version);
+                  }
 
-                if (rand.nextInt(100) < softCommitPercent) {
-                  verbose("softCommit start");
-                  assertU(TestHarness.commit("softCommit","true"));
-                  verbose("softCommit end");
-                } else {
-                  verbose("hardCommit start");
-                  assertU(commit());
-                  verbose("hardCommit end");
-                }
+                  if (rand.nextInt(100) < softCommitPercent) {
+                    verbose("softCommit start");
+                    assertU(TestHarness.commit("softCommit", "true"));
+                    verbose("softCommit end");
+                  } else {
+                    verbose("hardCommit start");
+                    assertU(commit());
+                    verbose("hardCommit end");
+                  }
 
-                synchronized(TestRealTimeGet.this) {
-                  // install this model snapshot only if it's newer than the current one
-                  if (version >= committedModelClock) {
-                    if (VERBOSE) {
-                      verbose("installing new committedModel version="+committedModelClock);
+                  synchronized (TestRealTimeGet.this) {
+                    // install this model snapshot only if it's newer than the current one
+                    if (version >= committedModelClock) {
+                      if (VERBOSE) {
+                        verbose("installing new committedModel version="
+                            + committedModelClock);
+                      }
+                      committedModel = newCommittedModel;
+                      committedModelClock = version;
                     }
-                    committedModel = newCommittedModel;
-                    committedModelClock = version;
                   }
                 }
+                numCommitting.decrementAndGet();
+                continue;
               }
-              numCommitting.decrementAndGet();
-              continue;
-            }
 
+              int id = rand.nextInt(ndocs);
+              Object sync = syncArr[id];
 
-            int id = rand.nextInt(ndocs);
-            Object sync = syncArr[id];
+              // set the lastId before we actually change it sometimes to try and
+              // uncover more race conditions between writing and reading
+              boolean before = rand.nextBoolean();
+              if (before) {
+                lastId = id;
+              }
 
-            // set the lastId before we actually change it sometimes to try and
-            // uncover more race conditions between writing and reading
-            boolean before = rand.nextBoolean();
-            if (before) {
-              lastId = id;
-            }
+              // We can't concurrently update the same document and retain our invariants of increasing values
+              // since we can't guarantee what order the updates will be executed.
+              // Even with versions, we can't remove the sync because increasing versions does not mean increasing vals.
+              synchronized (sync) {
+                DocInfo info = model.get(id);
 
-            // We can't concurrently update the same document and retain our invariants of increasing values
-            // since we can't guarantee what order the updates will be executed.
-            // Even with versions, we can't remove the sync because increasing versions does not mean increasing vals.
-            synchronized (sync) {
-              DocInfo info = model.get(id);
+                long val = info.val;
+                long nextVal = Math.abs(val) + 1;
 
-              long val = info.val;
-              long nextVal = Math.abs(val)+1;
+                if (oper < commitPercent + deletePercent) {
+                  boolean opt = rand.nextInt() < optimisticPercent;
+                  boolean correct = opt ?
+                      rand.nextInt() < optimisticCorrectPercent :
+                      false;
+                  long badVersion = correct ?
+                      0 :
+                      badVersion(rand, info.version);
 
-              if (oper < commitPercent + deletePercent) {
-                boolean opt = rand.nextInt() < optimisticPercent;
-                boolean correct = opt ? rand.nextInt() < optimisticCorrectPercent : false;
-                long badVersion = correct ? 0 : badVersion(rand, info.version);
-
-                if (VERBOSE) {
-                  if (!opt) {
-                    verbose("deleting id",id,"val=",nextVal);
-                  } else {
-                    verbose("deleting id",id,"val=",nextVal, "existing_version=",info.version,  (correct ? "" : (" bad_version=" + badVersion)));
+                  if (VERBOSE) {
+                    if (!opt) {
+                      verbose("deleting id", id, "val=", nextVal);
+                    } else {
+                      verbose("deleting id", id, "val=", nextVal,
+                          "existing_version=", info.version,
+                          (correct ? "" : (" bad_version=" + badVersion)));
+                    }
                   }
-                }
 
-                // assertU("<delete><id>" + id + "</id></delete>");
-                Long version = null;
+                  // assertU("<delete><id>" + id + "</id></delete>");
+                  Long version = null;
 
-                if (opt) {
-                  if (correct) {
-                    version = deleteAndGetVersion(Integer.toString(id), params("_version_", Long.toString(info.version)));
+                  if (opt) {
+                    if (correct) {
+                      version = deleteAndGetVersion(Integer.toString(id),
+                          params("_version_", Long.toString(info.version)));
+                    } else {
+                      SolrException se = expectThrows(SolrException.class,
+                          "should not get random version",
+                          () -> deleteAndGetVersion(Integer.toString(id),
+                              params("_version_", Long.toString(badVersion))));
+                      assertEquals(409, se.code());
+                    }
                   } else {
-                    SolrException se = expectThrows(SolrException.class, "should not get random version",
-                        () -> deleteAndGetVersion(Integer.toString(id), params("_version_", Long.toString(badVersion))));
-                    assertEquals(409, se.code());
+                    version = deleteAndGetVersion(Integer.toString(id), null);
+                  }
+
+                  if (version != null) {
+                    model.put(id, new DocInfo(version, -nextVal));
+                  }
+
+                  if (VERBOSE) {
+                    verbose("deleting id", id, "val=", nextVal, "DONE");
+                  }
+                } else if (oper
+                    < commitPercent + deletePercent + deleteByQueryPercent) {
+                  if (VERBOSE) {
+                    verbose("deleteByQuery id ", id, "val=", nextVal);
+                  }
+
+                  assertU("<delete><query>id:" + id + "</query></delete>");
+                  model.put(id, new DocInfo(-1L, -nextVal));
+                  if (VERBOSE) {
+                    verbose("deleteByQuery id", id, "val=", nextVal, "DONE");
                   }
                 } else {
-                  version = deleteAndGetVersion(Integer.toString(id), null);
-                }
+                  boolean opt = rand.nextInt() < optimisticPercent;
+                  boolean correct = opt ?
+                      rand.nextInt() < optimisticCorrectPercent :
+                      false;
+                  long badVersion = correct ?
+                      0 :
+                      badVersion(rand, info.version);
 
-                if (version != null) {
-                  model.put(id, new DocInfo(version, -nextVal));
-                }
-
-                if (VERBOSE) {
-                  verbose("deleting id", id, "val=",nextVal,"DONE");
-                }
-              } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
-                if (VERBOSE) {
-                  verbose("deleteByQuery id ",id, "val=",nextVal);
-                }
-
-                assertU("<delete><query>id:" + id + "</query></delete>");
-                model.put(id, new DocInfo(-1L, -nextVal));
-                if (VERBOSE) {
-                  verbose("deleteByQuery id",id, "val=",nextVal,"DONE");
-                }
-              } else {
-                boolean opt = rand.nextInt() < optimisticPercent;
-                boolean correct = opt ? rand.nextInt() < optimisticCorrectPercent : false;
-                long badVersion = correct ? 0 : badVersion(rand, info.version);
-
-                if (VERBOSE) {
-                  if (!opt) {
-                    verbose("adding id",id,"val=",nextVal);
-                  } else {
-                    verbose("adding id",id,"val=",nextVal, "existing_version=",info.version,  (correct ? "" : (" bad_version=" + badVersion)));
+                  if (VERBOSE) {
+                    if (!opt) {
+                      verbose("adding id", id, "val=", nextVal);
+                    } else {
+                      verbose("adding id", id, "val=", nextVal,
+                          "existing_version=", info.version,
+                          (correct ? "" : (" bad_version=" + badVersion)));
+                    }
                   }
-                }
 
-                Long version = null;
-                SolrInputDocument sd = sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal));
+                  Long version = null;
+                  SolrInputDocument sd = sdoc("id", Integer.toString(id), FIELD,
+                      Long.toString(nextVal));
 
-                if (opt) {
-                  if (correct) {
-                    version = addAndGetVersion(sd, params("_version_", Long.toString(info.version)));
+                  if (opt) {
+                    if (correct) {
+                      version = addAndGetVersion(sd,
+                          params("_version_", Long.toString(info.version)));
+                    } else {
+                      SolrException se = expectThrows(SolrException.class,
+                          "should not get bad version",
+                          () -> addAndGetVersion(sd,
+                              params("_version_", Long.toString(badVersion))));
+                      assertEquals(409, se.code());
+                    }
                   } else {
-                    SolrException se = expectThrows(SolrException.class, "should not get bad version",
-                        () -> addAndGetVersion(sd, params("_version_", Long.toString(badVersion))));
-                    assertEquals(409, se.code());
+                    version = addAndGetVersion(sd, null);
                   }
-                } else {
-                  version = addAndGetVersion(sd, null);
+
+                  if (version != null) {
+                    model.put(id, new DocInfo(version, nextVal));
+                  }
+
+                  if (VERBOSE) {
+                    verbose("adding id", id, "val=", nextVal, "DONE");
+                  }
+
                 }
+              }   // end sync
 
-
-                if (version != null) {
-                  model.put(id, new DocInfo(version, nextVal));
-                }
-
-                if (VERBOSE) {
-                  verbose("adding id", id, "val=", nextVal,"DONE");
-                }
-
+              if (!before) {
+                lastId = id;
               }
-            }   // end sync
-
-            if (!before) {
-              lastId = id;
             }
+          } catch (Throwable e) {
+            operations.set(-1L);
+            throw new RuntimeException(e);
+          } finally {
+            ParWork.closeExecutor();
           }
-        } catch (Throwable e) {
-          operations.set(-1L);
-          throw new RuntimeException(e);
-        }
         }
       };
 
@@ -672,7 +695,7 @@ public class TestRealTimeGet extends TestRTGBase {
 
 
     for (int i=0; i<nReadThreads; i++) {
-      Thread thread = new Thread("READER"+i) {
+      Thread thread = new Thread("READER" + i) {
         Random rand = new Random(random().nextInt());
 
         @Override
@@ -691,7 +714,7 @@ public class TestRealTimeGet extends TestRTGBase {
               if (realTime) {
                 info = model.get(id);
               } else {
-                synchronized(TestRealTimeGet.this) {
+                synchronized (TestRealTimeGet.this) {
                   info = committedModel.get(id);
                 }
               }
@@ -703,40 +726,47 @@ public class TestRealTimeGet extends TestRTGBase {
               boolean filteredOut = false;
               SolrQueryRequest sreq;
               if (realTime) {
-                ModifiableSolrParams p = params("wt","json", "qt","/get", "ids",Integer.toString(id));
+                ModifiableSolrParams p = params("wt", "json", "qt", "/get",
+                    "ids", Integer.toString(id));
                 if (rand.nextInt(100) < filteredGetPercent) {
-                  int idToFilter = rand.nextBoolean() ? id : rand.nextInt(ndocs);
+                  int idToFilter = rand.nextBoolean() ?
+                      id :
+                      rand.nextInt(ndocs);
                   filteredOut = idToFilter != id;
-                  p.add("fq", "id:"+idToFilter);
+                  p.add("fq", "id:" + idToFilter);
                 }
                 sreq = req(p);
               } else {
-                sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
+                sreq = req("wt", "json", "q", "id:" + Integer.toString(id),
+                    "omitHeader", "true");
               }
 
               String response = h.query(sreq);
               Map rsp = (Map) Utils.fromJSONString(response);
-              List doclist = (List)(((Map)rsp.get("response")).get("docs"));
+              List doclist = (List) (((Map) rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {
                 // there's no info we can get back with a delete, so not much we can check without further synchronization
                 // This is also correct when filteredOut==true
               } else {
                 assertEquals(1, doclist.size());
-                long foundVal = (Long)(((Map)doclist.get(0)).get(FIELD));
-                long foundVer = (Long)(((Map)doclist.get(0)).get("_version_"));
-                if (filteredOut || foundVal < Math.abs(info.val)
-                    || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must
-                  verbose("ERROR, id=", id, "found=",response,"model",info);
+                long foundVal = (Long) (((Map) doclist.get(0)).get(FIELD));
+                long foundVer = (Long) (((Map) doclist.get(0))
+                    .get("_version_"));
+                if (filteredOut || foundVal < Math.abs(info.val) || (
+                    foundVer == info.version && foundVal
+                        != info.val)) {    // if the version matches, the val must
+                  verbose("ERROR, id=", id, "found=", response, "model", info);
                   assertTrue(false);
                 }
               }
             }
+          } catch (Throwable e) {
+            operations.set(-1L);
+            throw new RuntimeException(e);
+          } finally {
+            ParWork.closeExecutor();
           }
-        catch (Throwable e) {
-          operations.set(-1L);
-          throw new RuntimeException(e);
         }
-      }
       };
 
       threads.add(thread);

@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -110,10 +111,10 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     UpdateLog.testing_logReplayFinishHook = countReplayLog::incrementAndGet;
 
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
-    cloudClient.add(COLLECTION, sdoc("id", "1"));
-    cloudClient.add(COLLECTION, sdoc("id", "2"));
-    cloudClient.add(COLLECTION, sdoc("id", "3"));
-    cloudClient.add(COLLECTION, sdoc("id", "4"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "1"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "2"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "3"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "4"));
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "*:*");
@@ -173,10 +174,10 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     UpdateLog.testing_logReplayFinishHook = countReplayLog::incrementAndGet;
 
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
-    cloudClient.add(COLLECTION, sdoc("id", "1000"));
-    cloudClient.add(COLLECTION, sdoc("id", "1001"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "1000"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "1001"));
     for (int i = 0; i < 10; i++) {
-      cloudClient.add(COLLECTION, sdoc("id", String.valueOf(i)));
+      cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", String.valueOf(i)));
     }
 
     ModifiableSolrParams params = new ModifiableSolrParams();

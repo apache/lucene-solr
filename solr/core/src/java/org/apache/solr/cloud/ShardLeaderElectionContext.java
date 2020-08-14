@@ -205,11 +205,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
         log.info("I may be the new leader - try and sync");
 
+        if (isClosed()) {
+          return;
+        }
         // nocommit
         // we are going to attempt to be the leader
         // first cancel any current recovery
         core.getUpdateHandler().getSolrCoreState().cancelRecovery();
-
+        if (isClosed()) {
+          return;
+        }
         PeerSync.PeerSyncResult result = null;
         boolean success = false;
         try {
@@ -219,7 +224,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           ParWork.propegateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
-
+        if (isClosed()) {
+          return;
+        }
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
 
         if (!success) {

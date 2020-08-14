@@ -36,6 +36,7 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -47,7 +48,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
@@ -210,7 +210,7 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
     private JettySolrRunner runner;
 
     public IndexInBackGround(int numDocs, JettySolrRunner nodeToBringUp) {
-      super(getClassName());
+      super(SolrTestCaseJ4.getClassName());
       this.numDocs = numDocs;
       this.runner = nodeToBringUp;
     }
@@ -325,7 +325,7 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
     assertEquals(docId, cloudClientDocs);
 
     // if there was no replication, we should not have replication.properties file
-    String replicationProperties = nodeToBringUp.getSolrHome() + "/cores/" + DEFAULT_TEST_COLLECTION_NAME + "/data/replication.properties";
+    String replicationProperties = nodeToBringUp.getSolrHome() + "/cores/" + SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME + "/data/replication.properties";
     assertTrue("PeerSync failed. Had to fail back to replication", Files.notExists(Paths.get(replicationProperties)));
   }
 

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -25,7 +25,6 @@ import org.apache.solr.core.SolrCore;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ConfigSetsAPITest extends SolrCloudTestCase {
@@ -83,7 +82,7 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
 
     // change col1's configSet
     CollectionAdminRequest.modifyCollection("col1",
-      map("collection.configName", "conf1")  // from cShare
+        SolrTestCaseJ4.map("collection.configName", "conf1")  // from cShare
     ).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     try (SolrCore coreCol1 = coreContainer.getCore("col1_shard1_replica_n1");

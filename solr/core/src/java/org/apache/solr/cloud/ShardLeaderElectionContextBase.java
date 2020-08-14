@@ -106,7 +106,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           }
 
         } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propegateInterrupt(e, true);
           return;
         } catch (Exception e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);

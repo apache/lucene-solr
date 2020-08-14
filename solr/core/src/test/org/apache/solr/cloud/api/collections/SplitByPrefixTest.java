@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -145,7 +146,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
       prefix = prefix.substring(0, prefix.length()-1) + "/16!";  // change "foo!" into "foo/16!" to match 2 level compositeId
       secondLevel="" + random().nextInt(2) + "!";
     }
-    return sdoc("id", prefix + secondLevel + unique);
+    return SolrTestCaseJ4.sdoc("id", prefix + secondLevel + unique);
   }
 
 

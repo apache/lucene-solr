@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -72,7 +73,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   @Before
   public void doBefore() throws Exception {
     configureCluster(1).configure();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
@@ -399,9 +400,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
       ModifiableSolrParams params = params("post-processor", "tracking-" + trackGroupName);
       List<SolrInputDocument> list = Arrays.asList(
-          sdoc("id", "4", categoryField, SHIPS[0]),
-          sdoc("id", "5", categoryField, SHIPS[1]),
-          sdoc("id", "6", categoryField, SHIPS[2]));
+          SolrTestCaseJ4.sdoc("id", "4", categoryField, SHIPS[0]),
+          SolrTestCaseJ4.sdoc("id", "5", categoryField, SHIPS[1]),
+          SolrTestCaseJ4.sdoc("id", "6", categoryField, SHIPS[2]));
       Collections.shuffle(list, random()); // order should not matter here
       assertUpdateResponse(add(getAlias(), list,
           params));
@@ -452,11 +453,11 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
   private SolrInputDocument newDoc(String routedValue) {
     if (routedValue != null) {
-      return sdoc("id", Integer.toString(++lastDocId),
+      return SolrTestCaseJ4.sdoc("id", Integer.toString(++lastDocId),
           categoryField, routedValue,
           intField, "0"); // always 0
     } else {
-      return sdoc("id", Integer.toString(++lastDocId),
+      return SolrTestCaseJ4.sdoc("id", Integer.toString(++lastDocId),
           intField, "0"); // always 0
     }
   }

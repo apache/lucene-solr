@@ -385,4 +385,9 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     }
     configManager.deleteConfigDir(configSetName);
   }
+
+  @Override
+  public void close() throws IOException {
+
+  }
 }

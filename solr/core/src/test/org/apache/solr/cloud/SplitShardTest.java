@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -170,7 +171,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       if (!slice.getState().equals(Slice.State.ACTIVE)) continue;
       long lastReplicaCount = -1;
       for (Replica replica : slice.getReplicas()) {
-        SolrClient replicaClient = getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
+        SolrClient replicaClient = SolrTestCaseJ4.getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
         long numFound = 0;
         try {
           numFound = replicaClient.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound();
@@ -211,7 +212,7 @@ public class SplitShardTest extends SolrCloudTestCase {
 
               // Try all docs in the same update request
               UpdateRequest updateReq = new UpdateRequest();
-              updateReq.add(sdoc("id", docId));
+              updateReq.add(SolrTestCaseJ4.sdoc("id", docId));
               // UpdateResponse ursp = updateReq.commit(client, collectionName);  // uncomment this if you want a commit each time
               UpdateResponse ursp = updateReq.process(client, collectionName);
               assertEquals(0, ursp.getStatus());  // for now, don't accept any failures

@@ -1045,6 +1045,13 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         }
     }
 
+    public void stopReserveExecutor() {
+//        try {
+//            ((ReservedThreadExecutor)_tryExecutor).stop();
+//        } catch (Exception e) {
+//            log.error("", e);
+//        }
+    }
 
     public void close() {
         try {

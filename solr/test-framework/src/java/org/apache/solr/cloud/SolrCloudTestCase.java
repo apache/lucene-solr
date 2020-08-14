@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -88,11 +89,11 @@ import org.slf4j.LoggerFactory;
  *   </code>
  * </pre>
  */
-public class SolrCloudTestCase extends SolrTestCaseJ4 {
+public class SolrCloudTestCase extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final int DEFAULT_TIMEOUT = 15;
+  public static final int DEFAULT_TIMEOUT = 15000;
   private static volatile SolrQueuedThreadPool qtp;
 
   private static class Config {
@@ -307,7 +308,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
     if (qtp != null) {
-      try (ParWork closer = new ParWork("qtp")) {
+      try (ParWork closer = new ParWork("qtp", false, true)) {
         closer.collect(() -> {
           try {
             qtp.stop();
@@ -316,11 +317,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
           }
         });
         closer.collect(() -> {
-          try {
-            qtp.waitForStopping();
-          } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
-          }
+
+            qtp.fillWithNoops();
+            qtp.fillWithNoops();
+
         });
         closer.addCollect("qtp_close");
       }
@@ -563,5 +563,22 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
     return replicaTypeMap;
+  }
+
+  /**
+   * Generates the correct SolrParams from an even list of strings.
+   * A string in an even position will represent the name of a parameter, while the following string
+   * at position (i+1) will be the assigned value.
+   *
+   * @param params an even list of strings
+   * @return the ModifiableSolrParams generated from the given list of strings.
+   */
+  public static ModifiableSolrParams params(String... params) {
+    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
+    ModifiableSolrParams msp = new ModifiableSolrParams();
+    for (int i=0; i<params.length; i+=2) {
+      msp.add(params[i], params[i+1]);
+    }
+    return msp;
   }
 }

@@ -26,7 +26,7 @@ import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.EmbeddedSolrServerTestBase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -39,7 +39,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SuppressSSL
+@SolrTestCase.SuppressSSL
 public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServerTestBase {
 
   private static final String COLLECTION_NAME = "techproducts";

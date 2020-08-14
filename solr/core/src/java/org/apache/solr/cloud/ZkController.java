@@ -540,6 +540,7 @@ public class ZkController implements Closeable {
           });
           worker.addCollect("disconnected");
         }
+        ParWork.closeExecutor(); // we are using the root exec directly, let's just make sure it's closed here to avoid a slight delay leak
     });
     init();
   }
@@ -1531,10 +1532,11 @@ public class ZkController implements Closeable {
         throw new AlreadyClosedException();
       }
 
-      getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (n,c) -> c != null && c.getLeader(shardId) != null);
+      getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (n,c) -> c != null && c.getLeader(shardId) != null && c.getLeader(shardId).getState().equals(
+          Replica.State.ACTIVE));
 
       //  there should be no stale leader state at this point, dont hit zk directly
-      String leaderUrl = zkStateReader.getLeaderUrl(collection, shardId, 10000);
+      String leaderUrl = zkStateReader.getLeaderUrl(collection, shardId, 5000);
 
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
       log.debug("We are {} and leader is {}", ourUrl, leaderUrl);

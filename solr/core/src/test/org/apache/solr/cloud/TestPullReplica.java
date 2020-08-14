@@ -16,31 +16,15 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -65,6 +49,20 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 @Slow
 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
@@ -235,14 +233,15 @@ public class TestPullReplica extends SolrCloudTestCase {
       cluster.getSolrClient().commit(collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (Http2SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+      try (Http2SolrClient leaderClient = SolrTestCaseJ4
+          .getHttpSolrClient(s.getLeader().getCoreUrl())) {
         assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
       }
 
       TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       for (Replica r:s.getReplicas(EnumSet.of(Replica.Type.PULL))) {
         //TODO: assert replication < REPLICATION_TIMEOUT_SECS
-        try (Http2SolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
+        try (Http2SolrClient pullReplicaClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl())) {
           while (true) {
             try {
               assertEquals("Replica " + r.getName() + " not up to date after 10 seconds",
@@ -358,13 +357,13 @@ public class TestPullReplica extends SolrCloudTestCase {
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd:slice.getReplicas()) {
-      try (Http2SolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), cluster.getSolrClient().getHttpClient())) {
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(rAdd.getCoreUrl(), cluster.getSolrClient().getHttpClient())) {
         client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
       }
       SolrDocument docCloudClient = cluster.getSolrClient().getById(collectionName, String.valueOf(id));
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet:slice.getReplicas()) {
-        try (Http2SolrClient client = getHttpSolrClient(rGet.getCoreUrl(), cluster.getSolrClient().getHttpClient())) {
+        try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(rGet.getCoreUrl(), cluster.getSolrClient().getHttpClient())) {
           SolrDocument doc = client.getById(String.valueOf(id));
           assertEquals("bar", doc.getFieldValue("foo_s"));
         }
@@ -374,7 +373,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd:slice.getReplicas()) {
-      try (Http2SolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), cluster.getSolrClient().getHttpClient())) {
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(rAdd.getCoreUrl(), cluster.getSolrClient().getHttpClient())) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
           assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
@@ -402,14 +401,14 @@ public class TestPullReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (Http2SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (Http2SolrClient leaderClient = SolrTestCaseJ4.getHttpSolrClient(s.getLeader().getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
     waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
 
     // Delete leader replica from shard1
-    ignoreException("No registered leader was found"); //These are expected
+    SolrTestCaseJ4.ignoreException("No registered leader was found"); //These are expected
     JettySolrRunner leaderJetty = null;
     if (removeReplica) {
       CollectionAdminRequest.deleteReplica(
@@ -450,7 +449,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
 
     // Also fails if I send the update to the pull replica explicitly
-    try (Http2SolrClient pullReplicaClient = getHttpSolrClient(docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+    try (Http2SolrClient pullReplicaClient = SolrTestCaseJ4.getHttpSolrClient(docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       expectThrows(SolrException.class, () ->
         cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
       );
@@ -472,7 +471,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       leaderJetty.start();
     }
     waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
-    unIgnoreException("No registered leader was found"); // Should have a leader from now on
+    SolrTestCaseJ4.unIgnoreException("No registered leader was found"); // Should have a leader from now on
 
     // Validate that the new nrt replica is the leader now
     docCollection = getCollectionState(collectionName);
@@ -488,7 +487,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // add docs agin
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     s = docCollection.getSlices().iterator().next();
-    try (Http2SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (Http2SolrClient leaderClient = SolrTestCaseJ4.getHttpSolrClient(s.getLeader().getCoreUrl())) {
       leaderClient.commit();
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
@@ -541,7 +540,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query) throws IOException, SolrServerException, InterruptedException {
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:replicas) {
-      try (Http2SolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
+      try (Http2SolrClient replicaClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl())) {
         while (true) {
           try {
             assertEquals("Replica " + r.getName() + " not up to date after " + REPLICATION_TIMEOUT_SECS + " seconds",

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -279,7 +280,8 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
 
     int expectedVal = 0;
     for (SolrClient client : clients) {
-      client.add(sdoc("id", "b!doc", "foo_i", map("inc",1)));
+      client.add(
+          SolrTestCaseJ4.sdoc("id", "b!doc", "foo_i", SolrTestCaseJ4.map("inc",1)));
       expectedVal++;
 
       QueryResponse rsp = client.query(params("qt","/get", "id","b!doc"));

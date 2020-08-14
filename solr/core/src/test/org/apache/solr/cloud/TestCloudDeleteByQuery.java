@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -169,17 +170,18 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       assertNotNull("could not find URL for " + shardName + " replica", passiveUrl);
 
       if (shardName.equals("shard1")) {
-        S_ONE_LEADER_CLIENT = getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
-        S_ONE_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
+        S_ONE_LEADER_CLIENT = SolrTestCaseJ4
+            .getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
+        S_ONE_NON_LEADER_CLIENT = SolrTestCaseJ4.getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
       } else if (shardName.equals("shard2")) {
-        S_TWO_LEADER_CLIENT = getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
-        S_TWO_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
+        S_TWO_LEADER_CLIENT = SolrTestCaseJ4.getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
+        S_TWO_NON_LEADER_CLIENT = SolrTestCaseJ4.getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
       } else {
         fail("unexpected shard: " + shardName);
       }
     }
     assertEquals("Should be exactly one server left (nost hosting either shard)", 1, urlMap.size());
-    NO_COLLECTION_CLIENT = getHttpSolrClient(urlMap.values().iterator().next() +
+    NO_COLLECTION_CLIENT = SolrTestCaseJ4.getHttpSolrClient(urlMap.values().iterator().next() +
                                               "/" + COLLECTION_NAME + "/");
     
     assertNotNull(S_ONE_LEADER_CLIENT);

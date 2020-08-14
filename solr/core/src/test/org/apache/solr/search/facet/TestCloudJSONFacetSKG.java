@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -131,7 +132,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
                (SOLO_INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
     
     // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    if (Boolean.getBoolean(SolrTestCaseJ4.NUMERIC_POINTS_SYSPROP)) System.setProperty(SolrTestCaseJ4.NUMERIC_DOCVALUES_SYSPROP,"true");
     
     // multi replicas should not matter...
     final int repFactor = usually() ? 1 : 2;
@@ -155,12 +156,13 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(SolrTestCaseJ4
+          .getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
     final int numDocs = atLeast(TEST_NIGHTLY ? 97 : 7) + 3;
     for (int id = 0; id < numDocs; id++) {
-      SolrInputDocument doc = sdoc("id", ""+id);
+      SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", ""+id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
         // NOTE: we ensure every doc has at least one value in each field
         // that way, if a term is returned for a parent there there is garunteed to be at least one

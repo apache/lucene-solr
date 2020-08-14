@@ -25,6 +25,7 @@ import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.codahale.metrics.Metered;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -127,7 +128,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
 
     for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ ) {
       final String v = "a" + counter;
-      req.add(sdoc("id", Integer.toString(counter), "name", v,
+      req.add(SolrTestCaseJ4.sdoc("id", Integer.toString(counter), "name", v,
           "name_dv", v,
           "name_dvs", v,"name_dvs", v+"1",
           "num",""+counter));
@@ -136,7 +137,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     counter++;
     for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ ) {
       final String v = "b" + counter;
-      req.add(sdoc("id", Integer.toString(counter), "name", v,
+      req.add(SolrTestCaseJ4.sdoc("id", Integer.toString(counter), "name", v,
           "name_dv", v,
           "name_dvs", v,"name_dvs", v+"1",
           "num",""+counter));
@@ -145,7 +146,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     counter++;
     for(; counter % NUM_DOCS_PER_TYPE != 0; counter++ ) {
       final String v = "dummy term doc" + counter;
-      req.add(sdoc("id", Integer.toString(counter), "name", 
+      req.add(SolrTestCaseJ4.sdoc("id", Integer.toString(counter), "name",
           v,
           "name_dv", v,
           "name_dvs", v,"name_dvs", v+"1",

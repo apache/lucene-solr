@@ -16,13 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -42,11 +38,14 @@ import org.apache.solr.handler.BackupStatusChecker;
 import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
  */
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @LuceneTestCase.Nightly // nocommit - check out more
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String SHARD2 = "shard2";

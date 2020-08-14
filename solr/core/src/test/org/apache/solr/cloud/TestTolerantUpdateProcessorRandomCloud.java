@@ -16,25 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -52,13 +40,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delIErr;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delQErr;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.f;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 /**
  * Test of TolerantUpdateProcessor using a randomized MiniSolrCloud.
@@ -71,7 +66,7 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
  * </p>
  *slowest_test_suite=org.apache.solr.cloud.DocValuesNotIndexedTest
  */
-@SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
+@SolrTestCase.SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
 public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -120,7 +115,8 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       String jettyURL = jetty.getBaseUrl();
-      NODE_CLIENTS.add(getHttpSolrClient(jettyURL.toString() + "/" + COLLECTION_NAME + "/"));
+      NODE_CLIENTS.add(SolrTestCaseJ4
+          .getHttpSolrClient(jettyURL.toString() + "/" + COLLECTION_NAME + "/"));
     }
     assertEquals(numServers, NODE_CLIENTS.size());
     

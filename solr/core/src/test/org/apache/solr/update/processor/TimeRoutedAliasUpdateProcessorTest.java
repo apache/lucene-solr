@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -87,7 +88,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   @Before
   public void doBefore() throws Exception {
     configureCluster(4).configure();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
@@ -268,9 +269,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
       ModifiableSolrParams params = params("post-processor", "tracking-" + trackGroupName);
       assertUpdateResponse(add(alias, Arrays.asList(
-          sdoc("id", "2", "timestamp_dt", "2017-10-24T00:00:00Z"),
-          sdoc("id", "3", "timestamp_dt", "2017-10-25T00:00:00Z"),
-          sdoc("id", "4", "timestamp_dt", "2017-10-23T00:00:00Z")),
+          SolrTestCaseJ4.sdoc("id", "2", "timestamp_dt", "2017-10-24T00:00:00Z"),
+          SolrTestCaseJ4.sdoc("id", "3", "timestamp_dt", "2017-10-25T00:00:00Z"),
+          SolrTestCaseJ4.sdoc("id", "4", "timestamp_dt", "2017-10-23T00:00:00Z")),
           params));
     } finally {
       updateCommands = TrackingUpdateProcessorFactory.stopRecording(trackGroupName);
@@ -379,7 +380,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     waitColAndAlias(getSaferTestName() + "foo", TRA, "2017-10-23",2);
     waitCoreCount(getSaferTestName() + "foo" + TRA + "2017-10-23", 4); // prove this works, for confidence in deletion checking below.
     assertUpdateResponse(solrClient.add(getSaferTestName() + "foo",
-        sdoc("id","1","timestamp_dt", "2017-10-23T00:00:00Z") // no extra collections should be created
+        SolrTestCaseJ4.sdoc("id","1","timestamp_dt", "2017-10-23T00:00:00Z") // no extra collections should be created
     ));
     assertUpdateResponse(solrClient.commit(getSaferTestName() + "foo"));
 
@@ -403,8 +404,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
         .addProperty(TimeRoutedAlias.ROUTER_PREEMPTIVE_CREATE_MATH, "3DAY").process(solrClient);
 
     assertUpdateResponse(add(alias, Arrays.asList(
-        sdoc("id", "7", "timestamp_dt", "2017-10-25T23:01:00Z"), // should cause preemptive creation of 10-27 now
-        sdoc("id", "71", "timestamp_dt", "2017-10-25T23:02:00Z")), // should not cause preemptive creation of 10-28 now
+        SolrTestCaseJ4.sdoc("id", "7", "timestamp_dt", "2017-10-25T23:01:00Z"), // should cause preemptive creation of 10-27 now
+        SolrTestCaseJ4.sdoc("id", "71", "timestamp_dt", "2017-10-25T23:02:00Z")), // should not cause preemptive creation of 10-28 now
         params));
     assertUpdateResponse(solrClient.commit(alias));
     waitColAndAlias(alias, TRA, "2017-10-27", numShards);
@@ -419,7 +420,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
 
     assertUpdateResponse(add(alias, Collections.singletonList(
-        sdoc("id", "8", "timestamp_dt", "2017-10-25T23:01:00Z")), // should cause preemptive creation of 10-28 now
+        SolrTestCaseJ4.sdoc("id", "8", "timestamp_dt", "2017-10-25T23:01:00Z")), // should cause preemptive creation of 10-28 now
         params));
     assertUpdateResponse(solrClient.commit(alias));
     waitColAndAlias(alias, TRA, "2017-10-28", numShards);
@@ -440,7 +441,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertEquals(9, resp.getResults().getNumFound());
 
     assertUpdateResponse(add(alias, Arrays.asList(
-        sdoc("id", "9", "timestamp_dt", "2017-10-27T23:01:00Z"), // should cause preemptive creation
+        SolrTestCaseJ4.sdoc("id", "9", "timestamp_dt", "2017-10-27T23:01:00Z"), // should cause preemptive creation
 
         // If these are not ignored properly this test will fail during cleanup with a message about router.name being
         // required. This happens because the test finishes while overseer threads are still trying to invoke maintain
@@ -449,9 +450,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
         // (normally router.name == 'time') The check for non-blank router.name  happens to be the first validation.
         // There is a small chance this could slip through without a fail occasionally, but it was 100% with just one
         // of these.
-        sdoc("id", "10", "timestamp_dt", "2017-10-28T23:01:00Z"),  // should be ignored due to in progress creation
-        sdoc("id", "11", "timestamp_dt", "2017-10-28T23:02:00Z"),  // should be ignored due to in progress creation
-        sdoc("id", "12", "timestamp_dt", "2017-10-28T23:03:00Z")), // should be ignored due to in progress creation
+        SolrTestCaseJ4.sdoc("id", "10", "timestamp_dt", "2017-10-28T23:01:00Z"),  // should be ignored due to in progress creation
+        SolrTestCaseJ4.sdoc("id", "11", "timestamp_dt", "2017-10-28T23:02:00Z"),  // should be ignored due to in progress creation
+        SolrTestCaseJ4. sdoc("id", "12", "timestamp_dt", "2017-10-28T23:03:00Z")), // should be ignored due to in progress creation
         params));
     assertUpdateResponse(solrClient.commit(alias));
     waitColAndAlias(alias, TRA, "2017-10-29", numShards);
@@ -473,7 +474,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     // Sych creation with an interval longer than the time slice for the alias..
     assertUpdateResponse(add(alias, Collections.singletonList(
-        sdoc("id", "13", "timestamp_dt", "2017-10-30T23:03:00Z")), // lucky?
+        SolrTestCaseJ4.sdoc("id", "13", "timestamp_dt", "2017-10-30T23:03:00Z")), // lucky?
         params));
     assertUpdateResponse(solrClient.commit(alias));
     waitColAndAlias(alias, TRA, "2017-10-30", numShards);
@@ -503,29 +504,29 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertEquals(14, resp.getResults().getNumFound());
 
     assertUpdateResponse(add(alias, Collections.singletonList(
-        sdoc("id", "14", "timestamp_dt", "2017-10-30T23:01:00Z")), // should cause preemptive creation 10-31
+        SolrTestCaseJ4.sdoc("id", "14", "timestamp_dt", "2017-10-30T23:01:00Z")), // should cause preemptive creation 10-31
         params));
     waitColAndAlias(alias, TRA, "2017-10-31", numShards);
 
     assertUpdateResponse(add(alias, Collections.singletonList(
-        sdoc("id", "15", "timestamp_dt", "2017-10-30T23:01:00Z")), // should cause preemptive creation 11-01
+        SolrTestCaseJ4.sdoc("id", "15", "timestamp_dt", "2017-10-30T23:01:00Z")), // should cause preemptive creation 11-01
         params));
     waitColAndAlias(alias, TRA, "2017-11-01", numShards);
 
     assertUpdateResponse(add(alias, Collections.singletonList(
-        sdoc("id", "16", "timestamp_dt", "2017-10-30T23:01:00Z")), // should cause preemptive creation 11-02
+        SolrTestCaseJ4. sdoc("id", "16", "timestamp_dt", "2017-10-30T23:01:00Z")), // should cause preemptive creation 11-02
         params));
     waitColAndAlias(alias, TRA, "2017-11-02", numShards);
 
     assertUpdateResponse(add(alias, Collections.singletonList(
-        sdoc("id", "17", "timestamp_dt", "2017-10-30T23:01:00Z")), // should NOT cause preemptive creation 11-03
+        SolrTestCaseJ4.sdoc("id", "17", "timestamp_dt", "2017-10-30T23:01:00Z")), // should NOT cause preemptive creation 11-03
         params));
 
     cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
     assertFalse(cols.contains("myalias" + TRA + "2017-11-03"));
 
     assertUpdateResponse(add(alias, Collections.singletonList(
-        sdoc("id", "18", "timestamp_dt", "2017-10-31T23:01:00Z")), // should cause preemptive creation 11-03
+        SolrTestCaseJ4.sdoc("id", "18", "timestamp_dt", "2017-10-31T23:01:00Z")), // should cause preemptive creation 11-03
         params));
     waitColAndAlias(alias, TRA, "2017-11-03",numShards);
 
@@ -540,10 +541,10 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     //
     // This method must NOT gain any Thread.sleep() statements, nor should it gain any long running operations
     assertUpdateResponse(add(alias, Arrays.asList(
-        sdoc("id", "2", "timestamp_dt", "2017-10-24T00:00:00Z"),
-        sdoc("id", "3", "timestamp_dt", "2017-10-25T00:00:00Z"),
-        sdoc("id", "4", "timestamp_dt", "2017-10-23T00:00:00Z"),
-        sdoc("id", "5", "timestamp_dt", "2017-10-25T23:00:00Z")), // should cause preemptive creation
+        SolrTestCaseJ4.sdoc("id", "2", "timestamp_dt", "2017-10-24T00:00:00Z"),
+        SolrTestCaseJ4.sdoc("id", "3", "timestamp_dt", "2017-10-25T00:00:00Z"),
+        SolrTestCaseJ4.sdoc("id", "4", "timestamp_dt", "2017-10-23T00:00:00Z"),
+        SolrTestCaseJ4.sdoc("id", "5", "timestamp_dt", "2017-10-25T23:00:00Z")), // should cause preemptive creation
         params));
     assertUpdateResponse(solrClient.commit(alias));
 
@@ -560,7 +561,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     // second collection. MaintainRoutedAliasCmd is meant to guard against this race condition by acquiring
     // a lock on the collection name.
     assertUpdateResponse(add(alias, Collections.singletonList(
-        sdoc("id", "6", "timestamp_dt", "2017-10-25T23:01:00Z")), // might cause duplicate preemptive creation
+        SolrTestCaseJ4.sdoc("id", "6", "timestamp_dt", "2017-10-25T23:01:00Z")), // might cause duplicate preemptive creation
         params));
     assertUpdateResponse(solrClient.commit(alias));
   }
@@ -584,7 +585,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   private void addOneDocSynchCreation(int numShards, String alias) throws SolrServerException, IOException, InterruptedException {
     // cause some collections to be created
     assertUpdateResponse(solrClient.add(alias,
-        sdoc("id","1","timestamp_dt", "2017-10-25T00:00:00Z")
+        SolrTestCaseJ4.sdoc("id","1","timestamp_dt", "2017-10-25T00:00:00Z")
     ));
     assertUpdateResponse(solrClient.commit(alias));
 
@@ -691,7 +692,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   }
 
   private SolrInputDocument newDoc(Instant timestamp) {
-    return sdoc("id", Integer.toString(++lastDocId),
+    return SolrTestCaseJ4.sdoc("id", Integer.toString(++lastDocId),
         getTimeField(), timestamp.toString(),
         getIntField(), "0"); // always 0
   }
@@ -745,7 +746,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     ModifiableSolrParams params = params();
     String nowDay = DateTimeFormatter.ISO_INSTANT.format(DateMathParser.parseMath(new Date(), "2019-09-14T01:00:00Z").toInstant());
     assertUpdateResponse(add(alias, Arrays.asList(
-        sdoc("id", "1", "timestamp_dt", nowDay)), // should not cause preemptive creation of 10-28 now
+        SolrTestCaseJ4.sdoc("id", "1", "timestamp_dt", nowDay)), // should not cause preemptive creation of 10-28 now
         params));
 
     // this process should have lead to the modification of the start time for the alias, converting it into
@@ -794,7 +795,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     // verify that we can still add documents to it.
     assertUpdateResponse(solrClient.add(alias,
-        sdoc("id","3","timestamp_dt", "2017-10-23T00:00:01Z")
+        SolrTestCaseJ4.sdoc("id","3","timestamp_dt", "2017-10-23T00:00:01Z")
     ));
     solrClient.commit(alias);
     resp = solrClient.query(alias, params(
@@ -806,7 +807,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     // verify that it can create new collections
     assertUpdateResponse(solrClient.add(alias,
-        sdoc("id","4","timestamp_dt", "2017-10-24T23:00:01Z") // preemptive
+        SolrTestCaseJ4.sdoc("id","4","timestamp_dt", "2017-10-24T23:00:01Z") // preemptive
     ));
     solrClient.commit(alias);
     waitColAndAlias(alias, TRA, "2017-10-25",1);
@@ -821,7 +822,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     // verify that documents go to the right collections
 
     assertUpdateResponse(solrClient.add(alias,
-        sdoc("id","5","timestamp_dt", "2017-10-25T12:00:01Z") // preemptive
+        SolrTestCaseJ4.sdoc("id","5","timestamp_dt", "2017-10-25T12:00:01Z") // preemptive
     ));
     solrClient.commit(alias);
 
@@ -855,7 +856,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     checkCollectionCountIs(3);
 
     assertUpdateResponse(solrClient.add(alias,
-        sdoc("id","6","timestamp_dt", "2017-10-26T12:00:01Z") // preemptive
+        SolrTestCaseJ4.sdoc("id","6","timestamp_dt", "2017-10-26T12:00:01Z") // preemptive
     ));
     waitColAndAlias(alias, TRA,"2017-10-26",1);
     checkCollectionCountIs(3)
@@ -865,7 +866,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             "myalias" + TRA + "2017-10-26"));
 
     assertUpdateResponse(solrClient.add(alias,
-        sdoc("id","7","timestamp_dt", "2017-10-27T12:00:01Z") // preemptive
+        SolrTestCaseJ4.sdoc("id","7","timestamp_dt", "2017-10-27T12:00:01Z") // preemptive
     ));
     waitColAndAlias(alias, TRA,"2017-10-27",1);
     waitCoreCount("myalias_2017-10-23",0);
@@ -877,7 +878,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     // verify that auto-delete works on new collections.
     assertUpdateResponse(solrClient.add(alias,
-        sdoc("id","8","timestamp_dt", "2017-10-28T12:00:01Z") // preemptive
+        SolrTestCaseJ4.sdoc("id","8","timestamp_dt", "2017-10-28T12:00:01Z") // preemptive
     ));
     waitColAndAlias(alias, TRA,"2017-10-28",1);
     waitCoreCount("myalias_2017-10-24",0);
@@ -936,10 +937,10 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     waitCol(1,legacy24);
     // put some data in the legacy collections:
     assertUpdateResponse(solrClient.add(legacy23,
-        sdoc("id","1","timestamp_dt", "2017-10-23T00:00:01Z")
+        SolrTestCaseJ4.sdoc("id","1","timestamp_dt", "2017-10-23T00:00:01Z")
     ));
     assertUpdateResponse(solrClient.add(legacy24,
-        sdoc("id","2","timestamp_dt", "2017-10-24T00:00:01Z")
+        SolrTestCaseJ4.sdoc("id","2","timestamp_dt", "2017-10-24T00:00:01Z")
     ));
 
     solrClient.commit(legacy23);

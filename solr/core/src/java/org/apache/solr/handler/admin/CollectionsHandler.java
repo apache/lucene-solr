@@ -404,7 +404,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             + event.getWatchedEvent().getType() + "]");
       } else {
         // we have to assume success - it was too quick for us to catch the response
-        return new OverseerSolrResponse(new NamedList());
+        NamedList<Object> resp = new NamedList<>();
+        resp.add("success", "true");
+        return new OverseerSolrResponse(resp);
       }
     }
   }

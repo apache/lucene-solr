@@ -178,7 +178,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     boolean testViaReplicationHandler = random().nextBoolean();
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    try (Http2SolrClient masterClient = getHttpSolrClient(replicaBaseUrl)) {
+    try (Http2SolrClient masterClient = SolrTestCaseJ4.getHttpSolrClient(replicaBaseUrl)) {
       // Create a backup.
       if (testViaReplicationHandler) {
         log.info("Running Backup via replication handler");

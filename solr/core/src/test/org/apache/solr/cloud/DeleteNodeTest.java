@@ -17,28 +17,21 @@
 
 package org.apache.solr.cloud;
 
-
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
 
 public class DeleteNodeTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,7 +56,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     Set<String> liveNodes = state.getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
-    CollectionAdminRequest.Create create = pickRandom(
+    CollectionAdminRequest.Create create = SolrTestCaseJ4.pickRandom(
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 1, 0),
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 1),

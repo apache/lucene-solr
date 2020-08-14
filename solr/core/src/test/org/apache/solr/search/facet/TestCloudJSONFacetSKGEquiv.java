@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -79,6 +80,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @see TestCloudJSONFacetSKG
  */
+@Ignore // nocommit
 public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -119,7 +121,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
                (SOLO_INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
     
     // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    if (Boolean.getBoolean(SolrTestCaseJ4.NUMERIC_POINTS_SYSPROP)) System.setProperty(SolrTestCaseJ4.NUMERIC_DOCVALUES_SYSPROP,"true");
     
     // multi replicas should not matter...
     final int repFactor = usually() ? 1 : 2;
@@ -143,12 +145,13 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(SolrTestCaseJ4
+          .getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
     final int numDocs = atLeast(100);
     for (int id = 0; id < numDocs; id++) {
-      SolrInputDocument doc = sdoc("id", ""+id);
+      SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", ""+id);
 
       // NOTE: for each fieldNum, there are actaully 4 fields: multi(str+int) + solo(str+int)
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {

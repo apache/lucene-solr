@@ -17,8 +17,17 @@
 
 package org.apache.solr;
 
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.io.File;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -28,6 +37,10 @@ import java.util.concurrent.TimeUnit;
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
+import org.apache.lucene.codecs.lucene86.Lucene86Codec;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -36,9 +49,13 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.ParWorkExecutor;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.TimeTracker;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SysStats;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -123,6 +140,18 @@ public class SolrTestCase extends LuceneTestCase {
                     }
                   });
 
+  /**
+   * Annotation for test classes that want to disable SSL
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressSSL {
+    /** Point to JIRA entry. */
+    public String bugUrl() default "None";
+  }
+
   public static final int DEFAULT_ZK_SESSION_TIMEOUT = 20000;  // default socket connection timeout in ms
   public static final int DEFAULT_CONNECTION_TIMEOUT = 10000;  // default socket connection timeout in ms
   public static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 15000;
@@ -197,29 +226,31 @@ public class SolrTestCase extends LuceneTestCase {
 
     if (!TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
-
-
+      Lucene86Codec codec = new Lucene86Codec(Lucene50StoredFieldsFormat.Mode.BEST_SPEED);
+      //Codec.setDefault(codec);
       System.setProperty("solr.lbclient.live_check_interval", "3000");
       System.setProperty("solr.httpShardHandler.completionTimeout", "3000");
       System.setProperty("zookeeper.request.timeout", "5000");
       System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
-//      System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.IntPointField");
-//      System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.FloatPointField");
-//      System.setProperty("solr.tests.LongFieldType", "org.apache.solr.schema.LongPointField");
-//      System.setProperty("solr.tests.DoubleFieldType", "org.apache.solr.schema.DoublePointField");
-//      System.setProperty("solr.tests.DateFieldType", "org.apache.solr.schema.DatePointField");
-//      System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
+      System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.TrieIntField");
+      System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.TrieFloatField");
+      System.setProperty("solr.tests.LongFieldType", "org.apache.solr.schema.TrieLongField");
+      System.setProperty("solr.tests.DoubleFieldType", "org.apache.solr.schema.TrieDoubleField");
+      System.setProperty("solr.tests.DateFieldType", "org.apache.solr.schema.TrieDateField");
+      System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
+      System.setProperty("solr.tests.numeric.dv", "true");
 
-      System.setProperty("solr.concurrentRequests.max", "5");
+
+      System.setProperty("solr.concurrentRequests.max", "15");
       System.setProperty("solr.tests.infostream", "false");
-      System.setProperty("numVersionBuckets", "8192");
+      System.setProperty("numVersionBuckets", "16384");
 
     //  System.setProperty("solr.per_thread_exec.max_threads", "2");
    //   System.setProperty("solr.per_thread_exec.min_threads", "1");
 
-      System.setProperty("zookeeper.nio.numSelectorThreads", "1");
+      System.setProperty("zookeeper.nio.numSelectorThreads", "2");
       System.setProperty("zookeeper.nio.numWorkerThreads", "3");
-      System.setProperty("zookeeper.commitProcessor.numWorkerThreads", "1");
+      System.setProperty("zookeeper.commitProcessor.numWorkerThreads", "2");
       System.setProperty("zookeeper.skipACL", "true");
       System.setProperty("zookeeper.nio.shutdownTimeout", "10");
 
@@ -364,7 +395,35 @@ public class SolrTestCase extends LuceneTestCase {
     assumeFalse(PROP + " == true",
                 systemPropertyAsBoolean(PROP, false));
   }
-  
+
+  public static String TEST_HOME() {
+    return getFile("solr/collection1").getParent();
+  }
+
+  public static Path TEST_PATH() { return getFile("solr/collection1").getParentFile().toPath(); }
+
+  /** Gets a resource from the context classloader as {@link File}. This method should only be used,
+   * if a real file is needed. To get a stream, code should prefer
+   * {@link Class#getResourceAsStream} using {@code this.getClass()}.
+   */
+  public static File getFile(String name) {
+    final URL url = SolrTestCaseJ4.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
+    if (url != null) {
+      try {
+        return new File(url.toURI());
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
+        throw new RuntimeException("Resource was found on classpath, but cannot be resolved to a " +
+            "normal file (maybe it is part of a JAR file): " + name);
+      }
+    }
+    final File file = new File(name);
+    if (file.exists()) {
+      return file;
+    }
+    throw new RuntimeException("Cannot find resource in classpath or in file-system (relative to CWD): " + name);
+  }
+
   @AfterClass
   public static void afterSolrTestCase() throws Exception {
     log.info("*******************************************************************");
@@ -387,15 +446,19 @@ public class SolrTestCase extends LuceneTestCase {
         }
       }
 
-      ParWork.closeExecutor();
-
       if (null != testExecutor) {
         testExecutor.shutdown();
         ParWork.close(testExecutor);
         testExecutor = null;
       }
 
+      ParWork.closeExecutor();
+
       ParWork.shutdownExec();
+
+
+
+
 
       SysStats.getSysStats().stopMonitor();
 
@@ -534,16 +597,21 @@ public class SolrTestCase extends LuceneTestCase {
     }
   }
 
+
+  public static Path configset(String name) {
+    return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");
+  }
+
   private static void interrupt(Thread thread, String nameContains) {
     if (nameContains != null && thread.getName().contains(nameContains) && nameContains.startsWith("ParWork")) {
 
  //     System.out.println("simulate interrupt on " + thread.getName());
 //      thread.interrupt();
-      try {
-        thread.join(5000);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-      }
+//      try {
+//        thread.join(5000);
+//      } catch (InterruptedException e) {
+//        ParWork.propegateInterrupt(e);
+//      }
     }
 
     if (nameContains != null && nameContains.startsWith("ParWork")) {
@@ -551,4 +619,163 @@ public class SolrTestCase extends LuceneTestCase {
     }
   }
 
+  public static SolrQueuedThreadPool getQtp() {
+
+    SolrQueuedThreadPool qtp = new SolrQueuedThreadPool("solr-test-qtp");;
+    qtp.setName("solr-test-qtp");
+    //qtp.setMaxThreads(Integer.getInteger("solr.maxContainerThreads", 50));
+    // qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
+    qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 8));
+    qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", 30000));
+
+    qtp.setStopTimeout((int) TimeUnit.SECONDS.toMillis(60));
+    qtp.setDaemon(true);
+    qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
+    // qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(1));
+    return qtp;
+  }
+
+
+  private static boolean changedFactory = false;
+  private static String savedFactory;
+  /** Use a different directory factory.  Passing "null" sets to an FS-based factory */
+  public static void useFactory(String factory) throws Exception {
+    // allow calling more than once so a subclass can override a base class
+    if (!changedFactory) {
+      savedFactory = System.getProperty("solr.DirectoryFactory");
+    }
+
+    if (factory == null) {
+      factory = random().nextInt(100) < 75 ? "solr.NRTCachingDirectoryFactory" : "solr.StandardDirectoryFactory"; // test the default most of the time
+    }
+    System.setProperty("solr.directoryFactory", factory);
+    changedFactory = true;
+  }
+
+  public static void resetFactory() throws Exception {
+    if (!changedFactory) return;
+    changedFactory = false;
+    if (savedFactory != null) {
+      System.setProperty("solr.directoryFactory", savedFactory);
+      savedFactory = null;
+    } else {
+      System.clearProperty("solr.directoryFactory");
+    }
+  }
+
+
+  public String getSaferTestName() {
+    // test names can hold additional info, like the test seed
+    // only take to first space
+    String testName = getTestName();
+    int index = testName.indexOf(' ');
+    if (index > 0) {
+      testName = testName.substring(0, index);
+    }
+    return testName;
+  }
+
+  /**
+   * Generates the correct SolrParams from an even list of strings.
+   * A string in an even position will represent the name of a parameter, while the following string
+   * at position (i+1) will be the assigned value.
+   *
+   * @param params an even list of strings
+   * @return the ModifiableSolrParams generated from the given list of strings.
+   */
+  public static ModifiableSolrParams params(String... params) {
+    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
+    ModifiableSolrParams msp = new ModifiableSolrParams();
+    for (int i=0; i<params.length; i+=2) {
+      msp.add(params[i], params[i+1]);
+    }
+    return msp;
+  }
+
+  protected static <T> T pickRandom(T... options) {
+    return options[random().nextInt(options.length)];
+  }
+
+  public boolean compareSolrDocumentList(Object expected, Object actual) {
+    if (!(expected instanceof SolrDocumentList)  || !(actual instanceof SolrDocumentList)) {
+      return false;
+    }
+
+    if (expected == actual) {
+      return true;
+    }
+
+    SolrDocumentList list1 = (SolrDocumentList) expected;
+    SolrDocumentList list2 = (SolrDocumentList) actual;
+
+    if (list1.getMaxScore() == null) {
+      if (list2.getMaxScore() != null) {
+        return false;
+      }
+    } else if (list2.getMaxScore() == null) {
+      return false;
+    } else {
+      if (Float.compare(list1.getMaxScore(), list2.getMaxScore()) != 0 || list1.getNumFound() != list2.getNumFound() ||
+          list1.getStart() != list2.getStart()) {
+        return false;
+      }
+    }
+    for(int i=0; i<list1.getNumFound(); i++) {
+      if(!compareSolrDocument(list1.get(i), list2.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public boolean compareSolrDocument(Object expected, Object actual) {
+
+    if (!(expected instanceof SolrDocument)  || !(actual instanceof SolrDocument)) {
+      return false;
+    }
+
+    if (expected == actual) {
+      return true;
+    }
+
+    SolrDocument solrDocument1 = (SolrDocument) expected;
+    SolrDocument solrDocument2 = (SolrDocument) actual;
+
+    if(solrDocument1.getFieldNames().size() != solrDocument2.getFieldNames().size()) {
+      return false;
+    }
+
+    Iterator<String> iter1 = solrDocument1.getFieldNames().iterator();
+    Iterator<String> iter2 = solrDocument2.getFieldNames().iterator();
+
+    if(iter1.hasNext()) {
+      String key1 = iter1.next();
+      String key2 = iter2.next();
+
+      Object val1 = solrDocument1.getFieldValues(key1);
+      Object val2 = solrDocument2.getFieldValues(key2);
+
+      if(!key1.equals(key2) || !val1.equals(val2)) {
+        return false;
+      }
+    }
+
+    if(solrDocument1.getChildDocuments() == null && solrDocument2.getChildDocuments() == null) {
+      return true;
+    }
+    if(solrDocument1.getChildDocuments() == null || solrDocument2.getChildDocuments() == null) {
+      return false;
+    } else if(solrDocument1.getChildDocuments().size() != solrDocument2.getChildDocuments().size()) {
+      return false;
+    } else {
+      Iterator<SolrDocument> childDocsIter1 = solrDocument1.getChildDocuments().iterator();
+      Iterator<SolrDocument> childDocsIter2 = solrDocument2.getChildDocuments().iterator();
+      while(childDocsIter1.hasNext()) {
+        if(!compareSolrDocument(childDocsIter1.next(), childDocsIter2.next())) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
 }

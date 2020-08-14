@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -56,7 +57,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
   public void test() throws Exception {
     JettySolrRunner node1 = cluster.getJettySolrRunner(0);
     JettySolrRunner node2 = cluster.getJettySolrRunner(1);
-    try (Http2SolrClient client1 = getHttpSolrClient(node1.getBaseUrl().toString())) {
+    try (Http2SolrClient client1 = SolrTestCaseJ4.getHttpSolrClient(node1.getBaseUrl().toString())) {
 
       node2.stop();
       cluster.waitForJettyToStop(node2);
@@ -72,7 +73,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       cluster.waitForNode(node2, 10);
       waitForState("", COLLECTION, clusterShape(1, 2));
 
-      try (Http2SolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         long numFound = client.query(COLLECTION, new SolrQuery("q","*:*", "distrib", "false")).getResults().getNumFound();
         assertEquals(100, numFound);
       }
@@ -82,7 +83,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       new UpdateRequest().add("id", "1", "num", "10")
           .commit(client1, COLLECTION);
 
-      try (Http2SolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         Object v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
         assertEquals("10", v.toString());
       }
@@ -102,7 +103,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       node2.start();
       cluster.waitForNode(node2, 10);
       waitForState("", COLLECTION, clusterShape(1, 2));
-      try (Http2SolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
         assertEquals("20", v.toString());
       }
@@ -114,13 +115,13 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       new UpdateRequest().add("id", "1", "num", "30")
           .commit(client1, COLLECTION);
       v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
-      assertEquals("30", v.toString());
+      SolrTestCaseJ4.      assertEquals("30", v.toString());
 
       node2.start();
       cluster.waitForNode(node2, 10);
       waitForState("", COLLECTION, clusterShape(1, 2));
 
-      try (Http2SolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
         assertEquals("30", v.toString());
       }
@@ -138,11 +139,11 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     node1.start();
     cluster.waitForNode(node1, 10);
     waitForState("", COLLECTION, clusterShape(1, 2));
-    try (Http2SolrClient client = getHttpSolrClient(node1.getBaseUrl().toString())) {
+    try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node1.getBaseUrl().toString())) {
       Object v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
       assertEquals("30", v.toString());
     }
-    try (Http2SolrClient client = getHttpSolrClient(node2.getBaseUrl().toString())) {
+    try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
       Object v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
       assertEquals("30", v.toString());
     }

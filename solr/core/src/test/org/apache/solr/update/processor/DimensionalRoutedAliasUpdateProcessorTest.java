@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -70,7 +71,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
   @Before
   public void doBefore() throws Exception {
     configureCluster(4).configure();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
@@ -703,7 +704,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
   private SolrInputDocument newDoc(String category, String timestamp) {
     Instant instant = Instant.parse(timestamp);
-    return sdoc("id", Integer.toString(++lastDocId),
+    return SolrTestCaseJ4.sdoc("id", Integer.toString(++lastDocId),
         getTimeField(), instant.toString(),
         getCatField(), category,
         getIntField(), "0"); // always 0

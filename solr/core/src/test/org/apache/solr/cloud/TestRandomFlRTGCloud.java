@@ -34,6 +34,7 @@ import java.util.TreeSet;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -149,7 +150,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         .process(CLOUD_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(SolrTestCaseJ4
+          .getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
   }
 
@@ -312,7 +314,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   private SolrInputDocument addRandomDocument(final int docId) throws IOException, SolrServerException {
     final SolrClient client = getRandClient(random());
 
-    final SolrInputDocument doc = sdoc("id", "" + docId,
+    final SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", "" + docId,
                                        "aaa_i", random().nextInt(),
                                        "bbb_i", random().nextInt(),
                                        //

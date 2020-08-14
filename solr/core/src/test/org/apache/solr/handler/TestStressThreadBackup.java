@@ -38,6 +38,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.TestUtil;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -82,9 +83,9 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
-    assertEquals(0, (CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
+    assertEquals(0, (CollectionAdminRequest.createCollection(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
                      .process(cluster.getSolrClient()).getStatus()));
-    adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    adminClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
     initCoreNameAndSolrCoreClient();
   }
 
@@ -327,10 +328,10 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   private void initCoreNameAndSolrCoreClient() {
     // Sigh.
     Replica r = cluster.getSolrClient().getZkStateReader().getClusterState()
-      .getCollection(DEFAULT_TEST_COLLECTION_NAME).getActiveSlices().iterator().next()
+      .getCollection(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME).getActiveSlices().iterator().next()
       .getReplicas().iterator().next();
     coreName = r.getCoreName();
-    coreClient = getHttpSolrClient(r.getCoreUrl());
+    coreClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl());
   }
 
   /** 

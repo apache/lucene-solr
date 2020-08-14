@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -114,7 +115,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     for (int id = 0; id < numDocs; id++) {
       final int rangeVal = random().nextInt(NUM_RANGE_VALUES);
       final String termVal = "x" + random().nextInt(maxTermId);
-      final SolrInputDocument doc = sdoc("id", ""+id,
+      final SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", ""+id,
                                          INT_FIELD, ""+rangeVal,
                                          STR_FIELD, termVal);
       RANGE_MODEL[rangeVal]++;

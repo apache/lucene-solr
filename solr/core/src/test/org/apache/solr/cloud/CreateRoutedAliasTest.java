@@ -211,7 +211,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   @Test
   public void testTimezoneAbsoluteDate() throws Exception {
     final String aliasName = getSaferTestName();
-    try (SolrClient client = getCloudSolrClient(cluster)) {
+    try (SolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster)) {
       CollectionAdminRequest.createTimeRoutedAlias(
           aliasName,
           "2018-01-15T00:00:00Z",

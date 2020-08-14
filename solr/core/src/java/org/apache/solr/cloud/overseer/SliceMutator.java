@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
+import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -68,8 +69,9 @@ public class SliceMutator {
     // if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
-    //DocCollection collection = CreateCollectionCmd.buildDocCollection(message, true);
-    DocCollection collection = clusterState.getCollection(coll);
+    DocCollection collection = CreateCollectionCmd
+        .buildDocCollection(message, true);
+  //  DocCollection collection = clusterState.getCollection(coll);
     Slice sl = collection.getSlice(slice);
     if (sl == null) {
       log.error("Invalid Collection/Slice {}/{} {} ", coll, slice, collection);

@@ -22,6 +22,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
@@ -47,7 +48,7 @@ public class CloudHttp2SolrClientBadInputTest extends SolrCloudTestCase {
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = getCloudHttp2SolrClient(cluster)) {
+    try (SolrClient client = SolrTestCaseJ4.getCloudHttp2SolrClient(cluster)) {
       assertExceptionThrownWithMessageContaining(IllegalArgumentException.class, Lists.newArrayList("ids", "null"), () -> {
         client.deleteById(ANY_COLLECTION, NULL_STR_LIST);
       });

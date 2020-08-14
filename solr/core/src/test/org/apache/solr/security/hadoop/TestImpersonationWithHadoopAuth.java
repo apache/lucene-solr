@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -68,7 +69,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
     proxyUserConfigs.put("proxyuser.noGroups.hosts", "*");
     proxyUserConfigs.put("proxyuser.anyHostAnyUser.hosts", "*");
     proxyUserConfigs.put("proxyuser.anyHostAnyUser.groups", "*");
-    proxyUserConfigs.put("proxyuser.wrongHost.hosts", DEAD_HOST_1);
+    proxyUserConfigs.put("proxyuser.wrongHost.hosts", SolrTestCaseJ4.DEAD_HOST_1);
     proxyUserConfigs.put("proxyuser.wrongHost.groups", "*");
     proxyUserConfigs.put("proxyuser.noHosts.groups", "*");
     proxyUserConfigs.put("proxyuser.localHostAnyGroup.hosts",

@@ -35,6 +35,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -60,11 +61,9 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrCLI;
-import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -212,7 +211,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       CollectionAdminRequest.Reload reload2 = CollectionAdminRequest.reloadCollection(COLLECTION);
 
-      try (Http2SolrClient solrClient = getHttpSolrClient(baseUrl)) {
+      try (Http2SolrClient solrClient = SolrTestCaseJ4.getHttpSolrClient(baseUrl)) {
         expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload2));
         reload2.setMethod(SolrRequest.METHOD.POST);
         expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload2));
@@ -305,12 +304,12 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       assertPkiAuthMetricsMinimums(15, 15, 0, 0, 0, 0);
 
       // Validate forwardCredentials
-      assertEquals(1, executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
+      assertEquals(1, executeQuery(SolrTestCaseJ4.params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
       assertAuthMetricsMinimums(25, 13, 9, 1, 2, 0);
       assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { forwardCredentials: true}}", "harry", "HarryIsUberCool");
      // verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/forwardCredentials", "true", 20, "harry", "HarryIsUberCool");
-      assertEquals(1, executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
+      assertEquals(1, executeQuery(SolrTestCaseJ4.params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
       assertAuthMetricsMinimums(32, 20, 9, 1, 2, 0);
       assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
       

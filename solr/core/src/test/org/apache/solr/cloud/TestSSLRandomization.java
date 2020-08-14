@@ -53,7 +53,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
   }
   
   public void testBaseUrl() throws Exception {
-    String url = buildUrl(6666, "/foo");
+    String url = SolrTestCaseJ4.buildUrl(6666, "/foo");
     assertEquals(sslConfig.isSSLMode() ? "https://127.0.0.1:6666/foo" : "http://127.0.0.1:6666/foo", url);
   }
   

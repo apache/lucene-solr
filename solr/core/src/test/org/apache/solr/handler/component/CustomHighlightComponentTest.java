@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -173,9 +174,9 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     final String t2 = "b_t";
     {
       new UpdateRequest()
-          .add(sdoc(id, 1, t1, "bumble bee", t2, "bumble bee"))
-          .add(sdoc(id, 2, t1, "honey bee", t2, "honey bee"))
-          .add(sdoc(id, 3, t1, "solitary bee", t2, "solitary bee"))
+          .add(SolrTestCaseJ4.sdoc(id, 1, t1, "bumble bee", t2, "bumble bee"))
+          .add(SolrTestCaseJ4.sdoc(id, 2, t1, "honey bee", t2, "honey bee"))
+          .add(SolrTestCaseJ4.sdoc(id, 3, t1, "solitary bee", t2, "solitary bee"))
           .commit(cluster.getSolrClient(), COLLECTION);
     }
 

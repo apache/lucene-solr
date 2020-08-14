@@ -32,6 +32,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -400,7 +401,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   private void assertSuccess(HttpUriRequest msg) throws IOException {
-    try (CloudSolrClient client = getCloudSolrClient(cluster)){
+    try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster)){
       try (CloseableHttpResponse response = (CloseableHttpResponse)client.getHttpClient().execute(msg)) {
         if (200 != response.getStatusLine().getStatusCode()) {
           System.err.println(EntityUtils.toString(response.getEntity()));
@@ -722,7 +723,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       // cluster's CloudSolrClient
       responseConsumer.accept(cluster.getSolrClient().query(collectionList, solrQuery));
     } else {
-      try (CloudSolrClient client = getCloudSolrClient(cluster)) {
+      try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster)) {
         try (CloudSolrClient solrClient = client) {
           if (random().nextBoolean()) {
             solrClient.setDefaultCollection(collectionList);
@@ -740,11 +741,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       // HttpSolrClient
       JettySolrRunner jetty = cluster.getRandomJetty(random());
       if (random().nextBoolean()) {
-        try (Http2SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
+        try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
           responseConsumer.accept(client.query(null, solrQuery));
         }
       } else {
-        try (Http2SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+        try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(jetty.getBaseUrl().toString())) {
           responseConsumer.accept(client.query(collectionList, solrQuery));
         }
       }
@@ -764,7 +765,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   public void testErrorChecks() throws Exception {
     CollectionAdminRequest.createCollection("testErrorChecks-collection", "conf", 2, 1).process(cluster.getSolrClient());
 
-    ignoreException(".");
+    SolrTestCaseJ4.ignoreException(".");
 
     // Invalid Alias name
     SolrException e = expectThrows(SolrException.class, () ->
@@ -792,7 +793,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     e = expectThrows(SolrException.class, () ->
         CollectionAdminRequest.createAlias("testalias3", "testalias2,doesnotexist").process(cluster.getSolrClient()));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
-    unIgnoreException(".");
+    SolrTestCaseJ4.unIgnoreException(".");
 
     CollectionAdminRequest.deleteAlias("testalias").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteAlias("testalias2").process(cluster.getSolrClient());

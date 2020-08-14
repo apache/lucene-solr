@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -31,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ObjectReleaseTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static Map<Object,String> OBJECTS = new ConcurrentHashMap<>(128, 0.75f, 2048);
+  public static Map<Object,String> OBJECTS = new ConcurrentHashMap<>(256, 0.75f, 32);
   
   public static boolean track(Object object) {
     StringBuilderWriter sw = new StringBuilderWriter(4096);
@@ -54,22 +55,24 @@ public class ObjectReleaseTracker {
    * @return null if ok else error message
    */
   public static String checkEmpty() {
-    String error = null;
+    StringBuilder error = new StringBuilder();
     Set<Entry<Object,String>> entries = OBJECTS.entrySet();
-
-    if (entries.size() > 0) {
-      List<String> objects = new ArrayList<>(entries.size());
-      for (Entry<Object,String> entry : entries) {
+    Set<Entry<Object,String>> entriesCopy = new HashSet<>(entries);
+    if (entriesCopy.size() > 0) {
+      List<String> objects = new ArrayList<>(entriesCopy.size());
+      for (Entry<Object,String> entry : entriesCopy) {
         objects.add(entry.getKey().getClass().getSimpleName());
       }
       
-      error = "ObjectTracker found " + entries.size() + " object(s) that were not released!!! " + objects + "\n";
-      for (Entry<Object,String> entry : entries) {
-        error += entry.getKey() + "\n" + entry.getValue() + "\n";
+      error.append("ObjectTracker found " + entriesCopy.size() + " object(s) that were not released!!! " + objects + "\n");
+      for (Entry<Object,String> entry : entriesCopy) {
+        error.append(entry.getKey() + "\n" + "StackTrace:\n" + entry.getValue() + "\n");
       }
     }
-    
-    return error;
+    if (error.length() == 0) {
+      return null;
+    }
+    return error.toString();
   }
   
   public static class ObjectTrackerException extends RuntimeException {

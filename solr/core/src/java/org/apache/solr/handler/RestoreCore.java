@@ -58,7 +58,7 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   public boolean doRestore() throws Exception {
-
+    log.info("Running restore");
     URI backupPath = backupRepo.resolve(backupLocation, backupName);
     SimpleDateFormat dateFormat = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT);
     String restoreIndexName = "restore." + dateFormat.format(new Date());

@@ -42,6 +42,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -233,14 +234,14 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
 
     Slice s = docCollection.getSlices().iterator().next();
-    try (Http2SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (Http2SolrClient leaderClient = SolrTestCaseJ4.getHttpSolrClient(s.getLeader().getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:s.getReplicas(EnumSet.of(Replica.Type.TLOG))) {
       //TODO: assert replication < REPLICATION_TIMEOUT_SECS
-      try (Http2SolrClient tlogReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
+      try (Http2SolrClient tlogReplicaClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl())) {
         while (true) {
           try {
             assertEquals("Replica " + r.getName() + " not up to date after 10 seconds",
@@ -337,14 +338,15 @@ public class TestTlogReplica extends SolrCloudTestCase {
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd:slice.getReplicas()) {
-      try (Http2SolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
+      try (Http2SolrClient client = SolrTestCaseJ4
+          .getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
         client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
       }
       SolrDocument docCloudClient = cluster.getSolrClient().getById(collectionName, String.valueOf(id));
       assertNotNull(docCloudClient);
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet:slice.getReplicas()) {
-        try (Http2SolrClient client = getHttpSolrClient(rGet.getCoreUrl(), httpClient)) {
+        try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(rGet.getCoreUrl(), httpClient)) {
           SolrDocument doc = client.getById(String.valueOf(id));
           assertEquals("bar", doc.getFieldValue("foo_s"));
         }
@@ -354,7 +356,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd:slice.getReplicas()) {
-      try (Http2SolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
           assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
@@ -378,7 +380,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (Http2SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (Http2SolrClient leaderClient = SolrTestCaseJ4.getHttpSolrClient(s.getLeader().getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -475,10 +477,10 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     new UpdateRequest()
-        .add(sdoc("id", "1"))
-        .add(sdoc("id", "2"))
-        .add(sdoc("id", "3"))
-        .add(sdoc("id", "4"))
+        .add(SolrTestCaseJ4.sdoc("id", "1"))
+        .add(SolrTestCaseJ4.sdoc("id", "2"))
+        .add(SolrTestCaseJ4.sdoc("id", "3"))
+        .add(SolrTestCaseJ4.sdoc("id", "4"))
         .process(cloudClient, collectionName);
 
     {
@@ -520,7 +522,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     boolean firstCommit = true;
     // UpdateLog copy over old updates
     for (int i = 15; i <= 150; i++) {
-      cloudClient.add(collectionName, sdoc("id",String.valueOf(i)));
+      cloudClient.add(collectionName, SolrTestCaseJ4.sdoc("id",String.valueOf(i)));
       if (random().nextInt(100) < 15 & i != 150) {
         if (firstCommit) {
           // because tlog replicas periodically ask leader for new segments,
@@ -542,18 +544,18 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     new UpdateRequest()
-        .add(sdoc("id", "3"))
-        .add(sdoc("id", "4"))
+        .add(SolrTestCaseJ4.sdoc("id", "3"))
+        .add(SolrTestCaseJ4.sdoc("id", "4"))
         .commit(cloudClient, collectionName);
     new UpdateRequest()
-        .add(sdoc("id", "5"))
+        .add(SolrTestCaseJ4.sdoc("id", "5"))
         .process(cloudClient, collectionName);
     JettySolrRunner solrRunner = getSolrRunner(false).get(0);
     solrRunner.stop();
     cluster.waitForJettyToStop(solrRunner);
     waitForState("Replica still up", collectionName, activeReplicaCount(0,1,0));
     new UpdateRequest()
-        .add(sdoc("id", "6"))
+        .add(SolrTestCaseJ4.sdoc("id", "6"))
         .process(cloudClient, collectionName);
     solrRunner.start();
     cluster.waitForNode(solrRunner, 10000);
@@ -565,7 +567,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     // If I add the doc immediately, the leader fails to communicate with the follower with broken pipe.
     // Options are, wait or retry...
     for (int i = 0; i < 3; i++) {
-      UpdateRequest ureq = new UpdateRequest().add(sdoc("id", "7"));
+      UpdateRequest ureq = new UpdateRequest().add(SolrTestCaseJ4.sdoc("id", "7"));
       ureq.setParam("collection", collectionName);
       NamedList<Object> response = cloudClient.request(ureq);
       if ((Integer)((NamedList<Object>)response.get("responseHeader")).get(UpdateRequest.REPFACT) >= 2) {
@@ -609,7 +611,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     // If I add the doc immediately, the leader fails to communicate with the follower with broken pipe.
     // Options are, wait or retry...
     for (int i = 0; i < 3; i++) {
-      UpdateRequest ureq = new UpdateRequest().add(sdoc("id", "8"));
+      UpdateRequest ureq = new UpdateRequest().add(SolrTestCaseJ4.sdoc("id", "8"));
       ureq.setParam("collection", collectionName);
       NamedList<Object> response = cloudClient.request(ureq);
       if ((Integer)((NamedList<Object>)response.get("responseHeader")).get(UpdateRequest.REPFACT) >= 2) {
@@ -618,8 +620,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
       log.info("Min RF not achieved yet. retrying");
     }
     new UpdateRequest()
-        .add(sdoc("id", "9"))
-        .add(sdoc("id", "10"))
+        .add(SolrTestCaseJ4.sdoc("id", "9"))
+        .add(SolrTestCaseJ4.sdoc("id", "10"))
         .process(cloudClient, collectionName);
     waitingForBufferUpdates.release();
     RecoveryStrategy.testing_beforeReplayBufferingUpdates = null;
@@ -644,7 +646,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), collectionName);
     new UpdateRequest()
-        .add(sdoc("id", "1"))
+        .add(SolrTestCaseJ4.sdoc("id", "1"))
         .commit(cloudClient, collectionName);
     waitForNumDocsInAllActiveReplicas(1);
     new UpdateRequest()
@@ -667,8 +669,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), collectionName);
     new UpdateRequest()
-        .add(sdoc("id", "1"))
-        .add(sdoc("id", "2"))
+        .add(SolrTestCaseJ4.sdoc("id", "1"))
+        .add(SolrTestCaseJ4.sdoc("id", "2"))
         .process(cloudClient, collectionName);
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
     oldLeaderJetty.stop();
@@ -679,8 +681,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForLeaderChange(oldLeaderJetty, "shard1");
     
     new UpdateRequest()   
-        .add(sdoc("id", "3"))
-        .add(sdoc("id", "4"))
+        .add(SolrTestCaseJ4.sdoc("id", "3"))
+        .add(SolrTestCaseJ4.sdoc("id", "4"))
         .process(cloudClient, collectionName);
     oldLeaderJetty.start();
     cluster.waitForNode(oldLeaderJetty, 10000);
@@ -733,7 +735,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private UpdateRequest simulatedUpdateRequest(Long prevVersion, Object... fields) throws SolrServerException, IOException {
-    SolrInputDocument doc = sdoc(fields);
+    SolrInputDocument doc = SolrTestCaseJ4.sdoc(fields);
 
     // get baseUrl of the leader
     String baseUrl = getBaseUrl();
@@ -795,7 +797,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       if (!r.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
         continue;
       }
-      try (Http2SolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
+      try (Http2SolrClient replicaClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl())) {
         while (true) {
           try {
             assertEquals("Replica " + r.getName() + " not up to date after " + timeout + " seconds",

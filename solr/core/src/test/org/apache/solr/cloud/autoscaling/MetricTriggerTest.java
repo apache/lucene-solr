@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -51,12 +52,12 @@ public class MetricTriggerTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME,
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME,
         "conf", 1, 1);
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
-    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 1);
+    cluster.waitForActiveCollection(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME, 1, 1);
   }
 
   @Test
@@ -64,12 +65,12 @@ public class MetricTriggerTest extends SolrCloudTestCase {
     CoreDescriptor coreDescriptor = cluster.getJettySolrRunner(0).getCoreContainer().getCoreDescriptors().iterator().next();
     String shardId = coreDescriptor.getCloudDescriptor().getShardId();
     String coreName = coreDescriptor.getName();
-    String replicaName = Utils.parseMetricsReplicaName(DEFAULT_TEST_COLLECTION_NAME, coreName);
+    String replicaName = Utils.parseMetricsReplicaName(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME, coreName);
     long waitForSeconds = 2 + random().nextInt(5);
-    String registry = SolrCoreMetricManager.createRegistryName(true, DEFAULT_TEST_COLLECTION_NAME, shardId, replicaName, null);
+    String registry = SolrCoreMetricManager.createRegistryName(true, SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME, shardId, replicaName, null);
     String tag = "metrics:" + registry + ":ADMIN./admin/file.requests";
 
-    Map<String, Object> props = createTriggerProps(waitForSeconds, tag, 1.0d, null, DEFAULT_TEST_COLLECTION_NAME, null, null);
+    Map<String, Object> props = createTriggerProps(waitForSeconds, tag, 1.0d, null, SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME, null, null);
 
     final List<TriggerEvent> events = new ArrayList<>();
     SolrZkClient zkClient = cluster.getSolrClient().getZkStateReader().getZkClient();
@@ -88,7 +89,7 @@ public class MetricTriggerTest extends SolrCloudTestCase {
 
       events.clear();
       tag = "metrics:" + registry + ":ADMIN./admin/file.handlerStart";
-      props = createTriggerProps(waitForSeconds, tag, null, 100.0d, DEFAULT_TEST_COLLECTION_NAME, null, null);
+      props = createTriggerProps(waitForSeconds, tag, null, 100.0d, SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME, null, null);
       try (MetricTrigger metricTrigger = new MetricTrigger("metricTrigger")) {
         metricTrigger.configure(loader, cloudManager, props);
         metricTrigger.setProcessor(noFirstRunProcessor);

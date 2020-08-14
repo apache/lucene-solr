@@ -17,12 +17,12 @@
 package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -114,7 +114,8 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
    // baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
     
     // we only set the connect timeout, not so timeout
-    try (Http2SolrClient baseClient = getHttpSolrClient(baseUrl, 10000)) {
+    try (Http2SolrClient baseClient = SolrTestCaseJ4
+        .getHttpSolrClient(baseUrl, 10000)) {
       baseClient.request(request);
     }
 

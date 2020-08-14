@@ -27,11 +27,10 @@ import java.util.stream.Collectors;
 
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
-import net.bytebuddy.implementation.bind.annotation.IgnoreForBinding;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -80,22 +79,22 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     List<MockSpan> allSpans = getFinishedSpans();
 
-    cloudClient.add(COLLECTION, sdoc("id", "1"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "1"));
     List<MockSpan> finishedSpans = getRecentSpans(allSpans);
     finishedSpans.removeIf(x ->
         !x.tags().get("http.url").toString().endsWith("/update"));
     assertEquals(2, finishedSpans.size());
     assertOneSpanIsChildOfAnother(finishedSpans);
 
-    cloudClient.add(COLLECTION, sdoc("id", "2"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "2"));
     finishedSpans = getRecentSpans(allSpans);
     finishedSpans.removeIf(x ->
         !x.tags().get("http.url").toString().endsWith("/update"));
     assertEquals(2, finishedSpans.size());
     assertOneSpanIsChildOfAnother(finishedSpans);
 
-    cloudClient.add(COLLECTION, sdoc("id", "3"));
-    cloudClient.add(COLLECTION, sdoc("id", "4"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "3"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "4"));
     cloudClient.commit(COLLECTION);
 
     getRecentSpans(allSpans);
@@ -121,7 +120,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     waitForSampleRateUpdated(0);
 
     getRecentSpans(allSpans);
-    cloudClient.add(COLLECTION, sdoc("id", "5"));
+    cloudClient.add(COLLECTION, SolrTestCaseJ4.sdoc("id", "5"));
     finishedSpans = getRecentSpans(allSpans);
     assertEquals(0, finishedSpans.size());
   }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -249,7 +250,7 @@ public class TestDistribDocBasedVersion extends SolrCloudBridgeTestCase {
 
   void vadd(String id, long version, String... params) throws Exception {
     UpdateRequest req = new UpdateRequest();
-    req.add(sdoc("id", id, vfield, version));
+    req.add(SolrTestCaseJ4.sdoc("id", id, vfield, version));
     for (int i=0; i<params.length; i+=2) {
       req.setParam( params[i], params[i+1]);
     }

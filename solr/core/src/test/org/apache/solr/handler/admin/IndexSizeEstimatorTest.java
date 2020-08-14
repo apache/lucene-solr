@@ -58,6 +58,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
+@Ignore // nocommit
 public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

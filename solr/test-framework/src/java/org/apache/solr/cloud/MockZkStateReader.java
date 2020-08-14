@@ -31,6 +31,7 @@ public class MockZkStateReader extends ZkStateReader {
     super(new MockSolrZkClient());
     this.clusterState = clusterState;
     this.collections = collections;
+    this.closeClient = true;
   }
   
   public Set<String> getAllCollections(){

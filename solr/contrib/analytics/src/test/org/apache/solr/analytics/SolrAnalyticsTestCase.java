@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.solr.JSONTestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -51,8 +52,8 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCollection() throws Exception {
     // Single-sharded core
-    initCore("solrconfig-analytics.xml", "schema-analytics.xml");
-    h.update("<delete><query>*:*</query></delete>");
+    SolrTestCaseJ4.initCore("solrconfig-analytics.xml", "schema-analytics.xml");
+    SolrTestCaseJ4.h.update("<delete><query>*:*</query></delete>");
 
     // Solr Cloud
     configureCluster(4)
@@ -71,7 +72,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
   }
 
   protected static void cleanIndex() throws Exception {
-    h.update("<delete><query>*:*</query></delete>");
+    SolrTestCaseJ4.h.update("<delete><query>*:*</query></delete>");
 
     new UpdateRequest()
         .deleteByQuery("*:*")
@@ -79,12 +80,12 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
   }
 
   protected static void addDoc(List<String> fieldsAndValues) {
-    assertU(adoc(fieldsAndValues.toArray(new String[0])));
+    SolrTestCaseJ4.assertU(SolrTestCaseJ4.adoc(fieldsAndValues.toArray(new String[0])));
     cloudReq.add(fieldsAndValues.toArray(new String[0]));
   }
 
   protected static void commitDocs() {
-    assertU(commit());
+    SolrTestCaseJ4.assertU(SolrTestCaseJ4.commit());
     try {
       cloudReq.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
     } catch (Exception e) {
@@ -131,7 +132,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
 
   private String queryCoreJson(SolrParams params) {
     try {
-      return JQ(req(params));
+      return SolrTestCaseJ4.JQ(SolrTestCaseJ4.req(params));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

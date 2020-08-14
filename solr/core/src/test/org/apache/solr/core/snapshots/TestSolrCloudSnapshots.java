@@ -153,7 +153,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         assertTrue(snapshotByCoreName.containsKey(coreName));
         CoreSnapshotMetaData coreSnapshot = snapshotByCoreName.get(coreName);
 
-        try (SolrClient adminClient = getHttpSolrClient(replicaBaseUrl)) {
+        try (SolrClient adminClient = SolrTestCaseJ4.getHttpSolrClient(replicaBaseUrl)) {
           Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);
           Optional<SnapshotMetaData> metaData = snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
           assertTrue("Snapshot not created for core " + coreName, metaData.isPresent());
@@ -259,7 +259,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         String replicaBaseUrl = replica.getStr(BASE_URL_PROP);
         String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
 
-        try (SolrClient adminClient = getHttpSolrClient(replicaBaseUrl)) {
+        try (SolrClient adminClient = SolrTestCaseJ4.getHttpSolrClient(replicaBaseUrl)) {
           Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);
           Optional<SnapshotMetaData> metaData = snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
           assertFalse("Snapshot not deleted for core " + coreName, metaData.isPresent());

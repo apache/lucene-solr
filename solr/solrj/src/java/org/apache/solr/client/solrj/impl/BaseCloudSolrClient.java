@@ -1041,8 +1041,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         }
       }
     }
-
-    waitForClusterStateUpdates(request);
+    if (resp != null && resp.get("exception") == null) {
+      waitForClusterStateUpdates(request);
+    }
 
     return resp;
   }

@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -82,7 +83,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
     stateManager = cloudManager.getDistribStateManager();
-    solrClient = new CloudSolrClientBuilder(Collections.singletonList(zkController.getZkServerAddress()),
+    solrClient = new SolrTestCaseJ4.CloudSolrClientBuilder(Collections.singletonList(zkController.getZkServerAddress()),
         Optional.empty()).build();
   }
 

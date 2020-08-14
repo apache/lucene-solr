@@ -16,35 +16,31 @@
  */
 package org.apache.solr.handler.component;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.hll.HLL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-
-import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.response.FieldStatsInfo;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-
-import org.apache.solr.util.LogLevel;
-import org.apache.solr.util.hll.HLL;
-import com.google.common.hash.Hashing;
-import com.google.common.hash.HashFunction;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @Slow
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
 @LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
 @LuceneTestCase.Nightly // this test can take a long time, perhaps due to schema, or maybe numeric fields?
 public class TestDistributedStatsComponentCardinality extends BaseDistributedSearchTestCase {
@@ -114,7 +110,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
       rsp = query(params("rows", "0", "q", "id:42")); 
       assertEquals(1, rsp.getResults().getNumFound());
       
-      rsp = query(params("rows", "0", "q", "*:*", 
+      rsp = query(params("rows", "0", "q", "*:*",
                          "stats","true", "stats.field", "{!min=true max=true}long_l"));
       assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
       assertEquals(MIN_LONG, Math.round((double) rsp.getFieldStatsInfo().get("long_l").getMin()));

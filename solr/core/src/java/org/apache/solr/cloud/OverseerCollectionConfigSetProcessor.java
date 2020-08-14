@@ -24,6 +24,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.zookeeper.KeeperException;
@@ -35,11 +36,11 @@ import org.apache.zookeeper.KeeperException;
  */
 public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor {
 
-   public OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
+   public OverseerCollectionConfigSetProcessor(CoreContainer cc, ZkStateReader zkStateReader, String myId,
                                                final HttpShardHandler shardHandler,
                                                String adminPath, Stats stats, Overseer overseer,
                                                OverseerNodePrioritizer overseerNodePrioritizer) throws KeeperException {
-    this(
+    this(cc,
         zkStateReader,
         myId,
         (HttpShardHandlerFactory) shardHandler.getShardHandlerFactory(),
@@ -54,7 +55,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
     );
   }
 
-  protected OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
+  protected OverseerCollectionConfigSetProcessor(CoreContainer cc, ZkStateReader zkStateReader, String myId,
                                         final HttpShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
                                         Stats stats,
@@ -65,7 +66,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
                                         DistributedMap completedMap,
                                         DistributedMap failureMap) {
     super(
-        zkStateReader,
+        cc,
         myId,
         stats,
         getOverseerMessageHandlerSelector(zkStateReader, myId, shardHandlerFactory,
@@ -93,6 +94,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
       @Override
       public void close() throws IOException {
         IOUtils.closeQuietly(collMessageHandler);
+        IOUtils.closeQuietly(configMessageHandler);
       }
 
       @Override

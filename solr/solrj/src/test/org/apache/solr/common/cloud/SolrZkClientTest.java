@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -65,7 +66,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig("_default", new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
         .configure();
-    solrClient = getCloudSolrClient(cluster.getZkServer().getZkAddress());
+    solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster.getZkServer().getZkAddress());
 
     final String SCHEME = "digest";
     final String AUTH = "user:pass";

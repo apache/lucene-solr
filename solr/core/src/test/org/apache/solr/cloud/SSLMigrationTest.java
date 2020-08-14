@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -51,7 +51,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
  * off in the cluster.
  */
 @Slow
-@SuppressSSL
+@SolrTestCase.SuppressSSL
 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
 

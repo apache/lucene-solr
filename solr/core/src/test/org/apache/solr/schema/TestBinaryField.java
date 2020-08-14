@@ -18,8 +18,8 @@ package org.apache.solr.schema;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
@@ -38,7 +38,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Properties;
 
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBinaryField extends SolrJettyTestBase {
 
   @BeforeClass

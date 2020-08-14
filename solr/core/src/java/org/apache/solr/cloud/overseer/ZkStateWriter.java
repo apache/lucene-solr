@@ -34,11 +34,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
+import javax.print.Doc;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -58,8 +65,9 @@ public class ZkStateWriter {
   //protected final ZkStateReader reader;
   protected volatile Stats stats;
 
-  protected final Map<String, DocCollection> updates = new HashMap<>();
-  private int numUpdates = 0;
+  //protected final Deque<DocCollection> updates = new ArrayDeque<>();
+  Map<String,DocCollection> updatesToWrite = new LinkedHashMap<>();
+
 
   // / protected boolean isClusterStateModified = false;
   protected long lastUpdatedTime = 0;
@@ -84,7 +92,7 @@ public class ZkStateWriter {
    * last enqueue operation resulted in buffered state. The method {@link #writePendingUpdates(ClusterState)} can
    * be used to force an immediate flush of pending cluster state changes.
    *
-   * @param prevState the cluster state information on which the given <code>cmd</code> is applied
+   * @param state the cluster state information on which the given <code>cmd</code> is applied
    * @param cmds       the list of {@link ZkWriteCommand} which specifies the change to be applied to cluster state in atomic
    * @param callback  a {@link org.apache.solr.cloud.overseer.ZkStateWriter.ZkWriteCallback} object to be used
    *                  for any callbacks
@@ -96,54 +104,179 @@ public class ZkStateWriter {
    *                               in a {@link org.apache.zookeeper.KeeperException.BadVersionException} this instance becomes unusable and
    *                               must be discarded
    */
-  public ClusterState enqueueUpdate(ClusterState prevState, List<ZkWriteCommand> cmds, ZkWriteCallback callback) throws IllegalStateException, Exception {
+  public ClusterState enqueueUpdate(ClusterState state, List<ZkWriteCommand> cmds, ZkWriteCallback callback) throws IllegalStateException, Exception {
     if (log.isDebugEnabled()) {
-      log.debug("enqueueUpdate(ClusterState prevState={}, List<ZkWriteCommand> cmds={}, ZkWriteCallback callback={}) - start", prevState, cmds, callback);
+      log.debug("enqueueUpdate(ClusterState prevState={}, List<ZkWriteCommand> cmds={}, updates={}, ZkWriteCallback callback={}) - start", state, cmds, updatesToWrite, callback);
     }
-
+    Map<String,DocCollection> updateCmds = new LinkedHashMap<>(cmds.size());
 // nocommit - all this
     for (ZkWriteCommand cmd : cmds) {
-      updates.put(cmd.name, cmd.collection);
-      numUpdates++;
+        updateCmds.put(cmd.name, cmd.collection);
     }
 
-    // if (maybeFlushAfter()) {
-    ClusterState state;
-    while (true) {
-      try {
-        state = writePendingUpdates(reader.getClusterState());
-        break;
-      } catch (KeeperException.BadVersionException e) {
-        prevState = reader.getClusterState();
-        stats = new Stats();
-        numUpdates = 0;
-        lastUpdatedTime = -1;
-        continue;
-//        log.info("BadVersion");
-//        throw new AlreadyClosedException();
-      } catch (InterruptedException | AlreadyClosedException e) {
-        ParWork.propegateInterrupt(e);
-        throw e;
-      } catch (Exception e) {
-        log.error("Ran into unexpected exception trying to write new cluster state", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    if (updateCmds.isEmpty()) {
+      return state;
+    }
+    ClusterState prevState = reader.getClusterState();
+    Set<Map.Entry<String,DocCollection>> entries = updateCmds.entrySet();
+    for (Map.Entry<String,DocCollection> entry : entries) {
+      DocCollection c = entry.getValue();
+
+      String name = entry.getKey();
+      String path = ZkStateReader.getCollectionPath(name);
+
+      Integer prevVersion = -1;
+      if (lastUpdatedTime == -1) {
+        prevVersion = -1;
       }
+      Stat stat = new Stat();
+      while (true) {
+        try {
 
-    }
+          if (c == null) {
+            // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
+            if (log.isDebugEnabled()) {
+              log.debug("going to delete state.json {}", path);
+            }
+            reader.getZkClient().clean(path);
+            updatesToWrite.remove(name);
+          } else if (updatesToWrite.get(name) != null || prevState.getCollectionOrNull(name) != null) {
+            if (log.isDebugEnabled()) {
+              log.debug(
+                  "enqueueUpdate() - going to update_collection {} version: {}",
+                  path, prevState.getZNodeVersion());
+            }
 
-    if (callback != null) {
-      callback.onWrite();
+            // assert c.getStateFormat() > 1;
+            // stat = reader.getZkClient().getCurator().checkExists().forPath(path);
+            DocCollection coll = updatesToWrite.get(name);
+            if (coll == null) {
+              coll = prevState.getCollectionOrNull(name);
+            }
+
+            prevVersion = coll.getZNodeVersion();
+
+            Map<String,Slice> existingSlices = coll.getSlicesMap();
+
+            Map<String,Slice> newSliceMap = new HashMap<>(
+                existingSlices.size() + 1);
+
+            if (log.isDebugEnabled()) {
+              log.debug("Existing slices {}", existingSlices);
+            }
+
+            existingSlices.forEach((sliceId, slice) -> {
+              newSliceMap.put(sliceId, slice);
+            });
+
+            if (log.isDebugEnabled()) {
+              log.debug("Add collection {}", c);
+            }
+
+            DocCollection finalC = c;
+            DocCollection finalColl = coll;
+            c.getSlicesMap().forEach((sliceId, slice) -> {
+              if (finalColl.getSlice(sliceId) != null) {
+                Map<String,Replica> newReplicas = new HashMap<>();
+
+                newReplicas.putAll(finalColl.getSlice(sliceId).getReplicasMap());
+                finalC.getSlice(sliceId).getReplicas().forEach((replica) -> {
+                  newReplicas.put(replica.getName(), replica);
+                });
+                Map<String,Object> newProps = new HashMap<>();
+                newProps.putAll(slice.getProperties());
+                Slice newSlice = new Slice(sliceId, newReplicas, newProps,
+                    finalC.getName());
+                newSliceMap.put(sliceId, newSlice);
+              } else {
+                Map<String,Replica> newReplicas = new HashMap<>();
+
+                Map<String,Object> newProps = new HashMap<>();
+
+                newProps.putAll(slice.getProperties());
+
+                finalC.getSlice(sliceId).getReplicas().forEach((replica) -> {
+                  newReplicas.put(replica.getName(), replica);
+                });
+
+                Slice newSlice = new Slice(sliceId, newReplicas, newProps,
+                    finalC.getName());
+                if (log.isDebugEnabled()) {
+                  log.debug("Add slice to new slices {}", newSlice);
+                }
+                newSliceMap.put(sliceId, newSlice);
+              }
+            });
+
+            if (log.isDebugEnabled()) {
+              log.debug("New Slice Map after combining {}", newSliceMap);
+            }
+
+            DocCollection newCollection = new DocCollection(name, newSliceMap,
+                c.getProperties(), c.getRouter(), prevVersion,
+                path);
+
+            if (log.isDebugEnabled()) {
+              log.debug("The new collection {}", newCollection);
+            }
+            updatesToWrite.put(name, newCollection);
+            LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
+            collStates.put(name, new ClusterState.CollectionRef(newCollection));
+            prevState = new ClusterState(prevState.getLiveNodes(),
+                collStates, prevState.getZNodeVersion());
+          } else {
+            if (log.isDebugEnabled()) {
+              log.debug(
+                  "enqueueUpdate() - going to create_collection {}",
+                  path);
+            }
+            //   assert c.getStateFormat() > 1;
+            DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(),
+                prevVersion, path);
+
+            LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
+            collStates.put(name, new ClusterState.CollectionRef(newCollection));
+            prevState = new ClusterState(prevState.getLiveNodes(),
+                collStates, prevState.getZNodeVersion());
+            updatesToWrite.put(name, newCollection);
+          }
+
+          break;
+        } catch (InterruptedException | AlreadyClosedException e) {
+          ParWork.propegateInterrupt(e);
+          throw e;
+        } catch (KeeperException.SessionExpiredException e) {
+          throw e;
+        } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
+          if (e instanceof KeeperException.BadVersionException) {
+            // nocommit invalidState = true;
+            //if (log.isDebugEnabled())
+            log.info(
+                "Tried to update the cluster state using version={} but we where rejected, currently at {}",
+                prevVersion, c == null ? "null" : c.getZNodeVersion(), e);
+            prevState = reader.getClusterState();
+            continue;
+          }
+          ParWork.propegateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Failed processing update=" + c + "\n" + prevState, e) {
+          };
+        }
+      }
+      // }
+
+      // numUpdates = 0;
+
+      // Thread.sleep(500);
     }
 
     if (log.isDebugEnabled()) {
       log.debug("enqueueUpdate(ClusterState, List<ZkWriteCommand>, ZkWriteCallback) - end");
     }
-    return state;
+    return prevState;
     // }
 
-//    if (log.isDebugEnabled()) {
-//      log.debug("enqueueUpdate(ClusterState, List<ZkWriteCommand>, ZkWriteCallback) - end");
-//    }
 //    return clusterState;
   }
 
@@ -152,7 +285,7 @@ public class ZkStateWriter {
       log.debug("hasPendingUpdates() - start");
     }
 
-    boolean returnboolean = numUpdates != 0;
+    boolean returnboolean = updatesToWrite.size() > 0;
     if (log.isDebugEnabled()) {
       log.debug("hasPendingUpdates() - end");
     }
@@ -169,175 +302,11 @@ public class ZkStateWriter {
    */
   public ClusterState writePendingUpdates(ClusterState state) throws IllegalStateException, KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
-      log.debug("writePendingUpdates() - start updates.size={}", updates.size());
+      log.debug("writePendingUpdates() - start updates.size={}", updatesToWrite.size());
     }
-
-    ClusterState prevState = reader.getClusterState();
     Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
-    ClusterState newClusterState = null;
-    KeeperException.BadVersionException exception = null;
-
     try {
-      // if (!updates.isEmpty()) {
-      for (Map.Entry<String,DocCollection> entry : updates.entrySet()) {
-        String name = entry.getKey();
-        String path = ZkStateReader.getCollectionPath(name);
-        DocCollection c = entry.getValue();
-        Integer prevVersion = -1;
-        if (lastUpdatedTime == -1) {
-          prevVersion = -1;
-        }
-        Stat stat = new Stat();
-
-        try {
-
-          if (c == null) {
-            // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
-            if (log.isDebugEnabled()) {
-              log.debug("going to delete state.json {}", path);
-            }
-            reader.getZkClient().clean(path);
-          } else if (prevState.getCollectionOrNull(name) != null) {
-            if (log.isDebugEnabled()) {
-              log.debug("writePendingUpdates() - going to update_collection {} version: {}", path,
-                      prevState.getZNodeVersion());
-            }
-
-            // assert c.getStateFormat() > 1;
-            // stat = reader.getZkClient().getCurator().checkExists().forPath(path);
-            DocCollection coll = prevState.getCollectionOrNull(name);
-            if (coll != null) {
-              prevVersion = coll.getZNodeVersion();
-            }
-
-            Map<String, Slice> existingSlices = prevState.getCollection(c.getName()).getSlicesMap();
-
-            Map<String, Slice> newSliceMap = new HashMap<>(existingSlices.size() + 1);
-
-            if (log.isDebugEnabled()) {
-              log.debug("Existing slices {}", existingSlices);
-            }
-
-            existingSlices.forEach((sliceId, slice) -> {
-              newSliceMap.put(sliceId, slice);
-            });
-
-            if (log.isDebugEnabled()) {
-              log.debug("Add collection {}", c);
-            }
-
-            DocCollection finalC = c;
-            prevState.getCollection(c.getName()).getSlicesMap().forEach((sliceId, slice) -> {
-
-              Map<String, Replica> newReplicas = new HashMap<>();
-
-              Map<String, Object> newProps = new HashMap<>();
-
-              newProps.putAll(slice.getProperties());
-
-              finalC.getSlice(sliceId).getReplicas().forEach((replica) -> {
-                newReplicas.put(replica.getName(), replica);
-              });
-
-              Slice newSlice = new Slice(sliceId, newReplicas, newProps, finalC.getName());
-              newSliceMap.put(sliceId, newSlice);
-
-            });
-
-            if (log.isDebugEnabled()) {
-              log.debug("New Slice Map after combining {}", newSliceMap);
-            }
-
-            DocCollection newCollection = new DocCollection(name, newSliceMap, c.getProperties(), c.getRouter(),
-                    prevState.getZNodeVersion(), path);
-            LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionsMap());
-            collStates.put(name, new ClusterState.CollectionRef(newCollection));
-            newClusterState = new ClusterState(prevState.getLiveNodes(), collStates, prevVersion);
-            c = newClusterState.getCollection(name);
-            byte[] data = Utils.toJSON(singletonMap(c.getName(), newCollection));
-
-            //if (log.isDebugEnabled()) {
-              log.info("Write state.json prevVersion={} bytes={} cs={}", prevVersion, data.length, newClusterState);
-            //}
-            // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
-            try {
-              stat = reader.getZkClient().setData(path, data, prevVersion, false);
-            } catch (KeeperException.BadVersionException bve) {
-              // this is a tragic error, we must disallow usage of this instance
-              log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", newClusterState.getZNodeVersion(), stat.getVersion(), bve);
-              lastUpdatedTime = -1;
-              exception = bve;
-              continue;
-            }
-          } else {
-            if (log.isDebugEnabled()) {
-              log.debug("writePendingUpdates() - going to create_collection {}", path);
-            }
-            //   assert c.getStateFormat() > 1;
-            DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(),
-                    0, path);
-
-            LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
-            collStates.put(name, new ClusterState.CollectionRef(newCollection));
-            newClusterState = new ClusterState(prevState.getLiveNodes(), collStates, prevState.getZNodeVersion());
-
-            byte[] data = Utils.toJSON(singletonMap(c.getName(), newCollection));
-            // reader.getZkClient().getCurator().create().storingStatIn(stat).forPath(path, data); // nocommit look at
-            // async updates
-            if (log.isDebugEnabled()) {
-              log.debug("Write state.json bytes={} cs={}", data.length, newClusterState);
-            }
-            try {
-              prevVersion = 0;
-              reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
-            } catch (KeeperException.NodeExistsException e) {
-              stat = reader.getZkClient().setData(path, data, -1, true);
-            }
-          }
-
-        } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propegateInterrupt(e);
-          throw e;
-        } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
-          if (e instanceof KeeperException.BadVersionException) {
-            // nocommit invalidState = true;
-            //if (log.isDebugEnabled())
-            log.info("Tried to update the cluster state using version={} but we where rejected, currently at {}", prevVersion, c == null ? "null" : c.getZNodeVersion(), e);
-            throw (KeeperException.BadVersionException) e;
-          }
-          ParWork.propegateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed processing update=" + entry, e) {
-          };
-        }
-        // }
-
-        // numUpdates = 0;
-        if (c != null) {
-          try {
-            System.out.println("waiting to see state " + prevVersion);
-            Integer finalPrevVersion = prevVersion;
-            reader.waitForState(c.getName(), 15, TimeUnit.SECONDS,
-                    (l, col) -> {
-
-                      if (col != null) {
-                        System.out.println("the version " + col.getZNodeVersion());
-                      }
-
-                      if (col != null && col.getZNodeVersion() > finalPrevVersion) {
-                        if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion());
-                        System.out.println("found the version");
-                        return true;
-                      }
-                      return false;
-                    });
-          } catch (TimeoutException e) {
-            log.warn("Timeout waiting to see written cluster state come back");
-          }
-        }
-       // Thread.sleep(500);
-      }
 
       // assert newClusterState.getZNodeVersion() >= 0;
       // byte[] data = Utils.toJSON(newClusterState);
@@ -346,12 +315,111 @@ public class ZkStateWriter {
       //
       //
       //
+      Map<String,DocCollection> failedUpdates = new LinkedHashMap<>();
+      for (DocCollection c : updatesToWrite.values()) {
+        String name = c.getName();
+        String path = ZkStateReader.getCollectionPath(c.getName());
+
+        Stat stat = new Stat();
+
+        try {
+
+         // if (reader.getClusterState().getCollectionOrNull(c.getName()) != null) {
+            if (true) {
+
+            byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
+
+            //if (log.isDebugEnabled()) {
+            log.info("Write state.json prevVersion={} bytes={} cs={}", c.getZNodeVersion(), data.length, c);
+            //}
+            // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
+            try {
+              stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), false);
+              break;
+            } catch (KeeperException.BadVersionException bve) {
+              // this is a tragic error, we must disallow usage of this instance
+              log.warn(
+                  "Tried to update the cluster state using version={} but we where rejected, found {}",
+                  c.getZNodeVersion(), stat.getVersion(), bve);
+              lastUpdatedTime = -1;
+              failedUpdates.put(name, c);
+              continue;
+            }
+          } else {
+
+            byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
+            // reader.getZkClient().getCurator().create().storingStatIn(stat).forPath(path, data); // nocommit look at
+            // async updates
+            if (log.isDebugEnabled()) {
+              log.debug("Write state.json bytes={} cs={}", data.length,
+                  state);
+            }
+            try {
+              reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
+
+            } catch (KeeperException.NodeExistsException e) {
+              log.error("collection already exists");
+              failedUpdates.put(name, c);
+              continue;
+            }
+          }
+
+          break;
+        } catch (InterruptedException | AlreadyClosedException e) {
+          ParWork.propegateInterrupt(e);
+          throw e;
+        } catch (KeeperException.SessionExpiredException e) {
+          throw e;
+        } catch (Exception e) {
+          ParWork.propegateInterrupt(e);
+//          if (e instanceof KeeperException.BadVersionException) {
+//            // nocommit invalidState = true;
+//            //if (log.isDebugEnabled())
+//            log.info(
+//                "Tried to update the cluster state using version={} but we where rejected, currently at {}",
+//                prevVersion, c == null ? "null" : c.getZNodeVersion(), e);
+//            prevState = reader.getClusterState();
+//            continue;
+//          }
+          ParWork.propegateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Failed processing update=" + c, e) {
+          };
+        }
+      }
+
+
+
+        for (DocCollection c : updatesToWrite.values()) {
+          if (c != null && !failedUpdates.containsKey(c.getName())) {
+            try {
+              //System.out.println("waiting to see state " + prevVersion);
+              Integer finalPrevVersion = c.getZNodeVersion();
+              reader.waitForState(c.getName(), 15, TimeUnit.SECONDS, (l, col) -> {
+
+                //              if (col != null) {
+                //                System.out.println("the version " + col.getZNodeVersion());
+                //              }
+
+                if (col != null && col.getZNodeVersion() > finalPrevVersion) {
+                  if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion());
+                  // System.out.println("found the version");
+                  return true;
+                }
+                return false;
+              });
+            } catch (TimeoutException e) {
+              log.warn("Timeout waiting to see written cluster state come back");
+            }
+          }
+        }
+
 
       lastUpdatedTime = System.nanoTime();
-      if (exception != null) {
-        throw exception;
-      }
-      updates.clear();
+
+      updatesToWrite.clear();
+      log.warn("Failed updates {}", failedUpdates.values());
+      updatesToWrite.putAll(failedUpdates);
       success = true;
     } finally {
       timerContext.stop();
@@ -362,14 +430,16 @@ public class ZkStateWriter {
       }
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("writePendingUpdates() - end - New Cluster State is: {}", newClusterState);
-    }
-    if (newClusterState == null) {
-      newClusterState = prevState;
-    }
-    assert newClusterState != null;
-    return newClusterState;
+//    if (log.isDebugEnabled()) {
+//      log.debug("writePendingUpdates() - end - New Cluster State is: {}", newClusterState);
+//    }
+
+
+    return state;
+  }
+
+  public Map<String,DocCollection>  getUpdatesToWrite() {
+    return updatesToWrite;
   }
 
   public interface ZkWriteCallback {

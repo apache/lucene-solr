@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -66,6 +67,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   public static final int MAX_BLOCKED_TASKS = 1000;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final CoreContainer cc;
 
   private OverseerTaskQueue workQueue;
   private DistributedMap runningMap;
@@ -96,7 +98,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   final private Predicate<String> excludedTasks = new Predicate<String>() {
     @Override
     public boolean test(String s) {
-      return runningTasks.contains(s) || blockedTasks.containsKey(s);
+      // nocommit
+      return runningTasks.contains(s) || blockedTasks.containsKey(s) || runningZKTasks.contains(s);
     }
 
     @Override
@@ -114,7 +117,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private final String thisNode;
 
-  public OverseerTaskProcessor(ZkStateReader zkStateReader, String myId,
+  public OverseerTaskProcessor(CoreContainer cc, String myId,
                                         Stats stats,
                                         OverseerMessageHandlerSelector selector,
                                         OverseerNodePrioritizer prioritizer,
@@ -131,6 +134,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.completedMap = completedMap;
     this.failureMap = failureMap;
     thisNode = Utils.getMDCNode();
+    this.cc = cc;
   }
 
   @Override
@@ -185,7 +189,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     }
 
     try {
-      while (!this.isClosed) {
+      while (!this.isClosed()) {
         try {
 
           if (log.isDebugEnabled()) log.debug(
@@ -209,7 +213,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           ArrayList<QueueEvent> heads = new ArrayList<>(
               blockedTasks.size() + MAX_PARALLEL_TASKS);
           heads.addAll(blockedTasks.values());
-
+          blockedTasks.clear(); // clear it now; may get refilled below.
           //If we have enough items in the blocked tasks already, it makes
           // no sense to read more items from the work queue. it makes sense
           // to clear out at least a few items in the queue before we read more items
@@ -218,7 +222,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             int toFetch = Math.min(MAX_BLOCKED_TASKS - heads.size(),
                 MAX_PARALLEL_TASKS - runningTasksSize());
             List<QueueEvent> newTasks = workQueue
-                .peekTopN(toFetch, excludedTasks, 2500);
+                .peekTopN(toFetch, excludedTasks, 10000);
             log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(),
                 newTasks);
             heads.addAll(newTasks);
@@ -226,7 +230,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
           if (isClosed) return;
 
-          blockedTasks.clear(); // clear it now; may get refilled below.
+
 
           taskBatch.batchId++;
 
@@ -372,12 +376,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     if (log.isDebugEnabled()) {
       log.debug("close() - start");
     }
-
+    ParWork.close(selector);
     isClosed = true;
-
-    try (ParWork closer = new ParWork(this, true)) {
-      closer.add("selector", selector);
-    }
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {
@@ -414,7 +414,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   }
 
   public boolean isClosed() {
-    return isClosed;
+    return isClosed || cc.isShutDown();
   }
 
   @SuppressWarnings("unchecked")
@@ -476,8 +476,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             log.debug("Updated completed map for task with zkid:[{}]", head.getId());
           }
         } else {
-          head.setBytes(OverseerSolrResponseSerializer.serialize(response));
-          log.debug("Completed task:[{}]", head.getId());
+          byte[] sdata = OverseerSolrResponseSerializer.serialize(response);
+         // cc.getZkController().zkStateReader.getZkClient().setData(head.getId(), sdata, false);
+          head.setBytes(sdata);
+          log.debug("Completed task:[{}] {}", head.getId(), response.getResponse());
         }
 
         markTaskComplete(head.getId(), asyncId);

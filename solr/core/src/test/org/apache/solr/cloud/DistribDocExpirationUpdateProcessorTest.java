@@ -30,6 +30,7 @@ import static java.util.Collections.singletonList;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -153,7 +154,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     {
       final UpdateRequest req = setAuthIfNeeded(new UpdateRequest());
       for (int i = 1; i <= totalNumDocs; i++) {
-        final SolrInputDocument doc = sdoc("id", i);
+        final SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", i);
 
         if (random().nextBoolean()) {
           doc.addField("should_expire_s","yup");
@@ -208,7 +209,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     assertTrue("WTF? no replica data?", 0 < initReplicaData.size());
 
     // add & hard commit a special doc with a short TTL 
-    setAuthIfNeeded(new UpdateRequest()).add(sdoc("id", "special99", "should_expire_s","yup","tTl_s","+30SECONDS"))
+    setAuthIfNeeded(new UpdateRequest()).add(SolrTestCaseJ4.sdoc("id", "special99", "should_expire_s","yup","tTl_s","+30SECONDS"))
       .commit(cluster.getSolrClient(), COLLECTION);
 
     // wait for our special docId to be deleted
@@ -281,7 +282,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     for (Replica replica : collectionState.getReplicas()) {
 
       String coreName = replica.getCoreName();
-      try (Http2SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+      try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(replica.getCoreUrl())) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command", "indexversion");

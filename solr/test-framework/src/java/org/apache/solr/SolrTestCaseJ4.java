@@ -16,56 +16,8 @@
  */
 package org.apache.solr;
 
-import javax.xml.xpath.XPathExpressionException;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.logging.log4j.Level;
@@ -81,8 +33,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
@@ -101,7 +51,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
@@ -146,6 +95,50 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * A junit4 Solr test harness that extends SolrTestCase and, by extension, LuceneTestCase.
@@ -194,18 +187,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
              new OutputStreamWriter(Files.newOutputStream(coreDirectory.resolve(CORE_PROPERTIES_FILENAME)), Charset.forName("UTF-8"))) {
       properties.store(writer, testname);
     }
-  }
-
-  /**
-   * Annotation for test classes that want to disable SSL
-   */
-  @Documented
-  @Inherited
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.TYPE)
-  public @interface SuppressSSL {
-    /** Point to JIRA entry. */
-    public String bugUrl() default "None";
   }
   
   /**
@@ -347,38 +328,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     savedMethodLogLevels.clear();
   }
 
-  private static boolean changedFactory = false;
-  private static String savedFactory;
-  /** Use a different directory factory.  Passing "null" sets to an FS-based factory */
-  public static void useFactory(String factory) throws Exception {
-    // allow calling more than once so a subclass can override a base class
-    if (!changedFactory) {
-      savedFactory = System.getProperty("solr.DirectoryFactory");
-    }
-
-    if (factory == null) {
-      factory = random().nextInt(100) < 75 ? "solr.NRTCachingDirectoryFactory" : "solr.StandardDirectoryFactory"; // test the default most of the time
-    }
-    System.setProperty("solr.directoryFactory", factory);
-    changedFactory = true;
-  }
-
-  public static void resetFactory() throws Exception {
-    if (!changedFactory) return;
-    changedFactory = false;
-    if (savedFactory != null) {
-      System.setProperty("solr.directoryFactory", savedFactory);
-      savedFactory = null;
-    } else {
-      System.clearProperty("solr.directoryFactory");
-    }
-  }
-
   protected static JettyConfig buildJettyConfig(String context) {
     return JettyConfig.builder().setContext(context).withSSLConfig(sslConfig.buildServerSSLConfig()).build();
   }
   
-  protected static String buildUrl(final int port, final String context) {
+  public static String buildUrl(final int port, final String context) {
     return (isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + context;
   }
 
@@ -555,7 +509,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     SolrException.ignorePatterns = new CopyOnWriteArraySet<>(Collections.singleton("ignore_exception"));
   }
 
-  protected static String getClassName() {
+  public static String getClassName() {
     return getTestClass().getName();
   }
 
@@ -563,7 +517,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return getTestClass().getSimpleName();
   }
 
-  protected static String configString;
+  public static String configString;
   protected static String schemaString;
   protected static Path testSolrHome;
 
@@ -576,7 +530,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * For use in test methods as needed.
    * </p>
    */
-  protected static TestHarness h;
+  public static TestHarness h;
 
   /**
    * LocalRequestFactory initialized by create[Default]Core[Container] using sensible
@@ -1126,23 +1080,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     XmlDoc d = new XmlDoc();
     d.xml = TestHarness.makeSimpleDoc(fieldsAndValues);
     return d;
-  }
-
-  /**
-   * Generates the correct SolrParams from an even list of strings.
-   * A string in an even position will represent the name of a parameter, while the following string
-   * at position (i+1) will be the assigned value.
-   *
-   * @param params an even list of strings
-   * @return the ModifiableSolrParams generated from the given list of strings.
-   */
-  public static ModifiableSolrParams params(String... params) {
-    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
-    ModifiableSolrParams msp = new ModifiableSolrParams();
-    for (int i=0; i<params.length; i+=2) {
-      msp.add(params[i], params[i+1]);
-    }
-    return msp;
   }
 
   public static Map map(Object... params) {
@@ -1927,39 +1864,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return value_to_id;
   }
 
-
-  /** Gets a resource from the context classloader as {@link File}. This method should only be used,
-   * if a real file is needed. To get a stream, code should prefer
-   * {@link Class#getResourceAsStream} using {@code this.getClass()}.
-   */
-  public static File getFile(String name) {
-    final URL url = SolrTestCaseJ4.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
-    if (url != null) {
-      try {
-        return new File(url.toURI());
-      } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
-        throw new RuntimeException("Resource was found on classpath, but cannot be resolved to a " + 
-            "normal file (maybe it is part of a JAR file): " + name);
-      }
-    }
-    final File file = new File(name);
-    if (file.exists()) {
-      return file;
-    }
-    throw new RuntimeException("Cannot find resource in classpath or in file-system (relative to CWD): " + name);
-  }
-  
-  public static String TEST_HOME() {
-    return getFile("solr/collection1").getParent();
-  }
-
-  public static Path TEST_PATH() { return getFile("solr/collection1").getParentFile().toPath(); }
-
-  public static Path configset(String name) {
-    return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");
-  }
-
   public static Throwable getRootCause(Throwable t) {
     Throwable result = t;
     for (Throwable cause = t; null != cause; cause = cause.getCause()) {
@@ -2075,89 +1979,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     FileUtils.copyFile(new File(top, "solrconfig.xml"), new File(subHome, "solrconfig.xml"));
     FileUtils.copyFile(new File(top, "stopwords.txt"), new File(subHome, "stopwords.txt"));
     FileUtils.copyFile(new File(top, "synonyms.txt"), new File(subHome, "synonyms.txt"));
-  }
-
-  public boolean compareSolrDocument(Object expected, Object actual) {
-
-    if (!(expected instanceof SolrDocument)  || !(actual instanceof SolrDocument)) {
-      return false;
-    }
-
-    if (expected == actual) {
-      return true;
-    }
-
-    SolrDocument solrDocument1 = (SolrDocument) expected;
-    SolrDocument solrDocument2 = (SolrDocument) actual;
-
-    if(solrDocument1.getFieldNames().size() != solrDocument2.getFieldNames().size()) {
-      return false;
-    }
-
-    Iterator<String> iter1 = solrDocument1.getFieldNames().iterator();
-    Iterator<String> iter2 = solrDocument2.getFieldNames().iterator();
-
-    if(iter1.hasNext()) {
-      String key1 = iter1.next();
-      String key2 = iter2.next();
-
-      Object val1 = solrDocument1.getFieldValues(key1);
-      Object val2 = solrDocument2.getFieldValues(key2);
-
-      if(!key1.equals(key2) || !val1.equals(val2)) {
-        return false;
-      }
-    }
-
-    if(solrDocument1.getChildDocuments() == null && solrDocument2.getChildDocuments() == null) {
-      return true;
-    }
-    if(solrDocument1.getChildDocuments() == null || solrDocument2.getChildDocuments() == null) {
-      return false;
-    } else if(solrDocument1.getChildDocuments().size() != solrDocument2.getChildDocuments().size()) {
-      return false;
-    } else {
-      Iterator<SolrDocument> childDocsIter1 = solrDocument1.getChildDocuments().iterator();
-      Iterator<SolrDocument> childDocsIter2 = solrDocument2.getChildDocuments().iterator();
-      while(childDocsIter1.hasNext()) {
-        if(!compareSolrDocument(childDocsIter1.next(), childDocsIter2.next())) {
-          return false;
-        }
-      }
-      return true;
-    }
-  }
-
-  public boolean compareSolrDocumentList(Object expected, Object actual) {
-    if (!(expected instanceof SolrDocumentList)  || !(actual instanceof SolrDocumentList)) {
-      return false;
-    }
-
-    if (expected == actual) {
-      return true;
-    }
-
-    SolrDocumentList list1 = (SolrDocumentList) expected;
-    SolrDocumentList list2 = (SolrDocumentList) actual;
-
-    if (list1.getMaxScore() == null) {
-      if (list2.getMaxScore() != null) {
-        return false;
-      } 
-    } else if (list2.getMaxScore() == null) {
-      return false;
-    } else {
-      if (Float.compare(list1.getMaxScore(), list2.getMaxScore()) != 0 || list1.getNumFound() != list2.getNumFound() ||
-          list1.getStart() != list2.getStart()) {
-        return false;
-      }
-    }
-    for(int i=0; i<list1.getNumFound(); i++) {
-      if(!compareSolrDocument(list1.get(i), list2.get(i))) {
-        return false;
-      }
-    }
-    return true;
   }
 
   public boolean compareSolrInputDocument(Object expected, Object actual) {
@@ -2684,17 +2505,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     waitForWarming(h.getCore());
   }
 
-  protected String getSaferTestName() {
-    // test names can hold additional info, like the test seed
-    // only take to first space
-    String testName = getTestName();
-    int index = testName.indexOf(' ');
-    if (index > 0) {
-      testName = testName.substring(0, index);
-    }
-    return testName;
-  }
-  
   @BeforeClass
   public static void assertNonBlockingRandomGeneratorAvailable() throws InterruptedException {
     final String EGD = "java.security.egd";
@@ -2752,10 +2562,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
   protected static void systemClearPropertySolrDisableShardsWhitelist() {
     System.clearProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST);
-  }
-
-  protected <T> T pickRandom(T... options) {
-    return options[random().nextInt(options.length)];
   }
   
   /**
@@ -2917,22 +2723,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #randomizeNumericTypesProperties
    */
-  protected static final Map<Class,String> RANDOMIZED_NUMERIC_FIELDTYPES
+  public static final Map<Class,String> RANDOMIZED_NUMERIC_FIELDTYPES
     = Collections.unmodifiableMap(private_RANDOMIZED_NUMERIC_FIELDTYPES);
 
-  public static SolrQueuedThreadPool getQtp() {
 
-    SolrQueuedThreadPool qtp = new SolrQueuedThreadPool("solr-test-qtp");;
-          qtp.setName("solr-test-qtp");
-          //qtp.setMaxThreads(Integer.getInteger("solr.maxContainerThreads", 50));
-         // qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
-          qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 2));
-          qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", 30000));
-
-          qtp.setStopTimeout((int) TimeUnit.SECONDS.toMillis(60));
-          qtp.setDaemon(true);
-          qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
-          // qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(1));
-    return qtp;
-  }
 }

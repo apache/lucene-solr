@@ -51,8 +51,8 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -100,7 +100,8 @@ import static org.junit.matchers.JUnitMatchers.containsString;
  * @since 1.4
  */
 @Slow
-@SuppressSSL     // Currently unknown why SSL does not work with this test
+@SolrTestCase.SuppressSSL
+// Currently unknown why SSL does not work with this test
 // commented 20-July-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 // commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
 @LuceneTestCase.Nightly // nocommit - nightly for a moment

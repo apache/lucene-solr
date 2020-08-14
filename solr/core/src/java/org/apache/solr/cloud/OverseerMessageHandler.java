@@ -18,10 +18,12 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.common.cloud.ZkNodeProps;
 
+import java.io.Closeable;
+
 /**
  * Interface for processing messages received by an {@link OverseerTaskProcessor}
  */
-public interface OverseerMessageHandler {
+public interface OverseerMessageHandler extends Closeable {
 
   /**
    * @param message the message to process

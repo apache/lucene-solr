@@ -69,7 +69,6 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-
     // HDFS nocommit fix
 //    if (threadName.startsWith("IPC Parameter Sending Thread ")) { // SOLR-5007
 //      return true;

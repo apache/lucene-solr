@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -66,7 +67,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    SolrInputDocument doc = sdoc("id", "1", "level_s", "root");
+    SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", "1", "level_s", "root");
 
     final SolrParams params = params("wt", "json", "_route_", "1");
 
@@ -75,17 +76,17 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
 
     indexDoc(aClient, params, doc);
 
-    doc = sdoc("id", "1", "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
+    doc = SolrTestCaseJ4.sdoc("id", "1", "children", SolrTestCaseJ4.map("add", SolrTestCaseJ4.sdocs(SolrTestCaseJ4.sdoc("id", "2", "level_s", "child"))));
 
     indexDoc(aClient, params, doc);
 
     for(int idIndex = 0; idIndex < ids.length; ++idIndex) {
 
-      doc = sdoc("id", "2", "grandChildren", map("add", sdocs(sdoc("id", ids[idIndex], "level_s", "grand_child"))));
+      doc = SolrTestCaseJ4.sdoc("id", "2", "grandChildren", SolrTestCaseJ4.map("add", SolrTestCaseJ4.sdocs(SolrTestCaseJ4.sdoc("id", ids[idIndex], "level_s", "grand_child"))));
 
       indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
 
-      doc = sdoc("id", "3", "inplace_updatable_int", map("inc", "1"));
+      doc = SolrTestCaseJ4.sdoc("id", "3", "inplace_updatable_int", SolrTestCaseJ4.map("inc", "1"));
 
       indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
 
@@ -123,7 +124,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    SolrInputDocument doc = sdoc("id", "1", "level_s", "root");
+    SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", "1", "level_s", "root");
 
     final SolrParams params = params("wt", "json", "_route_", "1");
 
@@ -132,16 +133,16 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
 
     indexDocAndRandomlyCommit(aClient, params, doc);
 
-    doc = sdoc("id", "1", "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
+    doc = SolrTestCaseJ4.sdoc("id", "1", "children", SolrTestCaseJ4.map("add", SolrTestCaseJ4.sdocs(SolrTestCaseJ4.sdoc("id", "2", "level_s", "child"))));
 
     indexDocAndRandomlyCommit(aClient, params, doc);
 
-    doc = sdoc("id", "2", "grandChildren", map("add", sdocs(sdoc("id", ids[0], "level_s", "grand_child"))));
+    doc = SolrTestCaseJ4.sdoc("id", "2", "grandChildren", SolrTestCaseJ4.map("add", SolrTestCaseJ4.sdocs(SolrTestCaseJ4.sdoc("id", ids[0], "level_s", "grand_child"))));
 
     indexDocAndRandomlyCommit(aClient, params, doc);
 
     for (int fieldValue = 1; fieldValue < 5; ++fieldValue) {
-      doc = sdoc("id", "3", "inplace_updatable_int", map("inc", "1"));
+      doc = SolrTestCaseJ4.sdoc("id", "3", "inplace_updatable_int", SolrTestCaseJ4.map("inc", "1"));
 
       indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
 
@@ -178,7 +179,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
     assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     final String rootId = "1";
 
-    SolrInputDocument doc = sdoc("id", rootId, "level_s", "root");
+    SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", rootId, "level_s", "root");
 
     final SolrParams wrongRootParams = params("wt", "json", "_route_", "c");
     final SolrParams rightParams = params("wt", "json", "_route_", rootId);
@@ -188,13 +189,13 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
 
     indexDocAndRandomlyCommit(aClient, params("wt", "json", "_route_", rootId), doc, false);
 
-    final SolrInputDocument childDoc = sdoc("id", rootId, "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
+    final SolrInputDocument childDoc = SolrTestCaseJ4.sdoc("id", rootId, "children", SolrTestCaseJ4.map("add", SolrTestCaseJ4.sdocs(SolrTestCaseJ4.sdoc("id", "2", "level_s", "child"))));
 
     indexDocAndRandomlyCommit(aClient, rightParams, childDoc, false);
 
-    final SolrInputDocument grandChildDoc = sdoc("id", "2", "grandChildren",
-        map("add", sdocs(
-            sdoc("id", "3", "level_s", "grandChild")
+    final SolrInputDocument grandChildDoc = SolrTestCaseJ4.sdoc("id", "2", "grandChildren",
+        SolrTestCaseJ4.map("add", SolrTestCaseJ4.sdocs(
+            SolrTestCaseJ4.sdoc("id", "3", "level_s", "grandChild")
             )
         )
     );

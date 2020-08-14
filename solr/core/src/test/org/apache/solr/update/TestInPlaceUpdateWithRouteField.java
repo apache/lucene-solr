@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -99,10 +100,10 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     Assert.assertThat(solrDocument.get("inplace_updatable_int"), is(id));
 
     int newDocValue = TestUtil.nextInt(random(), 1, 2 * NUMBER_OF_DOCS - 1);
-    SolrInputDocument sdoc = sdoc("id", ""+id,
+    SolrInputDocument sdoc = SolrTestCaseJ4.sdoc("id", ""+id,
         // use route field in update command
         "shardName", shardName,
-        "inplace_updatable_int", map("set", newDocValue));
+        "inplace_updatable_int", SolrTestCaseJ4.map("set", newDocValue));
     
     UpdateRequest updateRequest = new UpdateRequest()
         .add(sdoc);
@@ -117,7 +118,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     sdoc.remove("shardName");
     checkWrongCommandFailure(sdoc);
 
-    sdoc.addField("shardName",  map("set", "newShardName"));
+    sdoc.addField("shardName",  SolrTestCaseJ4.map("set", "newShardName"));
     checkWrongCommandFailure(sdoc);
   }
 
@@ -134,7 +135,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     List<SolrInputDocument> result = new ArrayList<>();
     for (int i = 0; i < number; i++) {
       String randomShard = shards[random().nextInt(shards.length)];
-      result.add(sdoc("id", String.valueOf(i),
+      result.add(SolrTestCaseJ4.sdoc("id", String.valueOf(i),
           "shardName", randomShard,
           "inplace_updatable_int", i));
     }
