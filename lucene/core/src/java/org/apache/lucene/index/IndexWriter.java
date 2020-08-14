@@ -610,7 +610,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             }
             if (maxCommitMergeWaitMillis > 0) {
               openingSegmentInfos = segmentInfos.clone();
-              onCommitMerges = prepareOnPointInTimeMerge(openingSegmentInfos, includeMergeReader, MergeTrigger.GET_READER,
+              onCommitMerges = preparePointInTimeMerge(openingSegmentInfos, includeMergeReader, MergeTrigger.GET_READER,
                   sci -> mergedReaders.put(sci.info.name, readerFactory.apply(sci)));
             }
           }
@@ -3318,7 +3318,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               if (anyChanges && maxCommitMergeWaitMillis > 0) {
                 // we can safely call prepareOnCommitMerge since writeReaderPool(true) above wrote all
                 // necessary files to disk and checkpointed them.
-                onCommitMerges = prepareOnPointInTimeMerge(toCommit, includeInCommit, MergeTrigger.COMMIT, sci->{});
+                onCommitMerges = preparePointInTimeMerge(toCommit, includeInCommit, MergeTrigger.COMMIT, sci->{});
               }
             }
             success = true;
@@ -3386,24 +3386,24 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   /**
-   * This optimization allows a commit to wait for merges on smallish segments to
-   * reduce the eventual number of tiny segments in the commit point.  We wrap a {@code OneMerge} to
-   * update the {@code committingSegmentInfos} once the merge has finished.  We replace the source segments
-   * in the SIS that we are going to commit with the freshly merged segment, but ignore all deletions and updates
-   * that are made to documents in the merged segment while it was merging.  The updates that are made do not belong to
-   * the point-in-time commit point and should therefore not be included. See the clone call in {@code onMergeComplete}
+   * This optimization allows a commit/getReader to wait for merges on smallish segments to
+   * reduce the eventual number of tiny segments in the commit point / NRT Reader.  We wrap a {@code OneMerge} to
+   * update the {@code mergingSegmentInfos} once the merge has finished. We replace the source segments
+   * in the SIS that we are going to commit / open the reader on with the freshly merged segment, but ignore all deletions and updates
+   * that are made to documents in the merged segment while it was merging. The updates that are made do not belong to
+   * the point-in-time commit point / NRT READER and should therefore not be included. See the clone call in {@code onMergeComplete}
    * below.  We also ensure that we pull the merge readers while holding {@code IndexWriter}'s lock.  Otherwise
    * we could see concurrent deletions/updates applied that do not belong to the segment.
    */
-  private MergePolicy.MergeSpecification prepareOnPointInTimeMerge(SegmentInfos mergeingSegmentInfos, AtomicBoolean includeMergeResult,
-                                                                   MergeTrigger trigger,
-                                                                   IOUtils.IOConsumer<SegmentCommitInfo> mergeFinished) throws IOException {
+  private MergePolicy.MergeSpecification preparePointInTimeMerge(SegmentInfos mergingSegmentInfos, AtomicBoolean includeMergeResult,
+                                                                 MergeTrigger trigger,
+                                                                 IOUtils.IOConsumer<SegmentCommitInfo> mergeFinished) throws IOException {
     assert Thread.holdsLock(this);
     assert trigger == MergeTrigger.GET_READER || trigger == MergeTrigger.COMMIT : "illegal trigger: " + trigger;
     MergePolicy.MergeSpecification onCommitMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
         new MergePolicy.OneMerge(toWrap.segments) {
           SegmentCommitInfo origInfo;
-          AtomicBoolean onlyOnce = new AtomicBoolean(false);
+          final AtomicBoolean onlyOnce = new AtomicBoolean(false);
 
           @Override
           public void mergeFinished(boolean committed, boolean segmentDropped) throws IOException {
@@ -3431,7 +3431,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 mergedSegmentNames.add(sci.info.name);
               }
               List<SegmentCommitInfo> toCommitMergedAwaySegments = new ArrayList<>();
-              for (SegmentCommitInfo sci : mergeingSegmentInfos) {
+              for (SegmentCommitInfo sci : mergingSegmentInfos) {
                 if (mergedSegmentNames.contains(sci.info.name)) {
                   toCommitMergedAwaySegments.add(sci);
                   if (trigger == MergeTrigger.COMMIT) { // if we do this in a getReader call here this is obsolete
@@ -3443,8 +3443,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               MergePolicy.OneMerge applicableMerge = new MergePolicy.OneMerge(toCommitMergedAwaySegments);
               applicableMerge.info = origInfo;
               long segmentCounter = Long.parseLong(origInfo.info.name.substring(1), Character.MAX_RADIX);
-              mergeingSegmentInfos.counter = Math.max(mergeingSegmentInfos.counter, segmentCounter + 1);
-              mergeingSegmentInfos.applyMergeChanges(applicableMerge, false);
+              mergingSegmentInfos.counter = Math.max(mergingSegmentInfos.counter, segmentCounter + 1);
+              mergingSegmentInfos.applyMergeChanges(applicableMerge, false);
             } else {
               if (infoStream.isEnabled("IW")) {
                 infoStream.message("IW", "skip apply merge during commit: " + toWrap.segString());
@@ -3456,7 +3456,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
           @Override
           void onMergeComplete() throws IOException {
-            if (includeMergeResult.get() && isAborted() == false && info.info.maxDoc() > 0) {
+            if (includeMergeResult.get()
+                && isAborted() == false
+                && info.info.maxDoc() > 0/* never do this if the segment if dropped / empty */) {
               assert Thread.holdsLock(IndexWriter.this);
               mergeFinished.accept(info);
               // clone the target info to make sure we have the original info without the updated del and update gens
