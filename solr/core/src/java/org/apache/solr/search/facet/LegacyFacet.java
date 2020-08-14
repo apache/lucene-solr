@@ -270,7 +270,6 @@ public class LegacyFacet {
     getCurrentSubs().put(key, sub);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private Map<String,Object> getCurrentSubs() {
     if (currentSubs == null) {
       currentSubs = new LinkedHashMap();

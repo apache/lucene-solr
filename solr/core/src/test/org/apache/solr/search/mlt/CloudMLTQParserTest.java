@@ -162,7 +162,6 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testMinDF() throws Exception {
 
     QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION,

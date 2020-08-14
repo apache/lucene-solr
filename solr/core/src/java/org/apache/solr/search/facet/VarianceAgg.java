@@ -31,7 +31,7 @@ public class VarianceAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -56,7 +56,7 @@ public class VarianceAgg extends SimpleAggValueSource {
       }
       vs = sf.getType().getValueSource(sf, null);
     }
-    return new SlotAcc.VarianceSlotAcc(vs, fcontext, numSlots);
+    return new VarianceSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -64,7 +64,7 @@ public class VarianceAgg extends SimpleAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetModule.FacetDoubleMerger {
+  private static class Merger extends FacetDoubleMerger {
     long count;
     double sumSq;
     double sum;
@@ -85,11 +85,11 @@ public class VarianceAgg extends SimpleAggValueSource {
     
     @Override
     protected double getDouble() {
-      return AggUtil.variance(sumSq, sum, count);
+      return AggUtil.uncorrectedVariance(sumSq, sum, count);
     }    
   }
 
-  class VarianceSortedNumericAcc extends DocValuesAcc.SDVSortedNumericAcc {
+  class VarianceSortedNumericAcc extends SDVSortedNumericAcc {
 
     public VarianceSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
@@ -97,11 +97,11 @@ public class VarianceAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 
-  class VarianceSortedSetAcc extends DocValuesAcc.SDVSortedSetAcc {
+  class VarianceSortedSetAcc extends SDVSortedSetAcc {
 
     public VarianceSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
@@ -109,11 +109,11 @@ public class VarianceAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 
-  class VarianceUnInvertedFieldAcc extends UnInvertedFieldAcc.SDVUnInvertedFieldAcc {
+  class VarianceUnInvertedFieldAcc extends SDVUnInvertedFieldAcc {
 
     public VarianceUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
@@ -121,7 +121,7 @@ public class VarianceAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 }

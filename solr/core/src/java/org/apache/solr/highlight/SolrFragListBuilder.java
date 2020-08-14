@@ -30,7 +30,7 @@ public interface SolrFragListBuilder extends SolrInfoBean, NamedListInitializedP
    * solrconfig.xml
    */
   @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args);
+  public void init( NamedList args);
 
   /**
    * Return a FragListBuilder.

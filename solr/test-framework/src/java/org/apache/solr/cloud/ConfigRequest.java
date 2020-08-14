@@ -29,7 +29,6 @@ import org.apache.solr.common.params.SolrParams;
  * e.g. to add custom components, handlers, parsers, etc. to an otherwise
  * generic configset.
  */
-@SuppressWarnings({"rawtypes"})
 public class ConfigRequest extends SolrRequest {
 
   protected final String message;
@@ -52,10 +51,5 @@ public class ConfigRequest extends SolrRequest {
   @Override
   public SolrResponse createResponse(SolrClient client) {
     return new SolrResponseBase();
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequest.SolrRequestType.ADMIN.toString();
   }
 }

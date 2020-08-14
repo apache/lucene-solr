@@ -111,7 +111,7 @@
       </fileset>
       <fileset dir=".">
   <include name="lib/*" />
-  <include name="README.md" />
+  <include name="README.txt" />
       </fileset>
     </copy>
   </target>

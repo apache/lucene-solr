@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class CountMetric extends Metric {
   private String columnName;
   private long count;
-  private boolean isAllColumns;
 
   public CountMetric() {
     this("*");
@@ -57,13 +56,12 @@ public class CountMetric extends Metric {
 
   private void init(String functionName, String columnName){
     this.columnName = columnName;
-    this.isAllColumns = "*".equals(this.columnName);
     setFunctionName(functionName);
     setIdentifier(functionName, "(", columnName, ")");
   }
 
   private boolean isAllColumns() {
-    return isAllColumns;
+    return "*".equals(this.columnName);
   }
 
   public void update(Tuple tuple) {

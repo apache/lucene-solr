@@ -35,7 +35,6 @@ public class SuggesterResponse {
 
   private final Map<String, List<Suggestion>> suggestionsPerDictionary = new LinkedHashMap<>();
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public SuggesterResponse(Map<String, NamedList<Object>> suggestInfo) {
     for (Map.Entry<String, NamedList<Object>> entry : suggestInfo.entrySet()) {
       SimpleOrderedMap suggestionsNode = (SimpleOrderedMap) entry.getValue().getVal(0);

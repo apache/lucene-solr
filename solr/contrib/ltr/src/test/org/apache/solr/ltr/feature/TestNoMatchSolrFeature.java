@@ -100,10 +100,8 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     String res = restTestHarness.query("/query"
         + yesMatchFeatureQuery.toQueryString());
 
-    @SuppressWarnings({"unchecked"})
     final Map<String,Object> jsonParse = (Map<String,Object>) Utils
         .fromJSONString(res);
-    @SuppressWarnings({"unchecked"})
     final Double doc0Score = (Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score");
 
@@ -167,10 +165,8 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     String res = restTestHarness.query("/query"
         + yesMatchFeatureQuery.toQueryString());
 
-    @SuppressWarnings({"unchecked"})
     final Map<String,Object> jsonParse = (Map<String,Object>) Utils
         .fromJSONString(res);
-    @SuppressWarnings({"unchecked"})
     final Double doc0Score = (Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score");
 

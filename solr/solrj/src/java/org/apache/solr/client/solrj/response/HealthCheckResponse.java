@@ -24,7 +24,6 @@ public class HealthCheckResponse extends SolrResponseBase {
   public HealthCheckResponse() {
   }
 
-  @SuppressWarnings({"unchecked"})
   public NamedList<String> getErrorMessages() {
     return (NamedList<String>) getResponse().get( "errors" );
   }

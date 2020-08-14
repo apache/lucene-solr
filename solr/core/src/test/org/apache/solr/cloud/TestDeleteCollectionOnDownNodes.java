@@ -44,6 +44,7 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
   public void deleteCollectionWithDownNodes() throws Exception {
 
     CollectionAdminRequest.createCollection("halfdeletedcollection2", "conf", 4, 3)
+        .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection("halfdeletedcollection2", 60, TimeUnit.SECONDS, 4, 12);

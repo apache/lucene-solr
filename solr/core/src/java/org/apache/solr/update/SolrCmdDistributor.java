@@ -131,7 +131,7 @@ public class SolrCmdDistributor implements Closeable {
         builder.append(errors.size() - 10);
         builder.append(" more");
       }
-      log.debug("{}", builder);
+      log.debug(builder.toString());
     }
 
     for (Error err : errors) {
@@ -162,9 +162,7 @@ public class SolrCmdDistributor implements Closeable {
       // Only backoff once for the full batch
       try {
         int backoffTime = Math.min(retryPause * resubmitList.get(0).req.retries, 2000);
-        if (log.isDebugEnabled()) {
-          log.debug("Sleeping {}ms before re-submitting {} requests", backoffTime, resubmitList.size());
-        }
+        log.debug("Sleeping {}ms before re-submitting {} requests", backoffTime, resubmitList.size());
         Thread.sleep(backoffTime);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
@@ -322,8 +320,9 @@ public class SolrCmdDistributor implements Closeable {
     }
     
     if (log.isDebugEnabled()) {
-      log.debug("sending update to {} retry: {} {} params {}"
-          , req.node.getUrl(), req.retries, req.cmd, req.uReq.getParams());
+      log.debug("sending update to "
+          + req.node.getUrl() + " retry:"
+          + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
     }
     
     if (isCommit) {
@@ -428,7 +427,6 @@ public class SolrCmdDistributor implements Closeable {
           NamedList<Object> nl = brp.processResponse(inputStream, null);
           Object hdr = nl.get("responseHeader");
           if (hdr != null && hdr instanceof NamedList) {
-            @SuppressWarnings({"unchecked"})
             NamedList<Object> hdrList = (NamedList<Object>) hdr;
             Object rfObj = hdrList.get(UpdateRequest.REPFACT);
             if (rfObj != null && rfObj instanceof Integer) {

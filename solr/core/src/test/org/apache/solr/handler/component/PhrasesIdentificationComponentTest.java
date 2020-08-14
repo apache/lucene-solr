@@ -381,7 +381,6 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     
   }
   
-  @SuppressWarnings({"unchecked"})
   public void testWhiteboxScores() throws Exception {
     final SchemaField analysisField = h.getCore().getLatestSchema().getField("multigrams_body");
     assertNotNull(analysisField);
@@ -453,7 +452,6 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     
   }
   
-  @SuppressWarnings({"unchecked"})
   public void testWhiteboxScorcesStopwords() throws Exception {
     final String input = "why the lazy dog brown fox";
     final Map<String,Double> fieldWeights = new TreeMap<>();
@@ -773,7 +771,6 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
 
   /** helper, docs for future junit/hamcrest seems to have something similar */
-  @SuppressWarnings({"rawtypes"})
   public static Matcher lessThan(double expected) {
     return new BaseMatcher() {
       @Override public boolean matches(Object actual) {
@@ -785,7 +782,6 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     };
   }
   /** helper, docs for future junit/hamcrest seems to have something similar */
-  @SuppressWarnings({"rawtypes"})
   public static Matcher greaterThan(double expected) {
     return new BaseMatcher() {
       @Override public boolean matches(Object actual) {

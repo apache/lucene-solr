@@ -61,36 +61,22 @@ public class SolrClientCloudManager implements SolrCloudManager {
   private final ZkStateReader zkStateReader;
   private final SolrZkClient zkClient;
   private final ObjectCache objectCache;
-  private final boolean closeObjectCache;
   private volatile boolean isClosed;
 
   public SolrClientCloudManager(DistributedQueueFactory queueFactory, CloudSolrClient solrClient) {
-    this(queueFactory, solrClient, null);
-  }
-
-  public SolrClientCloudManager(DistributedQueueFactory queueFactory, CloudSolrClient solrClient,
-                                ObjectCache objectCache) {
     this.queueFactory = queueFactory;
     this.solrClient = solrClient;
     this.zkStateReader = solrClient.getZkStateReader();
     this.zkClient = zkStateReader.getZkClient();
     this.stateManager = new ZkDistribStateManager(zkClient);
     this.isClosed = false;
-    if (objectCache == null) {
-      this.objectCache = new ObjectCache();
-      closeObjectCache = true;
-    } else {
-      this.objectCache = objectCache;
-      this.closeObjectCache = false;
-    }
+    this.objectCache = new ObjectCache();
   }
 
   @Override
   public void close() {
     isClosed = true;
-    if (closeObjectCache) {
-      IOUtils.closeQuietly(objectCache);
-    }
+    IOUtils.closeQuietly(objectCache);
   }
 
   @Override
@@ -124,7 +110,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
   }
 
   @Override
-  public SolrResponse request(@SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException {
+  public SolrResponse request(SolrRequest req) throws IOException {
     try {
       return req.process(solrClient);
     } catch (SolrServerException e) {

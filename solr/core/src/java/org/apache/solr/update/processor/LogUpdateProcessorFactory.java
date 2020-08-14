@@ -52,7 +52,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
   int maxNumToLog = 10;
   int slowUpdateThresholdMillis = -1;
   @Override
-  public void init( @SuppressWarnings({"rawtypes"})final NamedList args ) {
+  public void init( final NamedList args ) {
     if( args != null ) {
       SolrParams params = args.toSolrParams();
       maxNumToLog = params.getInt( "maxNumToLog", maxNumToLog );
@@ -62,8 +62,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    return (log.isInfoEnabled() || slowUpdateThresholdMillis >= 0) ?
-        new LogUpdateProcessor(req, rsp, this, next) : next;
+    return log.isInfoEnabled() ? new LogUpdateProcessor(req, rsp, this, next) : next;
   }
   
   static class LogUpdateProcessor extends UpdateRequestProcessor {
@@ -98,9 +97,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
     
     @Override
     public void processAdd(AddUpdateCommand cmd) throws IOException {
-      if (logDebug) {
-        log.debug("PRE_UPDATE {} {}", cmd, req);
-      }
+      if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString() + " " + req); }
 
       // call delegate first so we can log things like the version that get set later
       if (next != null) next.processAdd(cmd);
@@ -123,9 +120,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
 
     @Override
     public void processDelete( DeleteUpdateCommand cmd ) throws IOException {
-      if (logDebug) {
-        log.debug("PRE_UPDATE {} {}", cmd, req);
-      }
+      if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString() + " " + req); }
       if (next != null) next.processDelete(cmd);
 
       if (cmd.isDeleteById()) {
@@ -153,9 +148,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
 
     @Override
     public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
-      if (logDebug) {
-        log.debug("PRE_UPDATE {} {}", cmd, req);
-      }
+      if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString() + " " + req); }
       if (next != null) next.processMergeIndexes(cmd);
 
       toLog.add("mergeIndexes", cmd.toString());
@@ -163,9 +156,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
 
     @Override
     public void processCommit( CommitUpdateCommand cmd ) throws IOException {
-      if (logDebug) {
-        log.debug("PRE_UPDATE {} {}", cmd, req);
-      }
+      if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString() + " " + req); }
       if (next != null) next.processCommit(cmd);
 
 
@@ -178,9 +169,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
      */
     @Override
     public void processRollback( RollbackUpdateCommand cmd ) throws IOException {
-      if (logDebug) {
-        log.debug("PRE_UPDATE {} {}", cmd, req);
-      }
+      if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString() + " " + req); }
       if (next != null) next.processRollback(cmd);
 
       toLog.add("rollback", "");
@@ -189,9 +178,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
 
     @Override
     public void finish() throws IOException {
-      if (logDebug) {
-        log.debug("PRE_UPDATE FINISH {}", req);
-      }
+      if (logDebug) { log.debug("PRE_UPDATE FINISH " + req); }
       if (next != null) next.finish();
 
       // LOG A SUMMARY WHEN ALL DONE (INFO LEVEL)
@@ -203,7 +190,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       if (log.isWarnEnabled() && slowUpdateThresholdMillis >= 0) {
         final long elapsed = (long) req.getRequestTimer().getTime();
         if (elapsed >= slowUpdateThresholdMillis) {
-          log.warn("slow: {}", getLogStringAndClearRspToLog());
+          log.warn("slow: " + getLogStringAndClearRspToLog());
         }
       }
     }

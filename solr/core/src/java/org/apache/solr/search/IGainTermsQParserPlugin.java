@@ -143,10 +143,8 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
     @Override
     public void finish() throws IOException {
       NamedList<Double> analytics = new NamedList<Double>();
-      @SuppressWarnings({"unchecked", "rawtypes"})
       NamedList<Integer> topFreq = new NamedList();
 
-      @SuppressWarnings({"unchecked", "rawtypes"})
       NamedList<Integer> allFreq = new NamedList();
 
       rb.rsp.add("featuredTerms", analytics);

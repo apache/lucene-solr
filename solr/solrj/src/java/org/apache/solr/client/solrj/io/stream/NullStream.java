@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Date;
 
@@ -132,7 +133,7 @@ public class NullStream extends TupleStream implements Expressible {
       if(tuple.EOF) {
         eof = tuple;
         long end = new Date().getTime();
-        Tuple t = new Tuple();
+        Tuple t = new Tuple(new HashMap());
         t.put("nullCount", count);
         t.put("timer", end-start);
         return t;

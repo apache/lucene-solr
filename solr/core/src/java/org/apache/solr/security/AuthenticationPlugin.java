@@ -17,10 +17,8 @@
 package org.apache.solr.security;
 
 import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import java.security.Principal;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,14 +72,15 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
    * the response and status code have already been sent.
    * @throws Exception any exception thrown during the authentication, e.g. PrivilegedActionException
    */
-  public abstract boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response,
+  //TODO redeclare params as HttpServletRequest & HttpServletResponse
+  public abstract boolean doAuthenticate(ServletRequest request, ServletResponse response,
       FilterChain filterChain) throws Exception;
 
   /**
    * This method is called by SolrDispatchFilter in order to initiate authentication.
    * It does some standard metrics counting.
    */
-  public final boolean authenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
+  public final boolean authenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
     Timer.Context timer = requestTimes.time();
     requests.inc();
     try {
@@ -93,24 +92,6 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
       long elapsed = timer.stop();
       totalTime.inc(elapsed);
     }
-  }
-
-  HttpServletRequest wrapWithPrincipal(HttpServletRequest request, Principal principal) {
-      return wrapWithPrincipal(request, principal, principal.getName());
-  }
-
-  HttpServletRequest wrapWithPrincipal(HttpServletRequest request, Principal principal, String username) {
-    return new HttpServletRequestWrapper(request) {
-      @Override
-      public Principal getUserPrincipal() {
-        return principal;
-      }
-
-      @Override
-      public String getRemoteUser() {
-        return username;
-      }
-    };
   }
 
   /**

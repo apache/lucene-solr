@@ -42,7 +42,6 @@ import org.mockito.Mockito;
 public class SkipExistingDocumentsProcessorFactoryTest {
 
   private BytesRef docId = new BytesRef();
-  @SuppressWarnings({"rawtypes"})
   private SolrQueryRequest defaultRequest = new LocalSolrQueryRequest(null, new NamedList());
   
   @BeforeClass

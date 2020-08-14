@@ -60,7 +60,6 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   private NamedList<NamedList<NamedList<Object>>> readProperties() throws Exception {
     String xml = h.query(req(
         CommonParams.QT, "/admin/properties",

@@ -141,6 +141,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
             .map(JettySolrRunner::getNodeName)
             .collect(Collectors.joining(","))
         )
+        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collection, 2, 4);

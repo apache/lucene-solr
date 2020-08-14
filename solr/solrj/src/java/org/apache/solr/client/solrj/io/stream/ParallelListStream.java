@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -33,7 +34,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
 public class ParallelListStream extends TupleStream implements Expressible {
 
@@ -106,12 +107,14 @@ public class ParallelListStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
-    while (true) {
+    while(true) {
       if (currentStream == null) {
         if (streamIndex < streams.length) {
           currentStream = streams[streamIndex];
         } else {
-          return Tuple.EOF();
+          HashMap map = new HashMap();
+          map.put("EOF", true);
+          return new Tuple(map);
         }
       }
 
@@ -134,9 +137,9 @@ public class ParallelListStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("ParallelListStream"));
+    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("ParallelListStream"));
     try {
-      List<Future<StreamIndex>> futures = new ArrayList<>();
+      List<Future<StreamIndex>> futures = new ArrayList();
       int i=0;
       for (TupleStream tupleStream : streams) {
         StreamOpener so = new StreamOpener(new StreamIndex(tupleStream, i++));

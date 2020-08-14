@@ -129,9 +129,7 @@ public final class RequestHandlers {
     }
     handlers.init(Collections.emptyMap(),core, modifiedInfos);
     handlers.alias(handlers.getDefault(), "");
-    if (log.isDebugEnabled()) {
-      log.debug("Registered paths: {}", StrUtils.join(new ArrayList<>(handlers.keySet()), ','));
-    }
+    log.debug("Registered paths: {}" , StrUtils.join(new ArrayList<>(handlers.keySet()) , ',' ));
     if (handlers.get("") == null && !handlers.alias("/select", "")) {
       if (handlers.get("") == null && !handlers.alias("standard", "")) {
         log.warn("no default request handler is registered (either '/select' or 'standard')");
@@ -145,7 +143,7 @@ public final class RequestHandlers {
     if(p!=null) {
       for (String arg : StrUtils.splitSmart(p, ',')) {
         if(config.getInitParams().containsKey(arg)) ags.add(config.getInitParams().get(arg));
-        else log.warn("INVALID paramSet {} in requestHandler {}", arg, info);
+        else log.warn("INVALID paramSet {} in requestHandler {}", arg, info.toString());
       }
     }
     for (InitParams args : config.getInitParams().values())

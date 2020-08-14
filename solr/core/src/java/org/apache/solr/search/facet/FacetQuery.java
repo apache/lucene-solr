@@ -27,7 +27,6 @@ public class FacetQuery extends FacetRequest {
   // query string or query?
   Query q;
 
-  @SuppressWarnings("rawtypes")
   @Override
   public FacetProcessor createFacetProcessor(FacetContext fcontext) {
     return new FacetQueryProcessor(fcontext, this);
@@ -35,7 +34,7 @@ public class FacetQuery extends FacetRequest {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetModule.FacetQueryMerger(this);
+    return new FacetQueryMerger(this);
   }
   
   @Override

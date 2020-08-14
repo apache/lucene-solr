@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -54,9 +53,9 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
   @Test
   @BaseDistributedSearchTestCase.ShardsFixed(num = 3)
   public void test() throws Exception {
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+    waitForThingsToLevelOut(30);
 
-    createCollection(COLLECTION, "conf1", 4, 1);
+    createCollection(COLLECTION, "conf1", 4, 1, 4);
     final int numRuns = 10;
     populateIndex(numRuns);
   }
@@ -64,7 +63,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
   void populateIndex(int numRuns) throws IOException, SolrServerException {
     try {
       for (int i = 0; i < numRuns; i++) {
-        log.debug("Iteration number: {}", i);
+        log.debug("Iteration number: " + i);
         cloudClient.deleteByQuery(COLLECTION, "*:*");
         cloudClient.commit(COLLECTION);
 
@@ -74,7 +73,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
         final SolrQuery solrQuery = new SolrQuery("*:*");
         solrQuery.setRows(solrDocs.size());
         final SolrDocumentList resultDocs = getSolrResponse(solrQuery, COLLECTION);
-        log.debug("{}", resultDocs);
+        log.debug(resultDocs.toString());
         assertThatDocsHaveCorrectFields(solrDocs, resultDocs);
       }
     } finally {

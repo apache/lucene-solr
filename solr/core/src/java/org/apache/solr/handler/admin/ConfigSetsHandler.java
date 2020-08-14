@@ -29,6 +29,7 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.fs.Path;
 import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponse;
@@ -121,9 +122,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   void invokeAction(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetAction action) throws Exception {
     ConfigSetOperation operation = ConfigSetOperation.get(action);
-    if (log.isInfoEnabled()) {
-      log.info("Invoked ConfigSet Action :{} with params {} ", action.toLower(), req.getParamString());
-    }
+    log.info("Invoked ConfigSet Action :{} with params {} ", action.toLower(), req.getParamString());
     Map<String, Object> result = operation.call(req, rsp, this);
     sendToZk(rsp, operation, result);
   }
@@ -152,7 +151,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
 
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
-    String configPathInZk = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName;
+    String configPathInZk = ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + configSetName;
 
     if (zkClient.exists(configPathInZk, true)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
@@ -189,10 +188,8 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   boolean getTrusted(SolrQueryRequest req) {
     AuthenticationPlugin authcPlugin = coreContainer.getAuthenticationPlugin();
-    if (log.isInfoEnabled()) {
-      log.info("Trying to upload a configset. authcPlugin: {}, user principal: {}",
-          authcPlugin, req.getUserPrincipal());
-    }
+    log.info("Trying to upload a configset. authcPlugin: {}, user principal: {}",
+        authcPlugin, req.getUserPrincipal());
     if (authcPlugin != null && req.getUserPrincipal() != null) {
       return true;
     }
@@ -208,7 +205,6 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   private void handleResponse(String operation, ZkNodeProps m,
                               SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
     long time = System.nanoTime();
@@ -219,7 +215,6 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     if (event.getBytes() != null) {
       SolrResponse response = OverseerSolrResponseSerializer.deserialize(event.getBytes());
       rsp.getValues().addAll(response.getResponse());
-      @SuppressWarnings({"rawtypes"})
       SimpleOrderedMap exp = (SimpleOrderedMap) response.getResponse().get("exception");
       if (exp != null) {
         Integer code = (Integer) exp.get("rspCode");
@@ -283,7 +278,6 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         return CollectionsHandler.copy(req.getParams().required(), null, NAME);
       }
     },
-    @SuppressWarnings({"unchecked"})
     LIST_OP(LIST) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {

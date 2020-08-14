@@ -26,11 +26,10 @@ import org.apache.solr.response.SolrQueryResponse;
  */
 public class CustomUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory 
 {
-  @SuppressWarnings({"rawtypes"})
   public NamedList args = null;
   
   @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args )
+  public void init( NamedList args )
   {
     this.args = args;
   }

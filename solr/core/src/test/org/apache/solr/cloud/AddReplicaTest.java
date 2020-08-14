@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
+import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -61,6 +62,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 1, 1);
+    create.setMaxShardsPerNode(2);
     cloudClient.request(create);
     cluster.waitForActiveCollection(collection, 1, 1);
 
@@ -80,6 +82,13 @@ public class AddReplicaTest extends SolrCloudTestCase {
     assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
 
+    // try to add 5 more replicas which should fail because numNodes(4)*maxShardsPerNode(2)=8 and 4 replicas already exist
+    addReplica = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
+        .setNrtReplicas(3)
+        .setTlogReplicas(1)
+        .setPullReplicas(1);
+    status = addReplica.processAndWait(collection + "_xyz1", cloudClient, 120);
+    assertEquals(FAILED, status);
     docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
@@ -88,7 +97,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
 
-    // adding any number of replicas is supported if an explicit create node set is specified
+    // but adding any number of replicas is supported if an explicit create node set is specified
     // so test that as well
     LinkedHashSet<String> createNodeSet = new LinkedHashSet<>(2);
     createNodeSet.add(cluster.getRandomJetty(random()).getNodeName());
@@ -121,6 +130,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 2, 1);
+    create.setMaxShardsPerNode(2);
     cloudClient.request(create);
     
     cluster.waitForActiveCollection(collection, 2, 2);

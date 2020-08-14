@@ -38,13 +38,8 @@ public class InitParams {
   public static final String TYPE = "initParams";
   public final String name;
   public final Set<String> paths;
-  @SuppressWarnings({"rawtypes"})
-  public final NamedList defaults;
-  @SuppressWarnings({"rawtypes"})
-  public final NamedList invariants;
-  @SuppressWarnings({"rawtypes"})
-  public final NamedList  appends;
-  final private PluginInfo pluginInfo;
+  public final NamedList defaults, invariants, appends;
+  private PluginInfo pluginInfo;
   private final Set<String> KNOWN_KEYS = ImmutableSet.of(DEFAULTS, INVARIANTS, APPENDS);
 
   public InitParams(PluginInfo p) {
@@ -56,7 +51,6 @@ public class InitParams {
       paths = Set.copyOf(StrUtils.splitSmart(pathStr, ','));
     }
     this.paths = paths;
-    @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList) p.initArgs.get(DEFAULTS);
     defaults = nl == null ? null : nl.getImmutableCopy();
     nl = (NamedList) p.initArgs.get(INVARIANTS);
@@ -94,7 +88,6 @@ public class InitParams {
 
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void apply(PluginInfo info) {
     if (!info.isFromSolrConfig()) {
       //if this is a component implicitly defined in code it should be overridden by initPrams
@@ -117,7 +110,6 @@ public class InitParams {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static void merge(NamedList first, NamedList second, NamedList sink, String name, boolean appends) {
     if (first == null && second == null) return;
     if (first == null) first = new NamedList();

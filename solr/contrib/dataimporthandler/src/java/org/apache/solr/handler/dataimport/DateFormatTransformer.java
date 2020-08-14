@@ -68,7 +68,6 @@ public class DateFormatTransformer extends Transformer {
       try {
         Object o = aRow.get(srcCol);
         if (o instanceof List) {
-          @SuppressWarnings({"rawtypes"})
           List inputs = (List) o;
           List<Date> results = new ArrayList<>();
           for (Object input : inputs) {

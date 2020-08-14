@@ -18,7 +18,6 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -71,11 +70,6 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='6']",
         "//result/doc[5]/str[@name='id'][.='7']"
     );
-  }
-  
-  @Test
-  public void testMissingField() {
-    assertQEx("Expecting bad request", "Missing field to query", req("q", "{!terms}childrens|scifi"), SolrException.ErrorCode.BAD_REQUEST);
   }
 
   class TermsParams {

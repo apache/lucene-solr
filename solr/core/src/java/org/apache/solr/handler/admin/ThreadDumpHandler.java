@@ -19,10 +19,7 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
-import java.lang.management.LockInfo;
 import java.lang.management.ThreadMXBean;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.common.util.NamedList;
@@ -57,7 +54,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
     
     // Deadlocks
     ThreadInfo[] tinfos;
-    long[] tids = tmbean.findDeadlockedThreads();
+    long[] tids = tmbean.findMonitorDeadlockedThreads();
     if (tids != null) {
       tinfos = tmbean.getThreadInfo(tids, Integer.MAX_VALUE);
       NamedList<SimpleOrderedMap<Object>> lst = new NamedList<>();
@@ -70,8 +67,8 @@ public class ThreadDumpHandler extends RequestHandlerBase
     }
     
     // Now show all the threads....
-
-    tinfos = tmbean.dumpAllThreads(true, true);
+    tids = tmbean.getAllThreadIds();
+    tinfos = tmbean.getThreadInfo(tids, Integer.MAX_VALUE);
     NamedList<SimpleOrderedMap<Object>> lst = new NamedList<>();
     for (ThreadInfo ti : tinfos) {
       if (ti != null) {
@@ -94,47 +91,8 @@ public class ThreadDumpHandler extends RequestHandlerBase
     info.add( "state", ti.getThreadState().toString() );
     
     if (ti.getLockName() != null) {
-      // TODO: this is redundent with lock-waiting below .. deprecate & remove
-      // TODO: (but first needs UI change)
       info.add( "lock", ti.getLockName() );
     }
-    { final LockInfo lockInfo = ti.getLockInfo();
-      if (null != lockInfo) {
-        final SimpleOrderedMap<Object> lock = new SimpleOrderedMap<>();
-        info.add("lock-waiting", lock);
-        lock.add(NAME, lockInfo.toString());
-        if (-1 == ti.getLockOwnerId() && null == ti.getLockOwnerName()) {
-          lock.add("owner", null );
-        } else {
-          final SimpleOrderedMap<Object> owner = new SimpleOrderedMap<>();
-          lock.add("owner", owner);
-          owner.add(NAME, ti.getLockOwnerName());
-          owner.add( ID, ti.getLockOwnerId() );
-        }
-      }
-    }
-    { final LockInfo[] synchronizers = ti.getLockedSynchronizers();
-      if (0 < synchronizers.length) {
-        final List<String> locks = new ArrayList<>(synchronizers.length);
-        info.add("synchronizers-locked", locks);
-        for (LockInfo sync : synchronizers) {
-          locks.add(sync.toString());
-        }
-      }
-    }
-    { final LockInfo[] monitors = ti.getLockedMonitors();
-      if (0 < monitors.length) {
-        final List<String> locks = new ArrayList<>(monitors.length);
-        info.add("monitors-locked", locks);
-        for (LockInfo monitor : monitors) {
-          locks.add(monitor.toString());
-        }
-      }
-    }
-    
-    
-
-    
     if (ti.isSuspended()) {
       info.add( "suspended", true );
     }
@@ -147,6 +105,12 @@ public class ThreadDumpHandler extends RequestHandlerBase
       info.add( "userTime", formatNanos(tmbean.getThreadUserTime(tid)) );
     }
 
+    if (ti.getLockOwnerName() != null) {
+      SimpleOrderedMap<Object> owner = new SimpleOrderedMap<>();
+      owner.add(NAME, ti.getLockOwnerName());
+      owner.add( ID, ti.getLockOwnerId() );
+    }
+    
     // Add the stack trace
     int i=0;
     String[] trace = new String[ti.getStackTrace().length];

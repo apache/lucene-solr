@@ -37,7 +37,6 @@ import static org.apache.solr.update.processor.IgnoreLargeDocumentProcessorFacto
 public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testProcessor() throws IOException {
     NamedList args = new NamedList();
     args.add(IgnoreLargeDocumentProcessorFactory.LIMIT_SIZE_PARAM, 1);

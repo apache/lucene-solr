@@ -69,7 +69,6 @@ public class NumberFormatTransformer extends Transformer {
 
         if (val instanceof List) {
           List<String> inputs = (List) val;
-          @SuppressWarnings({"rawtypes"})
           List results = new ArrayList();
           for (String input : inputs) {
             try {

@@ -26,7 +26,7 @@ public class RubyResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_RUBY_UTF8="text/x-ruby;charset=UTF-8";
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
+  public void init(NamedList n) {
     /* NOOP */
   }
   
@@ -46,7 +46,7 @@ public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) th
   }
 }
 
-class RubyWriter extends JSONResponseWriter.NaNFloatWriter {
+class RubyWriter extends NaNFloatWriter {
 
   @Override
   protected String getNaN() { return "(0.0/0.0)"; }

@@ -52,10 +52,9 @@ public class ClusterStateMutator {
     this.stateManager = dataProvider.getDistribStateManager();
   }
 
-  @SuppressWarnings({"unchecked"})
   public ZkWriteCommand createCollection(ClusterState clusterState, ZkNodeProps message) {
     String cName = message.getStr(NAME);
-    log.debug("building a new cName: {}", cName);
+    log.debug("building a new cName: " + cName);
     if (clusterState.hasCollection(cName)) {
       log.warn("Collection {} already exists. exit", cName);
       return ZkStateWriter.NO_OP;
@@ -109,7 +108,12 @@ public class ClusterStateMutator {
       collectionProps.put("autoCreated", "true");
     }
 
-    DocCollection newCollection = new DocCollection(cName, slices, collectionProps, router, -1);
+    //TODO default to 2; but need to debug why BasicDistributedZk2Test fails early on
+    String znode = message.getInt(DocCollection.STATE_FORMAT, 1) == 1 ? null
+        : ZkStateReader.getCollectionPath(cName);
+
+    DocCollection newCollection = new DocCollection(cName,
+        slices, collectionProps, router, -1, znode);
 
     return new ZkWriteCommand(cName, newCollection);
   }
@@ -184,6 +188,17 @@ public class ClusterStateMutator {
       }
     }
     return null;
+  }
+
+  public ZkWriteCommand migrateStateFormat(ClusterState clusterState, ZkNodeProps message) {
+    final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+    if (!CollectionMutator.checkKeyExistence(message, ZkStateReader.COLLECTION_PROP)) return ZkStateWriter.NO_OP;
+    DocCollection coll = clusterState.getCollectionOrNull(collection);
+    if (coll == null || coll.getStateFormat() == 2) return ZkStateWriter.NO_OP;
+
+    return new ZkWriteCommand(coll.getName(),
+        new DocCollection(coll.getName(), coll.getSlicesMap(), coll.getProperties(), coll.getRouter(), 0,
+            ZkStateReader.getCollectionPath(collection)));
   }
 }
 

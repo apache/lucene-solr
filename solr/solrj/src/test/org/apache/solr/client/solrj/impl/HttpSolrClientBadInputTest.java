@@ -45,9 +45,7 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
-  private void assertExceptionThrownWithMessageContaining(@SuppressWarnings({"rawtypes"})Class expectedType,
-                                                          List<String> expectedStrings, ThrowingRunnable runnable) {
-    @SuppressWarnings({"unchecked"})
+  private void assertExceptionThrownWithMessageContaining(Class expectedType, List<String> expectedStrings, ThrowingRunnable runnable) {
     Throwable thrown = expectThrows(expectedType, runnable);
 
     if (expectedStrings != null) {

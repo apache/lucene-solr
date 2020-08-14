@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -83,10 +84,12 @@ public class OriginalScoreFeature extends Feature {
       return new OriginalScoreScorer(this, originalScorer);
     }
 
-    public class OriginalScoreScorer extends FilterFeatureScorer {
+    public class OriginalScoreScorer extends FeatureScorer {
+      final private Scorer originalScorer;
 
       public OriginalScoreScorer(FeatureWeight weight, Scorer originalScorer) {
-        super(weight, originalScorer);
+        super(weight,null);
+        this.originalScorer = originalScorer;
       }
 
       @Override
@@ -95,9 +98,23 @@ public class OriginalScoreFeature extends Feature {
         // was already scored in step 1
         // we shouldn't need to calc original score again.
         final DocInfo docInfo = getDocInfo();
-        return (docInfo != null && docInfo.hasOriginalDocScore() ? docInfo.getOriginalDocScore() : in.score());
+        return (docInfo != null && docInfo.hasOriginalDocScore() ? docInfo.getOriginalDocScore() : originalScorer.score());
       }
 
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return Float.POSITIVE_INFINITY;
+      }
+
+      @Override
+      public int docID() {
+        return originalScorer.docID();
+      }
+
+      @Override
+      public DocIdSetIterator iterator() {
+        return originalScorer.iterator();
+      }
     }
 
   }

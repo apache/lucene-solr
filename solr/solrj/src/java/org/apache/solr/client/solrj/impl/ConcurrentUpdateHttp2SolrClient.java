@@ -40,7 +40,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
@@ -160,7 +160,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       this.scheduler = builder.executorService;
       this.shutdownExecutor = false;
     } else {
-      this.scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("concurrentUpdateScheduler"));
+      this.scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("concurrentUpdateScheduler"));
       this.shutdownExecutor = true;
     }
 
@@ -209,7 +209,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     // Pull from the queue multiple times and streams over a single connection.
     // Exits on exception, interruption, or an empty queue to pull from.
     //
-    @SuppressWarnings({"unchecked"})
     void sendUpdateStream() throws Exception {
 
       try {
@@ -270,9 +269,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                 }
               } catch (Exception exc) {
                 // don't want to fail to report error if parsing the response fails
-                log.warn("Failed to parse error response from {} due to: ", basePath, exc);
+                log.warn("Failed to parse error response from " + basePath + " due to: " + exc);
               } finally {
-                solrExc = new BaseHttpSolrClient.RemoteSolrException(basePath , statusCode, msg.toString(), null);
+                solrExc = new HttpSolrClient.RemoteSolrException(basePath , statusCode, msg.toString(), null);
                 if (metadata != null) {
                   solrExc.setMetadata(metadata);
                 }
@@ -330,7 +329,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   // *must* be called with runners monitor held, e.g. synchronized(runners){ addRunner() }
   private void addRunner() {
-    MDC.put("ConcurrentUpdateHttp2SolrClient.url", String.valueOf(client.getBaseURL())); // MDC can't have null value
+    MDC.put("ConcurrentUpdateHttp2SolrClient.url", client.getBaseURL());
     try {
       Runner r = new Runner();
       runners.add(r);
@@ -346,7 +345,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, String collection)
+  public NamedList<Object> request(final SolrRequest request, String collection)
       throws SolrServerException, IOException {
     if (!(request instanceof UpdateRequest)) {
       request.setBasePath(basePath);
@@ -501,8 +500,8 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           }
           if (queueSize > 0 && runners.isEmpty()) {
             // TODO: can this still happen?
-            log.warn("No more runners, but queue still has {}  adding more runners to process remaining requests on queue"
-                , queueSize);
+            log.warn("No more runners, but queue still has " +
+                queueSize + " adding more runners to process remaining requests on queue");
             addRunner();
           }
 
@@ -539,16 +538,16 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     int lastQueueSize = -1;
     while (!queue.isEmpty()) {
       if (scheduler.isTerminated()) {
-        log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. Queue size: {}, Runners: {}. Current thread Interrupted? {}"
-            , scheduler, queue.size(), runners.size(), threadInterrupted);
+        log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. "
+            + "Queue size: {}, Runners: {}. Current thread Interrupted? {}", scheduler, queue.size(), runners.size(), threadInterrupted);
         break;
       }
 
       synchronized (runners) {
         int queueSize = queue.size();
         if (queueSize > 0 && runners.isEmpty()) {
-          log.warn("No more runners, but queue still has {} adding more runners to process remaining requests on queue"
-              , queueSize);
+          log.warn("No more runners, but queue still has " +
+              queueSize + " adding more runners to process remaining requests on queue");
           addRunner();
         }
       }

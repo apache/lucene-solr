@@ -89,7 +89,6 @@ public class CSVPrinter {
    *
    * @param comment the comment to output
    */
-  @SuppressWarnings({"fallthrough"})
   public void printlnComment(String comment) throws IOException {
     if(this.strategy.isCommentingDisabled()) {
         return;

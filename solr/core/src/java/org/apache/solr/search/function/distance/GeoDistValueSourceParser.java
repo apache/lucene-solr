@@ -193,7 +193,6 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     SchemaField sf = fp.getReq().getSchema().getField(sfield);
     FieldType type = sf.getType();
     if (type instanceof AbstractSpatialFieldType) {
-      @SuppressWarnings({"rawtypes"})
       AbstractSpatialFieldType asft = (AbstractSpatialFieldType) type;
       return new SpatialStrategyMultiValueSource(asft.getStrategy(sfield), asft.getDistanceUnits());
     }
@@ -210,8 +209,9 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
 
     final SpatialStrategy strategy;
     final DistanceUnits distanceUnits;
+
     public SpatialStrategyMultiValueSource(SpatialStrategy strategy, DistanceUnits distanceUnits) {
-      super(Collections.emptyList());
+      super(Collections.EMPTY_LIST);
       this.strategy = strategy;
       this.distanceUnits = distanceUnits;
     }

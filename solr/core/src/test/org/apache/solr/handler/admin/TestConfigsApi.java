@@ -36,10 +36,9 @@ import static org.apache.solr.handler.admin.TestCollectionAPIs.compareOutput;
 public class TestConfigsApi extends SolrTestCaseJ4 {
 
 
-  @SuppressWarnings({"unchecked"})
   public void testCommands() throws Exception {
 
-    try (ConfigSetsHandler handler = new ConfigSetsHandler(null) {
+    ConfigSetsHandler handler = new ConfigSetsHandler(null) {
       @Override
       protected void sendToZk(SolrQueryResponse rsp,
                               ConfigSetOperation operation,
@@ -48,14 +47,13 @@ public class TestConfigsApi extends SolrTestCaseJ4 {
         result.put(QUEUE_OPERATION, operation.action.toLower());
         rsp.add(ZkNodeProps.class.getName(), new ZkNodeProps(result));
       }
-    }) {
-      ApiBag apiBag = new ApiBag(false);
-      for (Api api : handler.getApis()) apiBag.register(api, EMPTY_MAP);
-      compareOutput(apiBag, "/cluster/configs/sample", DELETE, null, null,
-          "{name :sample, operation:delete}");
+    };
+    ApiBag apiBag = new ApiBag(false);
+    for (Api api : handler.getApis()) apiBag.register(api, EMPTY_MAP);
+    compareOutput(apiBag, "/cluster/configs/sample", DELETE, null, null,
+        "{name :sample, operation:delete}");
 
-      compareOutput(apiBag, "/cluster/configs", POST, "{create:{name : newconf, baseConfigSet: sample }}", null,
-          "{operation:create, name :newconf,  baseConfigSet: sample, immutable: false }");
-    }
+    compareOutput(apiBag, "/cluster/configs", POST, "{create:{name : newconf, baseConfigSet: sample }}", null,
+        "{operation:create, name :newconf,  baseConfigSet: sample, immutable: false }");
   }
 }

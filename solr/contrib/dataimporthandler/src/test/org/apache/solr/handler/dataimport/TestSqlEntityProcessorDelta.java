@@ -49,7 +49,7 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
     logPropertiesFile();
     changeStuff();
     int c = calculateDatabaseCalls();
-    log.debug("testSingleEntity delta-import ({} database calls expected)...", c);
+    log.debug("testSingleEntity delta-import (" + c + " database calls expected)...");
     singleEntity(c);
     validateChanges();
   }
@@ -76,7 +76,7 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
     changeStuff();
     int c = calculateDatabaseCalls();
     simpleTransform(c);
-    log.debug("testWithSimpleTransformer delta-import ({} database calls expected)...", c);
+    log.debug("testWithSimpleTransformer delta-import (" + c + " database calls expected)...");
     validateChanges(); 
   }
   @Test
@@ -86,7 +86,7 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
     logPropertiesFile();
     changeStuff();
     int c = calculateDatabaseCalls();
-    log.debug("testWithComplexTransformer delta-import ({} database calls expected)...", c);
+    log.debug("testWithComplexTransformer delta-import (" + c + " database calls expected)...");
     complexTransform(c, personChanges.deletedKeys.length);
     validateChanges();  
   }
@@ -94,7 +94,7 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
   public void testChildEntities() throws Exception {
     log.debug("testChildEntities full-import...");
     useParentDeltaQueryParam = random().nextBoolean();
-    log.debug("using parent delta? {}", useParentDeltaQueryParam);
+    log.debug("using parent delta? " + useParentDeltaQueryParam);
     withChildEntities(false, true);
     logPropertiesFile();
     changeStuff();
@@ -168,13 +168,13 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
         sb.append(s).append(" ");
       }
       sb.append(" }");    
-      log.debug("{}", sb);
+      log.debug(sb.toString());
     }
   }
   private void personChangesLog()
   {
     if(personChanges!=null) {
-    log.debug("person changes [ {} ] ", personChanges);
+    log.debug("person changes { " + personChanges.toString() + " } ");
     }
   }
   @Override

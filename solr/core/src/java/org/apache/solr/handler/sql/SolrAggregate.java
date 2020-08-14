@@ -89,7 +89,6 @@ class SolrAggregate extends Aggregate implements SolrRel {
     }
   }
 
-  @SuppressWarnings({"fallthrough"})
   private Pair<String, String> toSolrMetric(Implementor implementor, AggregateCall aggCall, List<String> inNames) {
     SqlAggFunction aggregation = aggCall.getAggregation();
     List<Integer> args = aggCall.getArgList();

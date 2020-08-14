@@ -199,12 +199,11 @@ public class FetchStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l =  new ArrayList();
     l.add(stream);
     return l;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void open() throws IOException {
     tuples = new ArrayList().iterator();
     stream.open();
@@ -240,7 +239,6 @@ public class FetchStream extends TupleStream implements Expressible {
       CloudSolrStream cloudSolrStream = new CloudSolrStream(zkHost, collection, params);
       StreamContext newContext = new StreamContext();
       newContext.setSolrClientCache(streamContext.getSolrClientCache());
-      newContext.setObjectCache(streamContext.getObjectCache());
       cloudSolrStream.setStreamContext(newContext);
       Map<String, Tuple> fetched = new HashMap<>();
       try {

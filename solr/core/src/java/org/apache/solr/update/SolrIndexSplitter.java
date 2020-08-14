@@ -196,9 +196,8 @@ public class SolrIndexSplitter {
         t = timings.sub("parentApplyBufferedUpdates");
         ulog.applyBufferedUpdates();
         t.stop();
-        if (log.isInfoEnabled()) {
-          log.info("Splitting in 'link' mode {}: re-opened parent IndexWriter.", (success ? "finished" : "FAILED"));
-        }
+        log.info("Splitting in 'link' mode " + (success? "finished" : "FAILED") +
+            ": re-opened parent IndexWriter.");
       }
     }
     results.add(CommonParams.TIMING, timings.asNamedList());
@@ -212,9 +211,7 @@ public class SolrIndexSplitter {
     SolrIndexConfig parentConfig = searcher.getCore().getSolrConfig().indexConfig;
     String timestamp = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
 
-    if (log.isInfoEnabled()) {
-      log.info("SolrIndexSplitter: partitions={} segments={}", numPieces, leaves.size());
-    }
+    log.info("SolrIndexSplitter: partitions=" + numPieces + " segments=" + leaves.size());
     RTimerTree t;
 
     // this tracks round-robin assignment of docs to partitions
@@ -310,10 +307,7 @@ public class SolrIndexSplitter {
           t = timings.sub("addIndexes");
           t.resume();
           for (int segmentNumber = 0; segmentNumber<leaves.size(); segmentNumber++) {
-            if (log.isInfoEnabled()) {
-              log.info("SolrIndexSplitter: partition # {} partitionCount={} {} segment #={} segmentCount={}", partitionNumber, numPieces
-                  , (ranges != null ? " range=" + ranges.get(partitionNumber) : ""), segmentNumber, leaves.size()); // logOk
-            }
+            log.info("SolrIndexSplitter: partition #" + partitionNumber + " partitionCount=" + numPieces + (ranges != null ? " range=" + ranges.get(partitionNumber) : "") + " segment #"+segmentNumber + " segmentCount=" + leaves.size());
             CodecReader subReader = SlowCodecReaderWrapper.wrap(leaves.get(segmentNumber).reader());
             iw.addIndexes(new LiveDocsReader(subReader, segmentDocSets.get(segmentNumber)[partitionNumber]));
           }
@@ -364,7 +358,7 @@ public class SolrIndexSplitter {
           subCore.getUpdateHandler().newIndexWriter(false);
           openNewSearcher(subCore);
         } catch (Exception e) {
-          log.error("Failed to switch sub-core {} to {}, split will fail", indexDirPath, hardLinkPath, e);
+          log.error("Failed to switch sub-core " + indexDirPath + " to " + hardLinkPath + ", split will fail.", e);
           switchOk = false;
           break;
         }
@@ -401,7 +395,7 @@ public class SolrIndexSplitter {
           try {
             openNewSearcher(subCore);
           } catch (Exception e) {
-            log.warn("Error rolling back failed split of {}", hardLinkPath, e);
+            log.warn("Error rolling back failed split of " + hardLinkPath, e);
           }
         }
         t.stop();
@@ -430,7 +424,6 @@ public class SolrIndexSplitter {
   }
 
   private void openNewSearcher(SolrCore core) throws Exception {
-    @SuppressWarnings({"rawtypes"})
     Future[] waitSearcher = new Future[1];
     core.getSearcher(true, false, waitSearcher, true);
     if (waitSearcher[0] != null) {
@@ -468,11 +461,8 @@ public class SolrIndexSplitter {
           t.resume();
           FixedBitSet set = findDocsToDelete(context);
           t.pause();
-          if (log.isInfoEnabled()) {
-            log.info("### partition={}, leaf={}, maxDoc={}, numDels={}, setLen={}, setCard={}"
-            , partition, context, context.reader().maxDoc()
-            ,context.reader().numDeletedDocs(), set.length(), set.cardinality());
-          }
+          log.info("### partition=" + partition + ", leaf=" + context + ", maxDoc=" + context.reader().maxDoc() +
+          ", numDels=" + context.reader().numDeletedDocs() + ", setLen=" + set.length() + ", setCard=" + set.cardinality());
           Bits liveDocs = context.reader().getLiveDocs();
           if (liveDocs != null) {
             // check that we don't delete already deleted docs
@@ -480,7 +470,7 @@ public class SolrIndexSplitter {
             dels.flip(0, dels.length());
             dels.and(set);
             if (dels.cardinality() > 0) {
-              log.error("### INVALID DELS {}", dels.cardinality());
+              log.error("### INVALID DELS " + dels.cardinality());
             }
           }
           return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(set, set.length()));

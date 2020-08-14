@@ -325,9 +325,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
    * @param userVersionFieldName Field name of the user versions being compared
    * @return True if acceptable, false if not.
    */
-  @SuppressWarnings({"unchecked"})
-  protected boolean newUpdateComparePasses(@SuppressWarnings({"rawtypes"})Comparable newUserVersion,
-                                           @SuppressWarnings({"rawtypes"})Comparable oldUserVersion, String userVersionFieldName) {
+  protected boolean newUpdateComparePasses(Comparable newUserVersion, Comparable oldUserVersion, String userVersionFieldName) {
     return oldUserVersion.compareTo(newUserVersion) < 0;
   }
 
@@ -353,12 +351,10 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     return values;
   }
 
-  @SuppressWarnings({"unchecked"})
   private static FunctionValues getFunctionValues(LeafReaderContext segmentContext,
                                           SchemaField field,
                                           SolrIndexSearcher searcher) throws IOException {
     ValueSource vs = field.getType().getValueSource(field, null);
-    @SuppressWarnings({"rawtypes"})
     Map context = ValueSource.newContext(searcher);
     vs.createWeight(context, searcher);
     return vs.getValues(context, segmentContext);
@@ -412,7 +408,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   private static void logOverlyFailedRetries(int i, UpdateCommand cmd) {
     // Log a warning every 256 retries.... even a few retries should normally be very unusual.
     if ((i&0xff) == 0xff) {
-      log.warn("Unusual number of optimistic concurrency retries: retries={} cmd={}", i, cmd);
+      log.warn("Unusual number of optimistic concurrency retries: retries=" + i + " cmd=" + cmd);
     }
   }
 

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Collections;
@@ -136,9 +135,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     return persistence;
   }
 
-  @SuppressWarnings({"unchecked"})
   private Cache<K, V> buildCache(Cache<K, V> prev) {
-    @SuppressWarnings({"rawtypes"})
     Caffeine builder = Caffeine.newBuilder()
         .initialCapacity(initialSize)
         .executor(executor)
@@ -231,7 +228,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() throws Exception {
     SolrCache.super.close();
     cache.invalidateAll();
     cache.cleanUp();

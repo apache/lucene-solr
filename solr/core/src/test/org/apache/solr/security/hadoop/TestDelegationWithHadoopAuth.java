@@ -27,7 +27,6 @@ import org.apache.http.HttpStatus;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
@@ -116,7 +115,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       DelegationTokenResponse.Renew renewResponse = renew.process(client);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
       return renewResponse.getExpirationTime();
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+    } catch (HttpSolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
       return -1;
     }
@@ -128,7 +127,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     try {
       cancel.process(client);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+    } catch (HttpSolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
     }
   }
@@ -151,7 +150,6 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     assertEquals("Did not receieve excepted status code", expectedStatusCode, lastStatusCode);
   }
 
-  @SuppressWarnings({"rawtypes"})
   private SolrRequest getAdminRequest(final SolrParams params) {
     return new CollectionAdminRequest.List() {
       @Override
@@ -163,7 +161,6 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     };
   }
 
-  @SuppressWarnings({"unchecked"})
   private int getStatusCode(String token, final String user, final String op, HttpSolrClient client)
   throws Exception {
     SolrClient delegationTokenClient;
@@ -184,7 +181,6 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       ModifiableSolrParams p = new ModifiableSolrParams();
       if (user != null) p.set(PseudoAuthenticator.USER_NAME, user);
       if (op != null) p.set("op", op);
-      @SuppressWarnings({"rawtypes"})
       SolrRequest req = getAdminRequest(p);
       if (user != null || op != null) {
         Set<String> queryParams = new HashSet<>();
@@ -195,7 +191,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       try {
         delegationTokenClient.request(req, null);
         return HttpStatus.SC_OK;
-      } catch (BaseHttpSolrClient.RemoteSolrException re) {
+      } catch (HttpSolrClient.RemoteSolrException re) {
         return re.code();
       }
     } finally {
@@ -203,13 +199,12 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private void doSolrRequest(SolrClient client,
-                             @SuppressWarnings({"rawtypes"})SolrRequest request,
+  private void doSolrRequest(SolrClient client, SolrRequest request,
       int expectedStatusCode) throws Exception {
     try {
       client.request(request);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+    } catch (HttpSolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
     }
   }
@@ -372,7 +367,6 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     String token = getDelegationToken(null, USER_1, primarySolrClient);
     assertNotNull(token);
 
-    @SuppressWarnings({"rawtypes"})
     SolrRequest request = getAdminRequest(new ModifiableSolrParams());
 
     // test without token

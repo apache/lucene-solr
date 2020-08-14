@@ -31,9 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Properties;
 
 /**
  * Abstract base class for testing merge indexes command
@@ -50,12 +48,12 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static Path getSolrHome() {
-    return SolrTestCaseJ4.getFile("solrj/solr/multicore").toPath();
+  static String getSolrHome() {
+    return SolrTestCaseJ4.getFile("solrj/solr/multicore").getAbsolutePath();
   }
 
   protected void setupCoreContainer() {
-    cores = new CoreContainer(getSolrHome(), new Properties());
+    cores = new CoreContainer(getSolrHome());
     cores.load();
     //cores = CoreContainer.createAndLoad(getSolrHome(), new File(TEMP_DIR, "solr.xml"));
   }
@@ -74,11 +72,8 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
 
     setupCoreContainer();
-    if (log.isInfoEnabled()) {
-      log.info("CORES={} : {}", cores, cores.getLoadedCoreNames());
-    }
-    cores.getAllowPaths().add(dataDir1.toPath());
-    cores.getAllowPaths().add(dataDir2.toPath());
+    log.info("CORES=" + cores + " : " + cores.getLoadedCoreNames());
+
   }
 
   @Override

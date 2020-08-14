@@ -211,7 +211,19 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   @Test
   public void deleteReplicaFromClusterState() throws Exception {
-    final String collectionName = "deleteFromClusterStateCollection";
+    deleteReplicaFromClusterState("false");
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
+  }
+  
+  @Test
+  public void deleteReplicaFromClusterStateLegacy() throws Exception {
+    deleteReplicaFromClusterState("true"); 
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
+  }
+
+  private void deleteReplicaFromClusterState(String legacyCloud) throws Exception {
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, legacyCloud).process(cluster.getSolrClient());
+    final String collectionName = "deleteFromClusterState_"+legacyCloud;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
         .process(cluster.getSolrClient());
     
@@ -225,7 +237,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     Slice shard = getCollectionState(collectionName).getSlice("shard1");
 
-    // don't choose the leader to shutdown, it just complicates things unnecessarily
+    // don't choose the leader to shutdown, it just complicates things unneccessarily
     Replica replica = getRandomReplica(shard, (r) ->
                                        ( r.getState() == Replica.State.ACTIVE &&
                                          ! r.equals(shard.getLeader())));
@@ -271,7 +283,23 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @Slow
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
-    final String collectionName = "raceDeleteReplicaCollection";
+    raceConditionOnDeleteAndRegisterReplica("false");
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
+  }
+  
+  @Test
+  @Slow
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
+  public void raceConditionOnDeleteAndRegisterReplicaLegacy() throws Exception {
+    raceConditionOnDeleteAndRegisterReplica("true");
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
+  }
+
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
+  public void raceConditionOnDeleteAndRegisterReplica(String legacyCloud) throws Exception {
+    
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, legacyCloud).process(cluster.getSolrClient());
+    final String collectionName = "raceDeleteReplica_"+legacyCloud;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .process(cluster.getSolrClient());
     
@@ -439,9 +467,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     try {
       cluster.getSolrClient().waitForState(collectionName, 20, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 1);
     } catch (TimeoutException e) {
-      if (log.isInfoEnabled()) {
-        log.info("Timeout wait for state {}", getCollectionState(collectionName));
-      }
+      log.info("Timeout wait for state {}", getCollectionState(collectionName));
       throw e;
     }
   }

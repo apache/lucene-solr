@@ -63,7 +63,6 @@ public class ClientUtils
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
 
-  @SuppressWarnings({"unchecked"})
   public static void writeXML( SolrInputDocument doc, Writer writer ) throws IOException
   {
     writer.write("<doc>");
@@ -82,7 +81,6 @@ public class ClientUtils
             update = entry.getKey().toString();
             v = entry.getValue();
             if (v instanceof Collection) {
-              @SuppressWarnings({"rawtypes"})
               Collection values = (Collection) v;
               for (Object value : values) {
                 writeVal(writer, name, value, update);

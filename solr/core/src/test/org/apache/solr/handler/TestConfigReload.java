@@ -64,9 +64,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
 
   private void reloadTest() throws Exception {
     SolrZkClient client = cloudClient.getZkStateReader().getZkClient();
-    if (log.isInfoEnabled()) {
-      log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getClusterState().getLiveNodes());
-    }
+    log.info("live_nodes_count :  " + cloudClient.getZkStateReader().getClusterState().getLiveNodes());
     String confPath = ZkConfigManager.CONFIGS_ZKNODE+"/conf1/";
 //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
     checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE,"config", "/config");
@@ -87,9 +85,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     Stat newStat = client.setData(resPath, data, true);
     client.setData("/configs/conf1", new byte[]{1}, true);
     assertTrue(newStat.getVersion() > stat.getVersion());
-    if (log.isInfoEnabled()) {
-      log.info("new_version {}", newStat.getVersion());
-    }
+    log.info("new_version "+ newStat.getVersion());
     Integer newVersion = newStat.getVersion();
     long maxTimeoutSeconds = 60;
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
@@ -114,7 +110,6 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     assertEquals(StrUtils.formatString("tried these servers {0} succeeded only in {1} ", urls, succeeded) , urls.size(), succeeded.size());
   }
 
-  @SuppressWarnings({"rawtypes"})
   private LinkedHashMapWriter getAsMap(String uri) throws Exception {
     HttpGet get = new HttpGet(uri) ;
     HttpEntity entity = null;

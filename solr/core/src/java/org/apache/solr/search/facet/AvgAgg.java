@@ -37,7 +37,7 @@ public class AvgAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -62,7 +62,7 @@ public class AvgAgg extends SimpleAggValueSource {
       }
       vs = sf.getType().getValueSource(sf, null);
     }
-    return new SlotAcc.AvgSlotAcc(vs, fcontext, numSlots);
+    return new AvgSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -70,13 +70,12 @@ public class AvgAgg extends SimpleAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetModule.FacetDoubleMerger {
+  private static class Merger extends FacetDoubleMerger {
     long num;
     double sum;
 
     @Override
     public void merge(Object facetResult, Context mcontext1) {
-      @SuppressWarnings({"unchecked"})
       List<Number> numberList = (List<Number>) facetResult;
       num += numberList.get(0).longValue();
       sum += numberList.get(1).doubleValue();
@@ -89,7 +88,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  class AvgSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
+  class AvgSortedNumericAcc extends DoubleSortedNumericDVAcc {
     int[] counts;
 
     public AvgSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
@@ -115,7 +114,6 @@ public class AvgAgg extends SimpleAggValueSource {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
         ArrayList lst = new ArrayList(2);
@@ -136,11 +134,11 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-      this.counts = resizer.resize(counts, 0);
+      resizer.resize(counts, 0);
     }
   }
 
-  class AvgSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
+  class AvgSortedSetAcc extends DoubleSortedSetDVAcc {
     int[] counts;
 
     public AvgSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
@@ -170,7 +168,6 @@ public class AvgAgg extends SimpleAggValueSource {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
         ArrayList lst = new ArrayList(2);
@@ -191,11 +188,11 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-      this.counts = resizer.resize(counts, 0);
+      resizer.resize(counts, 0);
     }
   }
 
-  class AvgUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
+  class AvgUnInvertedFieldAcc extends DoubleUnInvertedFieldAcc {
     int[] counts;
 
     public AvgUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
@@ -227,7 +224,6 @@ public class AvgAgg extends SimpleAggValueSource {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object getValue(int slot) {
       if (fcontext.isShard()) {
         ArrayList lst = new ArrayList(2);
@@ -248,7 +244,7 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-      this.counts = resizer.resize(counts, 0);
+      resizer.resize(counts, 0);
     }
   }
 }

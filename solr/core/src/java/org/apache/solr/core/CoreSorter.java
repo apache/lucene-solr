@@ -19,10 +19,8 @@ package org.apache.solr.core;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.cloud.CloudDescriptor;
@@ -39,11 +37,12 @@ import static java.util.stream.Collectors.toList;
  * waiting for replicas in the current node. This helps in avoiding leaderVote timeouts
  * happening in other nodes of the cluster
  */
-public final class CoreSorter implements Comparator<CoreDescriptor> {
-
+public class CoreSorter {
+  Map<String, CountsForEachShard> shardsVsReplicaCounts = new LinkedHashMap<>();
+  CoreContainer cc;
   private static final CountsForEachShard zero = new CountsForEachShard(0, 0, 0);
 
-  static final Comparator<CountsForEachShard> countsComparator = (c1, c2) -> {
+  public final static Comparator<CountsForEachShard> countsComparator = (c1, c2) -> {
     if (c1 == null) c1 = zero;//just to avoid  NPE
     if (c2 == null) c2 = zero;
     if (c1.totalReplicasInDownNodes < c2.totalReplicasInDownNodes) {
@@ -79,24 +78,15 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
     return 0;
   };
 
-  /** Primary entry-point to sort the cores. */
-  public static List<CoreDescriptor> sortCores(CoreContainer coreContainer, List<CoreDescriptor> descriptors) {
-    //sort the cores if it is in SolrCloud. In standalone mode the order does not matter
-    if (coreContainer.isZooKeeperAware()) {
-      return descriptors.stream()
-          .sorted(new CoreSorter().init(coreContainer, descriptors))
-          .collect(toList()); // new list
+
+  public CoreSorter init(CoreContainer cc) {
+    this.cc = cc;
+    if (cc == null || !cc.isZooKeeperAware()) {
+      return this;
     }
-    return descriptors;
-  }
-
-  private final Map<String, CountsForEachShard> shardsVsReplicaCounts = new HashMap<>();
-
-  CoreSorter init(CoreContainer cc, Collection<CoreDescriptor> coreDescriptors) {
-    String myNodeName = cc.getNodeConfig().getNodeName();
+    String myNodeName = getNodeName();
     ClusterState state = cc.getZkController().getClusterState();
-    for (CoreDescriptor coreDescriptor : coreDescriptors) {
-      CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
+    for (CloudDescriptor cloudDescriptor : getCloudDescriptors()) {
       String coll = cloudDescriptor.getCollectionName();
       String sliceName = getShardName(cloudDescriptor);
       if (shardsVsReplicaCounts.containsKey(sliceName)) continue;
@@ -120,6 +110,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
 
   }
 
+
   public int compare(CoreDescriptor cd1, CoreDescriptor cd2) {
     String s1 = getShardName(cd1.getCloudDescriptor());
     String s2 = getShardName(cd2.getCloudDescriptor());
@@ -130,6 +121,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
     return result == 0 ? s1.compareTo(s2) : result;
   }
 
+
   static class CountsForEachShard {
     public int totalReplicasInDownNodes = 0, myReplicas = 0, totalReplicasInLiveNodes = 0;
 
@@ -139,26 +131,21 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
       this.totalReplicasInLiveNodes = totalReplicasInLiveNodes;
     }
 
+    public boolean equals(Object obj) {
+      if (obj instanceof CountsForEachShard) {
+        CountsForEachShard that = (CountsForEachShard) obj;
+        return that.totalReplicasInDownNodes == totalReplicasInDownNodes && that.myReplicas == myReplicas;
+
+      }
+      return false;
+    }
+
     @Override
     public String toString() {
       return "down : " + totalReplicasInDownNodes + " , up :  " + totalReplicasInLiveNodes + " my : " + myReplicas;
     }
 
-    // for tests
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      CountsForEachShard that = (CountsForEachShard) o;
-      return totalReplicasInDownNodes == that.totalReplicasInDownNodes &&
-          myReplicas == that.myReplicas &&
-          totalReplicasInLiveNodes == that.totalReplicasInLiveNodes;
-    }
 
-    @Override
-    public int hashCode() {
-      return Objects.hash(totalReplicasInDownNodes, myReplicas, totalReplicasInLiveNodes);
-    }
   }
 
   static String getShardName(CloudDescriptor cd) {
@@ -169,14 +156,30 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
             + cd.getShardId();
   }
 
+
+  String getNodeName() {
+    return cc.getNodeConfig().getNodeName();
+  }
+
   /**Return all replicas for a given collection+slice combo
    */
-  private Collection<Replica> getReplicas(ClusterState cs, String coll, String slice) {
+  Collection<Replica> getReplicas(ClusterState cs, String coll, String slice) {
     DocCollection c = cs.getCollectionOrNull(coll);
     if (c == null) return emptyList();
     Slice s = c.getSlice(slice);
     if (s == null) return emptyList();
     return s.getReplicas();
   }
+
+
+  /**return cloud descriptors for all cores in this node
+   */
+  Collection<CloudDescriptor> getCloudDescriptors() {
+    return cc.getCores()
+        .stream()
+        .map((core) -> core.getCoreDescriptor().getCloudDescriptor())
+        .collect(toList());
+  }
+
 
 }

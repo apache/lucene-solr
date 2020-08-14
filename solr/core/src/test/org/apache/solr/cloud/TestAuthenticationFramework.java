@@ -17,6 +17,8 @@
 package org.apache.solr.cloud;
 
 import javax.servlet.FilterChain;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.lang.invoke.MethodHandles;
@@ -25,9 +27,9 @@ import java.util.Map;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -47,7 +49,8 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int numShards = 2;
   private static final int numReplicas = 2;
-  private static final int nodeCount = numShards*numReplicas;
+  private static final int maxShardsPerNode = 2;
+  private static final int nodeCount = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
   private static final String configName = "solrCloudCollectionConfig";
   private static final String collectionName = "testcollection";
 
@@ -76,7 +79,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
     // Should fail with 401
     try {
-      BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
+      HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class,
           this::collectionCreateSearchDeleteTwice);
       assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
     } finally {
@@ -96,11 +99,13 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
       throws Exception {
     if (random().nextBoolean()) {  // process asynchronously
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
+          .setMaxShardsPerNode(maxShardsPerNode)
           .processAndWait(cluster.getSolrClient(), 90);
       cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     }
     else {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
+          .setMaxShardsPerNode(maxShardsPerNode)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     }
@@ -136,22 +141,22 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     public void init(Map<String,Object> pluginConfig) {}
 
     @Override
-    public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain)
         throws Exception {
       if (expectedUsername == null) {
         filterChain.doFilter(request, response);
         return true;
       }
-      HttpServletRequest httpRequest = request;
+      HttpServletRequest httpRequest = (HttpServletRequest)request;
       String username = httpRequest.getHeader("username");
       String password = httpRequest.getHeader("password");
       
-      log.info("Username: {}, password: {}", username, password);
+      log.info("Username: "+username+", password: "+password);
       if(MockAuthenticationPlugin.expectedUsername.equals(username) && MockAuthenticationPlugin.expectedPassword.equals(password)) {
         filterChain.doFilter(request, response);
         return true;
       } else {
-        response.sendError(401, "Unauthorized request");
+        ((HttpServletResponse)response).sendError(401, "Unauthorized request");
         return false;
       }
     }

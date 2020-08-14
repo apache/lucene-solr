@@ -82,7 +82,6 @@ public class SchemaManager {
    * as possible instead of failing at the first error it encounters
    * @return List of errors. If the List is empty then the operation was successful.
    */
-  @SuppressWarnings({"rawtypes"})
   public List performOperations() throws Exception {
     List<CommandOperation> ops = req.getCommands(false);
     List errs = CommandOperation.captureErrors(ops);
@@ -96,7 +95,6 @@ public class SchemaManager {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   private List doOperations(List<CommandOperation> operations) throws InterruptedException, IOException, KeeperException {
     TimeOut timeOut = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     SolrCore core = req.getCore();
@@ -157,7 +155,7 @@ public class SchemaManager {
       waitForOtherReplicasToUpdate(timeOut, latestVersion);
     }
     if (errors.isEmpty() && timeOut.hasTimedOut()) {
-      log.warn("{} Timed out", errorMsg);
+      log.warn(errorMsg + "Timed out.");
       errors = singletonList(errorMsg + "Timed out.");
     }
     return errors;
@@ -430,7 +428,7 @@ public class SchemaManager {
         if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + name, true)) {
           String backupName = name + ManagedIndexSchemaFactory.UPGRADED_SCHEMA_EXTENSION;
           if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName, true)) {
-            log.warn("Unable to retrieve fresh managed schema, neither {} nor {} exist.", name, backupName);
+            log.warn("Unable to retrieve fresh managed schema, neither " + name + " nor " + backupName + " exist.");
             // use current schema
             return (ManagedIndexSchema) core.getLatestSchema();
           } else {
@@ -438,7 +436,7 @@ public class SchemaManager {
           }
         }
       } catch (Exception e) {
-        log.warn("Unable to retrieve fresh managed schema {}", name, e);
+        log.warn("Unable to retrieve fresh managed schema " + name, e);
         // use current schema
         return (ManagedIndexSchema) core.getLatestSchema();
       }

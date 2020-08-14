@@ -48,7 +48,6 @@ import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchG
 public class SearchGroupShardResponseProcessor implements ShardResponseProcessor {
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();
     Sort groupSort = rb.getGroupingSpec().getGroupSortSpec().getSort();
@@ -105,7 +104,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
         continue; // continue if there was an error and we're tolerant.
       }
       maxElapsedTime = (int) Math.max(maxElapsedTime, srsp.getSolrResponse().getElapsedTime());
-      @SuppressWarnings({"rawtypes"})
+      @SuppressWarnings("unchecked")
       NamedList<NamedList> firstPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("firstPhase");
       final Map<String, SearchGroupsFieldCommandResult> result = serializer.transformToNative(firstPhaseResult, groupSort, withinGroupSort, srsp.getShard());
       for (Map.Entry<String, List<Collection<SearchGroup<BytesRef>>>> entry : commandSearchGroups.entrySet()) {

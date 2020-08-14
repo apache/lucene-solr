@@ -44,7 +44,6 @@ public class AscEvaluatorTest extends SolrTestCase {
     }
       
     @Test
-    @SuppressWarnings({"unchecked"})
     public void integerSortTest() throws Exception{
       StreamEvaluator evaluator = factory.constructEvaluator("asc(a)");
       Object result;
@@ -58,7 +57,6 @@ public class AscEvaluatorTest extends SolrTestCase {
     }
 
     @Test
-    @SuppressWarnings({"unchecked"})
     public void doubleSortTest() throws Exception{
       StreamEvaluator evaluator = factory.constructEvaluator("asc(a)");
       Object result;
@@ -72,7 +70,6 @@ public class AscEvaluatorTest extends SolrTestCase {
     }
 
     @Test
-    @SuppressWarnings({"unchecked"})
     public void doubleWithIntegersSortTest() throws Exception{
       StreamEvaluator evaluator = factory.constructEvaluator("asc(a)");
       Object result;
@@ -86,7 +83,6 @@ public class AscEvaluatorTest extends SolrTestCase {
     }
 
     @Test
-    @SuppressWarnings({"unchecked"})
     public void stringSortTest() throws Exception{
       StreamEvaluator evaluator = factory.constructEvaluator("asc(a)");
       Object result;
@@ -102,9 +98,7 @@ public class AscEvaluatorTest extends SolrTestCase {
     private <T> void checkOrder(List<?> expected, List<?> actual){
       Assert.assertEquals(expected.size(), actual.size());
       for(int idx = 0; idx < expected.size(); ++idx){
-        @SuppressWarnings({"unchecked"})
         Comparable<Object> expectedValue = (Comparable<Object>)expected.get(idx);
-        @SuppressWarnings({"unchecked"})
         Comparable<Object> actualValue = (Comparable<Object>)actual.get(idx);
         
         Assert.assertEquals(0, expectedValue.compareTo(actualValue));

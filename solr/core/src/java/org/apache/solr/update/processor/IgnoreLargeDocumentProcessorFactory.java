@@ -48,7 +48,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
   private long maxDocumentSize = 1024 * 1024;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     maxDocumentSize = args.toSolrParams().required().getLong(LIMIT_SIZE_PARAM);
     args.remove(LIMIT_SIZE_PARAM);
 
@@ -125,7 +125,6 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       return size;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     static long estimate(Object obj) {
       if (obj instanceof SolrInputDocument) {
         return estimate((SolrInputDocument) obj);
@@ -163,7 +162,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       return size;
     }
 
-    private static long estimate(@SuppressWarnings({"rawtypes"})Collection collection) {
+    private static long estimate(Collection collection) {
       if (collection.isEmpty()) return 0;
       long size = 0;
       for (Object obj : collection) {

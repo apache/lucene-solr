@@ -71,10 +71,10 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
                 .getNewestSearcher(false);
             SolrIndexSearcher searcher = searchHolder.get();
             try {
-              if (log.isDebugEnabled()) {
-                log.debug("{} synched {}", core.getCoreContainer().getZkController().getNodeName()
-                    , searcher.count(new MatchAllDocsQuery()));
-              }
+              log.debug(core.getCoreContainer()
+                  .getZkController().getNodeName()
+                  + " synched "
+                  + searcher.count(new MatchAllDocsQuery()));
             } finally {
               searchHolder.decref();
             }

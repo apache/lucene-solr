@@ -54,11 +54,6 @@ public class DirectXmlRequest extends SolrRequest<UpdateResponse> implements IsU
     return params;
   }
 
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.UPDATE.toString();
-  }
-
 
   public void setParams(SolrParams params) {
     this.params = params;

@@ -30,7 +30,7 @@ public interface SolrFragmenter extends SolrInfoBean, NamedListInitializedPlugin
    * solrconfig.xml
    */
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args);
+  public void init(NamedList args);
 
   /**
    * Return a {@link org.apache.lucene.search.highlight.Fragmenter} appropriate for this field. 

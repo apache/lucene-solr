@@ -40,13 +40,11 @@ public abstract class JsonFacetMap<B extends JsonFacetMap<B>> extends HashMap<St
     return getThis();
   }
 
-  public B withSubFacet(String facetName,
-                        @SuppressWarnings({"rawtypes"})JsonFacetMap map) {
+  public B withSubFacet(String facetName, JsonFacetMap map) {
     if (! containsKey("facet")) {
       put("facet", new HashMap<String, Object>());
     }
 
-    @SuppressWarnings({"unchecked"})
     final Map<String, Object> subFacetMap = (Map<String, Object>) get("facet");
     subFacetMap.put(facetName, map);
     return getThis();
@@ -57,7 +55,6 @@ public abstract class JsonFacetMap<B extends JsonFacetMap<B>> extends HashMap<St
       put("facet", new HashMap<String, Object>());
     }
 
-    @SuppressWarnings({"unchecked"})
     final Map<String, Object> subFacetMap = (Map<String, Object>) get("facet");
     subFacetMap.put(facetName, statFacet);
     return getThis();

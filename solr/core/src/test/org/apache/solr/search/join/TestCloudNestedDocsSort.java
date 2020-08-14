@@ -107,8 +107,8 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
           final boolean canPickMatchingChild = !chVals.isEmpty() && !parentFilter.isEmpty();
           final boolean haveNtPickedMatchingChild = matchingParent==null ||matchingChild==null;
           if (canPickMatchingChild && haveNtPickedMatchingChild && usually()) {
-            matchingParent = parentFilter.iterator().next();
-            matchingChild = chVals.iterator().next();
+            matchingParent = (String) parentFilter.iterator().next();
+            matchingChild = (String) chVals.iterator().next();
           }
         }
         maxDocs += parent.getChildDocumentCount()+1;

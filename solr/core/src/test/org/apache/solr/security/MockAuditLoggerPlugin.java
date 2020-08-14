@@ -39,9 +39,7 @@ public class MockAuditLoggerPlugin extends AuditLoggerPlugin {
   public void audit(AuditEvent event) {
     events.add(event);
     incrementType(event.getEventType().name());
-    if (log.isInfoEnabled()) {
-      log.info("#{} - {}", events.size(), typeCounts);
-    }
+    log.info("#{} - {}", events.size(), typeCounts);
   }
 
   private void incrementType(String type) {

@@ -49,9 +49,7 @@ public class RegressionEvaluator extends RecursiveNumericEvaluator implements Tw
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
     
-    @SuppressWarnings({"unchecked"})
     List<Number> l1 = (List<Number>)first;
-    @SuppressWarnings({"unchecked"})
     List<Number> l2 = (List<Number>)second;
     
     if(l2.size() < l1.size()){

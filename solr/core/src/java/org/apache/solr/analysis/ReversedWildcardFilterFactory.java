@@ -88,10 +88,6 @@ public class ReversedWildcardFilterFactory extends TokenFilterFactory {
     }
   }
 
-  /** Default ctor for compatibility with SPI */
-  public ReversedWildcardFilterFactory() {
-    throw defaultCtorException();
-  }
 
   @Override
   public TokenStream create(TokenStream input) {

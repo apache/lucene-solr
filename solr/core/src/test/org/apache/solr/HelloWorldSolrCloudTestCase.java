@@ -41,7 +41,8 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
   private static final int numShards = 3;
   private static final int numReplicas = 2;
-  private static final int nodeCount = numShards*numReplicas;
+  private static final int maxShardsPerNode = 2;
+  private static final int nodeCount = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
 
   private static final String id = "id";
 
@@ -55,6 +56,7 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
     // create an empty collection
     CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
+        .setMaxShardsPerNode(maxShardsPerNode)
         .process(cluster.getSolrClient());
 
     // add a document

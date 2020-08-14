@@ -37,7 +37,6 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException {
 
     Matrix observations = null;
@@ -63,7 +62,6 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
 
     OLSMultipleLinearRegression multipleLinearRegression = (OLSMultipleLinearRegression)regress(observationData, outcomeData);
 
-    @SuppressWarnings({"rawtypes"})
     Map map = new HashMap();
 
     map.put("regressandVariance", multipleLinearRegression.estimateRegressandVariance());
@@ -82,9 +80,7 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
     return new MultipleRegressionTuple(multipleLinearRegression, map);
   }
 
-  @SuppressWarnings({"unchecked"})
   private List<Number> list(double[] values) {
-    @SuppressWarnings({"rawtypes"})
     List list = new ArrayList();
     for(double d : values) {
       list.add(d);
@@ -109,10 +105,9 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
     }
 
     public double predict(double[] values) {
-      @SuppressWarnings({"unchecked"})
       List<Number> weights = (List<Number>)get("regressionParameters");
       double prediction = 0.0;
-      List<Number> predictors = new ArrayList<>();
+      List<Number> predictors = new ArrayList();
       predictors.add(1.0D);
       for(double d : values) {
         predictors.add(d);

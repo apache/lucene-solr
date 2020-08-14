@@ -17,6 +17,7 @@
 package org.apache.solr.security;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,6 +49,8 @@ import org.apache.solr.common.cloud.ZkCredentialsProvider;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is an authentication filter based on Hadoop's {@link DelegationTokenAuthenticationFilter}.
@@ -55,6 +58,8 @@ import org.apache.zookeeper.data.ACL;
  * application to reuse the authentication of an end-user or another application.
  */
 public class DelegationTokenKerberosFilter extends DelegationTokenAuthenticationFilter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private CuratorFramework curatorFramework;
   private final Locale defaultLocale = Locale.getDefault();
 
@@ -78,12 +83,13 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
    * "solr.impersonator.user.name" will be added to the configuration.
    */
   @Override
-  protected Configuration getProxyuserConfiguration(FilterConfig filterConf) {
+  protected Configuration getProxyuserConfiguration(FilterConfig filterConf)
+      throws ServletException {
     Configuration conf = new Configuration(false);
 
-    Enumeration<String> names = filterConf.getInitParameterNames();
+    Enumeration<?> names = filterConf.getInitParameterNames();
     while (names.hasMoreElements()) {
-      String name = names.nextElement();
+      String name = (String) names.nextElement();
       if (name.startsWith(KerberosPlugin.IMPERSONATOR_PREFIX)) {
         String value = filterConf.getInitParameter(name);
         conf.set(PROXYUSER_PREFIX + "." + name.substring(KerberosPlugin.IMPERSONATOR_PREFIX.length()), value);
@@ -157,8 +163,11 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
     // without the appropriate ACL configuration. This issue is possibly related to HADOOP-11973
     try {
       zkClient.makePath(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, CreateMode.PERSISTENT, true);
-    } catch (KeeperException.NodeExistsException ex) {
-      // ignore?
+
+    } catch (KeeperException ex) {
+      if (ex.code() != KeeperException.Code.NODEEXISTS) {
+        throw ex;
+      }
     }
 
     curatorFramework = CuratorFrameworkFactory.builder()

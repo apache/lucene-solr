@@ -41,8 +41,8 @@ public class BackupRestoreUtils extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static int indexDocs(SolrClient leaderClient, String collectionName, long docsSeed) throws IOException, SolrServerException {
-    leaderClient.deleteByQuery(collectionName, "*:*");
+  public static int indexDocs(SolrClient masterClient, String collectionName, long docsSeed) throws IOException, SolrServerException {
+    masterClient.deleteByQuery(collectionName, "*:*");
 
     Random random = new Random(docsSeed);// use a constant seed for the whole test run so that we can easily re-index.
     int nDocs = TestUtil.nextInt(random, 1, 100);
@@ -55,15 +55,15 @@ public class BackupRestoreUtils extends SolrTestCase {
       doc.addField("name", "name = " + i);
       docs.add(doc);
     }
-    leaderClient.add(collectionName, docs);
-    leaderClient.commit(collectionName);
+    masterClient.add(collectionName, docs);
+    masterClient.commit(collectionName);
     return nDocs;
   }
 
-  public static void verifyDocs(int nDocs, SolrClient leaderClient, String collectionName) throws SolrServerException, IOException {
+  public static void verifyDocs(int nDocs, SolrClient masterClient, String collectionName) throws SolrServerException, IOException {
     ModifiableSolrParams queryParams = new ModifiableSolrParams();
     queryParams.set("q", "*:*");
-    QueryResponse response = leaderClient.query(collectionName, queryParams);
+    QueryResponse response = masterClient.query(collectionName, queryParams);
 
     assertEquals(0, response.getStatus());
     assertEquals(nDocs, response.getResults().getNumFound());
@@ -82,13 +82,13 @@ public class BackupRestoreUtils extends SolrTestCase {
       builder.append("=");
       builder.append(p.getValue());
     }
-    String leaderUrl = builder.toString();
-    executeHttpRequest(leaderUrl);
+    String masterUrl = builder.toString();
+    executeHttpRequest(masterUrl);
   }
 
   public static void runReplicationHandlerCommand(String baseUrl, String coreName, String action, String repoName, String backupName) throws IOException {
-    String leaderUrl = baseUrl + "/" + coreName + ReplicationHandler.PATH + "?command=" + action + "&repository="+repoName+"&name="+backupName;
-    executeHttpRequest(leaderUrl);
+    String masterUrl = baseUrl + "/" + coreName + ReplicationHandler.PATH + "?command=" + action + "&repository="+repoName+"&name="+backupName;
+    executeHttpRequest(masterUrl);
   }
 
   static void executeHttpRequest(String requestUrl) throws IOException {

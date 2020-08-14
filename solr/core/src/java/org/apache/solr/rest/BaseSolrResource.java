@@ -125,9 +125,12 @@ public abstract class BaseSolrResource extends ServerResource {
             SolrCore.preDecorateResponse(solrRequest, solrResponse);
 
             // client application can set a timeout for update requests
-            String updateTimeoutSecsParam = getSolrRequest().getParams().get(UPDATE_TIMEOUT_SECS);
+            Object updateTimeoutSecsParam = getSolrRequest().getParams().get(UPDATE_TIMEOUT_SECS);
             if (updateTimeoutSecsParam != null)
-              updateTimeoutSecs = Integer.parseInt(updateTimeoutSecsParam);
+              updateTimeoutSecs = (updateTimeoutSecsParam instanceof Number)
+                  ? ((Number) updateTimeoutSecsParam).intValue()
+                  : Integer.parseInt(updateTimeoutSecsParam.toString());
+
           }
         }
       } catch (Throwable t) {
@@ -195,7 +198,6 @@ public abstract class BaseSolrResource extends ServerResource {
   protected void handleException(Logger log) {
     Exception exception = getSolrResponse().getException();
     if (null != exception) {
-      @SuppressWarnings({"rawtypes"})
       NamedList info = new SimpleOrderedMap();
       int code = ResponseUtils.getErrorInfo(exception, info, log);
       setStatus(Status.valueOf(code));

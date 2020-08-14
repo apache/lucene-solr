@@ -59,7 +59,6 @@ import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.BaseTestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -100,7 +99,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  @SuppressWarnings({"unchecked"})
   public void testShortestPathStream() throws Exception {
 
     new UpdateRequest()
@@ -132,7 +130,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("shortestPath", ShortestPathStream.class);
 
-    @SuppressWarnings({"rawtypes"})
     Map params = new HashMap();
     params.put("fq", "predicate_s:knows");
 
@@ -146,7 +143,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "maxDepth=\"6\")");
 
     stream.setStreamContext(context);
-    paths = new HashSet<>();
+    paths = new HashSet();
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 2);
@@ -172,7 +169,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "maxDepth=\"6\")");
 
     stream.setStreamContext(context);
-    paths = new HashSet<>();
+    paths = new HashSet();
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 2);
@@ -197,6 +194,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "maxDepth=\"6\")");
 
     stream.setStreamContext(context);
+    paths = new HashSet();
     tuples = getTuples(stream);
 
     assertTrue(tuples.size() == 0);
@@ -232,7 +230,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
 
     stream.setStreamContext(context);
-    paths = new HashSet<>();
+    paths = new HashSet();
     tuples = getTuples(stream);
     assertTrue(tuples.size() == 1);
 
@@ -889,7 +887,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
     String xml = readString(reader);
     //Validate the nodes
-    String error = BaseTestHarness.validateXPath(xml,
+    String error = h.validateXPath(xml,
         "//graph/node[1][@id ='jim']",
         "//graph/node[2][@id ='max']",
         "//graph/node[3][@id ='sam']");
@@ -897,7 +895,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
       throw new Exception(error);
     }
     //Validate the edges
-    error = BaseTestHarness.validateXPath(xml,
+    error = h.validateXPath(xml,
         "//graph/edge[1][@source ='bill']",
         "//graph/edge[1][@target ='jim']",
         "//graph/edge[2][@source ='bill']",
@@ -932,7 +930,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    List<Tuple> tuples = new ArrayList<>();
+    List<Tuple> tuples = new ArrayList();
     for(Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
       tuples.add(t);
     }

@@ -100,7 +100,6 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testBasics() throws Exception {
 
     // get initial metrics
@@ -387,21 +386,15 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     DirectoryReader r = sr.getSearcher().getIndexReader();
     Directory d = r.directory();
 
-    if (log.isInfoEnabled()) {
-      log.info("FILES before addDoc={}", Arrays.asList(d.listAll()));
-    }
+    log.info("FILES before addDoc="+ Arrays.asList(d.listAll()));
     assertU(adoc("id", "1"));
 
     int nFiles = d.listAll().length;
-    if (log.isInfoEnabled()) {
-      log.info("FILES before prepareCommit={}", Arrays.asList(d.listAll()));
-    }
+    log.info("FILES before prepareCommit="+ Arrays.asList(d.listAll()));
 
     updateJ("", params("prepareCommit", "true"));
 
-    if (log.isInfoEnabled()) {
-      log.info("FILES after prepareCommit={}", Arrays.asList(d.listAll()));
-    }
+    log.info("FILES after prepareCommit="+Arrays.asList(d.listAll()));
     assertTrue( d.listAll().length > nFiles);  // make sure new index files were actually written
     
     assertJQ(req("q", "id:1")
@@ -467,7 +460,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+    public void init(NamedList args) {
 
     }
   }

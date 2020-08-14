@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.io.Closeable;
 import java.util.Map;
 
 /**
@@ -37,7 +36,7 @@ import java.util.Map;
  *
  * @since solr 1.3
  */
-public abstract class EntityProcessor implements Closeable {
+public abstract class EntityProcessor {
 
   /**
    * This method is called when it starts processing an entity. When it comes

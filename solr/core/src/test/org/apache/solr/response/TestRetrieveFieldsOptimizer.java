@@ -106,7 +106,6 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
   //TODO, how to generalize?
 
-  @SuppressWarnings({"unchecked"})
   private static void setupAllFields() throws IOException {
 
     IndexSchema schema = h.getCore().getLatestSchema();
@@ -232,7 +231,6 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void checkFetchSources(SolrReturnFields.FIELD_SOURCES source) throws Exception {
     String flAll = fieldsHolder.allFields.stream()
         .map(RetrieveField::getName) // This will call testField.getName()
@@ -320,7 +318,6 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     assertEquals("We didn't get the values from the expected places! ",
         source, ((SolrReturnFields) rsp.returnFields).getFieldSources());
 
-    @SuppressWarnings({"rawtypes"})
     NamedList res;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       res = (NamedList) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));

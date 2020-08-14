@@ -43,7 +43,6 @@ public class TestWriterImpl extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testDataConfigWithDataSource() throws Exception {
-    @SuppressWarnings({"rawtypes"})
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
     rows.add(createMap("id", "2", "desc", "two"));
@@ -52,7 +51,6 @@ public class TestWriterImpl extends AbstractDataImportHandlerTestCase {
     
     MockDataSource.setIterator("select * from x", rows.iterator());
     
-    @SuppressWarnings({"rawtypes"})
     Map extraParams = createMap("writerImpl", TestSolrWriter.class.getName(),
         "commit", "true");
     runFullImport(loadDataConfig("data-config-with-datasource.xml"),

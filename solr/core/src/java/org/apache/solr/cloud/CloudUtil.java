@@ -91,9 +91,9 @@ public class CloudUtil {
               SolrException.log(log, "Failed to delete instance dir for core:"
                   + desc.getName() + " dir:" + desc.getInstanceDir());
             }
-            log.error("{}",
-                new SolrException(ErrorCode.SERVER_ERROR, "Will not load SolrCore " + desc.getName()
-                    + " because it has been replaced due to failover.")); // logOk
+            log.error("", new SolrException(ErrorCode.SERVER_ERROR,
+                "Will not load SolrCore " + desc.getName()
+                    + " because it has been replaced due to failover."));
             throw new SolrException(ErrorCode.SERVER_ERROR,
                 "Will not load SolrCore " + desc.getName()
                     + " because it has been replaced due to failover.");
@@ -131,7 +131,6 @@ public class CloudUtil {
   /**Read the list of public keys from ZK
    */
 
-  @SuppressWarnings({"unchecked"})
   public static Map<String, byte[]> getTrustedKeys(SolrZkClient zk, String dir) {
     Map<String, byte[]> result = new HashMap<>();
     try {
@@ -235,6 +234,7 @@ public class CloudUtil {
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
    * number of shards and replicas.
    * <p>Note: for shards marked as inactive the current Solr behavior is that replicas remain active.
+   * {@link org.apache.solr.cloud.autoscaling.sim.SimCloudManager} follows this behavior.</p>
    * @param expectedShards expected number of shards
    * @param expectedReplicas expected number of active replicas per shard
    * @param withInactive if true then count also inactive shards
@@ -249,9 +249,7 @@ public class CloudUtil {
       }
       Collection<Slice> slices = withInactive ? collectionState.getSlices() : collectionState.getActiveSlices();
       if (slices.size() != expectedShards) {
-        if (log.isDebugEnabled()) {
-          log.debug("-- wrong number of slices for collection {}, expected={}, found={}: {}", collectionState.getName(), expectedShards, collectionState.getSlices().size(), collectionState.getSlices());
-        }
+        log.debug("-- wrong number of slices for collection {}, expected={}, found={}: {}", collectionState.getName(), expectedShards, collectionState.getSlices().size(), collectionState.getSlices());
         return false;
       }
       Set<String> leaderless = new HashSet<>();
@@ -270,9 +268,7 @@ public class CloudUtil {
             activeReplicas++;
         }
         if (activeReplicas != expectedReplicas) {
-          if (log.isDebugEnabled()) {
-            log.debug("-- wrong number of active replicas for collection {} in slice {}, expected={}, found={}", collectionState.getName(), slice.getName(), expectedReplicas, activeReplicas);
-          }
+          log.debug("-- wrong number of active replicas for collection {} in slice {}, expected={}, found={}", collectionState.getName(), slice.getName(), expectedReplicas, activeReplicas);
           return false;
         }
       }

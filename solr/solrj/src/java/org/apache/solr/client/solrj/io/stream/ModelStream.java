@@ -162,7 +162,7 @@ public class ModelStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l =  new ArrayList();
     return l;
   }
 
@@ -193,7 +193,9 @@ public class ModelStream extends TupleStream implements Expressible {
       tuple = model;
       model = null;
     } else {
-      tuple = Tuple.EOF();
+      Map map = new HashMap();
+      map.put("EOF", true);
+      tuple = new Tuple(map);
     }
 
     return tuple;

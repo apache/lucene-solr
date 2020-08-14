@@ -70,9 +70,9 @@ public class CommandOperation {
     commandData = o;
   }
 
-  @SuppressWarnings({"unchecked"})
   public Map<String, Object> getDataMap() {
     if (commandData instanceof Map) {
+      //noinspection unchecked
       return (Map<String, Object>) commandData;
     }
     addError(StrUtils.formatString("The command ''{0}'' should have the values as a json object '{'key:val'}' format but is ''{1}''", name, commandData));
@@ -100,7 +100,6 @@ public class CommandOperation {
       return commandData;
     }
     if (commandData instanceof Map) {
-      @SuppressWarnings({"rawtypes"})
       Map metaData = (Map) commandData;
       return metaData.get(key);
     } else {
@@ -171,7 +170,6 @@ public class CommandOperation {
     return s;
   }
 
-  @SuppressWarnings({"rawtypes"})
   private Map errorDetails() {
     return Utils.makeMap(name, commandData, ERR_MSGS, errors);
   }
@@ -209,7 +207,6 @@ public class CommandOperation {
   public static final String ERR_MSGS = "errorMessages";
   public static final String ROOT_OBJ = "";
 
-  @SuppressWarnings({"rawtypes"})
   public static List<Map> captureErrors(List<CommandOperation> ops) {
     List<Map> errors = new ArrayList<>();
     for (CommandOperation op : ops) {
@@ -229,7 +226,6 @@ public class CommandOperation {
    * Parse the command operations into command objects from javabin payload
    * * @param singletonCommands commands that cannot be repeated
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static List<CommandOperation> parse(InputStream in, Set<String> singletonCommands) throws IOException {
     List<CommandOperation> operations = new ArrayList<>();
 
@@ -292,7 +288,6 @@ public class CommandOperation {
       ev = parser.nextEvent();
       Object val = ob.getVal();
       if (val instanceof List && !singletonCommands.contains(key)) {
-        @SuppressWarnings({"rawtypes"})
         List list = (List) val;
         for (Object o : list) {
           if (!(o instanceof Map)) {
@@ -313,7 +308,6 @@ public class CommandOperation {
     return new CommandOperation(name, commandData);
   }
 
-  @SuppressWarnings({"rawtypes"})
   public Map getMap(String key, Map def) {
     Object o = getMapVal(key);
     if (o == null) return def;
@@ -331,8 +325,7 @@ public class CommandOperation {
     return new String(toJSON(singletonMap(name, commandData)), StandardCharsets.UTF_8);
   }
 
-  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams,
-                                                    @SuppressWarnings({"rawtypes"})NamedList resp) throws IOException {
+  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, NamedList resp) throws IOException {
     return readCommands(streams, resp, Collections.emptySet());
   }
 
@@ -346,9 +339,7 @@ public class CommandOperation {
    * @return parsed list of commands
    * @throws IOException if there is an error while parsing the stream
    */
-  @SuppressWarnings({"unchecked"})
-  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams,
-                                                    @SuppressWarnings({"rawtypes"})NamedList resp, Set<String> singletonCommands)
+  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, NamedList resp, Set<String> singletonCommands)
       throws IOException {
     if (streams == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
@@ -362,7 +353,6 @@ public class CommandOperation {
         ops.addAll(parse(stream.getReader(), singletonCommands));
       }
     }
-    @SuppressWarnings({"rawtypes"})
     List<Map> errList = CommandOperation.captureErrors(ops);
     if (!errList.isEmpty()) {
       resp.add(CommandOperation.ERR_MSGS, errList);

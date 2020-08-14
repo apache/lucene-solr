@@ -20,7 +20,9 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.solr.analytics.function.ReductionCollectionManager.ReductionDataCollection;
 import org.apache.solr.analytics.util.FacetRangeGenerator;
 import org.apache.solr.analytics.util.FacetRangeGenerator.FacetRange;
@@ -29,7 +31,6 @@ import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.Filter;
-import org.apache.solr.search.QueryUtils;
 
 /**
  * A facet that groups data by a discrete set of ranges.
@@ -65,7 +66,10 @@ public class RangeFacet extends AbstractSolrQueryFacet {
       Query q = sf.getType().getRangeQuery(null, sf, range.lower, range.upper, range.includeLower,range.includeUpper);
       // The searcher sends docIds to the RangeFacetAccumulator which forwards
       // them to <code>collectRange()</code> in this class for collection.
-      Query rangeQuery = QueryUtils.combineQueryAndFilter(q, filter);
+      Query rangeQuery = new BooleanQuery.Builder()
+          .add(q, Occur.MUST)
+          .add(filter, Occur.FILTER)
+          .build();
 
       ReductionDataCollection dataCol = collectionManager.newDataCollection();
       reductionData.put(range.toString(), dataCol);

@@ -99,8 +99,8 @@ limitations under the License.
       <h2>
         <span class="is-replicating">
           Replication
-          <span ng-show="isFollower"> (Follower)</span>
-          <span ng-show="isLeader"> (Leader)</span>
+          <span ng-show="isSlave"> (Slave)</span>
+          <span ng-show="isMaster"> (Master)</span>
         </span>
       </h2>
 
@@ -126,45 +126,45 @@ limitations under the License.
           </thead>
           <tbody>
 
-            <tr class="leaderSearch" ng-show="isLeader">
+            <tr class="masterSearch" ng-show="isMaster">
 
-              <th>Leader (Searching)</th>
+              <th>Master (Searching)</th>
               <td class="version"><div>{{replication.indexVersion}}</div></td>
               <td class="generation"><div>{{replication.generation}}</div></td>
               <td class="size"><div>{{replication.indexSize || '-'}}</div></td>
 
             </tr>
 
-            <tr class="leader" ng-show="isLeader">
+            <tr class="master" ng-show="isMaster">
 
-              <th>Leader (Replicable)</th>
-              <td class="version"><div>{{replication.leader.replicableVersion || '-'}}</div></td>
-              <td class="generation"><div>{{replication.leader.replicableGeneration || '-'}}</div></td>
+              <th>Master (Replicable)</th>
+              <td class="version"><div>{{replication.master.replicableVersion || '-'}}</div></td>
+              <td class="generation"><div>{{replication.master.replicableGeneration || '-'}}</div></td>
               <td class="size"><div>-</div></td>
 
             </tr>
 
-            <tr class="leader" ng-show="isFollower">
+            <tr class="master" ng-show="isSlave">
 
-              <th>Leader (Replicable)</th>
-              <td class="version"><div>{{replication.leader.replicableVersion || '-'}}</div></td>
-              <td class="generation"><div>{{replication.leader.replicableGeneration || '-'}}</div></td>
+              <th>Master (Replicable)</th>
+              <td class="version"><div>{{replication.master.replicableVersion || '-'}}</div></td>
+              <td class="generation"><div>{{replication.master.replicableGeneration || '-'}}</div></td>
               <td class="size"><div>-</div></td>
 
             </tr>
 
-            <tr class="leaderSearch" ng-show="isFollower">
+            <tr class="masterSearch" ng-show="isSlave">
 
-              <th>Leader (Searching)</th>
-              <td class="version"><div>{{replication.follower.leaderDetails.indexVersion}}</div></td>
-              <td class="generation"><div>{{replication.follower.leaderDetails.generation}}</div></td>
-              <td class="size"><div>{{replication.follower.leaderDetails.indexSize || '-'}}</div></td>
+              <th>Master (Searching)</th>
+              <td class="version"><div>{{replication.slave.masterDetails.indexVersion}}</div></td>
+              <td class="generation"><div>{{replication.slave.masterDetails.generation}}</div></td>
+              <td class="size"><div>{{replication.slave.masterDetails.indexSize || '-'}}</div></td>
 
             </tr>
 
-            <tr class="follower followerOnly" ng-show="isFollower">
+            <tr class="slave slaveOnly" ng-show="isSlave">
 
-              <th>Follower (Searching)</th>
+              <th>Slave (Searching)</th>
               <td class="version"><div>{{replication.indexVersion}}</div></td>
               <td class="generation"><div>{{replication.generation}}</div></td>
               <td class="size"><div>{{replication.indexSize || '-'}}</div></td>

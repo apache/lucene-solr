@@ -109,7 +109,6 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
     TestSolrConfigHandler.runConfigCommand(writeHarness,"/config/params", payload);
 
-    @SuppressWarnings({"rawtypes"})
     Map result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
         "/config/params",
@@ -275,8 +274,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
   }
 
-  @SuppressWarnings({"unchecked"})
-  public static void compareValues(@SuppressWarnings({"rawtypes"})Map result, Object expected, List<String> jsonPath) {
+  public static void compareValues(Map result, Object expected, List<String> jsonPath) {
     Object val = Utils.getObjectByPath(result, false, jsonPath);
     assertTrue(StrUtils.formatString("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, result.toString()),
         expected instanceof Predicate ?

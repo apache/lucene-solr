@@ -236,7 +236,6 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest=new ClassificationUpdateProcessor(params,mockProcessor,reader,req().getSchema());
     updateProcessorToTest.processAdd(update);
 
-    @SuppressWarnings({"unchecked"})
     ArrayList<Object> assignedClasses = (ArrayList)unseenDocument1.getFieldValues(TRAINING_CLASS);
     assertThat(assignedClasses.get(0),is("class2"));
     assertThat(assignedClasses.get(1),is("class1"));
@@ -260,7 +259,6 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest=new ClassificationUpdateProcessor(params,mockProcessor,reader,req().getSchema());
     updateProcessorToTest.processAdd(update);
 
-    @SuppressWarnings({"unchecked"})
     ArrayList<Object> assignedClasses = (ArrayList)unseenDocument1.getFieldValues(TRAINING_CLASS);
     assertThat(assignedClasses.size(),is(2));
     assertThat(assignedClasses.get(0),is("class2"));
@@ -285,7 +283,6 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
     updateProcessorToTest=new ClassificationUpdateProcessor(params,mockProcessor,reader,req().getSchema());
     updateProcessorToTest.processAdd(update);
 
-    @SuppressWarnings({"unchecked"})
     ArrayList<Object> assignedClasses = (ArrayList)unseenDocument1.getFieldValues(TRAINING_CLASS);
     assertThat(assignedClasses.size(),is(2));
     assertThat(assignedClasses.get(0),is("class2"));
@@ -312,7 +309,6 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     updateProcessorToTest.processAdd(update);
 
-    @SuppressWarnings({"unchecked"})
     ArrayList<Object> assignedClasses = (ArrayList)unseenDocument1.getFieldValues(TRAINING_CLASS);
     assertThat(assignedClasses.size(),is(2));
     assertThat(assignedClasses.get(0),is("class4"));
@@ -339,7 +335,6 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     updateProcessorToTest.processAdd(update);
 
-    @SuppressWarnings({"unchecked"})
     ArrayList<Object> assignedClasses = (ArrayList)unseenDocument1.getFieldValues(TRAINING_CLASS);
     assertThat(assignedClasses.size(),is(2));
     assertThat(assignedClasses.get(0),is("class4"));

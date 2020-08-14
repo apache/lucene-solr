@@ -127,21 +127,19 @@ public class OrderedExecutorTest extends SolrTestCase {
                   barrier.await(120, TimeUnit.SECONDS);
                   postBarrierLatch.countDown();
                 } catch (TimeoutException t) {
-                  log.error("Timeout in worker# {} awaiting barrier", lockId, t);
+                  log.error("Timeout in worker#" + lockId + "awaiting barrier", t);
                 } catch (BrokenBarrierException b) {
-                  log.error("Broken Barrier in worker#{}", lockId, b);
+                  log.error("Broken Barrier in worker#" + lockId, b);
                 } catch (InterruptedException e) {
-                  log.error("Interrupt in worker#{} awaiting barrier", lockId, e);
+                  log.error("Interrupt in worker#" + lockId + "awaiting barrier", e);
                   Thread.currentThread().interrupt();
                 }
               });
           });
       }
 
-      if (log.isInfoEnabled()) {
-        log.info("main thread: about to wait on pre-barrier latch, barrier={}, post-barrier latch={}",
-            barrier.getNumberWaiting(), postBarrierLatch.getCount());
-      }
+      log.info("main thread: about to wait on pre-barrier latch, barrier={}, post-barrier latch={}",
+               barrier.getNumberWaiting(), postBarrierLatch.getCount());
       
       try {
         // this latch should have fully counted down by now
@@ -153,11 +151,9 @@ public class OrderedExecutorTest extends SolrTestCase {
         Thread.currentThread().interrupt();
         fail("interupt while trying to await the preBarrierLatch");
       }
-
-      if (log.isInfoEnabled()) {
-        log.info("main thread: pre-barrier latch done, barrier={}, post-barrier latch={}",
-            barrier.getNumberWaiting(), postBarrierLatch.getCount());
-      }
+      
+      log.info("main thread: pre-barrier latch done, barrier={}, post-barrier latch={}",
+               barrier.getNumberWaiting(), postBarrierLatch.getCount());
       
       // nothing should have counted down yet on the postBarrierLatch
       assertEquals(parallelism, postBarrierLatch.getCount());
@@ -166,11 +162,9 @@ public class OrderedExecutorTest extends SolrTestCase {
         // if we now await on the the barrier, it should release
         // (once all other threads get to the barrier as well, but no external action needed)
         barrier.await(120, TimeUnit.SECONDS);
-
-        if (log.isInfoEnabled()) {
-          log.info("main thread: barrier has released, post-barrier latch={}",
-              postBarrierLatch.getCount());
-        }
+        
+        log.info("main thread: barrier has released, post-barrier latch={}",
+                 postBarrierLatch.getCount());
         
         // and now the post-barrier latch should release immediately
         // (or with a small await for thread scheduling but no other external action)

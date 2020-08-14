@@ -48,28 +48,23 @@ public class CloudInspectUtil {
    * @param bDeleteFails null or list of the ids of deletes that failed for b
    * @return true if the difference in a and b is legal
    */
-  @SuppressWarnings({"unchecked"})
   public static boolean checkIfDiffIsLegal(SolrDocumentList a,
       SolrDocumentList b, String aName, String bName, Set<String> bAddFails,
       Set<String> bDeleteFails) {
     boolean legal = true;
     
-    @SuppressWarnings({"rawtypes"})
     Set<Map> setA = new HashSet<>();
     for (SolrDocument sdoc : a) {
-      setA.add(new HashMap<>(sdoc));
+      setA.add(new HashMap(sdoc));
     }
     
-    @SuppressWarnings({"rawtypes"})
     Set<Map> setB = new HashSet<>();
     for (SolrDocument sdoc : b) {
-      setB.add(new HashMap<>(sdoc));
+      setB.add(new HashMap(sdoc));
     }
     
-    @SuppressWarnings({"rawtypes"})
     Set<Map> onlyInA = new HashSet<>(setA);
     onlyInA.removeAll(setB);
-    @SuppressWarnings({"rawtypes"})
     Set<Map> onlyInB = new HashSet<>(setB);
     onlyInB.removeAll(setA);
     
@@ -80,7 +75,7 @@ public class CloudInspectUtil {
     System.err.println("###### Only in " + aName + ": " + onlyInA);
     System.err.println("###### Only in " + bName + ": " + onlyInB);
     
-    for (@SuppressWarnings({"rawtypes"})Map doc : onlyInA) {
+    for (Map doc : onlyInA) {
       if (bAddFails == null || !bAddFails.contains(doc.get("id"))) {
         legal = false;
         // System.err.println("###### Only in " + aName + ": " + doc.get("id"));
@@ -91,7 +86,7 @@ public class CloudInspectUtil {
       }
     }
     
-    for (@SuppressWarnings({"rawtypes"})Map doc : onlyInB) {
+    for (Map doc : onlyInB) {
       if (bDeleteFails == null || !bDeleteFails.contains(doc.get("id"))) {
         legal = false;
         // System.err.println("###### Only in " + bName + ": " + doc.get("id"));
@@ -114,7 +109,6 @@ public class CloudInspectUtil {
    * @param bName label for the second list
    * @return the documents only in list a
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Set<Map> showDiff(SolrDocumentList a, SolrDocumentList b,
       String aName, String bName) {
     System.err.println("######" + aName + ": " + toStr(a, 10));
@@ -193,12 +187,12 @@ public class CloudInspectUtil {
     q = SolrTestCaseJ4.params("q", "*:*", "rows", "100000", "fl", "id", "tests", "checkShardConsistency(vsControl)/getIds");    // add a tag to aid in debugging via logs
     controlDocList = controlClient.query(q).getResults();
     if (controlDocs != controlDocList.getNumFound()) {
-      log.error("Something changed! control now {}", controlDocList.getNumFound());
+      log.error("Something changed! control now " + controlDocList.getNumFound());
     }
 
     cloudDocList = cloudClient.query(q).getResults();
     if (cloudClientDocs != cloudDocList.getNumFound()) {
-      log.error("Something changed! cloudClient now {}", cloudDocList.getNumFound());
+      log.error("Something changed! cloudClient now " + cloudDocList.getNumFound());
     }
 
     if (controlDocs != cloudClientDocs && (addFails != null || deleteFails != null)) {
@@ -209,7 +203,6 @@ public class CloudInspectUtil {
       }
     }
     
-    @SuppressWarnings({"rawtypes"})
     Set<Map> differences = CloudInspectUtil.showDiff(controlDocList, cloudDocList,
         "controlDocList", "cloudDocList");
 
@@ -220,7 +213,7 @@ public class CloudInspectUtil {
       // use filter() to allow being parsed as 'terms in set' query instead of a (weighted/scored)
       // BooleanQuery so we don't trip too many boolean clauses
       StringBuilder ids = new StringBuilder("filter(id:(");
-      for (@SuppressWarnings({"rawtypes"})Map doc : differences) {
+      for (Map doc : differences) {
         ids.append(" ").append(doc.get("id"));
         foundId = true;
       }
@@ -237,7 +230,7 @@ public class CloudInspectUtil {
         SolrDocumentList a = controlClient.query(q, SolrRequest.METHOD.POST).getResults();
         SolrDocumentList b = cloudClient.query(q, SolrRequest.METHOD.POST).getResults();
 
-        log.error("controlClient :{}\n\tcloudClient :{}", a, b);
+        log.error("controlClient :" + a + "\n\tcloudClient :" + b);
       }
     } catch (Exception e) {
       // swallow any exceptions, this is just useful for producing debug output,

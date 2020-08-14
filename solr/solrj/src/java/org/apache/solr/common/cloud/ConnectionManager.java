@@ -111,9 +111,7 @@ public class ConnectionManager implements Watcher {
     if (event.getState() == AuthFailed || event.getState() == Disconnected || event.getState() == Expired) {
       log.warn("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
-      }
+      log.debug("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
     }
 
     if (isClosed()) {
@@ -189,7 +187,7 @@ public class ConnectionManager implements Watcher {
         }
 
       } while (!isClosed());
-      log.info("zkClient Connected: {}", connected);
+      log.info("zkClient Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
       log.warn("zkClient has disconnected");
       disconnected();

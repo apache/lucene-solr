@@ -55,7 +55,8 @@ public class UniqFieldsUpdateProcessorFactory extends FieldValueSubsetUpdateProc
   }
 
   @Override
-  public Collection<Object> pickSubset(@SuppressWarnings({"rawtypes"})Collection values) {
+  @SuppressWarnings("unchecked")
+  public Collection pickSubset(Collection values) {
     Set<Object> uniqs = new HashSet<>();
     List<Object> result = new ArrayList<>(values.size());
     for (Object o : values) {

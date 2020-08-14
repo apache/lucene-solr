@@ -55,23 +55,18 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   @Test
   public void test() throws Exception {
-    @SuppressWarnings({"rawtypes"})
     Map editable_prop_map = (Map) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
-    @SuppressWarnings({"rawtypes"})
     Map caches = (Map) editable_prop_map.get("query");
 
     setupRestTestHarnesses();
     List<Thread> threads = new ArrayList<>(caches.size());
-    @SuppressWarnings({"rawtypes"})
     final List<List> collectErrors = new ArrayList<>();
 
     for (Object o : caches.entrySet()) {
-      @SuppressWarnings({"rawtypes"})
       final Map.Entry e = (Map.Entry) o;
       if (e.getValue() instanceof Map) {
         List<String> errs = new ArrayList<>();
         collectErrors.add(errs);
-        @SuppressWarnings({"rawtypes"})
         Map value = (Map) e.getValue();
         Thread t = new Thread(() -> {
           try {
@@ -90,10 +85,10 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
     boolean success = true;
 
-    for (@SuppressWarnings({"rawtypes"})List e : collectErrors) {
+    for (List e : collectErrors) {
       if(!e.isEmpty()){
         success = false;
-        log.error("{}", e);
+        log.error(e.toString());
       }
 
     }
@@ -104,8 +99,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
   }
 
 
-  private void invokeBulkCall(String  cacheName, List<String> errs,
-                              @SuppressWarnings({"rawtypes"})Map val) throws Exception {
+  private void invokeBulkCall(String  cacheName, List<String> errs, Map val) throws Exception {
 
     String payload = "{" +
         "'set-property' : {'query.CACHENAME.size':'CACHEVAL1'," +
@@ -134,7 +128,6 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         publisher.close();
       }
       
-      @SuppressWarnings({"rawtypes"})
       Map map = (Map) Utils.fromJSONString(response);
       Object errors = map.get("errors");
       if(errors!= null){
@@ -184,7 +177,6 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   }
 
-  @SuppressWarnings({"rawtypes"})
   public static LinkedHashMapWriter getAsMap(String uri, CloudSolrClient cloudClient) throws Exception {
     HttpGet get = new HttpGet(uri) ;
     HttpEntity entity = null;

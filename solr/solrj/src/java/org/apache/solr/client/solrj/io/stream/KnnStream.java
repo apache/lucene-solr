@@ -183,7 +183,7 @@ public class KnnStream extends TupleStream implements Expressible  {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l =  new ArrayList();
     return l;
   }
 
@@ -225,14 +225,17 @@ public class KnnStream extends TupleStream implements Expressible  {
 
   public Tuple read() throws IOException {
     if(documentIterator.hasNext()) {
-      Tuple tuple = new Tuple();
+      Map map = new HashMap();
       SolrDocument doc = documentIterator.next();
       for(Entry<String, Object> entry : doc.entrySet()) {
-        tuple.put(entry.getKey(), entry.getValue());
+        map.put(entry.getKey(), entry.getValue());
       }
-      return tuple;
+      return new Tuple(map);
     } else {
-      return Tuple.EOF();
+      Map fields = new HashMap();
+      fields.put("EOF", true);
+      Tuple tuple = new Tuple(fields);
+      return tuple;
     }
   }
 

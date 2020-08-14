@@ -17,8 +17,10 @@
 package org.apache.solr.security;
 
 import javax.servlet.FilterChain;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -83,16 +85,16 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to compare against time in header")
   @Override
-  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
+  public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
 
-    String requestURI = request.getRequestURI();
+    String requestURI = ((HttpServletRequest) request).getRequestURI();
     if (requestURI.endsWith(PublicKeyHandler.PATH)) {
       numPassThrough.inc();
       filterChain.doFilter(request, response);
       return true;
     }
     long receivedTime = System.currentTimeMillis();
-    String header = request.getHeader(HEADER);
+    String header = ((HttpServletRequest) request).getHeader(HEADER);
     if (header == null) {
       //this must not happen
       log.error("No SolrAuth header present");
@@ -131,8 +133,17 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         new BasicUserPrincipal(decipher.userName);
 
     numAuthenticated.inc();
-    filterChain.doFilter(wrapWithPrincipal(request, principal), response);
+    filterChain.doFilter(getWrapper((HttpServletRequest) request, principal), response);
     return true;
+  }
+
+  private static HttpServletRequestWrapper getWrapper(final HttpServletRequest request, final Principal principal) {
+    return new HttpServletRequestWrapper(request) {
+      @Override
+      public Principal getUserPrincipal() {
+        return principal;
+      }
+    };
   }
 
   public static class PKIHeaderData {
@@ -195,11 +206,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
           .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
       entity  = rsp.getEntity();
       byte[] bytes = EntityUtils.toByteArray(entity);
-      @SuppressWarnings({"rawtypes"})
       Map m = (Map) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
       if (key == null) {
-        log.error("No key available from {} {}", url, PublicKeyHandler.PATH);
+        log.error("No key available from " + url + PublicKeyHandler.PATH);
         return null;
       } else {
         log.info("New Key obtained from  node: {} / {}", nodename, key);
@@ -208,7 +218,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       keyCache.put(nodename, pubKey);
       return pubKey;
     } catch (Exception e) {
-      log.error("Exception trying to get public key from : {}", url, e);
+      log.error("Exception trying to get public key from : " + url, e);
       return null;
     } finally {
       Utils.consumeFully(entity);
@@ -227,14 +237,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
           return;
         }
         if (!cores.getAuthenticationPlugin().interceptInternodeRequest(request)) {
-          if (log.isDebugEnabled()) {
-            log.debug("{} secures this internode request", this.getClass().getSimpleName());
-          }
+          log.debug("{} secures this internode request", this.getClass().getSimpleName());
           generateToken().ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
         } else {
-          if (log.isDebugEnabled()) {
-            log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
-          }
+          log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
         }
       }
     };
@@ -263,14 +269,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         return;
       }
       if (!cores.getAuthenticationPlugin().interceptInternodeRequest(httpRequest, httpContext)) {
-        if (log.isDebugEnabled()) {
-          log.debug("{} secures this internode request", this.getClass().getSimpleName());
-        }
+        log.debug("{} secures this internode request", this.getClass().getSimpleName());
         setHeader(httpRequest);
       } else {
-        if (log.isDebugEnabled()) {
-          log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
-        }
+        log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
       }
     }
   }

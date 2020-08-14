@@ -49,7 +49,6 @@ public class HTMLStripTransformer extends Transformer {
 
       if (tmpVal instanceof List) {
         List<String> inputs = (List<String>) tmpVal;
-        @SuppressWarnings({"rawtypes"})
         List results = new ArrayList();
         for (String input : inputs) {
           if (input == null)

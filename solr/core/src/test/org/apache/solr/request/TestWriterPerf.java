@@ -149,10 +149,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
 
     double decodeTime = timer.getTime();
 
-    if (log.isInfoEnabled()) {
-      log.info("writer {}, size={}, encodeRate={} decodeRate={}"
-          , writerName, out.size(), (encIter * 1000L / encodeTime), (decIter * 1000L / decodeTime));
-    }
+    log.info("writer "+writerName+", size="+out.size()+", encodeRate="+(encIter*1000L/encodeTime) + ", decodeRate="+(decIter*1000L/decodeTime));
 
     req.close();
   }

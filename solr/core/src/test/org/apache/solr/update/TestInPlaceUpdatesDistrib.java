@@ -59,7 +59,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -290,15 +290,13 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // order the updates correctly for NONLEADER 1
     for (UpdateRequest update : updates) {
-      if (log.isInfoEnabled()) {
-        log.info("Issuing well ordered update: {}", update.getDocuments());
-      }
+      log.info("Issuing well ordered update: " + update.getDocuments());
       NONLEADERS.get(1).request(update);
     }
 
     // Reordering needs to happen using parallel threads
     ExecutorService threadpool = 
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new DefaultSolrThreadFactory(getTestName()));
 
     // re-order the updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -349,7 +347,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // Reordering needs to happen using parallel threads
     ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new DefaultSolrThreadFactory(getTestName()));
 
     // re-order the updates by swapping the last two
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -385,7 +383,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // number of docs we're testing (0 <= id), index may contain additional random docs (id < 0)
     int numDocs = atLeast(100);
     if (onlyLeaderIndexes) numDocs = TestUtil.nextInt(random(), 10, 50);
-    log.info("Trying num docs = {}", numDocs);
+    log.info("Trying num docs = " + numDocs);
     final List<Integer> ids = new ArrayList<Integer>(numDocs);
     for (int id = 0; id < numDocs; id++) {
       ids.add(id);
@@ -402,7 +400,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       luceneDocids.add((Integer) doc.get("[docid]"));
       valuesList.add((Float) doc.get("inplace_updatable_float"));
     }
-    log.info("Initial results: {}", results);
+    log.info("Initial results: "+results);
     
     // before we do any atomic operations, sanity check our results against all clients
     assertDocIdsAndValuesAgainstAllClients("sanitycheck", params, luceneDocids, "inplace_updatable_float", valuesList);
@@ -417,7 +415,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       assert -5.0F <= value && value <= 5.0F;
       valuesList.set(id, value);
     }
-    log.info("inplace_updatable_float: {}", valuesList);
+    log.info("inplace_updatable_float: " + valuesList);
     
     // update doc w/ set
     Collections.shuffle(ids, r); // so updates aren't applied in index order
@@ -648,7 +646,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertTrue("Earlier: "+docids+", now: "+getInternalDocIds("100"), docids.equals(getInternalDocIds("100")));
     
     SolrDocument sdoc = LEADER.getById("100");  // RTG straight from the index
-    assertEquals(sdoc.toString(), inplace_updatable_float, sdoc.get("inplace_updatable_float"));
+    assertEquals(sdoc.toString(), (float) inplace_updatable_float, sdoc.get("inplace_updatable_float"));
     assertEquals(sdoc.toString(), title, sdoc.get("title_s"));
     assertEquals(sdoc.toString(), version, sdoc.get("_version_"));
 
@@ -659,7 +657,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       version = currentVersion;
 
       sdoc = LEADER.getById("100");  // RTG from the tlog
-      assertEquals(sdoc.toString(), inplace_updatable_float, sdoc.get("inplace_updatable_float"));
+      assertEquals(sdoc.toString(), (float) inplace_updatable_float, sdoc.get("inplace_updatable_float"));
       assertEquals(sdoc.toString(), title, sdoc.get("title_s"));
       assertEquals(sdoc.toString(), version, sdoc.get("_version_"));
 
@@ -689,8 +687,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       final String clientDebug = client.toString() + (LEADER.equals(client) ? " (leader)" : " (not leader)");
       sdoc = client.getById("100", params("distrib", "false"));
 
-      assertEquals(clientDebug + " => "+ sdoc, 100, sdoc.get("inplace_updatable_int"));
-      assertEquals(clientDebug + " => "+ sdoc, inplace_updatable_float, sdoc.get("inplace_updatable_float"));
+      assertEquals(clientDebug + " => "+ sdoc, (int) 100, sdoc.get("inplace_updatable_int"));
+      assertEquals(clientDebug + " => "+ sdoc, (float) inplace_updatable_float, sdoc.get("inplace_updatable_float"));
       assertEquals(clientDebug + " => "+ sdoc, title, sdoc.get("title_s"));
       assertEquals(clientDebug + " => "+ sdoc, version, sdoc.get("_version_"));
     }
@@ -745,16 +743,14 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // order the updates correctly for NONLEADER 1
     for (UpdateRequest update : updates) {
-      if (log.isInfoEnabled()) {
-        log.info("Issuing well ordered update: {}", update.getDocuments());
-      }
+      log.info("Issuing well ordered update: " + update.getDocuments());
       NONLEADERS.get(1).request(update);
     }
 
     // Reordering needs to happen using parallel threads, since some of these updates will
     // be blocking calls, waiting for some previous updates to arrive on which it depends.
     ExecutorService threadpool = 
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new DefaultSolrThreadFactory(getTestName()));
 
     // re-order the updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -778,9 +774,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // assert both replicas have same effect
     for (SolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
-      if (log.isInfoEnabled()) {
-        log.info("Testing client: {}", ((HttpSolrClient) client).getBaseURL());
-      }
+      log.info("Testing client: " + ((HttpSolrClient)client).getBaseURL());
       assertReplicaValue(client, 0, "inplace_updatable_float", (newinplace_updatable_float + (float)(updates.size() - 1)), 
           "inplace_updatable_float didn't match for replica at client: " + ((HttpSolrClient)client).getBaseURL());
       assertReplicaValue(client, 0, "title_s", "title0_new", 
@@ -818,15 +812,13 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // order the updates correctly for NONLEADER 1
     for (UpdateRequest update : updates) {
-      if (log.isInfoEnabled()) {
-        log.info("Issuing well ordered update: {}", update.getDocuments());
-      }
+      log.info("Issuing well ordered update: " + update.getDocuments());
       NONLEADERS.get(1).request(update);
     }
 
     // Reordering needs to happen using parallel threads
     ExecutorService threadpool = 
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new DefaultSolrThreadFactory(getTestName()));
 
     // re-order the updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -892,15 +884,13 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // order the updates correctly for NONLEADER 1
     for (UpdateRequest update : updates) {
-      if (log.isInfoEnabled()) {
-        log.info("Issuing well ordered update: {}", update.getDocuments());
-      }
+      log.info("Issuing well ordered update: " + update.getDocuments());
       NONLEADERS.get(1).request(update);
     }
 
     // Reordering needs to happen using parallel threads
     ExecutorService threadpool = 
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new DefaultSolrThreadFactory(getTestName()));
     // re-order the last two updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
     Collections.swap(reorderedUpdates, 2, 3);
@@ -942,17 +932,15 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
     // All should succeed, i.e. no LIR
     assertEquals(updateResponses.size(), successful);
-
-    if (log.isInfoEnabled()) {
-      log.info("Non leader 0: {}", ((HttpSolrClient) NONLEADERS.get(0)).getBaseURL());
-      log.info("Non leader 1: {}", ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL()); // logOk
-    }
+    
+    log.info("Non leader 0: "+((HttpSolrClient)NONLEADERS.get(0)).getBaseURL());
+    log.info("Non leader 1: "+((HttpSolrClient)NONLEADERS.get(1)).getBaseURL());
     
     SolrDocument doc0 = NONLEADERS.get(0).getById(String.valueOf(0), params("distrib", "false"));
     SolrDocument doc1 = NONLEADERS.get(1).getById(String.valueOf(0), params("distrib", "false"));
 
-    log.info("Doc in both replica 0: {}", doc0);
-    log.info("Doc in both replica 1: {}", doc1);
+    log.info("Doc in both replica 0: "+doc0);
+    log.info("Doc in both replica 1: "+doc1);
     // assert both replicas have same effect
     for (int i=0; i<NONLEADERS.size(); i++) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrClient client = NONLEADERS.get(i);
@@ -984,7 +972,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         "Waiting for dependant update to timeout", 1, 6000);
 
     ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new DefaultSolrThreadFactory(getTestName()));
     for (UpdateRequest update : updates) {
       AsyncUpdateWithRandomCommit task = new AsyncUpdateWithRandomCommit(update, cloudClient,
                                                                          random().nextLong());
@@ -1033,11 +1021,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
     
     for (SolrClient client : clients) {
-      if (log.isInfoEnabled()) {
-        log.info("Testing client (Fetch missing test): {}", ((HttpSolrClient) client).getBaseURL());
-        log.info("Version at {} is: {}"
-            , ((HttpSolrClient) client).getBaseURL(), getReplicaValue(client, 1, "_version_")); // logOk
-      }
+      log.info("Testing client (Fetch missing test): " + ((HttpSolrClient) client).getBaseURL());
+      log.info(
+          "Version at " + ((HttpSolrClient) client).getBaseURL() + " is: " + getReplicaValue(client, 1, "_version_"));
+
       assertReplicaValue(client, 1, "inplace_updatable_float", (newinplace_updatable_float + 2.0f),
           "inplace_updatable_float didn't match for replica at client: " + ((HttpSolrClient) client).getBaseURL());
       assertReplicaValue(client, 1, "title_s", "title1_new",
@@ -1058,7 +1045,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       shardToJetty.get(SHARD1).get(1).jetty.getDebugFilter().addDelay("Waiting for dependant update to timeout", 4, 5998); // the delete update
 
       threadpool =
-          ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+          ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new DefaultSolrThreadFactory(getTestName()));
       for (UpdateRequest update : updates) {
         AsyncUpdateWithRandomCommit task = new AsyncUpdateWithRandomCommit(update, cloudClient,
                                                                            random().nextLong());
@@ -1311,7 +1298,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         "Waiting for dependant update to timeout", 2, 8000);
 
     ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new DefaultSolrThreadFactory(getTestName()));
     for (UpdateRequest update : updates) {
       AsyncUpdateWithRandomCommit task = new AsyncUpdateWithRandomCommit(update, cloudClient,
                                                                          random().nextLong());
@@ -1343,11 +1330,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     for (SolrClient client : clients) {
-      if (log.isInfoEnabled()) {
-        log.info("Testing client (testDBQUsingUpdatedFieldFromDroppedUpdate): {}", ((HttpSolrClient) client).getBaseURL());
-        log.info("Version at {} is: {}", ((HttpSolrClient) client).getBaseURL(),
-            getReplicaValue(client, 1, "_version_")); // logOk
-      }
+      log.info("Testing client (testDBQUsingUpdatedFieldFromDroppedUpdate): " + ((HttpSolrClient)client).getBaseURL());
+      log.info("Version at " + ((HttpSolrClient)client).getBaseURL() + " is: " + getReplicaValue(client, 1, "_version_"));
+
       assertNull(client.getById("1", params("distrib", "false")));
     }
 

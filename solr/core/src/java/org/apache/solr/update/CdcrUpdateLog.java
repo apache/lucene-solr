@@ -202,7 +202,6 @@ public class CdcrUpdateLog extends UpdateLog {
    * Creates a new {@link org.apache.solr.update.CdcrUpdateLog.CdcrLogReader}
    * initialised with the current list of tlogs.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public CdcrLogReader newLogReader() {
     return new CdcrLogReader(new ArrayList(logs), tlog);
   }
@@ -326,7 +325,7 @@ public class CdcrUpdateLog extends UpdateLog {
     id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
 
     if (debug) {
-      log.debug("UpdateHandler init: tlogDir={}, existing tlogs={}, next id={}", tlogDir, Arrays.asList(tlogFiles), id);
+      log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", existing tlogs=" + Arrays.asList(tlogFiles) + ", next id=" + id);
     }
 
     TransactionLog oldLog = null;
@@ -363,7 +362,6 @@ public class CdcrUpdateLog extends UpdateLog {
       // populate recent deleteByQuery commands
       for (int i=startingUpdates.deleteByQueryList.size()-1; i>=0; i--) {
         Update update = startingUpdates.deleteByQueryList.get(i);
-        @SuppressWarnings({"unchecked"})
         List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
         long version = (Long) dbq.get(1);
         String q = (String) dbq.get(2);
@@ -404,7 +402,6 @@ public class CdcrUpdateLog extends UpdateLog {
         Object o = tlogReader.next();
         if (o == null) break; // we reached the end of the tlog
         // should currently be a List<Oper,Ver,Doc/Id>
-        @SuppressWarnings({"rawtypes"})
         List entry = (List) o;
         operationAndFlags = (Integer) entry.get(0);
         int oper = operationAndFlags & OPERATION_MASK;
@@ -732,7 +729,6 @@ public class CdcrUpdateLog extends UpdateLog {
      * Extracts the version number and converts it to its absolute form.
      */
     private long getVersion(Object o) {
-      @SuppressWarnings({"rawtypes"})
       List entry = (List) o;
       // version is negative for delete, ensure that we are manipulating absolute version numbers
       return Math.abs((Long) entry.get(1));

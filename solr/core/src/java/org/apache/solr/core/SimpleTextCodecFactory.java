@@ -25,7 +25,6 @@ public class SimpleTextCodecFactory extends CodecFactory {
   private Codec codec;
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void init(NamedList args) {
     super.init(args);
     assert codec == null;

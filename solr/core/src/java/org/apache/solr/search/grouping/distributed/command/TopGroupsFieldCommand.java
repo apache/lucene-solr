@@ -116,7 +116,6 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   private final int maxDocPerGroup;
   private final boolean needScores;
   private final boolean needMaxScore;
-  @SuppressWarnings({"rawtypes"})
   private TopGroupsCollector secondPassCollector;
   private TopGroups<BytesRef> topGroups;
 
@@ -162,7 +161,6 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void postCollect(IndexSearcher searcher) throws IOException {
     if (firstPhaseGroups.isEmpty()) {
       topGroups = new TopGroups<>(groupSort.getSort(), withinGroupSort.getSort(), 0, 0, new GroupDocs[0], Float.NaN);

@@ -88,7 +88,6 @@ public class MetricsQuery {
     return jsonQueries;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static List<MetricsQuery> from(Node node) throws JsonQueryException {
     List<MetricsQuery> metricsQueries = new ArrayList<>();
 

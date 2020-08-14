@@ -1,5 +1,5 @@
 = Uploading Structured Data Store Data with the Data Import Handler
-:toclevels: 1
+:page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,8 +16,6 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-
-WARNING: The Data Import Handler is deprecated is scheduled to be removed in 9.0. This functionality will likely migrate to a 3rd-party plugin in the near future.
 
 Many search applications store the content to be indexed in a structured data store, such as a relational database. The Data Import Handler (DIH) provides a mechanism for importing content from a data store and indexing it.
 

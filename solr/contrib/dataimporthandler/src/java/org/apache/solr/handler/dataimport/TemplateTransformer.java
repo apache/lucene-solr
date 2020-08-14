@@ -76,8 +76,8 @@ public class TemplateTransformer extends Transformer {
       }
       for (String v : variables) {
         if (resolver.resolve(v) == null) {
-          log.warn("Unable to resolve variable: {} while parsing expression: {}"
-              ,v , expr);
+          log.warn("Unable to resolve variable: " + v
+                  + " while parsing expression: " + expr);
           resolvable = false;
         }
       }
@@ -94,7 +94,6 @@ public class TemplateTransformer extends Transformer {
     return row;
   }
 
-  @SuppressWarnings({"unchecked"})
   private void addToRow(String key, Map<String, Object> row, Object value) {
     Object prevVal = row.get(key);
     if (prevVal != null) {

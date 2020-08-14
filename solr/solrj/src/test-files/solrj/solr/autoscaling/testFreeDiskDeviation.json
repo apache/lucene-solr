@@ -1,0 +1,35 @@
+{
+  "liveNodes": [
+    "node1",
+    "node2",
+    "node3"
+  ],
+  "replicaInfo": {
+    "node1": {
+      "mycoll1": {
+        "shard3": [{"r3": {"type": "NRT", "INDEX.sizeInGB": 700}}],
+        "shard4": [{"r4": {"type": "NRT", "INDEX.sizeInGB": 400}}]
+      }
+    },
+    "node2": {
+      "mycoll1": {
+        "shard1": [{"r1": {"type": "NRT", "INDEX.sizeInGB": 450}}],
+        "shard2": [{"r2": {"type": "NRT", "INDEX.sizeInGB": 750}}]
+      }
+    },
+    "node3": {
+      "mycoll2": {
+        "shard1": [{"r1": {"type": "NRT", "INDEX.sizeInGB": 250}}]
+      }
+    }
+  },
+  "nodeValues": {
+    "node1": {"node": "node1", "cores": 2, "freedisk": 900},
+    "node2": {"node": "node2", "cores": 2, "freedisk": 800},
+    "node3": {"node": "node3", "cores": 1, "freedisk": 1200}
+  },
+  "config": {
+    "cluster-policy": [{"replica":"<2", "shard":"#EACH", "node":"#ANY"},
+      {"replica": "#ALL", "freedisk": ">700", "strict": false}]
+  }
+}

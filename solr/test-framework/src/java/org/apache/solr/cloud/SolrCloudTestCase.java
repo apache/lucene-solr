@@ -234,13 +234,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     public Builder withDefaultClusterProperty(String key, String value) {
-      @SuppressWarnings({"unchecked"})
       HashMap<String, Object> defaults = (HashMap<String, Object>) this.clusterProperties.get(CollectionAdminParams.DEFAULTS);
       if (defaults == null) {
         defaults = new HashMap<>();
         this.clusterProperties.put(CollectionAdminParams.DEFAULTS, defaults);
       }
-      @SuppressWarnings({"unchecked"})
       HashMap<String, Object> cluster = (HashMap<String, Object>) defaults.get(CollectionAdminParams.CLUSTER);
       if (cluster == null) {
         cluster = new HashMap<>();
@@ -349,9 +347,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
-      if (log.isInfoEnabled()) {
-        log.info("active slice count: {} expected: {}", collectionState.getActiveSlices().size(), expectedShards);
-      }
+      log.info("active slice count: " + collectionState.getActiveSlices().size() + " expected:" + expectedShards);
       if (collectionState.getActiveSlices().size() != expectedShards)
         return false;
       return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
@@ -393,7 +389,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
 
-    log.info("active replica count: {} expected replica count: {}", activeReplicas, expectedReplicas);
+    log.info("active replica count: " + activeReplicas + " expected replica count: " + expectedReplicas);
 
     return activeReplicas == expectedReplicas;
 
@@ -449,7 +445,6 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
     log.info("waitForResponse: {}", request);
     int i = 0;

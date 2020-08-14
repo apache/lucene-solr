@@ -26,6 +26,7 @@ import com.codahale.metrics.Metric;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -117,17 +118,18 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   @Test
   public void testHiddenSysProps() throws Exception {
     Path home = Paths.get(TEST_HOME());
+    SolrResourceLoader loader = new SolrResourceLoader(home);
 
     // default config
     String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr.xml").toFile(), "UTF-8");
-    NodeConfig config = SolrXmlConfig.fromString(home, solrXml);
+    NodeConfig config = SolrXmlConfig.fromString(loader, solrXml);
     NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.forEach(s -> {
       assertTrue(s, config.getMetricsConfig().getHiddenSysProps().contains(s));
     });
 
     // custom config
-    solrXml = FileUtils.readFileToString(home.resolve("solr-hiddensysprops.xml").toFile(), "UTF-8");
-    NodeConfig config2 = SolrXmlConfig.fromString(home, solrXml);
+    solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-hiddensysprops.xml").toFile(), "UTF-8");
+    NodeConfig config2 = SolrXmlConfig.fromString(loader, solrXml);
     Arrays.asList("foo", "bar", "baz").forEach(s -> {
       assertTrue(s, config2.getMetricsConfig().getHiddenSysProps().contains(s));
     });

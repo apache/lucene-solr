@@ -165,9 +165,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
           cpsm.mappings.put(key, sortedVals);        
         }
       }
-      if (log.isInfoEnabled()) {
-        log.info("Loaded {} synonym mappings for {}", synonymMappings.size(), getResourceId());
-      }
+      log.info("Loaded {} synonym mappings for {}", synonymMappings.size(), getResourceId());      
     }
 
     @SuppressWarnings("unchecked")
@@ -235,7 +233,6 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
             madeChanges = true;
           }
         } else if (val instanceof List) {
-          @SuppressWarnings({"unchecked"})
           List<String> vals = (List<String>)val;
 
           if (output == null) {
@@ -384,11 +381,6 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
           
   public ManagedSynonymFilterFactory(Map<String,String> args) {
     super(args);    
-  }
-
-  /** Default ctor for compatibility with SPI */
-  public ManagedSynonymFilterFactory() {
-    throw defaultCtorException();
   }
 
   @Override

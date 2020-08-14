@@ -61,11 +61,6 @@ public class MockTokenFilterFactory extends TokenFilterFactory {
     }
   }
 
-  /** Default ctor for compatibility with SPI */
-  public MockTokenFilterFactory() {
-    throw defaultCtorException();
-  }
-
   @Override
   public MockTokenFilter create(TokenStream stream) {
     return new MockTokenFilter(stream, filter);

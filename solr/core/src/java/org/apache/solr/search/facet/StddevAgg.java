@@ -32,7 +32,7 @@ public class StddevAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
@@ -57,7 +57,7 @@ public class StddevAgg extends SimpleAggValueSource {
       }
       vs = sf.getType().getValueSource(sf, null);
     }
-    return new SlotAcc.StddevSlotAcc(vs, fcontext, numSlots);
+    return new StddevSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -65,7 +65,7 @@ public class StddevAgg extends SimpleAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetModule.FacetDoubleMerger {
+  private static class Merger extends FacetDoubleMerger {
     long count;
     double sumSq;
     double sum;
@@ -86,11 +86,11 @@ public class StddevAgg extends SimpleAggValueSource {
     
     @Override
     protected double getDouble() {
-      return AggUtil.stdDev(sumSq, sum, count);
+      return AggUtil.uncorrectedStdDev(sumSq, sum, count);
     }    
   }
 
-  class StddevSortedNumericAcc extends DocValuesAcc.SDVSortedNumericAcc {
+  class StddevSortedNumericAcc extends SDVSortedNumericAcc {
 
     public StddevSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
@@ -98,11 +98,11 @@ public class StddevAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 
-  class StddevSortedSetAcc extends DocValuesAcc.SDVSortedSetAcc {
+  class StddevSortedSetAcc extends SDVSortedSetAcc {
 
     public StddevSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
@@ -110,11 +110,11 @@ public class StddevAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 
-  class StddevUnInvertedFieldAcc extends UnInvertedFieldAcc.SDVUnInvertedFieldAcc {
+  class StddevUnInvertedFieldAcc extends SDVUnInvertedFieldAcc {
 
     public StddevUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots);
@@ -122,7 +122,7 @@ public class StddevAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
     }
   }
 }

@@ -19,6 +19,7 @@ package org.apache.solr.response;
 import java.io.File;
 import java.io.FilePermission;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -94,7 +95,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   private Map<String,String> customTools = new HashMap<String,String>();
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     log.warn("VelocityResponseWriter is deprecated. This may be removed in future Solr releases. Please SOLR-14065.");
     fileResourceLoaderBaseDir = null;
     String templateBaseDir = (String) args.get(TEMPLATE_BASE_DIR);
@@ -102,11 +103,11 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     if (templateBaseDir != null && !templateBaseDir.isEmpty()) {
       fileResourceLoaderBaseDir = new File(templateBaseDir).getAbsoluteFile();
       if (!fileResourceLoaderBaseDir.exists()) { // "*not* exists" condition!
-        log.warn("{} specified does not exist: {}", TEMPLATE_BASE_DIR, fileResourceLoaderBaseDir);
+        log.warn(TEMPLATE_BASE_DIR + " specified does not exist: " + fileResourceLoaderBaseDir);
         fileResourceLoaderBaseDir = null;
       } else {
         if (!fileResourceLoaderBaseDir.isDirectory()) { // "*not* a directory" condition
-          log.warn("{} specified is not a directory: {}", TEMPLATE_BASE_DIR, fileResourceLoaderBaseDir);
+          log.warn(TEMPLATE_BASE_DIR + " specified is not a directory: " + fileResourceLoaderBaseDir);
           fileResourceLoaderBaseDir = null;
         }
       }
@@ -114,11 +115,9 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
 
     initPropertiesFileName = (String) args.get(PROPERTIES_FILE);
 
-    @SuppressWarnings({"rawtypes"})
     NamedList tools = (NamedList)args.get("tools");
     if (tools != null) {
       for(Object t : tools) {
-        @SuppressWarnings({"rawtypes"})
         Map.Entry tool = (Map.Entry)t;
         customTools.put(tool.getKey().toString(), tool.getValue().toString());
       }
@@ -129,10 +128,11 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   public void inform(SolrCore core) {
     // need to leverage SolrResourceLoader, so load init.properties.file here instead of init()
     if (initPropertiesFileName != null) {
+      InputStream is = null;
       try {
         velocityInitProps.load(new InputStreamReader(core.getResourceLoader().openResource(initPropertiesFileName), StandardCharsets.UTF_8));
       } catch (IOException e) {
-        log.warn("Error loading {} specified property file: {}", PROPERTIES_FILE, initPropertiesFileName, e);
+        log.warn("Error loading " + PROPERTIES_FILE + " specified property file: " + initPropertiesFileName, e);
       }
     }
     }
@@ -228,13 +228,11 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   private VelocityContext createContext(SolrQueryRequest request, SolrQueryResponse response) {
     VelocityContext context = new VelocityContext();
 
     // Register useful Velocity "tools"
     String locale = request.getParams().get(LOCALE);
-    @SuppressWarnings({"rawtypes"})
     Map toolConfig = new HashMap();
     toolConfig.put("locale", locale);
 

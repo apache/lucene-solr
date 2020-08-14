@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import org.apache.solr.core.SolrInfoBean;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -64,7 +63,7 @@ public interface SolrCache<K,V> extends SolrInfoBean {
    * regenerate an item in the new cache from an entry in the old cache.
    *
    */
-  public Object init(@SuppressWarnings({"rawtypes"})Map args, Object persistence, CacheRegenerator regenerator);
+  public Object init(Map args, Object persistence, CacheRegenerator regenerator);
   // I don't think we need a factory for faster creation given that these
   // will be associated with slow-to-create SolrIndexSearchers.
   // change to NamedList when other plugins do?
@@ -151,7 +150,7 @@ public interface SolrCache<K,V> extends SolrInfoBean {
 
 
   /** Frees any non-memory resources */
-  default void close() throws IOException {
+  default void close() throws Exception {
     SolrInfoBean.super.close();
   }
 

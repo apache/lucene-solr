@@ -28,10 +28,9 @@ import org.apache.solr.client.solrj.SolrRequest;
  */
 public class SolrRequestCarrier implements TextMap {
 
-  @SuppressWarnings({"rawtypes"})
   private final SolrRequest solrRequest;
 
-  public SolrRequestCarrier(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest) {
+  public SolrRequestCarrier(SolrRequest solrRequest) {
     this.solrRequest = solrRequest;
   }
 

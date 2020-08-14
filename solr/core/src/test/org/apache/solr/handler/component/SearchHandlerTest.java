@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -46,6 +45,8 @@ public class SearchHandlerTest extends SolrTestCaseJ4
     initCore("solrconfig.xml","schema.xml");
   }
 
+  
+  @SuppressWarnings("unchecked")
   @Test
   public void testInitialization()
   {
@@ -56,18 +57,15 @@ public class SearchHandlerTest extends SolrTestCaseJ4
     List<String> names0 = new ArrayList<>();
     names0.add( MoreLikeThisComponent.COMPONENT_NAME );
     
-    NamedList<List<String>> args = new NamedList<>();
+    NamedList args = new NamedList();
     args.add( SearchHandler.INIT_COMPONENTS, names0 );
-    try (SearchHandler handler = new SearchHandler()) {
-      handler.init(args);
-      handler.inform(core);
-
-      assertEquals(1, handler.getComponents().size());
-      assertEquals(core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
-          handler.getComponents().get(0));
-    } catch (IOException e) {
-      fail("IOExcepiton closing SearchHandler");
-    }
+    SearchHandler handler = new SearchHandler();
+    handler.init( args );
+    handler.inform( core );
+    
+    assertEquals( 1, handler.getComponents().size() );
+    assertEquals( core.getSearchComponent( MoreLikeThisComponent.COMPONENT_NAME ), 
+        handler.getComponents().get( 0 ) );
 
     // Build an explicit list that includes the debug comp.
     //-----------------------------------------------
@@ -76,22 +74,19 @@ public class SearchHandlerTest extends SolrTestCaseJ4
     names0.add( DebugComponent.COMPONENT_NAME );
     names0.add( MoreLikeThisComponent.COMPONENT_NAME );
 
-    args = new NamedList<>();
+    args = new NamedList();
     args.add( SearchHandler.INIT_COMPONENTS, names0 );
-    try (SearchHandler handler = new SearchHandler()) {
-      handler.init(args);
-      handler.inform(core);
+    handler = new SearchHandler();
+    handler.init( args );
+    handler.inform( core );
 
-      assertEquals(3, handler.getComponents().size());
-      assertEquals(core.getSearchComponent(FacetComponent.COMPONENT_NAME),
-          handler.getComponents().get(0));
-      assertEquals(core.getSearchComponent(DebugComponent.COMPONENT_NAME),
-          handler.getComponents().get(1));
-      assertEquals(core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
-          handler.getComponents().get(2));
-    } catch (IOException e) {
-      fail("Exception when closing SearchHandler");
-    }
+    assertEquals( 3, handler.getComponents().size() );
+    assertEquals( core.getSearchComponent( FacetComponent.COMPONENT_NAME ),
+        handler.getComponents().get( 0 ) );
+    assertEquals( core.getSearchComponent( DebugComponent.COMPONENT_NAME ),
+        handler.getComponents().get( 1 ) );
+    assertEquals( core.getSearchComponent( MoreLikeThisComponent.COMPONENT_NAME ), 
+        handler.getComponents().get( 2 ) );
     
 
     // First/Last list
@@ -102,22 +97,19 @@ public class SearchHandlerTest extends SolrTestCaseJ4
     List<String> names1 = new ArrayList<>();
     names1.add( FacetComponent.COMPONENT_NAME );
     
-    args = new NamedList<>();
+    args = new NamedList();
     args.add( SearchHandler.INIT_FIRST_COMPONENTS, names0 );
     args.add( SearchHandler.INIT_LAST_COMPONENTS, names1 );
-    try (SearchHandler handler = new SearchHandler()) {
-      handler.init(args);
-      handler.inform(core);
-
-      List<SearchComponent> comps = handler.getComponents();
-      assertEquals(2 + handler.getDefaultComponents().size(), comps.size());
-      assertEquals(core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME), comps.get(0));
-      assertEquals(core.getSearchComponent(FacetComponent.COMPONENT_NAME), comps.get(comps.size() - 2));
-      //Debug component is always last in this case
-      assertEquals(core.getSearchComponent(DebugComponent.COMPONENT_NAME), comps.get(comps.size() - 1));
-    } catch (IOException e) {
-      fail("Exception when closing SearchHandler");
-    }
+    handler = new SearchHandler();
+    handler.init( args );
+    handler.inform( core );
+    
+    List<SearchComponent> comps = handler.getComponents();
+    assertEquals( 2+handler.getDefaultComponents().size(), comps.size() );
+    assertEquals( core.getSearchComponent( MoreLikeThisComponent.COMPONENT_NAME ), comps.get( 0 ) );
+    assertEquals( core.getSearchComponent( FacetComponent.COMPONENT_NAME ), comps.get( comps.size()-2 ) );
+    //Debug component is always last in this case
+    assertEquals( core.getSearchComponent( DebugComponent.COMPONENT_NAME ), comps.get( comps.size()-1 ) );
   }
   
   @Test

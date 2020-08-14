@@ -19,7 +19,6 @@ package org.apache.solr.handler.sql;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.solr.client.solrj.io.SolrClientCache;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -33,17 +32,12 @@ import java.util.Properties;
 public class CalciteSolrDriver extends Driver {
   public final static String CONNECT_STRING_PREFIX = "jdbc:calcitesolr:";
 
-  public static CalciteSolrDriver INSTANCE = new CalciteSolrDriver();
-
-  private SolrClientCache solrClientCache;
-
-
   private CalciteSolrDriver() {
     super();
   }
 
   static {
-    INSTANCE.register();
+    new CalciteSolrDriver().register();
   }
 
   @Override
@@ -65,15 +59,11 @@ public class CalciteSolrDriver extends Driver {
     if(schemaName == null) {
       throw new SQLException("zk must be set");
     }
-    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache);
-    rootSchema.add(schemaName, solrSchema);
+    rootSchema.add(schemaName, new SolrSchema(info));
 
     // Set the default schema
     calciteConnection.setSchema(schemaName);
-    return calciteConnection;
-  }
 
-  public void setSolrClientCache(SolrClientCache solrClientCache) {
-    this.solrClientCache = solrClientCache;
+    return connection;
   }
 }

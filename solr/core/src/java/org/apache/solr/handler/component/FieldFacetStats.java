@@ -143,13 +143,13 @@ public class FieldFacetStats {
       facetStatsTerms.add(new HashMap<String, Integer>());
     }
     for (Map.Entry<String, Integer> pairs : facetStatsTerms.get(statsTermNum).entrySet()) {
-      String key = pairs.getKey();
+      String key = (String) pairs.getKey();
       StatsValues facetStats = facetStatsValues.get(key);
       if (facetStats == null) {
         facetStats = StatsValuesFactory.createStatsValues(statsField);
         facetStatsValues.put(key, facetStats);
       }
-      Integer count = pairs.getValue();
+      Integer count = (Integer) pairs.getValue();
       if (count != null) {
         facetStats.accumulate(value, count);
       }

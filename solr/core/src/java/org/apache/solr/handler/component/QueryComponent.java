@@ -44,7 +44,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -216,7 +215,7 @@ public class QueryComponent extends SearchComponent
           rb.setFilters( filters );
         }
       }
-    } catch (SyntaxError e) {
+    } catch (SyntaxError | FuzzyTermsEnum.FuzzyTermsException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
@@ -324,9 +323,7 @@ public class QueryComponent extends SearchComponent
   @Override
   public void process(ResponseBuilder rb) throws IOException
   {
-    if (log.isDebugEnabled()) {
-      log.debug("process: {}", rb.req.getParams());
-    }
+    log.debug("process: {}", rb.req.getParams());
   
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
@@ -366,7 +363,6 @@ public class QueryComponent extends SearchComponent
 
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
-    cmd.setMinExactCount(getMinExactCount(params));
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
     
@@ -401,14 +397,6 @@ public class QueryComponent extends SearchComponent
 
     // normal search result
     doProcessUngroupedSearch(rb, cmd, result);
-  }
-
-  private int getMinExactCount(SolrParams params) {
-    long minExactCount = params.getLong(CommonParams.MIN_EXACT_COUNT, Integer.MAX_VALUE);
-    if (minExactCount < 0 || minExactCount > Integer.MAX_VALUE) {
-      minExactCount = Integer.MAX_VALUE;
-    }
-    return (int)minExactCount;
   }
 
   protected void doFieldSortValues(ResponseBuilder rb, SolrIndexSearcher searcher) throws IOException
@@ -650,7 +638,7 @@ public class QueryComponent extends SearchComponent
   protected static final EndResultTransformer MAIN_END_RESULT_TRANSFORMER = new MainEndResultTransformer();
   protected static final EndResultTransformer SIMPLE_END_RESULT_TRANSFORMER = new SimpleEndResultTransformer();
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   protected void groupedFinishStage(final ResponseBuilder rb) {
     // To have same response as non-distributed request.
     GroupingSpecification groupSpec = rb.getGroupingSpec();
@@ -806,7 +794,6 @@ public class QueryComponent extends SearchComponent
     return true;
   }
 
-  @SuppressWarnings({"unchecked"})
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
       List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
       if(mergeStrategies != null) {
@@ -851,7 +838,6 @@ public class QueryComponent extends SearchComponent
       }
       
       long numFound = 0;
-      boolean hitCountIsExact = true;
       Float maxScore=null;
       boolean thereArePartialResults = false;
       Boolean segmentTerminatedEarly = null;
@@ -883,7 +869,6 @@ public class QueryComponent extends SearchComponent
             }
             docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
             nl.add("numFound", docs.getNumFound());
-            nl.add("numFoundExact", docs.getNumFoundExact());
             nl.add("maxScore", docs.getMaxScore());
             nl.add("shardAddress", srsp.getShardAddress());
           }
@@ -925,18 +910,12 @@ public class QueryComponent extends SearchComponent
           maxScore = maxScore==null ? docs.getMaxScore() : Math.max(maxScore, docs.getMaxScore());
         }
         numFound += docs.getNumFound();
-        
-        if (hitCountIsExact && Boolean.FALSE.equals(docs.getNumFoundExact())) {
-          hitCountIsExact = false;
-        }
 
-        @SuppressWarnings({"rawtypes"})
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
         if (sortFieldValues == null || sortFieldValues.size()==0 && // we bypass merging this response only if it's partial itself
                             thisResponseIsPartial) { // but not the previous one!!
           continue; //fsv timeout yields empty sort_vlaues
         }
-        @SuppressWarnings({"rawtypes"})
         NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
 
         // go through every doc in this response, construct a ShardDoc, and
@@ -1002,7 +981,6 @@ public class QueryComponent extends SearchComponent
       SolrDocumentList responseDocs = new SolrDocumentList();
       if (maxScore!=null) responseDocs.setMaxScore(maxScore);
       responseDocs.setNumFound(numFound);
-      responseDocs.setNumFoundExact(hitCountIsExact);
       responseDocs.setStart(ss.getOffset());
       // size appropriately
       for (int i=0; i<resultSize; i++) responseDocs.add(null);
@@ -1072,7 +1050,6 @@ public class QueryComponent extends SearchComponent
         nextCursorMarkValues.add(lastDoc.score);
       } else {
         assert null != sf.getField() : "SortField has null field";
-        @SuppressWarnings({"unchecked"})
         List<Object> fieldVals = (List<Object>) lastDoc.sortFieldValues.get(sf.getField());
         nextCursorMarkValues.add(fieldVals.get(lastDoc.orderInShard));
       }
@@ -1082,8 +1059,7 @@ public class QueryComponent extends SearchComponent
     rb.setNextCursorMark(nextCursorMark);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  protected NamedList unmarshalSortValues(SortSpec sortSpec,
+  protected NamedList unmarshalSortValues(SortSpec sortSpec, 
                                         NamedList sortFieldValues, 
                                         IndexSchema schema) {
     NamedList unmarshalledSortValsPerField = new NamedList();
@@ -1296,7 +1272,7 @@ public class QueryComponent extends SearchComponent
     }
 
     DocListAndSet res = new DocListAndSet();
-    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0, TotalHits.Relation.EQUAL_TO);
+    res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0);
     if (rb.isNeedDocSet()) {
       // TODO: create a cache for this!
       List<Query> queries = new ArrayList<>();
@@ -1508,12 +1484,7 @@ public class QueryComponent extends SearchComponent
     SolrQueryResponse rsp = rb.rsp;
 
     SolrIndexSearcher searcher = req.getSearcher();
-
-    try {
-      searcher.search(result, cmd);
-    } catch (FuzzyTermsEnum.FuzzyTermsException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
+    searcher.search(result, cmd);
     rb.setResult(result);
 
     ResultContext ctx = new BasicResultContext(rb);

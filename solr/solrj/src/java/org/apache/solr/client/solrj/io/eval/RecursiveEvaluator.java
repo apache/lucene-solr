@@ -22,6 +22,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -74,7 +76,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       //Let's first check to see if we have a List of Strings.
       //If we do let's try and convert to a list of doubles and see what happens
       try {
-        List<Number> vector = new ArrayList<>();
+        List<Number> vector = new ArrayList();
         boolean allDoubles = true;
         for(Object o : (Collection)value) {
           if(o instanceof String) {
@@ -143,12 +145,12 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       //can be contained within a tuple.
 
       Tuple tuple = (Tuple)value;
-      Tuple newTuple = new Tuple();
-      for(Object o : tuple.getFields().keySet()) {
-        Object v = tuple.get(o);
-        newTuple.put(o, normalizeOutputType(v));
+      Map map = new HashMap();
+      for(Object o : tuple.fields.keySet()) {
+        Object v = tuple.fields.get(o);
+        map.put(o, normalizeOutputType(v));
       }
-      return newTuple;
+      return new Tuple(map);
     }
     else{
       // anything else can just be returned as is

@@ -176,7 +176,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       failed = false;
     } finally {
       if (failed) {
-        log.error("REQUEST FAILED: {}", request);
+        log.error("REQUEST FAILED: " + request);
       }
     }
 
@@ -227,7 +227,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       failed = false;
     } finally {
       if (failed) {
-        log.error("REQUEST FAILED: {}", request);
+        log.error("REQUEST FAILED: " + request);
       }
     }
 
@@ -240,16 +240,20 @@ abstract public class RestTestBase extends SolrJettyTestBase {
         String err = JSONTestUtil.match(response, testJSON, delta);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error={}"
-              + "\n expected ={}\n response = {}\n request = {}\n"
-              , err, testJSON, response, request);
+          log.error("query failed JSON validation. error=" + err +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
-          log.error("JSON query validation threw an exception."
-              +"\n expected ={}\n response = {}\n request = {}\n"
-              , testJSON, response, request);
+          log.error("JSON query validation threw an exception." +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
         }
       }
     }
@@ -304,7 +308,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       failed = false;
     } finally {
       if (failed) {
-        log.error("REQUEST FAILED: {}", request);
+        log.error("REQUEST FAILED: " + request);
       }
     }
 
@@ -317,16 +321,20 @@ abstract public class RestTestBase extends SolrJettyTestBase {
         String err = JSONTestUtil.match(response, testJSON, delta);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error={}"
-              + "\n expected ={}\n response = {}\n request = {}\n"
-              ,err, testJSON, response, request);
+          log.error("query failed JSON validation. error=" + err +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
-          log.error("JSON query validation threw an exception."
-              + "\n expected ={}\n response = {}\n request = {}"
-              , testJSON, response, request);
+          log.error("JSON query validation threw an exception." +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
         }
       }
     }
@@ -379,7 +387,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       failed = false;
     } finally {
       if (failed) {
-        log.error("REQUEST FAILED: {}", request);
+        log.error("REQUEST FAILED: " + request);
       }
     }
 
@@ -392,16 +400,20 @@ abstract public class RestTestBase extends SolrJettyTestBase {
         String err = JSONTestUtil.match(response, testJSON, delta);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error={}"
-              + "\n expected ={}\n response = {}\n request = {}\n"
-              , err, testJSON, response, request);
+          log.error("query failed JSON validation. error=" + err +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
           log.error("JSON query validation threw an exception." +
-              "\n expected ={}\n response = {}\n request = {}\n"
-              ,testJSON, response, request);
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
         }
       }
     }
@@ -442,7 +454,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       failed = false;
     } finally {
       if (failed) {
-        log.error("REQUEST FAILED: {}", request);
+        log.error("REQUEST FAILED: " + request);
       }
     }
 
@@ -455,16 +467,19 @@ abstract public class RestTestBase extends SolrJettyTestBase {
         String err = JSONTestUtil.match(response, testJSON, delta);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error={}\n expected ={}"
-              + "\n response = {}\n request = {}"
-              , err, testJSON, response, request);
+          log.error("query failed JSON validation. error=" + err +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
-          log.error("JSON query validation threw an exception.\n expected ={}\n"
-              + "\n response = {}\n request = {}"
-              , testJSON, response, request
+          log.error("JSON query validation threw an exception." +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
           );
         }
       }

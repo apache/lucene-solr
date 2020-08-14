@@ -132,7 +132,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public void load(SolrQueryRequest req, SolrQueryResponse rsp,
       ContentStream stream, UpdateRequestProcessor processor) throws Exception {
     Parser parser = null;
@@ -216,7 +215,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           if(pwMapFile != null && pwMapFile.length() > 0) {
             InputStream is = req.getCore().getResourceLoader().openResource(pwMapFile);
             if(is != null) {
-              log.debug("Password file supplied: {}", pwMapFile);
+              log.debug("Password file supplied: "+pwMapFile);
               epp.parse(is);
             }
           }
@@ -224,13 +223,13 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           String resourcePassword = params.get(ExtractingParams.RESOURCE_PASSWORD);
           if(resourcePassword != null) {
             epp.setExplicitPassword(resourcePassword);
-            log.debug("Literal password supplied for file {}", resourceName);
+            log.debug("Literal password supplied for file "+resourceName);
           }
           parser.parse(inputStream, parsingHandler, metadata, context);
         } catch (TikaException e) {
           if(ignoreTikaException)
             log.warn(new StringBuilder("skip extracting text due to ").append(e.getLocalizedMessage())
-                .append(". metadata=").append(metadata.toString()).toString()); // logOk
+                .append(". metadata=").append(metadata.toString()).toString());
           else
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
@@ -244,7 +243,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           rsp.add(stream.getName(), writer.toString());
           writer.close();
           String[] names = metadata.names();
-          @SuppressWarnings({"rawtypes"})
           NamedList metadataNL = new NamedList();
           for (int i = 0; i < names.length; i++) {
             String[] vals = metadata.getValues(names[i]);

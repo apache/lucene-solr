@@ -16,8 +16,16 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.annotations.VisibleForTesting;
-import java.io.*;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.naming.NoInitialContextException;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -30,19 +38,34 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.util.*;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.request.SolrRequestHandler;
@@ -60,31 +83,32 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader {
+public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String base = "org.apache.solr";
-  private static final String[] packages = {
+  static final String project = "solr";
+  static final String base = "org.apache" + "." + project;
+  static final String[] packages = {
       "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
       "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
-      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
+      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin.",
+      "cloud.autoscaling."
   };
+  private static final java.lang.String SOLR_CORE_NAME = "solr.core.name";
+  private static Set<String> loggedOnce = new ConcurrentSkipListSet<>();
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
 
   private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
-
-  /**
-   * this is set  by the {@link SolrCore}
-   * This could be null if the core is not yet initialized
-   */
-  SolrCore core;
+  private String dataDir;
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
+
+  private final Properties coreProperties;
 
   private volatile boolean live;
 
@@ -94,9 +118,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   // (such as the SolrZkClient) when XML docs are being parsed.    
   private RestManager.Registry managedResourceRegistry;
 
-  /** @see #reloadLuceneSPI() */
-  private boolean needToReloadLuceneSPI = false; // requires synchronization
-
   public synchronized RestManager.Registry getManagedResourceRegistry() {
     if (managedResourceRegistry == null) {
       managedResourceRegistry = new RestManager.Registry();
@@ -105,46 +126,50 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   }
 
   public SolrResourceLoader() {
-    this(SolrPaths.locateSolrHome(), null);
+    this(SolrResourceLoader.locateSolrHome(), null, null);
   }
 
   /**
-   * Creates a loader.
-   * Note: we do NOT call {@link #reloadLuceneSPI()}.
+   * <p>
+   * This loader will delegate to the context classloader when possible,
+   * otherwise it will attempt to resolve resources using any jar files
+   * found in the "lib/" directory in the specified instance directory.
+   * If the instance directory is not specified (=null), SolrResourceLoader#locateInstanceDir will provide one.
    */
-  public SolrResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
+  public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
+    this(instanceDir, parent, null);
+  }
+
+  public SolrResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) throws MalformedURLException {
     this(instanceDir, parent);
     this.name = name;
-    final List<URL> libUrls = new ArrayList<>(classpath.size());
-    try {
-      for (Path path : classpath) {
-        libUrls.add(path.toUri().normalize().toURL());
-      }
-    } catch (MalformedURLException e) { // impossible?
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    for (Path path : classpath) {
+      addToClassLoader(path.toUri().normalize().toURL());
     }
-    addToClassLoader(libUrls);
+
   }
 
 
   public SolrResourceLoader(Path instanceDir) {
-    this(instanceDir, null);
+    this(instanceDir, null, null);
   }
 
   /**
+   * <p>
    * This loader will delegate to Solr's classloader when possible,
    * otherwise it will attempt to resolve resources using any jar files
    * found in the "lib/" directory in the specified instance directory.
+   * </p>
    *
    * @param instanceDir - base directory for this resource loader, if null locateSolrHome() will be used.
-   * @see SolrPaths#locateSolrHome()
+   * @see #locateSolrHome
    */
-  public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
+  public SolrResourceLoader(Path instanceDir, ClassLoader parent, Properties coreProperties) {
     if (instanceDir == null) {
-      this.instanceDir = SolrPaths.locateSolrHome();
+      this.instanceDir = SolrResourceLoader.locateSolrHome().toAbsolutePath().normalize();
       log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
     } else {
-      this.instanceDir = instanceDir;
+      this.instanceDir = instanceDir.toAbsolutePath().normalize();
       log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
     }
 
@@ -152,6 +177,25 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       parent = getClass().getClassLoader();
     }
     this.classLoader = URLClassLoader.newInstance(new URL[0], parent);
+
+    /*
+     * Skip the lib subdirectory when we are loading from the solr home.
+     * Otherwise load it, so core lib directories still get loaded.
+     * The default sharedLib will pick this up later, and if the user has
+     * changed sharedLib, then we don't want to load that location anyway.
+     */
+    if (!this.instanceDir.equals(SolrResourceLoader.locateSolrHome())) {
+      Path libDir = this.instanceDir.resolve("lib");
+      if (Files.exists(libDir)) {
+        try {
+          addToClassLoader(getURLs(libDir));
+        } catch (IOException e) {
+          log.warn("Couldn't add files from {} to classpath: {}", libDir, e.getMessage());
+        }
+        reloadLuceneSPI();
+      }
+    }
+    this.coreProperties = coreProperties;
   }
 
   /**
@@ -162,38 +206,46 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    *
    * @param urls    the URLs of files to add
    */
-  synchronized void addToClassLoader(List<URL> urls) {
+  void addToClassLoader(List<URL> urls) {
     URLClassLoader newLoader = addURLsToClassLoader(classLoader, urls);
-    if (newLoader == classLoader) {
-      return; // short-circuit
+    if (newLoader != classLoader) {
+      this.classLoader = newLoader;
     }
 
-    this.classLoader = newLoader;
-    this.needToReloadLuceneSPI = true;
+    log.info("[{}] Added {} libs to classloader, from paths: {}",
+        getCoreName("null"), urls.size(), urls.stream()
+        .map(u -> u.getPath().substring(0,u.getPath().lastIndexOf("/")))
+        .sorted()
+        .distinct()
+        .collect(Collectors.toList()));
+  }
 
-    if (log.isInfoEnabled()) {
-      log.info("Added {} libs to classloader, from paths: {}",
-          urls.size(), urls.stream()
-              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf("/")))
-              .sorted()
-              .distinct()
-              .collect(Collectors.toList()));
+  private String getCoreName(String defaultVal) {
+    if (getCoreProperties() != null) {
+      return getCoreProperties().getProperty(SOLR_CORE_NAME, defaultVal);
+    } else {
+      return defaultVal;
     }
   }
 
+  /**
+   * Adds URLs to the ResourceLoader's internal classloader.  This method <b>MUST</b>
+   * only be called prior to using this ResourceLoader to get any resources, otherwise
+   * its behavior will be non-deterministic. You also have to {link @reloadLuceneSPI}
+   * before using this ResourceLoader.
+   *
+   * @param urls    the URLs of files to add
+   */
+  void addToClassLoader(URL... urls) {
+    addToClassLoader(Arrays.asList(urls));
+  }
+  
   /**
    * Reloads all Lucene SPI implementations using the new classloader.
    * This method must be called after {@link #addToClassLoader(List)}
    * and before using this ResourceLoader.
    */
-  synchronized void reloadLuceneSPI() {
-    // TODO improve to use a static Set<URL> to check when we need to
-    if (!needToReloadLuceneSPI) {
-      return;
-    }
-    needToReloadLuceneSPI = false; // reset
-    log.debug("Reloading Lucene SPI");
-
+  void reloadLuceneSPI() {
     // Codecs:
     PostingsFormat.reloadPostingsFormats(this.classLoader);
     DocValuesFormat.reloadDocValuesFormats(this.classLoader);
@@ -204,11 +256,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     TokenizerFactory.reloadTokenizers(this.classLoader);
   }
 
-  public SolrCore getCore(){
-    return core;
-  }
-
-
   private static URLClassLoader addURLsToClassLoader(final URLClassLoader oldLoader, List<URL> urls) {
     if (urls.size() == 0) {
       return oldLoader;
@@ -218,9 +265,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     allURLs.addAll(Arrays.asList(oldLoader.getURLs()));
     allURLs.addAll(urls);
     for (URL url : urls) {
-      if (log.isDebugEnabled()) {
-        log.debug("Adding '{}' to classloader", url);
-      }
+      log.debug("Adding '{}' to classloader", url.toString());
     }
 
     ClassLoader oldParent = oldLoader.getParent();
@@ -279,8 +324,32 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     });
   }
 
+  /**
+   * Ensures a directory name always ends with a '/'.
+   */
+  public static String normalizeDir(String path) {
+    return (path != null && (!(path.endsWith("/") || path.endsWith("\\")))) ? path + File.separator : path;
+  }
+
+  public String[] listConfigDir() {
+    File configdir = new File(getConfigDir());
+    if (configdir.exists() && configdir.isDirectory()) {
+      return configdir.list();
+    } else {
+      return new String[0];
+    }
+  }
+
   public String getConfigDir() {
     return instanceDir.resolve("conf").toString();
+  }
+
+  public String getDataDir() {
+    return dataDir;
+  }
+
+  public Properties getCoreProperties() {
+    return coreProperties;
   }
 
   /**
@@ -292,6 +361,26 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    */
   public ClassLoader getClassLoader() {
     return classLoader;
+  }
+
+  /**
+   * Opens a schema resource by its name.
+   * Override this method to customize loading schema resources.
+   *
+   * @return the stream for the named schema
+   */
+  public InputStream openSchema(String name) throws IOException {
+    return openResource(name);
+  }
+
+  /**
+   * Opens a config resource by its name.
+   * Override this method to customize loading config resources.
+   *
+   * @return the stream for the named configuration
+   */
+  public InputStream openConfig(String name) throws IOException {
+    return openResource(name);
   }
 
   private Path checkPathIsSafe(Path pathToCheck) throws IOException {
@@ -349,11 +438,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   public String resourceLocation(String resource) {
     Path inConfigDir = getInstancePath().resolve("conf").resolve(resource);
     if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir))
-      return inConfigDir.normalize().toString();
+      return inConfigDir.toAbsolutePath().normalize().toString();
 
     Path inInstanceDir = getInstancePath().resolve(resource);
     if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir))
-      return inInstanceDir.normalize().toString();
+      return inInstanceDir.toAbsolutePath().normalize().toString();
 
     try (InputStream is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
       if (is != null)
@@ -420,7 +509,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern =
-      Pattern.compile("((\\Q" + base + ".analysis.\\E)|(\\Qsolr.\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
+      Pattern.compile("((\\Q" + base + ".analysis.\\E)|(\\Q" + project + ".\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
 
   @Override
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
@@ -447,7 +536,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
           return Class.forName(c, true, classLoader).asSubclass(expectedType);
         } catch (ClassNotFoundException | ClassCastException e) {
           // this can happen if the legacyAnalysisPattern below caches the wrong thing
-          log.warn("{} Unable to load cached class, attempting lookup. name={} shortname={} reason={}", name , c, cname, e);
+          log.warn( name + " Unable to load cached class, attempting lookup. name={} shortname={} reason={}", c, cname, e);
           classNameCache.remove(cname);
         }
       }
@@ -480,13 +569,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
         return clazz = Class.forName(cname, true, classLoader).asSubclass(expectedType);
       } catch (ClassNotFoundException e) {
         String newName = cname;
-        if (newName.startsWith("solr")) {
-          newName = cname.substring("solr".length() + 1);
+        if (newName.startsWith(project)) {
+          newName = cname.substring(project.length() + 1);
         }
         for (String subpackage : subpackages) {
           try {
             String name = base + '.' + subpackage + newName;
-            log.trace("Trying class name {}", name);
+            log.trace("Trying class name " + name);
             return clazz = Class.forName(name, true, classLoader).asSubclass(expectedType);
           } catch (ClassNotFoundException e1) {
             // ignore... assume first exception is best.
@@ -516,14 +605,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     }
   }
 
-  static final String[] empty = new String[0];
+  static final String empty[] = new String[0];
 
   @Override
   public <T> T newInstance(String name, Class<T> expectedType) {
     return newInstance(name, expectedType, empty);
   }
 
-  @SuppressWarnings({"rawtypes"})
   private static final Class[] NO_CLASSES = new Class[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
@@ -531,12 +619,40 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
 
-  @SuppressWarnings({"rawtypes"})
+  public CoreAdminHandler newAdminHandlerInstance(final CoreContainer coreContainer, String cname, String... subpackages) {
+    Class<? extends CoreAdminHandler> clazz = findClass(cname, CoreAdminHandler.class, subpackages);
+    if (clazz == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Can not find class: " + cname + " in " + classLoader);
+    }
+
+    CoreAdminHandler obj = null;
+    try {
+      Constructor<? extends CoreAdminHandler> ctor = clazz.getConstructor(CoreContainer.class);
+      obj = ctor.newInstance(coreContainer);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Error instantiating class: '" + clazz.getName() + "'", e);
+    }
+
+    if (!live) {
+      //TODO: Does SolrCoreAware make sense here since in a multi-core context
+      // which core are we talking about ?
+      if (obj instanceof ResourceLoaderAware) {
+        assertAwareCompatibility(ResourceLoaderAware.class, obj);
+        waitingForResources.add((ResourceLoaderAware) obj);
+      }
+    }
+
+    return obj;
+  }
+
+
   public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
     Class<? extends T> clazz = findClass(cName, expectedType, subPackages);
     if (clazz == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Can not find class: " + cName + " in " + classLoader);
+          "Can not find class: " + cName + " in " + classLoader);
     }
 
     T obj = null;
@@ -557,57 +673,31 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       }
 
     } catch (Error err) {
-      log.error("Loading Class {} ({}) triggered serious java error: {}", cName, clazz.getName(),
-          err.getClass().getName(), err);
-
+      log.error("Loading Class " + cName + " (" + clazz.getName() + ") triggered serious java error: "
+          + err.getClass().getName(), err);
       throw err;
 
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Error instantiating class: '" + clazz.getName() + "'", e);
+          "Error instantiating class: '" + clazz.getName() + "'", e);
     }
 
-    addToCoreAware(obj);
-    addToResourceLoaderAware(obj);
-    addToInfoBeans(obj);
-    return obj;
-  }
-
-  public <T> void addToInfoBeans(T obj) {
-    if(!live) {
-      if (obj instanceof SolrInfoBean) {
-        //TODO: Assert here?
-        infoMBeans.add((SolrInfoBean) obj);
-      }
-    }
-  }
-
-  public <T> boolean addToResourceLoaderAware(T obj) {
-    if (!live) {
-      if (obj instanceof ResourceLoaderAware) {
-        assertAwareCompatibility(ResourceLoaderAware.class, obj);
-        waitingForResources.add((ResourceLoaderAware) obj);
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  /** the inform() callback should be invoked on the listener.
-   * If this is 'live', the callback is not called so currently this returns 'false'
-   *
-   */
-  public <T> boolean addToCoreAware(T obj) {
     if (!live) {
       if (obj instanceof SolrCoreAware) {
         assertAwareCompatibility(SolrCoreAware.class, obj);
         waitingForCore.add((SolrCoreAware) obj);
       }
-      return true;
-    } else {
-      return false;
+      if (obj instanceof ResourceLoaderAware) {
+        assertAwareCompatibility(ResourceLoaderAware.class, obj);
+        waitingForResources.add((ResourceLoaderAware) obj);
+      }
+      if (obj instanceof SolrInfoBean) {
+        //TODO: Assert here?
+        infoMBeans.add((SolrInfoBean) obj);
+      }
     }
+
+    return obj;
   }
 
 
@@ -615,6 +705,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * Tell all {@link SolrCoreAware} instances about the SolrCore
    */
   public void inform(SolrCore core) {
+    this.dataDir = core.getDataDir();
+
     // make a copy to avoid potential deadlock of a callback calling newInstance and trying to
     // add something to waitingForCore.
     SolrCoreAware[] arr;
@@ -677,15 +769,101 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
         try {
           infoRegistry.put(bean.getName(), bean);
         } catch (Exception e) {
-          log.warn("could not register MBean '{}'.", bean.getName(), e);
+          log.warn("could not register MBean '" + bean.getName() + "'.", e);
         }
       }
     }
   }
 
   /**
-   * The instance path for this resource loader, as passed in from the constructor.
-   * It's absolute when this is for Solr Home or a Solr Core instance dir.
+   * Determines the solrhome from the environment.
+   * Tries JNDI (java:comp/env/solr/home) then system property (solr.solr.home);
+   * if both fail, defaults to solr/
+   * @return the instance directory name
+   */
+  /**
+   * Finds the solrhome based on looking up the value in one of three places:
+   * <ol>
+   * <li>JNDI: via java:comp/env/solr/home</li>
+   * <li>The system property solr.solr.home</li>
+   * <li>Look in the current working directory for a solr/ directory</li>
+   * </ol>
+   * <p>
+   * The return value is normalized.  Normalization essentially means it ends in a trailing slash.
+   *
+   * @return A normalized solrhome
+   * @see #normalizeDir(String)
+   */
+  public static Path locateSolrHome() {
+
+    String home = null;
+    // Try JNDI
+    try {
+      Context c = new InitialContext();
+      home = (String) c.lookup("java:comp/env/" + project + "/home");
+      logOnceInfo("home_using_jndi", "Using JNDI solr.home: " + home);
+    } catch (NoInitialContextException e) {
+      log.debug("JNDI not configured for " + project + " (NoInitialContextEx)");
+    } catch (NamingException e) {
+      log.debug("No /" + project + "/home in JNDI");
+    } catch (RuntimeException ex) {
+      log.warn("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
+    }
+
+    // Now try system property
+    if (home == null) {
+      String prop = project + ".solr.home";
+      home = System.getProperty(prop);
+      if (home != null) {
+        logOnceInfo("home_using_sysprop", "Using system property " + prop + ": " + home);
+      }
+    }
+
+    // if all else fails, try 
+    if (home == null) {
+      home = project + '/';
+      logOnceInfo("home_default", project + " home defaulted to '" + home + "' (could not find system property or JNDI)");
+    }
+    return Paths.get(home);
+  }
+
+  /**
+   * Solr allows users to store arbitrary files in a special directory located directly under SOLR_HOME.
+   * <p>
+   * This directory is generally created by each node on startup.  Files located in this directory can then be
+   * manipulated using select Solr features (e.g. streaming expressions).
+   */
+  public static final String USER_FILES_DIRECTORY = "userfiles";
+
+  public static void ensureUserFilesDataDir(Path solrHome) {
+    final Path userFilesPath = getUserFilesPath(solrHome);
+    final File userFilesDirectory = new File(userFilesPath.toString());
+    if (!userFilesDirectory.exists()) {
+      try {
+        final boolean created = userFilesDirectory.mkdir();
+        if (!created) {
+          log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", USER_FILES_DIRECTORY, solrHome);
+        }
+      } catch (Exception e) {
+        log.warn("Unable to create [" + USER_FILES_DIRECTORY + "] directory in SOLR_HOME [" + solrHome + "].  Features requiring this directory may fail.", e);
+      }
+    }
+  }
+
+  public static Path getUserFilesPath(Path solrHome) {
+    return Paths.get(solrHome.toAbsolutePath().toString(), USER_FILES_DIRECTORY).toAbsolutePath();
+  }
+
+  // Logs a message only once per startup
+  private static void logOnceInfo(String key, String msg) {
+    if (!loggedOnce.contains(key)) {
+      loggedOnce.add(key);
+      log.info(msg);
+    }
+  }
+
+  /**
+   * @return the instance path for this resource loader
    */
   public Path getInstancePath() {
     return instanceDir;
@@ -694,13 +872,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   /**
    * Keep a list of classes that are allowed to implement each 'Aware' interface
    */
-  @SuppressWarnings({"rawtypes"})
   private static final Map<Class, Class[]> awareCompatibility;
 
   static {
     awareCompatibility = new HashMap<>();
     awareCompatibility.put(
-        SolrCoreAware.class, new Class<?>[]{
+        SolrCoreAware.class, new Class[]{
             // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
             // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
             CodecFactory.class,
@@ -716,7 +893,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     );
 
     awareCompatibility.put(
-        ResourceLoaderAware.class, new Class<?>[]{
+        ResourceLoaderAware.class, new Class[]{
             // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
             // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
             CharFilterFactory.class,
@@ -731,8 +908,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   /**
    * Utility function to throw an exception if the class is invalid
    */
-  @SuppressWarnings({"rawtypes"})
-  public static void assertAwareCompatibility(Class aware, Object obj) {
+  static void assertAwareCompatibility(Class aware, Object obj) {
     Class[] valid = awareCompatibility.get(aware);
     if (valid == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -778,7 +954,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       try (OutputStream out = new FileOutputStream(confFile);) {
         out.write(content);
       }
-      log.info("Written confile {}", resourceName);
+      log.info("Written confile " + resourceName);
     } catch (IOException e) {
       final String msg = "Error persisting conf file " + resourceName;
       log.error(msg, e);

@@ -73,7 +73,6 @@ public class JSONTupleStream implements TupleStreamParser {
 
   /** returns the next Tuple or null */
   @Override
-  @SuppressWarnings({"unchecked"})
   public Map<String,Object> next() throws IOException {
     if (!atDocs) {
       boolean found = advanceToDocs();

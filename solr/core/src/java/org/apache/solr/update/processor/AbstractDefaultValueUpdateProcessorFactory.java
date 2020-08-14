@@ -46,7 +46,7 @@ public abstract class AbstractDefaultValueUpdateProcessorFactory
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
 
     Object obj = args.remove("fieldName");
     if (null == obj && null == fieldName) {

@@ -83,11 +83,9 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertU((commit()));
   }
 
-  @SuppressWarnings({"unchecked"})
   private String getStringVal(SolrQueryRequest sqr, String field, int doc) throws IOException {
     SchemaField sf = sqr.getSchema().getField(field);
     ValueSource vs = sf.getType().getValueSource(sf, null);
-    @SuppressWarnings({"rawtypes"})
     Map context = ValueSource.newContext(sqr.getSearcher());
     vs.createWeight(context, sqr.getSearcher());
     IndexReaderContext topReaderContext = sqr.getSearcher().getTopReaderContext();
@@ -140,7 +138,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertEquals(1, baseRefCount);
 
     Map<String, Metric> metrics = h.getCore().getCoreMetricManager().getRegistry().getMetrics();
-    @SuppressWarnings({"unchecked"})
     Gauge<Date> g = (Gauge<Date>)metrics.get("SEARCHER.searcher.registeredAt");
     Date sr3SearcherRegAt = g.getValue();
     assertU(commit()); // nothing has changed
@@ -250,7 +247,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       addDummyDoc(newCore);
       
       // Open a new searcher, this should call the newSearcherListeners
-      @SuppressWarnings({"rawtypes"})
       Future<?>[] future = new Future[1];
       newCore.getSearcher(true, false, future);
       future[0].get();
@@ -439,7 +435,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static AtomicInteger numberOfTimesCalledFirstSearcher;
 
     @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
+    public void init(NamedList args) {}
 
     @Override
     public void postCommit() {}
@@ -463,7 +459,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static CountDownLatch latch;
     
     @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
+    public void init(NamedList args) {}
 
     @Override
     public void postCommit() {}

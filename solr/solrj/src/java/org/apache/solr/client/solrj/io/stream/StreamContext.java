@@ -38,12 +38,9 @@ import org.apache.solr.common.params.SolrParams;
 
 public class StreamContext implements Serializable {
 
-  @SuppressWarnings({"rawtypes"})
   private Map entries = new HashMap();
-  @SuppressWarnings({"rawtypes"})
   private Map tupleContext = new HashMap();
-  private Map<String, Object> lets = new HashMap<>();
-  @SuppressWarnings({"rawtypes"})
+  private Map<String, Object> lets = new HashMap();
   private ConcurrentMap objectCache;
   public int workerID;
   public int numWorkers;
@@ -54,12 +51,11 @@ public class StreamContext implements Serializable {
   private SolrParams requestParams;
   private RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
 
-  @SuppressWarnings({"rawtypes"})
   public ConcurrentMap getObjectCache() {
     return this.objectCache;
   }
 
-  public void setObjectCache(@SuppressWarnings({"rawtypes"})ConcurrentMap objectCache) {
+  public void setObjectCache(ConcurrentMap objectCache) {
     this.objectCache = objectCache;
   }
 
@@ -71,7 +67,6 @@ public class StreamContext implements Serializable {
     return entries.get(key);
   }
 
-  @SuppressWarnings({"unchecked"})
   public void put(Object key, Object value) {
     this.entries.put(key, value);
   }
@@ -80,7 +75,6 @@ public class StreamContext implements Serializable {
     return entries.containsKey(key);
   }
 
-  @SuppressWarnings({"rawtypes"})
   public Map getEntries() {
     return this.entries;
   }
@@ -105,7 +99,6 @@ public class StreamContext implements Serializable {
     this.streamFactory = streamFactory;
   }
 
-  @SuppressWarnings({"rawtypes"})
   public Map getTupleContext() {
     return tupleContext;
   }

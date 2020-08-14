@@ -47,7 +47,9 @@
       "class": "solr.RealTimeGetHandler",
       "useParams":"_GET",
       "defaults": {
-        "omitHeader": true
+        "omitHeader": true,
+        "wt": "json",
+        "indent": true
       }
     },
     "/admin/ping": {
@@ -103,6 +105,9 @@
       "components": [
         "query"
       ],
+      "defaults": {
+        "wt": "json"
+      },
       "invariants": {
         "rq": "{!xport}",
         "distrib": false
@@ -119,6 +124,9 @@
     "/stream": {
       "class": "solr.StreamHandler",
       "useParams":"_STREAM",
+      "defaults": {
+        "wt": "json"
+      },
       "invariants": {
         "distrib": false
       }
@@ -126,6 +134,9 @@
     "/sql": {
       "class": "solr.SQLHandler",
       "useParams":"_SQL",
+      "defaults": {
+        "wt": "json"
+      },
       "invariants": {
         "distrib": false
       }

@@ -56,7 +56,6 @@ class SortDoc {
   public void reset() {
     this.docId = -1;
     this.docBase = -1;
-    this.ord = -1;
     for (SortValue value : sortValues) {
       value.reset();
     }
@@ -64,7 +63,7 @@ class SortDoc {
 
   public void setValues(int docId) throws IOException {
     this.docId = docId;
-    for (SortValue sortValue : sortValues) {
+    for(SortValue sortValue : sortValues) {
       sortValue.setCurrentValue(docId);
     }
   }
@@ -74,14 +73,14 @@ class SortDoc {
     this.ord = sortDoc.ord;
     this.docBase = sortDoc.docBase;
     SortValue[] vals = sortDoc.sortValues;
-    for (int i = 0; i < vals.length; i++) {
+    for(int i=0; i<vals.length; i++) {
       sortValues[i].setCurrentValue(vals[i]);
     }
   }
 
   public SortDoc copy() {
     SortValue[] svs = new SortValue[sortValues.length];
-    for (int i = 0; i < sortValues.length; i++) {
+    for(int i=0; i<sortValues.length; i++) {
       svs[i] = sortValues[i].copy();
     }
 
@@ -89,12 +88,12 @@ class SortDoc {
   }
 
   public boolean lessThan(Object o) {
-    if (docId == -1) {
+    if(docId == -1) {
       return true;
     }
     SortDoc sd = (SortDoc)o;
     SortValue[] sortValues1 = sd.sortValues;
-    for (int i = 0; i < sortValues.length; i++) {
+    for(int i=0; i<sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sortValues1[i]);
       if (comp < 0) {
         return true;
@@ -102,12 +101,12 @@ class SortDoc {
         return false;
       }
     }
-    return docId + docBase > sd.docId + sd.docBase; //index order
+    return docId+docBase > sd.docId+sd.docBase; //index order
   }
 
   public int compareTo(Object o) {
     SortDoc sd = (SortDoc)o;
-    for (int i = 0; i < sortValues.length; i++) {
+    for (int i=0; i<sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sd.sortValues[i]);
       if (comp != 0) {
         return comp;
@@ -119,8 +118,8 @@ class SortDoc {
 
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append(ord).append(':').append(docBase).append(':').append(docId).append("; ");
-    for (int i = 0; i < sortValues.length; i++) {
+    builder.append("docId: ").append(docId).append("; ");
+    for (int i=0; i < sortValues.length; i++) {
       builder.append("value").append(i).append(": ").append(sortValues[i]).append(", ");
     }
     return builder.toString();

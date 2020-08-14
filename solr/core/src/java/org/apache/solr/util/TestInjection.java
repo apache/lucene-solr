@@ -71,11 +71,9 @@ public class TestInjection {
    * If non-null, then this class should be used for accessing random entropy
    * @see #random
    */
-  @SuppressWarnings({"rawtypes"})
   private static final Class LUCENE_TEST_CASE;
   
   static {
-    @SuppressWarnings({"rawtypes"})
     Class nonFinalTemp = null;
     try {
       ClassLoader classLoader = MethodHandles.lookup().lookupClass().getClassLoader();
@@ -96,7 +94,6 @@ public class TestInjection {
       return null;
     } else {
       try {
-        @SuppressWarnings({"unchecked"})
         Method randomMethod = LUCENE_TEST_CASE.getMethod("random");
         return (Random) randomMethod.invoke(null);
       } catch (Exception e) {
@@ -143,7 +140,7 @@ public class TestInjection {
 
   private volatile static AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 
-  public volatile static Integer delayBeforeFollowerCommitRefresh=null;
+  public volatile static Integer delayBeforeSlaveCommitRefresh=null;
 
   public volatile static Integer delayInExecutePlanAction=null;
 
@@ -185,7 +182,7 @@ public class TestInjection {
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
-    delayBeforeFollowerCommitRefresh = null;
+    delayBeforeSlaveCommitRefresh = null;
     delayInExecutePlanAction = null;
     failInExecutePlanAction = false;
     skipIndexWriterCommitOnClose = false;
@@ -439,7 +436,7 @@ public class TestInjection {
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
-        log.info("Injecting failure: {}", label);
+        log.info("Injecting failure: " + label);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error: " + label);
       }
     }
@@ -521,11 +518,11 @@ public class TestInjection {
     return new Pair<>(Boolean.parseBoolean(val), Integer.parseInt(percent));
   }
 
-  public static boolean injectDelayBeforeFollowerCommitRefresh() {
-    if (delayBeforeFollowerCommitRefresh!=null) {
+  public static boolean injectDelayBeforeSlaveCommitRefresh() {
+    if (delayBeforeSlaveCommitRefresh!=null) {
       try {
-        log.info("Pausing IndexFetcher for {}ms", delayBeforeFollowerCommitRefresh);
-        Thread.sleep(delayBeforeFollowerCommitRefresh);
+        log.info("Pausing IndexFetcher for {}ms", delayBeforeSlaveCommitRefresh);
+        Thread.sleep(delayBeforeSlaveCommitRefresh);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }

@@ -37,7 +37,7 @@ public class CountValsAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
     if (vs instanceof FieldNameValueSource) {
       String field = ((FieldNameValueSource)vs).getFieldName();
@@ -64,10 +64,10 @@ public class CountValsAgg extends SimpleAggValueSource {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetModule.FacetLongMerger();
+    return new FacetLongMerger();
   }
 
-  class CountValSlotAcc extends SlotAcc.LongFuncSlotAcc {
+  class CountValSlotAcc extends LongFuncSlotAcc {
 
     public CountValSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, 0);
@@ -81,7 +81,7 @@ public class CountValsAgg extends SimpleAggValueSource {
     }
   }
 
-  class CountSortedNumericDVAcc extends DocValuesAcc.LongSortedNumericDVAcc {
+  class CountSortedNumericDVAcc extends LongSortedNumericDVAcc {
 
     public CountSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
@@ -93,7 +93,7 @@ public class CountValsAgg extends SimpleAggValueSource {
     }
   }
 
-  class CountSortedSetDVAcc extends DocValuesAcc.LongSortedSetDVAcc {
+  class CountSortedSetDVAcc extends LongSortedSetDVAcc {
 
     public CountSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
       super(fcontext, sf, numSlots, 0);
@@ -140,7 +140,7 @@ public class CountValsAgg extends SimpleAggValueSource {
 
     @Override
     public void resize(Resizer resizer) {
-      this.result = resizer.resize(result, 0);
+      resizer.resize(result, 0);
     }
 
     @Override

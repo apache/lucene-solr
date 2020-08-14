@@ -119,7 +119,6 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
         continue; // continue if there was an error and we're tolerant.  
       }
-      @SuppressWarnings({"rawtypes"})
       NamedList<NamedList> secondPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("secondPhase");
       if(secondPhaseResult == null)
         continue;
@@ -157,12 +156,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         continue;
       }
 
-      @SuppressWarnings({"rawtypes"})
       TopGroups<BytesRef>[] topGroupsArr = new TopGroups[topGroups.size()];
       int docsPerGroup = docsPerGroupDefault;
       if (docsPerGroup < 0) {
         docsPerGroup = 0;
-        for (@SuppressWarnings({"rawtypes"})TopGroups subTopGroups : topGroups) {
+        for (TopGroups subTopGroups : topGroups) {
           docsPerGroup += subTopGroups.totalGroupedHitCount;
         }
       }

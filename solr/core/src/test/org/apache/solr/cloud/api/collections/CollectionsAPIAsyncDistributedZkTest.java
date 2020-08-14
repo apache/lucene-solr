@@ -40,8 +40,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -98,6 +99,13 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
   @Test
   public void testAsyncRequests() throws Exception {
+    boolean legacy = random().nextBoolean();
+    if (legacy) {
+      CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "true").process(cluster.getSolrClient());
+    } else {
+      CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false").process(cluster.getSolrClient());
+    }
+    
     final String collection = "testAsyncOperations";
     final CloudSolrClient client = cluster.getSolrClient();
 
@@ -206,9 +214,11 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteReplica did not complete", RequestStatusState.COMPLETED, state);
 
-    state = CollectionAdminRequest.deleteCollection(collection)
-        .processAndWait(client, MAX_TIMEOUT_SECONDS);
-    assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
+    if (!legacy) {
+      state = CollectionAdminRequest.deleteCollection(collection)
+          .processAndWait(client, MAX_TIMEOUT_SECONDS);
+      assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
+    }
   }
 
   public void testAsyncIdRaceCondition() throws Exception {
@@ -229,7 +239,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     final AtomicInteger numFailure = new AtomicInteger(0);
     final CountDownLatch latch = new CountDownLatch(numThreads);
     
-    ExecutorService es = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrNamedThreadFactory("testAsyncIdRaceCondition"));
+    ExecutorService es = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new DefaultSolrThreadFactory("testAsyncIdRaceCondition"));
     try {
       for (int i = 0; i < numThreads; i++) {
         es.submit(new Runnable() {
@@ -245,15 +255,11 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
             }
             
             try {
-              if (log.isInfoEnabled()) {
-                log.info("{} - Reloading Collection.", Thread.currentThread().getName());
-              }
+              log.info("{} - Reloading Collection.", Thread.currentThread().getName());
               reloadCollectionRequest.processAsync("repeatedId", clients[random().nextInt(clients.length)]);
               numSuccess.incrementAndGet();
             } catch (SolrServerException e) {
-              if (log.isInfoEnabled()) {
-                log.info("Exception during collection reloading, we were waiting for one: ", e);
-              }
+              log.info(e.getMessage());
               assertEquals("Task with the same requestid already exists.", e.getMessage());
               numFailure.incrementAndGet();
             } catch (IOException e) {

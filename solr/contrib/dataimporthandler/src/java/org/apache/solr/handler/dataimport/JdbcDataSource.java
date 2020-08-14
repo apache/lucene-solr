@@ -87,7 +87,7 @@ public class JdbcDataSource extends
         if (batchSize == -1)
           batchSize = Integer.MIN_VALUE;
       } catch (NumberFormatException e) {
-        log.warn("Invalid batch size: {}", bsz);
+        log.warn("Invalid batch size: " + bsz);
       }
     }
 
@@ -172,10 +172,9 @@ public class JdbcDataSource extends
     return factory = new Callable<Connection>() {
       @Override
       public Connection call() throws Exception {
-        if (log.isInfoEnabled()) {
-          log.info("Creating a connection for entity {} with URL: {}"
-              , context.getEntityAttribute(DataImporter.NAME), url);
-        }
+        log.info("Creating a connection for entity "
+                + context.getEntityAttribute(DataImporter.NAME) + " with URL: "
+                + url);
         long start = System.nanoTime();
         Connection c = null;
 
@@ -189,7 +188,6 @@ public class JdbcDataSource extends
             // the class loader of the class which is trying to make the connection.
             // This is a workaround for cases where the user puts the driver jar in the
             // solr.home/lib or solr.home/core/lib directories.
-            @SuppressWarnings({"unchecked"})
             Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).getConstructor().newInstance();
             c = d.connect(url, initProps);
           }
@@ -207,8 +205,8 @@ public class JdbcDataSource extends
             throw new DataImportHandlerException(SEVERE, "Exception initializing SQL connection", e);
           }
         }
-        log.info("Time taken for getConnection(): {}"
-            , TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
+        log.info("Time taken for getConnection(): "
+            + TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
         return c;
       }
 
@@ -318,11 +316,11 @@ public class JdbcDataSource extends
       try {
         Connection c = getConnection();
         stmt = createStatement(c, batchSize, maxRows);
-        log.debug("Executing SQL: {}", query);
+        log.debug("Executing SQL: " + query);
         long start = System.nanoTime();
         resultSet = executeStatement(stmt, query);
-        log.trace("Time taken for sql : {}"
-                , TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
+        log.trace("Time taken for sql :"
+                + TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
         setColNames(resultSet);
       } catch (Exception e) {
         close();

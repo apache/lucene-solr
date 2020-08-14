@@ -61,9 +61,7 @@ public class CloudSolrClientBadInputTest extends SolrCloudTestCase {
     }
   }
 
-  private void assertExceptionThrownWithMessageContaining(@SuppressWarnings({"rawtypes"})Class expectedType,
-                                                          List<String> expectedStrings, LuceneTestCase.ThrowingRunnable runnable) {
-    @SuppressWarnings({"unchecked"})
+  private void assertExceptionThrownWithMessageContaining(Class expectedType, List<String> expectedStrings, LuceneTestCase.ThrowingRunnable runnable) {
     Throwable thrown = expectThrows(expectedType, runnable);
 
     if (expectedStrings != null) {

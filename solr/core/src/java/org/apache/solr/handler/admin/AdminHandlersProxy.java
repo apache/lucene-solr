@@ -69,7 +69,6 @@ public class AdminHandlersProxy {
     Set<String> nodes;
     String pathStr = req.getPath();
     
-    @SuppressWarnings({"unchecked"})
     Map<String,String> paramsMap = req.getParams().toMap(new HashMap<>());
     paramsMap.remove(PARAM_NODES);
     SolrParams params = new MapSolrParams(paramsMap);
@@ -91,9 +90,7 @@ public class AdminHandlersProxy {
       }       
       log.debug("Nodes requested: {}", nodes);
     }
-    if (log.isDebugEnabled()) {
-      log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
-    }
+    log.debug(PARAM_NODES + " parameter {} specified on {} request", nodeNames, pathStr);
     
     Map<String, Pair<Future<NamedList<Object>>, SolrClient>> responses = new HashMap<>();
     for (String node : nodes) {
@@ -111,9 +108,7 @@ public class AdminHandlersProxy {
         log.warn("Timeout when fetching result from node {}", entry.getKey(), te);
       }
     }
-    if (log.isInfoEnabled()) {
-      log.info("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet());
-    }
+    log.info("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet());
     return true;
   } 
 
@@ -126,7 +121,6 @@ public class AdminHandlersProxy {
     log.debug("Proxying {} request to node {}", endpoint, nodeName);
     URL baseUrl = new URL(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
-    @SuppressWarnings({"rawtypes"})
     SolrRequest proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, endpoint, params);
     HttpSolrClient.HttpUriRequestResponse proxyResp = solr.httpUriRequest(proxyReq);
     return new Pair<>(proxyResp.future, solr);

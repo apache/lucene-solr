@@ -37,14 +37,12 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class DumpRequestHandler extends RequestHandlerBase
 {
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {
     // Show params
     rsp.add( "params", req.getParams().toNamedList() );
     String[] parts = req.getParams().getParams("urlTemplateValues");
     if (parts != null && parts.length > 0) {
-      @SuppressWarnings({"rawtypes"})
       Map map = new LinkedHashMap<>();
       rsp.getValues().add("urlTemplateValues", map);
       for (String part : parts) {
@@ -54,7 +52,6 @@ public class DumpRequestHandler extends RequestHandlerBase
 
     String[] returnParams = req.getParams().getParams("param");
     if(returnParams !=null) {
-      @SuppressWarnings({"rawtypes"})
       NamedList params = (NamedList) rsp.getValues().get("params");
       for (String returnParam : returnParams) {
         String[] vals = req.getParams().getParams(returnParam);
@@ -71,7 +68,6 @@ public class DumpRequestHandler extends RequestHandlerBase
     }
 
     if(req.getParams().getBool("getdefaults", false)){
-      @SuppressWarnings({"rawtypes"})
       NamedList def = (NamedList) initArgs.get(PluginInfo.DEFAULTS);
       rsp.add("getdefaults", def);
     }
@@ -120,11 +116,9 @@ public class DumpRequestHandler extends RequestHandlerBase
   private List<String> subpaths;
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     super.init(args);
     if(args !=null) {
-      @SuppressWarnings({"rawtypes"})
       NamedList nl = (NamedList) args.get(PluginInfo.DEFAULTS);
       if(nl!=null) subpaths = nl.getAll("subpath");
     }

@@ -94,7 +94,6 @@ public class FacetHeatmap extends FacetRequest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static class Parser extends FacetParser<FacetHeatmap> {
-    @SuppressWarnings({"rawtypes"})
     Parser(FacetParser parent, String key) {
       super(parent, key);
     }
@@ -118,7 +117,6 @@ public class FacetHeatmap extends FacetRequest {
       final DistanceUnits distanceUnits;
       // note: the two instanceof conditions is not ideal, versus one. If we start needing to add more then refactor.
       if ((type instanceof AbstractSpatialPrefixTreeFieldType)) {
-        @SuppressWarnings({"rawtypes"})
         AbstractSpatialPrefixTreeFieldType rptType = (AbstractSpatialPrefixTreeFieldType) type;
         strategy = (PrefixTreeStrategy) rptType.getStrategy(fieldName);
         distanceUnits = rptType.getDistanceUnits();
@@ -206,21 +204,17 @@ public class FacetHeatmap extends FacetRequest {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public FacetProcessor createFacetProcessor(FacetContext fcontext) {
     return new FacetHeatmapProcessor(fcontext);
   }
 
   // don't use an anonymous class since the getSimpleName() isn't friendly in debug output
-  @SuppressWarnings({"rawtypes"})
   private class FacetHeatmapProcessor extends FacetProcessor {
-    @SuppressWarnings({"unchecked"})
     public FacetHeatmapProcessor(FacetContext fcontext) {
       super(fcontext, FacetHeatmap.this);
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
     public void process() throws IOException {
       super.process(); // handles domain changes
 
@@ -239,7 +233,7 @@ public class FacetHeatmap extends FacetRequest {
       }
 
       //Populate response
-      response = new SimpleOrderedMap<>();
+      response = new SimpleOrderedMap();
       response.add("gridLevel", gridLevel);
       response.add("columns", heatmap.columns);
       response.add("rows", heatmap.rows);
@@ -407,9 +401,7 @@ public class FacetHeatmap extends FacetRequest {
     }
     byte[] bytes = PngHelper.writeImage(image);
     long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNano);
-    if (log.isDebugEnabled()) {
-      log.debug("heatmap nativeSize={} pngSize={} pngTime={}", (counts.length * 4), bytes.length, durationMs);
-    }
+    log.debug("heatmap nativeSize={} pngSize={} pngTime={}", (counts.length * 4), bytes.length, durationMs);
     if (debugInfo != null) {
       debugInfo.putInfoItem("heatmap png timing", durationMs);
     }

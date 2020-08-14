@@ -58,18 +58,19 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,9 +108,7 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
  * Known limitations: The source and target clusters must have the same topology. Replication between clusters
  * with a different number of shards will likely results in an inconsistent index.
  * </p>
- * @deprecated since 8.6
  */
-@Deprecated(since = "8.6")
 public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAware {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -132,10 +131,8 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private CdcrBufferManager bufferManager;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     super.init(args);
-
-    log.warn("CDCR (in its current form) is deprecated as of 8.6 and shall be removed in 9.0. See SOLR-14022 for details.");
 
     if (args != null) {
       // Configuration of the Update Log Synchronizer
@@ -158,7 +155,6 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
       // Configuration of the Replicas
       replicasConfiguration = new HashMap<>();
-      @SuppressWarnings({"rawtypes"})
       List replicas = args.getAll(CdcrParams.REPLICA_PARAM);
       for (Object replica : replicas) {
         if (replica != null && replica instanceof NamedList) {
@@ -380,7 +376,6 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CdcrParams.CdcrAction.STATUS.toLower(), this.getStatus());
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private NamedList getStatus() {
     NamedList status = new NamedList();
     status.add(CdcrParams.ProcessState.getParam(), processStateManager.getState().toLower());
@@ -412,7 +407,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     DocCollection docCollection = cstate.getCollectionOrNull(collection);
     Collection<Slice> shards = docCollection == null? null : docCollection.getActiveSlices();
 
-    ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("parallelCdcrExecutor"));
+    ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(new DefaultSolrThreadFactory("parallelCdcrExecutor"));
 
     long checkpoint = Long.MAX_VALUE;
     try {
@@ -553,7 +548,6 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CdcrParams.LAST_PROCESSED_VERSION, lastProcessedVersion);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void handleQueuesAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     NamedList hosts = new NamedList();
 
@@ -586,7 +580,6 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         updateLogSynchronizer.isStarted() ? CdcrParams.ProcessState.STARTED.toLower() : CdcrParams.ProcessState.STOPPED.toLower());
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void handleOpsAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     NamedList hosts = new NamedList();
 
@@ -605,7 +598,6 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CdcrParams.OPERATIONS_PER_SECOND, hosts);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void handleErrorsAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     NamedList hosts = new NamedList();
 
@@ -652,8 +644,8 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
           coreState.setCdcrBootstrapRunning(true);
           latch.countDown(); // free the latch as current bootstrap is executing
           //running.set(true);
-          String leaderUrl = ReplicationHandler.getObjectWithBackwardCompatibility(req.getParams(), ReplicationHandler.LEADER_URL, ReplicationHandler.LEGACY_LEADER_URL, null);
-          BootstrapCallable bootstrapCallable = new BootstrapCallable(leaderUrl, core);
+          String masterUrl = req.getParams().get(ReplicationHandler.MASTER_URL);
+          BootstrapCallable bootstrapCallable = new BootstrapCallable(masterUrl, core);
           coreState.setCdcrBootstrapCallable(bootstrapCallable);
           Future<Boolean> bootstrapFuture = core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor()
               .submit(bootstrapCallable);
@@ -733,12 +725,12 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   static class BootstrapCallable implements Callable<Boolean>, Closeable {
-    private final String leaderUrl;
+    private final String masterUrl;
     private final SolrCore core;
     private volatile boolean closed = false;
 
-    BootstrapCallable(String leaderUrl, SolrCore core) {
-      this.leaderUrl = leaderUrl;
+    BootstrapCallable(String masterUrl, SolrCore core) {
+      this.masterUrl = masterUrl;
       this.core = core;
     }
 
@@ -762,7 +754,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       // to receive any updates from the source during bootstrap
       ulog.bufferUpdates();
       try {
-        commitOnLeader(leaderUrl);
+        commitOnLeader(masterUrl);
         // use rep handler directly, so we can do this sync rather than async
         SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
         ReplicationHandler replicationHandler = (ReplicationHandler) handler;
@@ -773,11 +765,17 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         }
 
         ModifiableSolrParams solrParams = new ModifiableSolrParams();
-        solrParams.set(ReplicationHandler.LEADER_URL, leaderUrl);
+        solrParams.set(ReplicationHandler.MASTER_URL, masterUrl);
         // we do not want the raw tlog files from the source
         solrParams.set(ReplicationHandler.TLOG_FILES, false);
 
         success = replicationHandler.doFetch(solrParams, false).getSuccessful();
+
+        // this is required because this callable can race with HttpSolrCall#destroy
+        // which clears the request info.
+        // Applying buffered updates fails without the following line because LogReplayer
+        // also tries to set request info and fails with AssertionError
+        SolrRequestInfo.clearRequestInfo();
 
         Future<UpdateLog.RecoveryInfo> future = ulog.applyBufferedUpdates();
         if (future == null) {
@@ -864,11 +862,9 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CommonParams.ACTION, CdcrParams.CdcrAction.SHARDCHECKPOINT.toString());
 
-        @SuppressWarnings({"rawtypes"})
         SolrRequest request = new QueryRequest(params);
         request.setPath(cdcrPath);
 
-        @SuppressWarnings({"rawtypes"})
         NamedList response = server.request(request);
         return (Long) response.get(CdcrParams.CHECKPOINT);
       }

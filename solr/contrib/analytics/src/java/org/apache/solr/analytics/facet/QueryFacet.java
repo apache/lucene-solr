@@ -19,14 +19,15 @@ package org.apache.solr.analytics.facet;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.solr.analytics.function.ReductionCollectionManager.ReductionDataCollection;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.Filter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryUtils;
 
 /**
  * A facet that breaks down the data by additional Solr Queries.
@@ -50,7 +51,10 @@ public class QueryFacet extends AbstractSolrQueryFacet {
       }
       // The searcher sends docIds to the QueryFacetAccumulator which forwards
       // them to <code>collectQuery()</code> in this class for collection.
-      Query queryQuery = QueryUtils.combineQueryAndFilter(q, filter);
+      Query queryQuery = new BooleanQuery.Builder()
+          .add(q, Occur.MUST)
+          .add(filter, Occur.FILTER)
+          .build();
 
       ReductionDataCollection dataCol = collectionManager.newDataCollection();
       reductionData.put(queryName, dataCol);

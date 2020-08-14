@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
 
-description = 'Solr Test Framework'
+apply plugin: 'java-library'
 
 dependencies {
   api project(':solr:core')

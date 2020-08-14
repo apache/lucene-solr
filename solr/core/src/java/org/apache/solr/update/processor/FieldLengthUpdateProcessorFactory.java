@@ -53,7 +53,7 @@ public final class FieldLengthUpdateProcessorFactory extends FieldMutatingUpdate
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     // no length specific init args
     super.init(args);
   }

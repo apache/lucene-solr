@@ -41,7 +41,6 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... values) throws IOException {
 
     Matrix matrix = null;
@@ -75,9 +74,8 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
       distanceMeasure = (DistanceMeasure)values[3];
     }
 
-    @SuppressWarnings({"rawtypes"})
     DBSCANClusterer<ClusterPoint> dbscan = new DBSCANClusterer(e, minPoints, distanceMeasure);
-    List<ClusterPoint> points = new ArrayList<>();
+    List<ClusterPoint> points = new ArrayList();
     double[][] data = matrix.getData();
     List<String> ids = matrix.getRowLabels();
 
@@ -90,7 +88,6 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
       }
     }
 
-    @SuppressWarnings({"rawtypes"})
     Map fields = new HashMap();
 
     fields.put("e", e);
@@ -124,7 +121,7 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
     private List<String> columnLabels;
     private List<Cluster<ClusterPoint>> clusters;
 
-    public ClusterTuple(@SuppressWarnings({"rawtypes"})Map fields,
+    public ClusterTuple(Map fields,
                         List<Cluster<ClusterPoint>> clusters,
                         List<String> columnLabels) {
       super(fields);

@@ -72,10 +72,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
     configureCluster(4).configure();
     solrClient = getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
-    if (log.isInfoEnabled()) {
-      log.info("SolrClient: {}", solrClient);
-      log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider()); // logOk
-    }
+    log.info("SolrClient: {}", solrClient);
+    log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider());
   }
 
   @After
@@ -99,7 +97,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
     CreateCategoryRoutedAlias CRA_Dim = createCategoryRoutedAlias(null, getCatField(), 20, null);
 
     CollectionAdminRequest.DimensionalRoutedAlias dra = CollectionAdminRequest.createDimensionalRoutedAlias(getAlias(),
-        CollectionAdminRequest.createCollection("_unused_", configName, 2, 2), TRA_Dim,  CRA_Dim);
+        CollectionAdminRequest.createCollection("_unused_", configName, 2, 2)
+            .setMaxShardsPerNode(2), TRA_Dim,  CRA_Dim);
 
     SolrParams params = dra.getParams();
     assertEquals("Dimensional[TIME,CATEGORY]", params.get(CollectionAdminRequest.RoutedAliasAdminRequest.ROUTER_TYPE_NAME));
@@ -359,7 +358,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
     CreateCategoryRoutedAlias CRA_Dim = createCategoryRoutedAlias(null, getCatField(), 20, null);
 
     CollectionAdminRequest.DimensionalRoutedAlias dra = CollectionAdminRequest.createDimensionalRoutedAlias(getAlias(),
-        CollectionAdminRequest.createCollection("_unused_", configName, 2, 2), CRA_Dim, TRA_Dim);
+        CollectionAdminRequest.createCollection("_unused_", configName, 2, 2)
+            .setMaxShardsPerNode(2), CRA_Dim, TRA_Dim);
 
     SolrParams params = dra.getParams();
     assertEquals("Dimensional[CATEGORY,TIME]", params.get(CollectionAdminRequest.RoutedAliasAdminRequest.ROUTER_TYPE_NAME));

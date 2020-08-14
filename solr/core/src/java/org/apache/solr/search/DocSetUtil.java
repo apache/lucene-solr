@@ -28,6 +28,8 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafCollector;
@@ -118,7 +120,11 @@ public class DocSetUtil {
   public static DocSet createDocSet(SolrIndexSearcher searcher, Query query, DocSet filter) throws IOException {
 
     if (filter != null) {
-      query = QueryUtils.combineQueryAndFilter(query, filter.getTopFilter());
+        Filter luceneFilter = filter.getTopFilter();
+        query = new BooleanQuery.Builder()
+            .add(query, BooleanClause.Occur.MUST)
+            .add(luceneFilter, BooleanClause.Occur.FILTER)
+            .build();
     }
 
     if (query instanceof TermQuery) {
@@ -174,7 +180,7 @@ public class DocSetUtil {
 
     DocSet answer = null;
     if (maxCount == 0) {
-      answer = DocSet.empty();
+      answer = DocSet.EMPTY;
     } else if (maxCount <= smallSetSize) {
       answer = createSmallSet(leaves, postList, maxCount, firstReader);
     } else {

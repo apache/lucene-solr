@@ -71,10 +71,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 
-/**
- * @deprecated since 8.6
- */
-@Deprecated
 public class HdfsDirectoryFactory extends CachingDirectoryFactory implements SolrCoreAware, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -159,21 +155,20 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
 
   @Override
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+  public void init(NamedList args) {
     super.init(args);
     params = args.toSolrParams();
     this.hdfsDataDir = getConfig(HDFS_HOME, null);
     if (this.hdfsDataDir != null && this.hdfsDataDir.length() == 0) {
       this.hdfsDataDir = null;
     } else {
-      log.info("{}={}", HDFS_HOME, this.hdfsDataDir);
+      log.info(HDFS_HOME + "=" + this.hdfsDataDir);
     }
     cacheMerges = getConfig(CACHE_MERGES, false);
     cacheReadOnce = getConfig(CACHE_READONCE, false);
     boolean kerberosEnabled = getConfig(KERBEROS_ENABLED, false);
-    if (log.isInfoEnabled()) {
-      log.info("Solr Kerberos Authentication {}", (kerberosEnabled ? "enabled" : "disabled"));
-    }
+    log.info("Solr Kerberos Authentication "
+        + (kerberosEnabled ? "enabled" : "disabled"));
     if (kerberosEnabled) {
       initKerberos();
     }
@@ -183,7 +178,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (null == rawLockType) {
       rawLockType = DirectoryFactory.LOCK_TYPE_HDFS;
-      log.warn("No lockType configured, assuming '{}'.", rawLockType);
+      log.warn("No lockType configured, assuming '"+rawLockType+"'.");
     }
     final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
     switch (lockType) {
@@ -230,12 +225,10 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       log.info(
           "Number of slabs of block cache [{}] with direct memory allocation set to [{}]",
           bankCount, directAllocation);
-      if (log.isInfoEnabled()) {
-        log.info(
-            "Block cache target memory usage, slab size of [{}] will allocate [{}] slabs and use ~[{}] bytes",
-            new Object[]{slabSize, bankCount,
-                ((long) bankCount * (long) slabSize)});
-      }
+      log.info(
+          "Block cache target memory usage, slab size of [{}] will allocate [{}] slabs and use ~[{}] bytes",
+          new Object[] {slabSize, bankCount,
+              ((long) bankCount * (long) slabSize)});
       
       int bsBufferSize = params.getInt("solr.hdfs.blockcache.bufferstore.buffersize", blockSize);
       int bsBufferCount = params.getInt("solr.hdfs.blockcache.bufferstore.buffercount", 0); // this is actually total size
@@ -419,7 +412,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       path = cd.getName();
     }
     
-    return normalize(SolrPaths.normalizeDir(ZkController
+    return normalize(SolrResourceLoader.normalizeDir(ZkController
         .trimLeadingAndTrailingSlashes(hdfsDataDir)
         + "/"
         + path
@@ -542,7 +535,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     try {
       pathExists = fileSystem.exists(dataDirPath);
     } catch (IOException e) {
-      log.error("Error checking if hdfs path exists {}", dataDir, e);
+      log.error("Error checking if hdfs path "+dataDir+" exists", e);
     }
     if (!pathExists) {
       log.warn("{} does not point to a valid data directory; skipping clean-up of old index directories.", dataDir);

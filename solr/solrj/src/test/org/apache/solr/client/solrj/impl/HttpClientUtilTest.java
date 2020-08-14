@@ -20,7 +20,7 @@ import javax.net.ssl.HostnameVerifier;
 import java.io.IOException;
 
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
+import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
@@ -50,26 +50,26 @@ public class HttpClientUtilTest extends SolrTestCase {
   public void testSSLSystemProperties() throws IOException {
 
     assertNotNull("HTTPS scheme could not be created using system defaults",
-                  HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry().lookup("https"));
+                  HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry().lookup("https"));
 
-    assertSSLHostnameVerifier(DefaultHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
+    assertSSLHostnameVerifier(DefaultHostnameVerifier.class, HttpClientUtil.getSchemaRegisteryProvider());
 
     System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "true");
     resetHttpClientBuilder();
-    assertSSLHostnameVerifier(DefaultHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
+    assertSSLHostnameVerifier(DefaultHostnameVerifier.class, HttpClientUtil.getSchemaRegisteryProvider());
 
     System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "");
     resetHttpClientBuilder();
-    assertSSLHostnameVerifier(DefaultHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
+    assertSSLHostnameVerifier(DefaultHostnameVerifier.class, HttpClientUtil.getSchemaRegisteryProvider());
     
     System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "false");
     resetHttpClientBuilder();
-    assertSSLHostnameVerifier(NoopHostnameVerifier.class, HttpClientUtil.getSocketFactoryRegistryProvider());
+    assertSSLHostnameVerifier(NoopHostnameVerifier.class, HttpClientUtil.getSchemaRegisteryProvider());
   }
 
   private void assertSSLHostnameVerifier(Class<? extends HostnameVerifier> expected,
-                                         SocketFactoryRegistryProvider provider) {
-    ConnectionSocketFactory socketFactory = provider.getSocketFactoryRegistry().lookup("https");
+                                         SchemaRegistryProvider provider) {
+    ConnectionSocketFactory socketFactory = provider.getSchemaRegistry().lookup("https");
     assertNotNull("unable to lookup https", socketFactory);
     assertTrue("socketFactory is not an SSLConnectionSocketFactory: " + socketFactory.getClass(),
                socketFactory instanceof SSLConnectionSocketFactory);

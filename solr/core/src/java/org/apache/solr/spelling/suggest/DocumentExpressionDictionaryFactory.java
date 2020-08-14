@@ -23,7 +23,6 @@ import java.util.Set;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
-import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.spell.Dictionary;
@@ -90,26 +89,9 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
     }
     SimpleBindings bindings = new SimpleBindings();
     for (SortField sortField : sortFields) {
-      bindings.add(sortField.getField(), fromSortField(sortField));
+      bindings.add(sortField);
     }
     return expression.getDoubleValuesSource(bindings).toLongValuesSource();
-  }
-
-  private DoubleValuesSource fromSortField(SortField field) {
-    switch(field.getType()) {
-      case INT:
-        return DoubleValuesSource.fromIntField(field.getField());
-      case LONG:
-        return DoubleValuesSource.fromLongField(field.getField());
-      case FLOAT:
-        return DoubleValuesSource.fromFloatField(field.getField());
-      case DOUBLE:
-        return DoubleValuesSource.fromDoubleField(field.getField());
-      case SCORE:
-        return DoubleValuesSource.SCORES;
-      default:
-        throw new UnsupportedOperationException();
-    }
   }
   
   private SortField getSortField(SolrCore core, String sortFieldName) {

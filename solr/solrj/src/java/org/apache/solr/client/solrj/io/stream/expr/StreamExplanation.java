@@ -55,7 +55,6 @@ public class StreamExplanation extends Explanation {
     children.add(child);
   }
   
-  @SuppressWarnings({"unchecked"})
   public Map<String,Object> toMap(Map<String,Object> map){
     map = super.toMap(map);
     

@@ -44,7 +44,7 @@ public class PHPSerializedResponseWriter implements QueryResponseWriter {
   private String contentType = CONTENT_TYPE_PHP_UTF8;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList namedList) {
+  public void init(NamedList namedList) {
     String contentType = (String) namedList.get("content-type");
     if (contentType != null) {
       this.contentType = contentType;
@@ -85,23 +85,17 @@ class PHPSerializedWriter extends JSONWriter {
   }
   
   @Override
-  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  public void writeNamedList(String name, NamedList val) throws IOException {
     writeNamedListAsMapMangled(name,val);
   }
   
-  @Deprecated
+  
+
   @Override
   public void writeStartDocumentList(String name, 
       long start, int size, long numFound, Float maxScore) throws IOException
   {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException
-  {
-    writeMapOpener(headerSize(maxScore, numFoundExact));
+    writeMapOpener((maxScore==null) ? 3 : 4);
     writeKey("numFound",false);
     writeLong(null,numFound);
     writeKey("start",false);
@@ -110,10 +104,6 @@ class PHPSerializedWriter extends JSONWriter {
     if (maxScore!=null) {
       writeKey("maxScore",false);
       writeFloat(null,maxScore);
-    }
-    if (numFoundExact != null) {
-      writeKey("numFoundExact",false);
-      writeBool(null, numFoundExact);
     }
     writeKey("docs",false);
     writeArrayOpener(size);
@@ -186,9 +176,7 @@ class PHPSerializedWriter extends JSONWriter {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator val) throws IOException {
-    @SuppressWarnings({"rawtypes"})
+  public void writeArray(String name, Iterator val) throws IOException {
     ArrayList vals = new ArrayList();
     while( val.hasNext() ) {
       vals.add(val.next());

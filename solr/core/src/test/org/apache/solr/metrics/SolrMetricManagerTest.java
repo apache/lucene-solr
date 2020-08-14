@@ -89,14 +89,11 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
     String registryName = TestUtil.randomSimpleString(r, 1, 10);
     assertEquals(0, metricManager.registry(registryName).getMetrics().size());
-    // There is nothing registered so we should be error-free on the first pass
-    metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.ERROR);
+    metricManager.registerAll(registryName, mr, false);
     // this should simply skip existing names
-    metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.IGNORE);
-    // this should re-register everything, and no errors
-    metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.REPLACE);
+    metricManager.registerAll(registryName, mr, true);
     // this should produce error
-    expectThrows(IllegalArgumentException.class, () -> metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.ERROR));
+    expectThrows(IllegalArgumentException.class, () -> metricManager.registerAll(registryName, mr, false));
   }
 
   @Test
@@ -237,7 +234,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     assertEquals(60, SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD);
   }
 
-  @SuppressWarnings({"unchecked"})
   private PluginInfo createPluginInfo(String name, String group, String registry) {
     Map<String,String> attrs = new HashMap<>();
     attrs.put("name", name);
@@ -248,7 +244,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     if (registry != null) {
       attrs.put("registry", registry);
     }
-    @SuppressWarnings({"rawtypes"})
     NamedList initArgs = new NamedList();
     initArgs.add("configurable", "true");
     return new PluginInfo("SolrMetricReporter", attrs, initArgs, null);

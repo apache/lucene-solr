@@ -69,15 +69,12 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
     assertEquals("Noble", result.get("firstName"));
     assertEquals("Paul", result.get("lastName"));
     src= new HashMap<>();
-    @SuppressWarnings({"unchecked", "rawtypes"})
     List<String> l= new ArrayList();
     l.add("Mr Noble Paul") ;
     l.add("Mr Shalin Mangar") ;
     src.put("fullName", l);
     result = new RegexTransformer().transformRow(src, context);
-    @SuppressWarnings({"rawtypes"})
     List l1 = (List) result.get("firstName");
-    @SuppressWarnings({"rawtypes"})
     List l2 = (List) result.get("lastName");
     assertEquals("Noble", l1.get(0));
     assertEquals("Shalin", l1.get(1));
@@ -153,7 +150,6 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
 
     VariableResolver resolver = new VariableResolver();
     resolver.addNamespace("e", row);
-    @SuppressWarnings({"unchecked"})
     Map<String, String> eAttrs = createMap("name", "e");
     Context context = getContext(null, resolver, null, Context.FULL_DUMP, fields, eAttrs);
 
@@ -179,7 +175,6 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
     ArrayList<String> strings = new ArrayList<>();
     strings.add("hello");
     strings.add("world");
-    @SuppressWarnings({"unchecked"})
     Map<String, Object> result = new RegexTransformer().transformRow(createMap("person", strings), context);
     assertEquals(strings,result.get("participant"));
   }

@@ -75,7 +75,6 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   int indexSize;
   List<FldType> types;
-  @SuppressWarnings({"rawtypes"})
   Map<Comparable, Doc> model = null;
   boolean validateResponses = true;
 
@@ -124,7 +123,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     int percent = rand.nextInt(100);
     if (model == null) return;
     ArrayList<String> ids = new ArrayList<>(model.size());
-    for (@SuppressWarnings({"rawtypes"})Comparable id : model.keySet()) {
+    for (Comparable id : model.keySet()) {
       if (rand.nextInt(100) < percent) {
         ids.add(id.toString());
       }
@@ -287,8 +286,11 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
         for (int i=1; i<responses.size(); i++) {
           String err = JSONTestUtil.match("/", responses.get(i), responses.get(0), 0.0);
           if (err != null) {
-            log.error("ERROR: mismatch facet response: {}\n expected ={}\n response = {}\n request = {}"
-                , err, responses.get(0), responses.get(i), params);
+            log.error("ERROR: mismatch facet response: " + err +
+                "\n expected =" + responses.get(0) +
+                "\n response = " + responses.get(i) +
+                "\n request = " + params
+            );
             fail(err);
           }
         }

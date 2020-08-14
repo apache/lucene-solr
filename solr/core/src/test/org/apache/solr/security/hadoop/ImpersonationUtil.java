@@ -50,7 +50,6 @@ public class ImpersonationUtil {
     return group;
   }
 
-  @SuppressWarnings({"rawtypes"})
   static SolrRequest getProxyRequest(String user, String doAs) {
     return new CollectionAdminRequest.List() {
       @Override

@@ -71,7 +71,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       runner.stop();
     }
     
-    HttpClientUtil.setSocketFactoryRegistryProvider(sslConfig.buildClientSocketFactoryRegistryProvider());
+    HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
     for(int i = 0; i < this.jettys.size(); i++) {
       JettySolrRunner runner = jettys.get(i);
       JettyConfig config = JettyConfig.builder()
@@ -123,7 +123,6 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
         .toLowerCase(Locale.ROOT), "name", "urlScheme", "val", value);
     @SuppressWarnings("unchecked")
     SolrParams params = new MapSolrParams(m);
-    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     

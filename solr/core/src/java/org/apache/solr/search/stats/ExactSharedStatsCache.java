@@ -40,15 +40,13 @@ public class ExactSharedStatsCache extends ExactStatsCache {
   // local stats obtained from shard servers
   private final Map<String,Map<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();
   private final Map<String,Map<String,CollectionStats>> perShardColStats = new ConcurrentHashMap<>();
-  // global stats synchronized from the leader
+  // global stats synchronized from the master
   private final Map<String,TermStats> currentGlobalTermStats = new ConcurrentHashMap<>();
   private final Map<String,CollectionStats> currentGlobalColStats = new ConcurrentHashMap<>();
 
   @Override
   protected StatsSource doGet(SolrQueryRequest req) {
-    if (log.isDebugEnabled()) {
-      log.debug("total={}, cache {}", currentGlobalColStats, currentGlobalTermStats.size());
-    }
+    log.debug("total={}, cache {}", currentGlobalColStats, currentGlobalTermStats.size());
     return new ExactStatsSource(statsCacheMetrics, currentGlobalTermStats, currentGlobalColStats);
   }
 

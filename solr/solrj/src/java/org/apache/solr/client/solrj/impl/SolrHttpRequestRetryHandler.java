@@ -111,9 +111,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
     }
 
     if (!isRetriable(exception)) {
-      if (log.isDebugEnabled()) {
-        log.debug("Do not retry, non retriable class {}", exception.getClass().getName());
-      }
+      log.debug("Do not retry, non retriable class {}", exception.getClass().getName());
       return false;
     }
 

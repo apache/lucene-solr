@@ -83,7 +83,6 @@ public class CollectionAdminResponse extends SolrResponseBase
     return Aliases.convertMapOfCommaDelimitedToMapOfList(getAliases());
   }
 
-  @SuppressWarnings({"unchecked"})
   public Map<String, Map<String, String>> getAliasProperties() {
     NamedList<Object> response = getResponse();
     if (response.get("properties") != null) {

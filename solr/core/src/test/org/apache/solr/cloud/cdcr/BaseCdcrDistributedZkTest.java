@@ -75,6 +75,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_PROPS;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
@@ -173,7 +174,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   @Before
-  @SuppressWarnings({"rawtypes"})
   public void baseBefore() throws Exception {
     this.createSourceCollection();
     if (this.createTargetCollection) this.createTargetCollection();
@@ -283,7 +283,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   /**
    * Invokes a CDCR action on a given node.
    */
-  @SuppressWarnings({"rawtypes"})
   protected NamedList invokeCdcrAction(CloudJettyRunner jetty, CdcrParams.CdcrAction action) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.ACTION, action.toString());
@@ -295,15 +294,13 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   protected void waitForCdcrStateReplication(String collection) throws Exception {
-    log.info("Wait for CDCR state to replicate - collection: {}", collection);
+    log.info("Wait for CDCR state to replicate - collection: " + collection);
 
     int cnt = 30;
     while (cnt > 0) {
-      @SuppressWarnings({"rawtypes"})
       NamedList status = null;
       boolean allEquals = true;
       for (CloudJettyRunner jetty : cloudJettys.get(collection)) { // check all replicas
-        @SuppressWarnings({"rawtypes"})
         NamedList rsp = invokeCdcrAction(jetty, CdcrParams.CdcrAction.STATUS);
         if (status == null) {
           status = (NamedList) rsp.get(CdcrParams.CdcrAction.STATUS.toLower());
@@ -324,7 +321,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       }
     }
 
-    log.info("CDCR state is identical across nodes - collection: {}", collection);
+    log.info("CDCR state is identical across nodes - collection: " + collection);
   }
 
   /**
@@ -334,9 +331,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   throws Exception {
     this.waitForCdcrStateReplication(collection); // ensure that cdcr state is replicated and stable
     for (CloudJettyRunner jetty : cloudJettys.get(collection)) { // check all replicas
-      @SuppressWarnings({"rawtypes"})
       NamedList rsp = invokeCdcrAction(jetty, CdcrParams.CdcrAction.STATUS);
-      @SuppressWarnings({"rawtypes"})
       NamedList status = (NamedList) rsp.get(CdcrParams.CdcrAction.STATUS.toLower());
       assertEquals(processState.toLower(), status.get(CdcrParams.ProcessState.getParam()));
       assertEquals(bufferState.toLower(), status.get(CdcrParams.BufferState.getParam()));
@@ -407,6 +402,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     try {
       // Create the target collection
       Map<String, List<Integer>> collectionInfos = new HashMap<>();
+      int maxShardsPerNode = 1;
 
       StringBuilder sb = new StringBuilder();
       for (String nodeName : collectionToNodeNames.get(name)) {
@@ -415,7 +411,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       }
       sb.deleteCharAt(sb.length() - 1);
 
-      createCollection(collectionInfos, name, shardCount, replicationFactor, client, sb.toString());
+      createCollection(collectionInfos, name, shardCount, replicationFactor, maxShardsPerNode, client, sb.toString());
     } finally {
       client.close();
     }
@@ -423,13 +419,14 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
 
   private CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
                                                    String collectionName, int numShards, int replicationFactor,
-                                                   SolrClient client, String createNodeSetStr)
+                                                   int maxShardsPerNode, SolrClient client, String createNodeSetStr)
       throws SolrServerException, IOException {
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
             NUM_SLICES, numShards,
             REPLICATION_FACTOR, replicationFactor,
-            CREATE_NODE_SET, createNodeSetStr),
+            CREATE_NODE_SET, createNodeSetStr,
+            MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client, "conf1");
   }
 
@@ -463,7 +460,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       collectionInfos.put(collectionName, list);
     }
     params.set("name", collectionName);
-    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -489,7 +485,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       res = new CollectionAdminResponse();
       res.setResponse(client.request(request));
     } catch (Exception e) {
-      log.warn("Error while deleting the collection {}", collectionName, e);
+      log.warn("Error while deleting the collection " + collectionName, e);
       return new CollectionAdminResponse();
     } finally {
       client.close();
@@ -503,7 +499,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     try {
       client.connect();
       ZkStateReader zkStateReader = client.getZkStateReader();
-      AbstractDistribZkTestBase.waitForCollectionToDisappear(collection, zkStateReader, true, 15);
+      AbstractDistribZkTestBase.waitForCollectionToDisappear(collection, zkStateReader, false, true, 15);
     } finally {
       client.close();
     }
@@ -789,7 +785,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   protected void waitForBootstrapToComplete(String collectionName, String shardId) throws Exception {
-    @SuppressWarnings({"rawtypes"})
     NamedList rsp;// we need to wait until bootstrap is complete otherwise the replicator thread will never start
     TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut())  {
@@ -817,11 +812,8 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   protected long getQueueSize(String collectionName, String shardId) throws Exception {
-    @SuppressWarnings({"rawtypes"})
     NamedList rsp = this.invokeCdcrAction(shardToLeaderJetty.get(collectionName).get(shardId), CdcrParams.CdcrAction.QUEUES);
-    @SuppressWarnings({"rawtypes"})
     NamedList host = (NamedList) ((NamedList) rsp.get(CdcrParams.QUEUES)).getVal(0);
-    @SuppressWarnings({"rawtypes"})
     NamedList status = (NamedList) host.get(TARGET_COLLECTION);
     return (Long) status.get(CdcrParams.QUEUE_SIZE);
   }

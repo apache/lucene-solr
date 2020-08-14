@@ -173,7 +173,7 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
     @Override
     public IndexInput clone() {
       CachedIndexInput clone = (CachedIndexInput) super.clone();
-      clone.source = source.clone();
+      clone.source = (IndexInput) source.clone();
       return clone;
     }
     

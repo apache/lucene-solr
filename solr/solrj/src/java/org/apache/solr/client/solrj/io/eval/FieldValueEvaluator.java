@@ -42,7 +42,6 @@ public class FieldValueEvaluator extends SourceEvaluator {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object evaluate(Tuple tuple) throws IOException {
     Object value = tuple.get(fieldName);
 

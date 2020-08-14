@@ -196,10 +196,9 @@ public abstract class SolrCoreState {
 
   public abstract void setCdcrBootstrapFuture(Future<Boolean> cdcrBootstrapFuture);
 
-  @SuppressWarnings("rawtypes")
   public abstract Callable getCdcrBootstrapCallable();
 
-  public abstract void setCdcrBootstrapCallable(@SuppressWarnings("rawtypes") Callable cdcrBootstrapCallable);
+  public abstract void setCdcrBootstrapCallable(Callable cdcrBootstrapCallable);
 
   public Throwable getTragicException() throws IOException {
     RefCounted<IndexWriter> ref = getIndexWriter(null);

@@ -96,7 +96,6 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     return tagByte == SOLRDOCLST;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private Map readAsMap(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
     Map m = new LinkedHashMap<>();
@@ -108,7 +107,6 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     return m;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private Map readSolrDocumentAsMap(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
     int size = readSize(dis);
@@ -176,7 +174,6 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
 
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Map<String, Object> next() throws IOException {
     if (arraySize == 0) return null;
     Object o = readVal(fis);

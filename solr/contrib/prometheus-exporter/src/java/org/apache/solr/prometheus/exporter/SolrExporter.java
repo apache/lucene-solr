@@ -39,7 +39,7 @@ import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
 import org.apache.solr.prometheus.scraper.SolrScraper;
 import org.apache.solr.prometheus.scraper.SolrStandaloneScraper;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,11 +105,11 @@ public class SolrExporter {
 
     this.metricCollectorExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
         numberThreads,
-        new SolrNamedThreadFactory("solr-exporter-collectors"));
+        new DefaultSolrThreadFactory("solr-exporter-collectors"));
 
     this.requestExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
         numberThreads,
-        new SolrNamedThreadFactory("solr-exporter-requests"));
+        new DefaultSolrThreadFactory("solr-exporter-requests"));
 
     this.solrScraper = createScraper(scrapeConfiguration, metricsConfiguration.getSettings());
     this.metricsCollector = new MetricsCollectorFactory(metricCollectorExecutor, scrapeInterval, solrScraper, metricsConfiguration).create();
@@ -208,7 +208,7 @@ public class SolrExporter {
       solrExporter.start();
       log.info("Solr Prometheus Exporter is running");
     } catch (IOException e) {
-      log.error("Failed to start Solr Prometheus Exporter: ", e);
+      log.error("Failed to start Solr Prometheus Exporter: " + e.toString());
     } catch (ArgumentParserException e) {
       parser.handleError(e);
     }
@@ -216,7 +216,7 @@ public class SolrExporter {
 
   private static MetricsConfiguration loadMetricsConfiguration(Path configPath) {
     try (SolrResourceLoader loader = new SolrResourceLoader(configPath.getParent())) {
-      XmlConfigFile config = new XmlConfigFile(loader, configPath.getFileName().toString(), null, null);
+      XmlConfigFile config = new XmlConfigFile(loader, configPath.getFileName().toString());
       return MetricsConfiguration.from(config);
     } catch (Exception e) {
       log.error("Could not load scrape configuration from {}", configPath.toAbsolutePath());

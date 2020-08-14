@@ -989,7 +989,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "3");
     doc.setField("cat", new String[]{"aaa", "ccc"});
-    doc.setField("atomic_is", 10);
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
@@ -1006,30 +1005,22 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "3");
     doc.setField("cat", ImmutableMap.of("add-distinct", "bbb"));
-    doc.setField("atomic_is", ImmutableMap.of("add-distinct", 10));
     assertU(adoc(doc));
     assertU(commit());
 
     assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '2']");
     assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "cat:bbb", "indent", "true"),
-        "//doc/arr[@name='cat'][count(str)=3]",
-        "//doc/arr[@name='atomic_is'][count(int)=1]"
-    );
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//doc/arr[@name='cat'][count(str)=3]");
 
     doc = new SolrInputDocument();
     doc.setField("id", "3");
-    doc.setField("cat", ImmutableMap.of("add-distinct", Arrays.asList("bbb", "bbb")));
-    doc.setField("atomic_is", ImmutableMap.of("add-distinct", Arrays.asList(10, 34)));
+    doc.setField("cat", ImmutableMap.of("add-distinct", Arrays.asList(new String[]{"bbb", "bbb"})));
     assertU(adoc(doc));
     assertU(commit());
 
     assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '2']");
     assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "cat:bbb", "indent", "true"),
-        "//doc/arr[@name='cat'][count(str)=3]", //'bbb' already present will not be added again
-        "//doc/arr[@name='atomic_is'][count(int)=2]"
-    );
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//doc/arr[@name='cat'][count(str)=3]"); //'bbb' already present will not be added again
 
     doc = new SolrInputDocument();
     doc.setField("id", "5");

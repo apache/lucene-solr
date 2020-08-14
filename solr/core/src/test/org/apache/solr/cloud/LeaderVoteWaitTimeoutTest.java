@@ -92,9 +92,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jetty);// TODO: Can we avoid this restart
       cluster.startJettySolrRunner(jetty);
       proxy.open(jetty.getBaseUrl().toURI());
-      if (log.isInfoEnabled()) {
-        log.info("Adding proxy for URL: {}. Proxy {}", jetty.getBaseUrl(), proxy.getUrl());
-      }
+      log.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
       proxies.put(jetty, proxy);
       jettys.put(proxy.getUrl(), jetty);
     }
@@ -293,14 +291,12 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   }
 
   private void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
-    @SuppressWarnings({"rawtypes"})
     NamedList rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
     assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match == null);
   }
 
-  @SuppressWarnings({"rawtypes"})
   private NamedList realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
     return solr.request(qr);

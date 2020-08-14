@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -95,10 +96,16 @@ public class EchoStream extends TupleStream implements Expressible {
   public Tuple read() throws IOException {
 
     if(finished) {
-      return Tuple.EOF();
+      HashMap m = new HashMap();
+      m.put("EOF", true);
+      Tuple tuple = new Tuple(m);
+      return tuple;
     } else {
+      HashMap m = new HashMap();
+      m.put("echo", echo);
+      Tuple tuple = new Tuple(m);
       finished = true;
-      return new Tuple("echo", echo);
+      return tuple;
     }
   }
 

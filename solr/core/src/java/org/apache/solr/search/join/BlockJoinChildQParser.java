@@ -23,6 +23,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
 
 public class BlockJoinChildQParser extends BlockJoinParentQParser {
@@ -33,7 +34,7 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
 
   @Override
   protected Query createQuery(Query parentListQuery, Query query, String scoreMode) {
-    return new ToChildBlockJoinQuery(query, getBitSetProducer(parentListQuery));
+    return new ToChildBlockJoinQuery(query, getFilter(parentListQuery).getFilter());
   }
 
   @Override
@@ -48,6 +49,8 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
         .add(new MatchAllDocsQuery(), Occur.MUST)
         .add(parents, Occur.MUST_NOT)
       .build();
-    return new BitSetProducerQuery(getBitSetProducer(notParents));
+    SolrConstantScoreQuery wrapped = new SolrConstantScoreQuery(getFilter(notParents));
+    wrapped.setCache(false);
+    return wrapped;
   }
 }

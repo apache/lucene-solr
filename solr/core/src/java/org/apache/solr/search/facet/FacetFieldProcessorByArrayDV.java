@@ -26,17 +26,14 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
-import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
-import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
-import org.apache.solr.search.facet.SweepCountAware.SegCountGlobal;
-import org.apache.solr.search.facet.SweepCountAware.SegCountPerSeg;
+import org.apache.solr.search.Filter;
 import org.apache.solr.uninverting.FieldCacheImpl;
 
 /**
@@ -97,10 +94,6 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       return;
     }
 
-    final SweepCountAccStruct base = SweepingCountSlotAcc.baseStructOf(this);
-    final List<SweepCountAccStruct> others = SweepingCountSlotAcc.otherStructsOf(this);
-    assert null != base;
-    
     // TODO: refactor some of this logic into a base class
     boolean countOnly = collectAcc==null && allBucketsAcc==null;
     boolean fullRange = startTermIndex == 0 && endTermIndex == si.getValueCount();
@@ -125,21 +118,16 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     if (freq.perSeg != null) accumSeg = canDoPerSeg && freq.perSeg;  // internal - override perSeg heuristic
 
-    final int maxSize = others.size() + 1; // others + base
     final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
-    final DocIdSetIterator[] subIterators = new DocIdSetIterator[maxSize];
-    final CountSlotAcc[] activeCountAccs = new CountSlotAcc[maxSize];
+    Filter filter = fcontext.base.getTopFilter();
 
     for (int subIdx = 0; subIdx < leaves.size(); subIdx++) {
       LeafReaderContext subCtx = leaves.get(subIdx);
 
       setNextReaderFirstPhase(subCtx);
 
-      final SweepDISI disi = SweepDISI.newInstance(base, others, subIterators, activeCountAccs, subCtx);
-      if (disi == null) {
-        continue;
-      }
-      LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(subIdx);
+      DocIdSet dis = filter.getDocIdSet(subCtx, null); // solr docsets already exclude any deleted docs
+      DocIdSetIterator disi = dis.iterator();
 
       SortedDocValues singleDv = null;
       SortedSetDocValues multiDv = null;
@@ -147,13 +135,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
         // TODO: get sub from multi?
         multiDv = subCtx.reader().getSortedSetDocValues(sf.getName());
         if (multiDv == null) {
-          if (countOnly) {
-            continue;
-          } else {
-            multiDv = DocValues.emptySortedSet();
-          }
-        } else if (countOnly && multiDv.getValueCount() < 1){
-          continue;
+          multiDv = DocValues.emptySortedSet();
         }
         // some codecs may optimize SortedSet storage for single-valued fields
         // this will be null if this is not a wrapped single valued docvalues.
@@ -163,15 +145,11 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       } else {
         singleDv = subCtx.reader().getSortedDocValues(sf.getName());
         if (singleDv == null) {
-          if (countOnly) {
-            continue;
-          } else {
-            singleDv = DocValues.emptySorted();
-          }
-        } else if (countOnly && singleDv.getValueCount() < 1) {
-          continue;
+          singleDv = DocValues.emptySorted();
         }
       }
+
+      LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(subIdx);
 
       if (singleDv != null) {
         if (accumSeg) {
@@ -196,7 +174,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
       }
     }
 
-    Arrays.fill(reuse, null);  // better GC
+    reuse = null;  // better GC
   }
 
   @Override
@@ -204,9 +182,9 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     return si.lookupOrd(ord);
   }
 
-  private void collectPerSeg(SortedDocValues singleDv, SweepDISI disi, LongValues toGlobal) throws IOException {
-    int segMax = singleDv.getValueCount();
-    final SegCountPerSeg segCounter = getSegCountPerSeg(disi, segMax);
+  private void collectPerSeg(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
+    int segMax = singleDv.getValueCount() + 1;
+    final int[] counts = getCountArr( segMax );
 
     /** alternate trial implementations
      // ord
@@ -224,110 +202,73 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter) {
       FieldCacheImpl.SortedDocValuesImpl.Iter fc = (FieldCacheImpl.SortedDocValuesImpl.Iter) singleDv;
       while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        final int segOrd = fc.getOrd(doc);
-        if (segOrd >= 0) {
-          final int maxIdx = disi.registerCounts(segCounter);
-          segCounter.incrementCount(segOrd, 1, maxIdx);
-        }
+        counts[fc.getOrd(doc) + 1]++;
       }
     } else {
       while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         if (singleDv.advanceExact(doc)) {
-          final int segOrd = singleDv.ordValue();
-          if (segOrd >= 0) {
-            final int maxIdx = disi.registerCounts(segCounter);
-            segCounter.incrementCount(segOrd, 1, maxIdx);
-          }
+          counts[singleDv.ordValue() + 1]++;
         }
       }
     }
 
     // convert segment-local counts to global counts
-    segCounter.register(disi.countAccs, toGlobal, segMax - 1);
+    for (int i=1; i<segMax; i++) {
+      int segCount = counts[i];
+      if (segCount > 0) {
+        int slot = toGlobal == null ? (i - 1) : (int) toGlobal.get(i - 1);
+        countAcc.incrementCount(slot, segCount);
+      }
+    }
   }
 
-  private SegCountPerSeg getSegCountPerSeg(SweepDISI disi, int segMax) {
-    final int size = disi.size;
-    return new SegCountPerSeg(getSegmentCountArrays(segMax, size), getBoolArr(segMax), segMax, size);
-  }
-
-  private SegCountGlobal getSegCountGlobal(SweepDISI disi, SortedDocValues dv) {
-    return new SegCountGlobal(disi.countAccs);
-  }
-
-  private SegCountGlobal getSegCountGlobal(SweepDISI disi, SortedSetDocValues dv) {
-    return new SegCountGlobal(disi.countAccs);
-  }
-
-  private void collectPerSeg(SortedSetDocValues multiDv, SweepDISI disi, LongValues toGlobal) throws IOException {
+  private void collectPerSeg(SortedSetDocValues multiDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int segMax = (int)multiDv.getValueCount();
-    final SegCountPerSeg segCounter = getSegCountPerSeg(disi, segMax);
+    final int[] counts = getCountArr( segMax );
 
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (multiDv.advanceExact(doc)) {
-        final int maxIdx = disi.registerCounts(segCounter);
-        for (;;) {
+        for(;;) {
           int segOrd = (int)multiDv.nextOrd();
           if (segOrd < 0) break;
-          segCounter.incrementCount(segOrd, 1, maxIdx);
+          counts[segOrd]++;
         }
       }
     }
 
-    segCounter.register(disi.countAccs, toGlobal, segMax - 1);
-  }
-
-  private boolean[] reuseBool;
-  private boolean[] getBoolArr(int maxNeeded) {
-    if (reuseBool == null) {
-      // make the count array large enough for any segment
-      // FUTURE: (optionally) directly use the array of the CountAcc for an optimized index..
-      reuseBool = new boolean[(int) si.getValueCount() + 1];
-    } else {
-      Arrays.fill(reuseBool, 0, maxNeeded, false);
-    }
-    return reuseBool;
-  }
-
-  private int[][] reuse = new int[12][];
-  private int[] getCountArr(int maxNeeded, int idx) {
-    if (idx >= reuse.length) {
-      reuse = Arrays.copyOf(reuse, idx + 1);
-    }
-    if (reuse[idx] == null) {
-      // make the count array large enough for any segment
-      // FUTURE: (optionally) directly use the array of the CountAcc for an optimized index..
-      reuse[idx] = new int[(int) si.getValueCount() + 1];
-    } else {
-      Arrays.fill(reuse[idx], 0, maxNeeded, 0);
-    }
-    return reuse[idx];
-  }
-
-  private int[][] getSegmentCountArrays(int segMax, int size) {
-    int[][] ret = new int[size][];
-    int i = size - 1;
-    do {
-      ret[i] = getCountArr(segMax, i);
-    } while (i-- > 0);
-    return ret;
-  }
-
-  private void collectDocs(SortedDocValues singleDv, SweepDISI disi, LongValues toGlobal) throws IOException {
-    int doc;
-    final SegCountGlobal segCounter = getSegCountGlobal(disi, singleDv);
-    while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (singleDv.advanceExact(doc)) {
-        final int maxIdx = disi.registerCounts(segCounter);
-        int segOrd = singleDv.ordValue();
-        collect(doc, segOrd, toGlobal, segCounter, maxIdx, disi.collectBase());
+    for (int i=0; i<segMax; i++) {
+      int segCount = counts[i];
+      if (segCount > 0) {
+        int slot = toGlobal == null ? (i) : (int) toGlobal.get(i);
+        countAcc.incrementCount(slot, segCount);
       }
     }
   }
 
-  private void collectCounts(SortedDocValues singleDv, SweepDISI disi, LongValues toGlobal) throws IOException {
-    final SegCountGlobal segCounter = getSegCountGlobal(disi, singleDv);
+  private int[] reuse;
+  private int[] getCountArr(int maxNeeded) {
+    if (reuse == null) {
+      // make the count array large enough for any segment
+      // FUTURE: (optionally) directly use the array of the CountAcc for an optimized index..
+      reuse = new int[(int) si.getValueCount() + 1];
+    } else {
+      Arrays.fill(reuse, 0, maxNeeded, 0);
+    }
+    return reuse;
+  }
+
+  private void collectDocs(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
+    int doc;
+    while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      if (singleDv.advanceExact(doc)) {
+        int segOrd = singleDv.ordValue();
+        collect(doc, segOrd, toGlobal);
+      }
+    }
+  }
+
+  private void collectCounts(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter) {
 
@@ -336,8 +277,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
         int segOrd = fc.getOrd(doc);
         if (segOrd < 0) continue;
         int ord = (int)toGlobal.get(segOrd);
-        int maxIdx = disi.registerCounts(segCounter);
-        segCounter.incrementCount(ord, 1, maxIdx);
+        countAcc.incrementCount(ord, 1);
       }
 
     } else {
@@ -346,60 +286,53 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
         if (singleDv.advanceExact(doc)) {
           int segOrd = singleDv.ordValue();
           int ord = (int) toGlobal.get(segOrd);
-          int maxIdx = disi.registerCounts(segCounter);
-          segCounter.incrementCount(ord, 1, maxIdx);
+          countAcc.incrementCount(ord, 1);
         }
       }
+
     }
   }
 
-  private void collectDocs(SortedSetDocValues multiDv, SweepDISI disi, LongValues toGlobal) throws IOException {
-    final SegCountGlobal segCounter = getSegCountGlobal(disi, multiDv);
+  private void collectDocs(SortedSetDocValues multiDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (multiDv.advanceExact(doc)) {
-        final int maxIdx = disi.registerCounts(segCounter);
-        final boolean collectBase = disi.collectBase();
         for(;;) {
           int segOrd = (int)multiDv.nextOrd();
           if (segOrd < 0) break;
-          collect(doc, segOrd, toGlobal, segCounter, maxIdx, collectBase);
+          collect(doc, segOrd, toGlobal);
         }
       }
     }
   }
 
-  private void collectCounts(SortedSetDocValues multiDv, SweepDISI disi, LongValues toGlobal) throws IOException {
-    final SegCountGlobal segCounter = getSegCountGlobal(disi, multiDv);
+  private void collectCounts(SortedSetDocValues multiDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       if (multiDv.advanceExact(doc)) {
-        final int maxIdx = disi.registerCounts(segCounter);
         for(;;) {
           int segOrd = (int)multiDv.nextOrd();
           if (segOrd < 0) break;
           int ord = (int)toGlobal.get(segOrd);
-          segCounter.incrementCount(ord, 1, maxIdx);
+          countAcc.incrementCount(ord, 1);
         }
       }
     }
   }
 
-  private void collect(int doc, int segOrd, LongValues toGlobal, SegCountGlobal segCounter, int maxIdx, boolean collectBase) throws IOException {
+  private void collect(int doc, int segOrd, LongValues toGlobal) throws IOException {
     int ord = (toGlobal != null && segOrd >= 0) ? (int)toGlobal.get(segOrd) : segOrd;
 
     int arrIdx = ord - startTermIndex;
     // This code handles faceting prefixes, which narrows the range of ords we want to collect.
     // It’s not an error for an ord to fall outside this range… we simply want to skip it.
     if (arrIdx >= 0 && arrIdx < nTerms) {
-      segCounter.incrementCount(arrIdx, 1, maxIdx);
-      if (collectBase) {
-        if (collectAcc != null) {
-          collectAcc.collect(doc, arrIdx, slotContext);
-        }
-        if (allBucketsAcc != null) {
-          allBucketsAcc.collect(doc, arrIdx, slotContext);
-        }
+      countAcc.incrementCount(arrIdx, 1);
+      if (collectAcc != null) {
+        collectAcc.collect(doc, arrIdx, slotContext);
+      }
+      if (allBucketsAcc != null) {
+        allBucketsAcc.collect(doc, arrIdx, slotContext);
       }
     }
   }

@@ -53,10 +53,11 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     int numberOfShards = random().nextInt(4)+1;
     int numberOfReplicas = random().nextInt(2)+1;
+    int maxShardsPerNode = random().nextInt(4)+1;
 
-    int numberOfNodes = numberOfShards * numberOfReplicas;
+    int numberOfNodes = (numberOfShards*numberOfReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
 
-    setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes);
+    setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes, maxShardsPerNode);
 
 
   }
@@ -196,7 +197,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
         queryResponse.getResults().get(7).get("features").toString());
   }
 
-  private void setupSolrCluster(int numShards, int numReplicas, int numServers) throws Exception {
+  private void setupSolrCluster(int numShards, int numReplicas, int numServers, int maxShardsPerNode) throws Exception {
     JettyConfig jc = buildJettyConfig("/solr");
     jc = JettyConfig.builder(jc).withServlets(extraServlets).build();
     solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome.toPath(), jc);
@@ -205,7 +206,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     solrCluster.getSolrClient().setDefaultCollection(COLLECTION);
 
-    createCollection(COLLECTION, "conf1", numShards, numReplicas);
+    createCollection(COLLECTION, "conf1", numShards, numReplicas, maxShardsPerNode);
     indexDocuments(COLLECTION);
     for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
       if (!solrRunner.getCoreContainer().getCores().isEmpty()){
@@ -218,11 +219,12 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   }
 
 
-  private void createCollection(String name, String config, int numShards, int numReplicas)
+  private void createCollection(String name, String config, int numShards, int numReplicas, int maxShardsPerNode)
       throws Exception {
     CollectionAdminResponse response;
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(name, config, numShards, numReplicas);
+    create.setMaxShardsPerNode(maxShardsPerNode);
     response = create.process(solrCluster.getSolrClient());
 
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {

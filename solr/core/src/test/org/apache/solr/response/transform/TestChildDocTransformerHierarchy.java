@@ -335,7 +335,6 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
     return idCounter.incrementAndGet();
   }
 
-  @SuppressWarnings({"unchecked"})
   private static void cleanSolrDocumentFields(SolrDocument input) {
     for(String fieldName: fieldsToRemove) {
       input.removeFields(fieldName);

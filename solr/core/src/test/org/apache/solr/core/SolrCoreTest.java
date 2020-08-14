@@ -28,7 +28,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrCoreState;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
@@ -187,7 +187,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     final int LOOP = 100;
     final int MT = 16;
-    ExecutorService service = ExecutorUtil.newMDCAwareFixedThreadPool(MT, new SolrNamedThreadFactory("refCountMT"));
+    ExecutorService service = ExecutorUtil.newMDCAwareFixedThreadPool(MT, new DefaultSolrThreadFactory("refCountMT"));
     List<Callable<Integer>> callees = new ArrayList<>(MT);
     final CoreContainer cores = h.getCoreContainer();
     for (int i = 0; i < MT; ++i) {
@@ -266,8 +266,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
     assertEquals("wrong config for enableLazyFieldLoading", true, solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
-    assertEquals("wrong config for useCircuitBreakers", false, solrConfig.useCircuitBreakers);
-    assertEquals("wrong config for memoryCircuitBreakerThresholdPct", 95, solrConfig.memoryCircuitBreakerThresholdPct);
   }
 
   /**
@@ -277,7 +275,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   @Test
   public void testReloadLeak() throws Exception {
     final ExecutorService executor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("testReloadLeak"));
+        ExecutorUtil.newMDCAwareFixedThreadPool(1, new DefaultSolrThreadFactory("testReloadLeak"));
 
     // Continuously open new searcher while core is not closed, and reload core to try to reproduce searcher leak.
     // While in practice we never continuously open new searchers, this is trying to make up for the fact that opening

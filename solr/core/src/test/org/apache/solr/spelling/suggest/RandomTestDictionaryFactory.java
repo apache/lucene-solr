@@ -99,15 +99,15 @@ public class RandomTestDictionaryFactory extends DictionaryFactory {
             ++emittedItems;
             next = new BytesRef(TestUtil.randomUnicodeString(LuceneTestCase.random(), MAX_LENGTH));
             if (emittedItems % 1000 == 0) {
-              log.info("{} emitted {} items", enabledSysProp, emittedItems);
+              log.info(enabledSysProp + " emitted " + emittedItems + " items.");
             }
           } else {
-            log.info("{} disabled after emitting {} items", enabledSysProp, emittedItems);
+            log.info(enabledSysProp + " disabled after emitting " + emittedItems + " items.");
             System.clearProperty(enabledSysProp); // disable once maxItems has been reached
             emittedItems = 0L;
           }
         } else {
-          log.warn("{} invoked when disabled", enabledSysProp);
+          log.warn(enabledSysProp + " invoked when disabled");
           emittedItems = 0L;
         }
         return next;

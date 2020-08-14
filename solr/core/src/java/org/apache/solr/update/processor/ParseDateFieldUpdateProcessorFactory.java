@@ -148,10 +148,8 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
             try {
               return Date.from(parseInstant(parser, srcStringVal, parsePosition));
             } catch (DateTimeParseException e) {
-              if (log.isDebugEnabled()) {
-                log.debug("value '{}' is not parseable with format '{}'",
-                    new Object[]{srcStringVal, format.getKey()});
-              }
+              log.debug("value '{}' is not parseable with format '{}'",
+                        new Object[] { srcStringVal, format.getKey() });
             }
           }
           log.debug("value '{}' was not parsed by any configured format, thus was not mutated", srcStringVal);
@@ -166,7 +164,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     
     Locale locale;
     String localeParam = (String)args.remove(LOCALE_PARAM);
@@ -182,7 +180,6 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
       defaultTimeZone = ZoneId.of(defaultTimeZoneParam.toString());
     }
 
-    @SuppressWarnings({"unchecked"})
     Collection<String> formatsParam = args.removeConfigArgs(FORMATS_PARAM);
     if (null != formatsParam) {
       for (String value : formatsParam) {

@@ -58,371 +58,368 @@ public abstract class DocValuesAcc extends SlotAcc {
    * returns whether or not given {@code doc} has value
    */
   protected abstract boolean advanceExact(int doc) throws IOException;
+}
 
+/**
+ * Accumulator for {@link NumericDocValues}
+ */
+abstract class NumericDVAcc extends DocValuesAcc {
+  NumericDocValues values;
 
-  /**
-   * Accumulator for {@link NumericDocValues}
-   */
-  abstract class NumericDVAcc extends DocValuesAcc {
-    NumericDocValues values;
-
-    public NumericDVAcc(FacetContext fcontext, SchemaField sf) throws IOException {
-      super(fcontext, sf);
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      super.setNextReader(readerContext);
-      values = DocValues.getNumeric(readerContext.reader(), sf.getName());
-    }
-
-    @Override
-    protected boolean advanceExact(int doc) throws IOException {
-      return values.advanceExact(doc);
-    }
+  public NumericDVAcc(FacetContext fcontext, SchemaField sf) throws IOException {
+    super(fcontext, sf);
   }
 
-  /**
-   * Accumulator for {@link SortedNumericDocValues}
-   */
-  abstract static class SortedNumericDVAcc extends DocValuesAcc {
-    SortedNumericDocValues values;
-
-    public SortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
-      super(fcontext, sf);
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      super.setNextReader(readerContext);
-      values = DocValues.getSortedNumeric(readerContext.reader(), sf.getName());
-    }
-
-    @Override
-    protected boolean advanceExact(int doc) throws IOException {
-      return values.advanceExact(doc);
-    }
+  @Override
+  public void setNextReader(LeafReaderContext readerContext) throws IOException {
+    super.setNextReader(readerContext);
+    values = DocValues.getNumeric(readerContext.reader(),  sf.getName());
   }
 
-  abstract static class LongSortedNumericDVAcc extends SortedNumericDVAcc {
-    long[] result;
-    long initialValue;
+  @Override
+  protected boolean advanceExact(int doc) throws IOException {
+    return values.advanceExact(doc);
+  }
+}
 
-    public LongSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
-      super(fcontext, sf, numSlots);
-      this.result = new long[numSlots];
-      this.initialValue = initialValue;
-      if (initialValue != 0) {
-        Arrays.fill(result, initialValue);
-      }
-    }
+/**
+ * Accumulator for {@link SortedNumericDocValues}
+ */
+abstract class SortedNumericDVAcc extends DocValuesAcc {
+  SortedNumericDocValues values;
 
-    @Override
-    public int compare(int slotA, int slotB) {
-      return Long.compare(result[slotA], result[slotB]);
-    }
+  public SortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    super(fcontext, sf);
+  }
 
-    @Override
-    public Object getValue(int slotNum) throws IOException {
-      return result[slotNum];
-    }
+  @Override
+  public void setNextReader(LeafReaderContext readerContext) throws IOException {
+    super.setNextReader(readerContext);
+    values = DocValues.getSortedNumeric(readerContext.reader(),  sf.getName());
+  }
 
-    @Override
-    public void reset() throws IOException {
+  @Override
+  protected boolean advanceExact(int doc) throws IOException {
+    return values.advanceExact(doc);
+  }
+}
+
+abstract class LongSortedNumericDVAcc extends SortedNumericDVAcc {
+  long[] result;
+  long initialValue;
+
+  public LongSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
+    super(fcontext, sf, numSlots);
+    this.result = new long[numSlots];
+    this.initialValue = initialValue;
+    if (initialValue != 0) {
       Arrays.fill(result, initialValue);
     }
-
-    @Override
-    public void resize(Resizer resizer) {
-    this.result = resizer.resize(result, initialValue);
-    }
-
   }
 
-  abstract static class DoubleSortedNumericDVAcc extends SortedNumericDVAcc {
-    double[] result;
-    double initialValue;
+  @Override
+  public int compare(int slotA, int slotB) {
+    return Long.compare(result[slotA], result[slotB]);
+  }
 
-    public DoubleSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, double initialValue) throws IOException {
-      super(fcontext, sf, numSlots);
-      this.result = new double[numSlots];
-      this.initialValue = initialValue;
-      if (initialValue != 0) {
-        Arrays.fill(result, initialValue);
-      }
-    }
+  @Override
+  public Object getValue(int slotNum) throws IOException {
+    return result[slotNum];
+  }
 
-    @Override
-    public int compare(int slotA, int slotB) {
-      return Double.compare(result[slotA], result[slotB]);
-    }
+  @Override
+  public void reset() throws IOException {
+    Arrays.fill(result, initialValue);
+  }
 
-    @Override
-    public Object getValue(int slotNum) throws IOException {
-      return result[slotNum];
-    }
+  @Override
+  public void resize(Resizer resizer) {
+    resizer.resize(result, initialValue);
+  }
 
-    @Override
-    public void reset() throws IOException {
+}
+
+abstract class DoubleSortedNumericDVAcc extends SortedNumericDVAcc {
+  double[] result;
+  double initialValue;
+
+  public DoubleSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, double initialValue) throws IOException {
+    super(fcontext, sf, numSlots);
+    this.result = new double[numSlots];
+    this.initialValue = initialValue;
+    if (initialValue != 0) {
       Arrays.fill(result, initialValue);
     }
+  }
 
-    @Override
-    public void resize(Resizer resizer) {
-    this.result = resizer.resize(result, initialValue);
-    }
+  @Override
+  public int compare(int slotA, int slotB) {
+    return Double.compare(result[slotA], result[slotB]);
+  }
 
-    /**
-     * converts given long value to double based on field type
-     */
-    protected double getDouble(long val) {
-      switch (sf.getType().getNumberType()) {
-        case INTEGER:
-        case LONG:
-        case DATE:
-          return val;
-        case FLOAT:
-          return NumericUtils.sortableIntToFloat((int) val);
-        case DOUBLE:
-          return NumericUtils.sortableLongToDouble(val);
-        default:
-          // this would never happen
-          return 0.0d;
-      }
-    }
+  @Override
+  public Object getValue(int slotNum) throws IOException {
+    return result[slotNum];
+  }
 
+  @Override
+  public void reset() throws IOException {
+    Arrays.fill(result, initialValue);
+  }
+
+  @Override
+  public void resize(Resizer resizer) {
+    resizer.resize(result, initialValue);
   }
 
   /**
-   * Base class for standard deviation and variance computation for fields with {@link SortedNumericDocValues}
+   * converts given long value to double based on field type
    */
-  abstract static class SDVSortedNumericAcc extends DoubleSortedNumericDVAcc {
-    int[] counts;
-    double[] sum;
-
-    public SDVSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
-      super(fcontext, sf, numSlots, 0);
-      this.counts = new int[numSlots];
-      this.sum = new double[numSlots];
-    }
-
-    @Override
-    protected void collectValues(int doc, int slot) throws IOException {
-      for (int i = 0, count = values.docValueCount(); i < count; i++) {
-        double val = getDouble(values.nextValue());
-        result[slot] += val * val;
-        sum[slot] += val;
-        counts[slot]++;
-      }
-    }
-
-    protected abstract double computeVal(int slot);
-
-    @Override
-    public int compare(int slotA, int slotB) {
-      return Double.compare(computeVal(slotA), computeVal(slotB));
-    }
-
-    @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public Object getValue(int slot) {
-      if (fcontext.isShard()) {
-        ArrayList lst = new ArrayList(3);
-        lst.add(counts[slot]);
-        lst.add(result[slot]);
-        lst.add(sum[slot]);
-        return lst;
-      } else {
-        return computeVal(slot);
-      }
-    }
-
-    @Override
-    public void reset() throws IOException {
-      super.reset();
-      Arrays.fill(counts, 0);
-      Arrays.fill(sum, 0);
-    }
-
-    @Override
-    public void resize(Resizer resizer) {
-      super.resize(resizer);
-    this.counts = resizer.resize(counts, 0);
-    this.sum = resizer.resize(sum, 0);
+  protected double getDouble(long val) {
+    switch (sf.getType().getNumberType()) {
+      case INTEGER:
+      case LONG:
+      case DATE:
+        return val;
+      case FLOAT:
+        return NumericUtils.sortableIntToFloat((int) val);
+      case DOUBLE:
+        return NumericUtils.sortableLongToDouble(val);
+      default:
+        // this would never happen
+        return 0.0d;
     }
   }
 
-  /**
-   * Accumulator for {@link SortedDocValues}
-   */
-  abstract class SortedDVAcc extends DocValuesAcc {
-    SortedDocValues values;
+}
 
-    public SortedDVAcc(FacetContext fcontext, SchemaField sf) throws IOException {
-      super(fcontext, sf);
-    }
+/**
+ * Base class for standard deviation and variance computation for fields with {@link SortedNumericDocValues}
+ */
+abstract class SDVSortedNumericAcc extends DoubleSortedNumericDVAcc {
+  int[] counts;
+  double[] sum;
 
-    @Override
-    public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      super.setNextReader(readerContext);
-      values = DocValues.getSorted(readerContext.reader(), sf.getName());
-    }
+  public SDVSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    super(fcontext, sf, numSlots, 0);
+    this.counts = new int[numSlots];
+    this.sum = new double[numSlots];
+  }
 
-    @Override
-    protected boolean advanceExact(int doc) throws IOException {
-      return values.advanceExact(doc);
+  @Override
+  protected void collectValues(int doc, int slot) throws IOException {
+    for (int i = 0, count = values.docValueCount(); i < count; i++) {
+      double val = getDouble(values.nextValue());
+      result[slot]+= val * val;
+      sum[slot]+= val;
+      counts[slot]++;
     }
   }
 
-  /**
-   * Accumulator for {@link SortedSetDocValues}
-   */
-  abstract static class SortedSetDVAcc extends DocValuesAcc {
-    SortedSetDocValues values;
+  protected abstract double computeVal(int slot);
 
-    public SortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
-      super(fcontext, sf);
-    }
+  @Override
+  public int compare(int slotA, int slotB) {
+    return Double.compare(computeVal(slotA), computeVal(slotB));
+  }
 
-    @Override
-    public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      super.setNextReader(readerContext);
-      values = DocValues.getSortedSet(readerContext.reader(), sf.getName());
-    }
-
-    @Override
-    protected boolean advanceExact(int doc) throws IOException {
-      return values.advanceExact(doc);
+  @Override
+  public Object getValue(int slot) {
+    if (fcontext.isShard()) {
+      ArrayList lst = new ArrayList(3);
+      lst.add(counts[slot]);
+      lst.add(result[slot]);
+      lst.add(sum[slot]);
+      return lst;
+    } else {
+      return computeVal(slot);
     }
   }
 
-  abstract static class LongSortedSetDVAcc extends SortedSetDVAcc {
-    long[] result;
-    long initialValue;
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    Arrays.fill(counts, 0);
+    Arrays.fill(sum, 0);
+  }
 
-    public LongSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
-      super(fcontext, sf, numSlots);
-      result = new long[numSlots];
-      this.initialValue = initialValue;
-      if (initialValue != 0) {
-        Arrays.fill(result, initialValue);
-      }
-    }
+  @Override
+  public void resize(Resizer resizer) {
+    super.resize(resizer);
+    resizer.resize(counts, 0);
+    resizer.resize(sum, 0);
+  }
+}
 
-    @Override
-    public int compare(int slotA, int slotB) {
-      return Long.compare(result[slotA], result[slotB]);
-    }
+/**
+ * Accumulator for {@link SortedDocValues}
+ */
+abstract class SortedDVAcc extends DocValuesAcc {
+  SortedDocValues values;
 
-    @Override
-    public Object getValue(int slotNum) throws IOException {
-      return result[slotNum];
-    }
+  public SortedDVAcc(FacetContext fcontext, SchemaField sf) throws IOException {
+    super(fcontext, sf);
+  }
 
-    @Override
-    public void reset() throws IOException {
+  @Override
+  public void setNextReader(LeafReaderContext readerContext) throws IOException {
+    super.setNextReader(readerContext);
+    values = DocValues.getSorted(readerContext.reader(), sf.getName());
+  }
+
+  @Override
+  protected boolean advanceExact(int doc) throws IOException {
+    return values.advanceExact(doc);
+  }
+}
+
+/**
+ * Accumulator for {@link SortedSetDocValues}
+ */
+abstract class SortedSetDVAcc extends DocValuesAcc {
+  SortedSetDocValues values;
+
+  public SortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    super(fcontext, sf);
+  }
+
+  @Override
+  public void setNextReader(LeafReaderContext readerContext) throws IOException {
+    super.setNextReader(readerContext);
+    values = DocValues.getSortedSet(readerContext.reader(), sf.getName());
+  }
+
+  @Override
+  protected boolean advanceExact(int doc) throws IOException {
+    return values.advanceExact(doc);
+  }
+}
+
+abstract class LongSortedSetDVAcc extends SortedSetDVAcc {
+  long[] result;
+  long initialValue;
+
+  public LongSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
+    super(fcontext, sf, numSlots);
+    result = new long[numSlots];
+    this.initialValue = initialValue;
+    if (initialValue != 0) {
       Arrays.fill(result, initialValue);
     }
-
-    @Override
-    public void resize(Resizer resizer) {
-    this.result = resizer.resize(result, initialValue);
-    }
   }
 
-  abstract static class DoubleSortedSetDVAcc extends SortedSetDVAcc {
-    double[] result;
-    double initialValue;
+  @Override
+  public int compare(int slotA, int slotB) {
+    return Long.compare(result[slotA], result[slotB]);
+  }
 
-    public DoubleSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
-      super(fcontext, sf, numSlots);
-      result = new double[numSlots];
-      this.initialValue = initialValue;
-      if (initialValue != 0) {
-        Arrays.fill(result, initialValue);
-      }
-    }
+  @Override
+  public Object getValue(int slotNum) throws IOException {
+    return result[slotNum];
+  }
 
-    @Override
-    public int compare(int slotA, int slotB) {
-      return Double.compare(result[slotA], result[slotB]);
-    }
+  @Override
+  public void reset() throws IOException {
+    Arrays.fill(result, initialValue);
+  }
 
-    @Override
-    public Object getValue(int slotNum) throws IOException {
-      return result[slotNum];
-    }
+  @Override
+  public void resize(Resizer resizer) {
+    resizer.resize(result, initialValue);
+  }
+}
 
-    @Override
-    public void reset() throws IOException {
+abstract class DoubleSortedSetDVAcc extends SortedSetDVAcc {
+  double[] result;
+  double initialValue;
+
+  public DoubleSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
+    super(fcontext, sf, numSlots);
+    result = new double[numSlots];
+    this.initialValue = initialValue;
+    if (initialValue != 0) {
       Arrays.fill(result, initialValue);
     }
+  }
 
-    @Override
-    public void resize(Resizer resizer) {
-    this.result = resizer.resize(result, initialValue);
+  @Override
+  public int compare(int slotA, int slotB) {
+    return Double.compare(result[slotA], result[slotB]);
+  }
+
+  @Override
+  public Object getValue(int slotNum) throws IOException {
+    return result[slotNum];
+  }
+
+  @Override
+  public void reset() throws IOException {
+    Arrays.fill(result, initialValue);
+  }
+
+  @Override
+  public void resize(Resizer resizer) {
+    resizer.resize(result, initialValue);
+  }
+}
+
+/**
+ * Base class for standard deviation and variance computation for fields with {@link SortedSetDocValues}
+ */
+abstract class SDVSortedSetAcc extends DoubleSortedSetDVAcc {
+  int[] counts;
+  double[] sum;
+
+  public SDVSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    super(fcontext, sf, numSlots, 0);
+    this.counts = new int[numSlots];
+    this.sum = new double[numSlots];
+  }
+
+  @Override
+  protected void collectValues(int doc, int slot) throws IOException {
+    long ord;
+    while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+      BytesRef term = values.lookupOrd(ord);
+      Object obj = sf.getType().toObject(sf, term);
+      double val = obj instanceof Date ? ((Date)obj).getTime(): ((Number)obj).doubleValue();
+      result[slot] += val * val;
+      sum[slot] += val;
+      counts[slot]++;
     }
   }
 
-  /**
-   * Base class for standard deviation and variance computation for fields with {@link SortedSetDocValues}
-   */
-  abstract static class SDVSortedSetAcc extends DoubleSortedSetDVAcc {
-    int[] counts;
-    double[] sum;
+  protected abstract double computeVal(int slot);
 
-    public SDVSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
-      super(fcontext, sf, numSlots, 0);
-      this.counts = new int[numSlots];
-      this.sum = new double[numSlots];
+  @Override
+  public int compare(int slotA, int slotB) {
+    return Double.compare(computeVal(slotA), computeVal(slotB));
+  }
+
+  @Override
+  public Object getValue(int slot) {
+    if (fcontext.isShard()) {
+      ArrayList lst = new ArrayList(3);
+      lst.add(counts[slot]);
+      lst.add(result[slot]);
+      lst.add(sum[slot]);
+      return lst;
+    } else {
+      return computeVal(slot);
     }
+  }
 
-    @Override
-    protected void collectValues(int doc, int slot) throws IOException {
-      long ord;
-      while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-        BytesRef term = values.lookupOrd(ord);
-        Object obj = sf.getType().toObject(sf, term);
-        double val = obj instanceof Date ? ((Date) obj).getTime() : ((Number) obj).doubleValue();
-        result[slot] += val * val;
-        sum[slot] += val;
-        counts[slot]++;
-      }
-    }
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    Arrays.fill(counts, 0);
+    Arrays.fill(sum, 0);
+  }
 
-    protected abstract double computeVal(int slot);
-
-    @Override
-    public int compare(int slotA, int slotB) {
-      return Double.compare(computeVal(slotA), computeVal(slotB));
-    }
-
-    @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public Object getValue(int slot) {
-      if (fcontext.isShard()) {
-        ArrayList lst = new ArrayList(3);
-        lst.add(counts[slot]);
-        lst.add(result[slot]);
-        lst.add(sum[slot]);
-        return lst;
-      } else {
-        return computeVal(slot);
-      }
-    }
-
-    @Override
-    public void reset() throws IOException {
-      super.reset();
-      Arrays.fill(counts, 0);
-      Arrays.fill(sum, 0);
-    }
-
-    @Override
-    public void resize(Resizer resizer) {
-      super.resize(resizer);
-    this.counts = resizer.resize(counts, 0);
-    this.sum = resizer.resize(sum, 0);
-    }
+  @Override
+  public void resize(Resizer resizer) {
+    super.resize(resizer);
+    resizer.resize(counts, 0);
+    resizer.resize(sum, 0);
   }
 }

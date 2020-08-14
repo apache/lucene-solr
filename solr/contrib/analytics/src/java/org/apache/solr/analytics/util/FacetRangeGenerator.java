@@ -273,84 +273,80 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
     }
     return calc;
   }
+}
+class IntegerFacetRangeGenerator extends FacetRangeGenerator<Integer> {
+  public IntegerFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
 
-  static class IntegerFacetRangeGenerator extends FacetRangeGenerator<Integer> {
-    public IntegerFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
-
-    @Override
-    protected Integer parseVal(String rawval) {
-      return Integer.valueOf(rawval);
-    }
-    @Override
-    public Integer parseAndAddGap(Integer value, String gap) {
-      return value.intValue() + Integer.valueOf(gap).intValue();
-    }
+  @Override
+  protected Integer parseVal(String rawval) {
+    return Integer.valueOf(rawval);
   }
-
-  static class LongFacetRangeGenerator extends FacetRangeGenerator<Long> {
-    public LongFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
-
-    @Override
-    protected Long parseVal(String rawval) {
-      return Long.valueOf(rawval);
-    }
-    @Override
-    public Long parseAndAddGap(Long value, String gap) {
-      return value.longValue() + Long.valueOf(gap).longValue();
-    }
+  @Override
+  public Integer parseAndAddGap(Integer value, String gap) {
+    return value.intValue() + Integer.valueOf(gap).intValue();
   }
+}
+class LongFacetRangeGenerator extends FacetRangeGenerator<Long> {
+  public LongFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
 
-  static class FloatFacetRangeGenerator extends FacetRangeGenerator<Float> {
-    public FloatFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
-
-    @Override
-    protected Float parseVal(String rawval) {
-      return Float.valueOf(rawval);
-    }
-    @Override
-    public Float parseAndAddGap(Float value, String gap) {
-      return value.floatValue() + Float.valueOf(gap).floatValue();
-    }
+  @Override
+  protected Long parseVal(String rawval) {
+    return Long.valueOf(rawval);
   }
-
-  static class DoubleFacetRangeGenerator extends FacetRangeGenerator<Double> {
-    public DoubleFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
-
-    @Override
-    protected Double parseVal(String rawval) {
-      return Double.valueOf(rawval);
-    }
-    @Override
-    public Double parseAndAddGap(Double value, String gap) {
-      return value.doubleValue() + Double.valueOf(gap).doubleValue();
-    }
-  }
-
-  static class DateFacetRangeGenerator extends FacetRangeGenerator<Date> {
-    private final Date now;
-    public DateFacetRangeGenerator(final RangeFacet rangeFacet, final Date now) {
-      super(rangeFacet);
-      this.now = now;
-    }
-
-    @Override
-    public String formatValue(Date val) {
-      return val.toInstant().toString();
-    }
-    @Override
-    protected Date parseVal(String rawval) {
-      return DateMathParser.parseMath(now, rawval);
-    }
-    @Override
-    protected Object parseGap(final String rawval) {
-      return rawval;
-    }
-    @Override
-    public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
-      final DateMathParser dmp = new DateMathParser();
-      dmp.setNow(value);
-      return dmp.parseMath(gap);
-    }
+  @Override
+  public Long parseAndAddGap(Long value, String gap) {
+    return value.longValue() + Long.valueOf(gap).longValue();
   }
 }
 
+class FloatFacetRangeGenerator extends FacetRangeGenerator<Float> {
+  public FloatFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
+
+  @Override
+  protected Float parseVal(String rawval) {
+    return Float.valueOf(rawval);
+  }
+  @Override
+  public Float parseAndAddGap(Float value, String gap) {
+    return value.floatValue() + Float.valueOf(gap).floatValue();
+  }
+}
+
+class DoubleFacetRangeGenerator extends FacetRangeGenerator<Double> {
+  public DoubleFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
+
+  @Override
+  protected Double parseVal(String rawval) {
+    return Double.valueOf(rawval);
+  }
+  @Override
+  public Double parseAndAddGap(Double value, String gap) {
+    return value.doubleValue() + Double.valueOf(gap).doubleValue();
+  }
+}
+class DateFacetRangeGenerator extends FacetRangeGenerator<Date> {
+  private final Date now;
+  public DateFacetRangeGenerator(final RangeFacet rangeFacet, final Date now) {
+    super(rangeFacet);
+    this.now = now;
+  }
+
+  @Override
+  public String formatValue(Date val) {
+    return val.toInstant().toString();
+  }
+  @Override
+  protected Date parseVal(String rawval) {
+    return DateMathParser.parseMath(now, rawval);
+  }
+  @Override
+  protected Object parseGap(final String rawval) {
+    return rawval;
+  }
+  @Override
+  public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
+    final DateMathParser dmp = new DateMathParser();
+    dmp.setNow(value);
+    return dmp.parseMath(gap);
+  }
+}

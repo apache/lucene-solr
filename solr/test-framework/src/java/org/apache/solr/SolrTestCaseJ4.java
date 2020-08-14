@@ -68,6 +68,8 @@ import java.util.stream.Collectors;
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.TraceFormatting;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import org.apache.commons.io.FileUtils;
@@ -79,6 +81,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -110,7 +113,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
@@ -119,6 +122,7 @@ import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -133,7 +137,6 @@ import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
@@ -168,10 +171,14 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
  * To change which core is used when loading the schema and solrconfig.xml, simply
  * invoke the {@link #initCore(String, String, String, String)} method.
  */
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class
+})
 @SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 @SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
 @RandomizeSSL()
-
+@ThreadLeakLingering(linger = 10000)
 public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -262,7 +269,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     testExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
         15L, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
-        new SolrNamedThreadFactory("testExecutor"),
+        new SolrjNamedThreadFactory("testExecutor"),
         true);
 
     // set solr.install.dir needed by some test configs outside of the test sandbox (!)
@@ -284,6 +291,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
+    System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
 
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
@@ -295,8 +303,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     newRandomConfig();
 
     sslConfig = buildSSLConfig();
-    // based on randomized SSL config, set SocketFactoryRegistryProvider appropriately
-    HttpClientUtil.setSocketFactoryRegistryProvider(sslConfig.buildClientSocketFactoryRegistryProvider());
+    // based on randomized SSL config, set SchemaRegistryProvider appropriately
+    HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
     Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
@@ -341,6 +349,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("enable.update.log");
       System.clearProperty("useCompoundFile");
       System.clearProperty("urlScheme");
+      System.clearProperty("solr.peerSync.useRangeVersions");
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
       System.clearProperty(ZK_WHITELIST_PROPERTY);
@@ -437,9 +446,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   private static Map<String, Level> savedClassLogLevels = new HashMap<>();
 
   public static void initClassLogLevels() {
-    @SuppressWarnings({"rawtypes"})
     Class currentClass = RandomizedContext.current().getTargetClass();
-    @SuppressWarnings({"unchecked"})
     LogLevel annotation = (LogLevel) currentClass.getAnnotation(LogLevel.class);
     if (annotation == null) {
       return;
@@ -511,10 +518,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     SSLTestConfig result = sslRandomizer.createSSLTestConfig();
-    if (log.isInfoEnabled()) {
-      log.info("Randomized ssl ({}) and clientAuth ({}) via: {}",
-          result.isSSLMode(), result.isClientAuthMode(), sslRandomizer.debug);
-    }
+    log.info("Randomized ssl ({}) and clientAuth ({}) via: {}",
+             result.isSSLMode(), result.isClientAuthMode(), sslRandomizer.debug);
     return result;
   }
 
@@ -550,7 +555,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if (xmlStr == null)
       xmlStr = "<solr></solr>";
     Files.write(solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE), xmlStr.getBytes(StandardCharsets.UTF_8));
-    h = new TestHarness(SolrXmlConfig.fromSolrHome(solrHome, new Properties()));
+    h = new TestHarness(SolrXmlConfig.fromSolrHome(solrHome));
     lrf = h.getRequestFactory("/select", 0, 20, CommonParams.VERSION, "2.2");
   }
   
@@ -589,16 +594,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    if (log.isInfoEnabled()) {
-      log.info("###Starting {}", getTestName());  // returns <unknown>???
-    }
+    log.info("###Starting " + getTestName());  // returns <unknown>???
   }
 
   @Override
   public void tearDown() throws Exception {
-    if (log.isInfoEnabled()) {
-      log.info("###Ending {}", getTestName());
-    }
+    log.info("###Ending " + getTestName());    
     super.tearDown();
   }
 
@@ -625,9 +626,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       final int id = dataDirCount.incrementAndGet();
       dataDir = initCoreDataDir = createTempDir("data-dir-"+ id).toFile();
       assertNotNull(dataDir);
-      if (log.isInfoEnabled()) {
-        log.info("Created dataDir: {}", dataDir.getAbsolutePath());
-      }
+      log.info("Created dataDir: {}", dataDir.getAbsolutePath());
     }
     return dataDir;
   }
@@ -673,7 +672,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     numCloses = SolrIndexSearcher.numCloses.getAndSet(0);
     if (numOpens != 0 || numCloses != 0) {
       // NOTE: some other tests don't use this base class and hence won't reset the counts.
-      log.warn("startTrackingSearchers: numOpens={} numCloses={}", numOpens, numCloses);
+      log.warn("startTrackingSearchers: numOpens="+numOpens+" numCloses="+numCloses);
       numOpens = numCloses = 0;
     }
   }
@@ -818,14 +817,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static CoreContainer createCoreContainer(NodeConfig config, CoresLocator locator) {
-    testSolrHome = config.getSolrHome();
+    testSolrHome = config.getSolrResourceLoader().getInstancePath();
     h = new TestHarness(config, locator);
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
   }
 
   public static CoreContainer createCoreContainer(String coreName, String dataDir, String solrConfig, String schema) {
-    NodeConfig nodeConfig = TestHarness.buildTestNodeConfig(TEST_PATH());
+    NodeConfig nodeConfig = TestHarness.buildTestNodeConfig(new SolrResourceLoader(TEST_PATH()));
     CoresLocator locator = new TestHarness.TestCoresLocator(coreName, dataDir, solrConfig, schema);
     CoreContainer cc = createCoreContainer(nodeConfig, locator);
     h.coreName = coreName;
@@ -859,9 +858,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * to log the fact that their setUp process has ended.
    */
   public void postSetUp() {
-    if (log.isInfoEnabled()) {
-      log.info("####POSTSETUP {}", getTestName());
-    }
+    log.info("####POSTSETUP " + getTestName());
   }
 
 
@@ -871,9 +868,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * tearDown method.
    */
   public void preTearDown() {
-    if (log.isInfoEnabled()) {
-      log.info("####PRETEARDOWN {}", getTestName());
-    }
+    log.info("####PRETEARDOWN " + getTestName());
   }
 
   /**
@@ -982,7 +977,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         tests = allTests;
       }
 
-      String results = BaseTestHarness.validateXPath(response, tests);
+      String results = h.validateXPath(response, tests);
 
       if (null != results) {
         String msg = "REQUEST FAILED: xpath=" + results
@@ -1018,7 +1013,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       failed = false;
     } finally {
       if (failed) {
-        log.error("REQUEST FAILED: {}", req.getParamString());
+        log.error("REQUEST FAILED: " + req.getParamString());
       }
     }
 
@@ -1067,7 +1062,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         failed = false;
       } finally {
         if (failed) {
-          log.error("REQUEST FAILED: {}", req.getParamString());
+          log.error("REQUEST FAILED: " + req.getParamString());
         }
       }
 
@@ -1080,15 +1075,19 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           String err = JSONTestUtil.match(response, testJSON, delta);
           failed = false;
           if (err != null) {
-            log.error("query failed JSON validation. error={}\n expected ={}\n response = {}\n request = {}"
-                , err, testJSON, response, req.getParamString()
+            log.error("query failed JSON validation. error=" + err +
+                "\n expected =" + testJSON +
+                "\n response = " + response +
+                "\n request = " + req.getParamString()
             );
             throw new RuntimeException(err);
           }
         } finally {
           if (failed) {
-            log.error("JSON query validation threw an exception.\n expected ={} \n response = {}\n request = {}"
-                , testJSON, response, req.getParamString()
+            log.error("JSON query validation threw an exception." + 
+                "\n expected =" + testJSON +
+                "\n response = " + response +
+                "\n request = " + req.getParamString()
             );
           }
         }
@@ -1285,7 +1284,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return msp;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Map map(Object... params) {
     LinkedHashMap ret = new LinkedHashMap();
     for (int i=0; i<params.length; i+=2) {
@@ -1436,7 +1434,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Appends to the <code>out</code> array with JSON from the <code>doc</code>.
    * Doesn't currently handle boosts, but does recursively handle child documents
    */
-  @SuppressWarnings({"unchecked"})
   public static void json(SolrInputDocument doc, CharArr out) {
     try {
       out.append('{');
@@ -1571,9 +1568,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       params = mparams;
     }
     String response = updateJ(jsonAdd(sdoc), params);
-    @SuppressWarnings({"rawtypes"})
     Map rsp = (Map)ObjectBuilder.fromJSON(response);
-    @SuppressWarnings({"rawtypes"})
     List lst = (List)rsp.get("adds");
     if (lst == null || lst.size() == 0) return null;
     return (Long) lst.get(1);
@@ -1586,9 +1581,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       params = mparams;
     }
     String response = updateJ(jsonDelId(id), params);
-    @SuppressWarnings({"rawtypes"})
     Map rsp = (Map)ObjectBuilder.fromJSON(response);
-    @SuppressWarnings({"rawtypes"})
     List lst = (List)rsp.get("deletes");
     if (lst == null || lst.size() == 0) return null;
     return (Long) lst.get(1);
@@ -1601,9 +1594,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       params = mparams;
     }
     String response = updateJ(jsonDelQ(q), params);
-    @SuppressWarnings({"rawtypes"})
     Map rsp = (Map)ObjectBuilder.fromJSON(response);
-    @SuppressWarnings({"rawtypes"})
     List lst = (List)rsp.get("deleteByQuery");
     if (lst == null || lst.size() == 0) return null;
     return (Long) lst.get(1);
@@ -1614,9 +1605,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   /////////////////////////////////////////////////////////////////////////////////////
   
   public abstract static class Vals {
-    @SuppressWarnings({"rawtypes"})
     public abstract Comparable get();
-    public String toJSON(@SuppressWarnings({"rawtypes"})Comparable val) {
+    public String toJSON(Comparable val) {
       return JSONUtil.toJSON(val);
     }
 
@@ -1643,7 +1633,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes"})
     public Comparable get() {
       return getInt();
     }
@@ -1670,7 +1659,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes"})
     public Comparable get() {
       return getInt();
     }
@@ -1690,7 +1678,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes"})
     public Comparable get() {
       return getFloat();
     }
@@ -1699,7 +1686,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static class BVal extends Vals {
 
     @Override
-    @SuppressWarnings({"rawtypes"})
     public Comparable get() {
       return random().nextBoolean();
     }
@@ -1723,7 +1709,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes"})
     public Comparable get() {
       char[] arr = new char[between(minLength,maxLength)];
       for (int i=0; i<arr.length; i++) {
@@ -1737,7 +1722,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static final IRange ZERO_TWO = new IRange(0,2);
   public static final IRange ONE_ONE = new IRange(1,1);
 
-  @SuppressWarnings({"rawtypes"})
   public static class Doc implements Comparable {
     public Comparable id;
     public List<Fld> fields;
@@ -1762,14 +1746,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
     public int compareTo(Object o) {
       if (!(o instanceof Doc)) return this.getClass().hashCode() - o.getClass().hashCode();
       Doc other = (Doc)o;
       return this.id.compareTo(other.id);
     }
 
-    @SuppressWarnings({"rawtypes"})
     public List<Comparable> getValues(String field) {
       for (Fld fld : fields) {
         if (fld.ftype.fname.equals(field)) return fld.vals;
@@ -1777,7 +1759,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       return null;
     }
 
-    @SuppressWarnings({"rawtypes"})
     public Comparable getFirstValue(String field) {
       List<Comparable> vals = getValues(field);
       return vals==null || vals.size()==0 ? null : vals.get(0);
@@ -1800,7 +1781,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static class Fld {
     public FldType ftype;
-    @SuppressWarnings({"rawtypes"})
     public List<Comparable> vals;
     @Override
     public String toString() {
@@ -1823,12 +1803,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       this.vals = vals;      
     }
 
-    @SuppressWarnings({"rawtypes"})
     public Comparable createValue() {
       return vals.get();
     }
 
-    @SuppressWarnings({"rawtypes"})
     public List<Comparable> createValues() {
       int nVals = numValues.getInt();
       if (nVals <= 0) return null;
@@ -1839,7 +1817,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     public Fld createField() {
-      @SuppressWarnings({"rawtypes"})
       List<Comparable> vals = createValues();
       if (vals == null) return null;
 
@@ -1861,7 +1838,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       }
     });
   }
-  @SuppressWarnings({"rawtypes"})
   public Map<Comparable,Doc> indexDocs(List<FldType> descriptor, Map<Comparable,Doc> model, int nDocs) throws Exception {
     if (model == null) {
       model = new LinkedHashMap<>();
@@ -1906,7 +1882,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     response = ((Map)response).get("response");
     response = ((Map)response).get("docs");
-    @SuppressWarnings({"unchecked"})
     List<Map> docList = (List<Map>)response;
     int order = 0;
     for (Map doc : docList) {
@@ -1983,7 +1958,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
 
     return new Comparator<Doc>() {
-      @SuppressWarnings({"rawtypes"})
       private Comparable zeroVal(Comparable template) {
         if (template == null) return null;
         if (template instanceof String) return null;  // fast-path for string
@@ -1998,11 +1972,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       }
 
       @Override
-      @SuppressWarnings({"unchecked"})
       public int compare(Doc o1, Doc o2) {
-        @SuppressWarnings({"rawtypes"})
         Comparable v1 = o1.getFirstValue(field);
-        @SuppressWarnings({"rawtypes"})
         Comparable v2 = o2.getFirstValue(field);
 
         v1 = v1 == null ? zeroVal(v2) : v1;
@@ -2056,7 +2027,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           out.append('[');
         }
         boolean firstVal = true;
-        for (@SuppressWarnings({"rawtypes"})Comparable val : fld.vals) {
+        for (Comparable val : fld.vals) {
           if (firstVal) firstVal=false;
           else out.append(',');
           out.append(JSONUtil.toJSON(val));
@@ -2073,7 +2044,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /** Return a Map from field value to a list of document ids */
-  @SuppressWarnings({"rawtypes"})
   public Map<Comparable, List<Comparable>> invertField(Map<Comparable, Doc> model, String field) {
     Map<Comparable, List<Comparable>> value_to_id = new HashMap<>();
 
@@ -2366,16 +2336,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         if (!(sdoc2.get(key2).getFirstValue() instanceof SolrInputDocument)) {
           return false;
         }
-        @SuppressWarnings({"rawtypes"})
         Collection col1 = (Collection) val1;
-        @SuppressWarnings({"rawtypes"})
         Collection col2 = (Collection) val2;
         if (col1.size() != col2.size()) {
           return false;
         }
-        @SuppressWarnings({"unchecked"})
         Iterator<SolrInputDocument> colIter1 = col1.iterator();
-        @SuppressWarnings({"unchecked"})
         Iterator<SolrInputDocument> colIter2 = col2.iterator();
         while (colIter1.hasNext()) {
           if (!compareSolrInputDocument(colIter1.next(), colIter2.next())) {
@@ -2578,7 +2544,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static CloudSolrClientBuilder newCloudSolrClient(String zkHost) {
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
+    return (CloudSolrClientBuilder) new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
   }
 
   /**
@@ -2942,7 +2908,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.clearProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST);
   }
 
-  @SuppressWarnings({"unchecked"})
   protected <T> T pickRandom(T... options) {
     return options[random().nextInt(options.length)];
   }
@@ -2992,9 +2957,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } else {
       System.setProperty(UPDATELOG_SYSPROP,"solr.UpdateLog");
     }
-    if (log.isInfoEnabled()) {
-      log.info("updateLog impl={}", System.getProperty(UPDATELOG_SYSPROP));
-    }
+    log.info("updateLog impl={}", System.getProperty(UPDATELOG_SYSPROP));
   }
 
   /**
@@ -3007,7 +2970,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @lucene.experimental
    * @lucene.internal
    */
-  @SuppressWarnings({"rawtypes"})
   private static void randomizeNumericTypesProperties() {
 
     final boolean useDV = random().nextBoolean();
@@ -3021,7 +2983,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     
     if (RandomizedContext.current().getTargetClass().isAnnotationPresent(SolrTestCaseJ4.SuppressPointFields.class)
         || (! usePoints)) {
-      log.info("Using TrieFields (NUMERIC_POINTS_SYSPROP=false) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
+      log.info("Using TrieFields (NUMERIC_POINTS_SYSPROP=false) w/NUMERIC_DOCVALUES_SYSPROP="+useDV);
       
       org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Integer.class, "solr.TrieIntField");
@@ -3033,7 +2995,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     } else {
-      log.info("Using PointFields (NUMERIC_POINTS_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
+      log.info("Using PointFields (NUMERIC_POINTS_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP="+useDV);
 
       org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = true;
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Integer.class, "solr.IntPointField");
@@ -3071,7 +3033,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
     System.clearProperty("solr.tests.numeric.points");
     System.clearProperty("solr.tests.numeric.points.dv");
-    for (@SuppressWarnings({"rawtypes"})Class c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
+    for (Class c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
       System.clearProperty("solr.tests." + c.getSimpleName() + "FieldType");
     }
     private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
@@ -3087,7 +3049,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static boolean isChildDoc(Object o) {
     if(o instanceof Collection) {
-      @SuppressWarnings({"rawtypes"})
       Collection col = (Collection) o;
       if(col.size() == 0) {
         return false;
@@ -3097,7 +3058,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return o instanceof SolrInputDocument;
   }
 
-  @SuppressWarnings({"rawtypes"})
   private static final Map<Class,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
   
   /**
@@ -3109,7 +3069,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #randomizeNumericTypesProperties
    */
-  @SuppressWarnings({"rawtypes"})
   protected static final Map<Class,String> RANDOMIZED_NUMERIC_FIELDTYPES
     = Collections.unmodifiableMap(private_RANDOMIZED_NUMERIC_FIELDTYPES);
 

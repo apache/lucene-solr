@@ -17,7 +17,10 @@
 package org.apache.solr.security;
 
 import javax.servlet.FilterChain;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -74,7 +77,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final String PARAM_REQUIRE_SUBJECT = "requireSub";
   private static final String PARAM_REQUIRE_ISSUER = "requireIss";
   private static final String PARAM_PRINCIPAL_CLAIM = "principalClaim";
-  private static final String PARAM_ROLES_CLAIM = "rolesClaim";
   private static final String PARAM_REQUIRE_EXPIRATIONTIME = "requireExp";
   private static final String PARAM_ALG_WHITELIST = "algWhitelist";
   private static final String PARAM_JWK_CACHE_DURATION = "jwkCacheDur";
@@ -93,7 +95,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
 
   private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN,
       PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
-      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_REALM, PARAM_ROLES_CLAIM,
+      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_REALM,
       PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS, PARAM_REQUIRE_ISSUER, PARAM_ISSUERS,
       // These keys are supported for now to enable PRIMARY issuer config through top-level keys
       JWTIssuerConfig.PARAM_JWK_URL, JWTIssuerConfig.PARAM_JWKS_URL, JWTIssuerConfig.PARAM_JWK, JWTIssuerConfig.PARAM_ISSUER,
@@ -104,7 +106,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private boolean requireExpirationTime;
   private List<String> algWhitelist;
   private String principalClaim;
-  private String rolesClaim;
   private HashMap<String, Pattern> claimsMatchCompiled;
   private boolean blockUnknown;
   private List<String> requiredScopes = new ArrayList<>();
@@ -142,8 +143,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
           PARAM_REQUIRE_SUBJECT);
     }
     principalClaim = (String) pluginConfig.getOrDefault(PARAM_PRINCIPAL_CLAIM, "sub");
-
-    rolesClaim = (String) pluginConfig.get(PARAM_ROLES_CLAIM);
     algWhitelist = (List<String>) pluginConfig.get(PARAM_ALG_WHITELIST);
     realm = (String) pluginConfig.getOrDefault(PARAM_REALM, DEFAULT_AUTH_REALM);
 
@@ -260,9 +259,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
           JWTIssuerConfig ic = new JWTIssuerConfig(issuerConf);
           ic.init();
           configs.add(ic);
-          if (log.isDebugEnabled()) {
-            log.debug("Found issuer with name {} and issuerId {}", ic.getName(), ic.getIss());
-          }
+          log.debug("Found issuer with name {} and issuerId {}", ic.getName(), ic.getIss());
         });
       }
       return configs;
@@ -275,7 +272,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
    * Main authentication method that looks for correct JWT token in the Authorization header
    */
   @Override
-  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
+  public boolean doAuthenticate(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws Exception {
+    HttpServletRequest request = (HttpServletRequest) servletRequest;
+    HttpServletResponse response = (HttpServletResponse) servletResponse;
+    
     String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
     if (jwtConsumer == null) {
@@ -318,7 +318,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     switch (authResponse.getAuthCode()) {
       case AUTHENTICATED:
         final Principal principal = authResponse.getPrincipal();
-        request = wrapWithPrincipal(request, principal);
+        HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
+          @Override
+          public Principal getUserPrincipal() {
+            return principal;
+          }
+        };
         if (!(principal instanceof JWTPrincipal)) {
           numErrors.mark();
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin says AUTHENTICATED but no token extracted");
@@ -326,7 +331,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         if (log.isDebugEnabled())
           log.debug("Authentication SUCCESS");
         numAuthenticated.inc();
-        filterChain.doFilter(request, response);
+        filterChain.doFilter(wrapper, response);
         return true;
 
       case PASS_THROUGH:
@@ -407,8 +412,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
               // Fail if we require scopes but they don't exist
               return new JWTAuthenticationResponse(AuthCode.CLAIM_MISMATCH, "Claim " + CLAIM_SCOPE + " is required but does not exist in JWT");
             }
-
-            // Find scopes for user
             Set<String> scopes = Collections.emptySet();
             Object scopesObj = jwtClaims.getClaimValue(CLAIM_SCOPE);
             if (scopesObj != null) {
@@ -423,27 +426,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
                   return new JWTAuthenticationResponse(AuthCode.SCOPE_MISSING, "Claim " + CLAIM_SCOPE + " does not contain any of the required scopes: " + requiredScopes);
                 }
               }
-            }
-
-            // Determine roles of user, either from 'rolesClaim' or from 'scope' as parsed above
-            final Set<String> finalRoles = new HashSet<>();
-            if (rolesClaim == null) {
+              final Set<String> finalScopes = new HashSet<>(scopes);
+              finalScopes.remove("openid"); // Remove standard scope
               // Pass scopes with principal to signal to any Authorization plugins that user has some verified role claims
-              finalRoles.addAll(scopes);
-              finalRoles.remove("openid"); // Remove standard scope
-            } else {
-              // Pull roles from separate claim, either as whitespace separated list or as JSON array
-              Object rolesObj = jwtClaims.getClaimValue(rolesClaim);
-              if (rolesObj != null) {
-                if (rolesObj instanceof String) {
-                  finalRoles.addAll(Arrays.asList(((String) rolesObj).split("\\s+")));
-                } else if (rolesObj instanceof List) {
-                  finalRoles.addAll(jwtClaims.getStringListClaimValue(rolesClaim));
-                }
-              }
-            }
-            if (finalRoles.size() > 0) {
-              return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipalWithUserRoles(principal, jwtCompact, jwtClaims.getClaimsMap(), finalRoles));
+              return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipalWithUserRoles(principal, jwtCompact, jwtClaims.getClaimsMap(), finalScopes));
             } else {
               return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaimsMap()));
             }

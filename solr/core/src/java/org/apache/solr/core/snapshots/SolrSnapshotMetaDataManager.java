@@ -171,10 +171,8 @@ public class SolrSnapshotMetaDataManager {
   public synchronized void snapshot(String name, String indexDirPath, long gen) throws IOException {
     Objects.requireNonNull(name);
 
-    if (log.isInfoEnabled()) {
-      log.info("Creating the snapshot named {} for core {} associated with index commit with generation {} in directory {}"
-          , name, solrCore.getName(), gen, indexDirPath);
-    }
+    log.info("Creating the snapshot named {} for core {} associated with index commit with generation {} in directory {}"
+        , name, solrCore.getName(), gen, indexDirPath);
 
     if(nameToDetailsMapping.containsKey(name)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "A snapshot with name " + name + " already exists");
@@ -206,9 +204,7 @@ public class SolrSnapshotMetaDataManager {
    * @throws IOException in case of I/O error
    */
   public synchronized Optional<SnapshotMetaData> release(String name) throws IOException {
-    if (log.isInfoEnabled()) {
-      log.info("Deleting the snapshot named {} for core {}", name, solrCore.getName());
-    }
+    log.info("Deleting the snapshot named {} for core {}", name, solrCore.getName());
     SnapshotMetaData result = nameToDetailsMapping.remove(Objects.requireNonNull(name));
     if(result != null) {
       boolean success = false;

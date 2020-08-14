@@ -34,7 +34,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -126,7 +126,7 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
     final HttpSolrClient client1 ;
     int threadCount = atLeast(2);
     final ExecutorService threads = ExecutorUtil.newMDCAwareFixedThreadPool(threadCount,
-        new SolrNamedThreadFactory(getClass().getSimpleName()+"TestScheduler"));
+        new SolrjNamedThreadFactory(getClass().getSimpleName()+"TestScheduler"));
     CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams(), pool);
     try{
       final LBHttpSolrClient roundRobin = new LBHttpSolrClient.Builder().

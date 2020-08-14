@@ -62,14 +62,12 @@ public class SolrResponseBase extends SolrResponse implements MapWriter
     return response.toString();
   }
   
-  @SuppressWarnings({"rawtypes"})
   public NamedList getResponseHeader() {
     return (NamedList) response.get("responseHeader");
   }
   
   // these two methods are based on the logic in SolrCore.setResponseHeaderValues(...)
   public int getStatus() {
-    @SuppressWarnings({"rawtypes"})
     NamedList header = getResponseHeader();
     if (header != null) {
         return (Integer) header.get("status");
@@ -80,7 +78,6 @@ public class SolrResponseBase extends SolrResponse implements MapWriter
   }
   
   public int getQTime() {
-    @SuppressWarnings({"rawtypes"})
     NamedList header = getResponseHeader();
     if (header != null) {
         return (Integer) header.get("QTime");

@@ -31,9 +31,11 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -48,7 +50,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.params.StreamParams;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
@@ -514,20 +515,22 @@ public class JDBCStream extends TupleStream implements Expressible {
   
   public Tuple read() throws IOException {
     
-    try {
-      Tuple tuple = new Tuple();
-      if (resultSet.next()) {
+    try{
+      Map<Object,Object> fields = new HashMap<>();
+      if(resultSet.next()){
         // we have a record
-        for (ResultSetValueSelector selector : valueSelectors) {
-          tuple.put(selector.getColumnName(), selector.selectValue(resultSet));
+        for(ResultSetValueSelector selector : valueSelectors){
+          fields.put(selector.getColumnName(), selector.selectValue(resultSet));
         }
-      } else {
+      }
+      else{
         // we do not have a record
-        tuple.put(StreamParams.EOF, true);
+        fields.put("EOF", true);
       }
       
-      return tuple;
-    } catch (SQLException e) {
+      return new Tuple(fields);
+    }
+    catch(SQLException e){
       throw new IOException(String.format(Locale.ROOT, "Failed to read next record with error '%s'", e.getMessage()), e);
     }
   }

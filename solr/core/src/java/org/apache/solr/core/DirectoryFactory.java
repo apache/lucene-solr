@@ -23,8 +23,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
 import java.util.Arrays;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
@@ -54,7 +55,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
 
   protected static final String INDEX_W_TIMESTAMP_REGEX = "index\\.[0-9]{17}"; // see SnapShooter.DATE_FMT
 
-  // May be set by sub classes as data root, in which case getDataHome will use it as base.  Absolute.
+  // May be set by sub classes as data root, in which case getDataHome will use it as base
   protected Path dataHomePath;
 
   // hint about what the directory contains - default is index directory
@@ -330,16 +331,16 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * @return a String with absolute path to data direcotry
    */
   public String getDataHome(CoreDescriptor cd) throws IOException {
-    Path dataDir;
+    String dataDir;
     if (dataHomePath != null) {
-      Path instanceDirLastPath = cd.getInstanceDir().getName(cd.getInstanceDir().getNameCount()-1);
-      dataDir = dataHomePath.resolve(instanceDirLastPath).resolve(cd.getDataDir());
+      String instanceDirLastPath = cd.getInstanceDir().getName(cd.getInstanceDir().getNameCount()-1).toString();
+      dataDir = Paths.get(coreContainer.getSolrHome()).resolve(dataHomePath)
+          .resolve(instanceDirLastPath).resolve(cd.getDataDir()).toAbsolutePath().toString();
     } else {
       // by default, we go off the instance directory
-      dataDir = cd.getInstanceDir().resolve(cd.getDataDir());
+      dataDir = cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString();
     }
-    assert dataDir.isAbsolute();
-    return dataDir.toString();
+    return dataDir;
   }
 
   public void cleanupOldIndexDirectories(final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload) {
@@ -382,7 +383,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
           log.warn("Delete old index directory {} failed.", dirToRmPath);
         }
       } catch (IOException ioExc) {
-        log.error("Failed to delete old directory {} due to: ", dir.getAbsolutePath(), ioExc);
+        log.error("Failed to delete old directory {} due to: {}", dir.getAbsolutePath(), ioExc.toString());
       }
     }
   }
@@ -397,7 +398,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public void initCoreContainer(CoreContainer cc) {
     this.coreContainer = cc;
     if (cc != null && cc.getConfig() != null) {
-      this.dataHomePath = cc.getConfig().getSolrDataHome(); // absolute
+      this.dataHomePath = cc.getConfig().getSolrDataHome();
     }
   }
   

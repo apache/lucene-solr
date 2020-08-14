@@ -116,11 +116,6 @@ public abstract class AbstractUpdateRequest extends SolrRequest<UpdateResponse> 
     return new UpdateResponse();
   }
 
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.UPDATE.toString();
-  }
-
   public boolean isWaitSearcher() {
     return params != null && params.getBool(UpdateParams.WAIT_SEARCHER, false);
   }

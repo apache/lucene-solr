@@ -53,7 +53,6 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
-import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -132,7 +131,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     Map<String, Metric> metrics = manager.registry(registry).getMetrics();
     assertTrue(metrics.containsKey("CORE.coreName"));
     assertTrue(metrics.containsKey("CORE.refCount"));
-    @SuppressWarnings({"unchecked"})
     Gauge<Number> g = (Gauge<Number>)metrics.get("CORE.refCount");
     assertTrue(g.getValue().intValue() > 0);
 
@@ -233,7 +231,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             ,"//*[@numFound='0']"
             );
     
-    assertU(BaseTestHarness.simpleTag("rollback"));
+    assertU(h.simpleTag("rollback"));
     assertU(commit());
   }
 
@@ -452,7 +450,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void testRequestHandlerBaseException() {
     final String tmp = "BOO! ignore_exception";
     SolrRequestHandler handler = new RequestHandlerBase() {
@@ -542,9 +539,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testLocalSolrQueryRequestParams() {
-    @SuppressWarnings({"rawtypes"})
     HashMap args = new HashMap();
     args.put("string", "string value");
     args.put("array", new String[] {"array", "value"});
@@ -619,9 +614,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testSolrParams() throws Exception {
-    @SuppressWarnings({"rawtypes"})
     NamedList nl = new NamedList();
     nl.add("i",555);
     nl.add("s","bbb");
@@ -659,7 +652,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(p.getBool("foo",false), false);
     assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
 
-    @SuppressWarnings({"rawtypes"})
     NamedList more = new NamedList();
     more.add("s", "aaa");
     more.add("s", "ccc");
@@ -1025,7 +1017,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
                  e.getMessage().contains(f));
     }
   }
-  
+
 //   /** this doesn't work, but if it did, this is how we'd test it. */
 //   public void testOverwriteFalse() {
 

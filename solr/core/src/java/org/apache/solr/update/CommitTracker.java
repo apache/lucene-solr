@@ -29,10 +29,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,12 +57,9 @@ public final class CommitTracker implements Runnable {
   private int docsUpperBound;
   private long timeUpperBound;
   private long tLogFileSizeUpperBound;
-
-  // note: can't use ExecutorsUtil because it doesn't have a *scheduled* ExecutorService.
-  //  Not a big deal but it means we must take care of MDC logging here.
-  private final ScheduledExecutorService scheduler =
-      Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("commitScheduler"));
-  @SuppressWarnings({"rawtypes"})
+  
+  private final ScheduledExecutorService scheduler = 
+      Executors.newScheduledThreadPool(1, new DefaultSolrThreadFactory("commitScheduler"));
   private ScheduledFuture pending;
   
   // state
@@ -91,7 +87,7 @@ public final class CommitTracker implements Runnable {
     this.softCommit = softCommit;
     this.openSearcher = openSearcher;
 
-    log.info("{} AutoCommit: {}", name, this);
+    log.info(name + " AutoCommit: " + this);
   }
 
   public boolean getOpenSearcher() {
@@ -136,7 +132,7 @@ public final class CommitTracker implements Runnable {
       if (pending != null && pending.getDelay(TimeUnit.MILLISECONDS) <= commitMaxTime) {
         // There is already a pending commit that will happen first, so
         // nothing else to do here.
-        // log.info("###returning since getDelay()=={} less than {}", pending.getDelay(TimeUnit.MILLISECONDS), commitMaxTime);
+        // log.info("###returning since getDelay()==" + pending.getDelay(TimeUnit.MILLISECONDS) + " less than " + commitMaxTime);
 
         return;
       }
@@ -252,8 +248,9 @@ public final class CommitTracker implements Runnable {
       pending = null;  // allow a new commit to be scheduled
     }
 
-    MDCLoggingContext.setCore(core);
-    try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+    SolrQueryRequest req = new LocalSolrQueryRequest(core,
+        new ModifiableSolrParams());
+    try {
       CommitUpdateCommand command = new CommitUpdateCommand(req, false);
       command.openSearcher = openSearcher;
       command.waitSearcher = WAIT_SEARCHER;
@@ -274,9 +271,9 @@ public final class CommitTracker implements Runnable {
     } catch (Exception e) {
       SolrException.log(log, "auto commit error...", e);
     } finally {
-      MDCLoggingContext.clear();
+      // log.info("###done committing");
+      req.close();
     }
-    // log.info("###done committing");
   }
   
   // to facilitate testing: blocks if called during commit

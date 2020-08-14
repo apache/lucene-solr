@@ -1,0 +1,27 @@
+{
+  "liveNodes":["node1",
+    "node2"],
+  "replicaInfo":{
+    "node1":{},
+    "node2":{"mycoll1":{
+      "shard1":[{"r1":{
+        "type":"NRT",
+        "INDEX.sizeInGB":900}}],
+      "shard2":[{"r2":{
+        "type":"NRT",
+        "INDEX.sizeInGB":300}}],
+      "shard3":[{"r3":{
+        "type":"NRT",
+        "INDEX.sizeInGB":200}}],
+      "shard4":[{"r4":{
+        "type":"NRT",
+        "INDEX.sizeInGB":100}}]}}},
+  "nodeValues":{
+    "node1":{
+      "node":"node1",
+      "cores":0,
+      "freedisk":2000},
+    "node2":{
+      "node":"node2",
+      "cores":4,
+      "freedisk":500}}}

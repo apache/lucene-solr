@@ -89,7 +89,7 @@ public class TermsComponent extends SearchComponent {
       !HttpShardHandlerFactory.doGetDisableShardsWhitelist());
 
   @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args )
+  public void init( NamedList args )
   {
     super.init(args);
     whitelistHostChecker = new WhitelistHostChecker(
@@ -415,7 +415,6 @@ public class TermsComponent extends SearchComponent {
         th.parse(terms);
 
 
-        @SuppressWarnings({"unchecked"})
         NamedList<Number> stats = (NamedList<Number>)srsp.getSolrResponse().getResponse().get("indexstats");
         if(stats != null) {
           th.numDocs += stats.get("numDocs").longValue();
@@ -432,7 +431,6 @@ public class TermsComponent extends SearchComponent {
     }
 
     TermsHelper ti = rb._termsHelper;
-    @SuppressWarnings({"rawtypes"})
     NamedList terms = ti.buildResponse();
 
     rb.rsp.add("terms", terms);

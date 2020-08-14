@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang3.StringUtils;
@@ -81,32 +80,31 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void test() throws Exception {
     log.info("replication factor test running");
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+    waitForThingsToLevelOut(30000);
 
     // test a 1x3 collection
     log.info("Testing replication factor handling for repfacttest_c8n_1x3");
     testRf3();
 
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+    waitForThingsToLevelOut(30000);
 
     // test handling when not using direct updates
     log.info("Now testing replication factor handling for repfacttest_c8n_2x2");
     testRf2NotUsingDirectUpdates();
         
-    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-    if (log.isInfoEnabled()) {
-      log.info("replication factor testing complete! final clusterState is: {}",
-          cloudClient.getZkStateReader().getClusterState());
-    }
+    waitForThingsToLevelOut(30000);
+    log.info("replication factor testing complete! final clusterState is: "+
+        cloudClient.getZkStateReader().getClusterState());    
   }
   
   protected void testRf2NotUsingDirectUpdates() throws Exception {
     int numShards = 2;
     int replicationFactor = 2;
+    int maxShardsPerNode = 1;
     String testCollectionName = "repfacttest_c8n_2x2";
     String shardId = "shard1";
 
-    createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor);
+    createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
 
     cloudClient.setDefaultCollection(testCollectionName);
     
@@ -275,11 +273,12 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   protected void testRf3() throws Exception {
     final int numShards = 1;
     final int replicationFactor = 3;
+    final int maxShardsPerNode = 1;
     final String testCollectionName = "repfacttest_c8n_1x3";
     final String shardId = "shard1";
     final int minRf = 2;
 
-    createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor);
+    createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
     cloudClient.setDefaultCollection(testCollectionName);
     
     List<Replica> replicas = 
@@ -501,15 +500,15 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  void createCollectionWithRetry(String testCollectionName, String config, int numShards, int replicationFactor) throws IOException, SolrServerException, InterruptedException, TimeoutException {
-    CollectionAdminResponse resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor);
+  void createCollectionWithRetry(String testCollectionName, String config, int numShards, int replicationFactor, int maxShardsPerNode) throws IOException, SolrServerException, InterruptedException, TimeoutException {
+    CollectionAdminResponse resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
 
     if (resp.getResponse().get("failure") != null) {
       Thread.sleep(5000); // let system settle down. This should be very rare.
 
       CollectionAdminRequest.deleteCollection(testCollectionName).process(cloudClient);
 
-      resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor);
+      resp = createCollection(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
 
       if (resp.getResponse().get("failure") != null) {
         fail("Could not create " + testCollectionName);

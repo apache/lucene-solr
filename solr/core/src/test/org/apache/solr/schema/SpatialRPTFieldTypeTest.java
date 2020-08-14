@@ -202,7 +202,6 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     setupRPTField("miles", "true", "WKT", random().nextBoolean()
         ? new SpatialRecursivePrefixTreeFieldType() : new RptWithGeometrySpatialField());
 
-    @SuppressWarnings({"rawtypes"})
     AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
         h.getCore().getLatestSchema().getField("geo").getType();
 
@@ -221,7 +220,6 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     setupRPTField("miles", "true", "GeoJSON", random().nextBoolean()
         ? new SpatialRecursivePrefixTreeFieldType() : new RptWithGeometrySpatialField());
 
-    @SuppressWarnings({"rawtypes"})
     AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
         h.getCore().getLatestSchema().getField("geo").getType();
 

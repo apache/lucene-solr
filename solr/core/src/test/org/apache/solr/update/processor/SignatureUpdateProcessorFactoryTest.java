@@ -260,7 +260,6 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void testNonStringFieldsValues() throws Exception {
     this.chain = "dedupe-allfields";
     

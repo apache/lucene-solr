@@ -123,7 +123,6 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
     public void testCachehits(){
       final SolrQueryRequest req = req();
       try {
-        @SuppressWarnings({"rawtypes"})
         final SolrCache cache = req.getSearcher().getCache("perSegFilter");
         assertNotNull(cache);
         final Map<String,Object> state = cache.getSolrMetricsContext().getMetricsSnapshot();

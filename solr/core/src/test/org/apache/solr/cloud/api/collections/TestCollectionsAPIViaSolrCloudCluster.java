@@ -56,6 +56,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
   private static final int numShards = 2;
   private static final int numReplicas = 2;
+  private static final int maxShardsPerNode = 1;
   private static final int nodeCount = 5;
   private static final String configName = "solrCloudCollectionConfig";
   private static final Map<String,String> collectionProperties  // ensure indexes survive core shutdown
@@ -76,12 +77,14 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   private void createCollection(String collectionName, String createNodeSet) throws Exception {
     if (random().nextBoolean()) { // process asynchronously
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
+          .setMaxShardsPerNode(maxShardsPerNode)
           .setCreateNodeSet(createNodeSet)
           .setProperties(collectionProperties)
           .processAndWait(cluster.getSolrClient(), 30);
     }
     else {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
+          .setMaxShardsPerNode(maxShardsPerNode)
           .setCreateNodeSet(createNodeSet)
           .setProperties(collectionProperties)
           .process(cluster.getSolrClient());
@@ -164,7 +167,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
     AbstractDistribZkTestBase.waitForCollectionToDisappear
-        (collectionName, client.getZkStateReader(), true, 330);
+        (collectionName, client.getZkStateReader(), true, true, 330);
 
     // create it again
     createCollection(collectionName, null);
@@ -203,7 +206,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     // delete the collection
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
     AbstractDistribZkTestBase.waitForCollectionToDisappear
-        (collectionName, client.getZkStateReader(), true, 330);
+        (collectionName, client.getZkStateReader(), true, true, 330);
   }
 
   @Test

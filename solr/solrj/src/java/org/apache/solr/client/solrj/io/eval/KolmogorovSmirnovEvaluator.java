@@ -17,15 +17,16 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.params.StreamParams;
 
 public class KolmogorovSmirnovEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
 
@@ -53,17 +54,17 @@ public class KolmogorovSmirnovEvaluator extends RecursiveObjectEvaluator impleme
     if(first instanceof RealDistribution){
       RealDistribution realDistribution = (RealDistribution)first;
 
-      Tuple tuple = new Tuple();
-      tuple.put(StreamParams.P_VALUE, ks.kolmogorovSmirnovTest(realDistribution, data));
-      tuple.put("d-statistic", ks.kolmogorovSmirnovStatistic(realDistribution, data));
-      return tuple;
+      Map<String,Double> m = new HashMap<>();
+      m.put("p-value", ks.kolmogorovSmirnovTest(realDistribution, data));
+      m.put("d-statistic", ks.kolmogorovSmirnovStatistic(realDistribution, data));
+      return new Tuple(m);
     }
     else if(first instanceof List<?> && ((List<?>) first).stream().noneMatch(item -> !(item instanceof Number))){
       double[] data2 = ((List<?>)first).stream().mapToDouble(item -> ((Number)item).doubleValue()).toArray();
-
-      Tuple tuple = new Tuple();
-      tuple.put("d-statistic", ks.kolmogorovSmirnovTest(data, data2));
-      return tuple;
+      
+      Map<String,Double> m = new HashMap<>();
+      m.put("d-statistic", ks.kolmogorovSmirnovTest(data, data2));
+      return new Tuple(m);
     }
     else{
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a RealDistribution or list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));

@@ -68,7 +68,6 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
 
       OLSRegressionEvaluator.MultipleRegressionTuple regressedTuple = (OLSRegressionEvaluator.MultipleRegressionTuple) first;
       if (second instanceof List) {
-        @SuppressWarnings({"unchecked"})
         List<Number> list = (List<Number>) second;
         double[] predictors = new double[list.size()];
 
@@ -81,7 +80,7 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
 
         Matrix m = (Matrix) second;
         double[][] data = m.getData();
-        List<Number> predictions = new ArrayList<>();
+        List<Number> predictions = new ArrayList();
         for (double[] predictors : data) {
           predictions.add(regressedTuple.predict(predictors));
         }
@@ -98,9 +97,8 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
           predictors[0] = ((Number)second).doubleValue();
           return regressedTuple.predict(predictors);
         } else if(second instanceof List) {
-          @SuppressWarnings({"unchecked"})
           List<Number> vec = (List<Number>)second;
-          List<Number> predictions = new ArrayList<>();
+          List<Number> predictions = new ArrayList();
           for(Number num : vec) {
             double[] predictors = new double[1];
             predictors[0] = num.doubleValue();
@@ -111,7 +109,6 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
       } else {
         //Handle multi-variate regression
         if (second instanceof List) {
-          @SuppressWarnings({"unchecked"})
           List<Number> list = (List<Number>) second;
           double[] predictors = new double[list.size()];
 
@@ -131,7 +128,7 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
             m = regressedTuple.scale(m);
           }
           double[][] data = m.getData();
-          List<Number> predictions = new ArrayList<>();
+          List<Number> predictions = new ArrayList();
           for (double[] predictors : data) {
             predictions.add(regressedTuple.predict(predictors));
           }
@@ -165,7 +162,7 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
           Matrix m = (Matrix) second;
           double[][] data = m.getData();
           if (data[0].length == 2) {
-            List<Number> out = new ArrayList<>();
+            List<Number> out = new ArrayList();
             for (double[] row : data) {
               out.add(bivariateFunction.value(row[0], row[1]));
             }

@@ -79,7 +79,6 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  @SuppressWarnings({"unchecked"})
   protected Map<String,Object> readJSON(String json) {
     try {
       return jsonmapper.readValue(json, Map.class);
@@ -92,7 +91,6 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
     return null; 
   }
   
-  @SuppressWarnings({"unchecked"})
   protected Map<String,Object> getFirstFeatureGeometry(Map<String,Object> json)
   {
     Map<String,Object> rsp = (Map<String,Object>)json.get("response");
@@ -215,10 +213,8 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
     }
   }
   
-  @SuppressWarnings({"unchecked"})
   protected Map<String,Object> readFirstDoc(String json)
   {
-    @SuppressWarnings({"rawtypes"})
     List docs = (List)((Map)readJSON(json).get("response")).get("docs");
     return (Map)docs.get(0);
   }

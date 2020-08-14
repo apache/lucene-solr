@@ -122,8 +122,9 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, exceptionMessage);
         }
         if (nodesLength > 1) {
-          log.warn("{}: More than one enum configuration found for enum '{}' in {}. The last one was taken."
-              , ftName, enumName, enumsConfigFile);
+          if (log.isWarnEnabled())
+            log.warn("{}: More than one enum configuration found for enum '{}' in {}. The last one was taken.",
+                     ftName, enumName, enumsConfigFile);
         }
         final Node enumNode = nodes.item(nodesLength - 1);
         final NodeList valueNodes = (NodeList) xpath.evaluate("value", enumNode, XPathConstants.NODESET);

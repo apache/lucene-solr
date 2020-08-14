@@ -323,7 +323,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     }
 
     @Override
-    public Collection<String> getFileNames() throws IOException {
+    public Collection getFileNames() throws IOException {
       return delegate.getFileNames();
     }
 
@@ -379,7 +379,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     }
 
     @Override
-    public Map<String,String> getUserData() throws IOException {
+    public Map getUserData() throws IOException {
       return delegate.getUserData();
     }    
   }

@@ -20,12 +20,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -34,7 +35,9 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.ResultContext;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.JoinQParserPlugin;
@@ -61,7 +64,7 @@ import org.apache.solr.search.TermsQParserPlugin;
  * It's necessary to pass some document field value as a parameter for subquery. It's supported via 
  * implicit <code>row.<i>fieldname</i></code> parameters, and can be (but might not only) referred via
  *  Local Parameters syntax.<br>
- * <code>q=name:john&amp;fl=name,id,depts:[subquery]&amp;depts.q={!terms f=id v=$row.dept_id}&amp;depts.rows=10</code>
+ * <code>q=namne:john&amp;fl=name,id,depts:[subquery]&amp;depts.q={!terms f=id v=$row.dept_id}&amp;depts.rows=10</code>
  * Here departments are retrieved per every employee in search result. We can say that it's like SQL
  * <code> join ON emp.dept_id=dept.id </code><br>
  * Note, when document field has multiple values they are concatenated with comma by default, it can be changed by
@@ -76,11 +79,11 @@ import org.apache.solr.search.TermsQParserPlugin;
  * <h2>When used in Real Time Get</h2>
  * <p>
  * When used in the context of a Real Time Get, the <i>values</i> from each document that are used 
- * in the subquery are the "real time" values (possibly from the transaction log), but the query
+ * in the qubquery are the "real time" values (possibly from the transaction log), but the query 
  * itself is still executed against the currently open searcher.  Note that this means if a 
  * document is updated but not yet committed, an RTG request for that document that uses 
  * <code>[subquery]</code> could include the older (committed) version of that document, 
- * with different field values, in the subquery results.
+ * with differnet field values, in the subquery results.
  * </p>
  */
 public class SubQueryAugmenterFactory extends TransformerFactory{
@@ -90,7 +93,7 @@ public class SubQueryAugmenterFactory extends TransformerFactory{
 
     if (field.contains("[") || field.contains("]")) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-          "please give an explicit name for [subquery] column ie fl=relation:[subquery ..]");
+          "please give an exlicit name for [subquery] column ie fl=relation:[subquery ..]");
     }
     
     checkThereIsNoDupe(field, req.getContext());
@@ -112,7 +115,6 @@ public class SubQueryAugmenterFactory extends TransformerFactory{
   @SuppressWarnings("unchecked")
   private void checkThereIsNoDupe(String field, Map<Object,Object> context) {
     // find a map
-    @SuppressWarnings({"rawtypes"})
     final Map conflictMap;
     final String conflictMapKey = getClass().getSimpleName();
     if (context.containsKey(conflictMapKey)) {
@@ -175,8 +177,7 @@ class SubQueryAugmenter extends DocTransformer {
       return new DocSlice((int)docList.getStart(), 
           docList.size(), new int[0], new float[docList.size()],
           (int) docList.getNumFound(), 
-          docList.getMaxScore() == null ?  Float.NaN : docList.getMaxScore(),
-              docList.getNumFoundExact() ? TotalHits.Relation.EQUAL_TO : TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO);
+          docList.getMaxScore() == null ?  Float.NaN : docList.getMaxScore());
     }
 
     @Override
@@ -216,8 +217,8 @@ class SubQueryAugmenter extends DocTransformer {
       
       if (vals != null) {
         StringBuilder rez = new StringBuilder();
-        for (@SuppressWarnings({"rawtypes"})Iterator iterator = vals.iterator(); iterator.hasNext();) {
-          Object object = iterator.next();
+        for (Iterator iterator = vals.iterator(); iterator.hasNext();) {
+          Object object = (Object) iterator.next();
           rez.append(convertFieldValue(object));
           if (iterator.hasNext()) {
             rez.append(separator);
@@ -312,7 +313,7 @@ class SubQueryAugmenter extends DocTransformer {
   }
   
   /**
-   * Returns false -- this transformer does use an IndexSearcher, but it does not (necessarily) need
+   * Returns false -- this transformer does use an IndexSearcher, but it does not (neccessarily) need 
    * the searcher from the ResultContext of the document being returned.  Instead we use the current 
    * "live" searcher for the specified core.
    */
@@ -325,14 +326,51 @@ class SubQueryAugmenter extends DocTransformer {
     final SolrParams docWithDeprefixed = SolrParams.wrapDefaults(
         new DocRowParams(doc, prefix, separator), baseSubParams);
     try {
-      QueryResponse rsp = server.query(coreName, docWithDeprefixed);
-      SolrDocumentList docList = rsp.getResults();
+      Callable<QueryResponse> subQuery = new Callable<QueryResponse>() {
+        @Override
+        public QueryResponse call() throws Exception {
+          try {
+            return new QueryResponse(
+                server.request(
+                    new QueryRequest(docWithDeprefixed), coreName)
+                , server);
+          } finally {
+          }
+        }
+      };
+      QueryResponse response = 
+          SolrRequestInfoSuspender.doInSuspension(subQuery);
+
+      final SolrDocumentList docList = (SolrDocumentList) response.getResults();
+
       doc.setField(getName(), new Result(docList));
+
     } catch (Exception e) {
       String docString = doc.toString();
       throw new SolrException(ErrorCode.BAD_REQUEST, "while invoking " +
           name + ":[subquery"+ (coreName!=null ? "fromIndex="+coreName : "") +"] on doc=" +
             docString.substring(0, Math.min(100, docString.length())), e.getCause());
+    } finally {}
+  }
+  
+  // look ma!! no hands.. 
+  final static class SolrRequestInfoSuspender extends SolrRequestInfo {
+    
+    private SolrRequestInfoSuspender(SolrQueryRequest req, SolrQueryResponse rsp) {
+      super(req, rsp);
+    }
+    
+    /** Suspends current SolrRequestInfo invoke the given action, and resumes then */
+    static <T> T doInSuspension(Callable<T> action) throws Exception {
+     
+      final SolrRequestInfo info = threadLocal.get();
+      try {
+        threadLocal.remove();
+        return action.call();
+      } finally {
+        setRequestInfo(info); 
+      }
     }
   }
+  
 }

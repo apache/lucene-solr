@@ -146,7 +146,6 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
     m.put("class", E.class.getName());
     l.add(m);
     resolver.setEvaluators(new DataImporter().getEvaluators(l));
-    @SuppressWarnings({"unchecked"})
     ContextImpl context = new ContextImpl(null, resolver, null,
         Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
     

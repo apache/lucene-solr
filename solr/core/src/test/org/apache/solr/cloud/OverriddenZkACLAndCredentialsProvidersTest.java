@@ -63,13 +63,11 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    if (log.isInfoEnabled()) {
-      log.info("####SETUP_START {}", getTestName());
-    }
+    log.info("####SETUP_START " + getTestName());
     createTempDir();
     
     zkDir =createTempDir().resolve("zookeeper/server1/data");
-    log.info("ZooKeeper dataDir:{}", zkDir);
+    log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run(false);
     
@@ -94,9 +92,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkClient.makePath("/unprotectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.close();
 
-    if (log.isInfoEnabled()) {
-      log.info("####SETUP_END {}", getTestName());
-    }
+    log.info("####SETUP_END " + getTestName());
   }
   
   @Override

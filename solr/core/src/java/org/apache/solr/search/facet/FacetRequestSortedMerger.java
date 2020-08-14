@@ -31,7 +31,7 @@ import java.util.Map;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 // base class for facets that create a list of buckets that can be sorted
-abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted> extends FacetModule.FacetBucketMerger<FacetRequestT> {
+abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted> extends FacetBucketMerger<FacetRequestT> {
   LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
   List<FacetBucket> sortedBuckets;
   BitSet shardHasMoreBuckets;  // null, or "true" if we saw a result from this shard and it indicated that there are more results
@@ -44,7 +44,6 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
   @Override
   public void merge(Object facetResult, Context mcontext) {
     this.mcontext = mcontext;
-    @SuppressWarnings({"rawtypes"})
     SimpleOrderedMap res = (SimpleOrderedMap)facetResult;
     Boolean more = (Boolean)res.get("more");
     if (more != null && more) {
@@ -58,18 +57,16 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
 
   private static class SortVal implements Comparable<SortVal> {
     FacetBucket bucket;
-    FacetModule.FacetSortableMerger merger;  // make this class inner and access merger , direction in parent?
+    FacetSortableMerger merger;  // make this class inner and access merger , direction in parent?
     FacetRequest.SortDirection direction;
 
     @Override
-    @SuppressWarnings({"unchecked"})
     public int compareTo(SortVal o) {
       int c = -merger.compareTo(o.merger, direction) * direction.getMultiplier();
       return c == 0 ? bucket.bucketValue.compareTo(o.bucket.bucketValue) : c;
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void mergeBucketList(List<SimpleOrderedMap> bucketList, Context mcontext) {
     for (SimpleOrderedMap bucketRes : bucketList) {
       Comparable bucketVal = (Comparable)bucketRes.get("val");
@@ -83,7 +80,6 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
   }
 
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void sortBuckets(final FacetRequest.FacetSort sort) {
     // NOTE: we *always* re-init from buckets, because it may have been modified post-refinement 
     sortedBuckets = new ArrayList<>( buckets.values() );
@@ -144,7 +140,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         if (merger != null) {
           SortVal sv = new SortVal();
           sv.bucket = bucket;
-          sv.merger = (FacetModule.FacetSortableMerger)merger;
+          sv.merger = (FacetSortableMerger)merger;
           sv.direction = direction;
           // sv.pos = i;  // if we need position in the future...
           lst.add(sv);

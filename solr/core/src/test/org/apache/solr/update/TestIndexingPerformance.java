@@ -116,13 +116,9 @@ public class TestIndexingPerformance extends SolrTestCaseJ4 {
       }
       updateHandler.addDoc(add);
     }
-    if (log.isInfoEnabled()) {
-      log.info("doc={}", Arrays.toString(fields));
-    }
+    log.info("doc="+ Arrays.toString(fields));
     double elapsed = timer.getTime();
-    if (log.isInfoEnabled()) {
-      log.info("iter={} time={} throughput={}", iter, elapsed, ((long) iter * 1000) / elapsed);
-    }
+    log.info("iter="+iter +" time=" + elapsed + " throughput=" + ((long)iter*1000)/elapsed);
 
     //discard all the changes
     updateHandler.rollback(new RollbackUpdateCommand(req));

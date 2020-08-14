@@ -92,9 +92,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
     final Aliases aliases = zkStateReader.getAliases(); // note: might be different from last request
     if (this.aliases != aliases) {
       if (this.aliases != null) {
-        if (log.isDebugEnabled()) {
-          log.debug("Observing possibly updated alias: {}", getAliasName());
-        }
+        log.debug("Observing possibly updated alias: {}", getAliasName());
       }
       // slightly inefficient, but not easy to make changes to the return value of parseCollections
       this.aliases = aliases;

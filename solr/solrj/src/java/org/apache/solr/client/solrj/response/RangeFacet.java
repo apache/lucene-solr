@@ -107,11 +107,9 @@ public abstract class RangeFacet<B, G> {
 
     private final String value;
     private final int count;
-    @SuppressWarnings({"rawtypes"})
     private final RangeFacet rangeFacet;
 
-    public Count(String value, int count,
-                 @SuppressWarnings({"rawtypes"})RangeFacet rangeFacet) {
+    public Count(String value, int count, RangeFacet rangeFacet) {
       this.value = value;
       this.count = count;
       this.rangeFacet = rangeFacet;
@@ -125,7 +123,6 @@ public abstract class RangeFacet<B, G> {
       return count;
     }
 
-    @SuppressWarnings({"rawtypes"})
     public RangeFacet getRangeFacet() {
       return rangeFacet;
     }

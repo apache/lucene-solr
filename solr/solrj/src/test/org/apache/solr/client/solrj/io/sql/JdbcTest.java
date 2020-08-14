@@ -417,7 +417,6 @@ public class JdbcTest extends SolrCloudTestCase {
 
   @Ignore("Fix error checking")
   @Test
-  @SuppressWarnings({"try"})
   public void testErrorPropagation() throws Exception {
     //Test error propagation
     Properties props = new Properties();
@@ -435,7 +434,6 @@ public class JdbcTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings({"try"})
   public void testSQLExceptionThrownWhenQueryAndConnUseDiffCollections() throws Exception  {
     String badCollection = COLLECTIONORALIAS + "bad";
     String connectionString = "jdbc:solr://" + zkHost + "?collection=" + badCollection;

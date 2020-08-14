@@ -40,7 +40,6 @@ public class DomainMapTest extends SolrTestCaseJ4 {
   public void testStoresFilterWithCorrectKey() {
     final DomainMap domain = new DomainMap()
         .withFilter("name:Solr");
-    @SuppressWarnings({"unchecked"})
     final List<String> filterList = (List<String>) domain.get("filter");
 
     assertTrue("Expected filter list to contain provided filter", filterList.contains("name:Solr"));
@@ -51,7 +50,6 @@ public class DomainMapTest extends SolrTestCaseJ4 {
     final DomainMap domain = new DomainMap()
         .withFilter("name:Solr")
         .withFilter("cat:search");
-    @SuppressWarnings({"unchecked"})
     final List<String> filterList = (List<String>) domain.get("filter");
 
     assertTrue("Expected filter list to contain 1st provided filter", filterList.contains("name:Solr"));
@@ -71,7 +69,6 @@ public class DomainMapTest extends SolrTestCaseJ4 {
   public void testStoresQueryWithCorrectKey() {
     final DomainMap domain = new DomainMap()
         .withQuery("name:Solr");
-    @SuppressWarnings({"unchecked"})
     final List<String> queryList = (List<String>) domain.get("query");
 
     assertTrue("Expected query list to contain provided query", queryList.contains("name:Solr"));
@@ -82,7 +79,6 @@ public class DomainMapTest extends SolrTestCaseJ4 {
     final DomainMap domain = new DomainMap()
         .withQuery("name:Solr")
         .withQuery("cat:search");
-    @SuppressWarnings({"unchecked"})
     final List<String> queryList = (List<String>) domain.get("query");
 
     assertTrue("Expected query list to contain 1st provided query", queryList.contains("name:Solr"));
@@ -102,7 +98,6 @@ public class DomainMapTest extends SolrTestCaseJ4 {
   public void testStoresTagsToExcludeWithCorrectKey() {
     final DomainMap domain = new DomainMap()
         .withTagsToExclude("BRAND");
-    @SuppressWarnings({"unchecked"})
     final List<String> exclusionList = (List<String>) domain.get("excludeTags");
 
     assertTrue("Expected tag-exclusion list to contain provided tag", exclusionList.contains("BRAND"));
@@ -113,7 +108,6 @@ public class DomainMapTest extends SolrTestCaseJ4 {
     final DomainMap domain = new DomainMap()
         .withTagsToExclude("BRAND")
         .withTagsToExclude("COLOR");
-    @SuppressWarnings({"unchecked"})
     final List<String> exclusionList = (List<String>) domain.get("excludeTags");
 
     assertTrue("Expected tag-exclusion list to contain provided 1st tag", exclusionList.contains("BRAND"));
@@ -176,7 +170,6 @@ public class DomainMapTest extends SolrTestCaseJ4 {
         .setJoinTransformation("any-from-field", "any-to-field");
 
     assertTrue(domain.containsKey("join"));
-    @SuppressWarnings({"unchecked"})
     final Map<String, Object> joinParams = (Map<String, Object>) domain.get("join");
     assertEquals("any-from-field", joinParams.get("from"));
     assertEquals("any-to-field", joinParams.get("to"));

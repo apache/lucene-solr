@@ -61,7 +61,7 @@ public class ExternalFileFieldReloader extends AbstractSolrEventListener {
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     cacheFieldSources(getCore().getLatestSchema());
   }
 
@@ -85,9 +85,7 @@ public class ExternalFileFieldReloader extends AbstractSolrEventListener {
       if (type instanceof ExternalFileField) {
         ExternalFileField eff = (ExternalFileField)type;
         fieldSources.add(eff.getFileFloatSource(field, datadir));
-        if (log.isInfoEnabled()) {
-          log.info("Adding ExternalFileFieldReloader listener for field {}", field.getName());
-        }
+        log.info("Adding ExternalFileFieldReloader listener for field {}", field.getName());
       }
     }
   }

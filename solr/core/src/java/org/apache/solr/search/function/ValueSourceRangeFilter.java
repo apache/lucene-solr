@@ -78,7 +78,6 @@ public class ValueSourceRangeFilter extends SolrFilter {
 
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public DocIdSet getDocIdSet(final Map context, final LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
     // NB the IndexSearcher parameter here can be null because Filter Weights don't
     // actually use it.
@@ -86,7 +85,6 @@ public class ValueSourceRangeFilter extends SolrFilter {
     return BitsFilteredDocIdSet.wrap(new DocIdSet() {
        @Override
        public DocIdSetIterator iterator() throws IOException {
-         @SuppressWarnings({"unchecked"})
          Scorer scorer = valueSource.getValues(context, readerContext).getRangeScorer(weight, readerContext, lowerVal, upperVal, includeLower, includeUpper);
          return scorer == null ? null : scorer.iterator();
        }
@@ -103,8 +101,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void createWeight(@SuppressWarnings({"rawtypes"})Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     valueSource.createWeight(context, searcher);
   }
 

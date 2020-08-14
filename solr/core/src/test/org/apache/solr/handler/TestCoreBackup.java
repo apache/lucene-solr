@@ -16,11 +16,16 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.lucene.index.DirectoryReader;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.TestUtil;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
@@ -29,12 +34,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.Arrays;
-
 public class TestCoreBackup extends SolrTestCaseJ4 {
+
   @Before // unique core per test
   public void coreInit() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
@@ -62,16 +63,14 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
 
     final CoreContainer cores = h.getCoreContainer();
-    cores.getAllowPaths().add(Paths.get(location));
-    try (final CoreAdminHandler admin = new CoreAdminHandler(cores)) {
-      SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-          (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-              "core", DEFAULT_TEST_COLLECTION_NAME, "name", snapshotName, "location", location)
-              , resp);
-      assertNull("Backup should have succeeded", resp.getException());
-      simpleBackupCheck(new File(location, "snapshot." + snapshotName), 2);
-    }
+    final CoreAdminHandler admin = new CoreAdminHandler(cores);
+    SolrQueryResponse resp = new SolrQueryResponse();
+    admin.handleRequestBody
+        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
+            "core", DEFAULT_TEST_COLLECTION_NAME, "name", snapshotName, "location", location)
+            , resp);
+    assertNull("Backup should have succeeded", resp.getException());
+    simpleBackupCheck(new File(location, "snapshot." + snapshotName), 2);
   }
 
   public void testBackupBeforeFirstCommit() throws Exception {
@@ -96,8 +95,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
     final File backupDir = createTempDir().toFile();
-    cores.getAllowPaths().add(backupDir.toPath());
-
+    
     { // first a backup before we've ever done *anything*...
       SolrQueryResponse resp = new SolrQueryResponse();
       admin.handleRequestBody
@@ -171,7 +169,6 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
                         0, initialEmptyIndexSegmentFileName);
       
     }
-    admin.close();
   }
 
   /**
@@ -198,9 +195,8 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
     
     final File backupDir = createTempDir().toFile();
-    cores.getAllowPaths().add(backupDir.toPath());
-
-
+    
+    
     { // take an initial 'backup1a' containing our 1 document
       final SolrQueryResponse resp = new SolrQueryResponse();
       admin.handleRequestBody
@@ -295,7 +291,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
                         1, oneDocSegmentFile);
       
     }
-    admin.close();
+    
   }
 
   /**
@@ -321,7 +317,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
         
         // sanity check this is the initial commit..
         final IndexCommit commit = s.getIndexReader().getIndexCommit();
-        assertEquals(EXPECTED_GEN_OF_EMPTY_INDEX, commit.getGeneration());
+        assertEquals(EXPECTED_GEN_OF_EMPTY_INDEX, (long) commit.getGeneration());
         return commit;
       });
 
@@ -340,7 +336,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
         final IndexCommit commit = s.getIndexReader().getIndexCommit();
         // WTF: how/why does this reader still have the same commit generation as before ? ? ? ? ?
         assertEquals("WTF: This Reader (claims) the same generation as our previous pre-softCommif (empty) reader",
-                     EXPECTED_GEN_OF_EMPTY_INDEX, commit.getGeneration());
+                     EXPECTED_GEN_OF_EMPTY_INDEX, (long) commit.getGeneration());
         return commit;
       });
 

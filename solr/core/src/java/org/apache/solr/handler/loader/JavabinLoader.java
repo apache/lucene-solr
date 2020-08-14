@@ -133,7 +133,7 @@ public class JavabinLoader extends ContentStreamLoader {
       throws IOException {
     FastInputStream in = FastInputStream.wrap(stream);
     SolrParams old = req.getParams();
-    try (JavaBinCodec jbc = new JavaBinCodec() {
+    new JavaBinCodec() {
       SolrParams params;
       AddUpdateCommand addCmd = null;
 
@@ -164,9 +164,7 @@ public class JavabinLoader extends ContentStreamLoader {
         return Collections.emptyList();
       }
 
-    }) {
-      jbc.unmarshal(in);
-    }
+    }.unmarshal(in);
   }
 
   private AddUpdateCommand getAddCommand(SolrQueryRequest req, SolrParams params) {

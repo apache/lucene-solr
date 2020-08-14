@@ -19,19 +19,17 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
-import org.apache.commons.exec.OS;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -41,7 +39,6 @@ import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.SAXParseException;
@@ -79,7 +76,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init(Path homeDirectory, String xml) throws Exception {
-    CoreContainer ret = new CoreContainer(SolrXmlConfig.fromString(homeDirectory, xml));
+    SolrResourceLoader loader = new SolrResourceLoader(homeDirectory);
+    CoreContainer ret = new CoreContainer(SolrXmlConfig.fromString(loader, xml));
     ret.load();
     return ret;
   }
@@ -201,11 +199,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     MockCoresLocator cl = new MockCoresLocator();
 
-    Path solrHome = createTempDir();
+    SolrResourceLoader resourceLoader = new SolrResourceLoader(createTempDir());
+
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
-    Path corePath = solrHome.resolve("badcore");
+    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
+    Path corePath = resourceLoader.getInstancePath().resolve("badcore");
     CoreDescriptor badcore = new CoreDescriptor("badcore", corePath, cc,
         "configSet", "nosuchconfigset");
 
@@ -314,11 +313,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       "<str name=\"shareSchema\">${shareSchema:false}</str>\n" +
       "</solr>";
 
-  private static final String ALLOW_PATHS_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-      "<solr>\n" +
-      "<str name=\"allowPaths\">${solr.allowPaths:}</str>\n" +
-      "</solr>";
-
   private static final String CUSTOM_HANDLERS_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
       "<solr>" +
       " <str name=\"collectionsHandler\">" + CustomCollectionsHandler.class.getName() + "</str>" +
@@ -349,82 +343,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     public CustomConfigSetsHandler(CoreContainer cc) {
       super(cc);
     }
-  }
-
-  @Test
-  public void assertAllowPathFromSolrXml() throws Exception {
-    Assume.assumeFalse(OS.isFamilyWindows());
-    System.setProperty("solr.allowPaths", "/var/solr");
-    CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.assertPathAllowed(Paths.get("/var/solr/foo"));
-    try {
-      cc.assertPathAllowed(Paths.get("/tmp"));
-      fail("Path /tmp should not be allowed");
-    } catch(SolrException e) {
-      /* Ignore */
-    } finally {
-      cc.shutdown();
-      System.clearProperty("solr.allowPaths");
-    }
-  }
-
-  @Test
-  public void assertAllowPathFromSolrXmlWin() throws Exception {
-    Assume.assumeTrue(OS.isFamilyWindows());
-    System.setProperty("solr.allowPaths", "C:\\solr");
-    CoreContainer cc = init(ALLOW_PATHS_SOLR_XML);
-    cc.assertPathAllowed(Paths.get("C:\\solr\\foo"));
-    try {
-      cc.assertPathAllowed(Paths.get("C:\\tmp"));
-      fail("Path C:\\tmp should not be allowed");
-    } catch(SolrException e) {
-      /* Ignore */
-    } finally {
-      cc.shutdown();
-      System.clearProperty("solr.allowPaths");
-    }
-  }
-
-  @Test
-  public void assertAllowPath() {
-    Assume.assumeFalse(OS.isFamilyWindows());
-    assertPathAllowed("/var/solr/foo");
-    assertPathAllowed("/var/log/../solr/foo");
-    assertPathAllowed("relative");
-
-    assertPathBlocked("../../false");
-    assertPathBlocked("./../../false");
-    assertPathBlocked("/var/solr/../../etc");
-  }
-
-  @Test
-  public void assertAllowPathWindows() {
-    Assume.assumeTrue(OS.isFamilyWindows());
-    assertPathAllowed("C:\\var\\solr\\foo");
-    assertPathAllowed("C:\\var\\log\\..\\solr\\foo");
-    assertPathAllowed("relative");
-
-    assertPathBlocked("..\\..\\false");
-    assertPathBlocked(".\\../\\..\\false");
-    assertPathBlocked("C:\\var\\solr\\..\\..\\etc");
-
-    // UNC paths are always blocked
-    assertPathBlocked("\\\\unc-server\\share\\path");
-  }
-
-  private static Set<Path> ALLOWED_PATHS = Set.of(Path.of("/var/solr"));
-  private static Set<Path> ALLOWED_PATHS_WIN = Set.of(Path.of("C:\\var\\solr"));
-
-  private void assertPathBlocked(String path) {
-    try {
-
-      SolrPaths.assertPathAllowed(Path.of(path), OS.isFamilyWindows() ? ALLOWED_PATHS_WIN : ALLOWED_PATHS);
-      fail("Path " + path + " sould have been blocked.");
-    } catch (SolrException e) { /* Expected */ }
-  }
-
-  private void assertPathAllowed(String path) {
-    SolrPaths.assertPathAllowed(Path.of(path), OS.isFamilyWindows() ? ALLOWED_PATHS_WIN : ALLOWED_PATHS);
   }
 
   @Test
@@ -553,14 +471,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // init the  CoreContainer with the mix of ok/bad cores
     MockCoresLocator cl = new MockCoresLocator();
 
-    Path solrHome = createTempDir();
+    SolrResourceLoader resourceLoader = new SolrResourceLoader(createTempDir());
 
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
-    cl.add(new CoreDescriptor("col_ok", solrHome.resolve("col_ok"), cc,
+    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
+    cl.add(new CoreDescriptor("col_ok", resourceLoader.getInstancePath().resolve("col_ok"), cc,
         "configSet", "minimal"));
-    cl.add(new CoreDescriptor("col_bad", solrHome.resolve("col_bad"), cc,
+    cl.add(new CoreDescriptor("col_bad", resourceLoader.getInstancePath().resolve("col_bad"), cc,
         "configSet", "bad-mergepolicy"));
     cc.load();
 

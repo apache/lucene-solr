@@ -51,9 +51,4 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   protected SimpleSolrResponse createResponse(SolrClient client) {
     return response;
   }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.UNSPECIFIED.toString();
-  }
 }

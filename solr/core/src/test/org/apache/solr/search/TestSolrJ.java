@@ -105,7 +105,6 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     // need a server.close()!!!
   }
 
-  @SuppressWarnings({"unchecked"})
   public static SolrInputDocument getDocument(int docnum) {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField(idField, docnum );
@@ -121,7 +120,6 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     int golden = (int)2654435761L;
     int h = docnum * golden;
     int n = (h & 0xff) + 1;
-    @SuppressWarnings({"rawtypes"})
     List lst = new ArrayList(n);
     for (int i=0; i<n; i++) {
       h = (h+i) * golden;

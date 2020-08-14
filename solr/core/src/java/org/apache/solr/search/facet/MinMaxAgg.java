@@ -46,7 +46,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
     SchemaField sf = null;
@@ -116,7 +116,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
   }
 
   // TODO: can this be replaced by ComparableMerger?
-  private class NumericMerger extends FacetModule.FacetDoubleMerger {
+  private class NumericMerger extends FacetDoubleMerger {
     double val = Double.NaN;
 
     @Override
@@ -133,11 +133,9 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
   }
 
-  private class ComparableMerger extends FacetModule.FacetSortableMerger {
-    @SuppressWarnings("rawtypes")
+  private class ComparableMerger extends FacetSortableMerger {
     Comparable val;
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public void merge(Object facetResult, Context mcontext) {
       Comparable other = (Comparable)facetResult;
       if (val == null) {
@@ -155,8 +153,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
-    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
       // NOTE: we don't use the minmax multiplier here because we still want natural ordering between slots (i.e. min(field) asc and max(field) asc) both sort "A" before "Z")
       return this.val.compareTo(((ComparableMerger)other).val);
     }
@@ -224,7 +221,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
     @Override
     public void resize(Resizer resizer) {
-      this.result = resizer.resize(result, MISSING);
+      resizer.resize(result, MISSING);
     }
 
     @Override
@@ -236,7 +233,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
   }
 
-  class DFuncAcc extends SlotAcc.DoubleFuncSlotAcc {
+  class DFuncAcc extends DoubleFuncSlotAcc {
     public DFuncAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, Double.NaN);
     }
@@ -263,7 +260,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
   }
 
-  class LFuncAcc extends SlotAcc.LongFuncSlotAcc {
+  class LFuncAcc extends LongFuncSlotAcc {
     FixedBitSet exists;
     public LFuncAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, 0);
@@ -323,7 +320,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
   }
 
-  class DateFuncAcc extends SlotAcc.LongFuncSlotAcc {
+  class DateFuncAcc extends LongFuncSlotAcc {
     private static final long MISSING = Long.MIN_VALUE;
     public DateFuncAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, MISSING);
@@ -507,7 +504,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
     @Override
     public void resize(Resizer resizer) {
-      this.slotOrd = resizer.resize(slotOrd, MISSING);
+      resizer.resize(slotOrd, MISSING);
     }
 
     @Override

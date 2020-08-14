@@ -267,9 +267,9 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
       }
     } else if (stat.equals("min")) {
       result = new ArrayList<T>();
-      for (List list : lists) {
+      for (List<T> list : lists) {
         if( list.size() == 0) continue;
-        Collections.sort(list);
+        Collections.sort((List<T>)list);
         result.add(list.get(0));
       }
     } else {

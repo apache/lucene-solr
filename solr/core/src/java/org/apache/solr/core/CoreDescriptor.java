@@ -126,7 +126,6 @@ public class CoreDescriptor {
 
   private final CloudDescriptor cloudDesc;
 
-  /** The absolute path to where the core lives. */
   private final Path instanceDir;
 
   /** The original standard core properties, before substitution */
@@ -176,7 +175,7 @@ public class CoreDescriptor {
   /**
    * Create a new CoreDescriptor.
    * @param name            the CoreDescriptor's name
-   * @param instanceDir     a Path resolving to the instanceDir. Must be absolute.
+   * @param instanceDir     a Path resolving to the instanceDir
    * @param coreProps       a Map of the properties for this core
    * @param containerProperties the properties from the enclosing container.
    * @param zkController    the ZkController in SolrCloud mode, otherwise null.
@@ -184,7 +183,6 @@ public class CoreDescriptor {
   public CoreDescriptor(String name, Path instanceDir, Map<String, String> coreProps,
                         Properties containerProperties, ZkController zkController) {
     this.instanceDir = instanceDir;
-    assert instanceDir.isAbsolute();
 
     originalCoreProperties.setProperty(CORE_NAME, name);
 
@@ -259,7 +257,7 @@ public class CoreDescriptor {
         propName = SOLR_CORE_PROP_PREFIX + propName;
       substitutableProperties.setProperty(propName, propValue);
     }
-    substitutableProperties.setProperty("solr.core.instanceDir", instanceDir.toString());
+    substitutableProperties.setProperty("solr.core.instanceDir", instanceDir.toAbsolutePath().toString());
   }
 
   /**
@@ -292,7 +290,9 @@ public class CoreDescriptor {
     return defaultProperties.get(CORE_DATADIR).equals(coreProperties.getProperty(CORE_DATADIR));
   }
 
-  /** The core instance directory (absolute). */
+  /**
+   * @return the core instance directory
+   */
   public Path getInstanceDir() {
     return instanceDir;
   }

@@ -38,7 +38,6 @@ public class ContextImpl extends Context {
 
   private VariableResolver resolver;
 
-  @SuppressWarnings({"rawtypes"})
   private DataSource ds;
 
   private String currProcess;
@@ -58,7 +57,7 @@ public class ContextImpl extends Context {
 
 
   public ContextImpl(EntityProcessorWrapper epw, VariableResolver resolver,
-                     @SuppressWarnings({"rawtypes"})DataSource ds, String currProcess,
+                     DataSource ds, String currProcess,
                      Map<String, Object> global, ContextImpl parentContext, DocBuilder docBuilder) {
     this.epw = epw;
     this.docBuilder = docBuilder;
@@ -85,7 +84,7 @@ public class ContextImpl extends Context {
 
   @Override
   public List<Map<String, String>> getAllEntityFields() {
-    return epw==null || epw.getEntity() == null ? Collections.emptyList() : epw.getEntity().getAllFieldsList();
+    return epw==null || epw.getEntity() == null ? Collections.EMPTY_LIST : epw.getEntity().getAllFieldsList();
   }
 
   @Override
@@ -94,7 +93,6 @@ public class ContextImpl extends Context {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public DataSource getDataSource() {
     if (ds != null) return ds;
     if(epw==null) { return null; }
@@ -110,7 +108,6 @@ public class ContextImpl extends Context {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public DataSource getDataSource(String name) {
     return dataImporter.getDataSourceInstance(epw==null ? null : epw.getEntity(), name, this);
   }

@@ -17,7 +17,25 @@
 
 package org.apache.solr.api;
 
-import com.google.common.collect.ImmutableSet;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.util.PathTrie.getPathSegments;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
+
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.SolrThreadSafe;
@@ -31,6 +49,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -41,15 +60,7 @@ import org.apache.solr.servlet.SolrRequestParsers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.function.Supplier;
-
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.util.PathTrie.getPathSegments;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.*;
+import com.google.common.collect.ImmutableSet;
 
 // class that handle the '/v2' path
 @SolrThreadSafe
@@ -122,16 +133,9 @@ public class V2HttpCall extends HttpSolrCall {
       } else if ("cores".equals(prefix)) {
         origCorename = pieces.get(1);
         core = cores.getCore(origCorename);
-      } else {
-        api = getApiInfo(cores.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
-        if(api != null) {
-          //custom plugin
-          initAdminRequest(path);
-          return;
-        }
       }
       if (core == null) {
-        log.error(">> path: '{}'", path);
+        log.error(">> path: '" + path + "'");
         if (path.endsWith(CommonParams.INTROSPECT)) {
           initAdminRequest(path);
           return;
@@ -147,6 +151,7 @@ public class V2HttpCall extends HttpSolrCall {
       } else {
         api = apiInfo == null ? api : apiInfo;
       }
+      MDCLoggingContext.setCore(core);
       parseRequest();
 
       addCollectionParamIfNeeded(getCollectionsList());
@@ -264,7 +269,6 @@ public class V2HttpCall extends HttpSolrCall {
     return api;
   }
 
-  @SuppressWarnings({"unchecked"})
   private static CompositeApi getSubPathApi(PluginBag<SolrRequestHandler> requestHandlers, String path, String fullPath, CompositeApi compositeApi) {
 
     String newPath = path.endsWith(CommonParams.INTROSPECT) ? path.substring(0, path.length() - CommonParams.INTROSPECT.length()) : path;
@@ -286,7 +290,6 @@ public class V2HttpCall extends HttpSolrCall {
           result.put(prefix + e.getKey(), e.getValue());
         }
 
-        @SuppressWarnings({"rawtypes"})
         Map m = (Map) rsp.getValues().get("availableSubPaths");
         if(m != null){
           m.putAll(result);

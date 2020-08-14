@@ -160,9 +160,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
           cpsm.mappings.put(key, sortedVals);
         }
       }
-      if (log.isInfoEnabled()) {
-        log.info("Loaded {} synonym mappings for {}", synonymMappings.size(), getResourceId());
-      }
+      log.info("Loaded {} synonym mappings for {}", synonymMappings.size(), getResourceId());
     }
 
     @SuppressWarnings("unchecked")
@@ -230,7 +228,6 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
             madeChanges = true;
           }
         } else if (val instanceof List) {
-          @SuppressWarnings({"unchecked"})
           List<String> vals = (List<String>)val;
 
           if (output == null) {
@@ -379,11 +376,6 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
 
   public ManagedSynonymGraphFilterFactory(Map<String,String> args) {
     super(args);
-  }
-
-  /** Default ctor for compatibility with SPI */
-  public ManagedSynonymGraphFilterFactory() {
-    throw defaultCtorException();
   }
 
   @Override

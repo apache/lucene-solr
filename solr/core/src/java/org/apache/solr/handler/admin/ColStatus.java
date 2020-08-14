@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -65,13 +66,12 @@ public class ColStatus {
   public static final String RAW_SIZE_SAMPLING_PERCENT_PROP = SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
   public static final String SEGMENTS_PROP = "segments";
 
-  public ColStatus(SolrClientCache solrClientCache, ClusterState clusterState, ZkNodeProps props) {
+  public ColStatus(HttpClient httpClient, ClusterState clusterState, ZkNodeProps props) {
     this.props = props;
-    this.solrClientCache = solrClientCache;
+    this.solrClientCache = new SolrClientCache(httpClient);
     this.clusterState = clusterState;
   }
 
-  @SuppressWarnings({"unchecked"})
   public void getColStatus(NamedList<Object> results) {
     Collection<String> collections;
     String col = props.getStr(ZkStateReader.COLLECTION_PROP);
@@ -101,6 +101,7 @@ public class ColStatus {
         continue;
       }
       SimpleOrderedMap<Object> colMap = new SimpleOrderedMap<>();
+      colMap.add("stateFormat", coll.getStateFormat());
       colMap.add("znodeVersion", coll.getZNodeVersion());
       Map<String, Object> props = new TreeMap<>(coll.getProperties());
       props.remove("shards");
@@ -209,7 +210,7 @@ public class ColStatus {
             rsp.remove("fieldInfoLegend");
           }
         } catch (SolrServerException | IOException e) {
-          log.warn("Error getting details of replica segments from {}", url, e);
+          log.warn("Error getting details of replica segments from " + url, e);
         }
       }
       if (nonCompliant.isEmpty()) {

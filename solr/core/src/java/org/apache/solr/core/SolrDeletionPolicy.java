@@ -48,7 +48,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
   private int maxOptimizedCommitsToKeep = 0;
 
   @Override
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+  public void init(NamedList args) {
     String keepOptimizedOnlyString = (String) args.get("keepOptimizedOnly");
     String maxCommitsToKeepString = (String) args.get("maxCommitsToKeep");
     String maxOptimizedCommitsToKeepString = (String) args.get("maxOptimizedCommitsToKeep");
@@ -80,9 +80,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
     if (commits.isEmpty()) {
       return;
     }
-    if (log.isDebugEnabled()) {
-      log.debug("SolrDeletionPolicy.onInit: commits: {}", new CommitsLoggingDebug(commits));
-    }
+    log.debug("SolrDeletionPolicy.onInit: commits: {}", new CommitsLoggingDebug(commits));
     updateCommits(commits);
   }
 
@@ -91,9 +89,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
    */
   @Override
   public void onCommit(List<? extends IndexCommit> commits) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("SolrDeletionPolicy.onCommit: commits: {}", new CommitsLoggingDebug(commits));
-    }
+    log.debug("SolrDeletionPolicy.onCommit: commits: {}", new CommitsLoggingDebug(commits));
     updateCommits(commits);
   }
 
@@ -154,9 +150,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
     synchronized (this) {
       long maxCommitAgeTimeStamp = -1L;
       IndexCommit newest = commits.get(commits.size() - 1);
-      if (log.isDebugEnabled()) {
-        log.debug("newest commit generation = {}", newest.getGeneration());
-      }
+      log.debug("newest commit generation = " + newest.getGeneration());
       int singleSegKept = (newest.getSegmentCount() == 1) ? 1 : 0;
       int totalKept = 1;
 

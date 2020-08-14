@@ -106,7 +106,6 @@ class GeoJSONWriter extends JSONWriter {
       }
       rsp.removeResponseHeader();
 
-      @SuppressWarnings({"unchecked"})
       NamedList<Object> vals = rsp.getValues();
       Object response = vals.remove("response");
       if(vals.size()==0) {
@@ -196,7 +195,6 @@ class GeoJSONWriter extends JSONWriter {
   {
     // Support multi-valued geometries
     if(geo instanceof Iterable) {
-      @SuppressWarnings({"rawtypes"})
       Iterator iter = ((Iterable)geo).iterator();
       if(!iter.hasNext()) {
         return; // empty list
@@ -294,18 +292,11 @@ class GeoJSONWriter extends JSONWriter {
     }
   }
 
-  @Deprecated
   @Override
   public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-  
-  @Override
-  public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException
+      long start, int size, long numFound, Float maxScore) throws IOException
   {
-    writeMapOpener(headerSize(maxScore, numFoundExact));
+    writeMapOpener((maxScore==null) ? 3 : 4);
     incLevel();
     writeKey("type",false);
     writeStr(null, "FeatureCollection", false);
@@ -321,13 +312,6 @@ class GeoJSONWriter extends JSONWriter {
       writeKey("maxScore",false);
       writeFloat(null,maxScore);
     }
-    
-    if (numFoundExact != null) {
-      writeMapSeparator();
-      writeKey("numFoundExact",false);
-      writeBool(null, numFoundExact);
-    }
-    
     writeMapSeparator();
     
     // if can we get bbox of all results, we should write it here

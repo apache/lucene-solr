@@ -35,7 +35,7 @@ import org.apache.jute.OutputArchive;
 import org.apache.jute.Record;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -54,7 +54,6 @@ import org.apache.zookeeper.server.Request;
 import org.apache.zookeeper.server.ServerCnxn;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.quorum.Leader.Proposal;
-import org.apache.zookeeper.txn.TxnDigest;
 import org.apache.zookeeper.txn.TxnHeader;
 import org.junit.After;
 import org.junit.Before;
@@ -210,7 +209,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     }
 
     @Override
-    public synchronized Collection<Proposal> getCommittedLog() {
+    public synchronized List<Proposal> getCommittedLog() {
       return zkdb.getCommittedLog();
     }
 
@@ -270,8 +269,8 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     }
 
     @Override
-    public ProcessTxnResult processTxn(TxnHeader hdr, Record txn, TxnDigest digest) {
-      return zkdb.processTxn(hdr, txn, digest);
+    public ProcessTxnResult processTxn(TxnHeader hdr, Record txn) {
+      return zkdb.processTxn(hdr, txn);
     }
 
     @Override
@@ -297,14 +296,9 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
     @Override
     public void setWatches(long relativeZxid, List<String> dataWatches,
-                           List<String> existWatches, List<String> childWatches,
-                           List<String> persistentWatches,
-                           List<String> persistentRecursiveWatches,
-                           Watcher watcher) {
-      zkdb.setWatches(relativeZxid, dataWatches, existWatches, childWatches,
-              persistentWatches, persistentRecursiveWatches, watcher);
-
-      }
+            List<String> existWatches, List<String> childWatches, Watcher watcher) {
+      zkdb.setWatches(relativeZxid, dataWatches, existWatches, childWatches, watcher);
+    }
 
     @Override
     public List<ACL> getACL(String path, Stat stat) throws NoNodeException {
@@ -362,15 +356,5 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     public void close() throws IOException {
       zkdb.close();
     }
-    @Override
-    public int getTxnCount() {
-      return zkdb.getTxnCount();
-    }
-
-    @Override
-    public long getTxnSize() {
-      return zkdb.getTxnSize();
-    }
-
   }
 }

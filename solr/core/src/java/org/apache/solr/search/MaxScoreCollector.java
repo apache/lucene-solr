@@ -37,7 +37,9 @@ public class MaxScoreCollector extends SimpleCollector {
 
   @Override
   public ScoreMode scoreMode() {
-    return ScoreMode.TOP_SCORES;
+    // Should be TOP_SCORES but this would wrap the scorer unnecessarily since
+    // this collector is only used in a MultiCollector.
+    return ScoreMode.COMPLETE;
   }
 
   @Override
@@ -48,10 +50,6 @@ public class MaxScoreCollector extends SimpleCollector {
   @Override
   public void collect(int doc) throws IOException {
     collectedAnyHits = true;
-    float docScore = scorer.score();
-    if (Float.compare(docScore, maxScore) > 0) {
-      maxScore = docScore;
-      scorer.setMinCompetitiveScore(Math.nextUp(maxScore));
-    }
+    maxScore = Math.max(scorer.score(), maxScore);
   }
 }

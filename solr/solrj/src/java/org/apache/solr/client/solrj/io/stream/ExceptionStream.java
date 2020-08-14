@@ -18,7 +18,9 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -58,15 +60,21 @@ public class ExceptionStream extends TupleStream {
   public Tuple read() {
     if(openException != null) {
       //There was an exception during the open.
+      Map fields = new HashMap();
+      fields.put("EXCEPTION", openException.getMessage());
+      fields.put("EOF", true);
       SolrException.log(log, openException);
-      return Tuple.EXCEPTION(openException.getMessage(), true);
+      return new Tuple(fields);
     }
 
     try {
       return stream.read();
     } catch (Exception e) {
+      Map fields = new HashMap();
+      fields.put("EXCEPTION", e.getMessage());
+      fields.put("EOF", true);
       SolrException.log(log, e);
-      return Tuple.EXCEPTION(e.getMessage(), true);
+      return new Tuple(fields);
     }
   }
   

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -73,13 +72,6 @@ public class Aliases {
     this.zNodeVersion = zNodeVersion;
   }
 
-  public void forEachAlias(BiConsumer<String, List<String>> consumer) {
-    collectionAliases.forEach((s, colls) -> consumer.accept(s, Collections.unmodifiableList(colls)));
-  }
-  public int size() {
-    return collectionAliases.size();
-  }
-
   /**
    * Create an instance from the JSON bytes read from zookeeper. Generally this should
    * only be done by a ZkStateReader.
@@ -88,7 +80,7 @@ public class Aliases {
    * @param zNodeVersion the version of the data in zookeeper that this instance corresponds to
    * @return A new immutable Aliases object
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   public static Aliases fromJSON(byte[] bytes, int zNodeVersion) {
     Map<String, Map> aliasMap;
     if (bytes == null || bytes.length == 0) {
@@ -97,7 +89,6 @@ public class Aliases {
       aliasMap = (Map<String, Map>) Utils.fromJSON(bytes);
     }
 
-    @SuppressWarnings({"rawtypes"})
     Map colAliases = aliasMap.getOrDefault(COLLECTION, Collections.emptyMap());
     colAliases = convertMapOfCommaDelimitedToMapOfList(colAliases); // also unmodifiable
 
@@ -115,7 +106,6 @@ public class Aliases {
       assert collectionAliasProperties.isEmpty();
       return null;
     } else {
-      @SuppressWarnings({"rawtypes"})
       Map<String,Map> tmp = new LinkedHashMap<>();
       tmp.put(COLLECTION, convertMapOfListToMapOfCommaDelimited(collectionAliases));
       if (!collectionAliasProperties.isEmpty()) {

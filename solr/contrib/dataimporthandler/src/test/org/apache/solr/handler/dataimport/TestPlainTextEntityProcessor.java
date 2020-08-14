@@ -46,7 +46,6 @@ public class TestPlainTextEntityProcessor extends AbstractDataImportHandlerTestC
     redirectTempProperties(di);
 
     TestDocBuilder.SolrWriterImpl sw = new TestDocBuilder.SolrWriterImpl();
-    @SuppressWarnings({"unchecked"})
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     di.runCmd(rp, sw);
     assertEquals(DS.s, sw.docs.get(0).getFieldValue("x"));
@@ -143,14 +142,12 @@ public class TestPlainTextEntityProcessor extends AbstractDataImportHandlerTestC
     redirectTempProperties(di);
 
     TestDocBuilder.SolrWriterImpl sw = new TestDocBuilder.SolrWriterImpl();
-    @SuppressWarnings({"unchecked"})
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     di.runCmd(rp, sw);
     assertEquals(DS.s, sw.docs.get(0).getFieldValue("plainText"));
   }
 
 
-  @SuppressWarnings({"rawtypes"})
   public static class DS extends DataSource {
     static String s = "hello world";
 

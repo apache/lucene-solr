@@ -126,7 +126,6 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @SuppressWarnings({"try"})
   public void testStreamURL() throws Exception
   {
     URL url = getClass().getResource("/README");
@@ -150,7 +149,6 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @SuppressWarnings({"try"})
   public void testStreamFile() throws Exception
   {
     File file = getFile("README");

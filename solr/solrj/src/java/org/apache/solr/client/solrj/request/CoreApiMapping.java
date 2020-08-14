@@ -64,9 +64,8 @@ public class CoreApiMapping {
     public final CoreAdminAction action;
     public final Map<String, String> paramstoAttr;
 
-    @SuppressWarnings({"unchecked"})
     Meta(EndPoint endPoint, SolrRequest.METHOD method, CoreAdminAction action, String commandName,
-         @SuppressWarnings({"rawtypes"})Map paramstoAttr) {
+         Map paramstoAttr) {
       this.commandName = commandName;
       this.endPoint = endPoint;
       this.method = method;

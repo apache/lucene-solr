@@ -155,12 +155,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       this.threshold = Float.parseFloat(threshold) + NODE_SPLIT_SLACK;
     }
 
-    @SuppressWarnings({"unchecked"})
     public void setLeft(Object left) {
       this.left = createRegressionTreeNode((Map<String,Object>) left);
     }
 
-    @SuppressWarnings({"unchecked"})
     public void setRight(Object right) {
       this.right = createRegressionTreeNode((Map<String,Object>) right);
     }
@@ -266,7 +264,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       this.weight = Float.valueOf(weight);
     }
 
-    @SuppressWarnings({"unchecked"})
     public void setRoot(Object root) {
       this.root = createRegressionTreeNode((Map<String,Object>)root);
     }
@@ -303,7 +300,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   public void setTrees(Object trees) {
     this.trees = new ArrayList<RegressionTree>();
     for (final Object o : (List<Object>) trees) {

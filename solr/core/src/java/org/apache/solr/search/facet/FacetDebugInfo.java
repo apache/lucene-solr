@@ -65,7 +65,7 @@ public class FacetDebugInfo {
     return info;
   }
   
-  public SimpleOrderedMap<Object> getFacetDebugInfo() {
+  public SimpleOrderedMap getFacetDebugInfo() {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     
     if (filter != null) info.add("filter", filter);

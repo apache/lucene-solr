@@ -94,7 +94,6 @@ public class SolrReporter extends ScheduledReporter {
       }
     }
 
-    @SuppressWarnings({"unchecked"})
     public static Report fromMap(Map<?, ?> map) {
       String groupPattern = (String)map.get("group");
       String labelPattern = (String)map.get("label");
@@ -107,11 +106,11 @@ public class SolrReporter extends ScheduledReporter {
         } else if (oFilters instanceof Collection) {
           metricFilters = (Collection<String>)oFilters;
         } else {
-          log.warn("Invalid report filters, ignoring: {}", oFilters);
+          log.warn("Invalid report filters, ignoring: " + oFilters);
         }
       }
       if (groupPattern == null || registryPattern == null) {
-        log.warn("Invalid report configuration, group and registry required!: {}", map);
+        log.warn("Invalid report configuration, group and registry required!: " + map);
         return null;
       }
       return new Report(groupPattern, labelPattern, registryPattern, metricFilters);
@@ -258,24 +257,9 @@ public class SolrReporter extends ScheduledReporter {
      *                    null to indicate that reporting should be skipped. Note: this
      *                    function will be called every time just before report is sent.
      * @return configured instance of reporter
-     * @deprecated use {@link #build(SolrClientCache, Supplier)} instead.
      */
-    @Deprecated
     public SolrReporter build(HttpClient client, Supplier<String> urlProvider) {
       return new SolrReporter(client, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
-          params, skipHistograms, skipAggregateValues, cloudClient, compact);
-    }
-
-    /**
-     * Build it.
-     * @param solrClientCache an instance of {@link SolrClientCache} to be used for making calls.
-     * @param urlProvider function that returns the base URL of Solr instance to target. May return
-     *                    null to indicate that reporting should be skipped. Note: this
-     *                    function will be called every time just before report is sent.
-     * @return configured instance of reporter
-     */
-    public SolrReporter build(SolrClientCache solrClientCache, Supplier<String> urlProvider) {
-      return new SolrReporter(solrClientCache, false, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
           params, skipHistograms, skipAggregateValues, cloudClient, compact);
     }
 
@@ -285,7 +269,6 @@ public class SolrReporter extends ScheduledReporter {
   private String handler;
   private Supplier<String> urlProvider;
   private SolrClientCache clientCache;
-  private boolean closeClientCache;
   private List<CompiledReport> compiledReports;
   private SolrMetricManager metricManager;
   private boolean skipHistograms;
@@ -323,55 +306,7 @@ public class SolrReporter extends ScheduledReporter {
   // We delegate to registries anyway, so having a dummy registry is harmless.
   private static final MetricRegistry dummyRegistry = new MetricRegistry();
 
-  // back-compat constructor
-
-  /**
-   * Create a SolrReporter instance.
-   * @param httpClient HttpClient to use for constructing SolrClient instances.
-   * @param urlProvider what URL to send to.
-   * @param metricManager metric manager
-   * @param metrics metric specifications to report
-   * @param handler handler name to report to
-   * @param reporterId my reporter id
-   * @param rateUnit rate unit
-   * @param durationUnit duration unit
-   * @param params request parameters
-   * @param skipHistograms if true then don't send histogram metrics
-   * @param skipAggregateValues if true then don't send aggregate metrics' individual values
-   * @param cloudClient if true then use CloudSolrClient, plain HttpSolrClient otherwise.
-   * @param compact if true then use compact representation.
-   *
-   * @deprecated use {@link SolrReporter#SolrReporter(SolrClientCache, boolean, Supplier, SolrMetricManager, List, String, String, TimeUnit, TimeUnit, SolrParams, boolean, boolean, boolean, boolean)} instead.
-   */
-  @Deprecated
   public SolrReporter(HttpClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
-                      List<Report> metrics, String handler,
-                      String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
-                      SolrParams params, boolean skipHistograms, boolean skipAggregateValues,
-                      boolean cloudClient, boolean compact) {
-    this (new SolrClientCache(httpClient), true, urlProvider, metricManager,
-        metrics, handler, reporterId, rateUnit, durationUnit,
-        params, skipHistograms, skipAggregateValues, cloudClient, compact);
-  }
-
-  /**
-   * Create a SolrReporter instance.
-   * @param solrClientCache client cache to use for constructing SolrClient instances.
-   * @param urlProvider what URL to send to.
-   * @param metricManager metric manager
-   * @param metrics metric specifications to report
-   * @param handler handler name to report to
-   * @param reporterId my reporter id
-   * @param rateUnit rate unit
-   * @param durationUnit duration unit
-   * @param params request parameters
-   * @param skipHistograms if true then don't send histogram metrics
-   * @param skipAggregateValues if true then don't send aggregate metrics' individual values
-   * @param cloudClient if true then use CloudSolrClient, plain HttpSolrClient otherwise.
-   * @param compact if true then use compact representation.
-   */
-  public SolrReporter(SolrClientCache solrClientCache, boolean closeClientCache,
-                      Supplier<String> urlProvider, SolrMetricManager metricManager,
                       List<Report> metrics, String handler,
                       String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
                       SolrParams params, boolean skipHistograms, boolean skipAggregateValues,
@@ -385,8 +320,7 @@ public class SolrReporter extends ScheduledReporter {
       handler = MetricsCollectorHandler.HANDLER_PATH;
     }
     this.handler = handler;
-    this.clientCache = solrClientCache;
-    this.closeClientCache = closeClientCache;
+    this.clientCache = new SolrClientCache(httpClient);
     this.compiledReports = new ArrayList<>();
     metrics.forEach(report -> {
       MetricFilter filter = new SolrMetricManager.RegexFilter(report.metricFilters);
@@ -394,7 +328,7 @@ public class SolrReporter extends ScheduledReporter {
         CompiledReport cs = new CompiledReport(report);
         compiledReports.add(cs);
       } catch (PatternSyntaxException e) {
-        log.warn("Skipping report with invalid registryPattern: {}", report.registryPattern, e);
+        log.warn("Skipping report with invalid registryPattern: " + report.registryPattern, e);
       }
     });
     this.skipHistograms = skipHistograms;
@@ -413,9 +347,7 @@ public class SolrReporter extends ScheduledReporter {
 
   @Override
   public void close() {
-    if (closeClientCache) {
-      clientCache.close();
-    }
+    clientCache.close();
     super.close();
   }
 
@@ -472,15 +404,12 @@ public class SolrReporter extends ScheduledReporter {
       //log.info("%%% sending to " + url + ": " + req.getParams());
       solr.request(req);
     } catch (Exception e) {
-      if (log.isDebugEnabled()) {
-        log.debug("Error sending metric report: {}", e);
-      }
+      log.debug("Error sending metric report: {}", e.toString());
     }
 
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void report(SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters, SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers) {
     // no-op - we do all the work in report()
   }

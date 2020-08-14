@@ -42,9 +42,7 @@ public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
     this.assertState(SOURCE_COLLECTION, CdcrParams.ProcessState.STOPPED, CdcrParams.BufferState.ENABLED);
 
     // send start action to first shard
-    @SuppressWarnings({"rawtypes"})
     NamedList rsp = invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.START);
-    @SuppressWarnings({"rawtypes"})
     NamedList status = (NamedList) rsp.get(CdcrParams.CdcrAction.STATUS.toLower());
     assertEquals(CdcrParams.ProcessState.STARTED.toLower(), status.get(CdcrParams.ProcessState.getParam()));
 
@@ -71,7 +69,6 @@ public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
   @ShardsFixed(num = 2)
   public void testCheckpointActions() throws Exception {
     // initial request on an empty index, must return -1
-    @SuppressWarnings({"rawtypes"})
     NamedList rsp = invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.COLLECTIONCHECKPOINT);
     assertEquals(-1l, rsp.get(CdcrParams.CHECKPOINT));
 
@@ -155,9 +152,7 @@ public class CdcrRequestHandlerTest extends BaseCdcrDistributedZkTest {
     this.assertState(SOURCE_COLLECTION, CdcrParams.ProcessState.STOPPED, CdcrParams.BufferState.ENABLED);
 
     // send disable buffer action to first shard
-    @SuppressWarnings({"rawtypes"})
     NamedList rsp = invokeCdcrAction(shardToLeaderJetty.get(SOURCE_COLLECTION).get(SHARD1), CdcrParams.CdcrAction.DISABLEBUFFER);
-    @SuppressWarnings({"rawtypes"})
     NamedList status = (NamedList) rsp.get(CdcrParams.CdcrAction.STATUS.toLower());
     assertEquals(CdcrParams.BufferState.DISABLED.toLower(), status.get(CdcrParams.BufferState.getParam()));
 

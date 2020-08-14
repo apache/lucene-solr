@@ -55,6 +55,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
 
   private static int numShards;
   private static int numReplicas;
+  private static int maxShardsPerNode;
   private static int nodesPerCluster;
 
   private static void appendClusterNodes(final StringBuilder sb, final String delimiter,
@@ -69,7 +70,8 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
 
     numShards = 2; // +random().nextInt(2);
     numReplicas = 1; // +random().nextInt(2);
-    nodesPerCluster = numShards * numReplicas;
+    maxShardsPerNode = 1; // +random().nextInt(2);
+    nodesPerCluster = (numShards * numReplicas + (maxShardsPerNode - 1)) / maxShardsPerNode;
 
     final StringBuilder sb = new StringBuilder();
 
@@ -96,7 +98,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
             return nodesPerCluster;
           }
         },
-        new DefaultClusterInitFunction(numShards, numReplicas) {
+        new DefaultClusterInitFunction(numShards, numReplicas, maxShardsPerNode) {
           @Override
           public void accept(String clusterId, MiniSolrCloudCluster cluster) {
             appendClusterNodes(sb, ",", cluster);

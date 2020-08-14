@@ -29,7 +29,6 @@ import org.junit.Test;
 public class TokenizerChainTest extends SolrTestCaseJ4 {
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testNormalization() throws Exception {
     String fieldName = "f";
     TokenFilterFactory[] tff = new TokenFilterFactory[2];

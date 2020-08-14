@@ -38,7 +38,6 @@ public class DomainMap extends HashMap<String, Object> {
       put("filter", new ArrayList<String>());
     }
 
-    @SuppressWarnings({"unchecked"})
     final List<String> filterList = (List<String>) get("filter");
     filterList.add(filter);
     return this;
@@ -58,7 +57,6 @@ public class DomainMap extends HashMap<String, Object> {
       put("query", new ArrayList<String>());
     }
 
-    @SuppressWarnings({"unchecked"})
     final List<String> queryList = (List<String>) get("query");
     queryList.add(query);
     return this;
@@ -81,7 +79,6 @@ public class DomainMap extends HashMap<String, Object> {
       put("excludeTags", new ArrayList<String>());
     }
 
-    @SuppressWarnings({"unchecked"})
     final List<String> excludeTagsList = (List<String>) get("excludeTags");
     excludeTagsList.add(excludeTagsValue);
     return this;

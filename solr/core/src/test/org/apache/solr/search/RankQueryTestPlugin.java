@@ -132,7 +132,6 @@ public class RankQueryTestPlugin extends QParserPlugin {
       this.mergeStrategy = mergeStrategy;
     }
 
-    @SuppressWarnings({"rawtypes"})
     public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) {
       if(collector == 0)
         return new TestCollector(null);
@@ -166,7 +165,6 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
     }
 
-    @SuppressWarnings({"unchecked"})
     public void merge(ResponseBuilder rb, ShardRequest sreq) {
 
       // id to shard mapping, to eliminate any accidental dups
@@ -185,7 +183,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       long numFound = 0;
       Float maxScore=null;
       boolean partialResults = false;
-      List<ShardDoc> shardDocs = new ArrayList<>();
+      List<ShardDoc> shardDocs = new ArrayList();
 
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
@@ -462,7 +460,6 @@ public class RankQueryTestPlugin extends QParserPlugin {
       }
     }
 
-    @SuppressWarnings({"unchecked"})
     public void merge(ResponseBuilder rb, ShardRequest sreq) {
 
       // id to shard mapping, to eliminate any accidental dups
@@ -481,7 +478,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       long numFound = 0;
       Float maxScore=null;
       boolean partialResults = false;
-      List<ShardDoc> shardDocs = new ArrayList<>();
+      List<ShardDoc> shardDocs = new ArrayList();
 
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
@@ -538,11 +535,8 @@ public class RankQueryTestPlugin extends QParserPlugin {
         SortSpec ss = rb.getSortSpec();
         Sort sort = ss.getSort();
 
-        @SuppressWarnings({"rawtypes"})
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("merge_values"));
-        @SuppressWarnings({"rawtypes"})
         NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
-        @SuppressWarnings({"rawtypes"})
         List lst = (List)unmarshalledSortFieldValues.getVal(0);
 
         for (int i=0; i<docs.size(); i++) {
@@ -620,7 +614,6 @@ public class RankQueryTestPlugin extends QParserPlugin {
       }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private NamedList unmarshalSortValues(SortSpec sortSpec,
                                           NamedList sortFieldValues,
                                           IndexSchema schema) {
@@ -664,13 +657,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
   }
 
 
-  @SuppressWarnings({"rawtypes"})
   static class TestCollector extends TopDocsCollector {
 
-    private List<ScoreDoc> list = new ArrayList<>();
+    private List<ScoreDoc> list = new ArrayList();
 
-    @SuppressWarnings({"unchecked"})
-    public TestCollector(@SuppressWarnings({"rawtypes"})PriorityQueue pq) {
+    public TestCollector(PriorityQueue pq) {
       super(pq);
     }
 
@@ -699,7 +690,6 @@ public class RankQueryTestPlugin extends QParserPlugin {
       return list.size();
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public TopDocs topDocs() {
       Collections.sort(list, new Comparator() {
         public int compare(Object o1, Object o2) {
@@ -732,13 +722,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   static class TestCollector1 extends TopDocsCollector {
 
-    private List<ScoreDoc> list = new ArrayList<>();
+    private List<ScoreDoc> list = new ArrayList();
 
-    @SuppressWarnings({"unchecked"})
-    public TestCollector1(@SuppressWarnings({"rawtypes"})PriorityQueue pq) {
+    public TestCollector1(PriorityQueue pq) {
       super(pq);
     }
 
@@ -764,7 +752,6 @@ public class RankQueryTestPlugin extends QParserPlugin {
       return list.size();
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public TopDocs topDocs() {
       Collections.sort(list, new Comparator() {
         public int compare(Object o1, Object o2) {

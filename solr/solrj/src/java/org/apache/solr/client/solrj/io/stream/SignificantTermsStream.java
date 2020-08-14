@@ -49,7 +49,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
@@ -77,7 +77,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
 
   public SignificantTermsStream(String zkHost,
                                  String collectionName,
-                                 @SuppressWarnings({"rawtypes"})Map params,
+                                 Map params,
                                  String field,
                                  float minDocFreq,
                                  float maxDocFreq,
@@ -202,10 +202,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
     return expression;
   }
 
-  @SuppressWarnings({"unchecked"})
   private void init(String collectionName,
                     String zkHost,
-                    @SuppressWarnings({"rawtypes"})Map params,
+                    Map params,
                     String field,
                     float minDocFreq,
                     float maxDocFreq,
@@ -234,14 +233,13 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       isCloseCache = false;
     }
 
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("SignificantTermsStream"));
+    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("SignificantTermsStream"));
   }
 
   public List<TupleStream> children() {
     return null;
   }
 
-  @SuppressWarnings({"rawtypes"})
   private List<Future<NamedList>> callShards(List<String> baseUrls) throws IOException {
 
     List<Future<NamedList>> futures = new ArrayList<>();
@@ -254,7 +252,6 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
           this.minTermLength,
           this.numTerms);
 
-      @SuppressWarnings({"rawtypes"})
       Future<NamedList> future = executorService.submit(lc);
       futures.add(future);
     }
@@ -284,17 +281,14 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
         .withExpression(toExpression(factory).toString());
   }
 
-  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
     try {
       if (tupleIterator == null) {
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
         long resultCount = 0;
-        for (@SuppressWarnings({"rawtypes"})Future<NamedList> getTopTermsCall : callShards(getShards(zkHost, collection, streamContext))) {
-          @SuppressWarnings({"rawtypes"})
+        for (Future<NamedList> getTopTermsCall : callShards(getShards(zkHost, collection, streamContext))) {
           NamedList fullResp = getTopTermsCall.get();
-          @SuppressWarnings({"rawtypes"})
           Map stResp = (Map)fullResp.get("significantTerms");
 
           List<String> terms = (List<String>)stResp.get("sterms");
@@ -319,11 +313,11 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
           }
         }
 
-        List<Map<String, Object>> maps = new ArrayList<>();
+        List<Map> maps = new ArrayList();
 
         for(Map.Entry<String, int[]> entry : mergeFreqs.entrySet()) {
           int[] freqs = entry.getValue();
-          Map<String, Object> map = new HashMap<>();
+          Map map = new HashMap();
           map.put("term", entry.getKey());
           map.put("background", freqs[0]);
           map.put("foreground", freqs[1]);
@@ -335,13 +329,15 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
         }
 
         Collections.sort(maps, new ScoreComp());
-        List<Tuple> tuples = new ArrayList<>();
-        for (Map<String, Object> map : maps) {
+        List<Tuple> tuples = new ArrayList();
+        for (Map map : maps) {
           if (tuples.size() == numTerms) break;
           tuples.add(new Tuple(map));
         }
 
-        tuples.add(Tuple.EOF());
+        Map map = new HashMap();
+        map.put("EOF", true);
+        tuples.add(new Tuple(map));
         tupleIterator = tuples.iterator();
       }
 
@@ -351,7 +347,6 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
   private static class ScoreComp implements Comparator<Map> {
     public int compare(Map a, Map b) {
       Float scorea = (Float)a.get("score");
@@ -360,7 +355,6 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   protected class SignificantTermsCall implements Callable<NamedList> {
 
     private String baseUrl;
@@ -388,7 +382,6 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       this.minTermLength = minTermLength;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public NamedList<Double> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);

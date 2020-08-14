@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -45,6 +46,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
+        .withProperty(ZkStateReader.LEGACY_CLOUD, "false")
         .configure();
   }
 
@@ -54,8 +56,10 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     String collectionName = "delDeadColl";
     int replicationFactor = 2;
     int numShards = 2;
+    int maxShardsPerNode = ((((numShards + 1) * replicationFactor) / cluster.getJettySolrRunners().size())) + 1;
 
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)
+        .setMaxShardsPerNode(maxShardsPerNode)
         .process(cluster.getSolrClient());
     waitForState("Expected a cluster of 2 shards and 2 replicas", collectionName, (n, c) -> {
       return DocCollection.isFullyActive(n, c, numShards, replicationFactor);
@@ -77,9 +81,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
       return r == null || r.getState() != Replica.State.ACTIVE;
     });
 
-    if (log.isInfoEnabled()) {
-      log.info("Removing replica {}/{} ", shard.getName(), replica.getName());
-    }
+    log.info("Removing replica {}/{} ", shard.getName(), replica.getName());
     CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
         .process(cluster.getSolrClient());
     waitForState("Expected deleted replica " + replica.getName() + " to be removed from cluster state", collectionName, (n, c) -> {

@@ -101,7 +101,9 @@ solrAdminApp.controller('CollectionsController',
           routerName: "compositeId",
           numShards: 1,
           configName: "",
-          replicationFactor: 1
+          replicationFactor: 1,
+          maxShardsPerNode: 1,
+          autoAddReplicas: 'false'
         };
       };
 
@@ -150,7 +152,9 @@ solrAdminApp.controller('CollectionsController',
                 "router.name": coll.routerName,
                 numShards: coll.numShards,
                 "collection.configName": coll.configName,
-                replicationFactor: coll.replicationFactor
+                replicationFactor: coll.replicationFactor,
+                maxShardsPerNode: coll.maxShardsPerNode,
+                autoAddReplicas: coll.autoAddReplicas
             };
             if (coll.shards) params.shards = coll.shards;
             if (coll.routerField) params["router.field"] = coll.routerField;

@@ -52,6 +52,7 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
       // therefore Assign.buildCoreNodeName will create same coreNodeName
       CollectionAdminRequest
           .createCollection("testCollection"+i, "config", 2, 1)
+          .setMaxShardsPerNode(100)
           .setCreateNodeSet("")
           .process(cluster.getSolrClient());
       CollectionAdminRequest

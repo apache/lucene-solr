@@ -62,7 +62,6 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     compareStringFormat("LIVE: सबरीमाला मंदिर के पास पहुंची दो महिलाएं, जमकर हो रहा विरोध-प्रदर्शन");
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testJavabinCodecWithCharSeq() throws IOException {
     SolrDocument document = new SolrDocument();
     document.put("id", "1");
@@ -104,7 +103,6 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) h.getCore().getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writer.write(baos, req, rsp);
-    @SuppressWarnings({"rawtypes"})
     NamedList res;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       res = (NamedList) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));

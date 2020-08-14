@@ -32,7 +32,6 @@ public class AscEvaluator extends RecursiveObjectEvaluator implements OneValueWo
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object value) throws IOException {
     if(null == value){
       return value;

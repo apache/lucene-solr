@@ -384,50 +384,46 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       args.add(QueryElevationComponent.FIELD_TYPE, "string");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
-      IndexReader reader;
-      try (SolrQueryRequest req = req()) {
-        reader = req.getSearcher().getIndexReader();
-      }
+      QueryElevationComponent comp = new QueryElevationComponent();
+      comp.init(args);
+      comp.inform(core);
 
-      try (QueryElevationComponent comp = new QueryElevationComponent()) {
-        comp.init(args);
-        comp.inform(core);
+      SolrQueryRequest req = req();
+      IndexReader reader = req.getSearcher().getIndexReader();
+      QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
+      req.close();
 
-        QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
-
-        // Make sure the boosts loaded properly
-        assertEquals(11, elevationProvider.size());
-        assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
-        assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
-        assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
-        assertNull(elevationProvider.getElevationForQuery("xxxx"));
-        assertNull(elevationProvider.getElevationForQuery("yyyy"));
-        assertNull(elevationProvider.getElevationForQuery("zzzz"));
-      }
+      // Make sure the boosts loaded properly
+      assertEquals(11, elevationProvider.size());
+      assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
+      assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
+      assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
+      assertNull(elevationProvider.getElevationForQuery("xxxx"));
+      assertNull(elevationProvider.getElevationForQuery("yyyy"));
+      assertNull(elevationProvider.getElevationForQuery("zzzz"));
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
       args = new NamedList<>();
       args.add(QueryElevationComponent.FIELD_TYPE, "lowerfilt");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
-      try (QueryElevationComponent comp = new QueryElevationComponent()) {
-        comp.init(args);
-        comp.inform(core);
-        QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
-        assertEquals(11, elevationProvider.size());
-        assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
-        assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
-        assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
-        assertEquals(1, elevationProvider.getElevationForQuery("xxxx").elevatedIds.size());
-        assertEquals(2, elevationProvider.getElevationForQuery("yyyy").elevatedIds.size());
-        assertEquals(3, elevationProvider.getElevationForQuery("zzzz").elevatedIds.size());
+      comp = new QueryElevationComponent();
+      comp.init(args);
+      comp.inform(core);
+      elevationProvider = comp.getElevationProvider(reader, core);
+      assertEquals(11, elevationProvider.size());
+      assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
+      assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
+      assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
+      assertEquals(1, elevationProvider.getElevationForQuery("xxxx").elevatedIds.size());
+      assertEquals(2, elevationProvider.getElevationForQuery("yyyy").elevatedIds.size());
+      assertEquals(3, elevationProvider.getElevationForQuery("zzzz").elevatedIds.size());
 
-        assertEquals("xxxx", comp.analyzeQuery("XXXX"));
-        assertEquals("xxxxyyyy", comp.analyzeQuery("XXXX YYYY"));
+      assertEquals("xxxx", comp.analyzeQuery("XXXX"));
+      assertEquals("xxxxyyyy", comp.analyzeQuery("XXXX YYYY"));
 
-        assertQ("Make sure QEC handles null queries", req("qt", "/elevate", "q.alt", "*:*", "defType", "dismax"),
-            "//*[@numFound='0']");
-      }
+      assertQ("Make sure QEC handles null queries", req("qt", "/elevate", "q.alt", "*:*", "defType", "dismax"),
+          "//*[@numFound='0']");
     } finally {
       delete();
     }
@@ -706,9 +702,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     out.flush();
     out.close();
 
-    if (log.isInfoEnabled()) {
-      log.info("OUT: {}", file.getAbsolutePath());
-    }
+    log.info("OUT:" + file.getAbsolutePath());
   }
 
   @Test
@@ -907,7 +901,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testElevatedIds() throws Exception {
-    try (QueryElevationComponent comp = new QueryElevationComponent()) {
+    try {
       init("schema12.xml");
       SolrCore core = h.getCore();
 
@@ -915,6 +909,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       args.add(QueryElevationComponent.FIELD_TYPE, "text");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
+      QueryElevationComponent comp = new QueryElevationComponent();
       comp.init(args);
       comp.inform(core);
 

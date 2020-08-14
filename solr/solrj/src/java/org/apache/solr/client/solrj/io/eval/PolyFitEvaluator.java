@@ -35,7 +35,6 @@ public class PolyFitEvaluator extends RecursiveNumericEvaluator implements ManyV
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object doWork(Object... objects) throws IOException{
 
     if(objects.length > 3) {

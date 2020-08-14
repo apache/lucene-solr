@@ -37,7 +37,6 @@ import static org.apache.solr.handler.admin.SecurityConfHandler.SecurityConfig;
 
 public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testEdit() throws Exception {
     MockSecurityHandler handler = new MockSecurityHandler();
     String command = "{\n" +
@@ -174,10 +173,8 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.setContentStreams(Collections.singletonList(o));
     rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
-    @SuppressWarnings({"rawtypes"})
     List l = (List) ((Map) ((List)rsp.getValues().get("errorMessages")).get(0)).get("errorMessages");
     assertEquals(1, l.size());
-    handler.close();
   }
 
 
@@ -269,9 +266,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 
 
   public static void main(String[] args) throws Exception{
-    try (MockSecurityHandler msh = new MockSecurityHandler()) {
-      System.out.println(msh.getStandardJson());
-    }
+    System.out.println(new MockSecurityHandler().getStandardJson());
   }
 
 

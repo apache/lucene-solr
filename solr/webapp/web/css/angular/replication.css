@@ -61,17 +61,17 @@ limitations under the License.
   border-bottom: 0;
 }
 
-#content #replication .leaderOnly,
-#content #replication .followerOnly
+#content #replication .masterOnly,
+#content #replication .slaveOnly
 {
 }
 
-#content #replication.leader .leaderOnly
+#content #replication.master .masterOnly
 {
   display: block;
 }
 
-#content #replication.follower .followerOnly
+#content #replication.slave .slaveOnly
 {
   display: block;
 }
@@ -300,7 +300,7 @@ limitations under the License.
   text-align: left;
 }
 
-#content #replication.follower #details table .followerOnly
+#content #replication.slave #details table .slaveOnly
 {
   display: table-row;
 }

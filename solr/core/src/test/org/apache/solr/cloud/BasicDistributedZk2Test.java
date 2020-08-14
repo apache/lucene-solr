@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -389,7 +388,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     // make sure we have published we are recovering
     Thread.sleep(1500);
     
-    waitForThingsToLevelOut(1, TimeUnit.MINUTES);
+    waitForThingsToLevelOut(60);
     
     Thread.sleep(500);
     
@@ -404,9 +403,8 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       params.set("qt", ReplicationHandler.PATH);
       params.set("command", "backup");
       params.set("name", backupName);
-      final Path location = FilterPath.unwrap(createTempDir()).toRealPath();
-      // Allow non-standard location outside SOLR_HOME
-      jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(location));
+      Path location = createTempDir();
+      location = FilterPath.unwrap(location).toRealPath();
       params.set("location", location.toString());
 
       QueryRequest request = new QueryRequest(params);

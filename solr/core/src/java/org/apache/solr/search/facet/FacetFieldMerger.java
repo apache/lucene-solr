@@ -45,7 +45,6 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void merge(Object facetResult, Context mcontext) {
     super.merge(facetResult, mcontext);
     if (numReturnedPerShard == null) {
@@ -54,7 +53,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     merge((SimpleOrderedMap)facetResult, mcontext);
   }
 
-  protected void merge(@SuppressWarnings("rawtypes") SimpleOrderedMap facetResult, Context mcontext) {
+  protected void merge(SimpleOrderedMap facetResult, Context mcontext) {
     if (freq.missing) {
       Object o = facetResult.get("missing");
       if (o != null) {
@@ -75,8 +74,6 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
       }
     }
 
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
     List<SimpleOrderedMap> bucketList = (List<SimpleOrderedMap>) facetResult.get("buckets");
     numReturnedPerShard[mcontext.shardNum] = bucketList.size();
     numReturnedBuckets += bucketList.size();
@@ -98,7 +95,6 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object getMergedResult() {
     SimpleOrderedMap result = new SimpleOrderedMap();
 
@@ -203,7 +199,6 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     Set<Object> values;
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public void merge(Object facetResult, Context mcontext) {
       SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
       long numBuckets = ((Number)map.get("numBuckets")).longValue();

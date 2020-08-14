@@ -53,11 +53,6 @@ public class MockTokenizerFactory extends TokenizerFactory {
     }
   }
 
-  /** Default ctor for compatibility with SPI */
-  public MockTokenizerFactory() {
-    throw defaultCtorException();
-  }
-
   @Override
   public MockTokenizer create(AttributeFactory factory) {
     MockTokenizer t = new MockTokenizer(factory, pattern, false);

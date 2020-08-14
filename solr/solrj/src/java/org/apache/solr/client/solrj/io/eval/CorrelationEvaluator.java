@@ -60,7 +60,6 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException{
 
     if(values.length == 2) {
@@ -151,7 +150,7 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
     if(labels != null) {
       return labels;
     } else {
-      List<String> l = new ArrayList<>();
+      List<String> l = new ArrayList();
       for(int i=0; i<length; i++) {
         String label = "col"+ ZplotStream.pad(Integer.toString(i), length);
         l.add(label);

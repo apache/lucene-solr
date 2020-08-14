@@ -43,9 +43,7 @@ import org.slf4j.LoggerFactory;
  * decoded and reuse if the tlog file is reopened. This is achieved by extending the constructor, and the
  * methods {@link #writeCommit(CommitUpdateCommand)} and {@link #getReader(long)}.</li>
  * </ul>
- * @deprecated since 8.6
  */
-@Deprecated(since = "8.6")
 public class CdcrTransactionLog extends TransactionLog {
 
   private boolean isReplaying;
@@ -104,7 +102,7 @@ public class CdcrTransactionLog extends TransactionLog {
         }
       }
     } catch (IOException e) {
-      log.error("Error while reading number of records in tlog {}", this, e);
+      log.error("Error while reading number of records in tlog " + this, e);
     }
     return 0;
   }
@@ -342,7 +340,7 @@ public class CdcrTransactionLog extends TransactionLog {
   public void close() {
     try {
       if (debug) {
-        log.debug("Closing tlog {}", this);
+        log.debug("Closing tlog" + this);
       }
 
       synchronized (this) {
@@ -382,7 +380,7 @@ public class CdcrTransactionLog extends TransactionLog {
   synchronized void reopenOutputStream() {
     try {
       if (debug) {
-        log.debug("Re-opening tlog's output stream: {}", this);
+        log.debug("Re-opening tlog's output stream: " + this);
       }
 
       raf = new RandomAccessFile(this.tlogFile, "rw");

@@ -80,7 +80,6 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   private long maxSize = DEFAULT_MAX_SIZE;
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(final SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String httpMethod = req.getHttpMethod();
     String path = (String) req.getContext().get("path");
@@ -125,7 +124,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
                   "q", "md5:" + md5,
                   "fl", "id,size,version,timestamp,blobName")),
               rsp);
-          log.warn("duplicate entry for blob : {}", blobName);
+          log.warn("duplicate entry for blob :" + blobName);
           return;
         }
 
@@ -150,13 +149,9 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
             "size", payload.limit(),
             "blob", payload);
         verifyWithRealtimeGet(blobName, version, req, doc);
-        if (log.isInfoEnabled()) {
-          log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
-        }
+        log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
         indexMap(req, rsp, doc);
-        if (log.isInfoEnabled()) {
-          log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
-        }
+        log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
 
         break;
       }
@@ -249,9 +244,9 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     try (UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp)) {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = solrDoc;
-      log.info("Adding doc: {}", doc);
+      log.info("Adding doc: " + doc);
       processor.processAdd(cmd);
-      log.info("committing doc: {}", doc);
+      log.info("committing doc: " + doc);
       processor.processCommit(new CommitUpdateCommand(req, false));
       processor.finish();
     }
@@ -276,7 +271,6 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   public void init(PluginInfo info) {
     super.init(info.initArgs);
     if (info.initArgs != null) {
-      @SuppressWarnings({"rawtypes"})
       NamedList invariants = (NamedList) info.initArgs.get(PluginInfo.INVARIANTS);
       if (invariants != null) {
         Object o = invariants.get("maxSize");

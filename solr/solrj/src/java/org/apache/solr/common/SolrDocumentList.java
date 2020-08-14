@@ -31,16 +31,7 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
   private long numFound = 0;
   private long start = 0;
   private Float maxScore = null;
-  private Boolean numFoundExact = true;
   
-  public Boolean getNumFoundExact() {
-    return numFoundExact;
-  }
-
-  public void setNumFoundExact(Boolean numFoundExact) {
-    this.numFoundExact = numFoundExact;
-  }
-
   public Float getMaxScore() {
     return maxScore;
   }
@@ -68,7 +59,6 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
   @Override
   public String toString() {
     return "{numFound="+numFound
-            +",numFoundExact="+String.valueOf(numFoundExact)
             +",start="+start
             + (maxScore!=null ? ",maxScore="+maxScore : "")
             +",docs="+super.toString()

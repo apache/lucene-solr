@@ -204,13 +204,11 @@ public class ImplicitSnitchTest extends SolrTestCaseJ4 {
     ImplicitSnitch implicitSnitch = new ImplicitSnitch();
     ServerSnitchContext noNodeExceptionSnitch = new ServerSnitchContext(null, null, new HashMap<>(), null)  {
       @Override
-      @SuppressWarnings({"rawtypes"})
       public Map getZkJson(String path) throws KeeperException, InterruptedException {
         throw new KeeperException.NoNodeException();
       }
     };
     implicitSnitch.getTags("", Collections.singleton(ImplicitSnitch.ROLE), noNodeExceptionSnitch);
-    @SuppressWarnings({"rawtypes"})
     Map map = (Map) noNodeExceptionSnitch.retrieve(ZkStateReader.ROLES); // todo it the key really supposed to /roles.json?
     assertNotNull(map);
     assertEquals(0, map.size());
@@ -222,7 +220,6 @@ public class ImplicitSnitchTest extends SolrTestCaseJ4 {
 
     ServerSnitchContext keeperExceptionSnitch = new ServerSnitchContext(null, null, new HashMap<>(), null)  {
       @Override
-      @SuppressWarnings({"rawtypes"})
       public Map getZkJson(String path) throws KeeperException, InterruptedException {
         throw new KeeperException.ConnectionLossException();
       }

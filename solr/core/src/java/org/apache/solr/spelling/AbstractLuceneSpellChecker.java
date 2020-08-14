@@ -80,8 +80,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   protected StringDistance sd;
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public String init(@SuppressWarnings({"rawtypes"})NamedList config, SolrCore core) {
+  public String init(NamedList config, SolrCore core) {
     super.init(config, core);
     indexDir = (String) config.get(INDEX_DIR);
     String accuracy = (String) config.get(ACCURACY);

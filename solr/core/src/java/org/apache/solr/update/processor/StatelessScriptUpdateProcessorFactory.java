@@ -177,9 +177,8 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
   private ScriptEngineCustomizer scriptEngineCustomizer;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    @SuppressWarnings({"unchecked"})
-    Collection<String> scripts =
+  public void init(NamedList args) {
+    Collection<String> scripts = 
       args.removeConfigArgs(SCRIPT_ARG);
     if (scripts.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 

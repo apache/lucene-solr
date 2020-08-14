@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
@@ -42,7 +41,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
   }
 
-  @SuppressWarnings({"try"})
   static class ZkConnection implements AutoCloseable {
 
     private ZkTestServer server = null;
@@ -69,20 +67,18 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void close() throws IOException, InterruptedException {
+    public void close() throws Exception {
       if (zkClient != null) zkClient.close();
       if (server != null) server.shutdown();
     }
   }
 
-  @SuppressWarnings({"try"})
   public void testConnect() throws Exception {
     try (ZkConnection conn = new ZkConnection (false)) {
       // do nothing
     }
   }
 
-  @SuppressWarnings({"try"})
   public void testMakeRootNode() throws Exception {
     try (ZkConnection conn = new ZkConnection ()) {
       final SolrZkClient zkClient = new SolrZkClient(conn.getServer().getZkHost(), AbstractZkTestCase.TIMEOUT);
@@ -94,7 +90,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings({"try"})
   public void testClean() throws Exception {
     try (ZkConnection conn = new ZkConnection ()) {
       final SolrZkClient zkClient = conn.getClient();
@@ -231,7 +226,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"try"})
   public void testMultipleWatchesAsync() throws Exception {
     try (ZkConnection conn = new ZkConnection()) {
       final SolrZkClient zkClient = conn.getClient();
@@ -282,7 +276,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings({"try"})
   public void testWatchChildren() throws Exception {
     try (ZkConnection conn = new ZkConnection ()) {
       final SolrZkClient zkClient = conn.getClient();
@@ -330,8 +323,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
     }
   }
-
-  @SuppressWarnings({"try"})
+  
   public void testSkipPathPartsOnMakePath() throws Exception {
     try (ZkConnection conn = new ZkConnection()) {
       final SolrZkClient zkClient = conn.getClient();

@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 
-@SuppressWarnings({"rawtypes"})
 public class VectorFunction extends ArrayList {
 
   protected static final long serialVersionUID = 1L;
@@ -29,7 +28,6 @@ public class VectorFunction extends ArrayList {
   private Object function;
   private Map context = new HashMap();
 
-  @SuppressWarnings({"unchecked"})
   public VectorFunction(Object function, double[] results) {
     this.function = function;
     for(double d : results) {
@@ -37,7 +35,6 @@ public class VectorFunction extends ArrayList {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   public VectorFunction(Object function, List<Number> values) {
     this.function = function;
     addAll(values);
@@ -47,7 +44,6 @@ public class VectorFunction extends ArrayList {
     return this.function;
   }
 
-  @SuppressWarnings({"unchecked"})
   public void addToContext(Object key, Object value) {
     this.context.put(key, value);
   }

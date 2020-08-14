@@ -48,9 +48,7 @@ public class DotProductEvaluator extends RecursiveNumericEvaluator implements Tw
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     RealVector v = new ArrayRealVector(((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
-    @SuppressWarnings({"unchecked", "rawtypes"})
     RealVector v2 = new ArrayRealVector(((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
 
     return v.dotProduct(v2);

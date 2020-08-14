@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.io.Closeable;
 import java.util.Properties;
 
 /**
@@ -36,7 +35,7 @@ import java.util.Properties;
  *
  * @since solr 1.3
  */
-public abstract class DataSource<T> implements Closeable {
+public abstract class DataSource<T> {
 
   /**
    * Initializes the DataSource with the <code>Context</code> and

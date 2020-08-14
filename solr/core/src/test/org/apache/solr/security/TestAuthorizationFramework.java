@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.apache.http.client.HttpClient;
@@ -61,7 +60,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
     MockAuthorizationPlugin.denyUsers.add("user1");
 
     try {
-      waitForThingsToLevelOut(10, TimeUnit.SECONDS);
+      waitForThingsToLevelOut(10);
       String baseUrl = jettys.get(0).getBaseUrl().toString();
       verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
       log.info("Starting test");
@@ -89,7 +88,6 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
 
   }
 
-  @SuppressWarnings({"unchecked"})
   public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
     boolean success = false;
     String s = null;
@@ -97,12 +95,10 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
     for (int i = 0; i < count; i++) {
       HttpGet get = new HttpGet(url);
       s = EntityUtils.toString(cl.execute(get, HttpClientUtil.createNewHttpClientRequestContext()).getEntity());
-      @SuppressWarnings({"rawtypes"})
       Map m = (Map) Utils.fromJSONString(s);
 
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
       if (expected instanceof Predicate) {
-        @SuppressWarnings({"rawtypes"})
         Predicate predicate = (Predicate) expected;
         if (predicate.test(actual)) {
           success = true;

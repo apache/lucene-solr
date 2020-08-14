@@ -26,6 +26,5 @@ public interface V2RequestSupport {
    * return V1 request object
    *
    */
-  @SuppressWarnings({"rawtypes"})
   SolrRequest getV2Request();
 }

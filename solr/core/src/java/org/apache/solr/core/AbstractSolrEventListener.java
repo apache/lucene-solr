@@ -29,13 +29,11 @@ public class AbstractSolrEventListener implements SolrEventListener {
   public AbstractSolrEventListener(SolrCore core) {
     this.core = core;
   }
-  @SuppressWarnings({"rawtypes"})
   private NamedList args;
-  @SuppressWarnings({"rawtypes"})
   public NamedList getArgs() { return args; }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     this.args = args.clone();
   }
 
@@ -69,7 +67,6 @@ public class AbstractSolrEventListener implements SolrEventListener {
    * @param currentSearcher If null, add FIRST_SEARCHER, otherwise NEW_SEARCHER
    * @param nlst The named list to add the EVENT value to
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   protected NamedList addEventParms(SolrIndexSearcher currentSearcher, NamedList nlst) {
     NamedList result = new NamedList();
     result.addAll(nlst);

@@ -279,16 +279,12 @@ class ExclusiveSliceProperty {
   }
 
   private void removeProp(Slice origSlice, String replicaName) {
-    if (log.isDebugEnabled()) {
-      log.debug("Removing property {} from slice {}, replica {}", property, origSlice.getName(), replicaName);
-    }
+    log.debug("Removing property {} from slice {}, replica {}", property, origSlice.getName(), replicaName);
     getReplicaFromChanged(origSlice, replicaName).getProperties().remove(property);
   }
 
   private void addProp(Slice origSlice, String replicaName) {
-    if (log.isDebugEnabled()) {
-      log.debug("Adding property {} to slice {}, replica {}", property, origSlice.getName(), replicaName);
-    }
+    log.debug("Adding property {} to slice {}, replica {}", property, origSlice.getName(), replicaName);
     getReplicaFromChanged(origSlice, replicaName).getProperties().put(property, "true");
   }
 
@@ -362,7 +358,7 @@ class ExclusiveSliceProperty {
       this.replica = replica;
     }
     public String toString() {
-      StringBuilder sb = new StringBuilder(System.lineSeparator()).append(System.lineSeparator());
+      StringBuilder sb = new StringBuilder(System.lineSeparator()).append(System.lineSeparator()).append("******EOE20 starting toString of SliceReplica");
       sb.append("    :").append(System.lineSeparator()).append("slice: ").append(slice.toString()).append(System.lineSeparator()).append("      replica: ").append(replica.toString()).append(System.lineSeparator());
       return sb.toString();
     }

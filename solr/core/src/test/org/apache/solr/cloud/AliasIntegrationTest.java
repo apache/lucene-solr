@@ -94,7 +94,6 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testProperties() throws Exception {
     CollectionAdminRequest.createCollection("collection1meta", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "conf", 1, 1).process(cluster.getSolrClient());
@@ -118,6 +117,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertEquals("collection2meta", aliases.get(1));
     //ensure we have the back-compat format in ZK:
     final byte[] rawBytes = zkStateReader.getZkClient().getData(ALIASES, null, null, true);
+    //noinspection unchecked
     assertTrue(((Map<String,Map<String,?>>)Utils.fromJSON(rawBytes)).get("collection").get("meta1") instanceof String);
 
     // set properties

@@ -106,7 +106,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
         }
       }
 
-      // Add all keys into a leader list
+      // Add all keys into a master list
       if (issuerConfig.usesHttpsJwk()) {
         keysSource = "[" + String.join(", ", issuerConfig.getJwksUrls()) + "]";
         for (HttpsJwks hjwks : issuerConfig.getHttpsJwks()) {
@@ -119,10 +119,8 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
 
       theChosenOne = verificationJwkSelector.select(jws, jsonWebKeys);
       if (theChosenOne == null && issuerConfig.usesHttpsJwk()) {
-        if (log.isDebugEnabled()) {
-          log.debug("Refreshing JWKs from all {} locations, as no suitable verification key for JWS w/ header {} was found in {}",
-              issuerConfig.getHttpsJwks().size(), jws.getHeaders().getFullHeaderAsJsonString(), jsonWebKeys);
-        }
+        log.debug("Refreshing JWKs from all {} locations, as no suitable verification key for JWS w/ header {} was found in {}",
+            issuerConfig.getHttpsJwks().size(), jws.getHeaders().getFullHeaderAsJsonString(), jsonWebKeys);
 
         jsonWebKeys.clear();
         for (HttpsJwks hjwks : issuerConfig.getHttpsJwks()) {

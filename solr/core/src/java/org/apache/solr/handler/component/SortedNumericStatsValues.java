@@ -29,20 +29,20 @@ import org.apache.solr.schema.NumberType;
 
 public class SortedNumericStatsValues implements StatsValues {
   
-  private final StatsValuesFactory.NumericStatsValues nsv;
+  private final NumericStatsValues nsv;
   private final String fieldName;
   private final NumberType numberType;
   private SortedNumericDocValues sndv;
   
   
-  public SortedNumericStatsValues(StatsValuesFactory.NumericStatsValues nsv, StatsField field) {
+  public SortedNumericStatsValues(NumericStatsValues nsv, StatsField field) {
     this.nsv = nsv;
     this.fieldName = field.getSchemaField().getName();
     this.numberType = field.getSchemaField().getType().getNumberType();
   }
 
   @Override
-  public void accumulate(@SuppressWarnings({"rawtypes"})NamedList stv) {
+  public void accumulate(NamedList stv) {
     nsv.accumulate(stv);
   }
   

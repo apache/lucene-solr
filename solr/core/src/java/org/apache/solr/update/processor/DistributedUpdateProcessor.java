@@ -366,9 +366,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (forwardedFromCollection && ulog.getState() == UpdateLog.State.ACTIVE) {
             // forwarded from a collection but we are not buffering so strip original version and apply our own
             // see SOLR-5308
-            if (log.isInfoEnabled()) {
-              log.info("Removing version field from doc: {}", cmd.getPrintableId());
-            }
+            log.info("Removing version field from doc: " + cmd.getPrintableId());
             cmd.solrDoc.remove(CommonParams.VERSION_FIELD);
             versionOnUpdate = 0;
           }
@@ -379,9 +377,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
               && isReplayOrPeersync == false) {
             // we're not in an active state, and this update isn't from a replay, so buffer it.
-            if (log.isInfoEnabled()) {
-              log.info("Leader logic applied but update log is buffering: {}", cmd.getPrintableId());
-            }
+            log.info("Leader logic applied but update log is buffering: " + cmd.getPrintableId());
             cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
             ulog.add(cmd);
             return true;
@@ -431,21 +427,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               UpdateCommand fetchedFromLeader = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
 
               if (fetchedFromLeader instanceof DeleteUpdateCommand) {
-                if (log.isInfoEnabled()) {
-                  log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document was deleted at the leader subsequently."
-                      , idBytes.utf8ToString());
-                }
+                log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document"
+                    + " was deleted at the leader subsequently.", idBytes.utf8ToString());
                 versionDelete((DeleteUpdateCommand) fetchedFromLeader);
                 return true;
               } else {
                 assert fetchedFromLeader instanceof AddUpdateCommand;
                 // Newer document was fetched from the leader. Apply that document instead of this current in-place
                 // update.
-                if (log.isInfoEnabled()) {
-                  log.info(
-                      "In-place update of {} failed to find valid lastVersion to apply to, forced to fetch full doc from leader: {}",
-                      idBytes.utf8ToString(), fetchedFromLeader);
-                }
+                log.info(
+                    "In-place update of {} failed to find valid lastVersion to apply to, forced to fetch full doc from leader: {}",
+                    idBytes.utf8ToString(), fetchedFromLeader);
+
                 // Make this update to become a non-inplace update containing the full document obtained from the
                 // leader
                 cmd.solrDoc = ((AddUpdateCommand) fetchedFromLeader).solrDoc;
@@ -457,8 +450,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               if (lastVersion != null && Math.abs(lastVersion) > prev) {
                 // this means we got a newer full doc update and in that case it makes no sense to apply the older
                 // inplace update. Drop this update
-                log.info("Update was applied on version: {}, but last version I have is: {}. Dropping current update"
-                    , prev, lastVersion);
+                log.info("Update was applied on version: " + prev + ", but last version I have is: " + lastVersion
+                    + ". Dropping current update.");
                 return true;
               } else {
                 // We're good, we should apply this update. First, update the bucket's highest.
@@ -479,9 +472,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
               if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
                 // This update is a repeat, or was reordered. We need to drop this update.
-                if (log.isDebugEnabled()) {
-                  log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
-                }
+                log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
                 return true;
               }
             }
@@ -558,8 +549,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // trying to index this partial update. Since a full update more recent than this partial update has succeeded,
       // we can drop the current update.
       if (log.isDebugEnabled()) {
-        log.debug("Update was applied on version: {}, but last version I have is: {} . Current update should be dropped. id={}"
-            , cmd.prevVersion, lastFoundVersion, cmd.getPrintableId());
+        log.debug("Update was applied on version: {}, but last version I have is: {}"
+            + ". Current update should be dropped. id={}", cmd.prevVersion, lastFoundVersion, cmd.getPrintableId());
       }
       return -1;
     } else if (Math.abs(lastFoundVersion) == cmd.prevVersion) {
@@ -571,29 +562,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // We have waited enough, but dependent update didn't arrive. Its time to actively fetch it from leader
-    if (log.isInfoEnabled()) {
-      log.info("Missing update, on which current in-place update depends on, hasn't arrived. id={}, looking for version={}, last found version={}",
-          cmd.getPrintableId(), cmd.prevVersion, lastFoundVersion);
-    }
+    log.info("Missing update, on which current in-place update depends on, hasn't arrived. id={}, looking for version={}, last found version={}", 
+        cmd.getPrintableId(), cmd.prevVersion, lastFoundVersion);
     
     UpdateCommand missingUpdate = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
     if (missingUpdate instanceof DeleteUpdateCommand) {
-      if (log.isInfoEnabled()) {
-        log.info("Tried to fetch document {} from the leader, but the leader says document has been deleted. Deleting the document here and skipping this update: Last found version: {}, was looking for: {}"
-            , cmd.getPrintableId(), lastFoundVersion, cmd.prevVersion);
-      }
-      versionDelete((DeleteUpdateCommand) missingUpdate);
+      log.info("Tried to fetch document {} from the leader, but the leader says document has been deleted. " 
+          + "Deleting the document here and skipping this update: Last found version: {}, was looking for: {}", cmd.getPrintableId(), lastFoundVersion, cmd.prevVersion);
+      versionDelete((DeleteUpdateCommand)missingUpdate);
       return -1;
     } else {
       assert missingUpdate instanceof AddUpdateCommand;
-      if (log.isDebugEnabled()) {
-        log.debug("Fetched the document: {}", ((AddUpdateCommand) missingUpdate).getSolrInputDocument());
-      }
+      log.debug("Fetched the document: {}", ((AddUpdateCommand)missingUpdate).getSolrInputDocument());
       versionAdd((AddUpdateCommand)missingUpdate);
-      if (log.isInfoEnabled()) {
-        log.info("Added the fetched document, id= {}, version={}"
-            , ((AddUpdateCommand) missingUpdate).getPrintableId(), missingUpdate.getVersion());
-      }
+      log.info("Added the fetched document, id="+((AddUpdateCommand)missingUpdate).getPrintableId()+", version="+missingUpdate.getVersion());
     }
     return missingUpdate.getVersion();
   }
@@ -606,11 +588,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       lastFoundVersion = lookedUpVersion == null ? 0L : lookedUpVersion;
 
       if (Math.abs(lastFoundVersion) < cmd.prevVersion) {
-        if (log.isDebugEnabled()) {
-          log.debug("Re-ordered inplace update. version={}, prevVersion={}, lastVersion={}, replayOrPeerSync={}, id={}",
-              (cmd.getVersion() == 0 ? versionOnUpdate : cmd.getVersion()), cmd.prevVersion, lastFoundVersion,
-              isReplayOrPeersync, cmd.getPrintableId());
-        }
+        log.debug("Re-ordered inplace update. version={}, prevVersion={}, lastVersion={}, replayOrPeerSync={}, id={}",
+            (cmd.getVersion() == 0 ? versionOnUpdate : cmd.getVersion()), cmd.prevVersion, lastFoundVersion,
+            isReplayOrPeersync, cmd.getPrintableId());
       }
 
       while (Math.abs(lastFoundVersion) < cmd.prevVersion && !waitTimeout.hasTimedOut()) {
@@ -1005,9 +985,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (forwardedFromCollection && ulog.getState() == UpdateLog.State.ACTIVE) {
             // forwarded from a collection but we are not buffering so strip original version and apply our own
             // see SOLR-5308
-            if (log.isInfoEnabled()) {
-              log.info("Removing version field from doc: {}", cmd.getId());
-            }
+            log.info("Removing version field from doc: " + cmd.getId());
             versionOnUpdate = signedVersionOnUpdate = 0;
           }
 
@@ -1015,9 +993,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
               && !isReplayOrPeersync) {
             // we're not in an active state, and this update isn't from a replay, so buffer it.
-            if (log.isInfoEnabled()) {
-              log.info("Leader logic applied but update log is buffering: {}", cmd.getId());
-            }
+            log.info("Leader logic applied but update log is buffering: " + cmd.getId());
             cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
             ulog.delete(cmd);
             return true;
@@ -1060,9 +1036,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
             if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
               // This update is a repeat, or was reordered. We need to drop this update.
-              if (log.isDebugEnabled()) {
-                log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
-              }
+              log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
               return true;
             }
           }
@@ -1104,10 +1078,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (ulog == null || ulog.getState() == UpdateLog.State.ACTIVE || (cmd.getFlags() & UpdateCommand.REPLAY) != 0) {
         super.processCommit(cmd);
       } else {
-        if (log.isInfoEnabled()) {
-          log.info("Ignoring commit while not ACTIVE - state: {} replay: {}"
-              , ulog.getState(), ((cmd.getFlags() & UpdateCommand.REPLAY) != 0));
-        }
+        log.info("Ignoring commit while not ACTIVE - state: " + ulog.getState() + " replay: " + ((cmd.getFlags() & UpdateCommand.REPLAY) != 0));
       }
 
     } finally {

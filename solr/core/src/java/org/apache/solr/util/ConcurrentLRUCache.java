@@ -417,7 +417,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     int wantToKeep = lowerWaterMark;
     int wantToRemove = sz - lowerWaterMark;
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings("unchecked") // generic array's are annoying
     CacheEntry<K,V>[] eset = new CacheEntry[sz];
     int eSize = 0;
 
@@ -552,7 +552,6 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           // this loop so far.
           queue.myMaxSize = sz - lowerWaterMark - numRemoved;
           while (queue.size() > queue.myMaxSize && queue.size() > 0) {
-            @SuppressWarnings({"rawtypes"})
             CacheEntry otherEntry = queue.pop();
             newOldestEntry = Math.min(otherEntry.lastAccessedCopy, newOldestEntry);
           }
@@ -596,8 +595,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     }
 
     @Override
-    protected boolean lessThan(@SuppressWarnings({"rawtypes"})CacheEntry a,
-                               @SuppressWarnings({"rawtypes"})CacheEntry b) {
+    protected boolean lessThan(CacheEntry a, CacheEntry b) {
       // reverse the parameter order so that the queue keeps the oldest items
       return b.lastAccessedCopy < a.lastAccessedCopy;
     }
@@ -861,19 +859,17 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   }
 
   private static class CleanupThread extends Thread {
-    @SuppressWarnings({"rawtypes"})
     private WeakReference<ConcurrentLRUCache> cache;
 
     private boolean stop = false;
 
-    public CleanupThread(@SuppressWarnings({"rawtypes"})ConcurrentLRUCache c) {
+    public CleanupThread(ConcurrentLRUCache c) {
       cache = new WeakReference<>(c);
     }
 
     @Override
     public void run() {
       while (true) {
-        @SuppressWarnings({"rawtypes"})
         ConcurrentLRUCache c = cache.get();
         if(c == null) break;
         synchronized (this) {

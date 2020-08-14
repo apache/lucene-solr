@@ -34,11 +34,8 @@ import java.util.stream.Collectors;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
-
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -60,7 +57,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
@@ -78,11 +75,9 @@ import org.slf4j.LoggerFactory;
 @Slow
 @SuppressSSL
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@LogLevel("org.apache.solr.cloud.*=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.*=DEBUG")
 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -92,7 +87,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0,
       Integer.MAX_VALUE, 5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-      new SolrNamedThreadFactory("testExecutor"));
+      new DefaultSolrThreadFactory("testExecutor"));
   
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
@@ -121,6 +116,11 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   public void setUp() throws Exception {
     super.setUp();
     collectionUlogDirMap.clear();
+    if (random().nextBoolean()) {
+      CollectionAdminRequest.setClusterProperty("legacyCloud", "false").process(cloudClient);
+    } else {
+      CollectionAdminRequest.setClusterProperty("legacyCloud", "true").process(cloudClient);
+    }
   }
   
   @Override
@@ -161,7 +161,9 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   private void testBasics() throws Exception {
     String collection1 = "solrj_collection";
     Create createCollectionRequest = CollectionAdminRequest.createCollection(collection1,"conf1",2,2)
-            .setRouterField("myOwnField");
+            .setMaxShardsPerNode(2)
+            .setRouterField("myOwnField")
+            .setAutoAddReplicas(true);
     CollectionAdminResponse response = createCollectionRequest.process(cloudClient);
 
     assertEquals(0, response.getStatus());
@@ -170,7 +172,9 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     
     String collection2 = "solrj_collection2";
     createCollectionRequest = CollectionAdminRequest.createCollection(collection2,"conf1",2,2)
-            .setRouterField("myOwnField");
+            .setMaxShardsPerNode(2)
+            .setRouterField("myOwnField")
+            .setAutoAddReplicas(false);
     CollectionAdminResponse response2 = createCollectionRequest.process(getCommonCloudSolrClient());
 
     assertEquals(0, response2.getStatus());
@@ -180,7 +184,9 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     
     String collection3 = "solrj_collection3";
     createCollectionRequest = CollectionAdminRequest.createCollection(collection3,"conf1",5,1)
-            .setRouterField("myOwnField");
+            .setMaxShardsPerNode(1)
+            .setRouterField("myOwnField")
+            .setAutoAddReplicas(true);
     CollectionAdminResponse response3 = createCollectionRequest.process(getCommonCloudSolrClient());
 
     assertEquals(0, response3.getStatus());
@@ -191,7 +197,9 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     // a collection has only 1 replica per a shard
     String collection4 = "solrj_collection4";
     createCollectionRequest = CollectionAdminRequest.createCollection(collection4,"conf1",5,1)
-        .setRouterField("text");
+        .setMaxShardsPerNode(5)
+        .setRouterField("text")
+        .setAutoAddReplicas(true);
     CollectionAdminResponse response4 = createCollectionRequest.process(getCommonCloudSolrClient());
 
     assertEquals(0, response4.getStatus());

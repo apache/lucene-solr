@@ -522,13 +522,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       if (mBeanServer.isRegistered(objectName)) {
         if (log.isDebugEnabled()) {
           Set<ObjectInstance> objects = mBeanServer.queryMBeans(objectName, null);
-          if (log.isDebugEnabled()) {
-            log.debug("## removing existing {} bean(s) for {}, current tag={}:", objects.size(), objectName.getCanonicalName(), tag);
-          }
+          log.debug("## removing existing " + objects.size() + " bean(s) for " + objectName.getCanonicalName() + ", current tag=" + tag + ":");
           for (ObjectInstance inst : objects) {
-            if (log.isDebugEnabled()) {
-              log.debug("## - tag={}{}", mBeanServer.getAttribute(inst.getObjectName(), INSTANCE_TAG));
-            }
+            log.debug("## - tag=" + mBeanServer.getAttribute(inst.getObjectName(), INSTANCE_TAG));
           }
         }
         mBeanServer.unregisterMBean(objectName);
@@ -542,9 +538,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       } else {
         registered.put(objectName, objectName);
       }
-      if (log.isDebugEnabled()) {
-        log.debug("## registered {}, tag={}", objectInstance.getObjectName().getCanonicalName(), tag);
-      }
+      log.debug("## registered " + objectInstance.getObjectName().getCanonicalName() + ", tag=" + tag);
     }
 
     private void unregisterMBean(ObjectName originalObjectName) throws InstanceNotFoundException, MBeanRegistrationException {
@@ -554,9 +548,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       }
       Set<ObjectInstance> objects = mBeanServer.queryMBeans(objectName, exp);
       for (ObjectInstance o : objects) {
-        if (log.isDebugEnabled()) {
-          log.debug("## Unregistered {}, tag={}", o.getObjectName().getCanonicalName(), tag);
-        }
+        log.debug("## Unregistered " + o.getObjectName().getCanonicalName() + ", tag=" + tag);
         mBeanServer.unregisterMBean(o.getObjectName());
       }
     }
@@ -748,7 +740,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       } else if (v instanceof Gauge) {
         listener.onGaugeAdded(k, (Gauge)v);
       } else {
-        log.warn("Unknown metric type {} for metric '{}', ignoring", v.getClass().getName(), k);
+        log.warn("Unknown metric type " + v.getClass().getName() + " for metric '" + k + "', ignoring");
       }
     });
   }

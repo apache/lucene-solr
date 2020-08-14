@@ -17,14 +17,16 @@
 
 package org.apache.solr.handler;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
@@ -40,7 +42,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.core.SolrCore;
-import org.eclipse.jetty.io.RuntimeIOException;
+import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +53,7 @@ public class CatStream extends TupleStream implements Expressible {
   private final int maxLines; // -1 for no max
 
   private StreamContext context;
-  private Path chroot;
+  private String chroot;
   private Iterator<CrawlFile> allFilesToCrawl;
 
   private int linesReturned = 0;
@@ -93,9 +95,9 @@ public class CatStream extends TupleStream implements Expressible {
     }
     final SolrCore core = (SolrCore) context.get("solr-core");
 
-    this.chroot = core.getCoreContainer().getUserFilesPath();
-    if (! Files.exists(chroot)) {
-      throw new IllegalStateException(chroot + " directory used to load files must exist but could not be found!");
+    this.chroot = Paths.get(core.getCoreContainer().getSolrHome(), SolrResourceLoader.USER_FILES_DIRECTORY).toString();
+    if (! new File(this.chroot).exists()) {
+      throw new IllegalStateException(SolrResourceLoader.USER_FILES_DIRECTORY + " directory used to load files must exist but could not be found!");
     }
   }
 
@@ -124,14 +126,14 @@ public class CatStream extends TupleStream implements Expressible {
   public Tuple read() throws IOException {
     if (maxLines >= 0 && linesReturned >= maxLines) {
       closeCurrentFileIfSet();
-      return Tuple.EOF();
+      return createEofTuple();
     } else if (currentFileHasMoreLinesToRead()) {
       return fetchNextLineFromCurrentFile();
     } else if (advanceToNextFileWithData()) {
       return fetchNextLineFromCurrentFile();
     } else { // No more data
       closeCurrentFileIfSet();
-      return Tuple.EOF();
+      return createEofTuple();
     }
   }
 
@@ -157,20 +159,28 @@ public class CatStream extends TupleStream implements Expressible {
   }
 
   private List<CrawlFile> validateAndSetFilepathsInSandbox() {
+    final String[] relativePathRoots = commaDelimitedFilepaths.split(",");
+
     final List<CrawlFile> crawlSeeds = new ArrayList<>();
-    for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
-      Path crawlRootPath = chroot.resolve(crawlRootStr).normalize();
-      if (! crawlRootPath.startsWith(chroot)) {
+    for (String crawlRoot : relativePathRoots) {
+      final File crawlRootFile = new File(crawlRoot);
+      if (crawlRootFile.isAbsolute()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "file/directory to stream must be under " + chroot);
+            "file/directory to stream must be provided as an absolute path: " + crawlRoot);
+      }
+      if ( crawlRoot.contains("..")) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "relative file/directory paths cannot contain '..': " + crawlRoot);
       }
 
-      if (! Files.exists(crawlRootPath)) {
+      final String rootAbsolutePath = getAbsolutePath(crawlRoot);
+      if (! new File(getAbsolutePath(crawlRoot)).exists()) {
+        log.warn("Unable to find abs path: {}", getAbsolutePath(crawlRoot));
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "file/directory to stream doesn't exist: " + crawlRootStr);
+            "file/directory to stream doesn't exist: " + crawlRoot);
       }
 
-      crawlSeeds.add(new CrawlFile(crawlRootStr, crawlRootPath));
+      crawlSeeds.add(new CrawlFile(crawlRoot, rootAbsolutePath));
     }
 
     return crawlSeeds;
@@ -180,25 +190,34 @@ public class CatStream extends TupleStream implements Expressible {
     while (allFilesToCrawl.hasNext()) {
       closeCurrentFileIfSet();
       currentFilePath = allFilesToCrawl.next();
-      currentFileLines = FileUtils.lineIterator(currentFilePath.absolutePath.toFile(), "UTF-8");
+      currentFileLines = FileUtils.lineIterator(new File(currentFilePath.absolutePath), "UTF-8");
       if (currentFileLines.hasNext()) return true;
     }
 
     return false;
   }
 
-  @SuppressWarnings({"unchecked"})
   private Tuple fetchNextLineFromCurrentFile() {
     linesReturned++;
 
-    return new Tuple(
-        "file", currentFilePath.displayPath,
-        "line", currentFileLines.next()
-    );
+    HashMap m = new HashMap();
+    m.put("file", currentFilePath.displayPath);
+    m.put("line", currentFileLines.next());
+    return new Tuple(m);
+  }
+
+  private Tuple createEofTuple() {
+    HashMap m = new HashMap();
+    m.put("EOF", true);
+    return new Tuple(m);
   }
 
   private boolean currentFileHasMoreLinesToRead() {
     return currentFileLines != null && currentFileLines.hasNext();
+  }
+
+  private String getAbsolutePath(String pathRelativeToChroot) {
+    return Paths.get(chroot, pathRelativeToChroot).toString();
   }
 
   private void closeCurrentFileIfSet() throws IOException {
@@ -211,26 +230,25 @@ public class CatStream extends TupleStream implements Expressible {
 
   private void findReadableFiles(CrawlFile seed, List<CrawlFile> foundFiles) {
 
-    final Path entry = seed.absolutePath;
+    final File entry = new File(seed.absolutePath);
 
     // Skip over paths that don't exist or that are symbolic links
-    if ((!Files.exists(entry)) || (!Files.isReadable(entry)) || Files.isSymbolicLink(entry)) {
+    if ((!entry.exists()) || (!entry.canRead()) || Files.isSymbolicLink(entry.toPath())) {
       return;
     }
 
     // We already know that the path in question exists, is readable, and is in our sandbox
-    if (Files.isRegularFile(entry)) {
+    if (entry.isFile()) {
       foundFiles.add(seed);
-    } else if (Files.isDirectory(entry)) {
-      try (Stream<Path> directoryContents = Files.list(entry)) {
-        directoryContents.sorted().forEach(iPath -> {
-          // debatable: should the separator be OS/file-system specific, or perhaps always "/" ?
-          final String displayPathSeparator = iPath.getFileSystem().getSeparator();
-          final String itemDisplayPath = seed.displayPath + displayPathSeparator + iPath.getFileName();
-          findReadableFiles(new CrawlFile(itemDisplayPath, iPath), foundFiles);
-        });
-      } catch (IOException e) {
-        throw new RuntimeIOException(e);
+    } else if (entry.isDirectory()) {
+      final String[] directoryContents = entry.list();
+      Arrays.sort(directoryContents);
+      if (directoryContents != null) {
+        for (String item : directoryContents) {
+          final String itemDisplayPath = Paths.get(seed.displayPath, item).toString();
+          final String itemAbsolutePath = Paths.get(seed.absolutePath, item).toString();
+          findReadableFiles(new CrawlFile(itemDisplayPath, itemAbsolutePath), foundFiles);
+        }
       }
     }
   }
@@ -240,9 +258,9 @@ public class CatStream extends TupleStream implements Expressible {
   // - display path to avoid leaking Solr node fs details in tuples (relative to chroot)
   public class CrawlFile {
     private final String displayPath;
-    private final Path absolutePath;
+    private final String absolutePath;
 
-    public CrawlFile(String displayPath, Path absolutePath) {
+    public CrawlFile(String displayPath, String absolutePath) {
       this.displayPath = displayPath;
       this.absolutePath = absolutePath;
     }

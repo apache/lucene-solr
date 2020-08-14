@@ -58,10 +58,7 @@ public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpd
         certainty = 0d;
       DetectedLanguage language = new DetectedLanguage(identifier.getLanguage(), certainty);
       languages.add(language);
-      if (log.isDebugEnabled()) {
-        log.debug("Language detected as {} with a certainty of {} (Tika distance={})"
-            , language, language.getCertainty(), identifier);
-      }
+      log.debug("Language detected as "+language+" with a certainty of "+language.getCertainty()+" (Tika distance="+identifier.toString()+")");
     } else {
       log.debug("No input text to detect language from, returning empty list");
     }

@@ -78,9 +78,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    if (log.isInfoEnabled()) {
-      log.info("####SETUP_START {}", getTestName());
-    }
+    log.info("####SETUP_START " + getTestName());
 
     String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
 
@@ -88,7 +86,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     solrHome = exampleHome;
 
     zkDir = tmpDir.resolve("zookeeper/server1/data");
-    log.info("ZooKeeper dataDir:{}", zkDir);
+    log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
@@ -100,9 +98,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     this.zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT);
 
-    if (log.isInfoEnabled()) {
-      log.info("####SETUP_END {}", getTestName());
-    }
+    log.info("####SETUP_END " + getTestName());
   }
 
   @Test

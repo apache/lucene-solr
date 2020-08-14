@@ -56,25 +56,14 @@ abstract class UniqueSlotAcc extends SlotAcc {
     if (fcontext.isShard()) {
       return getShardValue(slot);
     }
-    return getNonShardValue(slot);
-  }
-
-  /**
-   * Returns the current slot value as long
-   * This is used to get non-sharded value
-   */
-  public long getNonShardValue(int slot) {
-    long res;
     if (counts != null) {  // will only be pre-populated if this was used for sorting.
-      res = counts[slot];
-    } else {
-      FixedBitSet bs = arr[slot];
-      res = bs == null ? 0 : bs.cardinality();
+      return counts[slot];
     }
-    return res;
+
+    FixedBitSet bs = arr[slot];
+    return bs==null ? 0 : bs.cardinality();
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private Object getShardHLL(int slot) throws IOException {
     FixedBitSet ords = arr[slot];
     if (ords == null) return HLLAgg.NO_VALUES;
@@ -98,7 +87,6 @@ abstract class UniqueSlotAcc extends SlotAcc {
     return map;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private Object getShardValue(int slot) throws IOException {
     if (factory != null) return getShardHLL(slot);
     FixedBitSet ords = arr[slot];
@@ -120,8 +108,8 @@ abstract class UniqueSlotAcc extends SlotAcc {
 
       List lst = new ArrayList( Math.min(unique, maxExplicit) );
 
-      int maxOrd = ords.length();
-      if (maxOrd > 0) {
+      long maxOrd = ords.length();
+      if (ords != null && ords.length() > 0) {
         for (int ord=0; lst.size() < maxExplicit;) {
           ord = ords.nextSetBit(ord);
           if (ord == DocIdSetIterator.NO_MORE_DOCS) break;

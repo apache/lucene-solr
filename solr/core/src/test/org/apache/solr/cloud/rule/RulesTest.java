@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.rule;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
@@ -27,15 +28,18 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -67,6 +71,9 @@ public class RulesTest extends SolrCloudTestCase {
   @After
   public void removeCollections() throws Exception {
     cluster.deleteAllCollections();
+    // clear any cluster policy test methods may have set
+    cluster.getSolrClient().getZkStateReader().getZkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH,
+        "{}".getBytes(StandardCharsets.UTF_8), true);
   }
 
   @Test
@@ -90,7 +97,6 @@ public class RulesTest extends SolrCloudTestCase {
     
     DocCollection rulesCollection = getCollectionState(rulesColl);
 
-    @SuppressWarnings({"rawtypes"})
     List list = (List) rulesCollection.get("rule");
     assertEquals(3, list.size());
     assertEquals ( "<4", ((Map)list.get(0)).get("cores"));
@@ -146,10 +152,64 @@ public class RulesTest extends SolrCloudTestCase {
 
     // adding an additional replica should fail since our rule says at most one replica
     // per node, and we know every node already has one replica
-    expectedException.expect(BaseHttpSolrClient.RemoteSolrException.class);
-    expectedException.expectMessage(containsString("Could not identify nodes matching the rules"));
+    expectedException.expect(HttpSolrClient.RemoteSolrException.class);
+    expectedException.expectMessage(containsString("current number of eligible live nodes 0"));
     CollectionAdminRequest.addReplicaToShard(rulesColl, "shard2").process(cluster.getSolrClient());
     
+  }
+
+  @Test
+  public void testPortRuleInPresenceOfClusterPolicy() throws Exception  {
+    JettySolrRunner jetty = cluster.getRandomJetty(random());
+    String port = Integer.toString(jetty.getLocalPort());
+
+    // this cluster policy prohibits having any replicas on a node with the above port
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'replica': 0, 'port':'" + port + "'}" +
+        "    ]" +
+        "}";
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    cluster.getSolrClient().request(req);
+
+    // but this collection is created with a replica placement rule that says all replicas must be created
+    // on a node with above port (in direct conflict with the cluster policy)
+    String rulesColl = "portRuleColl2";
+    CollectionAdminRequest.createCollectionWithImplicitRouter(rulesColl, "conf", "shard1", 2)
+        .setRule("port:" + port)
+        .setSnitch("class:ImplicitSnitch")
+        .process(cluster.getSolrClient());
+    
+    waitForState("Collection should have followed port rule w/ImplicitSnitch, not cluster policy",
+                 rulesColl, (liveNodes, rulesCollection) -> {
+                   // first sanity check that the collection exists & the rules/snitch are listed
+                   if (null == rulesCollection) {
+                     return false;
+                   } else {
+                     List list = (List) rulesCollection.get("rule");
+                     if (null == list || 1 != list.size()) {
+                       return false;
+                     }
+                     if (! port.equals(((Map) list.get(0)).get("port"))) {
+                       return false;
+                     }
+                     list = (List) rulesCollection.get("snitch");
+                     if (null == list || 1 != list.size()) {
+                       return false;
+                     }
+                     if (! "ImplicitSnitch".equals(((Map)list.get(0)).get("class"))) {
+                       return false;
+                     }
+                   }
+                   if (2 != rulesCollection.getReplicas().size()) {
+                     return false;
+                   }
+                   // now sanity check that the rules were *obeyed*
+                   // (and the contradictory policy was ignored)
+                   return rulesCollection.getReplicas().stream().allMatch
+                     (replica -> (replica.getNodeName().contains(port) &&
+                                  replica.isActive(liveNodes)));
+                 });
   }
 
   @Test
@@ -170,7 +230,6 @@ public class RulesTest extends SolrCloudTestCase {
                    if (null == rulesCollection) {
                      return false;
                    } else {
-                     @SuppressWarnings({"rawtypes"})
                      List list = (List) rulesCollection.get("rule");
                      if (null == list || 1 != list.size()) {
                        return false;
@@ -197,7 +256,6 @@ public class RulesTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testHostFragmentRule() throws Exception {
 
     String rulesColl = "hostFragment";
@@ -216,7 +274,6 @@ public class RulesTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(rulesColl, 1, 2);
 
     DocCollection rulesCollection = getCollectionState(rulesColl);
-    @SuppressWarnings({"rawtypes"})
     List<Map> list = (List<Map>) rulesCollection.get("rule");
     assertEquals(2, list.size());
     assertEquals(ip_2, list.get(0).get("ip_2"));
@@ -240,7 +297,7 @@ public class RulesTest extends SolrCloudTestCase {
     String ip_1 = ipFragments[ipFragments.length - 1];
     String ip_2 = ipFragments[ipFragments.length - 2];
 
-    expectedException.expect(BaseHttpSolrClient.RemoteSolrException.class);
+    expectedException.expect(HttpSolrClient.RemoteSolrException.class);
     expectedException.expectMessage(containsString("ip_1"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(rulesColl, "conf", "shard1", 2)
@@ -293,6 +350,7 @@ public class RulesTest extends SolrCloudTestCase {
     p.add("rule", "cores:<5");
     p.add("rule", "node:*,replica:1");
     p.add("rule", "freedisk:>"+minGB2);
+    p.add("autoAddReplicas", "true");
     cluster.getSolrClient().request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p));
 
     waitForState("Should have found updated rules in DocCollection",
@@ -300,7 +358,6 @@ public class RulesTest extends SolrCloudTestCase {
                    if (null == rulesCollection) {
                      return false;
                    } 
-                   @SuppressWarnings({"rawtypes"})
                    List list = (List) rulesCollection.get("rule");
                    if (null == list || 3 != list.size()) {
                      return false;
@@ -312,6 +369,9 @@ public class RulesTest extends SolrCloudTestCase {
                      return false;
                    }
                    if (! (">"+minGB2).equals(((Map) list.get(2)).get("freedisk"))) {
+                     return false;
+                   }
+                   if (! "true".equals(String.valueOf(rulesCollection.getProperties().get("autoAddReplicas")))) {
                      return false;
                    }
                    list = (List) rulesCollection.get("snitch");

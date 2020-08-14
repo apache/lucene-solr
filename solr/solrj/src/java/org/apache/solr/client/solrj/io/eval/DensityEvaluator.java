@@ -42,7 +42,6 @@ public class DensityEvaluator extends RecursiveObjectEvaluator implements TwoVal
     }
 
     MultivariateRealDistribution multivariateRealDistribution = (MultivariateRealDistribution) first;
-    @SuppressWarnings({"unchecked"})
     List<Number> nums = (List<Number>) second;
 
     double[] vec = new double[nums.size()];

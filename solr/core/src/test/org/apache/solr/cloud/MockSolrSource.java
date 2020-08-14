@@ -43,6 +43,6 @@ public class MockSolrSource  {
     when(zkControllerMock.getZkStateReader()).thenReturn(reader);
     when(zkControllerMock.getZkClient()).thenReturn(zkClient);
     when(zkControllerMock.getOverseer()).thenReturn(overseer);
-    return zkControllerMock;
+    return (ZkController) zkControllerMock;
   }
 }

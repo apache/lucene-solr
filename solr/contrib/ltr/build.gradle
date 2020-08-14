@@ -17,8 +17,6 @@
 
 apply plugin: 'java-library'
 
-description = 'Learning to Rank Package'
-
 dependencies {
   implementation project(':solr:core')
   implementation project(':lucene:analysis:common')

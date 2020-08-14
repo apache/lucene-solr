@@ -85,8 +85,8 @@ public class Suggester extends SolrSpellChecker {
   private LookupFactory factory;
   
   @Override
-  public String init(@SuppressWarnings({"rawtypes"})NamedList config, SolrCore core) {
-    log.info("init: {}", config);
+  public String init(NamedList config, SolrCore core) {
+    log.info("init: " + config);
     String name = super.init(config, core);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
             : (Float)config.get(THRESHOLD_TOKEN_FREQUENCY);
@@ -164,14 +164,12 @@ public class Suggester extends SolrSpellChecker {
       if(!lookup.store(new FileOutputStream(target))) {
         if (sourceLocation == null) {
           assert reader != null && field != null;
-          log.error("Store Lookup build from index on field: {} failed reader has: {} docs", field, reader.maxDoc());
+          log.error("Store Lookup build from index on field: " + field + " failed reader has: " + reader.maxDoc() + " docs");
         } else {
-          log.error("Store Lookup build from sourceloaction: {} failed", sourceLocation);
+          log.error("Store Lookup build from sourceloaction: " + sourceLocation + " failed");
         }
       } else {
-        if (log.isInfoEnabled()) {
-          log.info("Stored suggest data to: {}", target.getAbsolutePath());
-        }
+        log.info("Stored suggest data to: " + target.getAbsolutePath());
       }
     }
   }
@@ -199,7 +197,7 @@ public class Suggester extends SolrSpellChecker {
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
-    log.debug("getSuggestions: {}", options.tokens);
+    log.debug("getSuggestions: " + options.tokens);
     if (lookup == null) {
       log.info("Lookup is null - invoke spellchecker.build first");
       return EMPTY_RESULT;

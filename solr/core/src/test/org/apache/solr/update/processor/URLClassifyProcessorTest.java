@@ -44,8 +44,6 @@ public class URLClassifyProcessorTest extends SolrTestCaseJ4 {
     document.addField("url", "http://www.example.com");
     addCommand.solrDoc = document;
     classifyProcessor.processAdd(addCommand);
-    assertEquals("Confirm single valued field returned",1, document.getField("url_length").getValueCount());
-    assertEquals("Confirm field populated",22, document.getField("url_length").getValue());
   }
   
   @Test

@@ -57,9 +57,7 @@ import org.slf4j.LoggerFactory;
  *  This would also allow to not log document data for requests with commit=true
  *  in them (since we know that if the request succeeds, all docs will be committed)
  *
- * @deprecated since 8.6
  */
-@Deprecated
 public class HdfsTransactionLog extends TransactionLog {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static boolean debug = log.isDebugEnabled();
@@ -120,7 +118,7 @@ public class HdfsTransactionLog extends TransactionLog {
         }
       } else {
         if (start > 0) {
-          log.error("New transaction log already exists:{} size={}", tlogFile, tlogOutStream.size());
+          log.error("New transaction log already exists:" + tlogFile + " size=" + tlogOutStream.size());
         }
 
         addGlobalStrings(globalStrings);
@@ -166,7 +164,6 @@ public class HdfsTransactionLog extends TransactionLog {
     return true;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void readHeader(FastInputStream fis) throws IOException {
     // read existing header
     boolean closeFis = false;
@@ -270,7 +267,7 @@ public class HdfsTransactionLog extends TransactionLog {
     synchronized (this) {
       if (fos == null) return;
       if (debug) {
-        log.debug("Closing output for {}", tlogFile);
+        log.debug("Closing output for " + tlogFile);
       }
       fos.flushBuffer();
       finalLogSize = fos.size();
@@ -405,7 +402,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
       synchronized (HdfsTransactionLog.this) {
         if (trace) {
-          log.trace("Reading log record.  pos={} currentSize={}", pos, getLogSize());
+          log.trace("Reading log record.  pos="+pos+" currentSize="+getLogSize());
         }
 
         if (pos >= getLogSize()) {
@@ -491,7 +488,6 @@ public class HdfsTransactionLog extends TransactionLog {
 
         long lastVersion = Long.MIN_VALUE;
         while ( (o = super.next()) != null) {
-          @SuppressWarnings({"rawtypes"})
           List entry = (List) o;
           long version = (Long) entry.get(UpdateLog.VERSION_IDX);
           version = Math.abs(version);

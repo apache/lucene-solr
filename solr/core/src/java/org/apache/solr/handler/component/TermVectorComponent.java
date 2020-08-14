@@ -84,7 +84,6 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
   private static final String TV_KEY_WARNINGS = "warnings";
 
-  @SuppressWarnings({"rawtypes"})
   protected NamedList initParams;
 
   /**
@@ -413,8 +412,6 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
       
       NamedList<Object> termVectorsNL = new NamedList<>();
-
-      @SuppressWarnings({"unchecked", "rawtypes"})
       Map.Entry<String, Object>[] arr = new NamedList.NamedListEntry[rb.resultIds.size()];
 
       for (ShardRequest sreq : rb.finished) {
@@ -422,7 +419,6 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           continue;
         }
         for (ShardResponse srsp : sreq.responses) {
-          @SuppressWarnings({"unchecked"})
           NamedList<Object> nl = (NamedList<Object>)srsp.getSolrResponse().getResponse().get(TERM_VECTORS);
 
           // Add metadata (that which isn't a uniqueKey value):
@@ -454,7 +450,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   //////////////////////// NamedListInitializedPlugin methods //////////////////////
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList args) {
     super.init(args);
     this.initParams = args;
   }

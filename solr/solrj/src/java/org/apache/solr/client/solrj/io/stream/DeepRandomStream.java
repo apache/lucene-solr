@@ -51,7 +51,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ROWS;
@@ -257,9 +257,9 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    this.tuples = new LinkedList<>();
-    this.solrStreams = new ArrayList<>();
-    this.eofTuples = Collections.synchronizedMap(new HashMap<>());
+    this.tuples = new LinkedList();
+    this.solrStreams = new ArrayList();
+    this.eofTuples = Collections.synchronizedMap(new HashMap());
     constructStreams();
     openStreams();
   }
@@ -278,7 +278,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
     // check for alias or collection
 
-    List<String> allCollections = new ArrayList<>();
+    List<String> allCollections = new ArrayList();
     String[] collectionNames = collectionName.split(",");
     for(String col : collectionNames) {
       List<String> collections = checkAlias
@@ -347,9 +347,9 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("DeepRandomStream"));
+    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("DeepRandomStream"));
     try {
-      List<Future<TupleWrapper>> futures = new ArrayList<>();
+      List<Future<TupleWrapper>> futures = new ArrayList();
       for (TupleStream solrStream : solrStreams) {
         StreamOpener so = new StreamOpener((SolrStream) solrStream, comp);
         Future<TupleWrapper> future = service.submit(so);
@@ -403,11 +403,14 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       }
       return t;
     } else {
-      Tuple tuple = Tuple.EOF();
+      Map m = new HashMap();
       if(trace) {
-        tuple.put("_COLLECTION_", this.collection);
+        m.put("_COLLECTION_", this.collection);
       }
-      return tuple;
+
+      m.put("EOF", true);
+
+      return new Tuple(m);
     }
   }
 
@@ -434,15 +437,10 @@ public class DeepRandomStream extends TupleStream implements Expressible {
       }
     }
 
-    @Override
     public boolean equals(Object o) {
       return this == o;
     }
 
-    @Override
-    public int hashCode() {
-      return Objects.hash(tuple);
-    }
     public Tuple getTuple() {
       return tuple;
     }

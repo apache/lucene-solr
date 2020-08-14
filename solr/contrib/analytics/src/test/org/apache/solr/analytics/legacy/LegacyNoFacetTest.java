@@ -139,22 +139,22 @@ public class LegacyNoFacetTest extends LegacyAbstractAnalyticsTest {
   public void sumTest() throws Exception {
     //Int
     Double intResult = (Double)getStatResult("sr", "int_id", VAL_TYPE.DOUBLE);
-    Double intTest = calculateNumberStat(intTestStart, "sum");
+    Double intTest = (Double)calculateNumberStat(intTestStart, "sum");
     assertEquals(getRawResponse(), intResult,intTest);
 
     //Long
     Double longResult = (Double)getStatResult("sr", "long_ld", VAL_TYPE.DOUBLE);
-    Double longTest = calculateNumberStat(longTestStart, "sum");
+    Double longTest = (Double)calculateNumberStat(longTestStart, "sum");
     assertEquals(getRawResponse(), longResult,longTest);
 
     //Float
     Double floatResult = (Double)getStatResult("sr", "float_fd", VAL_TYPE.DOUBLE);
-    Double floatTest = calculateNumberStat(floatTestStart, "sum");
+    Double floatTest = (Double)calculateNumberStat(floatTestStart, "sum");
     assertEquals(getRawResponse(), floatResult,floatTest);
 
     //Double
     Double doubleResult = (Double)getStatResult("sr", "double_dd", VAL_TYPE.DOUBLE);
-        Double doubleTest = calculateNumberStat(doubleTestStart, "sum");
+        Double doubleTest = (Double) calculateNumberStat(doubleTestStart, "sum");
     assertEquals(getRawResponse(), doubleResult,doubleTest);
   }
 
@@ -162,22 +162,22 @@ public class LegacyNoFacetTest extends LegacyAbstractAnalyticsTest {
   public void meanTest() throws Exception {
     //Int
     Double intResult = (Double)getStatResult("mr", "int_id", VAL_TYPE.DOUBLE);
-    Double intTest = calculateNumberStat(intTestStart, "mean");
+    Double intTest = (Double)calculateNumberStat(intTestStart, "mean");
     assertEquals(getRawResponse(), intResult,intTest);
 
     //Long
     Double longResult = (Double)getStatResult("mr", "long_ld", VAL_TYPE.DOUBLE);
-    Double longTest = calculateNumberStat(longTestStart, "mean");
+    Double longTest = (Double)calculateNumberStat(longTestStart, "mean");
     assertEquals(getRawResponse(), longResult,longTest);
 
     //Float
     Double floatResult = (Double)getStatResult("mr", "float_fd", VAL_TYPE.DOUBLE);
-    Double floatTest = calculateNumberStat(floatTestStart, "mean");
+    Double floatTest = (Double)calculateNumberStat(floatTestStart, "mean");
     assertEquals(getRawResponse(), floatResult,floatTest);
 
     //Double
     Double doubleResult = (Double)getStatResult("mr", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = calculateNumberStat(doubleTestStart, "mean");
+    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "mean");
     assertEquals(getRawResponse(), doubleResult,doubleTest);
   }
 
@@ -185,23 +185,23 @@ public class LegacyNoFacetTest extends LegacyAbstractAnalyticsTest {
   public void stddevTest() throws Exception {
     //Int
     Double intResult = (Double)getStatResult("str", "int_id", VAL_TYPE.DOUBLE);
-    Double intTest = calculateNumberStat(intTestStart, "stddev");
+    Double intTest = (Double)calculateNumberStat(intTestStart, "stddev");
     assertEquals(getRawResponse(), intResult, intTest, 0.00000000001);
 
     //Long
     Double longResult = (Double)getStatResult("str", "long_ld", VAL_TYPE.DOUBLE);
-    Double longTest = calculateNumberStat(longTestStart, "stddev");
+    Double longTest = (Double)calculateNumberStat(longTestStart, "stddev");
     assertEquals(getRawResponse(), longResult, longTest, 0.00000000001);
 
     //Float
     Double floatResult = (Double)getStatResult("str", "float_fd", VAL_TYPE.DOUBLE);
-    Double floatTest = calculateNumberStat(floatTestStart, "stddev");
+    Double floatTest = (Double)calculateNumberStat(floatTestStart, "stddev");
     assertEquals(getRawResponse(), floatResult, floatTest, 0.00000000001);
 
 
     //Double
     Double doubleResult = (Double)getStatResult("str", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = calculateNumberStat(doubleTestStart, "stddev");
+    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "stddev");
     assertEquals(getRawResponse(), doubleResult, doubleTest, 0.00000000001);
   }
 
@@ -209,22 +209,22 @@ public class LegacyNoFacetTest extends LegacyAbstractAnalyticsTest {
   public void medianTest() throws Exception {
     //Int
     Double intResult = (Double)getStatResult("medr", "int_id", VAL_TYPE.DOUBLE);
-    Double intTest = calculateNumberStat(intTestStart, "median");
+    Double intTest = (Double)calculateNumberStat(intTestStart, "median");
     assertEquals(getRawResponse(), intResult,intTest);
 
     //Long
     Double longResult = (Double)getStatResult("medr", "long_ld", VAL_TYPE.DOUBLE);
-    Double longTest = calculateNumberStat(longTestStart, "median");
+    Double longTest = (Double)calculateNumberStat(longTestStart, "median");
     assertEquals(getRawResponse(), longResult,longTest);
 
     //Float
     Double floatResult = (Double)getStatResult("medr", "float_fd", VAL_TYPE.DOUBLE);
-    Double floatTest = calculateNumberStat(floatTestStart, "median");
+    Double floatTest = (Double)calculateNumberStat(floatTestStart, "median");
     assertEquals(getRawResponse(), floatResult,floatTest);
 
     //Double
     Double doubleResult = (Double)getStatResult("medr", "double_dd", VAL_TYPE.DOUBLE);
-    Double doubleTest = calculateNumberStat(doubleTestStart, "median");
+    Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "median");
     assertEquals(getRawResponse(), doubleResult,doubleTest);
   }
 

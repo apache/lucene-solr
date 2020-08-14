@@ -416,7 +416,6 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
 
   public void testRandom() throws Exception {
 
-    @SuppressWarnings({"rawtypes"})
     Comparable[] vals = new Comparable[TestUtil.nextInt(random(), 1, 17)];
 
     // random ints
@@ -533,20 +532,17 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
   }
   
   /** Tests a single doc with a few explicit values, as well as testing exists with and w/o values */
-  @SuppressWarnings({"unchecked"})
-  protected void testSimpleValues(final String fieldname, final Class<?> clazz,
-                                  @SuppressWarnings({"rawtypes"})final Comparable... vals) {
+  protected void testSimpleValues(final String fieldname, final Class<?> clazz, final Comparable... vals) {
     clearIndex();
     
     assert 0 < vals.length;
-    @SuppressWarnings({"rawtypes"})
+    
     Comparable min = vals[0];
-    @SuppressWarnings({"rawtypes"})
     Comparable max = vals[0];
     
     final String type = clazz.getName();
     final SolrInputDocument doc1 = sdoc("id", "1");
-    for (@SuppressWarnings({"rawtypes"})Comparable v : vals) {
+    for (Comparable v : vals) {
       doc1.addField(fieldname, v);
       if (0 < min.compareTo(v)) {
         min = v;
@@ -614,8 +610,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
    * @param positive a "positive" value for this field (ie: in a function context, is more then the "0")
    */
   protected void testSimpleSort(final String fieldname,
-                                @SuppressWarnings({"rawtypes"})final Comparable negative,
-                                @SuppressWarnings({"rawtypes"})final Comparable positive) {
+                                final Comparable negative, final Comparable positive) {
     clearIndex();
 
     int numDocsExpected = 1;

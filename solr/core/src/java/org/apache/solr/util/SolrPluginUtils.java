@@ -196,14 +196,18 @@ public class SolrPluginUtils {
 
   }
 
-  private static final Pattern SPLIT_PATTERN = Pattern.compile("[\\s,]+"); // space or comma
 
-  /** Split a value between spaces and/or commas.  No need to trim anything. */
-  public static String[] split(String value) {
-    // TODO consider moving / adapting this into a new StrUtils.splitSmart variant?
-    // TODO deprecate; it's only used by two callers?
-    return SPLIT_PATTERN.split(value.trim());
+
+
+
+
+  private final static Pattern splitList=Pattern.compile(",| ");
+
+  /** Split a value that may contain a comma, space of bar separated list. */
+  public static String[] split(String value){
+     return splitList.split(value.trim(), 0);
   }
+
 
   /**
    * Pre-fetch documents into the index searcher's document cache.
@@ -323,7 +327,6 @@ public class SolrPluginUtils {
    * @return The debug info
    * @throws java.io.IOException if there was an IO error
    */
-  @SuppressWarnings({"rawtypes"})
   public static NamedList doStandardDebug(
           SolrQueryRequest req,
           String userQuery,
@@ -340,13 +343,12 @@ public class SolrPluginUtils {
   }
 
 
-  @SuppressWarnings({"unchecked"})
   public static void doStandardQueryDebug(
           SolrQueryRequest req,
           String userQuery,
           Query query,
           boolean dbgQuery,
-          @SuppressWarnings({"rawtypes"})NamedList dbg)
+          NamedList dbg)
   {
     if (dbgQuery) {
       /* userQuery may have been pre-processed .. expose that */
@@ -362,13 +364,12 @@ public class SolrPluginUtils {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   public static void doStandardResultsDebug(
           SolrQueryRequest req,
           Query query,
           DocList results,
           boolean dbgResults,
-          @SuppressWarnings({"rawtypes"})NamedList dbg) throws IOException
+          NamedList dbg) throws IOException
   {
     if (dbgResults) {
       SolrIndexSearcher searcher = req.getSearcher();
@@ -847,7 +848,7 @@ public class SolrPluginUtils {
    * {@code resultIds} is.  {@code resultIds} comes from {@link ResponseBuilder#resultIds}.  If the doc key
    * isn't in {@code resultIds} then it is ignored.
    * Note: most likely you will call {@link #removeNulls(Map.Entry[], NamedList)} sometime after calling this. */
-  public static void copyNamedListIntoArrayByDocPosInResponse(@SuppressWarnings({"rawtypes"})NamedList namedList, Map<Object, ShardDoc> resultIds,
+  public static void copyNamedListIntoArrayByDocPosInResponse(NamedList namedList, Map<Object, ShardDoc> resultIds,
                                                               Map.Entry<String, Object>[] destArr) {
     assert resultIds.size() == destArr.length;
     for (int i = 0; i < namedList.size(); i++) {
@@ -972,7 +973,7 @@ public class SolrPluginUtils {
       /* we definitely had some sort of sort string from the user,
        * but no SortSpec came out of it
        */
-      log.warn("Invalid sort '{}' was specified, ignoring", sort, sortE);
+      log.warn("Invalid sort \""+sort+"\" was specified, ignoring", sortE);
       return null;
     }
 
