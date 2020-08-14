@@ -43,48 +43,44 @@ public class BreakIteratorShrinkingAdjuster implements PassageAdjuster {
 
   @Override
   public OffsetRange adjust(Passage passage) {
-    try {
-      int from = passage.from;
-      if (from > 0) {
-        while (!bi.isBoundary(from)
-            || (from < value.length() && Character.isWhitespace(value.charAt(from)))) {
-          from = bi.following(from);
-          if (from == BreakIterator.DONE) {
-            from = passage.from;
-            break;
-          }
-        }
-        if (from == value.length()) {
+    int from = passage.from;
+    if (from > 0) {
+      while (!bi.isBoundary(from)
+          || (from < value.length() && Character.isWhitespace(value.charAt(from)))) {
+        from = bi.following(from);
+        if (from == BreakIterator.DONE) {
           from = passage.from;
+          break;
         }
       }
-
-      int to = passage.to;
-      if (to != value.length()) {
-        while (!bi.isBoundary(to) || (to > 0 && Character.isWhitespace(value.charAt(to - 1)))) {
-          to = bi.preceding(to);
-          if (to == BreakIterator.DONE) {
-            to = passage.to;
-            break;
-          }
-        }
-        if (to == 0) {
-          to = passage.to;
-        }
+      if (from == value.length()) {
+        from = passage.from;
       }
-
-      for (OffsetRange r : passage.markers) {
-        from = Math.min(from, r.from);
-        to = Math.max(to, r.to);
-      }
-
-      if (from > to) {
-        from = to;
-      }
-
-      return new OffsetRange(from, to);
-    } catch (Exception e) {
-      throw e;
     }
+
+    int to = passage.to;
+    if (to != value.length()) {
+      while (!bi.isBoundary(to) || (to > 0 && Character.isWhitespace(value.charAt(to - 1)))) {
+        to = bi.preceding(to);
+        if (to == BreakIterator.DONE) {
+          to = passage.to;
+          break;
+        }
+      }
+      if (to == 0) {
+        to = passage.to;
+      }
+    }
+
+    for (OffsetRange r : passage.markers) {
+      from = Math.min(from, r.from);
+      to = Math.max(to, r.to);
+    }
+
+    if (from > to) {
+      from = to;
+    }
+
+    return new OffsetRange(from, to);
   }
 }
