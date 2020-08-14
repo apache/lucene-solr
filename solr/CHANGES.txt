@@ -42,6 +42,8 @@ Improvements
 
 * SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
 
+* SOLR-14753 Change the SolrSingleThreaded annotation to SolrThreadUnsafe (MarcusSorealheis, Christine Poerschke, David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
