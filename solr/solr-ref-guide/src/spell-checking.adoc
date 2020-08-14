@@ -192,7 +192,7 @@ If set to `true`, this parameter reloads the spellchecker. The results depend on
 `spellcheck.count`::
 This parameter specifies the maximum number of suggestions that the spellchecker should return for a term. If this parameter isn't set, the value defaults to `1`. If the parameter is set but not assigned a number, the value defaults to `5`. If the parameter is set to a positive integer, that number becomes the maximum number of suggestions returned by the spellchecker.
 
-`spellcheck.queryAnalyzerFieldtype`::
+`spellcheck.queryAnalyzerFieldType`::
 A field type from Solr's schema. The analyzer configured for the provided field type is used by the QueryConverter to tokenize the value for "q" parameter. The field type specified by this parameter should do minimal transformations. It's usually a best practice to avoid types that aggressively stem or NGram, for instance, since those types of analysis can throw off spell checking.
 
 `spellcheck.onlyMorePopular`::

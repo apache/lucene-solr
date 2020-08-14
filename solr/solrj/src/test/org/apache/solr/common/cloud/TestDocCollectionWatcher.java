@@ -264,30 +264,4 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
     assertTrue("DocCollectionWatcher not notified of delete call", future.get());
   }
-  
-  @Test
-  public void testWatchesWorkForStateFormat1() throws Exception {
-
-    final CloudSolrClient client = cluster.getSolrClient();
-
-    Future<Boolean> future = waitInBackground("stateformat1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-                                              (c) -> (null != c) );
-
-    CollectionAdminRequest.createCollection("stateformat1", "config", 1, 1).setStateFormat(1)
-      .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("stateformat1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-                         (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
-    
-    assertTrue("DocCollectionWatcher not notified of stateformat=1 collection creation",
-               future.get());
-
-    Future<Boolean> migrated = waitInBackground("stateformat1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-                                                (c) -> c != null && c.getStateFormat() == 2);
-
-    CollectionAdminRequest.migrateCollectionFormat("stateformat1")
-      .processAndWait(client, MAX_WAIT_TIMEOUT);
-    assertTrue("DocCollectionWatcher did not persist over state format migration", migrated.get());
-
-  }
-
 }

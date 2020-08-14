@@ -219,14 +219,17 @@ public class RestManager {
         
         if (observer != null) {
           reg.observers.add(observer);
-          log.info("Added observer of type {} to existing ManagedResource {}", 
-              observer.getClass().getName(), resourceId);
+          if (log.isInfoEnabled()) {
+            log.info("Added observer of type {} to existing ManagedResource {}",
+                observer.getClass().getName(), resourceId);
+          }
         }
       } else {
         registered.put(resourceId, 
             new ManagedResourceRegistration(resourceId, implClass, observer));
-        log.info("Registered ManagedResource impl {} for path {}", 
-            implClass.getName(), resourceId);
+        if (log.isInfoEnabled()) {
+          log.info("Registered ManagedResource impl {} for path {}", implClass.getName(), resourceId);
+        }
       }
       
       // there may be a RestManager, in which case, we want to add this new ManagedResource immediately
@@ -334,7 +337,7 @@ public class RestManager {
         }
       }
       
-      log.info("Found ManagedResource ["+managedResource+"] for "+resourceId);      
+      log.info("Found ManagedResource [{}] for {}", managedResource, resourceId);
     }    
     
     @Override
@@ -614,7 +617,7 @@ public class RestManager {
                    StorageIO storageIO) 
       throws SolrException
   {
-    log.debug("Initializing RestManager with initArgs: "+initArgs);
+    log.debug("Initializing RestManager with initArgs: {}", initArgs);
 
     if (storageIO == null)
       throw new IllegalArgumentException(
@@ -633,7 +636,9 @@ public class RestManager {
     managed.put(SCHEMA_BASE_PATH+MANAGED_ENDPOINT, endpoint);
             
     // init registered managed resources
-    log.debug("Initializing {} registered ManagedResources", registry.registered.size());
+    if (log.isDebugEnabled()) {
+      log.debug("Initializing {} registered ManagedResources", registry.registered.size());
+    }
     for (ManagedResourceRegistration reg : registry.registered.values()) {
       // keep track of this for lookups during request processing
       managed.put(reg.resourceId, createManagedResource(reg));
@@ -751,7 +756,7 @@ public class RestManager {
       res.onResourceDeleted();
     } catch (IOException e) {
       // the resource is already deleted so just log this
-      log.error("Error when trying to clean-up after deleting "+resourceId, e);
+      log.error("Error when trying to clean-up after deleting {}",resourceId, e);
     }
   }
       

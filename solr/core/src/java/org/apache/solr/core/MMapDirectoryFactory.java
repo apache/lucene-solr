@@ -47,6 +47,7 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   private int maxChunk;
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void init(NamedList args) {
     super.init(args);
     SolrParams params = args.toSolrParams();

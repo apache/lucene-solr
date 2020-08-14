@@ -80,7 +80,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
 
     for (Meta meta : Meta.values()) {
       if (result.get(meta) == null) {
-        log.error("ERROR_INIT. No corresponding API implementation for : " + meta.commandName);
+        log.error("ERROR_INIT. No corresponding API implementation for : {}", meta.commandName);
       }
     }
 

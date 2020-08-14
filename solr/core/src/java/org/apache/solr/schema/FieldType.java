@@ -282,7 +282,7 @@ public abstract class FieldType extends FieldProperties {
   public IndexableField createField(SchemaField field, Object value) {
     if (!field.indexed() && !field.stored()) {
       if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
+        log.trace("Ignoring unindexed/unstored field: {}", field);
       return null;
     }
     
@@ -677,6 +677,9 @@ public abstract class FieldType extends FieldProperties {
 
   /**
    * calls back to TextResponseWriter to write the field value
+   * <p>
+   * Sub-classes should prefer using {@link #toExternal(IndexableField)} or {@link #toObject(IndexableField)}
+   * to get the writeable external value of <code>f</code> instead of directly using <code>f.stringValue()</code> or <code>f.binaryValue()</code>
    */
   public abstract void write(TextResponseWriter writer, String name, IndexableField f) throws IOException;
 

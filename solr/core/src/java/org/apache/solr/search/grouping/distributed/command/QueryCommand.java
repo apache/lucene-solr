@@ -138,6 +138,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
   private final String queryString;
   private final Query mainQuery;
 
+  @SuppressWarnings({"rawtypes"})
   private TopDocsCollector topDocsCollector;
   private FilterCollector filterCollector;
   private MaxScoreCollector maxScoreCollector;

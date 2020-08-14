@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -94,7 +95,7 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
     
     Thread.sleep(45000);
   
-    waitForThingsToLevelOut(600); // we can insert random update delays, so this can take a while, especially when beasting this test
+    waitForThingsToLevelOut(); // we can insert random update delays, so this can take a while, especially when beasting this test
     
     Thread.sleep(2000);
     
@@ -104,7 +105,7 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
       thread.safeStop();
     }
     
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     checkShardConsistency(false, false);
 

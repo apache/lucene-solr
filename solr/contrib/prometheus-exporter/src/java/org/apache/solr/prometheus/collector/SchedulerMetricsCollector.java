@@ -33,7 +33,7 @@ import io.prometheus.client.Collector;
 import io.prometheus.client.Histogram;
 import org.apache.solr.prometheus.exporter.SolrExporter;
 import org.apache.solr.prometheus.scraper.Async;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +51,7 @@ public class SchedulerMetricsCollector implements Closeable {
 
   private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(
       1,
-      new DefaultSolrThreadFactory("scheduled-metrics-collector"));
+      new SolrNamedThreadFactory("scheduled-metrics-collector"));
 
   private final Executor executor;
 
@@ -77,7 +77,8 @@ public class SchedulerMetricsCollector implements Closeable {
     scheduler.scheduleWithFixedDelay(this::collectMetrics, 0, duration, timeUnit);
   }
 
-  private void collectMetrics() {
+  private@SuppressWarnings({"try"})
+  void collectMetrics() {
 
     try (Histogram.Timer timer = metricsCollectionTime.startTimer()) {
       log.info("Beginning metrics collection");

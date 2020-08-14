@@ -40,6 +40,6 @@ The configuration of a Solr application should take into account:
 * any inherent relevance of documents (e.g., it might make sense to ensure that an official product description or FAQ is always returned near the top of the search results)
 * whether or not the age of documents matters significantly (in some contexts, the most recent documents might always be the most important)
 
-Keeping all these factors in mind, it's often helpful in the planning stages of a Solr deployment to sketch out the types of responses you think the search application should return for sample queries. Once the application is up and running, you can employ a series of testing methodologies, such as focus groups, in-house testing, http://trec.nist.gov[TREC] tests and A/B testing to fine tune the configuration of the application to best meet the needs of its users.
+Keeping all these factors in mind, it's often helpful in the planning stages of a Solr deployment to sketch out the types of responses you think the search application should return for sample queries. Once the application is up and running, you can employ a series of testing methodologies, such as focus groups, in-house testing, http://trec.nist.gov[TREC] tests, and A/B testing to fine tune the configuration of the application to best meet the needs of its users.
 
-For more information about relevance, see Grant Ingersoll's tech article https://lucidworks.com/blog/2009/09/02/debugging-search-application-relevance-issues/[Debugging Search Application Relevance Issues] which is available on SearchHub.org.
+For more information about relevance, see Grant Ingersoll's blog post https://lucidworks.com/post/debugging-search-application-relevance-issues/[Debugging Search Application Relevance Issues].

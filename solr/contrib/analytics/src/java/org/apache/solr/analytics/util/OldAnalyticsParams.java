@@ -48,14 +48,14 @@ public interface OldAnalyticsParams {
     public Map<String,OldQueryFacet> queryFacets = new HashMap<>();
   }
 
-  public static final String FIELD_FACET = "ff|fieldfacet";
-  public static final String VALUE_FACET = "vf|valuefacet";
-  public static final String LIMIT = "l|limit";
-  public static final String OFFSET = "off|offset";
-  public static final String SHOW_MISSING = "sm|showmissing";
-  public static final String SORT_EXPRESSION ="se|sortexpr|sortexpression";
-  public static final String OLAP_SORT_EXPRESSION ="ss|sortstat|sortstatistic";
-  public static final String SORT_DIRECTION ="sd|sortdirection";
+  public static final String FIELD_FACET = "(?:ff|fieldfacet)";
+  public static final String VALUE_FACET = "(?:vf|valuefacet)";
+  public static final String LIMIT = "(?:l|limit)";
+  public static final String OFFSET = "(?:off|offset)";
+  public static final String SHOW_MISSING = "(?:sm|showmissing)";
+  public static final String SORT_EXPRESSION ="(?:se|sortexpr|sortexpression)";
+  public static final String OLAP_SORT_EXPRESSION ="(?:ss|sortstat|sortstatistic)";
+  public static final String SORT_DIRECTION ="(?:sd|sortdirection)";
 
   public static class OldFieldFacet {
     public String field;
@@ -114,13 +114,13 @@ public interface OldAnalyticsParams {
     }
   }
 
-  public static final String RANGE_FACET = "rf|rangefacet";
-  public static final String START = "st|start";
-  public static final String END = "e|end";
-  public static final String GAP = "g|gap";
-  public static final String HARDEND = "he|hardend";
-  public static final String INCLUDE_BOUNDARY = "ib|includebound";
-  public static final String OTHER_RANGE = "or|otherrange";
+  public static final String RANGE_FACET = "(?:rf|rangefacet)";
+  public static final String START = "(?:st|start)";
+  public static final String END = "(?:e|end)";
+  public static final String GAP = "(?:g|gap)";
+  public static final String HARDEND = "(?:he|hardend)";
+  public static final String INCLUDE_BOUNDARY = "(?:ib|includebound)";
+  public static final String OTHER_RANGE = "(?:or|otherrange)";
 
   public static class OldRangeFacet {
     public String field;
@@ -170,8 +170,8 @@ public interface OldAnalyticsParams {
     public String[] queries;
   }
 
-  public static final String QUERY_FACET = "qf|queryfacet";
-  public static final String QUERY = "q|query";
+  public static final String QUERY_FACET = "(?:qf|queryfacet)";
+  public static final String QUERY = "(?:q|query)";
 
   //Defaults
   public static final boolean DEFAULT_ABBREVIATE_PREFIX = true;

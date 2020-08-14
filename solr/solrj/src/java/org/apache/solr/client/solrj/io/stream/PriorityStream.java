@@ -120,7 +120,7 @@ public class PriorityStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     l.add(highPriorityTasks);
     l.add(tasks);
     return l;

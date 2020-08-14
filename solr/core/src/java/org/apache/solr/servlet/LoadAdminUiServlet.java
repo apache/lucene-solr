@@ -15,6 +15,13 @@
  * limitations under the License.
  */
 package org.apache.solr.servlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
@@ -24,15 +31,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-
 /**
  * A simple servlet to load the Solr Admin UI
  * 
@@ -40,13 +38,20 @@ import java.nio.charset.StandardCharsets;
  */
 public final class LoadAdminUiServlet extends BaseSolrServlet {
 
+  // check system properties for whether or not admin UI is disabled, default is false
+  private static final boolean disabled = Boolean.parseBoolean(System.getProperty("disableAdminUI", "false"));
+
   @Override
-  public void doGet(HttpServletRequest _request,
-                    HttpServletResponse _response)
-      throws IOException {
+  public void doGet(HttpServletRequest _request, HttpServletResponse _response) throws IOException {
+    if(disabled){
+      _response.sendError(404, "Solr Admin UI is disabled. To enable it, change the default value of SOLR_ADMIN_UI_" +
+          "ENABLED in bin/solr.in.sh or solr.in.cmd.");
+      return;
+    }
     HttpServletRequest request = SolrDispatchFilter.closeShield(_request, false);
     HttpServletResponse response = SolrDispatchFilter.closeShield(_response, false);
-    
+
+
     response.addHeader("X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface
 
     // This attribute is set by the SolrDispatchFilter

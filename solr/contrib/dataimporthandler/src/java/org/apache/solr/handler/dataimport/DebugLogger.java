@@ -44,6 +44,7 @@ import java.util.Stack;
 class DebugLogger {
   private Stack<DebugInfo> debugStack;
 
+  @SuppressWarnings({"rawtypes"})
   NamedList output;
 //  private final SolrWriter writer1;
 
@@ -54,6 +55,7 @@ class DebugLogger {
 
   boolean enabled = true;
 
+  @SuppressWarnings({"rawtypes"})
   public DebugLogger() {
 //    writer = solrWriter;
     output = new NamedList();
@@ -75,6 +77,7 @@ class DebugLogger {
     return debugStack.isEmpty() ? null : debugStack.peek();
   }
 
+  @SuppressWarnings({"unchecked"})
   public void log(DIHLogLevels event, String name, Object row) {
     if (event == DIHLogLevels.DISABLE_LOGGING) {
       enabled = false;
@@ -150,9 +153,12 @@ class DebugLogger {
     }
   }
 
-  private void addToNamedList(NamedList nl, Object row) {
+  @SuppressWarnings({"unchecked"})
+  private void addToNamedList(@SuppressWarnings({"rawtypes"})NamedList nl, Object row) {
     if (row instanceof List) {
+      @SuppressWarnings({"rawtypes"})
       List list = (List) row;
+      @SuppressWarnings({"rawtypes"})
       NamedList l = new NamedList();
       nl.add(null, l);
       for (Object o : list) {
@@ -167,6 +173,7 @@ class DebugLogger {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   DataSource wrapDs(final DataSource ds) {
     return new DataSource() {
       @Override
@@ -236,6 +243,7 @@ class DebugLogger {
   }
 
   static String getTransformerName(Transformer t) {
+    @SuppressWarnings({"rawtypes"})
     Class transClass = t.getClass();
     if (t instanceof EntityProcessorWrapper.ReflectionTransformer) {
       return ((EntityProcessorWrapper.ReflectionTransformer) t).trans;
@@ -256,12 +264,14 @@ class DebugLogger {
 
     int tCount, rowCount;
 
+    @SuppressWarnings({"rawtypes"})
     NamedList lst;
 
     DIHLogLevels type;
 
     DebugInfo parent;
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public DebugInfo(String name, DIHLogLevels type, DebugInfo parent) {
       this.name = name;
       this.type = type;

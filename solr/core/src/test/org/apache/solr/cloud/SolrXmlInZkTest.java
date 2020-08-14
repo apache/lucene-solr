@@ -81,7 +81,9 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
     zkClient.close();
 
-    log.info("####SETUP_START " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_START {}", getTestName());
+    }
 
     // set some system properties for use by tests
     Properties props = new Properties();
@@ -89,7 +91,9 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     props.setProperty("solr.test.sys.prop2", "proptwo");
 
     cfg = SolrDispatchFilter.loadNodeConfig(solrHome, props);
-    log.info("####SETUP_END " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_END {}", getTestName());
+    }
   }
 
   private void closeZK() throws Exception {

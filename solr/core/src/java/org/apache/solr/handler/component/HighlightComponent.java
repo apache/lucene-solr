@@ -168,6 +168,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
       // No highlighting if there is no query -- consider q.alt=*:*
       if( highlightQuery != null ) {
+        @SuppressWarnings({"rawtypes"})
         NamedList sumData = highlighter.doHighlighting(
                 rb.getResults().docList,
                 highlightQuery,
@@ -276,22 +277,26 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     return "highlighting";
   }
 
-  protected Object convertHighlights(NamedList hl) {
+  protected Object convertHighlights(@SuppressWarnings({"rawtypes"})NamedList hl) {
     return hl;
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected Object[] newHighlightsArray(int size) {
     return new NamedList.NamedListEntry[size];
   }
 
   protected void addHighlights(Object[] objArr, Object obj, Map<Object, ShardDoc> resultIds) {
+    @SuppressWarnings({"unchecked"})
     Map.Entry<String, Object>[] arr = (Map.Entry<String, Object>[])objArr;
+    @SuppressWarnings({"rawtypes"})
     NamedList hl = (NamedList)obj;
     SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(hl, resultIds, arr);
   }
 
   protected Object getAllHighlights(Object[] objArr) {
-      final Map.Entry<String, Object>[] arr = (Map.Entry<String, Object>[])objArr;
+    @SuppressWarnings({"unchecked"})
+    final Map.Entry<String, Object>[] arr = (Map.Entry<String, Object>[])objArr;
       // remove nulls in case not all docs were able to be retrieved
       return SolrPluginUtils.removeNulls(arr, new SimpleOrderedMap<>());
   }

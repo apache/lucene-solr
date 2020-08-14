@@ -113,8 +113,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     claims.setClaim("claim1", "foo"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim2", "bar"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim3", "foo"); // additional claims/attributes about the subject can be added
-    List<String> groups = Arrays.asList("group-one", "other-group", "group-three");
-    claims.setStringListClaim("groups", groups); // multi-valued claims work too and will end up as a JSON array
+    List<String> roles = Arrays.asList("group-one", "other-group", "group-three");
+    claims.setStringListClaim("roles", roles); // multi-valued claims work too and will end up as a JSON array
     return claims;
   }
 
@@ -325,11 +325,29 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
 
+    // When 'rolesClaim' is not defined in config, then all scopes are registered as roles
     Principal principal = resp.getPrincipal();
     assertTrue(principal instanceof VerifiedUserRoles);
     Set<String> roles = ((VerifiedUserRoles)principal).getVerifiedRoles();
     assertEquals(1, roles.size());
     assertTrue(roles.contains("solr:read"));
+  }
+
+  @Test
+  public void roles() {
+    testConfig.put("rolesClaim", "roles");
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+
+    // When 'rolesClaim' is defined in config, then roles from that claim are used instead of claims
+    Principal principal = resp.getPrincipal();
+    assertTrue(principal instanceof VerifiedUserRoles);
+    Set<String> roles = ((VerifiedUserRoles)principal).getVerifiedRoles();
+    assertEquals(3, roles.size());
+    assertTrue(roles.contains("group-one"));
+    assertTrue(roles.contains("other-group"));
+    assertTrue(roles.contains("group-three"));
   }
 
   @Test

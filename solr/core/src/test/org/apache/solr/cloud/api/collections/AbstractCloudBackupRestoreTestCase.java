@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -72,6 +73,12 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   @BeforeClass
   public static void createCluster() throws Exception {
     docsSeed = random().nextLong();
+    System.setProperty("solr.allowPaths", "*");
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    System.clearProperty("solr.allowPaths");
   }
 
   /**
@@ -114,17 +121,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         CollectionAdminRequest.createCollectionWithImplicitRouter(getCollectionName(), "conf1", "shard1,shard2", replFactor, numTlogReplicas, numPullReplicas) :
         CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
 
-    if (random().nextBoolean()) {
-      create.setMaxShardsPerNode(-1);
-    } else if (doSplitShardOperation) {
-      create.setMaxShardsPerNode((int) Math.ceil(NUM_SPLIT_SHARDS * backupReplFactor / (double) cluster.getJettySolrRunners().size()));
-    } else if (NUM_SHARDS * (backupReplFactor) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
-      create.setMaxShardsPerNode((int) Math.ceil(NUM_SHARDS * backupReplFactor / (double) cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
-    }
-
-    if (random().nextBoolean()) {
-      create.setAutoAddReplicas(true);//just to assert it survives the restoration
-    }
     Properties coreProps = new Properties();
     coreProps.put("customKey", "customValue");//just to assert it survives the restoration
     create.setProperties(coreProps);
@@ -171,10 +167,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
 
-    if (NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) > cluster.getJettySolrRunners().size()) {
-      create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) / cluster.getJettySolrRunners().size())); //just to assert it survives the restoration
-    }
-
     CloudSolrClient solrClient = cluster.getSolrClient();
     create.process(solrClient);
 
@@ -201,10 +193,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     {
       CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
           .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
-      if (backupCollection.getReplicas().size() > cluster.getJettySolrRunners().size()) {
-        // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
-        restore.setMaxShardsPerNode((int)Math.ceil(backupCollection.getReplicas().size()/cluster.getJettySolrRunners().size()));
-      }
 
       restore.setConfigName("confFaulty");
       assertEquals(RequestStatusState.FAILED, restore.processAndWait(solrClient, 30));
@@ -332,8 +320,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     int restoreReplFactor = restoreReplcationFactor + restoreTlogReplicas + restorePullReplicas;
 
-    boolean isMaxShardsPerNodeExternal = false;
-    boolean isMaxShardsUnlimited = false;
     CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
         .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
 
@@ -345,26 +331,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     }
     int computeRestoreMaxShardsPerNode = (int) Math.ceil((restoreReplFactor * numShards/(double) cluster.getJettySolrRunners().size()));
 
-    if (restoreReplFactor > backupReplFactor) { //else the backup maxShardsPerNode should be enough
-      log.info("numShards={} restoreReplFactor={} maxShardsPerNode={} totalNodes={}",
-          numShards, restoreReplFactor, computeRestoreMaxShardsPerNode, cluster.getJettySolrRunners().size());
-
-      if (random().nextBoolean()) { //set it to -1
-        isMaxShardsUnlimited = true;
-        restore.setMaxShardsPerNode(-1);
-      } else {
-        isMaxShardsPerNodeExternal = true;
-        restore.setMaxShardsPerNode(computeRestoreMaxShardsPerNode);
-      }
-    }
-
     if (rarely()) { // Try with createNodeSet configuration
       //Always 1 as cluster.getJettySolrRunners().size()=NUM_SHARDS=2
       restore.setCreateNodeSet(cluster.getJettySolrRunners().get(0).getNodeName());
-      // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
-      isMaxShardsPerNodeExternal = true;
-      computeRestoreMaxShardsPerNode = origShardToDocCount.size() * restoreReplFactor;
-      restore.setMaxShardsPerNode(computeRestoreMaxShardsPerNode);
     }
 
     final int restoreMaxShardsPerNode = computeRestoreMaxShardsPerNode;
@@ -394,7 +363,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       assertEquals(origShardToDocCount, getShardToDocCountMap(client, restoreCollection));
     }
 
-    assertEquals(backupCollection.getAutoAddReplicas(), restoreCollection.getAutoAddReplicas());
     assertEquals(sameConfig ? "conf1" : "customConfigName",
         cluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
 
@@ -411,15 +379,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     assertEquals(restoreCollection.toString(), restoreReplcationFactor, restoreCollection.getNumNrtReplicas().intValue());
     assertEquals(restoreCollection.toString(), restorePullReplicas, restoreCollection.getNumPullReplicas().intValue());
     assertEquals(restoreCollection.toString(), restoreTlogReplicas, restoreCollection.getNumTlogReplicas().intValue());
-    if (isMaxShardsPerNodeExternal) {
-      assertEquals(restoreCollectionName, restoreMaxShardsPerNode, restoreCollection.getMaxShardsPerNode());
-    } else if (isMaxShardsUnlimited){
-      assertEquals(restoreCollectionName, -1, restoreCollection.getMaxShardsPerNode());
-    } else {
-      assertEquals(restoreCollectionName, backupCollection.getMaxShardsPerNode(), restoreCollection.getMaxShardsPerNode());
-    }
-
-    assertEquals("Restore collection should use stateFormat=2", 2, restoreCollection.getStateFormat());
 
     //SOLR-12605: Add more docs after restore is complete to see if they are getting added fine
     //explicitly querying the leaders. If we use CloudSolrClient there is no guarantee that we'll hit a nrtReplica
@@ -430,7 +389,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       Map<String, Integer> restoredCollectionPerShardCountAfterIndexing = getShardToDocCountMap(client, restoreCollection);
       int restoredCollectionFinalDocCount = restoredCollectionPerShardCountAfterIndexing.values().stream().mapToInt(Number::intValue).sum();
 
-      log.info("Original doc count in restored collection:" + restoredCollectionDocCount + ", number of newly added documents to the restored collection: " + numberNewDocsIndexed + ", after indexing: " + restoredCollectionFinalDocCount);
+      log.info("Original doc count in restored collection:{} , number of newly added documents to the restored collection: {}"
+          + ", after indexing: {}"
+          , restoredCollectionDocCount, numberNewDocsIndexed, restoredCollectionFinalDocCount);
       assertEquals((restoredCollectionDocCount + numberNewDocsIndexed), restoredCollectionFinalDocCount);
     }
 

@@ -49,6 +49,7 @@ public class CacheConfig implements MapSerializable{
   
   private String nodeName;
 
+  @SuppressWarnings({"rawtypes"})
   private Class<? extends SolrCache> clazz;
   private Map<String,String> args;
   private CacheRegenerator regenerator;
@@ -61,6 +62,7 @@ public class CacheConfig implements MapSerializable{
 
   public CacheConfig() {}
 
+  @SuppressWarnings({"rawtypes"})
   public CacheConfig(Class<? extends SolrCache> clazz, Map<String,String> args, CacheRegenerator regenerator) {
     this.clazz = clazz;
     this.args = args;
@@ -80,13 +82,18 @@ public class CacheConfig implements MapSerializable{
     if (nodes == null || nodes.getLength() == 0) return new LinkedHashMap<>();
     Map<String, CacheConfig> result = new HashMap<>(nodes.getLength());
     for (int i = 0; i < nodes.getLength(); i++) {
-      CacheConfig config = getConfig(solrConfig, nodes.item(i).getNodeName(), DOMUtil.toMap(nodes.item(i).getAttributes()), configPath);
-      result.put(config.args.get(NAME), config);
+      Node node = nodes.item(i);
+      if ("true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
+        CacheConfig config = getConfig(solrConfig, node.getNodeName(),
+                                       DOMUtil.toMap(node.getAttributes()), configPath);
+        result.put(config.args.get(NAME), config);
+      }
     }
     return result;
   }
 
 
+  @SuppressWarnings({"unchecked"})
   public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
     Node node = solrConfig.getNode(xpath, false);
     if(node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
@@ -99,9 +106,11 @@ public class CacheConfig implements MapSerializable{
   }
 
 
+  @SuppressWarnings({"unchecked"})
   public static CacheConfig getConfig(SolrConfig solrConfig, String nodeName, Map<String,String> attrs, String xpath) {
     CacheConfig config = new CacheConfig();
     config.nodeName = nodeName;
+    @SuppressWarnings({"rawtypes"})
     Map attrsCopy = new LinkedHashMap<>(attrs.size());
     for (Map.Entry<String, String> e : attrs.entrySet()) {
       attrsCopy.put(e.getKey(), String.valueOf(e.getValue()));
@@ -134,6 +143,7 @@ public class CacheConfig implements MapSerializable{
     return config;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public SolrCache newInstance() {
     try {
       SolrCache cache = clazz.getConstructor().newInstance();
@@ -148,7 +158,9 @@ public class CacheConfig implements MapSerializable{
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Map<String, Object> toMap(Map<String, Object> map) {
+    @SuppressWarnings({"rawtypes"})
     Map result = Collections.unmodifiableMap(args);
     return result;
   }

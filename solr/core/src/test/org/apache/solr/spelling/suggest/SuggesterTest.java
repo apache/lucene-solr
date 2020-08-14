@@ -103,8 +103,10 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   }
   
   // SOLR-2726
+  @SuppressWarnings({"unchecked"})
   public void testAnalyzer() throws Exception {
     Suggester suggester = new Suggester();
+    @SuppressWarnings({"rawtypes"})
     NamedList params = new NamedList();
     params.add("field", "test_field");
     params.add("lookupImpl", "org.apache.solr.spelling.suggest.tst.TSTLookupFactory");

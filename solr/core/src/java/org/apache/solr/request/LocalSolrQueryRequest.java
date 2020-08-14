@@ -35,13 +35,16 @@ import org.apache.solr.core.SolrCore;
  *
  */
 public class LocalSolrQueryRequest extends SolrQueryRequestBase {
+  @SuppressWarnings({"rawtypes"})
   public final static Map emptyArgs = new HashMap(0,1);
   
   public String userPrincipalName = null;
   
-  protected static SolrParams makeParams(String query, String qtype, int start, int limit, Map args) {
+  protected static SolrParams makeParams(String query, String qtype, int start, int limit,
+                                         @SuppressWarnings({"rawtypes"})Map args) {
     Map<String,String[]> map = new HashMap<>();
-    for (Iterator iter = args.entrySet().iterator(); iter.hasNext();) {
+    for (@SuppressWarnings({"rawtypes"})Iterator iter = args.entrySet().iterator(); iter.hasNext();) {
+      @SuppressWarnings({"rawtypes"})
       Map.Entry e = (Map.Entry)iter.next();
       String k = e.getKey().toString();
       Object v = e.getValue();
@@ -55,11 +58,12 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
     return new MultiMapSolrParams(map);
   }
 
-  public LocalSolrQueryRequest(SolrCore core, String query, String qtype, int start, int limit, Map args) {
+  public LocalSolrQueryRequest(SolrCore core, String query, String qtype, int start, int limit,
+                               @SuppressWarnings({"rawtypes"})Map args) {
     super(core,makeParams(query,qtype,start,limit,args));
   }
 
-  public LocalSolrQueryRequest(SolrCore core, NamedList args) {
+  public LocalSolrQueryRequest(SolrCore core, @SuppressWarnings({"rawtypes"})NamedList args) {
     super(core, args.toSolrParams());
   }
 

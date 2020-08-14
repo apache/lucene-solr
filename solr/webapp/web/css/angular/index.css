@@ -152,6 +152,8 @@ limitations under the License.
   background-position: 1px 50%;
   display: block;
   padding-left: 22px;
+  font-weight: bold;
+  text-align: left;
 }
 
 #content #index #instance h2 { background-image: url( ../../img/ico/server.png ); }
@@ -214,3 +216,6 @@ limitations under the License.
 {
   margin-top: 20px;
 }
+
+#content #index #security h2 { background-image: url( ../../img/ico/prohibition.png ); }
+#content #index #security div { text-align: right; }

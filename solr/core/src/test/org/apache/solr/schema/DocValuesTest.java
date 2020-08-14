@@ -570,7 +570,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
       }
       assertU(commit());
 
-      log.info("Indexed values: "+values);
+      log.info("Indexed values: {}", values);
       // Querying
       int numQueries = 10000;
       for (int j=0; j<numQueries; j++) {
@@ -628,7 +628,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         for (int k=0; k<tests.size(); k++) {
           testsArr[k] = tests.get(k);
         }
-        log.info("Expected: "+tests);
+        log.info("Expected: {}", tests);
         assertQ(req("q", fieldName[i] + ":" + (minInclusive? '[': '{') + min + " TO " + max + (maxInclusive? ']': '}'),
                          "sort", "id_i asc", "fl", "id,"+fieldName[i]+",score"),
             testsArr);

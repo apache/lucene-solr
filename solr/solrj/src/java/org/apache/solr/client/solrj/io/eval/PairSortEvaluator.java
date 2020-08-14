@@ -34,6 +34,7 @@ public class PairSortEvaluator extends RecursiveNumericEvaluator implements TwoV
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object first, Object second) throws IOException{
     if(null == first){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
@@ -55,7 +56,7 @@ public class PairSortEvaluator extends RecursiveNumericEvaluator implements TwoV
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - first list (%d) has a different size than the second list (%d)",toExpression(constructingFactory), l1.size(), l2.size()));
     }
 
-    List<double[]> pairs = new ArrayList();
+    List<double[]> pairs = new ArrayList<>();
     for(int idx = 0; idx < l1.size(); ++idx){
       double[] pair = new double[2];
       pair[0]= l1.get(idx).doubleValue();

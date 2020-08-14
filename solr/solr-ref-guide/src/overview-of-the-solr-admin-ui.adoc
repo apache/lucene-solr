@@ -1,5 +1,4 @@
 = Overview of the Solr Admin UI
-:page-toc: false
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -17,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr features a Web interface that makes it easy for Solr administrators and programmers to view <<files-screen.adoc#files-screen,Solr configuration>> details, run <<query-screen.adoc#query-screen,queries and analyze>> document fields in order to fine-tune a Solr configuration and access <<Getting Assistance,online documentation>> and other help.
+Solr features a Web interface that provides online access to many Solr configuration options and features.
 
 == Dashboard
 
@@ -30,15 +29,18 @@ The left-side of the screen is a menu under the Solr logo that provides the navi
 
 The first set of links are for system-level information and configuration and provide access to <<logging.adoc#logging,Logging>>, <<collections-core-admin.adoc#collections-core-admin,Collection/Core Administration>>, and <<java-properties.adoc#java-properties,Java Properties>>, among other things.
 
-At the end of this information is at least one pulldown listing Solr cores configured for this instance. On <<solrcloud.adoc#solrcloud,SolrCloud>> nodes, an additional pulldown list shows all collections in this cluster. Clicking on a collection or core name shows secondary menus of information for the specified collection or core, such as a <<schema-browser-screen.adoc#schema-browser-screen,Schema Browser>>, <<files-screen.adoc#files-screen,Config Files>>, <<plugins-stats-screen.adoc#plugins-stats-screen,Plugins & Statistics>>, and an ability to perform <<query-screen.adoc#query-screen,Queries>> on indexed data.
+At the end of this information is at least one pulldown listing Solr cores configured for this instance.
+On <<solrcloud.adoc#solrcloud,SolrCloud>> nodes, an additional pulldown list shows all collections in this cluster.
+Clicking on a collection or core name shows secondary menus of information for the specified collection or core, such as a <<schema-browser-screen.adoc#schema-browser-screen,Schema Browser>>, <<files-screen.adoc#files-screen,Config Files>>, <<plugins-stats-screen.adoc#plugins-stats-screen,Plugins & Statistics>>, and an ability to perform <<query-screen.adoc#query-screen,Queries>> on indexed data.
 
-The center of the screen shows the detail of the option selected. This may include a sub-navigation for the option or text or graphical representation of the requested data. See the sections in this guide for each screen for more details.
+The left-side navigation appears on every screen, while the center changes to  the detail of the option selected.
+The Dashboard shows several information items in the center of the screen, including system uptime, the version being run, system-level data, JVM arguments, and the security plugins enabled (if any).
 
-Under the covers, the Solr Admin UI re-uses the same HTTP APIs available to all clients to access Solr-related data to drive an external interface.
+Under the covers, the Solr Admin UI uses the same HTTP APIs available to all clients to access Solr-related data to drive an external interface.
 
 [TIP]
 ====
-The path to the Solr Admin UI given above is `\http://hostname:port/solr`, which redirects to `\http://hostname:port/solr/\#/` in the current version. A convenience redirect is also supported, so simply accessing the Admin UI at `\http://hostname:port/` will also redirect to `\http://hostname:port/solr/#/`.
+The path to the Solr Admin UI given above is `\http://hostname:port/solr`, which redirects to `\http://hostname:port/solr/\#/`. A convenience redirect is also supported, so simply accessing the Admin UI at `\http://hostname:port/` will also redirect to `\http://hostname:port/solr/#/`.
 ====
 
 == Login Screen
@@ -51,6 +53,8 @@ image::images/overview-of-the-solr-admin-ui/login.png[]
 This login screen currently only works with Basic Authentication.
 See the section <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>> for
  details on how to configure Solr to use this method of authentication.
+
+Once logged in, the left-hand navigation will show the current user with an option to logout.
 
 If Kerberos is enabled and the user has a valid ticket, the login screen will be skipped.
 However, if the user does not have a valid ticket, they will see a message that they need to obtain a valid ticket before continuing.

@@ -51,7 +51,6 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, 1, 4)
-        .setMaxShardsPerNode(1000)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 1, 4);
   }
@@ -66,7 +65,9 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
 
     boolean clearedCounter = false;
     for (int i = 0; i < numOperations; i++) {
-      log.info("Collection counter={} i={}", getCounter(), i);
+      if (log.isInfoEnabled()) {
+        log.info("Collection counter={} i={}", getCounter(), i);
+      }
       boolean deleteReplica = random().nextBoolean() && numLiveReplicas > 1;
       // No need to clear counter more than one time
       if (random().nextBoolean() && i > 5 && !clearedCounter) {

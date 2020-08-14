@@ -29,10 +29,10 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.cloud.autoscaling.DelegatingCloudManager;
+import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.Snitch;
@@ -46,6 +46,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
 
 public class RuleEngineTest extends SolrTestCaseJ4{
   @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testPlacement2(){
 
 
@@ -101,6 +102,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
       protected SnitchContext getSnitchCtx(String node, SnitchInfoImpl info, SolrCloudManager cloudManager) {
         return new ServerSnitchContext(info, node, snitchSession,cloudManager){
           @Override
+          @SuppressWarnings({"rawtypes"})
           public Map getZkJson(String path) {
             if(ZkStateReader.ROLES.equals(path)){
               return Collections.singletonMap("overseer", preferredOverseerNodes);
@@ -121,6 +123,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
 
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testPlacement3(){
     String s = "{" +
         "  '127.0.0.1:49961_':{" +
@@ -209,7 +212,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
           }
 
           @Override
-          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+          public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
             return null;
           }
         };
@@ -244,6 +247,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
 
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List<Rule> parseRules(String s) {
 
     List maps = (List) Utils.fromJSON(s.getBytes(StandardCharsets.UTF_8));
@@ -254,6 +258,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
   }
 
   @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testPlacement() throws Exception {
     String rulesStr = "rack:*,replica:<2";
     List<Rule> rules = parse(Arrays.asList(rulesStr));
@@ -289,15 +294,18 @@ public class RuleEngineTest extends SolrTestCaseJ4{
   }
 
   public static class MockSnitch extends Snitch {
+    @SuppressWarnings({"rawtypes"})
     static Map nodeVsTags = Collections.emptyMap();
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
       ctx.getTags().putAll((Map<? extends String, ?>) nodeVsTags.get(solrNode));
     }
 
     @Override
     public boolean isKnownTag(String tag) {
+      @SuppressWarnings({"rawtypes"})
       Map next = (Map) nodeVsTags.values().iterator().next();
       return next.containsKey(tag);
     }

@@ -1,6 +1,6 @@
 = Collections API
 :page-children: cluster-node-management, collection-management, collection-aliasing, shard-management, replica-management
-:page-toc: false
+:page-show-toc: false
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

@@ -43,7 +43,7 @@ public class SumRowsEvaluator extends RecursiveObjectEvaluator implements OneVal
 
       Matrix matrix = (Matrix) value;
       double[][] data = matrix.getData();
-      List<Number> sums = new ArrayList(data.length);
+      List<Number> sums = new ArrayList<>(data.length);
 
       for(int i=0; i<data.length; i++) {
         double sum = 0;

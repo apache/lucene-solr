@@ -56,8 +56,6 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
   private void doCustomSharding() throws Exception {
     printLayout();
 
-  
-
     File jettyDir = createTempDir("jetty").toFile();
     jettyDir.mkdirs();
     setupJettySolrHome(jettyDir);
@@ -65,7 +63,6 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
     j.start();
     assertEquals(0, CollectionAdminRequest
         .createCollection(DEFAULT_COLLECTION, "conf1", 1, 1)
-        .setStateFormat(Integer.parseInt(getStateFormat()))
         .setCreateNodeSet("")
         .process(cloudClient).getStatus());
     assertTrue(CollectionAdminRequest

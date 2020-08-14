@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.handler.dataimport.config.DIHConfiguration;
@@ -66,7 +67,7 @@ public class DocBuilder {
 
   private EntityProcessorWrapper currentEntityProcessorWrapper;
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private Map statusMessages = Collections.synchronizedMap(new LinkedHashMap());
 
   public Statistics importStatistics = new Statistics();
@@ -113,8 +114,8 @@ public class DocBuilder {
       VariableResolver resolver = null;
       String epoch = propWriter.convertDateToString(EPOCH);
       if(dataImporter != null && dataImporter.getCore() != null
-          && dataImporter.getCore().getResourceLoader().getCoreProperties() != null){
-        resolver =  new VariableResolver(dataImporter.getCore().getResourceLoader().getCoreProperties());
+          && dataImporter.getCore().getCoreDescriptor().getSubstitutableProperties() != null){
+        resolver =  new VariableResolver(dataImporter.getCore().getCoreDescriptor().getSubstitutableProperties());
       } else {
         resolver = new VariableResolver();
       }
@@ -157,6 +158,7 @@ public class DocBuilder {
 
   private void invokeEventListener(String className, Exception lastException) {
     try {
+      @SuppressWarnings({"unchecked"})
       EventListener listener = (EventListener) loadClass(className, dataImporter.getCore()).getConstructor().newInstance();
       notifyListener(listener, lastException);
     } catch (Exception e) {
@@ -265,28 +267,45 @@ public class DocBuilder {
         statusMessages.put(DataImporter.MSG.TOTAL_FAILED_DOCS, ""+ importStatistics.failedDocCount.get());
 
       statusMessages.put("Time taken", getTimeElapsedSince(startTime.get()));
-      log.info("Time taken = " + getTimeElapsedSince(startTime.get()));
+      if (log.isInfoEnabled()) {
+        log.info("Time taken = {}", getTimeElapsedSince(startTime.get()));
+      }
     } catch(Exception e)
     {
       throw new RuntimeException(e);
-    } finally
-    {
-      if (writer != null) {
-        writer.close();
+    } finally {
+      // Cannot use IOUtils.closeQuietly since DIH relies on exceptions bubbling out of writer.close() to indicate
+      // success/failure of the run.
+      RuntimeException raisedDuringClose = null;
+      try {
+        if (writer != null) {
+          writer.close();
+        }
+      } catch (RuntimeException e) {
+        if (log.isWarnEnabled()) {
+          log.warn("Exception encountered while closing DIHWriter " + writer + "; temporarily suppressing to ensure other DocBuilder elements are closed", e); // logOk
+        }
+        raisedDuringClose = e;
       }
+
       if (epwList != null) {
         closeEntityProcessorWrappers(epwList);
       }
       if(reqParams.isDebug()) {
         reqParams.getDebugInfo().debugVerboseOutput = getDebugLogger().output;
       }
+
+      if (raisedDuringClose != null) {
+        throw raisedDuringClose;
+      }
     }
   }
   private void closeEntityProcessorWrappers(List<EntityProcessorWrapper> epwList) {
     for(EntityProcessorWrapper epw : epwList) {
-      epw.close();
-      if(epw.getDatasource()!=null) {
-        epw.getDatasource().close();
+      IOUtils.closeQuietly(epw);
+
+      if(epw.getDatasource() != null) {
+        IOUtils.closeQuietly(epw.getDatasource());
       }
       closeEntityProcessorWrappers(epw.getChildren());
     }
@@ -313,6 +332,7 @@ public class DocBuilder {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   void handleError(String message, Exception e) {
     if (!dataImporter.getCore().getCoreContainer().isZooKeeperAware()) {
       writer.rollback();
@@ -385,7 +405,7 @@ public class DocBuilder {
         key = map.get(keyName);
       }
       if(key == null) {
-        log.warn("no key was available for deleted pk query. keyName = " + keyName);
+        log.warn("no key was available for deleted pk query. keyName = {}", keyName);
         continue;
       }
       writer.deleteDoc(key);
@@ -483,7 +503,7 @@ public class DocBuilder {
             if (seenDocCount <= reqParams.getStart())
               continue;
             if (seenDocCount > reqParams.getStart() + reqParams.getRows()) {
-              log.info("Indexing stopped at docCount = " + importStatistics.docCount);
+              log.info("Indexing stopped at docCount = {}", importStatistics.docCount);
               break;
             }
           }
@@ -593,6 +613,7 @@ public class DocBuilder {
     Object value = arow.get(DELETE_DOC_BY_ID);
     if (value != null) {
       if (value instanceof Collection) {
+        @SuppressWarnings({"rawtypes"})
         Collection collection = (Collection) value;
         for (Object o : collection) {
           writer.deleteDoc(o.toString());
@@ -606,6 +627,7 @@ public class DocBuilder {
     value = arow.get(DELETE_DOC_BY_QUERY);
     if (value != null) {
       if (value instanceof Collection) {
+        @SuppressWarnings({"rawtypes"})
         Collection collection = (Collection) value;
         for (Object o : collection) {
           writer.deleteByQuery(o.toString());
@@ -689,6 +711,7 @@ public class DocBuilder {
 
   private void addFieldToDoc(Object value, String name, boolean multiValued, DocWrapper doc) {
     if (value instanceof Collection) {
+      @SuppressWarnings({"rawtypes"})
       Collection collection = (Collection) value;
       if (multiValued) {
         for (Object o : collection) {
@@ -714,6 +737,7 @@ public class DocBuilder {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public EntityProcessorWrapper getEntityProcessorWrapper(Entity entity) {
     EntityProcessor entityProcessor = null;
     if (entity.getProcessorName() == null) {
@@ -759,9 +783,11 @@ public class DocBuilder {
                   "deltaQuery has no column to resolve to declared primary key pk='%s'",
                   pk));
     }
-    log.info(String.format(Locale.ROOT,
-        "Resolving deltaQuery column '%s' to match entity's declared pk '%s'",
-        resolvedPk, pk));
+    if (log.isInfoEnabled()) {
+      log.info(String.format(Locale.ROOT,
+          "Resolving deltaQuery column '%s' to match entity's declared pk '%s'",
+          resolvedPk, pk));
+    }
     return resolvedPk;
   }
 
@@ -772,7 +798,7 @@ public class DocBuilder {
    *
    * @return an iterator to the list of keys for which Solr documents should be updated.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Set<Map<String, Object>> collectDelta(EntityProcessorWrapper epw, VariableResolver resolver,
                                                Set<Map<String, Object>> deletedRows) {
     //someone called abort
@@ -796,7 +822,9 @@ public class DocBuilder {
     
     // identifying the modified rows for this entity
     Map<String, Map<String, Object>> deltaSet = new HashMap<>();
-    log.info("Running ModifiedRowKey() for Entity: " + epw.getEntity().getName());
+    if (log.isInfoEnabled()) {
+      log.info("Running ModifiedRowKey() for Entity: {}", epw.getEntity().getName());
+    }
     //get the modified rows in this entity
     String pk = epw.getEntity().getPk();
     while (true) {
@@ -844,8 +872,10 @@ public class DocBuilder {
         return new HashSet();
     }
 
-    log.info("Completed ModifiedRowKey for Entity: " + epw.getEntity().getName() + " rows obtained : " + deltaSet.size());
-    log.info("Completed DeletedRowKey for Entity: " + epw.getEntity().getName() + " rows obtained : " + deletedSet.size());
+    if (log.isInfoEnabled()) {
+      log.info("Completed ModifiedRowKey for Entity: {} rows obtained: {}", epw.getEntity().getName(), deltaSet.size());
+      log.info("Completed DeletedRowKey for Entity: {} rows obtained : {}", epw.getEntity().getName(), deletedSet.size()); // logOk
+    }
 
     myModifiedPks.addAll(deltaSet.values());
     Set<Map<String, Object>> parentKeyList = new HashSet<>();
@@ -870,7 +900,9 @@ public class DocBuilder {
           return new HashSet();
       }
     }
-    log.info("Completed parentDeltaQuery for Entity: " + epw.getEntity().getName());
+    if (log.isInfoEnabled()) {
+      log.info("Completed parentDeltaQuery for Entity: {}", epw.getEntity().getName());
+    }
     if (epw.getEntity().isDocRoot())
       deletedRows.addAll(deletedSet);
 
@@ -919,7 +951,7 @@ public class DocBuilder {
     return reqParams;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   static Class loadClass(String name, SolrCore core) throws ClassNotFoundException {
     try {
       return core != null ?

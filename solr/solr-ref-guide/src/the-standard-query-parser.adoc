@@ -153,7 +153,7 @@ To query for a field existing, simply use a wildcard instead of a term in the se
 
 `field:*`
 
-A field will be considered to "exist" if it has any value, even values which are often considered "not existent". (e.g. `NaN`, `""`, etc.)
+A field will be considered to "exist" if it has any value, even values which are often considered "not existent". (e.g., `NaN`, `""`, etc.)
 
 === Range Searches
 
@@ -354,7 +354,7 @@ Solr's standard query parser originated as a variation of Lucene's "classic" Que
 ** `field:[* TO 100]` finds all field values less than or equal to 100
 ** `field:[100 TO *]` finds all field values greater than or equal to 100
 ** `field:[* TO *]` finds all documents where the field has a value between `-Infinity` and `Infinity`, excluding `NaN`.
-** `field:*` finds all documents where the field exists (i.e. has any value).
+** `field:*` finds all documents where the field exists (i.e., has any value).
 * Pure negative queries (all clauses prohibited) are allowed (only as a top-level clause)
 ** `-inStock:false` finds all field values where inStock is not false
 ** `-field:*` finds all documents without a value for the field.

@@ -184,6 +184,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
 //              System.out.println( "NOW: " + now_txt );
               
               // Calculate the differences
+              @SuppressWarnings({"rawtypes"})
               NamedList diff = diffNamedList(ref_bean,now_bean);
               diff.add( "_changed_", true ); // flag the changed thing
               cat.add(name, diff);
@@ -204,6 +205,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     return changed;
   }
   
+  @SuppressWarnings({"rawtypes"})
   public NamedList diffNamedList(NamedList ref, NamedList now) {
     NamedList out = new SimpleOrderedMap();
     for(int i=0; i<ref.size(); i++) {
@@ -232,6 +234,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     return out;
   }
   
+  @SuppressWarnings({"rawtypes"})
   public Object diffObject(Object ref, Object now) {
     if (now instanceof Map) {
       now = new NamedList((Map)now);
@@ -272,6 +275,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   /**
    * The 'avgRequestsPerSecond' field will make everything look like it changed
    */
+  @SuppressWarnings({"rawtypes"})
   public NamedList normalize(NamedList input) {
     input.remove("avgRequestsPerSecond");
     for(int i=0; i<input.size(); i++) {

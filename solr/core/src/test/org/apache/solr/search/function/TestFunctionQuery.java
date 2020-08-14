@@ -1040,6 +1040,38 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testQueryAsFlParam() {
+    clearIndex();
+
+    assertU(adoc("id", "1", "age_i", "35"));
+    assertU(adoc("id", "2", "age_i", "25"));
+    assertU(commit());
+
+    // some docs match the query func but some doesn't
+    // if doc doesn't match, it should use default value
+    assertQ(req("q", "*:*", "fl", "*,score,bleh:query($qq,5.0)", "qq", "id:2"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[1]/float[@name='bleh'][.='5.0']",
+        "count(//result/doc[2]/float[@name='bleh'][.='5.0'])=0",
+        "//result/doc[2]/float[@name='bleh']" // since score can't be known, doing existing match
+        );
+
+    // when the doc match the query func condition default value shouldn't be used
+    // when no def val is passed in query func, 0.0 would be used
+    assertQ(req("q", "*:*", "fl", "*,score,bleh:query($qq)", "qq", "id:*"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "count(//result/doc[1]/float[@name='bleh'][.='0.0'])=0",
+        "count(//result/doc[2]/float[@name='bleh'][.='0.0'])=0",
+        "//result/doc[1]/float[@name='bleh']",
+        "//result/doc[2]/float[@name='bleh']"
+    );
+  }
+
+  @Test
   public void testEqualFunction() {
     clearIndex();
     assertU(adoc("id", "1", "field1_s", "value1", "field2_s", "value1",

@@ -123,6 +123,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
     log.info("------ managed models ~ loading ------");
 
     if ((managedData != null) && (managedData instanceof List)) {
+      @SuppressWarnings({"unchecked"})
       final List<Map<String,Object>> up = (List<Map<String,Object>>) managedData;
       for (final Map<String,Object> u : up) {
         addModelFromMap(u);
@@ -141,7 +142,9 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
 
   public synchronized void addModel(LTRScoringModel ltrScoringModel) throws ModelException {
     try {
-      log.info("adding model {}", ltrScoringModel.getName());
+      if (log.isInfoEnabled()) {
+        log.info("adding model {}", ltrScoringModel.getName());
+      }
       store.addModel(ltrScoringModel);
     } catch (final ModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);

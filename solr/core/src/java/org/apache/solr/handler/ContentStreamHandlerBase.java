@@ -32,7 +32,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
 
     // Caching off by default

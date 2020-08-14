@@ -30,6 +30,10 @@
   <dependencies>
     <dependency org="org.apache.zookeeper" name="zookeeper" rev="${/org.apache.zookeeper/zookeeper}" conf="compile"/>
     <dependency org="org.apache.zookeeper" name="zookeeper-jute" rev="${/org.apache.zookeeper/zookeeper-jute}" conf="compile"/>
+    <!-- needed to instantiate an embedded Zookeeper server as of 3.6.1-->
+    <dependency org="org.xerial.snappy" name="snappy-java" rev="${/org.xerial.snappy/snappy-java}" conf="compile" />
+    <dependency org="commons-lang" name="commons-lang" rev="${/commons-lang/commons-lang}" conf="compile" />
+
     <dependency org="org.apache.httpcomponents" name="httpclient" rev="${/org.apache.httpcomponents/httpclient}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpmime" rev="${/org.apache.httpcomponents/httpmime}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpcore" rev="${/org.apache.httpcomponents/httpcore}" conf="compile"/>

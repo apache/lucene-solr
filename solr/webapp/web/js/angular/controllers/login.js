@@ -47,7 +47,7 @@ solrAdminApp.controller('LoginController',
           sessionStorage.setItem("auth.scheme", authScheme);
         }
 
-        var supportedSchemes = ['Basic', 'Bearer', 'Negotiate'];
+        var supportedSchemes = ['Basic', 'Bearer', 'Negotiate', 'Certificate'];
         $scope.authSchemeSupported = supportedSchemes.includes(authScheme);
 
         if (authScheme === 'Bearer') {

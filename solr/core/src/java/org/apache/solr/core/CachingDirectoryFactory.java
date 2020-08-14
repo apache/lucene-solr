@@ -157,12 +157,16 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   @Override
   public void close() throws IOException {
     synchronized (this) {
-      log.debug("Closing {} - {} directories currently being tracked", this.getClass().getSimpleName(), byDirectoryCache.size());
+      if (log.isDebugEnabled()) {
+        log.debug("Closing {} - {} directories currently being tracked", this.getClass().getSimpleName(), byDirectoryCache.size());
+      }
       this.closed = true;
       Collection<CacheValue> values = byDirectoryCache.values();
       for (CacheValue val : values) {
-        log.debug("Closing {} - currently tracking: {}",
-            this.getClass().getSimpleName(), val);
+
+        if (log.isDebugEnabled()) {
+          log.debug("Closing {} - currently tracking: {}", this.getClass().getSimpleName(), val);
+        }
         try {
           // if there are still refs out, we have to wait for them
           assert val.refCnt > -1 : val.refCnt;
@@ -190,7 +194,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         try {
           for (CacheValue v : val.closeEntries) {
             assert v.refCnt == 0 : val.refCnt;
-            log.debug("Closing directory when closing factory: " + v.path);
+            log.debug("Closing directory when closing factory: {}", v.path);
             boolean cl = closeCacheValue(v);
             if (cl) {
               closedDirs.add(v);
@@ -202,7 +206,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
 
       for (CacheValue val : removeEntries) {
-        log.debug("Removing directory after core close: " + val.path);
+        log.debug("Removing directory after core close: {}", val.path);
         try {
           removeDirectory(val);
         } catch (Exception e) {
@@ -225,7 +229,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   // be sure this is called with the this sync lock
   // returns true if we closed the cacheValue, false if it will be closed later
   private boolean closeCacheValue(CacheValue cacheValue) {
-    log.debug("looking to close {} {}", cacheValue.path, cacheValue.closeEntries.toString());
+    log.debug("looking to close {} {}", cacheValue.path, cacheValue.closeEntries);
     List<CloseListener> listeners = closeListeners.remove(cacheValue.directory);
     if (listeners != null) {
       for (CloseListener listener : listeners) {
@@ -269,7 +273,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
     for (CacheValue val : cacheValue.removeEntries) {
       if (!val.deleteAfterCoreClose) {
-        log.debug("Removing directory before core close: " + val.path);
+        log.debug("Removing directory before core close: {}", val.path);
         try {
           removeDirectory(val);
         } catch (Exception e) {
@@ -293,13 +297,15 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   }
 
   private void close(CacheValue val) {
-    log.debug("Closing directory, CoreContainer#isShutdown={}", coreContainer != null ? coreContainer.isShutDown() : "null");
+    if (log.isDebugEnabled()) {
+      log.debug("Closing directory, CoreContainer#isShutdown={}", coreContainer != null ? coreContainer.isShutDown() : "null");
+    }
     try {
       if (coreContainer != null && coreContainer.isShutDown() && val.directory instanceof ShutdownAwareDirectory) {
-        log.debug("Closing directory on shutdown: " + val.path);
+        log.debug("Closing directory on shutdown: {}", val.path);
         ((ShutdownAwareDirectory) val.directory).closeOnShutdown();
       } else {
-        log.debug("Closing directory: " + val.path);
+        log.debug("Closing directory: {}", val.path);
         val.directory.close();
       }
       assert ObjectReleaseTracker.release(val.directory);
@@ -391,7 +397,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings("rawtypes") NamedList args) {
     maxWriteMBPerSecFlush = (Double) args.get("maxWriteMBPerSecFlush");
     maxWriteMBPerSecMerge = (Double) args.get("maxWriteMBPerSecMerge");
     maxWriteMBPerSecRead = (Double) args.get("maxWriteMBPerSecRead");
@@ -399,10 +405,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
     // override global config
     if (args.get(SolrXmlConfig.SOLR_DATA_HOME) != null) {
-      dataHomePath = Paths.get((String) args.get(SolrXmlConfig.SOLR_DATA_HOME));
+      dataHomePath = Paths.get((String) args.get(SolrXmlConfig.SOLR_DATA_HOME)).toAbsolutePath().normalize();
     }
     if (dataHomePath != null) {
-      log.info(SolrXmlConfig.SOLR_DATA_HOME + "=" + dataHomePath);
+      log.info("{} = {}", SolrXmlConfig.SOLR_DATA_HOME, dataHomePath);
     }
   }
 
@@ -427,7 +433,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         throw new IllegalArgumentException("Unknown directory: " + directory
             + " " + byDirectoryCache);
       }
-      log.debug("Releasing directory: " + cacheValue.path + " " + (cacheValue.refCnt - 1) + " " + cacheValue.doneWithDir);
+      if (log.isDebugEnabled()) {
+        log.debug("Releasing directory: {} {} {}", cacheValue.path, (cacheValue.refCnt - 1), cacheValue.doneWithDir);
+      }
 
       cacheValue.refCnt--;
 

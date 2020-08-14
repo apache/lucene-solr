@@ -86,6 +86,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void doEdit(SolrQueryRequest req, SolrQueryResponse rsp, String path, final String key, final Object plugin)
       throws IOException {
     ConfigEditablePlugin configEditablePlugin = null;
@@ -156,14 +157,16 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
   protected abstract void getConf(SolrQueryResponse rsp, String key);
 
   public static Map<String, Object> getMapValue(Map<String, Object> lookupMap, String key) {
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> m = (Map<String, Object>) lookupMap.get(key);
     if (m == null) lookupMap.put(key, m = new LinkedHashMap<>());
     return m;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static List getListValue(Map<String, Object> lookupMap, String key) {
     List l = (List) lookupMap.get(key);
-    if (l == null) lookupMap.put(key, l= new ArrayList());
+    if (l == null) lookupMap.put(key, l= new ArrayList<>());
     return l;
   }
 
@@ -193,6 +196,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
    * The data object defaults to EMPTY_MAP if not set
    */
   public static class SecurityConfig {
+    @SuppressWarnings({"unchecked"})
     private Map<String, Object> data = Collections.EMPTY_MAP;
     private int version = -1;
 
@@ -213,6 +217,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
      * @param data an Object of type Map&lt;String,Object&gt;
      * @return SecurityConf object (builder pattern)
      */
+    @SuppressWarnings({"unchecked"})
     public SecurityConfig setData(Object data) {
       if (data instanceof Map) {
         this.data = (Map<String, Object>) data;

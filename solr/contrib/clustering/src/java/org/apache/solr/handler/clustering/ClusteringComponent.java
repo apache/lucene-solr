@@ -179,7 +179,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
 
           if (!engine.isAvailable()) {
             if (optional) {
-              log.info("Optional clustering engine not available: " + name);
+              log.info("Optional clustering engine not available: {}", name);
             } else {
               throw new SolrException(ErrorCode.SERVER_ERROR, 
                   "A required clustering engine failed to initialize, check the logs: " + name);
@@ -192,11 +192,11 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
           } else if (engine instanceof DocumentClusteringEngine) {
             previousEntry = documentClusteringEngines.put(name, (DocumentClusteringEngine) engine);
           } else {
-            log.warn("Unknown type of a clustering engine for class: " + engineClassName);
+            log.warn("Unknown type of a clustering engine for class: {}", engineClassName);
             continue;
           }
           if (previousEntry != null) {
-            log.warn("Duplicate clustering engine component named '" + name + "'.");
+            log.warn("Duplicate clustering engine component named '{}'.", name);
           }
         }
       }
@@ -237,7 +237,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         Object clusters = engine.cluster(rb.getQuery(), solrDocList, docIds, rb.req);
         rb.rsp.add("clusters", clusters);
       } else {
-        log.warn("No engine named: " + name);
+        log.warn("No engine named: {}", name);
       }
     }
 
@@ -257,7 +257,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         }
         rb.rsp.add("clusters", nl);
       } else {
-        log.warn("No engine named: " + name);
+        log.warn("No engine named: {}", name);
       }
     }
   }
@@ -312,7 +312,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
           sreq.params.set(CommonParams.FL, fl + sb.toString());
         }
       } else {
-        log.warn("No engine named: " + name);
+        log.warn("No engine named: {}", name);
       }
     }
   }
@@ -342,7 +342,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         Object clusters = engine.cluster(rb.getQuery(), solrDocList, docIds, rb.req);
         rb.rsp.add("clusters", clusters);
       } else {
-        log.warn("No engine named: " + name);
+        log.warn("No engine named: {}", name);
       }
     }
   }
@@ -383,9 +383,11 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     }
 
     if (defaultEngine != null) {
-      log.info("Default engine for " + type + ": " + engineName + " [" + defaultEngine.getClass().getSimpleName() + "]");
+      if (log.isInfoEnabled()) {
+        log.info("Default engine for {}: {} [{}]", type, engineName, defaultEngine.getClass().getSimpleName());
+      }
     } else {
-      log.warn("No default engine for " + type + ".");
+      log.warn("No default engine for {}.", type);
     }
   }
 }

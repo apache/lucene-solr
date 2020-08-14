@@ -81,6 +81,11 @@ public abstract class DelegationTokenRequest
 
     @Override
     public DelegationTokenResponse.Get createResponse(SolrClient client) { return new DelegationTokenResponse.Get(); }
+
+    @Override
+    public String getRequestType() {
+      return SolrRequestType.ADMIN.toString();
+    }
   }
 
   public static class Renew extends DelegationTokenRequest<Renew, DelegationTokenResponse.Renew> {
@@ -108,6 +113,11 @@ public abstract class DelegationTokenRequest
 
     @Override
     public DelegationTokenResponse.Renew createResponse(SolrClient client) { return new DelegationTokenResponse.Renew(); }
+
+    @Override
+    public String getRequestType() {
+      return SolrRequestType.ADMIN.toString();
+    }
   }
 
   public static class Cancel extends DelegationTokenRequest<Cancel, DelegationTokenResponse.Cancel> {
@@ -136,5 +146,10 @@ public abstract class DelegationTokenRequest
 
     @Override
     public DelegationTokenResponse.Cancel createResponse(SolrClient client) { return new DelegationTokenResponse.Cancel(); }
+
+    @Override
+    public String getRequestType() {
+      return SolrRequestType.ADMIN.toString();
+    }
   }
 }
