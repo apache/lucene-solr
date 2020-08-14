@@ -3456,7 +3456,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
           @Override
           void onMergeComplete() throws IOException {
-            if (includeMergeResult.get() && isAborted() == false) {
+            if (includeMergeResult.get() && isAborted() == false && info.info.maxDoc() > 0) {
               assert Thread.holdsLock(IndexWriter.this);
               mergeFinished.accept(info);
               // clone the target info to make sure we have the original info without the updated del and update gens
