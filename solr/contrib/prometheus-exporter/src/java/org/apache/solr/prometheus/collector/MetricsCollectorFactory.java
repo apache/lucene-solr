@@ -18,7 +18,7 @@
 package org.apache.solr.prometheus.collector;
 
 import java.util.List;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,12 +29,12 @@ import org.apache.solr.prometheus.scraper.SolrScraper;
 public class MetricsCollectorFactory {
 
   private final MetricsConfiguration metricsConfiguration;
-  private final Executor executor;
+  private final ExecutorService executor;
   private final int refreshInSeconds;
   private final SolrScraper solrScraper;
 
   public MetricsCollectorFactory(
-      Executor executor,
+      ExecutorService executor,
       int refreshInSeconds,
       SolrScraper solrScraper,
       MetricsConfiguration metricsConfiguration) {

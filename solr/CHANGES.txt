@@ -133,6 +133,8 @@ New Features
 * SOLR-14582: Expose IWC.setMaxCommitMergeWaitMillis in Solr's index config. This is an expert config option that can be
   set when using a custom MergePolicy (doesn't have any effect on the default MP) (Tomás Fernández Löbbe)
 
+* SOLR-13751: Add BooleanSimilarityFactory class. (Andy Webb via Christine Poerschke)
+
 Improvements
 ---------------------
 
@@ -176,6 +178,14 @@ Bug Fixes
 * SOLR-14657: Improve error handling in IndexReader realted metrics that were causing scary ERROR logging
   if metrics were requested while Solr was in the process of closing/re-opening a new IndexReader. (hossman)
 
+* SOLR-14748: Fix incorrect auth/SSL startup logging (Jason Gerlowski)
+
+* SOLR-14751: Zookeeper Admin screen not working for old ZK versions (janhoy)
+
+* SOLR-14677: Improve DIH termination logic to close all DataSources, EntityProcessors (Jason Gerlowski)
+
+* SOLR-14703: Fix edismax replacement of all whitespace characters with spaces (Yuriy Koval via Jason Gerlowski)
+
 Other Changes
 ---------------------
 
@@ -199,6 +209,9 @@ Other Changes
 
 Bug Fixes
 ---------------------
+
+* SOLR-14665, SOLR-14706: Revert SOLR-12845 adding of default autoscaling cluster policy, due to performance
+ issues. (Ishan Chattopadhyaya, Houston Putman, Gus Heck, ab)
 
 * SOLR-14671: Parsing dynamic ZK config sometimes cause NuberFormatException (janhoy)
 
