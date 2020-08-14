@@ -63,6 +63,9 @@ API Changes
 
 Improvements
 
+* LUCENE-9463: Query match region retrieval component, passage scoring and formatting
+  for building custom highlighters. (Alan Woodward, Dawid Weiss)
+
 * LUCENE-9370: RegExp query is no longer lenient about inappropriate backslashes and
   follows the Java Pattern policy for rejecting illegal syntax.  (Mark Harwood)
 

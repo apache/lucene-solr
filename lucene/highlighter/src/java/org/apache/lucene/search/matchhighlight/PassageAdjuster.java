@@ -14,19 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search.matchhighlight;
 
-
-apply plugin: 'java-library'
-
-description = 'Highlights search keywords in results'
-
-dependencies {
-  api project(':lucene:core')
-
-  implementation project(':lucene:queries')
-  implementation project(':lucene:memory')
-
-  testImplementation project(':lucene:test-framework')
-  testImplementation project(':lucene:analysis:common')
-  testImplementation project(':lucene:queryparser')
+/**
+ * Adjusts the range of one or more passages over a given value. An example
+ * adjuster could shift passage boundary to the next or previous word delimiter
+ * or white space, for example.
+ */
+public interface PassageAdjuster {
+  void currentValue(CharSequence value);
+  OffsetRange adjust(Passage p);
 }
