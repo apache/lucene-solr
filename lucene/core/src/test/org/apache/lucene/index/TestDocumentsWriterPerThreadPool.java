@@ -49,6 +49,11 @@ public class TestDocumentsWriterPerThreadPool extends LuceneTestCase {
       pool.close();
       assertEquals(1, pool.size());
       pool.marksAsFreeAndUnlock(second);
+      assertEquals(1, pool.size());
+      for (DocumentsWriterPerThread lastPerThead : pool.filterAndLock(x -> true)) {
+        pool.checkout(lastPerThead);
+        lastPerThead.unlock();
+      }
       assertEquals(0, pool.size());
     }
   }
