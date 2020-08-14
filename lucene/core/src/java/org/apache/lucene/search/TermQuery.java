@@ -80,9 +80,6 @@ public class TermQuery extends Query {
       if (te == null) {
         return null;
       }
-      if (context.reader().terms(term.field()).hasPositions() == false) {
-        return super.matches(context, doc);
-      }
       return MatchesUtils.forField(term.field(), () -> {
         PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
         if (pe.advance(doc) != doc) {
