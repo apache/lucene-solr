@@ -139,9 +139,6 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
     synchronized (this) {
       assert dwpts.contains(state) : "we tried to add a DWPT back to the pool but the pool doesn't know aobut this DWPT";
       freeList.add(state);
-      if (closed) {
-        checkout(state);
-      }
     }
     state.unlock();
   }
