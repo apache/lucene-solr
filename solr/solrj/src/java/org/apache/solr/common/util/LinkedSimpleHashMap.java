@@ -14,39 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.spell;
+package org.apache.solr.common.util;
 
+import org.apache.solr.cluster.api.SimpleMap;
 
-/**
- * SuggestWord, used in suggestSimilar method in SpellChecker class.
- * <p>
- * Default sort is first by score, then by frequency.
- */
-public final class SuggestWord{
-  
-  /**
-   * Creates a new empty suggestion with null text.
-   */
-  public SuggestWord() {}
-  
-  /**
-   * the score of the word
-   */
-  public float score;
+import java.util.LinkedHashMap;
+import java.util.function.BiConsumer;
 
-  /**
-   * The freq of the word
-   */
-  public int freq;
+public class LinkedSimpleHashMap<T> extends LinkedHashMap<String, T>  implements SimpleMap<T> {
+    @Override
+    public T get(String key) {
+        return super.get(key);
+    }
 
-  /**
-   * the suggested word
-   */
-  public String string;
+    @Override
+    public void forEachEntry(BiConsumer<String, ? super T> fun) {
 
-  @Override
-  public String toString() {
-    return "SuggestWord(string=" + string + ", score=" + score + ", freq=" + freq + ")";
-  }
-
+    }
 }

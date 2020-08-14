@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.handler.dataimport.config.DIHConfiguration;
@@ -272,24 +273,39 @@ public class DocBuilder {
     } catch(Exception e)
     {
       throw new RuntimeException(e);
-    } finally
-    {
-      if (writer != null) {
-        writer.close();
+    } finally {
+      // Cannot use IOUtils.closeQuietly since DIH relies on exceptions bubbling out of writer.close() to indicate
+      // success/failure of the run.
+      RuntimeException raisedDuringClose = null;
+      try {
+        if (writer != null) {
+          writer.close();
+        }
+      } catch (RuntimeException e) {
+        if (log.isWarnEnabled()) {
+          log.warn("Exception encountered while closing DIHWriter " + writer + "; temporarily suppressing to ensure other DocBuilder elements are closed", e); // logOk
+        }
+        raisedDuringClose = e;
       }
+
       if (epwList != null) {
         closeEntityProcessorWrappers(epwList);
       }
       if(reqParams.isDebug()) {
         reqParams.getDebugInfo().debugVerboseOutput = getDebugLogger().output;
       }
+
+      if (raisedDuringClose != null) {
+        throw raisedDuringClose;
+      }
     }
   }
   private void closeEntityProcessorWrappers(List<EntityProcessorWrapper> epwList) {
     for(EntityProcessorWrapper epw : epwList) {
-      epw.close();
-      if(epw.getDatasource()!=null) {
-        epw.getDatasource().close();
+      IOUtils.closeQuietly(epw);
+
+      if(epw.getDatasource() != null) {
+        IOUtils.closeQuietly(epw.getDatasource());
       }
       closeEntityProcessorWrappers(epw.getChildren());
     }

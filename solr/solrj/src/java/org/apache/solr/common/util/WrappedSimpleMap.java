@@ -14,39 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.spell;
+
+package org.apache.solr.common.util;
+
+import org.apache.solr.cluster.api.SimpleMap;
+
+import java.util.Map;
+import java.util.function.BiConsumer;
+
+public class WrappedSimpleMap<T>  implements SimpleMap<T> {
+    private final Map<String, T> delegate;
+
+    @Override
+    public T get(String key) {
+        return delegate.get(key);
+    }
+
+    @Override
+    public void forEachEntry(BiConsumer<String, ? super T> fun) {
+        delegate.forEach(fun);
+
+    }
+
+    @Override
+    public int size() {
+        return delegate.size();
+    }
 
 
-/**
- * SuggestWord, used in suggestSimilar method in SpellChecker class.
- * <p>
- * Default sort is first by score, then by frequency.
- */
-public final class SuggestWord{
-  
-  /**
-   * Creates a new empty suggestion with null text.
-   */
-  public SuggestWord() {}
-  
-  /**
-   * the score of the word
-   */
-  public float score;
-
-  /**
-   * The freq of the word
-   */
-  public int freq;
-
-  /**
-   * the suggested word
-   */
-  public String string;
-
-  @Override
-  public String toString() {
-    return "SuggestWord(string=" + string + ", score=" + score + ", freq=" + freq + ")";
-  }
+    public WrappedSimpleMap(Map<String, T> delegate) {
+        this.delegate = delegate;
+    }
 
 }

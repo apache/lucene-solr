@@ -14,39 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.spell;
+package org.apache.solr.search.similarities;
 
+import org.apache.lucene.search.similarities.BooleanSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.solr.schema.SimilarityFactory;
 
 /**
- * SuggestWord, used in suggestSimilar method in SpellChecker class.
- * <p>
- * Default sort is first by score, then by frequency.
+ * Factory for {@link BooleanSimilarity}
+ *
+ * Simple similarity that gives terms a score that is equal to their query
+ * boost. This similarity is typically used with disabled norms since neither
+ * document statistics nor index statistics are used for scoring.
  */
-public final class SuggestWord{
+public class BooleanSimilarityFactory extends SimilarityFactory {
   
-  /**
-   * Creates a new empty suggestion with null text.
-   */
-  public SuggestWord() {}
-  
-  /**
-   * the score of the word
-   */
-  public float score;
-
-  /**
-   * The freq of the word
-   */
-  public int freq;
-
-  /**
-   * the suggested word
-   */
-  public String string;
-
   @Override
-  public String toString() {
-    return "SuggestWord(string=" + string + ", score=" + score + ", freq=" + freq + ")";
+  public Similarity getSimilarity() {
+    return new BooleanSimilarity();
   }
-
 }
