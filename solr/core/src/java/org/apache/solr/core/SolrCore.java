@@ -1600,6 +1600,49 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         searcherExecutor.shutdown();
       }
 
+      AtomicBoolean coreStateClosed = new AtomicBoolean(false);
+
+      closer.add("SolrCoreState", () -> {
+        boolean closed = false;
+        if (updateHandler != null && updateHandler instanceof IndexWriterCloser && solrCoreState != null) {
+          closed = solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
+        } else {
+          closed = solrCoreState.decrefSolrCoreState(null);
+        }
+        coreStateClosed.set(closed);
+        return solrCoreState;
+      });
+
+      closer.add("shutdown", () -> {
+
+        synchronized (searcherLock) {
+          while (onDeckSearchers.get() > 0) {
+            try {
+              searcherLock.wait(1000); // nocommit
+            } catch (InterruptedException e) {
+              ParWork.propegateInterrupt(e);
+            } // nocommit
+          }
+        }
+        return "wait for on deck searchers";
+
+      });
+
+      closer.add("closeSearcher", () -> {
+        closeSearcher();
+      });
+      assert ObjectReleaseTracker.release(searcherExecutor);
+      closer.add("searcherExecutor", searcherExecutor, () -> {
+        infoRegistry.clear();
+        return infoRegistry;
+      }, () -> {
+        Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
+        this.directoryFactory.doneWithDirectory(snapshotsDir);
+
+        this.directoryFactory.release(snapshotsDir);
+        return snapshotsDir;
+      });
+
       List<Callable<Object>> closeHookCalls = new ArrayList<>();
 
       if (closeHooks != null) {
@@ -1647,49 +1690,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       });
 
       closer.add("SolrCoreInternals", closeCalls);
-
-      AtomicBoolean coreStateClosed = new AtomicBoolean(false);
-
-      closer.add("SolrCoreState", () -> {
-        boolean closed = false;
-        if (updateHandler != null && updateHandler instanceof IndexWriterCloser && solrCoreState != null) {
-          closed = solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
-        } else {
-          closed = solrCoreState.decrefSolrCoreState(null);
-        }
-        coreStateClosed.set(closed);
-        return solrCoreState;
-      });
-
-      closer.add("shutdown", () -> {
-
-        synchronized (searcherLock) {
-          while (onDeckSearchers.get() > 0) {
-            try {
-              searcherLock.wait(1000); // nocommit
-            } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
-            } // nocommit
-          }
-        }
-        return "wait for on deck searchers";
-
-      });
-
-      closer.add("closeSearcher", () -> {
-        closeSearcher();
-      });
-      assert ObjectReleaseTracker.release(searcherExecutor);
-      closer.add("searcherExecutor", searcherExecutor, () -> {
-        infoRegistry.clear();
-        return infoRegistry;
-      }, () -> {
-        Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
-        this.directoryFactory.doneWithDirectory(snapshotsDir);
-
-        this.directoryFactory.release(snapshotsDir);
-        return snapshotsDir;
-      });
 
       closer.add("CleanupOldIndexDirs", () -> {
         if (coreStateClosed.get()) cleanupOldIndexDirectories(false);

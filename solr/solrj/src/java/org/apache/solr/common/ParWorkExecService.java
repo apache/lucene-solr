@@ -89,7 +89,7 @@ public class ParWorkExecService extends AbstractExecutorService {
         service.execute(new Runnable() {
           @Override
           public void run() {
-            runIt(finalRunnable, false);
+            runIt(finalRunnable, true, false, false);
           }
         });
       }
@@ -202,8 +202,9 @@ public class ParWorkExecService extends AbstractExecutorService {
 
   @Override
   public void execute(Runnable runnable) {
+
     if (shutdown) {
-      runIt(runnable, true);
+      runIt(runnable, false, true, true);
       return;
     }
     running.incrementAndGet();
@@ -212,7 +213,7 @@ public class ParWorkExecService extends AbstractExecutorService {
         service.execute(new Runnable() {
           @Override
           public void run() {
-            runIt(runnable, false);
+            runIt(runnable, false, false, false);
           }
         });
       } catch (Exception e) {
@@ -224,28 +225,30 @@ public class ParWorkExecService extends AbstractExecutorService {
       return;
     }
 
+    boolean acquired = false;
     if (runnable instanceof ParWork.SolrFutureTask) {
 
     } else {
-
-
-      if (!available.tryAcquire()) {
-        runIt(runnable, true);
+      if (!checkLoad()) {
+        runIt(runnable, false, true, false);
         return;
       }
 
-      if (!checkLoad()) {
-        runIt(runnable, true);
+      if (!available.tryAcquire()) {
+        runIt(runnable, false, true, false);
         return;
+      } else {
+        acquired = true;
       }
     }
 
     Runnable finalRunnable = runnable;
     try {
-    service.execute(new Runnable() {
+      boolean finalAcquired = acquired;
+      service.execute(new Runnable() {
       @Override
       public void run() {
-        runIt(finalRunnable, false);
+        runIt(finalRunnable, finalAcquired, false, false);
       }
     });
     } catch (Exception e) {
@@ -280,24 +283,24 @@ public class ParWorkExecService extends AbstractExecutorService {
 //    }
   }
 
-  private void runIt(Runnable runnable, boolean callThreadRuns) {
+  private void runIt(Runnable runnable, boolean acquired, boolean callThreadRuns, boolean alreadyShutdown) {
     try {
       runnable.run();
     } finally {
       try {
-        if (runnable instanceof ParWork.SolrFutureTask) {
-
-        } else {
+        if (acquired) {
           available.release();
         }
       } finally {
-        try {
-          running.decrementAndGet();
-          synchronized (awaitTerminate) {
-            awaitTerminate.notifyAll();
+        if (!alreadyShutdown) {
+          try {
+            running.decrementAndGet();
+            synchronized (awaitTerminate) {
+              awaitTerminate.notifyAll();
+            }
+          } finally {
+            if (!callThreadRuns) ParWork.closeExecutor();
           }
-        } finally {
-          if (!callThreadRuns) ParWork.closeExecutor();
         }
       }
     }
