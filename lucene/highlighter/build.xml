@@ -38,6 +38,7 @@
     <pathelement path="${memory.jar}"/>
     <pathelement path="${queries.jar}"/>
     <pathelement path="${analyzers-common.jar}"/>
+    <pathelement path="${queryparser.jar}"/>
     <path refid="test.base.classpath"/>
   </path>
 

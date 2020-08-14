@@ -12,7 +12,7 @@ System Requirements
 
 API Changes
 
-* LUCENE-8474: RAMDirectory and associated deprecated classes have been 
+* LUCENE-8474: RAMDirectory and associated deprecated classes have been
   removed. (Dawid Weiss)
 
 * LUCENE-3041: The deprecated Weight#extractTerms() method has been 
@@ -58,7 +58,13 @@ API Changes
 
 * LUCENE-9340: SimpleBindings#add(SortField) has been removed. (Alan Woodward)
 
+* LUCENE-9462: Fields without positions should still return MatchIterator.
+  (Alan Woodward, Dawid Weiss)
+
 Improvements
+
+* LUCENE-9463: Query match region retrieval component, passage scoring and formatting
+  for building custom highlighters. (Alan Woodward, Dawid Weiss)
 
 * LUCENE-9370: RegExp query is no longer lenient about inappropriate backslashes and
   follows the Java Pattern policy for rejecting illegal syntax.  (Mark Harwood)
@@ -113,7 +119,6 @@ Improvements
   sort fields the skipping functionality works when the same field is indexed both
   with doc values and points. In this case, there is an assumption that the same data is
   stored in these points and doc values (Mayya Sharipova, Jim Ferenczi, Adrien Grand)
-
 
 Bug fixes
 
@@ -181,6 +186,9 @@ Improvements
 * LUCENE-9440: FieldInfo#checkConsistency called twice from Lucene50(60)FieldInfosFormat#read;
   Removed the (redundant?) assert and do these checks for real. (Yauheni Putsykovich)
 
+* LUCENE-9446: In BooleanQuery rewrite, always remove MatchAllDocsQuery filter clauses
+  when possible. (Julie Tibshirani)
+
 Optimizations
 ---------------------
 
@@ -189,7 +197,10 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-9427: Fix a regression where the unified highlighter didn't produce
+  highlights on fuzzy queries that correspond to exact matches. (Julie Tibshirani)
+
 
 Documentation
 ---------------------

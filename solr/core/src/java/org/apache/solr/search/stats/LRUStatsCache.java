@@ -65,7 +65,7 @@ public class LRUStatsCache extends ExactStatsCache {
   // map of <shardName, <field, collStats>>
   private final Map<String,Map<String,CollectionStats>> perShardColStats = new ConcurrentHashMap<>();
   
-  // global stats synchronized from the master
+  // global stats synchronized from the leader
 
   // cache of <term, termStats>
   private final CaffeineCache<String,TermStats> currentGlobalTermStats = new CaffeineCache<>();

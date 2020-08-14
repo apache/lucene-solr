@@ -1317,7 +1317,7 @@ def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
   command = 'ant test -Dtestcase=TestBackwardsCompatibility -Dtests.verbose=true'
   p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   stdout, stderr = p.communicate()
-  if p.returncode is not 0:
+  if p.returncode != 0:
     # Not good: the test failed!
     raise RuntimeError('%s failed:\n%s' % (command, stdout))
   stdout = stdout.decode('utf-8',errors='replace').replace('\r\n','\n')
