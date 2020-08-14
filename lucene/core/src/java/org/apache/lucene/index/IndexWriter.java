@@ -545,7 +545,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // obtained during this flush are pooled, the first time
     // this method is called:
     readerPool.enableReaderPooling();
-    DirectoryReader r = null;
+    StandardDirectoryReader r = null;
     doBeforeFlush();
     boolean anyChanges;
     /*
@@ -609,7 +609,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
             }
             if (maxCommitMergeWaitMillis > 0) {
-              openingSegmentInfos = segmentInfos.clone();
+              // we take the SIS from the reader which has already pruned away fully deleted readers
+              // this makes pulling the readers below after the merge simpler since we can be safe that
+              // they are not closed. Every segment has a corresponding SR in the SDR we opened if we use
+              // this SIS
+              openingSegmentInfos = r.getSegmentInfos().clone();
               onCommitMerges = preparePointInTimeMerge(openingSegmentInfos, includeMergeReader, MergeTrigger.GET_READER,
                   sci -> mergedReaders.put(sci.info.name, readerFactory.apply(sci)));
             }
@@ -639,7 +643,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             includeMergeReader.set(false);
             boolean openNewReader = mergedReaders.isEmpty() == false;
             if (openNewReader) {
-              DirectoryReader mergedReader = StandardDirectoryReader.open(this,
+              StandardDirectoryReader mergedReader = StandardDirectoryReader.open(this,
                   sci -> {
                     // as soon as we remove the reader and return it the StandardDirectoryReader#open
                     // will take care of closing it. We only need to handle the readers that remain in the
