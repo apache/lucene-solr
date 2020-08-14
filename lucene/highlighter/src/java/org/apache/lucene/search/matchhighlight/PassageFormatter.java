@@ -25,9 +25,12 @@ import java.util.RandomAccess;
 import java.util.function.Function;
 
 /**
- * Formats a collection of {@link Passage} over a given string, cleaning up
+ * Formats a collection of {@linkplain Passage passages} over a given string, cleaning up
  * and resolving restrictions concerning overlaps, allowed sub-ranges over the
  * input string and length restrictions.
+ *
+ * Passages are demarcated with constructor-provided ellipsis and start/end marker
+ * sequences.
  */
 public class PassageFormatter {
   private final String ellipsis;

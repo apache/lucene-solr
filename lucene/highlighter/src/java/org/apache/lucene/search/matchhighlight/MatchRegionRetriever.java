@@ -263,8 +263,14 @@ public class MatchRegionRetriever {
 
         case DOCS_AND_FREQS:
         case DOCS:
+          // By default retrieve offsets from individual tokens
+          // retrieved by the analyzer (possibly narrowed down to
+          // only those terms that the query hinted at when passed
+          // a QueryVisitor.
+          //
+          // Alternative straties are also possible and may make sense
+          // depending on the use case (OffsetsFromValues, for example).
           return new OffsetsFromTokens(field, analyzer);
-          // return new OffsetsFromValues(field, analyzer);
 
         default:
           return
