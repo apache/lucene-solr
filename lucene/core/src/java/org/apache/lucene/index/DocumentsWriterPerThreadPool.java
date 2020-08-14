@@ -97,6 +97,10 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
         throw new ThreadInterruptedException(ie);
       }
     }
+    // we must check if we are closed since this might happen while we are waiting for the writer permit
+    // and if we miss that we might release a new DWPT even though the pool is closed. Yet, that wouldn't be the
+    // end of the world it's violating the contract that we don't release any new DWPT after this pool is closed
+    ensureOpen();
     DocumentsWriterPerThread dwpt = dwptFactory.get();
     dwpt.lock(); // lock so nobody else will get this DWPT
     dwpts.add(dwpt);
@@ -109,9 +113,7 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
   /** This method is used by DocumentsWriter/FlushControl to obtain a DWPT to do an indexing operation (add/updateDocument). */
   DocumentsWriterPerThread getAndLock() throws IOException {
     synchronized (this) {
-      if (closed) {
-        throw new AlreadyClosedException("DWPTPool is already closed");
-      }
+      ensureOpen();
       // Important that we are LIFO here! This way if number of concurrent indexing threads was once high,
       // but has now reduced, we only use a limited number of DWPTs. This also guarantees that if we have suddenly
       // a single thread indexing
@@ -125,6 +127,12 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
       }
       // DWPT is already locked before return by this method:
       return newWriter();
+    }
+  }
+
+  private void ensureOpen() {
+    if (closed) {
+      throw new AlreadyClosedException("DWPTPool is already closed");
     }
   }
 
