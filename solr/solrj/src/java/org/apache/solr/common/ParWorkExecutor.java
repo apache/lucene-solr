@@ -67,7 +67,16 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
   }
 
   public void shutdown() {
-   // allowCoreThreadTimeOut(true);
+    // wake up idle threads!
+    ThreadPoolExecutor exec = ParWork.getEXEC();
+    for (int i = 0; i < getPoolSize(); i++) {
+      exec.submit(new Runnable() {
+        @Override
+        public void run() {
+
+        }
+      });
+    }
     super.shutdown();
   }
 }

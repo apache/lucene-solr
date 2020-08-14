@@ -528,7 +528,7 @@ public class ParWork implements Closeable {
     AtomicReference<Throwable> exception = new AtomicReference<>();
     try {
       for (WorkUnit workUnit : workUnits) {
-        log.info("Process workunit {} {}", workUnit.label, workUnit.objects);
+        if (log.isDebugEnabled()) log.debug("Process workunit {} {}", workUnit.label, workUnit.objects);
         TimeTracker workUnitTracker = null;
         assert (workUnitTracker = workUnit.tracker.startSubClose(workUnit.label)) != null;
         try {

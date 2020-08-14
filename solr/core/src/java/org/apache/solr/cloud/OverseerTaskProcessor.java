@@ -294,7 +294,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
                     .getId() + " message:" + message.toString());
             Runner runner = new Runner(messageHandler, message, operation, head,
                 lock);
-            ParWork.getExecutor().submit(runner, true);
+            ParWork.getEXEC().execute(runner);
           }
 
         } catch (InterruptedException | AlreadyClosedException e) {

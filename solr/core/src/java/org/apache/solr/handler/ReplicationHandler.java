@@ -1778,6 +1778,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (restoreFuture != null) {
       restoreFuture.cancel(false);
     }
+    try {
+      executorService.shutdownNow();
+    } catch (NullPointerException e) {
+      // okay
+    }
 
     try (ParWork closer = new ParWork(this, true)) {
       if (pollingIndexFetcher != null) {
@@ -1791,8 +1796,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           currentIndexFetcher.destroy();
         });
       }
-      closer.collect(restoreExecutor);
-      closer.collect(executorService);
+    ///  closer.collect(restoreExecutor);
+     // closer.collect(executorService);
       closer.addCollect("ReplicationHandlerClose");
     }
 

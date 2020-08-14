@@ -1632,6 +1632,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         closeSearcher();
       });
       assert ObjectReleaseTracker.release(searcherExecutor);
+      searcherExecutor.shutdownNow();
       closer.add("searcherExecutor", searcherExecutor, () -> {
         infoRegistry.clear();
         return infoRegistry;

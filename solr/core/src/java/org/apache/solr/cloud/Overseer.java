@@ -554,8 +554,8 @@ public class Overseer implements SolrCloseable {
     @Override
     public void close() throws IOException {
       this.isClosed = true;
+      ((Thread)thread).interrupt();
       thread.close();
-      Thread.currentThread().interrupt();
     }
 
     public Closeable getThread() {
@@ -881,31 +881,42 @@ public class Overseer implements SolrCloseable {
     if (log.isDebugEnabled()) {
       log.debug("doClose() - start");
     }
-    try (ParWork closer = new ParWork(this, true)) {
 
-      closer.collect(() -> {
-        IOUtils.closeQuietly(ccThread);
+    if (ccThread != null) {
         ccThread.interrupt();
-      });
-
-      closer.collect(() -> {
-
-        IOUtils.closeQuietly(updaterThread);
-        updaterThread.interrupt();
-      });
-
-      closer.collect(() -> {
-
-        IOUtils.closeQuietly(triggerThread);
-        triggerThread.interrupt();
-      });
-
-      closer.addCollect("OverseerInternals");
     }
+    if (updaterThread != null) {
+      updaterThread.interrupt();
+    }
+
+    IOUtils.closeQuietly(ccThread);
+
+    IOUtils.closeQuietly(updaterThread);
+
+    if (ccThread != null) {
+      try {
+        ccThread.join();
+      } catch (InterruptedException e) {
+        // okay
+      }
+    }
+    if (updaterThread != null) {
+      try {
+        updaterThread.join();
+      } catch (InterruptedException e) {
+        // okay
+      }
+    }
+    //      closer.collect(() -> {
+    //
+    //        IOUtils.closeQuietly(triggerThread);
+    //        triggerThread.interrupt();
+    //      });
 
     if (log.isDebugEnabled()) {
       log.debug("doClose() - end");
     }
+
     assert ObjectReleaseTracker.release(this);
   }
 
