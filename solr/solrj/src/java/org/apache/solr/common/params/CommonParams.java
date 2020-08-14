@@ -294,6 +294,10 @@ public interface CommonParams {
   String NAME = "name";
   String VALUE_LONG = "val";
 
+  String SOLR_REQUEST_CONTEXT_PARAM = "Solr-Request-Context";
+
+  String SOLR_REQUEST_TYPE_PARAM = "Solr-Request-Type";
+
   String VERSION_FIELD="_version_";
 
   String FAIL_ON_VERSION_CONFLICTS ="failOnVersionConflicts";
