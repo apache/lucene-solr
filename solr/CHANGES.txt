@@ -74,6 +74,8 @@ Bug Fixes
 
 * SOLR-14677: Improve DIH termination logic to close all DataSources, EntityProcessors (Jason Gerlowski)
 
+* SOLR-14703: Fix edismax replacement of all whitespace characters with spaces (Yuriy Koval via Jason Gerlowski)
+
 Other Changes
 ---------------------
 
