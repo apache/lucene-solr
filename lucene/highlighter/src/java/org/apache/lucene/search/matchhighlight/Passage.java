@@ -14,19 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search.matchhighlight;
 
+import java.util.List;
 
-apply plugin: 'java-library'
+/**
+ * A passage is a fragment of source text, scored and possibly with a list of sub-offsets (markers)
+ * to be highlighted. The markers can be overlapping or nested, but they're always contained within
+ * the passage.
+ */
+public class Passage extends OffsetRange {
+  public List<OffsetRange> markers;
 
-description = 'Highlights search keywords in results'
+  public Passage(int from, int to, List<OffsetRange> markers) {
+    super(from, to);
 
-dependencies {
-  api project(':lucene:core')
+    this.markers = markers;
+  }
 
-  implementation project(':lucene:queries')
-  implementation project(':lucene:memory')
-
-  testImplementation project(':lucene:test-framework')
-  testImplementation project(':lucene:analysis:common')
-  testImplementation project(':lucene:queryparser')
+  @Override
+  public String toString() {
+    return "[" + super.toString() + ", markers=" + markers + "]";
+  }
 }
