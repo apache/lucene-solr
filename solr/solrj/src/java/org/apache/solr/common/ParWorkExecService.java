@@ -1,6 +1,5 @@
 package org.apache.solr.common;
 
-import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SysStats;
 import org.apache.solr.common.util.TimeOut;
@@ -10,26 +9,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.Phaser;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ParWorkExecService extends AbstractExecutorService {
@@ -99,23 +89,7 @@ public class ParWorkExecService extends AbstractExecutorService {
         service.execute(new Runnable() {
           @Override
           public void run() {
-            try {
-              finalRunnable.run();
-            } finally {
-              try {
-                if (finalRunnable instanceof ParWork.SolrFutureTask) {
-
-                } else {
-                  available.release();
-                }
-              } finally {
-                ParWork.closeExecutor();
-                running.decrementAndGet();
-                synchronized (awaitTerminate) {
-                  awaitTerminate.notifyAll();
-                }
-              }
-            }
+            runIt(finalRunnable, false);
           }
         });
       }
@@ -236,14 +210,7 @@ public class ParWorkExecService extends AbstractExecutorService {
       service.execute(new Runnable() {
         @Override
         public void run() {
-          try {
-            runnable.run();
-          } finally {
-            running.decrementAndGet();
-            synchronized (awaitTerminate) {
-              awaitTerminate.notifyAll();
-            }
-          }
+          runIt(runnable, false);
         }
       });
       return;
@@ -253,34 +220,15 @@ public class ParWorkExecService extends AbstractExecutorService {
 
     } else {
 
-      try {
-        available.acquire();
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-        running.decrementAndGet();
-        synchronized (awaitTerminate) {
-          awaitTerminate.notifyAll();
-        }
+
+      if (!available.tryAcquire()) {
+        runIt(runnable, true);
         return;
       }
-      if (!checkLoad()) {
-        try {
-          runnable.run();
-        } finally {
-          try {
-            if (runnable instanceof ParWork.SolrFutureTask) {
 
-            } else {
-              available.release();
-            }
-          } finally {
-            ParWork.closeExecutor();
-            running.decrementAndGet();
-            synchronized (awaitTerminate) {
-              awaitTerminate.notifyAll();
-            }
-          }
-        }
+      if (!checkLoad()) {
+        runIt(runnable, true);
+        return;
       }
     }
 
@@ -288,23 +236,7 @@ public class ParWorkExecService extends AbstractExecutorService {
     service.execute(new Runnable() {
       @Override
       public void run() {
-        try {
-          finalRunnable.run();
-        } finally {
-          try {
-            if (finalRunnable instanceof ParWork.SolrFutureTask) {
-
-            } else {
-              available.release();
-            }
-          } finally {
-            ParWork.closeExecutor();
-            running.decrementAndGet();
-            synchronized (awaitTerminate) {
-              awaitTerminate.notifyAll();
-            }
-          }
-        }
+        runIt(finalRunnable, false);
       }
     });
 
@@ -333,6 +265,28 @@ public class ParWorkExecService extends AbstractExecutorService {
 //    }
   }
 
+  private void runIt(Runnable runnable, boolean callThreadRuns) {
+    try {
+      runnable.run();
+    } finally {
+      try {
+        if (runnable instanceof ParWork.SolrFutureTask) {
+
+        } else {
+          available.release();
+        }
+      } finally {
+        try {
+          running.decrementAndGet();
+          synchronized (awaitTerminate) {
+            awaitTerminate.notifyAll();
+          }
+        } finally {
+          if (!callThreadRuns) ParWork.closeExecutor();
+        }
+      }
+    }
+  }
 
   public Integer getMaximumPoolSize() {
     return maxSize;
