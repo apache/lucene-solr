@@ -14,19 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search.matchhighlight;
 
+import java.util.function.Function;
 
-apply plugin: 'java-library'
-
-description = 'Highlights search keywords in results'
-
-dependencies {
-  api project(':lucene:core')
-
-  implementation project(':lucene:queries')
-  implementation project(':lucene:memory')
-
-  testImplementation project(':lucene:test-framework')
-  testImplementation project(':lucene:analysis:common')
-  testImplementation project(':lucene:queryparser')
+/**
+ * A per-field supplier of {@link OffsetsRetrievalStrategy}.
+ */
+@FunctionalInterface
+public interface OffsetsRetrievalStrategySupplier extends Function<String, OffsetsRetrievalStrategy> {
 }
