@@ -62,7 +62,7 @@ public interface SimpleMap<T> extends MapWriter {
    * @param fun Consume each entry and return a boolean to signal whether to proceed or not. If true, continue, if false stop
    */
   default void abortableForEach(BiFunction<String, ? super T, Boolean> fun) {
-    forEachEntry(new BiConsumer<>() {
+    forEachEntry(new BiConsumer<String, T>() {
       boolean end = false;
       @Override
       public void accept(String k, T v) {
