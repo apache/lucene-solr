@@ -2,6 +2,7 @@ package org.apache.solr.common;
 
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SysStats;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -50,6 +51,8 @@ public class ParWorkExecService extends AbstractExecutorService {
   private final BlockingArrayQueue<Runnable> workQueue = new BlockingArrayQueue<>(30, 0);
   private volatile Worker worker;
   private volatile Future<?> workerFuture;
+
+  private SysStats sysStats = ParWork.getSysStats();
 
   private class Worker implements Runnable {
 
@@ -209,7 +212,7 @@ public class ParWorkExecService extends AbstractExecutorService {
 
      //zaa System.out.println("WAIT : " + workQueue.size() + " " + available.getQueueLength() + " " + workQueue.toString());
       synchronized (awaitTerminate) {
-        awaitTerminate.wait(250);
+        awaitTerminate.wait(500);
       }
     }
 //    workQueue.clear();
@@ -260,7 +263,25 @@ public class ParWorkExecService extends AbstractExecutorService {
         }
         return;
       }
+      if (!checkLoad()) {
+        try {
+          runnable.run();
+        } finally {
+          try {
+            if (runnable instanceof ParWork.SolrFutureTask) {
 
+            } else {
+              available.release();
+            }
+          } finally {
+            ParWork.closeExecutor();
+            running.decrementAndGet();
+            synchronized (awaitTerminate) {
+              awaitTerminate.notifyAll();
+            }
+          }
+        }
+      }
     }
 
     Runnable finalRunnable = runnable;
@@ -318,23 +339,15 @@ public class ParWorkExecService extends AbstractExecutorService {
   }
 
   public boolean checkLoad() {
-    double load = ManagementFactory.getOperatingSystemMXBean()
-        .getSystemLoadAverage();
-    if (load < 0) {
-      log.warn("SystemLoadAverage not supported on this JVM");
-    }
 
-    double ourLoad = ParWork.getSysStats().getAvarageUsagePerCPU();
-
-    if (ourLoad > 99.0D) {
+    double ourLoad = ParWork.getSysStats().getTotalUsage();
+    if (ourLoad > SysStats.OUR_LOAD_HIGH) {
       return false;
     } else {
-      double sLoad = load / (double) ParWork.PROC_COUNT;
+      double sLoad = sysStats.getSystemLoad();
       if (sLoad > ParWork.PROC_COUNT) {
         return false;
       }
-      if (log.isDebugEnabled()) log.debug("ParWork, load:" + sLoad);
-
     }
     return true;
   }

@@ -27,6 +27,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.util.SysStats;
 import org.eclipse.jetty.servlets.QoSFilter;
@@ -40,11 +41,11 @@ public class SolrQoSFilter extends QoSFilter {
   static final String MAX_REQUESTS_INIT_PARAM = "maxRequests";
   static final String SUSPEND_INIT_PARAM = "suspendMs";
   static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
-  public static final int OUR_LOAD_HIGH = 99;
+
   protected int _origMaxRequests;
 
 
-  private static SysStats sysStats = SysStats.getSysStats();
+  private static SysStats sysStats = ParWork.getSysStats();
 
   @Override
   public void init(FilterConfig filterConfig) {
@@ -62,9 +63,9 @@ public class SolrQoSFilter extends QoSFilter {
     String source = req.getHeader(QoSParams.REQUEST_SOURCE);
     boolean imagePath = req.getPathInfo() != null && req.getPathInfo().startsWith("/img/");
     if (!imagePath && (source == null || !source.equals(QoSParams.INTERNAL))) {
-      double ourLoad = sysStats.getAvarageUsagePerCPU();
-      if (ourLoad > OUR_LOAD_HIGH) {
-        log.info("Our individual load is {}", ourLoad);
+      double ourLoad = sysStats.getTotalUsage();
+      log.info("Our individual load is {}", ourLoad);
+      if (ourLoad > SysStats.OUR_LOAD_HIGH) {
         int cMax = getMaxRequests();
         if (cMax > 2) {
           int max = Math.max(2, (int) ((double)cMax * 0.60D));

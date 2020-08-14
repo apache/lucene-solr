@@ -19,8 +19,11 @@ import java.util.concurrent.TimeUnit;
 public class SysStats extends Thread {
     private static final Logger log = LoggerFactory
         .getLogger(MethodHandles.lookup().lookupClass());
-    public static final int REFRESH_INTERVAL = 5000;
+
+    public static final int OUR_LOAD_HIGH = 1;
+    public static final long REFRESH_INTERVAL = TimeUnit.NANOSECONDS.convert(5000, TimeUnit.MILLISECONDS);
     static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
+    private final long refreshIntervalMs;
 
     private long refreshInterval;
     private  volatile boolean stopped;
@@ -31,7 +34,6 @@ public class SysStats extends Thread {
 
     private static volatile SysStats sysStats;
     private volatile double totalUsage;
-    private volatile double usagePerCPU;
     private volatile double sysLoad;
 
     public static SysStats getSysStats() {
@@ -47,6 +49,7 @@ public class SysStats extends Thread {
 
     public SysStats(long refreshInterval) {
         this.refreshInterval = refreshInterval;
+        this.refreshIntervalMs = TimeUnit.MILLISECONDS.convert(refreshInterval, TimeUnit.NANOSECONDS);
         setName("CPUMonitoringThread");
         setDaemon(true);
         start();
@@ -67,6 +70,7 @@ public class SysStats extends Thread {
     @Override
     public void run() {
         boolean gatherThreadStats = true;
+        Collection<ThreadTime> values = null;
         while(!stopped) {
             if (gatherThreadStats) {
                 Set<Long> mappedIds = new HashSet<Long>(threadTimeMap.keySet());
@@ -76,55 +80,48 @@ public class SysStats extends Thread {
                 removeDeadThreads(mappedIds, allThreadIds);
 
                 mapNewThreads(allThreadIds);
-
-                Collection<ThreadTime> values = new HashSet<ThreadTime>(
-                    threadTimeMap.values());
+                values = new HashSet<>(threadTimeMap.values());
 
                 for (ThreadTime threadTime : values) {
                     threadTime.setCurrent(threadBean.getThreadCpuTime(threadTime.getId()));
                 }
 
-                try {
-                    Thread.sleep(refreshInterval / 2);
-                    if (stopped) {
-                        return;
-                    }
-                } catch (InterruptedException e) {
-                    ParWork.propegateInterrupt(e, true);
-                    return;
-                }
-
-                for (ThreadTime threadTime : values) {
-                    threadTime.setLast(threadTime.getCurrent());
-                }
-
-                Collection<ThreadTime> vals;
-                vals = new HashSet<ThreadTime>(threadTimeMap.values());
-
-                double usage = 0D;
-                for (ThreadTime threadTime : vals) {
-                    usage += (threadTime.getCurrent() - threadTime.getLast()) / (
-                        refreshInterval * REFRESH_INTERVAL);
-                }
-                totalUsage = usage;
-                usagePerCPU = getTotalUsage() / ParWork.PROC_COUNT;
-
                 double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
                 if (load < 0) {
                     log.warn("SystemLoadAverage not supported on this JVM");
-                    load = 0;
+                } else {
+                    sysLoad = load / (double) PROC_COUNT;
                 }
-                sysLoad = load / (double) PROC_COUNT;
 
-                gatherThreadStats = false;
             } else {
                 double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
                 if (load < 0) {
                     log.warn("SystemLoadAverage not supported on this JVM");
-                    load = 0;
+                } else {
+                    sysLoad = load / (double) PROC_COUNT;
                 }
-                sysLoad = load / (double) PROC_COUNT;
                 gatherThreadStats = true;
+            }
+
+
+            try {
+                Thread.sleep(refreshIntervalMs);
+//                if (stopped) {
+//                    return;
+//                }
+            } catch (InterruptedException e) {
+//                ParWork.propegateInterrupt(e, true);
+//                return;
+            }
+
+            if (gatherThreadStats) {
+                double usage = 0D;
+                for (ThreadTime threadTime : values) {
+                    threadTime.setLast(threadBean.getThreadCpuTime(threadTime.getId()));
+                    usage += ( threadTime.getLast() - threadTime.getCurrent()) / (refreshInterval * 2.0f);
+                }
+                totalUsage = usage;
+                gatherThreadStats = false;
             }
         }
     }
@@ -161,12 +158,11 @@ public class SysStats extends Thread {
     }
 
     public double getTotalUsage() {
-
         return totalUsage;
     }
 
     public double getAvarageUsagePerCPU() {
-        return usagePerCPU;
+        return getTotalUsage() / ParWork.PROC_COUNT;
     }
 
     public double getUsageByThread(Thread t) {
@@ -177,7 +173,7 @@ public class SysStats extends Thread {
         double usage = 0D;
         if(info != null) {
             synchronized (info) {
-                usage = (info.getCurrent() - info.getLast()) / (TimeUnit.MILLISECONDS.toNanos(refreshInterval / 2));
+                usage = (info.getCurrent() - info.getLast()) / (TimeUnit.MILLISECONDS.toNanos(refreshInterval * 2));
             }
         }
         return usage;
