@@ -141,19 +141,30 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       shards = shardsMap.get(collection);
     } else {
       //SolrCloud Sharding
-      CloudSolrClient cloudSolrClient =
-          Optional.ofNullable(streamContext.getSolrClientCache()).orElseGet(SolrClientCache::new).getCloudSolrClient(zkHost);
+      SolrClientCache solrClientCache = (streamContext != null ? streamContext.getSolrClientCache() : null);
+      final SolrClientCache localSolrClientCache;
+      if (solrClientCache == null) {
+        solrClientCache = localSolrClientCache = new SolrClientCache();
+      } else {
+        localSolrClientCache = null;
+      }
+      CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zkHost);
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
 
 
-      ModifiableSolrParams solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
+      final ModifiableSolrParams solrParams;
+      if (streamContext != null) {
+        solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
+      } else {
+        solrParams = new ModifiableSolrParams();
+      }
       solrParams.add(requestParams);
 
       RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator =
-          Optional.ofNullable(streamContext.getRequestReplicaListTransformerGenerator()).orElseGet(RequestReplicaListTransformerGenerator::new);
+          Optional.ofNullable(streamContext != null ? streamContext.getRequestReplicaListTransformerGenerator() : null).orElseGet(RequestReplicaListTransformerGenerator::new);
 
       ReplicaListTransformer replicaListTransformer = requestReplicaListTransformerGenerator.getReplicaListTransformer(solrParams);
 
@@ -170,10 +181,15 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
           shards.add(sortedReplicas.get(0).getCoreUrl());
         }
       }
+      if (localSolrClientCache != null) {
+        localSolrClientCache.close();
+      }
     }
-    Object core = streamContext.get("core");
-    if (streamContext != null && streamContext.isLocal() && core != null) {
-      shards.removeIf(shardUrl -> !shardUrl.contains((CharSequence) core));
+    if (streamContext != null) {
+      Object core = streamContext.get("core");
+      if (streamContext.isLocal() && core != null) {
+        shards.removeIf(shardUrl -> !shardUrl.contains((CharSequence) core));
+      }
     }
 
     return shards;
