@@ -46,8 +46,9 @@ When upgrading to 8.6.1 users should be aware of the following major changes fro
 * As mentioned in the 8.6 upgrade notes, a default autoscaling policy was provided starting in 8.6.0.
 This default autoscaling policy resulted in increasingly slow collection creation calls in large clusters (50+ collections).
 +
-In 8.6.1 the default autoscaling policy has been removed, and clouds will not use autoscaling unless a policy has explicitly been created.
-If your cloud is running 8.6.0 and **not using an explicit autoscaling policy**, upgrade to 8.6.1 and remove the default cluster policy and preferences via the following command.
+In 8.6.1 the default autoscaling policy has been removed, and clusters will not use autoscaling unless a policy has explicitly been created.
+If your cluster is running 8.6.0 and *not using an explicit autoscaling policy*, upgrade to 8.6.1 and remove the default cluster policy and preferences via the following command.
++
 Replace `localhost:8983` with your Solr endpoint.
 +
 ```
