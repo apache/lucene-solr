@@ -113,7 +113,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
     }
 
     try (ParWork closer = new ParWork(this, true)) {
-      closer.collect(() -> {
+      closer.collect("cancelElection", () -> {
         try {
           super.cancelElection();
         } catch (Exception e) {
@@ -121,7 +121,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
           log.error("Exception closing Overseer", e);
         }
       });
-      closer.collect(() -> {
+      closer.collect("overseer", () -> {
         try {
           overseer.doClose();
         } catch (Exception e) {
@@ -129,7 +129,6 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
           log.error("Exception closing Overseer", e);
         }
       });
-      closer.addCollect("overseerElectionContextCancel");
     }
   }
 
@@ -137,7 +136,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   public void close() {
     this.isClosed  = true;
     try (ParWork closer = new ParWork(this, true)) {
-      closer.collect(() -> {
+      closer.collect("superClose", () -> {
         try {
           super.close();
         } catch (Exception e) {
@@ -145,7 +144,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
           log.error("Exception canceling election", e);
         }
       });
-      closer.collect(() -> {
+      closer.collect("Overseer", () -> {
         try {
           overseer.doClose();
         } catch (Exception e) {
@@ -153,7 +152,6 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
           log.error("Exception closing Overseer", e);
         }
       });
-      closer.addCollect("overseerElectionContextClose");
     }
   }
 

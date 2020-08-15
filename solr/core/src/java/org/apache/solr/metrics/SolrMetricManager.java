@@ -925,7 +925,6 @@ public class SolrMetricManager {
 
     try (ParWork worker = new ParWork(this)) {
       worker.collect(calls);
-      worker.addCollect("loadMetricsReporters");
     }
   }
 
@@ -1131,7 +1130,7 @@ public class SolrMetricManager {
       reportersLock.unlock();
     }
     try (ParWork closer = new ParWork(this, true)) {
-      closer.add("MetricReporters", closeReporters);
+      closer.collect("MetricReporters", closeReporters);
     }
     return removed;
   }

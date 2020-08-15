@@ -665,9 +665,9 @@ public class TransactionLog implements Closeable {
      * @throws IOException If there is a low-level I/O error.
      */
     public Object next() throws IOException, InterruptedException {
-      long pos = fis.position();
-
+      long pos;
       synchronized (TransactionLog.this) {
+        pos = fis.position();
         if (trace) {
           log.trace("Reading log record.  pos={} currentSize={}", pos, fos.size());
         }
@@ -690,14 +690,15 @@ public class TransactionLog implements Closeable {
           pos = fis.position();
         }
       }
+      synchronized (TransactionLog.this) {
+        Object o = codec.readVal(fis);
 
-      Object o = codec.readVal(fis);
+        // skip over record size
+        int size = fis.readInt();
+        assert size == fis.position() - pos - 4;
 
-      // skip over record size
-      int size = fis.readInt();
-      assert size == fis.position() - pos - 4;
-
-      return o;
+        return o;
+      }
     }
 
     public void close() {

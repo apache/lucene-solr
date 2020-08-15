@@ -40,6 +40,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +73,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -196,7 +199,7 @@ public class CoreContainer implements Closeable {
 
   private volatile UpdateShardHandler updateShardHandler;
 
-  public volatile static ThreadPoolExecutor solrCoreLoadExecutor;
+  public volatile ExecutorService solrCoreLoadExecutor;
 
   private final OrderedExecutor replayUpdatesExecutor;
 
@@ -349,8 +352,11 @@ public class CoreContainer implements Closeable {
 
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
 
-    this.replayUpdatesExecutor = new OrderedExecutor( cfg.getReplayUpdatesThreads(),
-            ParWork.getExecutorService(cfg.getReplayUpdatesThreads()));
+    this.replayUpdatesExecutor = new OrderedExecutor(
+        cfg.getReplayUpdatesThreads(),
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            cfg.getReplayUpdatesThreads(),
+            new SolrNamedThreadFactory("replayUpdatesExecutor")));
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
@@ -358,7 +364,7 @@ public class CoreContainer implements Closeable {
     try (ParWork work = new ParWork(this)) {
 
       if (Boolean.getBoolean("solr.enablePublicKeyHandler")) {
-        work.collect(() -> {
+        work.collect("", () -> {
           try {
             containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(cfg.getCloudConfig()));
           } catch (IOException | InvalidKeySpecException e) {
@@ -367,14 +373,14 @@ public class CoreContainer implements Closeable {
         });
       }
 
-      work.collect(() -> {
+      work.collect("",() -> {
         updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
         updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
       });
 
-      work.addCollect("updateShardHandler");
+      work.addCollect();
 
-      work.collect(() -> {
+      work.collect("",() -> {
         shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(),
                 loader, updateShardHandler);
         if (shardHandlerFactory instanceof SolrMetricProducer) {
@@ -382,8 +388,6 @@ public class CoreContainer implements Closeable {
           metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler");
         }
       });
-      work.addCollect("shardHandler");
-
     }
     if (zkClient != null) {
       zkSys.initZooKeeper(this, cfg.getCloudConfig());
@@ -392,17 +396,19 @@ public class CoreContainer implements Closeable {
 
     containerProperties.putAll(cfg.getSolrProperties());
 
-    if (solrCoreLoadExecutor == null) {
-      synchronized (CoreContainer.class) {
-        if (solrCoreLoadExecutor == null) {
-//          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Math.max(3, Runtime.getRuntime().availableProcessors() / 2),
-//                  2, TimeUnit.SECOND,
-//                  new BlockingArrayQueue<>(100, 10),
-//                  new SolrNamedThreadFactory("SolrCoreLoader"));
-          solrCoreLoadExecutor = new ParWorkExecutor("SolrCoreLoader", Math.max(3, Runtime.getRuntime().availableProcessors() / 2));
-        }
-      }
-    }
+
+    solrCoreLoadExecutor = new ParWorkExecService(ParWork.getEXEC(), Math.max(3, Runtime.getRuntime().availableProcessors() / 2));
+//    if (solrCoreLoadExecutor == null) {
+//      synchronized (CoreContainer.class) {
+//        if (solrCoreLoadExecutor == null) {
+////          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Math.max(3, Runtime.getRuntime().availableProcessors() / 2),
+////                  2, TimeUnit.SECOND,
+////                  new BlockingArrayQueue<>(100, 10),
+////                  new SolrNamedThreadFactory("SolrCoreLoader"));
+//          solrCoreLoadExecutor = new ParWorkExecutor("SolrCoreLoader", Math.max(3, Runtime.getRuntime().availableProcessors() / 2));
+//        }
+//      }
+   // }
 
   }
 
@@ -729,17 +735,15 @@ public class CoreContainer implements Closeable {
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
+    solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
+
+    // initialize CalciteSolrDriver instance to use this solrClientCache
+    CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);
+
+
     try (ParWork work = new ParWork(this)) {
-      work.collect(() -> {
-        solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
 
-        // initialize CalciteSolrDriver instance to use this solrClientCache
-        CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);
-
-      });
-      work.addCollect("zksys");
-
-      work.collect(() -> {
+      work.collect("", () -> {
         solrCores.load(loader);
 
         logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
@@ -762,7 +766,7 @@ public class CoreContainer implements Closeable {
         }
       });
 
-      work.collect(() -> {
+      work.collect("",() -> {
         MDCLoggingContext.setNode(this);
 
         securityConfHandler = isZooKeeperAware() ? new SecurityConfHandlerZk(this) : new SecurityConfHandlerLocal(this);
@@ -771,53 +775,53 @@ public class CoreContainer implements Closeable {
         this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
       });
 
-      work.collect(() -> {
+      work.collect("",() -> {
         createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
         createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
       });
 
-      work.collect(() -> {
+      work.collect("",() -> {
         collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
         infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
       });
 
 
-      work.collect(() -> {
+      work.collect("",() -> {
         // metricsHistoryHandler uses metricsHandler, so create it first
         metricsHandler = new MetricsHandler(this);
         containerHandlers.put(METRICS_PATH, metricsHandler);
         metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH);
       });
 
-      work.collect(() -> {
+      work.collect("",() -> {
         autoscalingHistoryHandler = createHandler(AUTOSCALING_HISTORY_PATH, AutoscalingHistoryHandler.class.getName(), AutoscalingHistoryHandler.class);
         metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
         // may want to add some configuration here in the future
         metricsCollectorHandler.init(null);
       });
 
-      work.collect(() -> {
+      work.collect("",() -> {
         containerHandlers.put(AUTHZ_PATH, securityConfHandler);
         securityConfHandler.initializeMetrics(solrMetricsContext, AUTHZ_PATH);
         containerHandlers.put(AUTHC_PATH, securityConfHandler);
       });
 
-      work.collect(() -> {
+      work.collect("",() -> {
         PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
         metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.node);
         metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jvm);
         metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jetty);
       });
 
-      work.addCollect("ccload");
+      work.addCollect();
 
       if (!Boolean.getBoolean("solr.disableMetricsHistoryHandler")) {
-        work.collect(() -> {
+        work.collect("",() -> {
           createMetricsHistoryHandler();
         });
       }
 
-      work.addCollect("metricsHistoryHandlers");
+      work.addCollect();
 
       coreAdminHandler = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
       configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
@@ -887,7 +891,8 @@ public class CoreContainer implements Closeable {
         List<CoreDescriptor> cds = coresLocator.discover(this);
         if (isZooKeeperAware()) {
           // sort the cores if it is in SolrCloud. In standalone node the order does not matter
-          CoreSorter coreComparator = new CoreSorter().init(zkSys.zkController, cds);
+          CoreSorter coreComparator = new CoreSorter()
+              .init(zkSys.zkController, cds);
           cds = new ArrayList<>(cds);// make a copy
           Collections.sort(cds, coreComparator::compare);
         }
@@ -913,14 +918,13 @@ public class CoreContainer implements Closeable {
                     solrCores.markCoreAsNotLoading(cd);
                   }
                 }
-                register.collect(() -> {
+                register.collect("registerCoreInZk", () -> {
                   zkSys.registerInZk(core, false);
                 });
                 return core;
               }));
             }
           }
-          register.addCollect("RegisterInZk"); //  nocommit
         }
 
       } finally {
@@ -1051,6 +1055,10 @@ public class CoreContainer implements Closeable {
   public void close() throws IOException {
     closeTracker.close();
     log.info("Closing CoreContainer");
+    isShutDown = true;
+
+    solrCoreLoadExecutor.shutdownNow();
+
     // must do before isShutDown=true
     if (isZooKeeperAware()) {
       try {
@@ -1062,7 +1070,6 @@ public class CoreContainer implements Closeable {
       }
     }
 
-    isShutDown = true;
 
     try (ParWork closer = new ParWork(this, true)) {
 
@@ -1072,7 +1079,7 @@ public class CoreContainer implements Closeable {
         // overseerCollectionQueue.allowOverseerPendingTasksToComplete();
       }
       log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
-
+      solrCoreLoadExecutor.shutdown();
       if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null) {
         zkSys.zkController.disconnect();
       }
@@ -1081,18 +1088,17 @@ public class CoreContainer implements Closeable {
         solrCores.closing();
       }
 
+      ExecutorUtil.shutdownAndAwaitTermination(solrCoreLoadExecutor);
+
       if (replayUpdatesExecutor != null) {
         // stop accepting new tasks
         replayUpdatesExecutor.shutdown();
       }
 
-      closer.add("replayUpdateExec", () -> {
-        replayUpdatesExecutor.shutdownAndAwaitTermination();
-        return replayUpdatesExecutor;
-      });
-      closer.add("MetricsHistory&WaitForSolrCores", metricsHistoryHandler,
-              metricsHistoryHandler != null ? metricsHistoryHandler.getSolrClient() : null, solrCores);
-
+      closer.collect("metricsHistoryHandler", metricsHistoryHandler);
+      closer.collect("MetricsHistorySolrClient", metricsHistoryHandler != null ? metricsHistoryHandler.getSolrClient(): null);
+      closer.collect("WaitForSolrCores", solrCores);
+    //  closer.addCollect();
       List<Callable<?>> callables = new ArrayList<>();
 
       if (metricManager != null) {
@@ -1123,7 +1129,7 @@ public class CoreContainer implements Closeable {
         });
       }
 
-      closer.add("Metrics reporters & guages", callables);
+      closer.collect("SolrCoreInternals", callables);
 
       callables = new ArrayList<>();
       if (isZooKeeperAware()) {
@@ -1155,14 +1161,26 @@ public class CoreContainer implements Closeable {
         auditPlugin = auditloggerPlugin.plugin;
       }
 
-      closer.add("Final Items",  authPlugin, authenPlugin, auditPlugin, callables, solrClientCache);
+      closer.collect(authPlugin);
+      closer.collect("replayUpdateExec", () -> {
+        replayUpdatesExecutor.shutdownAndAwaitTermination();
+      });
+      closer.collect(solrCoreLoadExecutor);
+      closer.collect(authenPlugin);
+      closer.collect(auditPlugin);
+      closer.collect(callables);
+      closer.collect(solrClientCache);
+      closer.collect(loader);
+      closer.addCollect();
 
-      closer.add("zkSys", zkSys);
+      closer.collect(shardHandlerFactory);
+      closer.collect(updateShardHandler);
+      closer.addCollect();
 
-      closer.add("loader", loader);
+      closer.collect(zkSys);
+      closer.addCollect();
 
-      closer.add("shardHandlers", shardHandlerFactory, updateShardHandler);
-     }
+    }
 
     assert ObjectReleaseTracker.release(this);
   }
@@ -1187,7 +1205,7 @@ public class CoreContainer implements Closeable {
     // make sure we wait for any recoveries to stop
     try (ParWork work = new ParWork(this, true)) {
       for (SolrCore core : cores) {
-        work.collect(() -> {
+        work.collect("cancelRecoveryFor-" + core.getName(), () -> {
           try {
             core.getSolrCoreState().cancelRecovery(true, true);
           } catch (Exception e) {
@@ -1195,7 +1213,6 @@ public class CoreContainer implements Closeable {
           }
         });
       }
-      work.addCollect("cancelCoreRecoveries");
     }
   }
 

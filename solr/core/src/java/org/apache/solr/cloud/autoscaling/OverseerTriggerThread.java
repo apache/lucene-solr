@@ -101,7 +101,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     try (ParWork closer = new ParWork(this)) {
       closer.collect(triggerFactory);
       closer.collect(scheduledTriggers);
-      closer.collect(() -> {
+      closer.collect("signalAllOnUpdateLock", () -> {
         try {
           updateLock.lock();
           updated.signalAll();
@@ -109,7 +109,6 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           updateLock.unlock();
         }
       });
-      closer.addCollect("close");
     }
 
     activeTriggers.clear();

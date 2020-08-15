@@ -52,9 +52,11 @@ import java.util.stream.IntStream;
 @Ignore // nocommit debug
 public class SolrExampleJettyTest extends SolrExampleTests {
 
+  private static JettySolrRunner jetty;
+
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Test
@@ -66,7 +68,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception  {
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
@@ -77,7 +79,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     Http2SolrClient.SimpleResponse resp = Http2SolrClient.POST(getUri(client), client, json.getBytes(StandardCharsets.UTF_8), "application/json");
     assertEquals(200, resp.status);
     client.commit();
-    QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*"));
+    QueryResponse rsp = getSolrClient(jetty).query(new SolrQuery("*:*"));
     assertEquals(2,rsp.getResults().getNumFound());
 
     SolrDocument doc = rsp.getResults().get(0);
@@ -107,7 +109,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     doc.addField("id", "1");
     doc.addField("b_is", IntStream.range(0, 30000).boxed().collect(Collectors.toList()));
 
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.add(doc);
     client.commit();
     long start = System.nanoTime();
@@ -119,7 +121,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Ignore
   public void testUtf8QueryPerf() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    HttpSolrClient client = (HttpSolrClient) getSolrClient(jetty);
     client.deleteByQuery("*:*");
     client.commit();
     List<SolrInputDocument> docs = new ArrayList<>();

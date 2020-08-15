@@ -36,13 +36,8 @@ import org.junit.Ignore;
 @Ignore // nocommit debug
 public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
-
   @Override
-  public SolrClient createNewSolrClient()
+  public SolrClient createNewSolrClient(JettySolrRunner jetty)
   {
     // setup the server...
     String url = jetty.getBaseUrl().toString() + "/collection1";

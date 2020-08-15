@@ -328,7 +328,7 @@ public class MiniSolrCloudCluster {
 
       try {
         try (ParWork worker = new ParWork(this)) {
-          worker.add("start-jettys", startups);
+          worker.collect("start-jettys", startups);
         }
       } catch (Exception e) {
         ParWork.propegateInterrupt(e);
@@ -715,12 +715,11 @@ public class MiniSolrCloudCluster {
 
       try (ParWork parWork = new ParWork(this, false)) {
         parWork.collect(shutdowns);
-        parWork.addCollect("jetties");
+        parWork.addCollect();
         parWork.collect(solrClient);
-        parWork.addCollect("solrClient");
+        parWork.addCollect();
         if (!externalZkServer) {
           parWork.collect(zkServer);
-          parWork.addCollect("zkServer");
         }
       }
     } finally {

@@ -782,7 +782,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     while (waitingForCore.size() > 0) {
       try (ParWork worker = new ParWork(this)) {
         waitingForCore.forEach(aware -> {
-          worker.collect(()-> {
+          worker.collect("informSolrCore", ()-> {
             try {
               aware.inform(core);
             } catch (Exception e) {
@@ -792,8 +792,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
             waitingForCore.remove(aware);
           });
         });
-
-        worker.addCollect("informResourceLoader");
       }
     }
 
@@ -808,7 +806,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     while (waitingForResources.size() > 0) {
       try (ParWork worker = new ParWork(this)) {
         waitingForResources.forEach(r -> {
-          worker.collect(()-> {
+          worker.collect("informResourceLoader", ()-> {
             try {
               r.inform(loader);
             } catch (Exception e) {
@@ -818,8 +816,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
             waitingForResources.remove(r);
           });
         });
-
-        worker.addCollect("informResourceLoader");
       }
     }
   }
@@ -837,7 +833,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
       try (ParWork worker = new ParWork(this)) {
         infoMBeans.forEach(imb -> {
-          worker.collect(()-> {
+          worker.collect("informInfoRegistry", ()-> {
               try {
                 infoRegistry.put(imb.getName(), imb);
                 infoMBeans.remove(imb);
@@ -847,8 +843,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
               }
           });
         });
-
-        worker.addCollect("informInfoRegistry");
       }
     }
   }

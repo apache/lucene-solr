@@ -58,7 +58,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   private UpdateLog ulog;
   private HttpSolrClient clientToLeader;
 
-  private boolean doFingerprint;
+  private final boolean doFingerprint;
 
   private SolrCore core;
   private PeerSync.Updater updater;
@@ -331,7 +331,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       QueryResponse rsp = new QueryRequest(params, SolrRequest.METHOD.POST).process(clientToLeader);
       Exception exception = rsp.getException();
       if (exception != null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail, exception);
       }
       return rsp.getResponse();
     } catch (SolrServerException | IOException e) {
@@ -377,9 +377,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       IndexFingerprint ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
       int cmp = IndexFingerprint.compare(leaderFingerprint, ourFingerprint);
       log.info("Fingerprint comparison result: {}" , cmp);
-      if (cmp != 0) {
+     // if (cmp != 0) {
         log.info("Leader fingerprint: {}, Our fingerprint: {}", leaderFingerprint , ourFingerprint);
-      }
+     // }
       return cmp == 0;  // currently, we only check for equality...
     } catch (IOException e) {
       log.warn("Could not confirm if we are already in sync. Continue with PeerSync");

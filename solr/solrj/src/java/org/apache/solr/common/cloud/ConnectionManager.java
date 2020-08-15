@@ -162,6 +162,10 @@ public class ConnectionManager implements Watcher, Closeable {
     disconnectedLatch.countDown();
     connectedLatch = new CountDownLatch(1);
 
+    if (isClosed) {
+      return;
+    }
+
     try {
       disconnectListener.disconnected();
     } catch (NullPointerException e) {

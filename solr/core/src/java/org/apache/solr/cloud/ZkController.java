@@ -405,17 +405,16 @@ public class ZkController implements Closeable {
         try (ParWork worker = new ParWork("disconnected", true)) {
           worker.collect(overseerContexts);
           worker.collect( ZkController.this.overseer);
-          worker.collect(() -> {
+          worker.collect("", () -> {
             clearZkCollectionTerms();
           });
           worker.collect(electionContexts.values());
-          worker.collect(() -> {
+          worker.collect("",() -> {
             markAllAsNotLeader(descriptorsSupplier);
           });
-          worker.collect(() -> {
+          worker.collect("",() -> {
             cc.cancelCoreRecoveries();
           });
-          worker.addCollect("disconnected");
         }
       }
     });
@@ -485,7 +484,6 @@ public class ZkController implements Closeable {
                   }
                 }
               }
-              parWork.addCollect("registerCores");
             }
 
             // notify any other objects that need to know when the session was re-connected
@@ -501,7 +499,6 @@ public class ZkController implements Closeable {
                   log.warn("Error when notifying OnReconnect listener {} after session re-connected.", listener, exc);
                 }
               }
-              parWork.addCollect("reconnectListeners");
             }
           } catch (InterruptedException e) {
             ParWork.propegateInterrupt(e);
@@ -531,16 +528,17 @@ public class ZkController implements Closeable {
 
         try (ParWork worker = new ParWork("disconnected", true)) {
           worker.collect( ZkController.this.overseer);
-          worker.collect(() -> {
+          worker.collect("clearZkCollectionTerms", () -> {
             clearZkCollectionTerms();
           });
-          worker.collect(electionContexts.values());
-          worker.collect(() -> {
+          if (zkClient.isConnected()) {
+            worker.collect(electionContexts.values());
+          }
+          worker.collect("markAllAsNotLeader", () -> {
             markAllAsNotLeader(descriptorsSupplier);
           });
-          worker.addCollect("disconnected");
         }
-        ParWork.closeExecutor(); // we are using the root exec directly, let's just make sure it's closed here to avoid a slight delay leak
+      //  ParWork.closeExecutor(); // we are using the root exec directly, let's just make sure it's closed here to avoid a slight delay leak
     });
     init();
   }
@@ -570,7 +568,9 @@ public class ZkController implements Closeable {
   public void disconnect() {
     try (ParWork closer = new ParWork(this, true)) {
       if (getZkClient().getConnectionManager().isConnected()) {
-        closer.add("PublishNodeAsDown&RepFromLeadersClose&RemoveEmphem", replicateFromLeaders.values(), () -> {
+        closer.collect( "replicateFromLeaders", replicateFromLeaders.values());
+
+        closer.collect("PublishNodeAsDown&RepFromLeadersClose&RemoveEmphem", () -> {
 
           try {
             log.info("Publish this node as DOWN...");
@@ -580,7 +580,9 @@ public class ZkController implements Closeable {
           }
           return "PublishDown";
 
-        }, () -> {
+        });
+        closer.addCollect();
+        closer.collect("removeEphemeralLiveNode", () -> {
           try {
             removeEphemeralLiveNode();
           } catch (Exception e) {
@@ -611,19 +613,18 @@ public class ZkController implements Closeable {
       closer.collect(cloudSolrClient);
       closer.collect(replicateFromLeaders.values());
       closer.collect(overseerContexts.values());
-      closer.addCollect("internals");
+      closer.addCollect();
 
-      closer.collect(() -> {
+      closer.collect("Overseer", () -> {
         if (overseer != null) {
           overseer.closeAndDone();
         }
       });
-      closer.addCollect("overseer");
+      closer.addCollect();
       closer.collect(zkStateReader);
-      closer.addCollect("zkStateReader");
+      closer.addCollect();
       if (closeZkClient) {
         closer.collect(zkClient);
-        closer.addCollect("zkClient");
       }
 
     }
@@ -1098,7 +1099,7 @@ public class ZkController implements Closeable {
 
         try (ParWork worker = new ParWork((this))) {
           // start the overseer first as following code may need it's processing
-          worker.collect(() -> {
+          worker.collect("startOverseer", () -> {
             LeaderElector overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), electionContexts);
             ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, overseer);
             ElectionContext prevContext = electionContexts.put(new ContextKey("overseer", "overser"), context);
@@ -1118,10 +1119,10 @@ public class ZkController implements Closeable {
             }
           });
 
-          worker.collect(() -> {
+          worker.collect("registerLiveNodesListener", () -> {
             registerLiveNodesListener();
           });
-          worker.collect(() -> {
+          worker.collect("publishDownState", () -> {
             try {
               Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null);
               if (stat != null && stat.getNumChildren() > 0) {
@@ -1134,7 +1135,7 @@ public class ZkController implements Closeable {
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
             }
           });
-          worker.addCollect("ZkControllerInit");
+          worker.addCollect();
         }
         // Do this last to signal we're up.
         createEphemeralLiveNode();
@@ -2739,12 +2740,10 @@ public class ZkController implements Closeable {
       // run these in a separate thread because this can be long running
 
       try (ParWork worker = new ParWork(this, true)) {
-        worker.add("", () -> {
-          listeners.forEach((it) -> worker.collect(() -> {
-            it.run();
-            return it;
-          }));
-        });
+        listeners
+            .forEach((it) -> worker.collect("confDirectoryListener", () -> {
+              it.run();
+            }));
       }
     }
     return true;

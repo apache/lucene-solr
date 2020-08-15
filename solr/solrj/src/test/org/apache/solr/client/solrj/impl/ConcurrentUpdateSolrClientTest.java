@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -48,6 +49,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Ignore // nocommit debug
 public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
+
+  private static JettySolrRunner jetty;
 
   /**
    * Mock endpoint where the CUSS being tested in this class sends requests.
@@ -133,7 +136,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(TestServlet.class), "/cuss/*")
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
   
   @Test

@@ -29,6 +29,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -52,7 +53,8 @@ public class PeerSyncWithBufferUpdatesTest  extends BaseDistributedSearchTestCas
   private ModifiableSolrParams seenLeader =
       params(DISTRIB_UPDATE_PARAM, FROM_LEADER);
 
-  public PeerSyncWithBufferUpdatesTest() {
+  public PeerSyncWithBufferUpdatesTest() throws Exception {
+    useFactory(null);
     stress = 0;
 
     // TODO: a better way to do this?
@@ -61,7 +63,7 @@ public class PeerSyncWithBufferUpdatesTest  extends BaseDistributedSearchTestCas
   }
 
   @Test
-  @ShardsFixed(num = 3)
+  @ShardsFixed(num = 2)
   public void test() throws Exception {
     Set<Integer> docsAdded = new LinkedHashSet<>();
     handle.clear();
@@ -71,7 +73,6 @@ public class PeerSyncWithBufferUpdatesTest  extends BaseDistributedSearchTestCas
 
     SolrClient client0 = clients.get(0);
     SolrClient client1 = clients.get(1);
-    SolrClient client2 = clients.get(2);
 
     long v = 0;
     // add some context
@@ -87,6 +88,7 @@ public class PeerSyncWithBufferUpdatesTest  extends BaseDistributedSearchTestCas
 
     // it restarted and must do PeerSync
     SolrCore jetty1Core = jettys.get(1).getCoreContainer().getCores().iterator().next();
+    SolrCore jetty0Core = jettys.get(0).getCoreContainer().getCores().iterator().next();
     jetty1Core.getUpdateHandler().getUpdateLog().bufferUpdates();
     for (int i = 16; i <= 20; i++) {
       add(client0, seenLeader, sdoc("id",String.valueOf(i),"_version_",++v));
@@ -102,7 +104,7 @@ public class PeerSyncWithBufferUpdatesTest  extends BaseDistributedSearchTestCas
     add(client1, seenLeader, sdoc("id","23","_version_",v));
 
     // client1 should be able to sync
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, ((Http2SolrClient)client0).getBaseURL());
 
     // on-wire updates arrived on jetty1
     add(client1, seenLeader, sdoc("id","21","_version_",v-2));
@@ -112,7 +114,7 @@ public class PeerSyncWithBufferUpdatesTest  extends BaseDistributedSearchTestCas
     jetty1Core.getUpdateHandler().getUpdateLog().applyBufferedUpdates().get();
 
     for (int i = 1; i <= 23; i++) docsAdded.add(i);
-
+    jetty0Core.getUpdateHandler().getUpdateLog().openRealtimeSearcher();
     validateDocs(docsAdded, client0, client1);
 
     // random test
@@ -174,7 +176,7 @@ public class PeerSyncWithBufferUpdatesTest  extends BaseDistributedSearchTestCas
       }
     }
     // with many gaps, client1 should be able to sync
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
   }
 
   private static class DeleteByQuery {
@@ -198,6 +200,7 @@ public class PeerSyncWithBufferUpdatesTest  extends BaseDistributedSearchTestCas
   }
 
   private void validateDocs(Set<Integer> docsAdded, SolrClient client0, SolrClient client1) throws SolrServerException, IOException {
+    System.out.println("commits");
     client0.commit();
     client1.commit();
     QueryResponse qacResponse;

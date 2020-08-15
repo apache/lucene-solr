@@ -131,8 +131,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Both 'node' and 'createNodeSet' parameters cannot be specified together.");
     }
 
-    int timeout = message.getInt(TIMEOUT, 10 * 60); // 10 minutes
-    boolean parallel = message.getBool("parallel", false);
+    int timeout = message.getInt(TIMEOUT, 15); // 10 minutes
+    boolean parallel = message.getBool("parallel", true);
 
     Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()).toUpperCase(Locale.ROOT));
     EnumMap<Replica.Type, Integer> replicaTypesVsCount = new EnumMap<>(Replica.Type.class);
@@ -209,9 +209,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         runnable.run();
       }
     } else {
-      try (ParWork worker = new ParWork(this)) {
-        worker.add("AddReplica", runnable);
-      }
+      ParWork.getEXEC().execute(runnable);
     }
 
     return createReplicas.stream()

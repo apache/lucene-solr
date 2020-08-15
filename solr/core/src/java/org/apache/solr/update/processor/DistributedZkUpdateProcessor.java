@@ -233,7 +233,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
             if (isLeader) {
 
-              worker.collect(() -> {
+              worker.collect("localCommit", () -> {
                 log.info(
                     "processCommit - Do a local commit on NRT endpoint for leader");
                 try {
@@ -253,7 +253,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                       req.getCore().getName()));
 
               List<SolrCmdDistributor.Node> finalUseNodes1 = useNodes;
-              worker.collect(() -> {
+              worker.collect("distCommit", () -> {
                 cmdDistrib.distribCommit(cmd, finalUseNodes1, params);
               });
             }
@@ -279,7 +279,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                   .getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
 
               List<SolrCmdDistributor.Node> finalUseNodes = useNodes;
-              worker.collect(() -> {
+              worker.collect("distCommit", () -> {
                 cmdDistrib.distribCommit(cmd, finalUseNodes, params);
               });
 
@@ -288,7 +288,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           }
 
         }
-        worker.addCollect("distCommit");
       }
       log.info("processCommit(CommitUpdateCommand) - end");
   }

@@ -546,8 +546,6 @@ public class ScheduledTriggers implements Closeable {
       closer.collect(listeners);
       closer.collect(actionExecutor);
       closer.collect(scheduledThreadPoolExecutor);
-
-      closer.addCollect("ScheduledTriggers");
     }
 
     scheduledTriggerWrappers.clear();

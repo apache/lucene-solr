@@ -260,7 +260,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       // clean up static
       testSolrHome = null;
-
+      ParWork.closeExecutor();
  //     LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
   //    savedClassLogLevels.clear();
 //      StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
@@ -517,11 +517,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return getTestClass().getSimpleName();
   }
 
-  public static String configString;
-  protected static String schemaString;
-  protected static Path testSolrHome;
+  public static volatile String configString;
+  protected static volatile String schemaString;
+  protected static volatile Path testSolrHome;
 
-  protected static SolrConfig solrConfig;
+  protected static volatile SolrConfig solrConfig;
 
   /**
    * Harness initialized by create[Default]Core[Container].

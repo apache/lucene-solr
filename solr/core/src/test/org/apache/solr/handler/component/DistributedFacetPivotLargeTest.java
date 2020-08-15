@@ -334,7 +334,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
                             "facet","true",
                             "facet.pivot","place_s,company_t",
                             // the (50) Nplaceholder place_s values exist in 6 each on oneShard
-                            FacetParams.FACET_PIVOT_MINCOUNT, ""+(6 * shardsArr.length),
+                            FacetParams.FACET_PIVOT_MINCOUNT, ""+(6 * shardsArr.length()),
                             FacetParams.FACET_LIMIT, "4",
                             "facet.sort", "index");
       rsp = null;
@@ -1013,7 +1013,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     }
 
     try (ParWork adder = new ParWork(this)) {
-      adder.collect(() -> {
+      adder.collect("", () -> {
         try {
           addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft", "pay_i", 4367, "hiredate_dt", "2012-11-01T12:30:00Z");
         } catch (IOException e) {
@@ -1022,7 +1022,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
           throw new RuntimeException(e);
         }
       });
-      adder.collect(() -> {
+      adder.collect("", () -> {
         try {
           addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft bbc", "pay_i", 8742, "hiredate_dt", "2012-11-01T12:30:00Z");
         } catch (IOException e) {
@@ -1032,7 +1032,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         }
       });
 
-      adder.collect(() -> {
+      adder.collect("", () -> {
         try {
           addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft polecat", "pay_i", 5824, "hiredate_dt", "2012-11-01T12:30:00Z");
         } catch (IOException e) {
@@ -1041,7 +1041,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
           throw new RuntimeException(e);
         }
       });
-      adder.collect(() -> {
+      adder.collect("", () -> {
         try {
           addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft ", "pay_i", 6539, "hiredate_dt", "2012-11-01T12:30:00Z");
         } catch (IOException e) {
@@ -1050,7 +1050,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
           throw new RuntimeException(e);
         }
       });
-      adder.collect(() -> {
+      adder.collect("", () -> {
         try {
           addPivotDoc(oneShard, "id", getDocNum(), "place_s", "medical staffing network holdings, inc.", "company_t", "microsoft ", "pay_i", 6539, "hiredate_dt", "2012-11-01T12:30:00Z", "special_s", "xxx");
         } catch (IOException e) {
@@ -1060,7 +1060,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
         }
       });
 
-      adder.collect(() -> {
+      adder.collect("", () -> {
         try {
           addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "polecat", "pay_i", 4352, "hiredate_dt", "2012-01-01T12:30:00Z", "special_s", "xxx");
         } catch (IOException e) {
@@ -1069,7 +1069,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
           throw new RuntimeException(e);
         }
       });
-      adder.collect(() -> {
+      adder.collect("", () -> {
         try {
           addPivotDoc(oneShard, "id", getDocNum(), "place_s", "krakaw", "company_t", "polecat", "pay_i", 4352, "hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL);
         } catch (IOException e) {
@@ -1078,7 +1078,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
           throw new RuntimeException(e);
         }
       });
-      adder.collect(() -> {
+      adder.collect("", () -> {
         try {
           addPivotDoc(twoShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft", "pay_i", 12, "hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL);
         } catch (IOException e) {
@@ -1087,7 +1087,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
           throw new RuntimeException(e);
         }
       });
-      adder.collect(() -> {
+      adder.collect("", () -> {
         try {
           addPivotDoc(twoShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft", "pay_i", 543, "hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL);
         } catch (IOException e) {
@@ -1096,7 +1096,6 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
           throw new RuntimeException(e);
         }
       });
-      adder.addCollect("addDocs");
     }
 
     // two really trivial documents, unrelated to the rest of the tests, 

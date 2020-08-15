@@ -289,7 +289,6 @@ public class LBHttpSolrClient extends LBSolrClient {
 
       try (ParWork closer = new ParWork(this)) {
         closer.collect(urlToClient.values());
-        closer.addCollect("solrClients");
       }
     }
     urlToClient.clear();

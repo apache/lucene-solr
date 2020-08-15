@@ -230,7 +230,7 @@ public class Http2SolrClient extends SolrClient {
     httpClient.setIdleTimeout(idleTimeout);
     try {
     //  httpClient.setExecutor(httpClientExecutor);
-      httpClient.setStrictEventOrdering(false);
+      httpClient.setStrictEventOrdering(true);
       httpClient.setConnectBlocking(false);
       httpClient.setFollowRedirects(false);
       httpClient.setMaxRequestsQueuedPerDestination(1024);
@@ -253,7 +253,7 @@ public class Http2SolrClient extends SolrClient {
     if (closeClient) {
       try {
         try (ParWork closer = new ParWork(this, false, true)) {
-          closer.collect(() -> {
+          closer.collect("httpClient", () -> {
                 try {
                   httpClient.stop();
                 } catch (InterruptedException e) {
@@ -263,7 +263,7 @@ public class Http2SolrClient extends SolrClient {
                 }
               });
 
-          closer.collect(() -> {
+          closer.collect("httpClientScheduler", () -> {
            // httpClientExecutor.stopReserveExecutor();
             try {
               httpClient.getScheduler().stop();
@@ -277,7 +277,6 @@ public class Http2SolrClient extends SolrClient {
 //            httpClientExecutor.fillWithNoops();
 
           });
-          closer.addCollect("httpClientExecutor");
         }
       } catch (Exception e) {
         log.error("Exception closing httpClient", e);

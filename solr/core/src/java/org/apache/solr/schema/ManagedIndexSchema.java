@@ -1174,11 +1174,10 @@ public final class ManagedIndexSchema extends IndexSchema {
     super.postReadInform();
     try (ParWork worker = new ParWork(this)) {
       for (FieldType fieldType : fieldTypes.values()) {
-        worker.collect(() -> {
+        worker.collect("informResourceLoaderAwareObjectsForFieldType", () -> {
           informResourceLoaderAwareObjectsForFieldType(fieldType);
         });
       }
-      worker.addCollect("informFields");
     }
   }
 
@@ -1321,7 +1320,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       CharFilterFactory[] charFilters = chain.getCharFilterFactories();
       for (CharFilterFactory next : charFilters) {
         if (next instanceof ResourceLoaderAware) {
-          worker.collect(()->{
+          worker.collect("informResourceLoaderAwareObjectsInChain", ()->{
             try {
               ((ResourceLoaderAware) next).inform(loader);
             } catch (IOException e) {
@@ -1333,7 +1332,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
       TokenizerFactory tokenizerFactory = chain.getTokenizerFactory();
       if (tokenizerFactory instanceof ResourceLoaderAware) {
-        worker.collect(()->{
+        worker.collect("tokenizerFactoryResourceLoaderAware", ()->{
           try {
             ((ResourceLoaderAware) tokenizerFactory).inform(loader);
           } catch (IOException e) {
@@ -1346,7 +1345,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       TokenFilterFactory[] filters = chain.getTokenFilterFactories();
       for (TokenFilterFactory next : filters) {
         if (next instanceof ResourceLoaderAware) {
-          worker.collect(()->{
+          worker.collect("TokenFilterFactoryResourceLoaderAware", ()->{
             try {
               ((ResourceLoaderAware) next).inform(loader);
             } catch (IOException e) {
@@ -1355,7 +1354,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           });
         }
       }
-      worker.addCollect("managedSchemaInform");
+      worker.addCollect();
     }
   }
   

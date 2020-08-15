@@ -16,6 +16,7 @@
  */
 package org.apache.solr.servlet;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -26,18 +27,32 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.restlet.ext.servlet.ServerServlet;
 
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
 
+  protected static JettySolrRunner jetty;
+
+
   protected HttpRequestBase getSelectMethod(String method, String... params) throws URISyntaxException {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    HttpSolrClient client = (HttpSolrClient) getSolrClient(jetty);
     HttpRequestBase m = null;
     
     ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
@@ -64,7 +79,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
   }
 
   protected HttpRequestBase getUpdateMethod(String method, String... params) throws URISyntaxException {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    HttpSolrClient client = (HttpSolrClient) getSolrClient(jetty);
     HttpRequestBase m = null;
     
     ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
@@ -87,7 +102,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
   }
   
   protected HttpClient getClient() {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    HttpSolrClient client = (HttpSolrClient) getSolrClient(jetty);
     return client.getHttpClient();
   }
 

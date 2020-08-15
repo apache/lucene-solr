@@ -154,13 +154,11 @@ public class DeleteReplicaCmd implements Cmd {
         // callDeleteReplica on all replicas
         for (String replica : replicas) {
           if (log.isDebugEnabled()) log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
-          worker.collect(() -> { deleteCore(shardSlice, collectionName, replica, message, shard, results, onComplete, parallel); return replica; });
+          worker.collect("deleteCore", () -> { deleteCore(shardSlice, collectionName, replica, message, shard, results, onComplete, parallel); return replica; });
         }
         results.add("shard_id", shardId);
         results.add("replicas_deleted", replicas);
       }
-
-      worker.addCollect("DeleteReplicas");
     }
 
   }

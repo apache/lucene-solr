@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.beans.Field;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -39,9 +40,11 @@ import java.util.Iterator;
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBatchUpdate extends SolrJettyTestBase {
 
+  private static JettySolrRunner jetty;
+
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   static final int numdocs = 1000;  
@@ -49,7 +52,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new RequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
@@ -57,7 +60,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithBinary()throws Exception{
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new BinaryRequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
@@ -65,7 +68,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
 
   @Test
   public void testWithBinaryBean()throws Exception{
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new BinaryRequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     final int[] counter = new int[1];

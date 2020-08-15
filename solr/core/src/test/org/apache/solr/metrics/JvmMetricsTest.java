@@ -25,6 +25,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
 import org.junit.BeforeClass;
@@ -45,18 +46,14 @@ public class JvmMetricsTest extends SolrJettyTestBase {
       "systemLoadAverage"
   };
 
-  static final String[] BUFFER_METRICS = {
-      "direct.Count",
-      "direct.MemoryUsed",
-      "direct.TotalCapacity",
-      "mapped.Count",
-      "mapped.MemoryUsed",
-      "mapped.TotalCapacity"
-  };
+  static final String[] BUFFER_METRICS = {"direct.Count", "direct.MemoryUsed",
+      "direct.TotalCapacity", "mapped.Count", "mapped.MemoryUsed",
+      "mapped.TotalCapacity"};
+  private static JettySolrRunner jetty;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Test

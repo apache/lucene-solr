@@ -229,17 +229,17 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   @Override
   public void close() throws IOException {
     try (ParWork closer = new ParWork(this, true)) {
-      closer.collect(() -> {
+      closer.collect("superClose", () -> {
         try {
           SolrCache.super.close();
         } catch (IOException e) {
           log.warn("IOException on close", e);
         }
       });
-      closer.collect(() -> {
+      closer.collect("invalidateAll", () -> {
         cache.invalidateAll();
       });
-      closer.addCollect("CaffeineCacheClose");
+      closer.addCollect();
     }
     ramBytes.reset();
   }

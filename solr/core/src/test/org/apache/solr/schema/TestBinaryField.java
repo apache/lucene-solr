@@ -23,6 +23,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -40,6 +41,8 @@ import java.util.Properties;
 
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBinaryField extends SolrJettyTestBase {
+
+  private static JettySolrRunner jetty;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -70,12 +73,12 @@ public class TestBinaryField extends SolrJettyTestBase {
       coreProps.store(w, "");
     }
 
-    createAndStartJetty(homeDir.getAbsolutePath());
+    jetty = createAndStartJetty(homeDir.getAbsolutePath());
   }
 
 
   public void testSimple() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     byte[] buf = new byte[10];
     for (int i = 0; i < 10; i++) {
       buf[i] = (byte) i;

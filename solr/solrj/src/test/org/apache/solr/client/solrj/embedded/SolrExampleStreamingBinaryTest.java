@@ -39,8 +39,8 @@ import java.util.List;
 public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 
   @Override
-  public SolrClient createNewSolrClient() {
-    ConcurrentUpdateSolrClient client = (ConcurrentUpdateSolrClient)super.createNewSolrClient();
+  public SolrClient createNewSolrClient(JettySolrRunner jetty) {
+    ConcurrentUpdateSolrClient client = (ConcurrentUpdateSolrClient)super.createNewSolrClient(jetty);
     client.setParser(new BinaryResponseParser());
     client.setRequestWriter(new BinaryRequestWriter());
     return client;
@@ -49,7 +49,7 @@ public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
   @Test
   public void testQueryAndStreamResponse() throws Exception {
     // index a simple document with one child
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     client.deleteByQuery("*:*");
 
     SolrInputDocument child = new SolrInputDocument();

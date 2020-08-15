@@ -332,7 +332,6 @@ public class PluginBag<T> implements AutoCloseable {
     try (ParWork worker = new ParWork(this)) {
       worker.collect(otherPlugins);
       worker.collect(reqHandlerPlugins);
-      worker.addCollect("plugins");
     }
     if (infos.size() > 0) { // Aggregate logging
       if (log.isDebugEnabled()) {
@@ -376,7 +375,7 @@ public class PluginBag<T> implements AutoCloseable {
       for (Map.Entry<String,PluginHolder<T>> e : registry.entrySet()) {
         worker.collect(e.getValue());
       }
-      worker.addCollect("Plugins");
+      worker.addCollect();
     }
   }
 

@@ -27,6 +27,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -39,6 +40,7 @@ import org.junit.Test;
 @Ignore // nocommit debug
 public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
 
+  private static JettySolrRunner jetty;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -46,7 +48,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(ConcurrentUpdateSolrClientTest.TestServlet.class), "/cuss/*")
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
   @Test

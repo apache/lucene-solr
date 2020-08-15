@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -68,7 +69,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
-
+  private JettySolrRunner jetty;
 
   @Before
   public void before() throws Exception {
@@ -84,7 +85,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
         "/solr", true, extraServlets);
 //    if (random().nextBoolean()) {
 //      log.info("These tests are run with V2 API");
@@ -94,10 +95,6 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
     client = null;
     if (restTestHarness != null) {
       restTestHarness.close();

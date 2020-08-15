@@ -703,25 +703,36 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
+  public RefCounted<SolrIndexSearcher> openRealtimeSearcher() {
+    return openRealtimeSearcher(false);
+  }
+
   /** Opens a new realtime searcher and clears the id caches.
    * This may also be called when we updates are being buffered (from PeerSync/IndexFingerprint)
+   * @return
    */
-  public void openRealtimeSearcher() {
+  public RefCounted<SolrIndexSearcher> openRealtimeSearcher(boolean returnSearcher) {
     synchronized (this) {
       // We must cause a new IndexReader to be opened before anything looks at these caches again
       // so that a cache miss will read fresh data.
       try {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
-        holder.decref();
-      } catch (Exception e) {
-        SolrException.log(log, "Error opening realtime searcher", e);
-        return;
-      }
+        if (returnSearcher) {
+          return holder;
+        } else {
+          holder.decref();
+        }
 
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e, true);
+        SolrException.log(log, "Error opening realtime searcher", e);
+        return null;
+      }
       if (map != null) map.clear();
       if (prevMap != null) prevMap.clear();
       if (prevMap2 != null) prevMap2.clear();
     }
+    return null;
   }
 
   /** currently for testing only */
@@ -1253,7 +1264,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
-  public void copyOverOldUpdates(long commitVersion) {
+  public synchronized void copyOverOldUpdates(long commitVersion) {
     TransactionLog oldTlog = prevTlog;
     if (oldTlog == null && !logs.isEmpty()) {
       oldTlog = logs.getFirst();
@@ -1328,8 +1339,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
       }
       // Prev tlog will be closed, so nullify prevMap
-      if (prevTlog == oldTlog) {
-        prevMap = null;
+      synchronized (this) {
+        if (prevTlog == oldTlog) {
+          prevMap = null;
+        }
       }
     } catch (IOException e) {
       log.error("Exception reading versions from log",e);

@@ -285,7 +285,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
         Collections.shuffle(followerIndicesList, random());
         for (Integer ii : followerIndicesList) {
           if (!leaderIndices.contains(ii)) {
-            worker.collect(() -> {
+            worker.collect("stopJettyFollowers", () -> {
               try {
                 cluster.stopJettySolrRunner(jettys.get(ii));
               } catch (Exception e) {
@@ -294,7 +294,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
             });
           }
         }
-        worker.addCollect("stopJettysFollowers");
       }
     }
     if (TEST_NIGHTLY) {
@@ -308,7 +307,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
         // first stop the followers (in no particular order)
         Collections.shuffle(leaderIndicesList, random());
         for (Integer ii : leaderIndicesList) {
-          worker.collect(() -> {
+          worker.collect("stopJettyFollowers", () -> {
             try {
               cluster.stopJettySolrRunner(jettys.get(ii));
             } catch (Exception e) {
@@ -316,7 +315,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
             }
           });
         }
-        worker.addCollect("stopJettysFollowers");
       }
 
     }
@@ -344,7 +342,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
         for (Integer ii : restartIndicesList) {
           final JettySolrRunner jetty = jettys.get(ii);
           if (!jetty.isRunning()) {
-            worker.collect(() -> {
+            worker.collect("startJetties", () -> {
               try {
                 cluster.startJettySolrRunner(jetty);
               } catch (Exception e) {
@@ -355,7 +353,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
           }
         }
-        worker.addCollect("startJettys");
       }
     }
     cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);

@@ -554,7 +554,6 @@ public class Overseer implements SolrCloseable {
     @Override
     public void close() throws IOException {
       this.isClosed = true;
-      ((Thread)thread).interrupt();
       thread.close();
     }
 

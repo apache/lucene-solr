@@ -178,7 +178,6 @@ public class CloudSolrClient extends BaseCloudSolrClient {
         closer.collect(myClient);
       }
       closer.collect(zkStateReader);
-      closer.addCollect("cloudclient");
     }
     super.close();
     ObjectReleaseTracker.release(this);

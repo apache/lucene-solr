@@ -973,7 +973,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     List<JettySolrRunner> upJettys = Collections.synchronizedList(new ArrayList<>(jettys));
     List<SolrClient> upClients = Collections.synchronizedList(new ArrayList<>(clients));
     List<JettySolrRunner> downJettys = Collections.synchronizedList(new ArrayList<>());
-    List<String> upShards = Collections.synchronizedList(new ArrayList<>(Arrays.asList(shardsArr)));
+    List<String> upShards = Collections.synchronizedList(new ArrayList<>(shardsArr.length()));
+    for (int i = 0; i < shardsArr.length(); i++) {
+      upShards.add(shardsArr.get(i));
+    }
     
     int cap =  Math.max(upJettys.size() - 1, 1);
 
@@ -1239,14 +1242,14 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
 
     assertNotNull("missing shard info", sinfo);
-    assertEquals("should have an entry for each shard ["+sinfo+"] "+shards, shardsArr.length, sinfo.size());
+    assertEquals("should have an entry for each shard ["+sinfo+"] "+shards, shardsArr.length(), sinfo.size());
     // identify each one
     for (Map.Entry<String,?> entry : sinfo) {
       String shard = entry.getKey();
       NamedList<?> info = (NamedList<?>) entry.getValue();
       boolean found = false;
-      for(int i=0; i<shardsArr.length; i++) {
-        String s = shardsArr[i];
+      for(int i=0; i<shardsArr.length(); i++) {
+        String s = shardsArr.get(i);
         if (shard.contains(s)) {
           found = true;
           // make sure that it responded if it's up and the landing node didn't error before sending the request to the shard

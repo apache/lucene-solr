@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -34,6 +35,8 @@ import org.junit.Test;
 
 public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
 
+  private static JettySolrRunner jetty;
+
   private static File createSolrHome() throws Exception {
     File workDir = createTempDir().toFile();
     setupJettyTestHome(workDir, DEFAULT_TEST_COLLECTION_NAME);
@@ -44,7 +47,8 @@ public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
   public static void beforeClass() throws Exception {
     File solrHome = createSolrHome();
     solrHome.deleteOnExit();
-    createAndStartJetty(solrHome.getAbsolutePath());
+    jetty = createAndStartJetty(
+        solrHome.getAbsolutePath());
   }
 
   @Test

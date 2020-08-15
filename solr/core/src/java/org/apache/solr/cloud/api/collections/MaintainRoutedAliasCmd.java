@@ -125,8 +125,8 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
       switch (action.actionType) {
         case ENSURE_REMOVED:
           if (exists) {
-            try (ParWork worker = new ParWork(this)) {
-              worker.add("AddReplica", () -> {
+            ParWork.getEXEC().submit(
+             () -> {
                 try {
                   deleteTargetCollection(clusterState, results, aliasName, aliasesManager, action);
                 } catch (Exception e) {
@@ -137,7 +137,6 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
                   log.debug("Exception for last message:", e);
                 }
               });
-            }
           }
           break;
         case ENSURE_EXISTS:

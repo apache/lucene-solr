@@ -737,6 +737,7 @@ public class JettySolrRunner implements Closeable {
     // Do not let Jetty/Solr pollute the MDC for this thread
     Map<String,String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
+    CoreContainer coreContainer = getCoreContainer();
     try {
 
       try {
@@ -769,7 +770,7 @@ public class JettySolrRunner implements Closeable {
       if (enableProxy) {
         proxy.close();
       }
-      if (wait && getCoreContainer() != null && getCoreContainer()
+      if (wait && coreContainer != null && coreContainer
           .isZooKeeperAware()) {
         log.info("waitForJettyToStop: {}", getLocalPort());
         String nodeName = getNodeName();
@@ -780,12 +781,13 @@ public class JettySolrRunner implements Closeable {
 
         log.info("waitForNode: {}", getNodeName());
 
-        ZkStateReader reader = getCoreContainer().getZkController()
+        ZkStateReader reader = coreContainer.getZkController()
             .getZkStateReader();
 
         try {
-          reader.waitForLiveNodes(10, TimeUnit.SECONDS,
-              (o, n) -> !n.contains(nodeName));
+          if (!reader.isClosed() && reader.getZkClient().isConnected()) {
+            reader.waitForLiveNodes(10, TimeUnit.SECONDS, (o, n) -> !n.contains(nodeName));
+          }
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

@@ -144,12 +144,15 @@ public class SolrCoreMetricManager implements Closeable {
   @Override
   public void close() throws IOException {
     try (ParWork closer = new ParWork(this)) {
-      closer.add("CloseReporters", () -> {metricManager.closeReporters(getRegistryName(), solrMetricsContext.tag); return "reporters";}, () -> {
+      closer.collect("CloseReporters", () -> {metricManager.closeReporters(getRegistryName(), solrMetricsContext.tag); return "reporters";});
+
+
+      closer.collect("leaderReporters",    () -> {
         if (getLeaderRegistryName() != null) metricManager.closeReporters(getLeaderRegistryName(), solrMetricsContext.tag);
-        return "leaderReporters";
-      }, () -> {
+      });
+      closer.addCollect();
+      closer.collect("gauges", () -> {
         metricManager.unregisterGauges(getRegistryName(), solrMetricsContext.tag);
-        return "gauges";
       });
     }
   }

@@ -249,7 +249,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     try (ParWork worker = new ParWork(this)) {
       if (!forwardToLeader) {
-        worker.collect(() -> {
+        worker.collect("localAddUpdate", () -> {
           if (vinfo != null) vinfo.lockForUpdate();
           try {
 
@@ -280,7 +280,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         if (log.isDebugEnabled()) log.debug("Collect distrib add");
         AddUpdateCommand finalCloneCmd = cloneCmd == null ? cmd : cloneCmd;
-        worker.collect(() -> {
+        worker.collect("distAddUpdate", () -> {
           if (log.isDebugEnabled()) log.debug("Run distrib add collection");
           try {
             doDistribAdd(finalCloneCmd);
@@ -292,7 +292,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         });
       }
 
-      worker.addCollect("distUpdate");
+      worker.addCollect();
     }
 
 
@@ -455,9 +455,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               // specified it must exist (versionOnUpdate==1) and it does.
             } else {
               if(cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true) == false) {
+                System.out.println("version conflict! DROP!");
                 return true;
               }
-
+              System.out.println("version conflict!");
               throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId()
                   + " expected=" + versionOnUpdate + " actual=" + foundVersion);
             }
@@ -475,6 +476,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // we're not in an active state, and this update isn't from a replay, so buffer it.
             cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
             ulog.add(cmd);
+            System.out.println(" we're not in an active state, and this update isn't from a replay, so buffer it.");
             return true;
           }
 
@@ -538,9 +540,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
               if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
                 // This update is a repeat, or was reordered. We need to drop this update.
-                if (log.isDebugEnabled()) {
-                  log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
-                }
+                log.info("Dropping add update due to version {}", idBytes.utf8ToString());
                 return true;
               }
             }
@@ -889,7 +889,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     versionDeleteByQuery(cmd);
 
     try (ParWork work = new ParWork(this)) {
-      work.collect(() -> {
+      work.collect("localDeleteByQuery", () -> {
         try {
           doLocalDelete(cmd);
         } catch (IOException e) {
@@ -897,14 +897,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       });
 
-      work.collect(() -> {
+      work.collect("distDeleteByQuery", () -> {
         try {
           doDistribDeleteByQuery(cmd, replicas, coll);
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       });
-      work.addCollect("deleteByQuery");
+      work.addCollect();
 
     }
 

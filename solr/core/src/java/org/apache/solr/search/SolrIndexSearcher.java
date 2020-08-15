@@ -496,7 +496,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     try (ParWork worker = new ParWork(this)) {
       for (SolrCache cache : cacheList) {
         worker.collect(cache);
-        worker.addCollect("Caches");
       }
     }
 

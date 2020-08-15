@@ -86,13 +86,13 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     // this fails because client0 has no context (i.e. no updates of its own to judge if applying the updates
     // from client1 will bring it into sync with client1)
-    assertSync(client1, numVersions, false, shardsArr[0]);
+    assertSync(client1, numVersions, false, shardsArr.get(0));
 
     // bring client1 back into sync with client0 by adding the doc
     add(client1, seenLeader, sdoc("id","1","_version_",v));
 
     // both have the same version list, so sync should now return true
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     // TODO: test that updates weren't necessary
 
     client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*"), client0, client1);
@@ -100,7 +100,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     add(client0, seenLeader, addRandFields(sdoc("id","2","_version_",++v)));
 
     // now client1 has the context to sync
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
 
     client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*"), client0, client1);
 
@@ -113,7 +113,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     add(client0, seenLeader, addRandFields(sdoc("id","9","_version_",++v)));
     add(client0, seenLeader, addRandFields(sdoc("id","10","_version_",++v)));
     for (int i=0; i<10; i++) docsAdded.add(i+1);
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
 
     validateDocs(docsAdded, client0, client1);
 
@@ -128,7 +128,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(-++v)), "1000");
     docsAdded.add(1002); // 1002 added
 
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     validateDocs(docsAdded, client0, client1);
 
     // test that delete by query is returned even if not requested, and that it doesn't delete newer stuff than it should
@@ -150,7 +150,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     add(client, seenLeader, sdoc("id","2002","_version_",++v));
     del(client, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(-++v)), "2000");
 
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
 
     validateDocs(docsAdded, client0, client1);
 
@@ -177,7 +177,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     docsAdded.add(3001); // 3001 added
     docsAdded.add(3002); // 3002 added
     
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     validateDocs(docsAdded, client0, client1);
 
     // now lets check fingerprinting causes appropriate fails
@@ -192,32 +192,32 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
 
     // client0 now has an additional add beyond our window and the fingerprint should cause this to fail
-    assertSync(client1, numVersions, false, shardsArr[0]);
+    assertSync(client1, numVersions, false, shardsArr.get(0));
 
     // if we turn of fingerprinting, it should succeed
     System.setProperty("solr.disableFingerprint", "true");
     try {
-      assertSync(client1, numVersions, true, shardsArr[0]);
+      assertSync(client1, numVersions, true, shardsArr.get(0));
     } finally {
       System.clearProperty("solr.disableFingerprint");
     }
 
     // lets add the missing document and verify that order doesn't matter
     add(client1, seenLeader, sdoc("id",Integer.toString((int)v),"_version_",v));
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
 
     // lets do some overwrites to ensure that repeated updates and maxDoc don't matter
     for (int i=0; i<10; i++) {
       add(client0, seenLeader, sdoc("id", Integer.toString((int) v + i + 1), "_version_", v + i + 1));
     }
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     
     validateDocs(docsAdded, client0, client1);
 
     // lets add some in-place updates
     add(client0, seenLeader, sdoc("id", "5000", "val_i_dvo", 0, "title", "mytitle", "_version_", 5000)); // full update
     docsAdded.add(5000);
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     // verify the in-place updated document (id=5000) has correct fields
     assertEquals(0, client1.getById("5000").get("val_i_dvo"));
     assertEquals(client0.getById("5000")+" and "+client1.getById("5000"), 
@@ -226,7 +226,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     ModifiableSolrParams inPlaceParams = new ModifiableSolrParams(seenLeader);
     inPlaceParams.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, "5000");
     add(client0, inPlaceParams, sdoc("id", "5000", "val_i_dvo", 1, "_version_", 5001)); // in-place update
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     // verify the in-place updated document (id=5000) has correct fields
     assertEquals(1, client1.getById("5000").get("val_i_dvo"));
     assertEquals(client0.getById("5000")+" and "+client1.getById("5000"), 
@@ -240,7 +240,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     
     inPlaceParams.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, "5001");
     add(client0, inPlaceParams, sdoc("id", 5000, "val_i_dvo", 2, "_version_", 5004)); // in-place update
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     // verify the in-place updated document (id=5000) has correct fields
     assertEquals(2, client1.getById("5000").get("val_i_dvo"));
     assertEquals(client0.getById("5000")+" and "+client1.getById("5000"), 
@@ -248,16 +248,16 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     // a DBQ with value
     delQ(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","5005"),  "val_i_dvo:1"); // current val is 2, so this should not delete anything
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
 
 
 
     add(client0, seenLeader, sdoc("id", "5000", "val_i_dvo", 0, "title", "mytitle", "_version_", 5000)); // full update
     docsAdded.add(5000);
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     inPlaceParams.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, "5004");
     add(client0, inPlaceParams, sdoc("id", 5000, "val_i_dvo", 3, "_version_", 5006));
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
 
     // verify the in-place updated document (id=5000) has correct fields
     assertEquals(3, client1.getById("5000").get("val_i_dvo"));
@@ -268,7 +268,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","5007"),  5000);
     docsAdded.remove(5000);
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
 
     validateDocs(docsAdded, client0, client1);
 
@@ -276,7 +276,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     // if doc with id=6000 is deleted, further in-place-updates should fail
     add(client0, seenLeader, sdoc("id", "6000", "val_i_dvo", 6, "title", "mytitle", "_version_", 6000)); // full update
     delQ(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","6004"),  "val_i_dvo:6"); // current val is 6000, this will delete id=6000
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     SolrException ex = expectThrows(SolrException.class, () -> {
       inPlaceParams.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, "6000");
       add(client0, inPlaceParams, sdoc("id", 6000, "val_i_dvo", 6003, "_version_", 5007));
@@ -294,7 +294,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     docsAdded.add(7001001);
     docsAdded.add(7001002);
     delQ(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","7000"),  "id:*"); // reordered delete
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     validateDocs(docsAdded, client0, client1);
 
     // Reordered DBQ should not affect update
@@ -304,7 +304,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     docsAdded.add(8000);
     docsAdded.add(8000001);
     docsAdded.add(8000002);
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     validateDocs(docsAdded, client0, client1);
 
   }
@@ -317,7 +317,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
 
     // sync should fail since there's not enough overlap to give us confidence
-    assertSync(client1, numVersions, false, shardsArr[0]);
+    assertSync(client1, numVersions, false, shardsArr.get(0));
 
     // add some of the docs that were missing... just enough to give enough overlap
     int toAdd2 = (int)(numVersions * .25);
@@ -325,7 +325,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
       add(client1, seenLeader, sdoc("id",Integer.toString(i+11),"_version_",v+i+1));
     }
 
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     validateDocs(docsAdded, client0, client1);
   }
 

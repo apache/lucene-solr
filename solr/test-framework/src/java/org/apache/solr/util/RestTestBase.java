@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -38,6 +39,7 @@ import java.util.SortedMap;
 abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static volatile RestTestHarness restTestHarness;
+  protected static JettySolrRunner jetty;
 
   @AfterClass
   public synchronized static void cleanUpHarness() throws IOException {
@@ -45,17 +47,20 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     restTestHarness = null;
   }
 
-  public synchronized static void createJettyAndHarness
+  public synchronized static JettySolrRunner createJettyAndHarness
       (String solrHome, String configFile, String schemaFile, String context,
        boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) throws Exception {
 
-    createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
+    jetty = createAndStartJetty(
+        solrHome, configFile, schemaFile, context, stopAtShutdown,
+        extraServlets);
     if (restTestHarness != null) {
       restTestHarness.close();
     }
     restTestHarness = new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME,
         getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME,
             (Http2SolrClient) client));
+    return jetty;
   }
 
   /** Validates an update XML String is successful

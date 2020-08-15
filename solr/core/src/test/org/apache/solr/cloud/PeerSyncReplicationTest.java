@@ -238,7 +238,7 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
     try (ParWork worker = new ParWork("stop_jetties")) {
 
       for (JettySolrRunner replicaToShutDown : replicasToShutDown) {
-        worker.collect(() -> {
+        worker.collect("shutdownReplicas", () -> {
           try {
             replicaToShutDown.stop();
           } catch (Exception e) {
@@ -246,7 +246,6 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
           }
         });
       }
-      worker.addCollect("stop_jetties");
     }
 
     for (JettySolrRunner jetty : replicasToShutDown) {

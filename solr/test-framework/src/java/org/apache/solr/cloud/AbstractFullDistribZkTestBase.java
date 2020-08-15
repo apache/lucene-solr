@@ -497,7 +497,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                       , i, jettyDir, Replica.Type.TLOG, ((currentI % sliceCount) + 1)); // logOk
             }
 
-            create.add("Create Jettys", () -> {
+            create.collect("Create Jettys", () -> {
               try {
                 JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
                         + cnt) : null, null, "solrconfig.xml", null, Replica.Type.TLOG);
@@ -522,14 +522,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 throw new RuntimeException(e);
               }
             });
-
+            create.addCollect();
           } else {
             if (log.isInfoEnabled()) {
               log.info("create jetty {} in directory {} of type {} for shard{}"
                       , i, jettyDir, Replica.Type.NRT, ((currentI % sliceCount) + 1)); // logOk
             }
 
-            create.add("Create Jettys", () -> {
+            create.collect("Create Jettys", () -> {
               try {
                 JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
                         + cnt) : null, null, "solrconfig.xml", null, null);
@@ -553,10 +553,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 throw new RuntimeException(e);
               }
             });
+            create.addCollect();
           }
         } else {
           log.info("create jetty {} in directory {} of type {} for shard{}", i, jettyDir, Replica.Type.PULL, ((currentI % sliceCount) + 1)); // logOk
-          create.add("Create Jettys", () -> {
+          create.collect("Create Jettys", () -> {
             try {
               JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
                       + cnt) : null, null, "solrconfig.xml", null, Replica.Type.PULL);
@@ -580,6 +581,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               throw new RuntimeException(e);
             }
           });
+          create.addCollect();
         }
       }
     }
@@ -592,7 +594,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       synchronized (createReplicaRequests) {
         for (CollectionAdminRequest r : createReplicaRequests) {
 
-          closer.collect(() -> {
+          closer.collect("createReplica", () -> {
             CollectionAdminResponse response;
             try {
               response = (CollectionAdminResponse) r.process(cloudClient);
@@ -605,11 +607,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           });
         }
       }
-
+      closer.addCollect();
       log.info("creating pull replicas: " + createPullReplicaRequests);
       synchronized (createPullReplicaRequests) {
         for (CollectionAdminRequest r : createPullReplicaRequests) {
-          closer.collect(() -> {
+          closer.collect("createPullReplicaRequests", () -> {
             CollectionAdminResponse response;
             try {
               response = (CollectionAdminResponse) r.process(cloudClient);
@@ -622,7 +624,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           });
         }
       }
-      closer.addCollect("Create Replica Requests");
     }
 
 
@@ -1739,7 +1740,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 //    destroyServersCalled = true;
 
     try (ParWork closer = new ParWork(this)) {
-      closer.add("destroy_servers", commonCloudSolrClient, coreClients, controlClientCloud, cloudClient);
+      closer.collect(commonCloudSolrClient, coreClients, controlClientCloud, cloudClient);
     }
     coreClients.clear();
     

@@ -143,7 +143,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       for (FileSystem fs : values) {
         closer.collect(fs);
       }
-      closer.collect(()->{
+      closer.collect("hdfsDirFactoryClose", ()->{
         tmpFsCache.invalidateAll();
         tmpFsCache.cleanUp();
         try {
@@ -155,7 +155,6 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
 
       closer.collect(MetricsHolder.metrics);
       closer.collect(LocalityHolder.reporter);
-      closer.addCollect("hdfsDirFactoryClose");
     }
 
   }

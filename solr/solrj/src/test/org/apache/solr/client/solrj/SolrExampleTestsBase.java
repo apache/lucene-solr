@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj;
 
 import junit.framework.Assert;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -27,6 +28,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,14 +38,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
-  
+
+  protected static JettySolrRunner jetty;
+
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
+  }
+
   /**
    * query the example
    */
   @Test
   public void testCommitWithinOnAdd() throws Exception {
     // make sure it is empty...
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     client.deleteByQuery("*:*");// delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
@@ -116,7 +125,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   @Test
   public void testCommitWithinOnDelete() throws Exception {
     // make sure it is empty...
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     client.deleteByQuery("*:*");// delete everything!
     client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
@@ -160,7 +169,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   
   @Test
   public void testAddDelete() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     
     // Empty the database...
     client.deleteByQuery("*:*");// delete everything!
@@ -208,7 +217,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   
   @Test
   public void testStreamingRequest() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     // Empty the database...
     client.deleteByQuery("*:*");// delete everything!
     client.commit();
@@ -256,7 +265,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   
   protected QueryResponse assertNumFound(String query, int num)
       throws SolrServerException, IOException {
-    QueryResponse rsp = getSolrClient().query(new SolrQuery(query));
+    QueryResponse rsp = getSolrClient(jetty).query(new SolrQuery(query));
     if (num != rsp.getResults().getNumFound()) {
       fail("expected: " + num + " but had: " + rsp.getResults().getNumFound()
           + " :: " + rsp.getResults());

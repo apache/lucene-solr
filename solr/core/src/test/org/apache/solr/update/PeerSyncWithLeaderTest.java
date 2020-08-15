@@ -41,12 +41,12 @@ public class PeerSyncWithLeaderTest extends PeerSyncTest {
     }
 
     // sync should fail since we are too far with the leader
-    assertSync(client1, numVersions, false, shardsArr[0]);
+    assertSync(client1, numVersions, false, shardsArr.get(0));
 
     // add a doc that was missing... just enough to give enough overlap
     add(client1, seenLeader, sdoc("id",Integer.toString(11),"_version_",v+1));
 
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, shardsArr.get(0));
     validateDocs(docsAdded, client0, client1);
   }
 

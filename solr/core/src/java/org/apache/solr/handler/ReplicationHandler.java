@@ -1786,19 +1786,19 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     try (ParWork closer = new ParWork(this, true)) {
       if (pollingIndexFetcher != null) {
-        closer.collect(() -> {
+        closer.collect("pollingIndexFetcher", () -> {
           pollingIndexFetcher.destroy();
         });
       }
 
       if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
-        closer.collect(() -> {
+        closer.collect("currentIndexFetcher", () -> {
           currentIndexFetcher.destroy();
         });
       }
     ///  closer.collect(restoreExecutor);
      // closer.collect(executorService);
-      closer.addCollect("ReplicationHandlerClose");
+      closer.addCollect();
     }
 
   }

@@ -687,14 +687,11 @@ public class ZkStateReader implements SolrCloseable {
         cloudCollectionsListeners.forEach(listener -> {
 
           listener.onChange(oldCollections, newCollections);
-          worker.collect(() -> {
-
+          worker.collect("cloudCollectionsListeners", () -> {
             listener.onChange(oldCollections, newCollections);
-            return listener;
           });
         });
 
-        worker.addCollect("CollectionListeners");
       }
     }
   }
@@ -1335,7 +1332,7 @@ public class ZkStateReader implements SolrCloseable {
 
           try (ParWork work = new ParWork(this, true)) {
             for (CollectionPropsWatcher observer : collectionPropsObservers.values()) {
-              work.collect(() -> {
+              work.collect("collectionPropsObservers", () -> {
                 observer.onStateChanged(props.props);
               });
             }

@@ -35,6 +35,7 @@ import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
@@ -60,6 +61,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
 
   private static File tmpSolrHome;
+  private JettySolrRunner jetty;
 
   @Before
   public void before() throws Exception {
@@ -69,7 +71,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
         "/solr", true, null);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
@@ -84,10 +86,6 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -639,7 +637,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     m = getObj(harness, "a4", "fields");
     assertNotNull("field a4 not created", m);
     assertEquals("mySimField", m.get("type"));
-    assertFieldSimilarity("a4", SweetSpotSimilarity.class);
+    assertFieldSimilarity("a4", SweetSpotSimilarity.class, jetty);
     
     m = getObj(harness, "myWhitespaceTxtField", "fieldTypes");
     assertNotNull(m);
@@ -650,7 +648,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull("field a5 not created", m);
     assertEquals("myWhitespaceTxtField", m.get("type"));
     assertNull(m.get("uninvertible")); // inherited, but API shouldn't return w/o explicit showDefaults
-    assertFieldSimilarity("a5", BM25Similarity.class); // unspecified, expect default
+    assertFieldSimilarity("a5", BM25Similarity.class, jetty); // unspecified, expect default
 
     m = getObj(harness, "wdf_nocase", "fields");
     assertNull("field 'wdf_nocase' not deleted", m);
@@ -1005,13 +1003,13 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull("field " + fieldName + " not created", fields);
 
     assertEquals(0,
-                 getSolrClient().add(Arrays.asList(sdoc("id","1",fieldName,"xxx aaa"),
+                 getSolrClient(jetty).add(Arrays.asList(sdoc("id","1",fieldName,"xxx aaa"),
                                                    sdoc("id","2",fieldName,"xxx bbb aaa"),
                                                    sdoc("id","3",fieldName,"xxx bbb zzz"))).getStatus());
                                                    
-    assertEquals(0, getSolrClient().commit().getStatus());
+    assertEquals(0, getSolrClient(jetty).commit().getStatus());
     {
-      SolrDocumentList docs = getSolrClient().query
+      SolrDocumentList docs = getSolrClient(jetty).query
         (params("q",fieldName+":xxx","sort", fieldName + " asc, id desc")).getResults();
          
       assertEquals(3L, docs.getNumFound());
@@ -1021,7 +1019,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
       assertEquals("2", docs.get(2).getFieldValue("id"));
     }
     {
-      SolrDocumentList docs = getSolrClient().query
+      SolrDocumentList docs = getSolrClient(jetty).query
         (params("q",fieldName+":xxx", "sort", fieldName + " desc, id asc")).getResults();
                                                            
       assertEquals(3L, docs.getNumFound());
@@ -1035,19 +1033,19 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @Test
   public void testAddNewFieldAndQuery() throws Exception {
-    getSolrClient().add(Arrays.asList(
+    getSolrClient(jetty).add(Arrays.asList(
         sdoc("id", "1", "term_s", "tux")));
 
-    getSolrClient().commit(true, true);
+    getSolrClient(jetty).commit(true, true);
     Map<String,Object> attrs = new HashMap<>();
     attrs.put("name", "newstringtestfield");
     attrs.put("type", "string");
 
-    new SchemaRequest.AddField(attrs).process(getSolrClient());
+    new SchemaRequest.AddField(attrs).process(getSolrClient(jetty));
 
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetField("newstringtestfield");
-    int size = getSolrClient().query(query).getResults().size();
+    int size = getSolrClient(jetty).query(query).getResults().size();
     assertEquals(1, size);
   }
 
@@ -1082,7 +1080,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     Map fields = getObj(harness, fieldName, "fields");
     assertNotNull("field " + fieldName + " not created", fields);
     
-    assertFieldSimilarity(fieldName, BM25Similarity.class,
+    assertFieldSimilarity(fieldName, BM25Similarity.class, jetty,
        sim -> assertEquals("Unexpected k1", k1, sim.getK1(), .001),
        sim -> assertEquals("Unexpected b", b, sim.getB(), .001));
 
@@ -1108,7 +1106,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     fields = getObj(harness, fieldName, "fields");
     assertNotNull("field " + fieldName + " not created", fields);
 
-    assertFieldSimilarity(fieldName, DFISimilarity.class,
+    assertFieldSimilarity(fieldName, DFISimilarity.class, jetty,
         sim -> assertEquals("Unexpected independenceMeasure", independenceMeasure, sim.getIndependence().toString()),
         sim -> assertEquals("Unexpected discountedOverlaps", discountOverlaps, sim.getDiscountOverlaps()));
   }
@@ -1161,7 +1159,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
    * Executes each of the specified Similarity-accepting validators.
    */
   @SafeVarargs
-  private static <T extends Similarity> void assertFieldSimilarity(String fieldname, Class<T> expected, Consumer<T>... validators) {
+  private static <T extends Similarity> void assertFieldSimilarity(String fieldname, Class<T> expected, JettySolrRunner jetty, Consumer<T>... validators) {
     CoreContainer cc = jetty.getCoreContainer();
     try (SolrCore core = cc.getCore("collection1")) {
       SimilarityFactory simfac = core.getLatestSchema().getSimilarityFactory();

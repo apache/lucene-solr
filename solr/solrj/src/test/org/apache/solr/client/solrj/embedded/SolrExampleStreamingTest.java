@@ -41,13 +41,15 @@ import java.util.List;
 @Ignore // nocommit - flakey
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
+  protected static JettySolrRunner jetty;
+
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Override
-  public SolrClient createNewSolrClient()
+  public SolrClient createNewSolrClient(JettySolrRunner jetty)
   {
     try {
       // setup the server...

@@ -16,20 +16,12 @@
  */
 package org.apache.solr;
 
-import java.io.File;
-import java.io.OutputStreamWriter;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.util.Properties;
-import java.util.SortedMap;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -39,7 +31,15 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.OutputStreamWriter;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Properties;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 {
@@ -50,7 +50,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
   }
 
-  public static JettySolrRunner jetty;
+  public static Set<JettySolrRunner> jettys = ConcurrentHashMap.newKeySet();
   public static int port;
   public static SolrClient client = null;
   public static String context;
@@ -112,14 +112,12 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     nodeProps.setProperty("coreRootDirectory", coresDir.toString());
     nodeProps.setProperty("configSetBaseDir", solrHome);
 
-
-    if (jetty != null) {
-      throw new IllegalStateException();
-    }
-    jetty = new JettySolrRunner(solrHome, nodeProps, jettyConfig);
+    JettySolrRunner jetty = new JettySolrRunner(solrHome, nodeProps,
+        jettyConfig);
     jetty.start();
     port = jetty.getLocalPort();
     log.info("Jetty Assigned Port#{}", port);
+    jettys.add(jetty);
     return jetty;
   }
 
@@ -136,15 +134,16 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     } catch (NullPointerException e) {
       // okay
     }
-    if (jetty != null) {
+
+    for (JettySolrRunner jetty : jettys) {
       jetty.stop();
-      jetty = null;
     }
+    jettys.clear();
   }
 
-  public synchronized SolrClient getSolrClient() {
+  public synchronized SolrClient getSolrClient(JettySolrRunner jetty) {
     if (client == null) {
-      client = createNewSolrClient();
+      client = createNewSolrClient(jetty);
     }
     return client;
   }
@@ -155,7 +154,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
    * otherwise an embedded implementation will be created.
    * Subclasses should override for other options.
    */
-  public SolrClient createNewSolrClient() {
+  public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     try {
       // setup the client...
       final String url = jetty.getBaseUrl().toString() + "/" + "collection1";

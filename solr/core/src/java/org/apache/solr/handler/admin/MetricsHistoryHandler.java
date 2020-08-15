@@ -358,7 +358,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
               Map.Entry<String, Object> entry = it.next();
               String key = entry.getKey();
 
-              worker.collect(() -> {
+              worker.collect("metrics", () -> {
                 String registry = key;
                 if (group != Group.core) { // add nodeName suffix
                   registry = registry + "." + nodeName;
@@ -620,9 +620,8 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
     try (ParWork closer = new ParWork(this)) {
       closer.collect(factory);
-      closer.addCollect("factory");
+      closer.addCollect();
       closer.collect(collectService);
-      closer.addCollect("collectService");
     }
 
     knownDbs.clear();

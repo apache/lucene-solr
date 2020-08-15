@@ -62,10 +62,6 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
   @After
   private void after() throws Exception {
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
     

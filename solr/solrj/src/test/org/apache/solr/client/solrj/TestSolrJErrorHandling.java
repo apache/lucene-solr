@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -55,13 +56,14 @@ import org.slf4j.LoggerFactory;
 @Ignore // nocommit - some race with auto schema or delete by query
 public class TestSolrJErrorHandling extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static JettySolrRunner jetty;
 
   List<Throwable> unexpected = new CopyOnWriteArrayList<>();
 
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Override
@@ -107,7 +109,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new RequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
@@ -115,7 +117,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   @Test
   public void testWithBinary() throws Exception {
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new BinaryRequestWriter());
     client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
@@ -269,7 +271,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
    String bodyString = getJsonDocs(200000);  // sometimes succeeds with this size, but larger can cause OOM from command line
 
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
 
     String urlString = client.getBaseURL() + "/update";
 

@@ -195,7 +195,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   final public void close() {
     close = true;
     try (ParWork closer = new ParWork(this, true)) {
-      closer.collect(() -> {
+      closer.collect("prevSendPreRecoveryHttpUriRequestAbort", () -> {
         try {
           prevSendPreRecoveryHttpUriRequest.abort();
         } catch (NullPointerException e) {
@@ -217,12 +217,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
                   "Skipping recovery, no " + ReplicationHandler.PATH + " handler found");
         }
-        closer.collect(() -> {
+        closer.collect("abortFetch", () -> {
           replicationHandler.abortFetch();
         });
 
       }
-      closer.addCollect("recoveryStratClose");
     }
 
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);

@@ -439,13 +439,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public void close(IndexWriterCloser closer) {
     try (ParWork worker = new ParWork(this, true)) {
-      worker.collect(() -> {
+      worker.collect("cancelRecovery", () -> {
         cancelRecovery(true, true);
       });
-      worker.collect(() -> {
-        ParWork.close(recoveryStrat);
-      });
-      worker.collect(() -> {
+      worker.collect(recoveryStrat);
+      worker.collect("closeIndexWriter", () -> {
       // we can't lock here without
       // a blocking race, we should not need to
       // though
@@ -456,7 +454,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
          // iwLock.writeLock().unlock();
         }
       });
-      worker.addCollect("recoveryStratClose");
+      worker.addCollect();
     }
   }
 

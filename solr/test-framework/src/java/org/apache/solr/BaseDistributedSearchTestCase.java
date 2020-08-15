@@ -42,6 +42,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import javax.servlet.Filter;
 
@@ -239,7 +240,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected volatile String context;
   protected volatile String[] deadServers;
   protected volatile String shards;
-  protected volatile String[] shardsArr;
+  protected volatile AtomicReferenceArray<String> shardsArr;
   protected volatile File testDir;
   protected volatile SolrClient controlClient;
 
@@ -346,7 +347,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     System.setProperty("configSetBaseDir", getSolrHome());
     StringBuilder sb = new StringBuilder();
     try (ParWork worker = new ParWork(this)) {
-      worker.collect(() -> {
+      worker.collect("createControlJetty", () -> {
         try {
           controlJetty = createControlJetty();
         } catch (Exception e) {
@@ -355,10 +356,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         }
         controlClient = createNewSolrClient(controlJetty.getLocalPort());
       });
-      shardsArr = new String[numShards];
+      shardsArr = new AtomicReferenceArray<>(numShards);
       for (int i = 0; i < numShards; i++) {
         int finalI = i;
-        worker.collect(() -> {
+        worker.collect("createJetties", () -> {
           if (sb.length() > 0) sb.append(',');
           final String shardname = "shard" + finalI;
           Path jettyHome = testDir.toPath().resolve(shardname);
@@ -376,14 +377,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
             if (shardStr.endsWith("/")) shardStr += DEFAULT_TEST_CORENAME;
             else shardStr += "/" + DEFAULT_TEST_CORENAME;
 
-            shardsArr[finalI] = shardStr;
+            shardsArr.set(finalI, shardStr);
             sb.append(shardStr);
           } catch (Exception e) {
             ParWork.propegateInterrupt(e);
             throw new RuntimeException(e);
           }
         });
-        worker.addCollect("startJettys");
       }
 
     }
@@ -400,16 +400,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (deadServers == null) return shards;
     
     StringBuilder sb = new StringBuilder();
-    for (String shard : shardsArr) {
+
+    for (int i = 0; i < shardsArr.length(); i++) {
+      String shard = shardsArr.get(i);
       if (sb.length() > 0) sb.append(',');
       int nDeadServers = r.nextInt(deadServers.length+1);
       if (nDeadServers > 0) {
         List<String> replicas = new ArrayList<>(Arrays.asList(deadServers));
         Collections.shuffle(replicas, r);
         replicas.add(r.nextInt(nDeadServers+1), shard);
-        for (int i=0; i<nDeadServers+1; i++) {
-          if (i!=0) sb.append('|');
-          sb.append(replicas.get(i));
+        for (int j=0; j<nDeadServers+1; j++) {
+          if (j!=0) sb.append('|');
+          sb.append(replicas.get(j));
         }
       } else {
         sb.append(shard);
@@ -425,7 +427,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 //    if (destroyServersCalled) throw new RuntimeException("destroyServers already called");
 //    destroyServersCalled = true;
     try (ParWork closer = new ParWork(this, true)) {
-      closer.add("jetties&clients", controlClient, clients, jettys, controlJetty);
+      closer.collect(controlClient, clients, jettys, controlJetty);
     }
     
     clients.clear();

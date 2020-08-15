@@ -102,7 +102,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
                               String async) throws InterruptedException {
     try (ParWork worker = new ParWork("cleanupReplicas")) {
       for (ZkNodeProps sReplica : sourceReplicas) {
-        worker.collect(() -> {
+        worker.collect("      worker.addCollect(\"deleteNodeReplicas\");\n", () -> {
           ZkNodeProps sourceReplica = sReplica;
           String coll = sourceReplica.getStr(COLLECTION_PROP);
           String shard = sourceReplica.getStr(SHARD_ID_PROP);
@@ -131,7 +131,6 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           }
         });
       }
-      worker.addCollect("deleteNodeReplicas");
     }
   }
 

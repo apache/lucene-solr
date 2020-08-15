@@ -92,9 +92,8 @@ public class SolrClientCache implements Serializable, Closeable {
   public synchronized void close() {
     try (ParWork closer = new ParWork(this, true)) {
       for (Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
-        closer.collect(entry.getValue());
+        closer.collect("solrClient", entry.getValue());
       }
-      closer.addCollect("solrClients");
     }
     solrClients.clear();
     assert ObjectReleaseTracker.release(this);

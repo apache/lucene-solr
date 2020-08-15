@@ -23,6 +23,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -43,7 +44,8 @@ public class TestStreamBody extends RestTestBase {
 
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
-  
+  private JettySolrRunner jetty;
+
   @Before
   public void before() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
@@ -57,7 +59,7 @@ public class TestStreamBody extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-minimal.xml", "schema-rest.xml",
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-minimal.xml", "schema-rest.xml",
         "/solr", true, extraServlets);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
@@ -67,10 +69,6 @@ public class TestStreamBody extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
     if (client != null) {
       client.close();
       client = null;
@@ -99,7 +97,7 @@ public class TestStreamBody extends RestTestBase {
       }
     };
     try {
-      queryRequest.process(getSolrClient());
+      queryRequest.process(getSolrClient(jetty));
       fail();
     } catch (SolrException se) {
       assertTrue(se.getMessage(), se.getMessage().contains("Bad contentType for search handler :text/xml"));
@@ -119,10 +117,10 @@ public class TestStreamBody extends RestTestBase {
         return "/update";
       }
     };
-    SolrException se = expectThrows(SolrException.class, () -> queryRequest.process(getSolrClient()));
+    SolrException se = expectThrows(SolrException.class, () -> queryRequest.process(getSolrClient(jetty)));
     assertTrue(se.getMessage(), se.getMessage().contains("Stream Body is disabled"));
     enableStreamBody(true);
-    queryRequest.process(getSolrClient());
+    queryRequest.process(getSolrClient(jetty));
   }
 
   // Enables/disables stream.body through Config API

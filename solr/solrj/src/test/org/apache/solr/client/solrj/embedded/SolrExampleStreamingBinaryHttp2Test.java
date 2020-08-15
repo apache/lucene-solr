@@ -41,7 +41,7 @@ import org.junit.Test;
 public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHttp2Test {
 
   @Override
-  public SolrClient createNewSolrClient() {
+  public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     // setup the server...
     String url = jetty.getBaseUrl().toString() + "/collection1";
     // smaller queue size hits locks more often
@@ -59,7 +59,7 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
   @Test
   public void testQueryAndStreamResponse() throws Exception {
     // index a simple document with one child
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     client.deleteByQuery("*:*");
 
     SolrInputDocument child = new SolrInputDocument();

@@ -1009,7 +1009,6 @@ public class SimCloudManager implements SolrCloudManager {
       closer.collect(triggerThread);
       closer.collect(objectCache);
       closer.collect(simCloudManagerPool);
-      closer.addCollect("simCloudManagerClose");
     }
 
     ObjectReleaseTracker.release(this);

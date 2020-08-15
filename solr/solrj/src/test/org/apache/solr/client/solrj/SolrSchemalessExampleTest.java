@@ -30,6 +30,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -72,7 +73,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
   }
   @Test
   public void testArbitraryJsonIndexing() throws Exception  {
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
@@ -89,7 +90,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Test
   public void testFieldMutating() throws Exception {
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
@@ -126,7 +127,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
 
   @Override
-  public SolrClient createNewSolrClient() {
+  public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     try {
       // setup the server...
       String url = jetty.getBaseUrl().toString() + "/collection1";

@@ -22,16 +22,19 @@ import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.eclipse.jetty.util.Jetty;
 import org.junit.BeforeClass;
 
 public class SolrExampleXMLHttp2Test extends SolrExampleTests {
+  protected static JettySolrRunner jetty;
+
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Override
-  public SolrClient createNewSolrClient() {
+  public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     try {
       String url = jetty.getBaseUrl().toString() + "/collection1";
       Http2SolrClient client = new Http2SolrClient.Builder(url).connectionTimeout(DEFAULT_CONNECTION_TIMEOUT).build();

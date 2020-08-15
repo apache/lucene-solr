@@ -86,8 +86,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   @Override
   public void close() {
     try (ParWork closer = new ParWork(this, true)) {
-      closer.collect(() -> super.close());
-      closer.collect(() -> {
+      closer.collect("superClose",() -> super.close());
+      closer.collect("cancelElection",() -> {
         try {
           cancelElection();
         } catch (Exception e) {
@@ -96,7 +96,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
       });
       closer.collect(syncStrategy);
-      closer.addCollect("shardLeaderElectionContextClose");
+      closer.addCollect();
     }
 
     this.isClosed = true;

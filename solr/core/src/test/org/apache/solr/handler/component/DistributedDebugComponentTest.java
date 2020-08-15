@@ -32,6 +32,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -65,7 +66,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   public static void createThings() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
     solrHome = createSolrHome();
-    createAndStartJetty(solrHome.getAbsolutePath());
+    JettySolrRunner jetty = createAndStartJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
 
     collection1 = getHttpSolrClient(url + "/collection1");
@@ -106,10 +107,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     if (null != collection2) {
       collection2.close();
       collection2 = null;
-    }
-    if (null != jetty) {
-      jetty.stop();
-      jetty=null;
     }
     resetExceptionIgnores();
     systemClearPropertySolrDisableShardsWhitelist();

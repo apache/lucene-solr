@@ -55,11 +55,11 @@ public class IndexFingerprint implements MapSerializable {
   public IndexFingerprint() {
     // default constructor
   }
-  
+
   public IndexFingerprint (long maxVersionSpecified)  {
     this.maxVersionSpecified = maxVersionSpecified;
   }
-  
+
   public long getMaxVersionSpecified() {
     return maxVersionSpecified;
   }
@@ -91,8 +91,8 @@ public class IndexFingerprint implements MapSerializable {
   /** Opens a new realtime searcher and returns it's (possibly cached) fingerprint */
   public static IndexFingerprint getFingerprint(SolrCore core, long maxVersion) throws IOException {
     RTimer timer = new RTimer();
-    core.getUpdateHandler().getUpdateLog().openRealtimeSearcher();
-    RefCounted<SolrIndexSearcher> newestSearcher = core.getUpdateHandler().getUpdateLog().uhandler.core.getRealtimeSearcher();
+
+    RefCounted<SolrIndexSearcher> newestSearcher = core.getUpdateHandler().getUpdateLog().openRealtimeSearcher(true);
     try {
       IndexFingerprint f = newestSearcher.get().getIndexFingerprint(maxVersion);
       final double duration = timer.stop();
@@ -104,20 +104,21 @@ public class IndexFingerprint implements MapSerializable {
       }
     }
   }
-  
+
   public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, Long maxVersion)
       throws IOException {
+
     SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
     ValueSource vs = versionField.getType().getValueSource(versionField, null);
     @SuppressWarnings({"rawtypes"})
     Map funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
-    
+
     IndexFingerprint f = new IndexFingerprint();
     f.maxVersionSpecified = maxVersion;
     f.maxDoc = ctx.reader().maxDoc();
     f.numDocs = ctx.reader().numDocs();
-    
+
     int maxDoc = ctx.reader().maxDoc();
     Bits liveDocs = ctx.reader().getLiveDocs();
     FunctionValues fv = vs.getValues(funcContext, ctx);
@@ -131,11 +132,11 @@ public class IndexFingerprint implements MapSerializable {
         f.numVersions++;
       }
     }
-    
+    System.out.println("Create new fingerprint:" + f);
     return f;
   }
-  
-  
+
+
   public static IndexFingerprint reduce(IndexFingerprint acc, IndexFingerprint f2) {
     // acc should have maxVersionSpecified already set in it using IndexFingerprint(long maxVersionSpecified) constructor
     acc.maxDoc = Math.max(acc.maxDoc, f2.maxDoc);

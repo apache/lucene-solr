@@ -290,12 +290,11 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
         for (Entry<String,Object> entry : entrySet) {
           Object v = entry.getValue();
           if (v instanceof  Map) {
-            work.collect(() -> {
+            work.collect("includes", () -> {
               handleIncludes((ValidatingJsonMap) v, loc, maxDepth - 1);
             });
           }
         }
-        work.addCollect("includes");
       }
     }
   }

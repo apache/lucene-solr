@@ -339,7 +339,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     AtomicBoolean interrupted = new AtomicBoolean();
     try (ParWork work = new ParWork(this)) {
       for (Map.Entry<String, QueueEvent> entry : entrySet) {
-        work.collect(()->{
+        work.collect("cleanWorkQueue", ()->{
           if (interrupted.get() || sessionExpired.get()) {
             return;
           }

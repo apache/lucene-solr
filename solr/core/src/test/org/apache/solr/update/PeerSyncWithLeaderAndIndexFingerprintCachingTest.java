@@ -27,10 +27,13 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 
 public class PeerSyncWithLeaderAndIndexFingerprintCachingTest extends PeerSyncWithIndexFingerprintCachingTest {
+  public PeerSyncWithLeaderAndIndexFingerprintCachingTest() throws Exception {
+  }
+
   @Override
   void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {
     QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions",Integer.toString(numVersions), "syncWithLeader", StrUtils.join(Arrays.asList(syncWith), ',')));
     NamedList rsp = client.request(qr);
-    assertEquals(expectedResult, (Boolean) rsp.get("syncWithLeader"));
+    assertEquals(rsp.toString(), expectedResult, (Boolean) rsp.get("syncWithLeader"));
   }
 }

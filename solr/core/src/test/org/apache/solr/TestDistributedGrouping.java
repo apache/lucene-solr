@@ -174,27 +174,27 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     // The shard the result came from matters in the order if both document sortvalues are equal
 
     try (ParWork worker = new ParWork(this)) {
-      worker.collect(() -> {
+      worker.collect("", () -> {
         try {
           query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc");
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
-        worker.collect(() -> {
+        worker.collect("", () -> {
           try {
             query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "id asc, _docid_ asc");
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
         });
-        worker.collect(() -> {
+        worker.collect("", () -> {
           try {
             query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "{!func}add(" + i1 + ",5) asc, id asc");
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
         });
-        worker.collect(() -> {
+        worker.collect("", () -> {
           try {
             query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "facet.field", t1);
           } catch (Exception e) {
@@ -202,28 +202,28 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           }
         });
 
-        worker.collect(() -> {
+        worker.collect("", () -> {
           try {
             query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "stats", "true", "stats.field", tlong);
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
         });
-        worker.collect(() -> {
+        worker.collect("", () -> {
           try {
             query("q", "kings", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "spellcheck", "true", "spellcheck.build", "true", "qt", "spellCheckCompRH", "df", "subject");
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
         });
-        worker.collect(() -> {
+        worker.collect("", () -> {
           try {
             query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "facet", "true", "hl","true","hl.fl",t1);
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
         });
-        worker.collect(() -> {
+        worker.collect("", () -> {
           try {
             query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "group.sort", "id desc");
           } catch (Exception e) {
@@ -231,7 +231,6 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           }
         });
       });
-      worker.addCollect("testQueries");
     }
 
 
@@ -370,8 +369,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     nl = (NamedList<?>) nl.getVal(0);
     int matches = (Integer) nl.getVal(0);
     int groupCount = (Integer) nl.get("ngroups");
-    assertEquals((TEST_NIGHTLY ? 100 : 10) * shardsArr.length, matches);
-    assertEquals(shardsArr.length, groupCount);
+    assertEquals((TEST_NIGHTLY ? 100 : 10) * shardsArr.length(), matches);
+    assertEquals(shardsArr.length(), groupCount);
 
 
     // We validate distributed grouping with scoring as first sort.
@@ -379,28 +378,28 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     handle.put("maxScore", SKIP);// TODO see SOLR-6612
 
     try (ParWork worker = new ParWork(this)) {
-      worker.collect(()->{
+      worker.collect("", ()->{
         try {
           query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " desc", "group.sort", "score desc"); // SOLR-2955
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
       });
-      worker.collect(()->{
+      worker.collect("", ()->{
         try {
           query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "score desc, _docid_ asc, id asc");
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
       });
-      worker.collect(()->{
+      worker.collect("", ()->{
         try {
           query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1);
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
       });
-      worker.collect(()->{
+      worker.collect("", ()->{
         try {
           query("q", "*:*",
                   "group", "true",
@@ -410,7 +409,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           throw new RuntimeException(e);
         }
       });
-      worker.collect(()->{
+      worker.collect("", ()->{
         try {
           query("q", "*:*",
                   "group", "true",
@@ -420,7 +419,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           throw new RuntimeException(e);
         }
       });
-      worker.collect(()->{
+      worker.collect("", ()->{
         try {
           query("q", "*:*",
                   "group", "true",
@@ -431,7 +430,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         }
       });
 
-      worker.collect(()->{
+      worker.collect("", ()->{
         try {
           // grouping shouldn't care if there are multiple fl params, or what order the fl field names are in
           variantQuery(params("q", "*:*",
@@ -446,7 +445,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           throw new RuntimeException(e);
         }
       });
-      worker.collect(()->{
+      worker.collect("", ()->{
         try {
           variantQuery(params("q", "*:*", "rows", "100",
                   "group", "true", "group.field", s1dv, "group.limit", "-1",
@@ -460,7 +459,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           throw new RuntimeException(e);
         }
       });
-      worker.collect(()->{
+      worker.collect("", ()->{
         try {
           variantQuery(params("q", "*:*", "rows", "100",
                   "group", "true", "group.field", s1dv, "group.limit", "-1",
@@ -474,7 +473,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           throw new RuntimeException(e);
         }
       });
-      worker.collect(()->{
+      worker.collect("", ()->{
         try {
           variantQuery(params("q", "{!func}id_i1", "rows", "100",
                   "group", "true", "group.field", i1, "group.limit", "-1",
@@ -487,7 +486,6 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           throw new RuntimeException(e);
         }
       });
-      worker.addCollect("someTestQueries");
     }
 
     // some explicit checks of non default sorting, and sort/group.sort with diff clauses

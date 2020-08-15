@@ -25,6 +25,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -39,13 +40,15 @@ import org.junit.BeforeClass;
  */
 public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
+  private static JettySolrRunner jetty;
+
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   public void test404ViaHttp() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     QueryRequest request = new QueryRequest(params("file",
             "does-not-exist-404.txt"));
     request.setPath("/admin/file");
@@ -72,7 +75,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testDirList() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     //assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
     QueryRequest request = new QueryRequest();
     request.setPath("/admin/file");
@@ -82,7 +85,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testGetRawFile() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = getSolrClient(jetty);
     //assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
     QueryRequest request = new QueryRequest(params("file", "managed-schema"));
     request.setPath("/admin/file");

@@ -639,11 +639,10 @@ public class IndexSchema {
     //Run the callbacks on SchemaAware now that everything else is done
     try (ParWork work = new ParWork(this)) {
       for (SchemaAware aware : schemaAware) {
-        work.collect(() -> {
+        work.collect("postReadInform", () -> {
           aware.inform(this);
         });
       }
-      work.addCollect("postReadInform");
     }
   }
 

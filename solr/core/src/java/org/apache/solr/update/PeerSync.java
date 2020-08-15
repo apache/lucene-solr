@@ -85,10 +85,8 @@ public class PeerSync implements SolrMetricProducer {
   private final boolean doFingerprint;
   private final Http2SolrClient client;
   private final boolean onlyIfActive;
-  private SolrCore core;
-  private Updater updater;
-
-  private MissedUpdatesFinder missedUpdatesFinder;
+  private final SolrCore core;
+  private final Updater updater;
 
   // metrics
   private Timer syncTime;
@@ -227,12 +225,12 @@ public class PeerSync implements SolrMetricProducer {
         return PeerSyncResult.failure(false);
       }
 
-      this.missedUpdatesFinder = new MissedUpdatesFinder(ourUpdates, msg(), nUpdates, ourLowThreshold, ourHighThreshold);
+      MissedUpdatesFinder missedUpdatesFinder = new MissedUpdatesFinder(ourUpdates, msg(), nUpdates, ourLowThreshold, ourHighThreshold);
 
       for (;;) {
         ShardResponse srsp = shardHandler.takeCompletedOrError();
         if (srsp == null) break;
-        boolean success = handleResponse(srsp);
+        boolean success = handleResponse(srsp, missedUpdatesFinder);
         if (!success) {
           if (log.isInfoEnabled()) {
             log.info("{} DONE. sync failed", msg());
@@ -291,6 +289,8 @@ public class PeerSync implements SolrMetricProducer {
       try {
         IndexFingerprint otherFingerprint = IndexFingerprint.fromObject(replicaFingerprint);
         IndexFingerprint ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
+        log.info("otherFingerPrint {}", otherFingerprint);
+        log.info("ourFingerprint {}", ourFingerprint);
         if(IndexFingerprint.compare(otherFingerprint, ourFingerprint) == 0) {
           log.info("We are already in sync. No need to do a PeerSync ");
           return true;
@@ -335,7 +335,8 @@ public class PeerSync implements SolrMetricProducer {
     shardHandler.submit(sreq, replica, sreq.params);
   }
 
-  private boolean handleResponse(ShardResponse srsp) {
+  private boolean handleResponse(ShardResponse srsp,
+      MissedUpdatesFinder missedUpdatesFinder) {
     ShardRequest sreq = srsp.getShardRequest();
 
     if (srsp.getException() != null) {
@@ -382,7 +383,7 @@ public class PeerSync implements SolrMetricProducer {
     }
 
     if (sreq.purpose == 1) {
-      return handleVersions(srsp);
+      return handleVersions(srsp, missedUpdatesFinder);
     } else {
       return handleUpdates(srsp);
     }
@@ -430,7 +431,7 @@ public class PeerSync implements SolrMetricProducer {
     return true;
   }
 
-  private boolean handleVersions(ShardResponse srsp) {
+  private boolean handleVersions(ShardResponse srsp, MissedUpdatesFinder missedUpdatesFinder) {
     // we retrieved the last N updates from the replica
     @SuppressWarnings({"unchecked"})
     List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
@@ -808,10 +809,10 @@ public class PeerSync implements SolrMetricProducer {
    * Helper class for doing comparison ourUpdates and other replicas's updates to find the updates that we missed
    */
   public static class MissedUpdatesFinder extends MissedUpdatesFinderBase {
-    private long ourHighThreshold; // 80th percentile
-    private long ourHighest;  // currently just used for logging/debugging purposes
-    private String logPrefix;
-    private long nUpdates;
+    private final long ourHighThreshold; // 80th percentile
+    private final long ourHighest;  // currently just used for logging/debugging purposes
+    private final String logPrefix;
+    private final long nUpdates;
 
     MissedUpdatesFinder(List<Long> ourUpdates, String logPrefix, long nUpdates,
                         long ourLowThreshold, long ourHighThreshold) {
@@ -886,10 +887,13 @@ public class PeerSync implements SolrMetricProducer {
     static final MissedUpdatesRequest ALREADY_IN_SYNC = new MissedUpdatesRequest();
     public static final MissedUpdatesRequest EMPTY = new MissedUpdatesRequest();
 
-    String versionsAndRanges;
-    long totalRequestedUpdates;
+    final String versionsAndRanges;
+    final long totalRequestedUpdates;
 
-    private MissedUpdatesRequest(){}
+    private MissedUpdatesRequest(){
+      versionsAndRanges = null;
+      totalRequestedUpdates = 0;
+    }
 
     public static MissedUpdatesRequest of(String versionsAndRanges, long totalRequestedUpdates) {
       if (totalRequestedUpdates == 0) return EMPTY;

@@ -63,10 +63,6 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
   @After
   private void after() throws Exception {
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
     if (null != tmpSolrHome) {
       FileUtils.deleteDirectory(tmpSolrHome);
     }

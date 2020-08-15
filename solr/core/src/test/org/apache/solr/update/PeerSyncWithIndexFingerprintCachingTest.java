@@ -25,6 +25,8 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -49,16 +51,17 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
   private ModifiableSolrParams seenLeader = 
     params(DISTRIB_UPDATE_PARAM, FROM_LEADER);
   
-  public PeerSyncWithIndexFingerprintCachingTest() {
+  public PeerSyncWithIndexFingerprintCachingTest() throws Exception {
+    System.setProperty("solr.tests.mergePolicyFactory", "org.apache.solr.index.NoMergePolicyFactory");
     stress = 0;
-
+    useFactory(null);
     // TODO: a better way to do this?
     configString = "solrconfig-tlog.xml";
     schemaString = "schema.xml";
   }
 
   @Test
-  @ShardsFixed(num = 3)
+  @ShardsFixed(num = 2)
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
@@ -77,17 +80,18 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
     client0.commit(); client1.commit();
     
     IndexFingerprint before = getFingerprint(client0, Long.MAX_VALUE);
+    System.out.println("before " + before);
     
     del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(-++v)), "2");
     client0.commit(); 
     
     IndexFingerprint after = getFingerprint(client0, Long.MAX_VALUE);
-   
+    System.out.println("after " + after);
     // make sure fingerprint before and after deleting are not the same
     Assert.assertTrue(IndexFingerprint.compare(before, after) != 0);
     
     // replica which missed the delete should be able to sync
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, true, ((Http2SolrClient)client0).getBaseURL());
     client0.commit(); client1.commit();  
 
     queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
@@ -102,7 +106,7 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
   void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {
     QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions",Integer.toString(numVersions), "sync", StrUtils.join(Arrays.asList(syncWith), ',')));
     NamedList rsp = client.request(qr);
-    assertEquals(expectedResult, (Boolean) rsp.get("sync"));
+    assertEquals(rsp.toString(), expectedResult, (Boolean) rsp.get("sync"));
   }
 
 }

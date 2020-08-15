@@ -399,11 +399,13 @@ public class ZkTestServer implements Closeable {
   //      ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
     //    if (zkDb != null) zkDb.clear();
         try (ParWork worker = new ParWork(this, true, true)) {
-          worker.add("ZkTestInternals", () -> {
+          worker.collect("ZkTestInternals", () -> {
             zooKeeperServer.shutdown(false);
 
             return zooKeeperServer;
-          }, () -> {
+          });
+
+          worker.collect("cnxnFactory", () -> {
 
             cnxnFactory.shutdown();
 

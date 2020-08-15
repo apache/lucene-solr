@@ -64,8 +64,9 @@ public class ParWork implements Closeable {
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
   private final boolean requireAnotherThread;
+  private final String rootLabel;
 
-  private volatile Set<Object> collectSet = ConcurrentHashMap.newKeySet(32);
+  private volatile Set<ParObject> collectSet = ConcurrentHashMap.newKeySet(32);
 
   private static volatile ThreadPoolExecutor EXEC;
 
@@ -110,14 +111,15 @@ public class ParWork implements Closeable {
     }
 
     private static class WorkUnit {
-    private final List<Object> objects;
+    private final List<ParObject> objects;
     private final TimeTracker tracker;
-    private final String label;
 
-    public WorkUnit(List<Object> objects, TimeTracker tracker, String label) {
+    public WorkUnit(List<ParObject> objects, TimeTracker tracker) {
       objects.remove(null);
-      boolean ok = false;
-      for (Object object : objects) {
+      boolean ok;
+      for (ParObject parobject : objects) {
+        Object object = parobject.object;
+        assert !(object instanceof ParObject);
         ok  = false;
         for (Class okobject : OK_CLASSES) {
           if (object == null || okobject.isAssignableFrom(object.getClass())) {
@@ -133,16 +135,15 @@ public class ParWork implements Closeable {
 
       this.objects = objects;
       this.tracker = tracker;
-      this.label = label;
 
       assert checkTypesForTests(objects);
     }
 
-    private boolean checkTypesForTests(List<Object> objects) {
-      for (Object object : objects) {
-        assert !(object instanceof Collection);
-        assert !(object instanceof Map);
-        assert !(object.getClass().isArray());
+    private boolean checkTypesForTests(List<ParObject> objects) {
+      for (ParObject object : objects) {
+        assert !(object.object instanceof Collection);
+        assert !(object.object instanceof Map);
+        assert !(object.object.getClass().isArray());
       }
 
       return true;
@@ -245,169 +246,80 @@ public class ParWork implements Closeable {
   public ParWork(Object object, boolean ignoreExceptions, boolean requireAnotherThread) {
     this.ignoreExceptions = ignoreExceptions;
     this.requireAnotherThread = requireAnotherThread;
+    this.rootLabel = object instanceof String ?
+        (String) object : object.getClass().getSimpleName();
     assert (tracker = new TimeTracker(object, object == null ? "NullObject" : object.getClass().getName())) != null;
     // constructor must stay very light weight
+  }
+
+  public void collect(String label, Object object) {
+    if (object == null) {
+      return;
+    }
+    ParObject ob = new ParObject();
+    ob.object = object;
+    ob.label = label;
+    collectSet.add(ob);
   }
 
   public void collect(Object object) {
     if (object == null) {
       return;
     }
-    collectSet.add(object);
+    ParObject ob = new ParObject();
+    ob.object = object;
+    ob.label = object.getClass().getSimpleName();
+    collectSet.add(ob);
+  }
+
+  public void collect(Object... objects) {
+    for (Object object : objects) {
+      collect(object);
+    }
   }
 
   /**
    * @param callable A Callable to run. If an object is return, it's toString is
    *                 used to identify it.
    */
-  public void collect(Callable<?> callable) {
-    collectSet.add(callable);
+  public void collect(String label, Callable<?> callable) {
+    ParObject ob = new ParObject();
+    ob.object = callable;
+    ob.label = label;
+    collectSet.add(ob);
   }
 
   /**
    * @param runnable A Runnable to run. If an object is return, it's toString is
    *                 used to identify it.
    */
-  public void collect(Runnable runnable) {
+  public void collect(String label, Runnable runnable) {
     if (runnable == null) {
       return;
     }
-    collectSet.add(runnable);
+    ParObject ob = new ParObject();
+    ob.object = runnable;
+    ob.label = label;
+    collectSet.add(ob);
   }
 
-  public void addCollect(String label) {
+  public void addCollect() {
     if (collectSet.isEmpty()) {
       if (log.isDebugEnabled()) log.debug("No work collected to submit");
       return;
     }
     try {
-      add(label, collectSet);
+      for (ParObject ob : collectSet) {
+        assert (!(ob.object instanceof ParObject));
+        add(ob);
+      }
     } finally {
       collectSet.clear();
     }
   }
 
-  // add a unit of work
-  public void add(String label, Object... objects) {
-    if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, Object objects={}) - start", label, objects);
-    }
-
-    List<Object> objectList = new ArrayList<>(objects.length + 32);
-
-    gatherObjects(objects, objectList);
-
-    WorkUnit workUnit = new WorkUnit(objectList, tracker, label);
-    workUnits.add(workUnit);
-
-    if (log.isDebugEnabled()) {
-      log.debug("add(String, Object) - end");
-    }
-  }
-
-  public void add(Object object) {
-    if (log.isDebugEnabled()) {
-      log.debug("add(Object object={}) - start", object);
-    }
-
-    if (object == null)
-      return;
-    if (object instanceof Collection<?>) {
-      throw new IllegalArgumentException("Use this method only with a single Object");
-    }
-    add(object.getClass().getName(), object);
-
-    if (log.isDebugEnabled()) {
-      log.debug("add(Object) - end");
-    }
-  }
-
-  public void add(String label, Callable<?> callable) {
-    if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, callable<?> callable={}) - start", label, callable);
-    }
-    WorkUnit workUnit = new WorkUnit(Collections.singletonList(callable), tracker, label);
-    workUnits.add(workUnit);
-
-    if (log.isDebugEnabled()) {
-      log.debug("add(String, callable<?>) - end");
-    }
-  }
-
-  public void add(String label, Callable<?>... callables) {
-    if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, callable<?> callables={}) - start", label, callables);
-    }
-
-    List<Object> objects = new ArrayList<>(callables.length);
-    objects.addAll(Arrays.asList(callables));
-
-    WorkUnit workUnit = new WorkUnit(objects, tracker, label);
-    workUnits.add(workUnit);
-
-    if (log.isDebugEnabled()) {
-      log.debug("add(String, Callable<?>) - end");
-    }
-  }
-
-  public void add(String label, Runnable... tasks) {
-    if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, Runnable tasks={}) - start", label, tasks);
-    }
-
-    List<Object> objects = new ArrayList<>(tasks.length);
-    objects.addAll(Arrays.asList(tasks));
-
-    WorkUnit workUnit = new WorkUnit(objects, tracker, label);
-    workUnits.add(workUnit);
-
-    if (log.isDebugEnabled()) {
-      log.debug("add(String, Runnable) - end");
-    }
-  }
-  public void add(String label, Runnable task) {
-    if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, Runnable tasks={}) - start", label, task);
-    }
-
-    List<Object> objects = new ArrayList<>(1);
-    objects.add(task);
-
-    WorkUnit workUnit = new WorkUnit(objects, tracker, label);
-    workUnits.add(workUnit);
-
-    if (log.isDebugEnabled()) {
-      log.debug("add(String, Runnable) - end");
-    }
-  }
-
-
-  /**
-   *
-   * 
-   * Runs the callable and closes the object in parallel. The object return will
-   * be used for tracking. You can return a String if you prefer.
-   * 
-   */
-  public void add(String label, Object object, Callable callable) {
-    if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, Object object={}, Callable Callable={}) - start", label, object, callable);
-    }
-
-    List<Object> objects = new ArrayList<>(2 + 32);
-    objects.add(callable);
-
-    gatherObjects(object, objects);
-    WorkUnit workUnit = new WorkUnit(objects, tracker, label);
-    workUnits.add(workUnit);
-
-    if (log.isDebugEnabled()) {
-      log.debug("add(String, Object, Callable) - end");
-    }
-  }
-
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  private void gatherObjects(Object object, List<Object> objects) {
+  private void gatherObjects(Object object, List<ParObject> objects) {
     if (log.isDebugEnabled()) {
       log.debug("gatherObjects(Object object={}, List<Object> objects={}) - start", object, objects);
     }
@@ -438,68 +350,28 @@ public class ParWork implements Closeable {
         if (log.isDebugEnabled()) {
           log.debug("Found a non collection object to add {}", object.getClass().getName());
         }
-        objects.add(object);
+        if (object instanceof ParObject) {
+          objects.add((ParObject) object);
+        } else {
+          ParObject ob = new ParObject();
+          ob.object = object;
+          ob.label = object.getClass().getSimpleName();
+          objects.add(ob);
+        }
       }
     }
   }
 
-  public void add(String label, Object object, Callable... callables) {
+  private void add(ParObject object) {
     if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, Object object={}, Callable Callables={}) - start", label, object, callables);
+      log.debug("add(String label={}, Object object={}, Callable Callables={}) - start", object.label, object);
     }
 
-    List<Object> objects = new ArrayList<>(callables.length + 1 + 32);
-    objects.addAll(Arrays.asList(callables));
-    gatherObjects(object, objects);
+    List<ParObject> objects = new ArrayList<>();
 
-    WorkUnit workUnit = new WorkUnit(objects, tracker, label);
-    workUnits.add(workUnit);
-  }
+    gatherObjects(object.object, objects);
 
-  public void add(String label, Object object1, Object object2, Callable<?>... callables) {
-    if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, Object object1={}, Object object2={}, Callable<?> callables={}) - start", label,
-          object1, object2, callables);
-    }
-
-    List<Object> objects = new ArrayList<>(callables.length + 2 + 32);
-    objects.addAll(Arrays.asList(callables));
-
-    gatherObjects(object1, objects);
-    gatherObjects(object2, objects);
-
-    WorkUnit workUnit = new WorkUnit(objects, tracker, label);
-    workUnits.add(workUnit);
-    if (log.isDebugEnabled()) {
-      log.debug("Add WorkUnit:" + objects); // nocommit
-    }
-  }
-
-  public void add(String label, Object object1, Object object2, Object object3, Callable<?>... callables) {
-    if (log.isDebugEnabled()) {
-      log.debug(
-          "add(String label={}, Object object1={}, Object object2={}, Object object3={}, Callable<?> callables={}) - start",
-          label, object1, object2, object3, callables);
-    }
-
-    List<Object> objects = new ArrayList<>(callables.length + 3 + 32);
-    objects.addAll(Arrays.asList(callables));
-    gatherObjects(object1, objects);
-    gatherObjects(object2, objects);
-    gatherObjects(object3, objects);
-
-    WorkUnit workUnit = new WorkUnit(objects, tracker, label);
-    workUnits.add(workUnit);
-  }
-
-  public void add(String label, List<Callable<?>> callables) {
-    if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, List<Callable<?>> callables={}) - start", label, callables);
-    }
-
-    List<Object> objects = new ArrayList<>(callables.size());
-    objects.addAll(callables);
-    WorkUnit workUnit = new WorkUnit(objects, tracker, label);
+    WorkUnit workUnit = new WorkUnit(objects, tracker);
     workUnits.add(workUnit);
   }
 
@@ -509,9 +381,7 @@ public class ParWork implements Closeable {
       log.debug("close() - start");
     }
 
-    if (collectSet != null && collectSet.size() > 1) {
-      throw new IllegalStateException("addCollect must be called to add any objects collected!");
-    }
+    addCollect();
 
     boolean needExec = false;
     for (WorkUnit workUnit : workUnits) {
@@ -528,19 +398,19 @@ public class ParWork implements Closeable {
     AtomicReference<Throwable> exception = new AtomicReference<>();
     try {
       for (WorkUnit workUnit : workUnits) {
-        if (log.isDebugEnabled()) log.debug("Process workunit {} {}", workUnit.label, workUnit.objects);
+        if (log.isDebugEnabled()) log.debug("Process workunit {} {}", rootLabel, workUnit.objects);
         TimeTracker workUnitTracker = null;
-        assert (workUnitTracker = workUnit.tracker.startSubClose(workUnit.label)) != null;
+        assert (workUnitTracker = workUnit.tracker.startSubClose(rootLabel)) != null;
         try {
-          List<Object> objects = workUnit.objects;
+          List<ParObject> objects = workUnit.objects;
 
           if (objects.size() == 1) {
-            handleObject(workUnit.label, exception, workUnitTracker, objects.get(0));
+            handleObject(exception, workUnitTracker, objects.get(0));
           } else {
 
             List<Callable<Object>> closeCalls = new ArrayList<>(objects.size());
 
-            for (Object object : objects) {
+            for (ParObject object : objects) {
 
               if (object == null)
                 continue;
@@ -551,7 +421,7 @@ public class ParWork implements Closeable {
                   @Override
                   public Object call() throws Exception {
                     try {
-                      handleObject(workUnit.label, exception, finalWorkUnitTracker,
+                      handleObject(exception, finalWorkUnitTracker,
                           object);
                     } catch (Throwable t) {
                       log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
@@ -565,7 +435,7 @@ public class ParWork implements Closeable {
               } else {
                 closeCalls.add(() -> {
                   try {
-                    handleObject(workUnit.label, exception, finalWorkUnitTracker,
+                    handleObject(exception, finalWorkUnitTracker,
                         object);
                   } catch (Throwable t) {
                     log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
@@ -678,13 +548,13 @@ public class ParWork implements Closeable {
     return new ParWorkExecService(getEXEC(), maximumPoolSize);
   }
 
-  private void handleObject(String label, AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, Object object) {
+  private void handleObject(AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, ParObject ob) {
     if (log.isDebugEnabled()) {
       log.debug(
           "handleObject(AtomicReference<Throwable> exception={}, CloseTimeTracker workUnitTracker={}, Object object={}) - start",
-          exception, workUnitTracker, object);
+          exception, workUnitTracker, ob.object);
     }
-
+    Object object = ob.object;
     if (object != null) {
       assert !(object instanceof Collection);
       assert !(object instanceof Map);
@@ -723,7 +593,7 @@ public class ParWork implements Closeable {
       }
 
       if (!handled) {
-        String msg = label + " -> I do not know how to close " + label + ": " + object.getClass().getName();
+        String msg = ob.label + " -> I do not know how to close " + ob.label  + ": " + object.getClass().getName();
         log.error(msg);
         IllegalArgumentException illegal = new IllegalArgumentException(msg);
         exception.set(illegal);
@@ -735,12 +605,12 @@ public class ParWork implements Closeable {
       } else {
         if (ignoreExceptions) {
           warns.add(t);
-          log.error("Error handling close for an object: " + label + ": " + object.getClass().getSimpleName() , new ObjectReleaseTracker.ObjectTrackerException(t));
+          log.error("Error handling close for an object: " + ob.label + ": " + object.getClass().getSimpleName() , new ObjectReleaseTracker.ObjectTrackerException(t));
           if (t instanceof Error && !(t instanceof AssertionError)) {
             throw (Error) t;
           }
         } else {
-          log.error("handleObject(AtomicReference<Throwable>=" + exception + ", CloseTimeTracker=" + workUnitTracker   + ", Label=" + label + ")"
+          log.error("handleObject(AtomicReference<Throwable>=" + exception + ", CloseTimeTracker=" + workUnitTracker   + ", Label=" + ob.label + ")"
               + ", Object=" + object + ")", t);
           propegateInterrupt(t);
           if (t instanceof Error) {
@@ -768,15 +638,15 @@ public class ParWork implements Closeable {
    * @param object to close
    */
   public static void close(Object object, boolean ignoreExceptions) {
+    if (object == null) return;
+    assert !(object instanceof ParObject);
     try (ParWork dw = new ParWork(object, ignoreExceptions)) {
-      dw.add(object);
+      dw.collect(object);
     }
   }
 
   public static void close(Object object) {
-    try (ParWork dw = new ParWork(object)) {
-      dw.add(object != null ? "Close " + object.getClass().getSimpleName() : "null", object);
-    }
+    close(object, false);
   }
 
   public static <K> Set<K> concSetSmallO() {
@@ -869,5 +739,10 @@ public class ParWork implements Closeable {
     public SolrFutureTask(Callable callable) {
       super(callable);
     }
+  }
+
+  private static class ParObject {
+    String label;
+    Object object;
   }
 }

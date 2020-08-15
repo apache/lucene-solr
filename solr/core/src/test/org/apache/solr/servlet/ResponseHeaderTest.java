@@ -24,6 +24,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -41,14 +42,15 @@ import java.net.URI;
 public class ResponseHeaderTest extends SolrJettyTestBase {
   
   private static File solrHomeDirectory;
-  
+  private static JettySolrRunner jetty;
+
   @BeforeClass
   public static void beforeTest() throws Exception {
     solrHomeDirectory = createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "solrconfig-headers.xml"), new File(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"));
-    createAndStartJetty(solrHomeDirectory.getAbsolutePath());
+    jetty = createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
   
   @AfterClass
@@ -61,7 +63,7 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
   @Test
   @Ignore // nocommit use Http2SolrClient#GET
   public void testHttpResponse() throws SolrServerException, IOException {
-    Http2SolrClient client = (Http2SolrClient) getSolrClient();
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
 
     URI uri = URI.create(client.getBaseURL() + "/withHeaders?q=*:*");
     HttpGet httpGet = new HttpGet(uri);

@@ -103,7 +103,7 @@ public class ParWorkExecService extends AbstractExecutorService {
 
   public ParWorkExecService(ExecutorService service, int maxSize) {
     assert service != null;
-    assert ObjectReleaseTracker.track(this);
+    //assert ObjectReleaseTracker.track(this);
     if (maxSize == -1) {
       this.maxSize = MAX_AVAILABLE;
     } else {
@@ -127,7 +127,7 @@ public class ParWorkExecService extends AbstractExecutorService {
 
   @Override
   public void shutdown() {
-
+    assert ObjectReleaseTracker.release(this);
     this.shutdown = true;
    // worker.interrupt();
   //  workQueue.clear();
@@ -177,7 +177,6 @@ public class ParWorkExecService extends AbstractExecutorService {
   @Override
   public boolean awaitTermination(long l, TimeUnit timeUnit)
       throws InterruptedException {
-    assert ObjectReleaseTracker.release(this);
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (running.get() > 0) {
       if (timeout.hasTimedOut()) {
@@ -193,7 +192,7 @@ public class ParWorkExecService extends AbstractExecutorService {
 
 //    workerFuture.cancel(true);
     terminated = true;
-    workerFuture.cancel(true);
+  //  workerFuture.cancel(true);
 
    // worker.interrupt();
     return true;
@@ -248,7 +247,7 @@ public class ParWorkExecService extends AbstractExecutorService {
       service.execute(new Runnable() {
       @Override
       public void run() {
-        runIt(finalRunnable, finalAcquired, false, false);
+          runIt(finalRunnable, finalAcquired, false, false);
       }
     });
     } catch (Exception e) {
