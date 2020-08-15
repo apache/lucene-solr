@@ -81,7 +81,7 @@ class GeoExactCircle extends GeoBaseCircle {
     final GeoPoint westPoint = planetModel.surfacePointOnBearing(center, radius, Math.PI * 1.5);
 
     final GeoPoint edgePoint;
-    if (planetModel.c > planetModel.ab) {
+    if (planetModel.zScaling > planetModel.xyScaling) {
       // z can be greater than x or y, so ellipse is longer in height than width
       slices.add(new ApproximationSlice(center, eastPoint, Math.PI * 0.5, westPoint, Math.PI * -0.5, northPoint, 0.0, true));
       slices.add(new ApproximationSlice(center, westPoint, Math.PI * 1.5, eastPoint, Math.PI * 0.5, southPoint, Math.PI, true));

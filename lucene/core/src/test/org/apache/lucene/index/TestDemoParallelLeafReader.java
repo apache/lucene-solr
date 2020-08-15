@@ -416,7 +416,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
             SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
             assert infos.size() == 1;
-            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, false, IOContext.DEFAULT, Collections.emptyMap());
+            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, IOContext.DEFAULT);
 
             //checkParallelReader(leaf, parLeafReader, schemaGen);
 
@@ -530,7 +530,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
         @Override
         public CodecReader wrapForMerge(CodecReader reader) throws IOException {
-          LeafReader wrapped = getCurrentReader((SegmentReader)reader, schemaGen);
+          LeafReader wrapped = getCurrentReader(reader, schemaGen);
           if (wrapped instanceof ParallelLeafReader) {
             parallelReaders.add((ParallelLeafReader) wrapped);
           }
@@ -538,7 +538,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         }
 
         @Override
-        public void mergeFinished() throws IOException {
+        public void mergeFinished(boolean success, boolean segmentDropped) throws IOException {
+          super.mergeFinished(success, segmentDropped);
           Throwable th = null;
           for (ParallelLeafReader r : parallelReaders) {
             try {

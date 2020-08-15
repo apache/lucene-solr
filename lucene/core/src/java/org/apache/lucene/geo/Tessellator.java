@@ -360,7 +360,16 @@ final public class Tessellator {
         if (hx >= p.getX() && p.getX() >= mx && hx != p.getX()
             && pointInEar(p.getX(), p.getY(), hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy)) {
           tan = Math.abs(hy - p.getY()) / (hx - p.getX()); // tangential
-          if ((tan < tanMin || (tan == tanMin && p.getX() > connection.getX())) && isLocallyInside(p, holeNode)) {
+          if (isVertexEquals(p, connection) && isLocallyInside(p, holeNode)) {
+            // make sure we are not crossing the polygon. This might happen when several holes have a bridge to the same polygon vertex
+            // and this vertex has different vertex.
+            boolean crosses = GeoUtils.lineCrossesLine(p.getX(), p.getY(), holeNode.getX(), holeNode.getY(),
+                connection.next.getX(), connection.next.getY(), connection.previous.getX(), connection.previous.getY());
+            if (crosses == false) {
+              connection = p;
+              tanMin = tan;
+            }
+          } else if ((tan < tanMin || (tan == tanMin && p.getX() > connection.getX())) && isLocallyInside(p, holeNode)) {
             connection = p;
             tanMin = tan;
           }
@@ -376,7 +385,12 @@ final public class Tessellator {
     Node next = polygon;
     do {
       if (isVertexEquals(next, vertex)) {
-        return next;
+        // make sure we are not crossing the polygon. This might happen when several holes share the same polygon vertex.
+        boolean crosses = GeoUtils.lineCrossesLine(next.previous.getX(), next.previous.getY(), vertex.next.getX(), vertex.next.getY(),
+                                                   next.next.getX(), next.next.getY(), vertex.previous.getX(), vertex.previous.getY());
+        if (crosses == false) {
+          return next;
+        }
       }
       next = next.next;
     } while(next != polygon);
@@ -435,7 +449,6 @@ final public class Tessellator {
           continue;
         }
         currEar = nextNode;
-
         // If the whole polygon has been iterated over and no more ears can be found.
         if (currEar == stop) {
           switch (state) {
@@ -915,13 +928,14 @@ final public class Tessellator {
       continueIteration = false;
       nextNode = node.next;
       prevNode = node.previous;
-      //We can filter points when they are the same, if not and they are co-linear we can only
-      //remove it if both edges have the same value in .isNextEdgeFromPolygon
-      if (isVertexEquals(node, nextNode)  ||
-          (prevNode.isNextEdgeFromPolygon == node.isNextEdgeFromPolygon &&
+      // we can filter points when:
+      if (isVertexEquals(node, nextNode)  ||   // 1. they are the same,
+          isVertexEquals(prevNode, nextNode) || // 2.- each one starts and ends in each other
+          (prevNode.isNextEdgeFromPolygon == node.isNextEdgeFromPolygon && // 3.- they are co-linear and both edges have the same value in .isNextEdgeFromPolygon
               area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
         // Remove the node
-        removeNode(node, prevNode.isNextEdgeFromPolygon);
+        boolean nextEdgeFromPol = prevNode.isNextEdgeFromPolygon != node.isNextEdgeFromPolygon ? true : prevNode.isNextEdgeFromPolygon;
+        removeNode(node, nextEdgeFromPol);
         node = end = prevNode;
 
         if (node == nextNode) {

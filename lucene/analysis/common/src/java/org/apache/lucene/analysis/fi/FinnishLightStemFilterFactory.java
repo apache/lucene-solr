@@ -48,6 +48,11 @@ public class FinnishLightStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public FinnishLightStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new FinnishLightStemFilter(input);

@@ -76,6 +76,7 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
       SynonymMap.Builder.join(new String[]{"dopple", "ganger"}, multiWordCharsRef);
       builder.add(new CharsRef("two"), multiWordCharsRef.get(), true);
       SynonymMap synonymMap = builder.build();
+      @SuppressWarnings("deprecation")
       TokenStream stream = new SynonymFilter(tokenizer, synonymMap, true);
       stream = new LimitTokenPositionFilter(stream, 3, consumeAll);
 

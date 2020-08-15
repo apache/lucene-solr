@@ -21,6 +21,12 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
     System.get(function(data) {
       $scope.system = data;
 
+      if ("username" in data.security) {
+        // Needed for Kerberos, since this is the only place from where
+        // Kerberos username can be obtained.
+        sessionStorage.setItem("auth.username", data.security.username);
+      }
+
       // load average, unless its negative (means n/a on windows, etc)
       if (data.system.systemLoadAverage >= 0) {
         $scope.load_average = data.system.systemLoadAverage.toFixed(2);

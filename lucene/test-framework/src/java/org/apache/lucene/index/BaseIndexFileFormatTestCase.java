@@ -362,7 +362,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
                                                          segmentInfo, fieldInfos,
                                                          null, new IOContext(new FlushInfo(1, 20)));
     
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, fieldInfos, false, IOContext.READ, Collections.emptyMap());
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, fieldInfos, IOContext.READ);
 
     // PostingsFormat
     NormsProducer fakeNorms = new NormsProducer() {
@@ -623,7 +623,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
         } catch (AlreadyClosedException ace) {
           // OK: writer was closed by abort; we just reopen now:
           dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration
-          assertTrue(iw.deleter.isClosed());
+          assertTrue(iw.isDeleterClosed());
           assertTrue(allowAlreadyClosed);
           allowAlreadyClosed = false;
           conf = newIndexWriterConfig(analyzer);
@@ -659,7 +659,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
           } catch (AlreadyClosedException ace) {
             // OK: writer was closed by abort; we just reopen now:
             dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration
-            assertTrue(iw.deleter.isClosed());
+            assertTrue(iw.isDeleterClosed());
             assertTrue(allowAlreadyClosed);
             allowAlreadyClosed = false;
             conf = newIndexWriterConfig(analyzer);
@@ -728,6 +728,44 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     return r;
   }
 
+  /**
+   * A directory that tracks created files that haven't been deleted.
+   */
+  protected static class FileTrackingDirectoryWrapper extends FilterDirectory {
+
+    private final Set<String> files = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
+
+    /** Sole constructor. */
+    FileTrackingDirectoryWrapper(Directory in) {
+      super(in);
+    }
+
+    /** Get the set of created files. */
+    public Set<String> getFiles() {
+      return Set.copyOf(files);
+    }
+
+    @Override
+    public IndexOutput createOutput(String name, IOContext context) throws IOException {
+      files.add(name);
+      return super.createOutput(name, context);
+    }
+
+    @Override
+    public void rename(String source, String dest) throws IOException {
+      files.remove(source);
+      files.add(dest);
+      super.rename(source, dest);
+    }
+
+    @Override
+    public void deleteFile(String name) throws IOException {
+      files.remove(name);
+      super.deleteFile(name);
+    }
+
+  }
+
   private static class ReadBytesIndexInputWrapper extends IndexInput {
 
     private final IndexInput in;
@@ -787,15 +825,18 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
   }
 
-  private static class ReadBytesDirectoryWrapper extends FilterDirectory {
+  /** A directory that tracks read bytes. */
+  protected static class ReadBytesDirectoryWrapper extends FilterDirectory {
 
-    ReadBytesDirectoryWrapper(Directory in) {
+    /** Sole constructor. */
+    public ReadBytesDirectoryWrapper(Directory in) {
       super(in);
     }
 
     private final Map<String, FixedBitSet> readBytes = new ConcurrentHashMap<>();
 
-    Map<String, FixedBitSet> getReadBytes() {
+    /** Get information about which bytes have been read. */
+    public Map<String, FixedBitSet> getReadBytes() {
       return Map.copyOf(readBytes);
     }
 
@@ -873,7 +914,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
    *  combination of opening a reader and calling checkIntegrity on it reads all bytes of all files. */
   public void testCheckIntegrityReadsAllBytes() throws Exception {
     assumeFalse("SimpleText doesn't store checksums of its files", getCodec() instanceof SimpleTextCodec);
-    Directory dir = applyCreatedVersionMajor(newDirectory());
+    FileTrackingDirectoryWrapper dir = new FileTrackingDirectoryWrapper(newDirectory());
+    applyCreatedVersionMajor(dir);
 
     IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, cfg);
@@ -894,7 +936,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
     Map<String, FixedBitSet> readBytesMap = readBytesWrapperDir.getReadBytes();
 
-    Set<String> unreadFiles = new HashSet<>(Arrays.asList(readBytesWrapperDir.listAll()));
+    Set<String> unreadFiles = new HashSet<>(dir.getFiles());System.out.println(Arrays.toString(dir.listAll()));
     unreadFiles.removeAll(readBytesMap.keySet());
     unreadFiles.remove(IndexWriter.WRITE_LOCK_NAME);
     assertTrue("Some files have not been open: " + unreadFiles, unreadFiles.isEmpty());

@@ -98,8 +98,10 @@ public class ParseIntFieldUpdateProcessorFactory extends ParseNumericFieldUpdate
         ParsePosition pos = new ParsePosition(0);
         Number number = numberFormat.get().parse(stringVal, pos);
         if (pos.getIndex() != stringVal.length()) {
-          log.debug("value '{}' is not parseable, thus not mutated; unparsed chars: '{}'",
-                    new Object[] { srcVal, stringVal.substring(pos.getIndex())});
+          if (log.isDebugEnabled()) {
+            log.debug("value '{}' is not parseable, thus not mutated; unparsed chars: '{}'",
+                new Object[]{srcVal, stringVal.substring(pos.getIndex())});
+          }
           return SKIP_FIELD_VALUE_LIST_SINGLETON;
         }
         int intValue = number.intValue();

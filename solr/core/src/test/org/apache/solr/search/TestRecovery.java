@@ -234,10 +234,13 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertEquals(UpdateLog.State.REPLAYING, h.getCore().getUpdateHandler().getUpdateLog().getState());
       // check metrics
+      @SuppressWarnings({"unchecked"})
       Gauge<Integer> state = (Gauge<Integer>)metrics.get("TLOG.state");
       assertEquals(UpdateLog.State.REPLAYING.ordinal(), state.getValue().intValue());
+      @SuppressWarnings({"unchecked"})
       Gauge<Integer> replayingLogs = (Gauge<Integer>)metrics.get("TLOG.replay.remaining.logs");
       assertTrue(replayingLogs.getValue().intValue() > 0);
+      @SuppressWarnings({"unchecked"})
       Gauge<Long> replayingDocs = (Gauge<Long>)metrics.get("TLOG.replay.remaining.bytes");
       assertTrue(replayingDocs.getValue().longValue() > 0);
       Meter replayDocs = (Meter)metrics.get("TLOG.replay.ops");
@@ -570,8 +573,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+      @SuppressWarnings({"unchecked"})
       Gauge<Integer> state = (Gauge<Integer>)metrics.get("TLOG.state");
       assertEquals(UpdateLog.State.BUFFERING.ordinal(), state.getValue().intValue());
+      @SuppressWarnings({"unchecked"})
       Gauge<Integer> bufferedOps = (Gauge<Integer>)metrics.get("TLOG.buffered.ops");
       int initialOps = bufferedOps.getValue();
       Meter applyingBuffered = (Meter)metrics.get("TLOG.applyingBuffered.ops");
@@ -1676,17 +1681,22 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   private static Long getVer(SolrQueryRequest req) throws Exception {
     String response = JQ(req);
+    @SuppressWarnings({"rawtypes"})
     Map rsp = (Map) Utils.fromJSONString(response);
+    @SuppressWarnings({"rawtypes"})
     Map doc = null;
     if (rsp.containsKey("doc")) {
       doc = (Map)rsp.get("doc");
     } else if (rsp.containsKey("docs")) {
+      @SuppressWarnings({"rawtypes"})
       List lst = (List)rsp.get("docs");
       if (lst.size() > 0) {
         doc = (Map)lst.get(0);
       }
     } else if (rsp.containsKey("response")) {
+      @SuppressWarnings({"rawtypes"})
       Map responseMap = (Map)rsp.get("response");
+      @SuppressWarnings({"rawtypes"})
       List lst = (List)responseMap.get("docs");
       if (lst.size() > 0) {
         doc = (Map)lst.get(0);

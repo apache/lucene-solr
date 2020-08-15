@@ -298,7 +298,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
     if (normalCompletion == null || normalCompletion.getFST() == null) {
       return false;
     }
-    normalCompletion.getFST().save(output);
+    normalCompletion.getFST().save(output, output);
     return true;
   }
 
@@ -306,7 +306,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
   public synchronized boolean load(DataInput input) throws IOException {
     count = input.readVLong();
     this.higherWeightsCompletion = new FSTCompletion(new FST<>(
-        input, NoOutputs.getSingleton()));
+        input, input, NoOutputs.getSingleton()));
     this.normalCompletion = new FSTCompletion(
         higherWeightsCompletion.getFST(), false, exactMatchFirst);
     return true;

@@ -39,15 +39,6 @@ configure(rootProject) {
     rootSeed = propertyOrDefault('tests.seed', String.format("%08X", new Random().nextLong()))
     rootSeedLong = SeedUtils.parseSeedChain(rootSeed)[0]
     projectSeedLong = rootSeedLong ^ project.path.hashCode()
-
-    // "base" version is stripped of the qualifier. Compute it.
-    baseVersion = {
-      def m = (rootProject.version =~ /^(\d+\.\d+\.\d+)(-(.+))?/)
-      if (!m) {
-        throw GradleException("Can't strip version to just x.y.z: " + rootProject.version)
-      }
-      return m[0][1]
-    }()
   }
 
   task randomizationInfo() {

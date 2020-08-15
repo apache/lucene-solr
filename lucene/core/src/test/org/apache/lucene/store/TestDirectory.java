@@ -42,7 +42,6 @@ public class TestDirectory extends LuceneTestCase {
     }
 
     final List<FSDirectory> dirs0 = new ArrayList<>();
-    dirs0.add(new SimpleFSDirectory(path));
     dirs0.add(new NIOFSDirectory(path));
     if (hasWorkingMMapOnWindows()) {
       dirs0.add(new MMapDirectory(path));
@@ -117,13 +116,13 @@ public class TestDirectory extends LuceneTestCase {
   // LUCENE-1468
   public void testNotDirectory() throws Throwable {
     Path path = createTempDir("testnotdir");
-    Directory fsDir = new SimpleFSDirectory(path);
+    Directory fsDir = new NIOFSDirectory(path);
     try {
       IndexOutput out = fsDir.createOutput("afile", newIOContext(random()));
       out.close();
       assertTrue(slowFileExists(fsDir, "afile"));
       expectThrows(IOException.class, () -> {
-        new SimpleFSDirectory(path.resolve("afile"));
+        new NIOFSDirectory(path.resolve("afile"));
       });
     } finally {
       fsDir.close();

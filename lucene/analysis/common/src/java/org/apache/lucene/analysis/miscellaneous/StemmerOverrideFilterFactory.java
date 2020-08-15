@@ -58,6 +58,11 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public StemmerOverrideFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (dictionaryFiles != null) {

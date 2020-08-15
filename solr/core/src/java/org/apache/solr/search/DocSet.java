@@ -36,6 +36,16 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
     assert this instanceof BitDocSet || this instanceof SortedIntDocSet;
   }
 
+  // can't use a trivial static initializer "EMPTY = new SortedIntDocSet" because it can lead to classloader deadlock
+  private static class EmptyLazyHolder {
+    static final DocSet INSTANCE = new SortedIntDocSet(new int[0]);
+  }
+
+  /** An empty instance (has no docs). */
+  public static DocSet empty() {
+    return EmptyLazyHolder.INSTANCE;
+  }
+
   /**
    * Returns the number of documents in the set.
    */
@@ -114,8 +124,6 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
 
 
   public abstract DocSet clone();
-
-  public static final DocSet EMPTY = new SortedIntDocSet(new int[0], 0);
 
   /**
    * A {@link Bits} that has fast random access (as is generally required of Bits).

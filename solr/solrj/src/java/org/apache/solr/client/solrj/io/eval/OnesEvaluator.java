@@ -38,7 +38,7 @@ public class OnesEvaluator extends RecursiveNumericEvaluator implements OneValue
   @Override
   public Object doWork(Object value){
     int size = ((Number)value).intValue();
-    List<Number> ones = new ArrayList();
+    List<Number> ones = new ArrayList<>();
     for(int i=0; i<size; i++) {
       ones.add(1);
     }

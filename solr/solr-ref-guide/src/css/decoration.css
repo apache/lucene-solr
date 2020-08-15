@@ -1,0 +1,254 @@
+/** This CSS defines decoration elements, such as buttons, input boxes,
+    bootstrap-based components (pills, jumbotrons), horizontal lines, leads **/
+
+/** === BUTTONS & FORM ELEMENTS === **/
+
+/* Used for bottom scrollnav buttons */
+.btn-primary {
+    color: #D9411E;
+    background-color: transparent;
+    border-color: #CDCECF;
+    font-weight: bold;
+}
+
+/* Used for bottom scrollnav buttons */
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.open .dropdown-toggle.btn-primary {
+    background-color: #D9411E;
+    border-color: #CDCECF;
+}
+
+/* used for Download Solr button on docs home page */
+.btn-home {
+  color: #ffffff;
+  background-color: #F35B38;
+  border-color: #E6E7E8;
+}
+
+input
+{
+    margin: 0;
+    font-size: 100%;
+    font-family: inherit;
+    line-height: normal;
+}
+
+input::-moz-focus-inner
+{
+    padding: 0;
+    border: 0;
+}
+
+.keyseq
+{
+    color: rgba(51,51,51,.8);
+}
+
+kbd
+{
+    display: inline-block;
+    margin: -.15em .15em 0 .15em;
+    padding: .2em .6em .2em .5em;
+    border: 1px solid #ccc;
+    -webkit-border-radius: 3px;
+            border-radius: 3px;
+    background-color: #f7f7f7;
+    -webkit-box-shadow: 0 1px 0 rgba(0,0,0,.2),
+    0 0 0 .1em white inset;
+            box-shadow: 0 1px 0 rgba(0,0,0,.2),
+    0 0 0 .1em #fff inset;
+    color: rgba(0,0,0,.8);
+    vertical-align: middle;
+    white-space: nowrap;
+    font-size: .75em;
+    line-height: 1.4;
+}
+
+.keyseq kbd:first-child
+{
+    margin-left: 0;
+}
+
+.keyseq kbd:last-child
+{
+    margin-right: 0;
+}
+
+.menu,
+.menuseq
+{
+    color: rgba(0,0,0,.8);
+}
+
+b.button:after,
+b.button:before
+{
+    position: relative;
+    top: -1px;
+    font-weight: 400;
+}
+
+b.button:before
+{
+    padding: 0 3px 0 2px;
+    content: '[';
+}
+
+b.button:after
+{
+    padding: 0 2px 0 3px;
+    content: ']';
+}
+/** === END BUTTONS & FORM ELEMENTS === **/
+
+/** === BOOTSTRAP TABS/PILLS === **/
+
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-link.active:hover,
+.nav-tabs .nav-link.active:focus,
+.nav-pills .nav-link.active,
+.nav-pills .nav-link.active:hover,
+.nav-pills .nav-link.active:focus
+ {
+    background-color: #D9411E;
+    color: white;
+}
+
+ul.nav.nav-pills li {
+  margin-left: 5px;
+}
+
+.nav-pills > li {
+  float: left;
+}
+
+.nav-pills > li > a {
+  border-radius: 5px;
+  background-color: #f1f1f1
+}
+
+.nav-pills > li > a {
+  line-height: 30px;
+}
+
+.nav-pills > li + li {
+  margin-left: 2px;
+}
+
+.tab-content {
+    padding: 0px;
+}
+
+.tab-content > .tab-pane,
+.tab-content > .content > .tab-pane,
+.pill-content > .pill-pane,
+.tab-content > .content > .tab-pane {
+  display: none;
+}
+
+.tab-content > .active,
+.tab-content > .content > .active,
+.pill-content > .active {
+  display: block;
+}
+
+/* CT 16 jan 2020: think these are not used */
+a.list-group-item.active > .badge,
+.nav-pills > .nav-link.active > .badge {
+  color: #74ab50;
+  background-color: #ffffff;
+}
+.nav-pills > .nav-link > .badge {
+  margin-left: 3px;
+}
+
+/** === END BOOTSTRAP TABS/PILLS === **/
+
+/** === LEAD PARAGRAPHS === **/
+
+/* Defines size and line height for "lead" type sections, the first sentence of a page. */
+#preamble > .sectionbody > .paragraph:first-of-type p,
+.paragraph.lead > p,
+p.lead,
+#preamble > p:first-of-type
+{
+    font-size: 1.21875em;
+    line-height: 1.6;
+}
+
+/* Defines color for "lead" type sections, the first text on a page. */
+#preamble > .sectionbody > .paragraph:first-of-type p,
+.paragraph.lead > p,
+#preamble > p:first-of-type
+{
+    color: rgba(0,0,0,.85);
+}
+
+
+/** === BOOTSTRAP JUMBOTRONS === **/
+
+/* Changes styling for Bootstrap "jumbotron" component used on index.html
+   Will be inherited by all jumbotron segments used anywhere */
+aside.sidebarblock.jumbotron {
+  background-color: #FAFAFA;
+  border: solid 2px;
+  border-color: #D9411E;
+  border-radius: 6px;
+  margin-top: 20px;
+  padding-left: 60px;
+  padding-right: 60px;
+}
+
+.jumbotron p {
+  line-height: 1.4;
+  font-size: 1.0625rem;
+}
+
+/* Bootstrap 4 CSS sets jumbotron padding really high on larger screens;
+   we don't need it */
+@media (min-width: 576px) {
+  .jumbotron {
+    padding: 2rem 1rem;
+  }
+}
+
+/* Custom headline style for use in index.html jumbotron box */
+aside > .lead-homepage {
+  font-size: 1.21875em;
+  text-align: center;
+  font-weight: bold;
+}
+
+
+/** === HORIZONTAL RULES === **/
+
+hr {
+    border: 0;
+    border-bottom: 1px dashed #ccc;
+    background: #999;
+    margin: 1.25em 0 1.1875em;
+    width: 90%;
+    height: 0;
+    clear: both;
+    border: solid #ddddd8;
+    border-width: 1px 0 0;
+    -moz-box-sizing: content-box;
+         box-sizing: content-box;
+}
+/** === END HORIZONTAL RULES === **/
+
+/** === ANCHORJS === **/
+/* This is the permalink icon after section headings */
+
+.anchorjs-link:hover {
+    color: #216f9b;
+}
+
+*:hover > .anchorjs-link {
+    transition: color .25s linear;
+    text-decoration: none;
+}
+/** === END ANCHORJS === **/

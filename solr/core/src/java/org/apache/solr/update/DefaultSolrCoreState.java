@@ -84,6 +84,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private volatile Future<Boolean> cdcrBootstrapFuture;
 
+  @SuppressWarnings({"rawtypes"})
   private volatile Callable cdcrBootstrapCallable;
 
   @Deprecated
@@ -204,14 +205,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     if (iw != null) {
       if (!rollback) {
         try {
-          log.debug("Closing old IndexWriter... core=" + coreName);
+          log.debug("Closing old IndexWriter... core= {}", coreName);
           iw.close();
         } catch (Exception e) {
           SolrException.log(log, "Error closing old IndexWriter. core=" + coreName, e);
         }
       } else {
         try {
-          log.debug("Rollback old IndexWriter... core=" + coreName);
+          log.debug("Rollback old IndexWriter... core={}", coreName);
           iw.rollback();
         } catch (Exception e) {
           SolrException.log(log, "Error rolling back old IndexWriter. core=" + coreName, e);
@@ -448,12 +449,13 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public Callable getCdcrBootstrapCallable() {
     return cdcrBootstrapCallable;
   }
 
   @Override
-  public void setCdcrBootstrapCallable(Callable cdcrBootstrapCallable) {
+  public void setCdcrBootstrapCallable(@SuppressWarnings({"rawtypes"})Callable cdcrBootstrapCallable) {
     this.cdcrBootstrapCallable = cdcrBootstrapCallable;
   }
 }

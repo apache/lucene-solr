@@ -44,7 +44,7 @@ public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName = message.getStr(CoreAdminParams.NAME);
     String target = message.getStr(CollectionAdminParams.TARGET);
 

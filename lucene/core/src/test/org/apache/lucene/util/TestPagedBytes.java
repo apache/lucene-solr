@@ -45,7 +45,12 @@ public class TestPagedBytes extends LuceneTestCase {
       final int blockSize = 1 << blockBits;
       final PagedBytes p = new PagedBytes(blockBits);
       final IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
-      final int numBytes = TestUtil.nextInt(random, 2, 10000000);
+      final int numBytes;
+      if (TEST_NIGHTLY) {
+        numBytes = TestUtil.nextInt(random(), 2, 10_000_000);
+      } else {
+        numBytes = TestUtil.nextInt(random(), 2, 1_000_000);
+      }
 
       final byte[] answer = new byte[numBytes];
       random.nextBytes(answer);
@@ -105,7 +110,12 @@ public class TestPagedBytes extends LuceneTestCase {
       final int blockSize = 1 << blockBits;
       final PagedBytes p = new PagedBytes(blockBits);
       final DataOutput out = p.getDataOutput();
-      final int numBytes = random().nextInt(10000000);
+      final int numBytes;
+      if (TEST_NIGHTLY) {
+        numBytes = random().nextInt(10_000_000);
+      } else {
+        numBytes = random().nextInt(1_000_000);
+      }
 
       final byte[] answer = new byte[numBytes];
       random().nextBytes(answer);

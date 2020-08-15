@@ -48,6 +48,11 @@ public class RemoveDuplicatesTokenFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public RemoveDuplicatesTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public RemoveDuplicatesTokenFilter create(TokenStream input) {
     return new RemoveDuplicatesTokenFilter(input);

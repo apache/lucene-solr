@@ -836,7 +836,9 @@ public class TestPackedInts extends LuceneTestCase {
         final long[] blocks = new long[blocksOffset + blocksLen];
         for (int i = 0; i < blocks.length; ++i) {
           blocks[i] = random().nextLong();
-          if (format == PackedInts.Format.PACKED_SINGLE_BLOCK && 64 % bpv != 0) {
+          @SuppressWarnings("deprecation")
+          PackedInts.Format PACKED_SINGLE_BLOCK = PackedInts.Format.PACKED_SINGLE_BLOCK;
+          if (format == PACKED_SINGLE_BLOCK && 64 % bpv != 0) {
             // clear highest bits for packed
             final int toClear = 64 % bpv;
             blocks[i] = (blocks[i] << toClear) >>> toClear;

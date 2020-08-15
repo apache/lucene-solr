@@ -81,7 +81,7 @@ public class AbstractDIHCacheTestCase {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public int compareTo(ControlData cd) {
       Comparable c1 = (Comparable) data[0];
       Comparable c2 = (Comparable) cd.data[0];

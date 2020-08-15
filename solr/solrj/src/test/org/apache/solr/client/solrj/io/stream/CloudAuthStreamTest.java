@@ -75,6 +75,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
    *
    * @see SolrRequest#setBasicAuthCredentials
    */
+  @SuppressWarnings({"rawtypes"})
   private static <T extends SolrRequest> T setBasicAuthCredentials(T req, String user) {
     assert null != user;
     req.setBasicAuthCredentials(user, user);
@@ -521,7 +522,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
           daemonCheck.setCredentials(user, user);
           final List<Tuple> tuples = getTuples(daemonCheck);
           assertEquals(1, tuples.size()); // our daemon;
-          log.info("Current daemon status: {}", tuples.get(0).fields);
+          if (log.isInfoEnabled()) {
+            log.info("Current daemon status: {}", tuples.get(0).getFields());
+          }
           assertEquals(daemonId + " should have never had a successful iteration",
                        Long.valueOf(0L), tuples.get(0).getLong("iterations"));
           state = tuples.get(0).get("state");
@@ -806,7 +809,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       log.trace("TupleStream: {}", tupleStream);
       tupleStream.open();
       for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
-        log.trace("Tuple: {}", t.fields);
+        if (log.isTraceEnabled()) {
+          log.trace("Tuple: {}", t.getFields());
+        }
         tuples.add(t);
       }
     } finally {

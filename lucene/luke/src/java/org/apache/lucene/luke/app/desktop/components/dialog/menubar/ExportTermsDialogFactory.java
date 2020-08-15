@@ -248,10 +248,10 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
           try {
             filename = toolsModel.exportTerms(directory, field, selectedDelimiter);
           } catch (LukeException e) {
-            log.error("Error while exporting terms from field " + field, e);
+            log.error("Error while exporting terms from field {}", field, e);
             statusLbl.setText(MessageUtils.getLocalizedMessage("export.terms.label.error", e.getMessage()));
           } catch (Exception e) {
-            log.error("Error while exporting terms from field " + field, e);
+            log.error("Error while exporting terms from field {}", field, e);
             statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
             throw e;
           } finally {

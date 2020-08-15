@@ -536,10 +536,9 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
           "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count", 
           "zk_packets_sent", "zk_packets_received",
           "tickTime", "maxClientCnxns", "minSessionTimeout", "maxSessionTimeout"];
-        $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort"];
+        $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort", "role"];
         $scope.ensembleDetailKeys = ["peerType", "electionAlg", "initLimit", "syncLimit",
-          "zk_followers", "zk_synced_followers", "zk_pending_syncs",
-          "server.1", "server.2", "server.3", "server.4", "server.5"];
+          "zk_followers", "zk_synced_followers", "zk_pending_syncs"];
         $scope.notEmptyRow = function(key) {
           for (hostId in $scope.zkState.details) {
             if (key in $scope.zkState.details[hostId]) return true;
@@ -754,8 +753,6 @@ var graphSubController = function ($scope, Zookeeper) {
                                 pullReplicas: state[c].pullReplicas,
                                 replicationFactor: state[c].replicationFactor,
                                 router: state[c].router.name,
-                                maxShardsPerNode: state[c].maxShardsPerNode,
-                                autoAddReplicas: state[c].autoAddReplicas,
                                 nrtReplicas: state[c].nrtReplicas,
                                 tlogReplicas: state[c].tlogReplicas,
                                 numShards: shards.length
@@ -873,9 +870,7 @@ solrAdminApp.directive('graph', function(Constants) {
                 if (d.data.type == 'collection') {
                   tooltip = d.name + " {<br/> ";
                   tooltip += "numShards: [" + d.data.numShards + "],<br/>";
-                  tooltip += "maxShardsPerNode: [" + d.data.maxShardsPerNode + "],<br/>";
                   tooltip += "router: [" + d.data.router + "],<br/>";
-                  tooltip += "autoAddReplicas: [" + d.data.autoAddReplicas + "],<br/>";
                   tooltip += "replicationFactor: [" + d.data.replicationFactor + "],<br/>";
                   tooltip += "nrtReplicas: [" + d.data.nrtReplicas + "],<br/>";
                   tooltip += "pullReplicas: [" + d.data.pullReplicas + "],<br/>";

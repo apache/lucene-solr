@@ -128,6 +128,7 @@ public class Explanation implements MapSerializable {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Map toMap(Map<String, Object> map) {
     if(null != expressionNodeId){ map.put("expressionNodeId",expressionNodeId); }
     if(null != expressionType){ map.put("expressionType",expressionType); }

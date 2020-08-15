@@ -59,7 +59,7 @@ public class TestReloadDeadlock extends TestRTGBase {
         sb.append(' ');
         sb.append(o == null ? "(null)" : o.toString());
       }
-      log.info(sb.toString());
+      log.info("{}", sb);
     }
   }
 

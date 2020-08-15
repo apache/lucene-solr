@@ -58,6 +58,11 @@ public class OpenNLPChunkerFilterFactory extends TokenFilterFactory implements R
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public OpenNLPChunkerFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public OpenNLPChunkerFilter create(TokenStream in) {
     try {

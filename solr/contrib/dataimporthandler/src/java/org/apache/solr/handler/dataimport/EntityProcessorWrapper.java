@@ -45,6 +45,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
 
   private EntityProcessor delegate;
   private Entity entity;
+  @SuppressWarnings({"rawtypes"})
   private DataSource datasource;
   private List<EntityProcessorWrapper> children = new ArrayList<>();
   private DocBuilder docBuilder;
@@ -68,7 +69,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
   public void init(Context context) {
     rowcache = null;
     this.context = context;
-    resolver = (VariableResolver) context.getVariableResolver();
+    resolver = context.getVariableResolver();
     if (entityName == null) {
       onError = resolver.replaceTokens(context.getEntityAttribute(ON_ERROR));
       if (onError == null) onError = ABORT;
@@ -78,12 +79,12 @@ public class EntityProcessorWrapper extends EntityProcessor {
 
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked"})
   void loadTransformers() {
     String transClasses = context.getEntityAttribute(TRANSFORMER);
 
     if (transClasses == null) {
-      transformers = Collections.EMPTY_LIST;
+      transformers = Collections.emptyList();
       return;
     }
 
@@ -110,6 +111,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
         continue;
       }
       try {
+        @SuppressWarnings({"rawtypes"})
         Class clazz = DocBuilder.loadClass(trans, context.getSolrCore());
         if (Transformer.class.isAssignableFrom(clazz)) {
           transformers.add((Transformer) clazz.getConstructor().newInstance());
@@ -124,7 +126,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
             log.error(msg);
             wrapAndThrow(SEVERE, nsme,msg);        
       } catch (Exception e) {
-        log.error("Unable to load Transformer: " + aTransArr, e);
+        log.error("Unable to load Transformer: {}", aTransArr, e);
         wrapAndThrow(SEVERE, e,"Unable to load Transformer: " + trans);
       }
     }
@@ -153,13 +155,14 @@ public class EntityProcessorWrapper extends EntityProcessor {
   static class ReflectionTransformer extends Transformer {
     final Method meth;
 
+    @SuppressWarnings({"rawtypes"})
     final Class clazz;
 
     final String trans;
 
     final Object o;
 
-    public ReflectionTransformer(Method meth, Class clazz, String trans)
+    public ReflectionTransformer(Method meth, @SuppressWarnings({"rawtypes"})Class clazz, String trans)
             throws Exception {
       this.meth = meth;
       this.clazz = clazz;
@@ -172,7 +175,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
       try {
         return meth.invoke(o, aRow);
       } catch (Exception e) {
-        log.warn("method invocation failed on transformer : " + trans, e);
+        log.warn("method invocation failed on transformer : {}", trans, e);
         throw new DataImportHandlerException(WARN, e);
       }
     }
@@ -195,7 +198,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
     Map<String, Object> transformedRow = row;
     List<Map<String, Object>> rows = null;
     boolean stopTransform = checkStopTransform(row);
-    VariableResolver resolver = (VariableResolver) context.getVariableResolver();
+    VariableResolver resolver = context.getVariableResolver();
     for (Transformer t : transformers) {
       if (stopTransform) break;
       try {
@@ -207,6 +210,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
             if (o == null)
               continue;
             if (o instanceof Map) {
+              @SuppressWarnings({"rawtypes"})
               Map oMap = (Map) o;
               stopTransform = checkStopTransform(oMap);
               tmpRows.add((Map) o);
@@ -223,6 +227,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
           if (o == null)
             return null;
           if (o instanceof Map) {
+            @SuppressWarnings({"rawtypes"})
             Map oMap = (Map) o;
             stopTransform = checkStopTransform(oMap);
             transformedRow = (Map) o;
@@ -251,7 +256,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
 
   }
 
-  private boolean checkStopTransform(Map oMap) {
+  private boolean checkStopTransform(@SuppressWarnings({"rawtypes"})Map oMap) {
     return oMap.get("$stopTransform") != null
             && Boolean.parseBoolean(oMap.get("$stopTransform").toString());
   }
@@ -313,7 +318,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
   }
 
   public VariableResolver getVariableResolver() {
-    return (VariableResolver) context.getVariableResolver();
+    return context.getVariableResolver();
   }
 
   public Context getContext() {
@@ -333,11 +338,12 @@ public class EntityProcessorWrapper extends EntityProcessor {
     return children;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public DataSource getDatasource() {
     return datasource;
   }
 
-  public void setDatasource(DataSource datasource) {
+  public void setDatasource(@SuppressWarnings({"rawtypes"})DataSource datasource) {
     this.datasource = datasource;
   }
 

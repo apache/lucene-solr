@@ -91,6 +91,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testFieldMutating() throws Exception {
     HttpSolrClient client = (HttpSolrClient) getSolrClient();
     client.deleteByQuery("*:*");
@@ -121,6 +122,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
         "p_q",
         "p.q",
         "x_y");
+    @SuppressWarnings({"rawtypes"})
     HashSet set = new HashSet();
     QueryResponse rsp = assertNumFound("*:*", expected.size());
     for (SolrDocument doc : rsp.getResults()) set.addAll(doc.getFieldNames());

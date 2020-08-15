@@ -23,7 +23,6 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
@@ -61,19 +60,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final Directory directory) throws IOException {
-    return open(directory, Collections.emptyMap());
-  }
-
-  /** Returns a IndexReader reading the index in the given
-   *  Directory
-   * @param directory the index directory
-   * @param readerAttributes the reader attributes passed to the {@link org.apache.lucene.codecs.Codec} layer of the
-   *                         directory reader. This attribute map is forwarded to all leaf readers as well as to the readers
-   *                         that are opened subsequently via the different flavors of {@link DirectoryReader#openIfChanged(DirectoryReader)}
-   * @throws IOException if there is a low-level IO error
-   */
-  public static DirectoryReader open(final Directory directory, final Map<String, String> readerAttributes) throws IOException {
-    return StandardDirectoryReader.open(directory, null, readerAttributes);
+    return StandardDirectoryReader.open(directory, null);
   }
   
   /**
@@ -122,19 +109,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final IndexCommit commit) throws IOException {
-    return open(commit, Collections.emptyMap());
-  }
-
-  /** Expert: returns an IndexReader reading the index in the given
-   *  {@link IndexCommit}.
-   * @param commit the commit point to open
-   * @param readerAttributes the reader attributes passed to the {@link org.apache.lucene.codecs.Codec} layer of the
-   *                         directory reader. This attribute map is forwarded to all leaf readers as well as to the readers
-   *                         that are opened subsequently via the different flavors of {@link DirectoryReader#openIfChanged(DirectoryReader)}
-   * @throws IOException if there is a low-level IO error
-   */
-  public static DirectoryReader open(final IndexCommit commit, Map<String, String> readerAttributes) throws IOException {
-    return StandardDirectoryReader.open(commit.getDirectory(), commit, readerAttributes);
+   return StandardDirectoryReader.open(commit.getDirectory(), commit);
   }
 
   /**

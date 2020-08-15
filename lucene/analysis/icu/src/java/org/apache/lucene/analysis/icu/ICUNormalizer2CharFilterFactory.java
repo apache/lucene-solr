@@ -74,6 +74,11 @@ public class ICUNormalizer2CharFilterFactory extends CharFilterFactory {
     this.normalizer = normalizer;
   }
 
+  /** Default ctor for compatibility with SPI */
+  public ICUNormalizer2CharFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public Reader create(Reader input) {
     return new ICUNormalizer2CharFilter(input, normalizer);

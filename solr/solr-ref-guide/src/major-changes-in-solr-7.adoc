@@ -1,5 +1,4 @@
 = Major Changes in Solr 7
-:page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -47,8 +46,6 @@ See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,T
 Solr autoscaling is a new suite of features in Solr to make managing a SolrCloud cluster easier and more automated.
 
 At its core, Solr autoscaling provides users with a rule syntax to define preferences and policies for how to distribute nodes and shards in a cluster, with the goal of maintaining a balance in the cluster. As of Solr 7, Solr will take any policy or preference rules into account when determining where to place new shards and replicas created or moved with various Collections API commands.
-
-See the section <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,SolrCloud Autoscaling>> for details on the options available in 7.0. Expect more features to be released in subsequent 7.x releases in this area.
 
 === Other Features & Enhancements
 

@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -32,9 +31,9 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * <p>
  * To prevent OOM Errors and ensure IndexWriter's stability this class blocks
  * incoming threads from indexing once 2 x number of available
- * {@link ThreadState}s in {@link DocumentsWriterPerThreadPool} is exceeded.
+ * {@link DocumentsWriterPerThread}s in {@link DocumentsWriterPerThreadPool} is exceeded.
  * Once flushing catches up and the number of flushing DWPT is equal or lower
- * than the number of active {@link ThreadState}s threads are released and can
+ * than the number of active {@link DocumentsWriterPerThread}s threads are released and can
  * continue indexing.
  */
 final class DocumentsWriterStallControl {

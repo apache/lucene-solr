@@ -154,7 +154,6 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
 
     CollectionAdminRequest
         .createCollection(COLLECTION_NAME, "conf", 1, 1)
-        .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
@@ -182,7 +181,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     if (uniquePrefixes.size() % 2 == 1) {  // make it an even sized list so we can split it exactly in two
       uniquePrefixes.remove(uniquePrefixes.size()-1);
     }
-    log.info("Unique prefixes: " + uniquePrefixes);
+    log.info("Unique prefixes: {}", uniquePrefixes);
 
     for (Prefix prefix : uniquePrefixes) {
       client.add( getDoc(prefix.key, "doc1") );

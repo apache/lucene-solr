@@ -54,7 +54,7 @@ class BBoxValueSource extends ShapeValuesSource {
     final NumericDocValues maxY = DocValues.getNumeric(reader, strategy.field_maxY);
 
     //reused
-    final Rectangle rect = strategy.getSpatialContext().makeRectangle(0,0,0,0);
+    final Rectangle rect = strategy.getSpatialContext().getShapeFactory().rect(0,0,0,0);
 
     return new ShapeValues() {
 

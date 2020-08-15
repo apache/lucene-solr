@@ -269,6 +269,8 @@ When starting Solr, you must provide an address for ZooKeeper or Solr won't know
 
 When referring to the location of ZooKeeper within Solr, it's best to use the addresses of all the servers in the ensemble. If one happens to be down, Solr will automatically be able to send its request to another server in the list.
 
+ZooKeeper version 3.5 and later supports dynamic reconfiguration of server addresses and roles. But note that Solr will only be able to talk to the servers listed in the static ZooKeeper connect string.
+
 === Using a chroot
 
 If your ensemble is or will be shared among other systems besides Solr, you should consider defining application-specific _znodes_, or a hierarchical namespace that will only include Solr's files.

@@ -809,11 +809,16 @@ public class TestIndexWriterReader extends LuceneTestCase {
   // Stress test reopen during add/delete
   public void testDuringAddDelete() throws Exception {
     Directory dir1 = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(newLogMergePolicy(2));
+    if (TEST_NIGHTLY) {
+      // if we have a ton of iterations we need to make sure we don't do unnecessary
+      // extra flushing otherwise we will timeout on nightly
+      iwc.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
+      iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+    }
     final IndexWriter writer = new IndexWriter(
-        dir1,
-        newIndexWriterConfig(new MockAnalyzer(random()))
-          .setMergePolicy(newLogMergePolicy(2))
-    );
+        dir1,iwc);
 
     // create the index
     createIndexNoClose(false, "test", writer);
@@ -822,7 +827,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     DirectoryReader r = writer.getReader();
 
     final int iters = TEST_NIGHTLY ? 1000 : 10;
-    final List<Throwable> excs = Collections.synchronizedList(new ArrayList<Throwable>());
+    final List<Throwable> excs = Collections.synchronizedList(new ArrayList<>());
 
     final Thread[] threads = new Thread[numThreads];
     final AtomicInteger remainingThreads = new AtomicInteger(numThreads);

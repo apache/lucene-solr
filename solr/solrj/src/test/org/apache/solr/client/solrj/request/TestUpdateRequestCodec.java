@@ -157,7 +157,9 @@ public class TestUpdateRequestCodec extends SolrTestCase {
   }
 
   //this format accepts a 1:1 mapping of the json format and javabin format
+  @SuppressWarnings({"unchecked"})
   public void testStreamableInputDocFormat() throws IOException {
+    @SuppressWarnings({"rawtypes"})
     Map m = Utils.makeMap("id","1","desc" ,"The desc 1");
     m.put(CHILDDOC, (MapWriter) ew -> {
       ew.put("id","1.1");
@@ -175,13 +177,14 @@ public class TestUpdateRequestCodec extends SolrTestCase {
       ew.put("des", "The desc 2");
     };
 
+    @SuppressWarnings({"rawtypes"})
     List l = new ArrayList();
     l.add(m);
     l.add(m2);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     new JavaBinCodec().marshal(l.iterator(), baos);
 
-    List<SolrInputDocument>  l2 = new ArrayList();
+    List<SolrInputDocument>  l2 = new ArrayList<>();
 
     new JavaBinUpdateRequestCodec().unmarshal(new ByteArrayInputStream(baos.toByteArray()), (document, req, commitWithin, override) -> l2.add(document));
 
@@ -261,6 +264,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
   }
 
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void compareDocs(String m,
                            SolrInputDocument expectedDoc,
                            SolrInputDocument actualDoc) {

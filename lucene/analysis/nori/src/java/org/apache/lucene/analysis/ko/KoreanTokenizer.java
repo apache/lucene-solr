@@ -164,37 +164,64 @@ public final class KoreanTokenizer extends Tokenizer {
   }
 
   /**
-   * Create a new KoreanTokenizer.
+   * Create a new KoreanTokenizer using the system and unknown dictionaries shipped with Lucene.
    *
    * @param factory the AttributeFactory to use
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param mode Decompound mode.
-   * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
+   * @param outputUnknownUnigrams if true outputs unigrams for unknown words.
    */
   public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams) {
     this(factory, userDictionary, mode, outputUnknownUnigrams, true);
   }
 
   /**
-   * Create a new KoreanTokenizer.
+   * Create a new KoreanTokenizer using the system and unknown dictionaries shipped with Lucene.
    *
    * @param factory the AttributeFactory to use
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param mode Decompound mode.
-   * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
+   * @param outputUnknownUnigrams if true outputs unigrams for unknown words.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    */
   public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams, boolean discardPunctuation) {
+    this(factory,
+        TokenInfoDictionary.getInstance(),
+        UnknownDictionary.getInstance(),
+        ConnectionCosts.getInstance(),
+        userDictionary, mode, outputUnknownUnigrams, discardPunctuation);
+  }
+
+  /**
+   * <p>Create a new KoreanTokenizer supplying a custom system dictionary and unknown dictionary.
+   * This constructor provides an entry point for users that want to construct custom language models
+   * that can be used as input to {@link org.apache.lucene.analysis.ko.util.DictionaryBuilder}.</p>
+   *
+   * @param factory the AttributeFactory to use
+   * @param systemDictionary a custom known token dictionary
+   * @param unkDictionary a custom unknown token dictionary
+   * @param connectionCosts custom token transition costs
+   * @param userDictionary Optional: if non-null, user dictionary.
+   * @param mode Decompound mode.
+   * @param outputUnknownUnigrams if true outputs unigrams for unknown words.
+   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   * @lucene.experimental
+   */
+  public KoreanTokenizer(AttributeFactory factory,
+                         TokenInfoDictionary systemDictionary,
+                         UnknownDictionary unkDictionary,
+                         ConnectionCosts connectionCosts,
+                         UserDictionary userDictionary,
+                         DecompoundMode mode,
+                         boolean outputUnknownUnigrams,
+                         boolean discardPunctuation) {
     super(factory);
-    this.mode = mode;
-    this.discardPunctuation = discardPunctuation;
-    this.outputUnknownUnigrams = outputUnknownUnigrams;
-    dictionary = TokenInfoDictionary.getInstance();
-    fst = dictionary.getFST();
-    unkDictionary = UnknownDictionary.getInstance();
-    characterDefinition = unkDictionary.getCharacterDefinition();
+    this.dictionary = systemDictionary;
+    this.fst = dictionary.getFST();
+    this.unkDictionary = unkDictionary;
+    this.characterDefinition = unkDictionary.getCharacterDefinition();
+    this.costs = connectionCosts;
     this.userDictionary = userDictionary;
-    costs = ConnectionCosts.getInstance();
     fstReader = fst.getBytesReader();
     if (userDictionary != null) {
       userFST = userDictionary.getFST();
@@ -203,7 +230,9 @@ public final class KoreanTokenizer extends Tokenizer {
       userFST = null;
       userFSTReader = null;
     }
-
+    this.mode = mode;
+    this.outputUnknownUnigrams = outputUnknownUnigrams;
+    this.discardPunctuation = discardPunctuation;
     buffer.reset(this.input);
 
     resetState();

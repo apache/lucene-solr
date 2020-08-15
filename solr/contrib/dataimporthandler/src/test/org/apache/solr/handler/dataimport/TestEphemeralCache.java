@@ -46,6 +46,7 @@ public class TestEphemeralCache extends AbstractDataImportHandlerTestCase {
 
   @SuppressWarnings("unchecked")
   private void setupMockData() {
+    @SuppressWarnings({"rawtypes"})
     List parentRows = new ArrayList();
     parentRows.add(createMap("id", new BigDecimal("1"), "parent_s", "one"));
     parentRows.add(createMap("id", new BigDecimal("2"), "parent_s", "two"));
@@ -53,6 +54,7 @@ public class TestEphemeralCache extends AbstractDataImportHandlerTestCase {
     parentRows.add(createMap("id", new BigDecimal("4"), "parent_s", "four"));
     parentRows.add(createMap("id", new BigDecimal("5"), "parent_s", "five"));
     
+    @SuppressWarnings({"rawtypes"})
     List child1Rows = new ArrayList();
     child1Rows.add(createMap("id", new BigDecimal("6"), "child1a_mult_s", "this is the number six."));
     child1Rows.add(createMap("id", new BigDecimal("5"), "child1a_mult_s", "this is the number five."));
@@ -65,6 +67,7 @@ public class TestEphemeralCache extends AbstractDataImportHandlerTestCase {
     child1Rows.add(createMap("id", new BigDecimal("1"), "child1a_mult_s", "uno"));
     child1Rows.add(createMap("id", new BigDecimal("2"), "child1b_s", "CHILD1B", "child1a_mult_s", "this is the number two."));
     
+    @SuppressWarnings({"rawtypes"})
     List child2Rows = new ArrayList();
     child2Rows.add(createMap("id", new BigDecimal("6"), "child2a_mult_s", "Child 2 says, 'this is the number six.'"));
     child2Rows.add(createMap("id", new BigDecimal("5"), "child2a_mult_s", "Child 2 says, 'this is the number five.'"));

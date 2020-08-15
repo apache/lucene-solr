@@ -87,14 +87,14 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   void doTestJoin(String joinPrefix) throws Exception {
     assertJQ(req("q", joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev", "fl", "id",
         "debugQuery", random().nextBoolean() ? "true":"false")
-        , "/response=={'numFound':3,'start':0,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+        , "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
     );
 
     // find people that develop stuff - but limit via filter query to a name of "john"
     // this tests filters being pushed down to queries (SOLR-3062)
     assertJQ(req("q", joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev", "fl", "id", "fq", "name:john",
         "debugQuery", random().nextBoolean() ? "true":"false")
-        , "/response=={'numFound':1,'start':0,'docs':[{'id':'1'}]}"
+        , "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'}]}"
     );
   }
 

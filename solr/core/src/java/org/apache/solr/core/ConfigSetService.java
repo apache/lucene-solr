@@ -61,6 +61,7 @@ public abstract class ConfigSetService {
    * @param dcore the core's CoreDescriptor
    * @return a ConfigSet
    */
+  @SuppressWarnings({"rawtypes"})
   public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
 
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
@@ -80,7 +81,7 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
-      IndexSchema schema = createIndexSchema(dcore, solrConfig);
+      ConfigSet.SchemaSupplier schema = force -> createIndexSchema(dcore, solrConfig, force);
       return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -108,7 +109,7 @@ public abstract class ConfigSetService {
    * @return a SolrConfig object
    */
   protected SolrConfig createSolrConfig(CoreDescriptor cd, SolrResourceLoader loader, boolean isTrusted) {
-    return SolrConfig.readFromResourceLoader(loader, cd.getConfigName(), isTrusted);
+    return SolrConfig.readFromResourceLoader(loader, cd.getConfigName(), isTrusted, cd.getSubstitutableProperties());
   }
 
   /**
@@ -117,7 +118,7 @@ public abstract class ConfigSetService {
    * @param solrConfig the core's SolrConfig
    * @return an IndexSchema
    */
-  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig) {
+  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig, boolean forceFetch) {
     // This is the schema name from the core descriptor.  Sometimes users specify a custom schema file.
     //   Important:  indexSchemaFactory.create wants this!
     String cdSchemaName = cd.getSchemaName();
@@ -126,14 +127,15 @@ public abstract class ConfigSetService {
     //  want to pay the overhead of that at this juncture.  If we guess wrong, no schema sharing.
     //  The fix is usually to name your schema managed-schema instead of schema.xml.
     IndexSchemaFactory indexSchemaFactory = IndexSchemaFactory.newIndexSchemaFactory(solrConfig);
-    String guessSchemaName = indexSchemaFactory.getSchemaResourceName(cdSchemaName);
 
     String configSet = cd.getConfigSet();
     if (configSet != null && schemaCache != null) {
+      String guessSchemaName = indexSchemaFactory.getSchemaResourceName(cdSchemaName);
       Long modVersion = getCurrentSchemaModificationVersion(configSet, solrConfig, guessSchemaName);
       if (modVersion != null) {
         // note: luceneMatchVersion influences the schema
         String cacheKey = configSet + "/" + guessSchemaName + "/" + modVersion + "/" + solrConfig.luceneMatchVersion;
+        if(forceFetch) schemaCache.invalidate(cacheKey);
         return schemaCache.get(cacheKey,
             (key) -> indexSchemaFactory.create(cdSchemaName, solrConfig));
       } else {
@@ -158,6 +160,7 @@ public abstract class ConfigSetService {
    * @param loader the core's resource loader
    * @return the ConfigSet properties
    */
+  @SuppressWarnings({"rawtypes"})
   protected NamedList loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
     return ConfigSetProperties.readFromResourceLoader(loader, cd.getConfigSetPropertiesName());
   }
@@ -166,6 +169,7 @@ public abstract class ConfigSetService {
    * Return the ConfigSet flags or null if none.
    */
   // TODO should fold into configSetProps -- SOLR-14059
+  @SuppressWarnings({"rawtypes"})
   protected NamedList loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
     return null;
   }
@@ -204,7 +208,8 @@ public abstract class ConfigSetService {
     @Override
     public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
       Path instanceDir = locateInstanceDir(cd);
-      return new SolrResourceLoader(instanceDir, parentLoader.getClassLoader(), cd.getSubstitutableProperties());
+      SolrResourceLoader solrResourceLoader = new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
+      return solrResourceLoader;
     }
 
     @Override
@@ -231,7 +236,7 @@ public abstract class ConfigSetService {
       } catch (FileNotFoundException e) {
         return null; // acceptable
       } catch (IOException e) {
-        log.warn("Unexpected exception when getting modification time of " + schemaFile, e);
+        log.warn("Unexpected exception when getting modification time of {}", schemaFile, e);
         return null; // debatable; we'll see an error soon if there's a real problem
       }
     }

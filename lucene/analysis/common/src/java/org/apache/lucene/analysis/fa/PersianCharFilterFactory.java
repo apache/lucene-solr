@@ -48,6 +48,11 @@ public class PersianCharFilterFactory extends CharFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public PersianCharFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public Reader create(Reader input) {
     return new PersianCharFilter(input);

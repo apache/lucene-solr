@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -138,6 +139,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
           "'set-user': {'harry':'HarryIsCool'}\n" +
           "}";
 
+      @SuppressWarnings({"rawtypes"})
       final SolrRequest genericReq;
       if (isUseV2Api) {
         genericReq = new V2Request.Builder("/cluster/security/authentication").withMethod(SolrRequest.METHOD.POST).build();
@@ -150,7 +152,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       cluster.getSolrClient().getHttpClient().getConnectionManager().closeExpiredConnections();
       cluster.getSolrClient().getHttpClient().getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);
       
-      HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+      BaseHttpSolrClient.RemoteSolrException exp = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
         cluster.getSolrClient().request(genericReq);
       });
       assertEquals(401, exp.code());
@@ -202,14 +204,14 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
       try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
-        expectThrows(HttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload));
+        expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload));
         reload.setMethod(SolrRequest.METHOD.POST);
-        expectThrows(HttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload));
+        expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload));
       }
       cluster.getSolrClient().request(CollectionAdminRequest.reloadCollection(COLLECTION)
           .setBasicAuthCredentials("harry", "HarryIsUberCool"));
 
-      expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
         cluster.getSolrClient().request(CollectionAdminRequest.reloadCollection(COLLECTION)
             .setBasicAuthCredentials("harry", "Cool12345"));
       });
@@ -231,7 +233,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       delQuery.setBasicAuthCredentials("harry","HarryIsUberCool");
       delQuery.process(aNewClient, COLLECTION);//this should succeed
       try {
-        HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+        BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
           new UpdateRequest().deleteByQuery("*:*").process(aNewClient, COLLECTION);
         });
         assertTrue(e.getMessage(), e.getMessage().contains("Authentication failed"));
@@ -255,19 +257,20 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       try {
         System.setProperty("basicauth", "harry:HarryIsUberCool");
         tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+        @SuppressWarnings({"rawtypes"})
         Map obj = (Map) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
         assertTrue(obj.containsKey("version"));
         assertTrue(obj.containsKey("startTime"));
         assertTrue(obj.containsKey("uptime"));
         assertTrue(obj.containsKey("memory"));
       } catch (Exception e) {
-        log.error("RunExampleTool failed due to: " + e +
-            "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
+        log.error("RunExampleTool failed due to: {}; stdout from tool prior to failure: {}"
+            , e, baos.toString(StandardCharsets.UTF_8.name())); // logOk
       }
 
       SolrParams params = new MapSolrParams(Collections.singletonMap("q", "*:*"));
       // Query that fails due to missing credentials
-      exp = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+      exp = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
         cluster.getSolrClient().query(COLLECTION, params);
       });
       assertEquals(401, exp.code());
@@ -319,6 +322,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private QueryResponse executeQuery(ModifiableSolrParams params, String user, String pass) throws IOException, SolrServerException {
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = new QueryRequest(params);
     req.setBasicAuthCredentials(user, pass);
     QueryResponse resp = (QueryResponse) req.process(cluster.getSolrClient(), COLLECTION);

@@ -42,34 +42,42 @@ public interface CollectionParams {
 
 
   enum LockLevel {
-    CLUSTER(0),
-    COLLECTION(1),
-    SHARD(2),
-    REPLICA(3),
-    NONE(10);
+    NONE(10, null),
+    REPLICA(3, null),
+    SHARD(2, REPLICA),
+    COLLECTION(1, SHARD),
+    CLUSTER(0, COLLECTION);
 
-    public final int level;
+    private final int height;
+    private final LockLevel child;
 
-    LockLevel(int i) {
-      this.level = i;
+    LockLevel(int height, LockLevel child) {
+      this.height = height;
+      this.child = child;
     }
 
     public LockLevel getChild() {
-      return getLevel(level + 1);
+      return this.child;
     }
 
-    public static LockLevel getLevel(int i) {
-      for (LockLevel v : values()) {
-        if (v.level == i) return v;
-      }
-      return null;
+    public int getHeight() {
+      return this.height;
     }
 
     public boolean isHigherOrEqual(LockLevel that) {
-      return that.level <= level;
+      return height >= that.height;
     }
   }
 
+  /**
+   * <p>(Mostly) Collection API actions that can be sent by nodes to the Overseer over the <code>/overseer/collection-queue-work</code>
+   * ZooKeeper queue.</p>
+   *
+   * <p>Some of these actions are also used over the cluster state update queue at <code>/overseer/queue</code> and have a
+   * different (though related) meaning there. These actions are:
+   * {@link #CREATE}, {@link #DELETE}, {@link #CREATESHARD}, {@link #DELETESHARD}, {@link #ADDREPLICA}, {@link #ADDREPLICAPROP},
+   * {@link #DELETEREPLICAPROP}, {@link #BALANCESHARDUNIQUE} and {@link #MODIFYCOLLECTION}.</p>
+   */
   enum CollectionAction {
     CREATE(true, LockLevel.COLLECTION),
     DELETE(true, LockLevel.COLLECTION),
@@ -103,13 +111,11 @@ public interface CollectionParams {
     BALANCESHARDUNIQUE(true, LockLevel.SHARD),
     REBALANCELEADERS(true, LockLevel.COLLECTION),
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
-    MIGRATESTATEFORMAT(true, LockLevel.CLUSTER),
     BACKUP(true, LockLevel.COLLECTION),
     RESTORE(true, LockLevel.COLLECTION),
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
     DELETESNAPSHOT(true, LockLevel.COLLECTION),
     LISTSNAPSHOTS(false, LockLevel.NONE),
-    UTILIZENODE(false, LockLevel.NONE),
     //only for testing. it just waits for specified time
     // these are not exposed via collection API commands
     // but the overseer is aware of these tasks

@@ -18,6 +18,7 @@ package org.apache.lucene.geo;
 
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestXYRectangle extends LuceneTestCase {
 
@@ -103,4 +104,56 @@ public class TestXYRectangle extends LuceneTestCase {
     }
   }
 
+  /** make sure that if a point is inside a circle, it is inside of the bbox as well */
+  public void testRandomCircleToBBox() {
+    int iters = atLeast(100);
+    for(int iter= 0;iter < iters; iter++) {
+
+      float centerX = ShapeTestUtil.nextFloat(random());
+      float centerY = ShapeTestUtil.nextFloat(random());
+
+      final float radius;
+      if (random().nextBoolean()) {
+        radius = random().nextFloat() * TestUtil.nextInt(random(), 1, 100000);
+      } else {
+        radius = Math.abs(ShapeTestUtil.nextFloat(random()));
+      }
+
+      XYRectangle bbox = XYRectangle.fromPointDistance(centerX, centerY, radius);
+      Component2D component2D = bbox.toComponent2D();
+
+      int numPointsToTry = 1000;
+      for(int i = 0; i < numPointsToTry; i++) {
+
+        double x;
+        if (random().nextBoolean()) {
+          x = Math.min(Float.MAX_VALUE, centerX + radius + random().nextDouble());
+        } else {
+          x = Math.max(-Float.MAX_VALUE, centerX + radius - random().nextDouble());
+        }
+        double y;
+        if (random().nextBoolean()) {
+          y = Math.min(Float.MAX_VALUE, centerY + radius + random().nextDouble());
+        } else {
+          y = Math.max(-Float.MAX_VALUE, centerY + radius - random().nextDouble());
+        }
+
+        // cartesian says it's within the circle:
+        boolean cartesianSays = component2D.contains(x, y);
+        // BBox says its within the box:
+        boolean bboxSays = x >= bbox.minX && x <= bbox.maxX && y >= bbox.minY && y <= bbox.maxY;
+
+        if (cartesianSays) {
+          if (bboxSays == false) {
+            System.out.println("  centerX=" + centerX + " centerY=" + centerY + " radius=" + radius);
+            System.out.println("  bbox: x=" + bbox.minX + " to " + bbox.maxX + " y=" + bbox.minY + " to " + bbox.maxY);
+            System.out.println("  point: x=" + x + " y=" + y);
+            fail("point was within the distance according to cartesian distance, but the bbox doesn't contain it");
+          }
+        } else {
+          // it's fine if cartesian said it was outside the radius and bbox said it was inside the box
+        }
+      }
+    }
+  }
 }

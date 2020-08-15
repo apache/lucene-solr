@@ -123,7 +123,7 @@ final class NRTSuggesterBuilder {
     if (fst == null) {
       return false;
     }
-    fst.save(output);
+    fst.save(output, output);
 
     /* write some more  meta-info */
     assert maxAnalyzedPathsPerOutput > 0;

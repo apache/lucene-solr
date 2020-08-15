@@ -73,226 +73,233 @@ public class MinFunction {
     throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a comparable parameter. " +
           "Incorrect parameter: "+params[0].getExpressionStr());
   });
+
+  static class IntMinFunction extends AbstractIntValue implements ReductionFunction {
+    private IntMinCollector collector;
+    public static final String name = MinFunction.name;
+    private final String exprStr;
+
+    public IntMinFunction(IntValueStream param) {
+      this.collector = new IntMinCollector(param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    }
+
+    @Override
+    public int getInt() {
+      return collector.exists() ? collector.min() : 0;
+    }
+    @Override
+    public boolean exists() {
+      return collector.exists();
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (IntMinCollector)sync.apply(collector);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
+
+  static class LongMinFunction extends AbstractLongValue implements ReductionFunction {
+    private LongMinCollector collector;
+    public static final String name = MinFunction.name;
+    private final String exprStr;
+
+    public LongMinFunction(LongValueStream param) {
+      this.collector = new LongMinCollector(param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    }
+
+    @Override
+    public long getLong() {
+      return collector.exists() ? collector.min() : 0;
+    }
+    @Override
+    public boolean exists() {
+      return collector.exists();
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (LongMinCollector)sync.apply(collector);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
+
+  static class FloatMinFunction extends AbstractFloatValue implements ReductionFunction {
+    private FloatMinCollector collector;
+    public static final String name = MinFunction.name;
+    private final String exprStr;
+
+    public FloatMinFunction(FloatValueStream param) {
+      this.collector = new FloatMinCollector(param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    }
+
+    @Override
+    public float getFloat() {
+      return collector.exists() ? collector.min() : 0;
+    }
+    @Override
+    public boolean exists() {
+      return collector.exists();
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (FloatMinCollector)sync.apply(collector);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
+
+  static class DoubleMinFunction extends AbstractDoubleValue implements ReductionFunction {
+    private DoubleMinCollector collector;
+    public static final String name = MinFunction.name;
+    private final String exprStr;
+
+    public DoubleMinFunction(DoubleValueStream param) {
+      this.collector = new DoubleMinCollector(param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    }
+
+    @Override
+    public double getDouble() {
+      return collector.exists() ? collector.min() : 0;
+    }
+    @Override
+    public boolean exists() {
+      return collector.exists();
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (DoubleMinCollector)sync.apply(collector);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
+
+  static class DateMinFunction extends AbstractDateValue implements ReductionFunction {
+    private LongMinCollector collector;
+    public static final String name = MinFunction.name;
+    private final String exprStr;
+
+    public DateMinFunction(LongValueStream param) {
+      this.collector = new LongMinCollector(param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    }
+
+    @Override
+    public long getLong() {
+      return collector.exists() ? collector.min() : 0;
+    }
+    @Override
+    public boolean exists() {
+      return collector.exists();
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (LongMinCollector)sync.apply(collector);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
+
+  static class StringMinFunction extends AbstractStringValue implements ReductionFunction {
+    private StringMinCollector collector;
+    public static final String name = MinFunction.name;
+    private final String exprStr;
+
+    public StringMinFunction(StringValueStream param) {
+      this.collector = new StringMinCollector(param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    }
+
+    @Override
+    public String getString() {
+      return collector.exists() ? collector.min() : null;
+    }
+    @Override
+    public boolean exists() {
+      return collector.exists();
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (StringMinCollector)sync.apply(collector);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
 }
-class IntMinFunction extends AbstractIntValue implements ReductionFunction {
-  private IntMinCollector collector;
-  public static final String name = MinFunction.name;
-  private final String exprStr;
 
-  public IntMinFunction(IntValueStream param) {
-    this.collector = new IntMinCollector(param);
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-  }
-
-  @Override
-  public int getInt() {
-    return collector.exists() ? collector.min() : 0;
-  }
-  @Override
-  public boolean exists() {
-    return collector.exists();
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (IntMinCollector)sync.apply(collector);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class LongMinFunction extends AbstractLongValue implements ReductionFunction {
-  private LongMinCollector collector;
-  public static final String name = MinFunction.name;
-  private final String exprStr;
-
-  public LongMinFunction(LongValueStream param) {
-    this.collector = new LongMinCollector(param);
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-  }
-
-  @Override
-  public long getLong() {
-    return collector.exists() ? collector.min() : 0;
-  }
-  @Override
-  public boolean exists() {
-    return collector.exists();
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (LongMinCollector)sync.apply(collector);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class FloatMinFunction extends AbstractFloatValue implements ReductionFunction {
-  private FloatMinCollector collector;
-  public static final String name = MinFunction.name;
-  private final String exprStr;
-
-  public FloatMinFunction(FloatValueStream param) {
-    this.collector = new FloatMinCollector(param);
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-  }
-
-  @Override
-  public float getFloat() {
-    return collector.exists() ? collector.min() : 0;
-  }
-  @Override
-  public boolean exists() {
-    return collector.exists();
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (FloatMinCollector)sync.apply(collector);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class DoubleMinFunction extends AbstractDoubleValue implements ReductionFunction {
-  private DoubleMinCollector collector;
-  public static final String name = MinFunction.name;
-  private final String exprStr;
-
-  public DoubleMinFunction(DoubleValueStream param) {
-    this.collector = new DoubleMinCollector(param);
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-  }
-
-  @Override
-  public double getDouble() {
-    return collector.exists() ? collector.min() : 0;
-  }
-  @Override
-  public boolean exists() {
-    return collector.exists();
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (DoubleMinCollector)sync.apply(collector);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class DateMinFunction extends AbstractDateValue implements ReductionFunction {
-  private LongMinCollector collector;
-  public static final String name = MinFunction.name;
-  private final String exprStr;
-
-  public DateMinFunction(LongValueStream param) {
-    this.collector = new LongMinCollector(param);
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-  }
-
-  @Override
-  public long getLong() {
-    return collector.exists() ? collector.min() : 0;
-  }
-  @Override
-  public boolean exists() {
-    return collector.exists();
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (LongMinCollector)sync.apply(collector);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class StringMinFunction extends AbstractStringValue implements ReductionFunction {
-  private StringMinCollector collector;
-  public static final String name = MinFunction.name;
-  private final String exprStr;
-
-  public StringMinFunction(StringValueStream param) {
-    this.collector = new StringMinCollector(param);
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-  }
-
-  @Override
-  public String getString() {
-    return collector.exists() ? collector.min() : null;
-  }
-  @Override
-  public boolean exists() {
-    return collector.exists();
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (StringMinCollector)sync.apply(collector);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}

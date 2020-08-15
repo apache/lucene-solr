@@ -68,7 +68,7 @@ class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThrea
       }
     }
 
-    log.info("num searches done:" + numSearches + " with " + queryFails + " fails");
+    log.info("num searches done: {} with {} fails", numSearches, queryFails);
   }
 
   @Override

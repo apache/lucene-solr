@@ -562,7 +562,7 @@ public class Vector {
    * @return a magnitude value for that (x,y,z) that projects the vector onto the specified ellipsoid.
    */
   static double computeDesiredEllipsoidMagnitude(final PlanetModel planetModel, final double x, final double y, final double z) {
-    return 1.0 / Math.sqrt(x*x*planetModel.inverseAbSquared + y*y*planetModel.inverseAbSquared + z*z*planetModel.inverseCSquared);
+    return 1.0 / Math.sqrt(x*x*planetModel.inverseXYScalingSquared + y*y*planetModel.inverseXYScalingSquared + z*z*planetModel.inverseZScalingSquared);
   }
 
   /** Compute the desired magnitude of a unit vector projected to a given
@@ -572,7 +572,7 @@ public class Vector {
    * @return a magnitude value for that z value that projects the vector onto the specified ellipsoid.
    */
   static double computeDesiredEllipsoidMagnitude(final PlanetModel planetModel, final double z) {
-    return 1.0 / Math.sqrt((1.0-z*z)*planetModel.inverseAbSquared + z*z*planetModel.inverseCSquared);
+    return 1.0 / Math.sqrt((1.0-z*z)*planetModel.inverseXYScalingSquared + z*z*planetModel.inverseZScalingSquared);
   }
 
   @Override

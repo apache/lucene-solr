@@ -36,6 +36,7 @@ public class TestTemplateTransformer extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRow() {
+    @SuppressWarnings({"rawtypes"})
     List fields = new ArrayList();
     fields.add(createMap("column", "firstName"));
     fields.add(createMap("column", "lastName"));
@@ -52,6 +53,7 @@ public class TestTemplateTransformer extends AbstractDataImportHandlerTestCase {
             TemplateTransformer.TEMPLATE,"Mr ${e.name}"));
 
     List<String> mails = Arrays.asList("a@b.com", "c@d.com");
+    @SuppressWarnings({"rawtypes"})
     Map row = createMap(
             "firstName", "Shalin",
             "middleName", "Shekhar", 
@@ -73,6 +75,7 @@ public class TestTemplateTransformer extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRowMultiValue() {
+    @SuppressWarnings({"rawtypes"})
     List fields = new ArrayList();
     fields.add(createMap("column", "year"));
     fields.add(createMap("column", "month"));
@@ -89,6 +92,7 @@ public class TestTemplateTransformer extends AbstractDataImportHandlerTestCase {
                           TemplateTransformer.TEMPLATE,
                           "${e.year}-${e.month}-${e.day}" ));
       
+    @SuppressWarnings({"rawtypes"})
     Map row = createMap( "year", "2016",
                          "month", "Apr",
                          "day", "30" );

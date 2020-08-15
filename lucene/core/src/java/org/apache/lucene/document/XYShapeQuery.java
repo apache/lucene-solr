@@ -50,31 +50,72 @@ final class XYShapeQuery extends ShapeQuery {
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
 
-    double minLat = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    double minLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    double maxLat = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    double maxLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    double minY = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minX = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxY = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxX = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return component2D.relate(minLon, maxLon, minLat, maxLat);
+    return component2D.relate(minX, maxX, minY, maxY);
   }
 
   @Override
-  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
+  protected boolean queryIntersects(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = decode(scratchTriangle.aY);
-    double alon = decode(scratchTriangle.aX);
-    double blat = decode(scratchTriangle.bY);
-    double blon = decode(scratchTriangle.bX);
-    double clat = decode(scratchTriangle.cY);
-    double clon = decode(scratchTriangle.cX);
+    switch (scratchTriangle.type) {
+      case POINT: {
+        double y = decode(scratchTriangle.aY);
+        double x = decode(scratchTriangle.aX);
+        return component2D.contains(x, y);
+      }
+      case LINE: {
+        double aY = decode(scratchTriangle.aY);
+        double aX = decode(scratchTriangle.aX);
+        double bY = decode(scratchTriangle.bY);
+        double bX = decode(scratchTriangle.bX);
+        return component2D.intersectsLine(aX, aY, bX, bY);
+      }
+      case TRIANGLE: {
+        double aY = decode(scratchTriangle.aY);
+        double aX = decode(scratchTriangle.aX);
+        double bY = decode(scratchTriangle.bY);
+        double bX = decode(scratchTriangle.bX);
+        double cY = decode(scratchTriangle.cY);
+        double cX = decode(scratchTriangle.cX);
+        return component2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+      }
+      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
+    }
+  }
 
-    switch (queryRelation) {
-      case INTERSECTS: return component2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
-      case WITHIN: return component2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
-      case DISJOINT: return component2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
-      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
+  @Override
+  protected boolean queryContains(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
+
+    switch (scratchTriangle.type) {
+      case POINT: {
+        double y = decode(scratchTriangle.aY);
+        double x = decode(scratchTriangle.aX);
+        return component2D.contains(x, y);
+      }
+      case LINE: {
+        double aY = decode(scratchTriangle.aY);
+        double aX = decode(scratchTriangle.aX);
+        double bY = decode(scratchTriangle.bY);
+        double bX = decode(scratchTriangle.bX);
+        return component2D.containsLine(aX, aY, bX, bY);
+      }
+      case TRIANGLE: {
+        double aY = decode(scratchTriangle.aY);
+        double aX = decode(scratchTriangle.aX);
+        double bY = decode(scratchTriangle.bY);
+        double bX = decode(scratchTriangle.bX);
+        double cY = decode(scratchTriangle.cY);
+        double cX = decode(scratchTriangle.cX);
+        return component2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+      }
+      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
     }
   }
 
@@ -82,14 +123,30 @@ final class XYShapeQuery extends ShapeQuery {
   protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = decode(scratchTriangle.aY);
-    double alon = decode(scratchTriangle.aX);
-    double blat = decode(scratchTriangle.bY);
-    double blon = decode(scratchTriangle.bX);
-    double clat = decode(scratchTriangle.cY);
-    double clon = decode(scratchTriangle.cX);
-
-    return component2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
+    switch (scratchTriangle.type) {
+      case POINT: {
+        double y = decode(scratchTriangle.aY);
+        double x = decode(scratchTriangle.aX);
+        return component2D.withinPoint(x, y);
+      }
+      case LINE: {
+        double aY = decode(scratchTriangle.aY);
+        double aX = decode(scratchTriangle.aX);
+        double bY = decode(scratchTriangle.bY);
+        double bX = decode(scratchTriangle.bX);
+        return component2D.withinLine(aX, aY, scratchTriangle.ab, bX, bY);
+      }
+      case TRIANGLE: {
+        double aY = decode(scratchTriangle.aY);
+        double aX = decode(scratchTriangle.aX);
+        double bY = decode(scratchTriangle.bY);
+        double bX = decode(scratchTriangle.bX);
+        double cY = decode(scratchTriangle.cY);
+        double cX = decode(scratchTriangle.cX);
+        return component2D.withinTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
+      }
+      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
+    }
   }
 
   @Override

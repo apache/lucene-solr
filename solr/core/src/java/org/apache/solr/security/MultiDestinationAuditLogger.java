@@ -88,7 +88,9 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
     if (pluginConfig.size() > 0) {
       log.error("Plugin config was not fully consumed. Remaining parameters are {}", pluginConfig);
     }
-    log.info("Initialized {} audit plugins: {}", plugins.size(), pluginNames);
+    if (log.isInfoEnabled()) {
+      log.info("Initialized {} audit plugins: {}", plugins.size(), pluginNames);
+    }
   }
 
   @Override
@@ -102,7 +104,7 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
       if (klas == null) {
         throw new SolrException(SERVER_ERROR, "class is required for auditlogger plugin");
       }
-      log.info("Initializing auditlogger plugin: " + klas);
+      log.info("Initializing auditlogger plugin: {}", klas);
       AuditLoggerPlugin p = loader.newInstance(klas, AuditLoggerPlugin.class);
       if (p.getClass().equals(this.getClass())) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot nest MultiDestinationAuditLogger");

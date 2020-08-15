@@ -82,7 +82,7 @@ public class CdcrVersionReplicationTest extends BaseCdcrDistributedZkTest {
   private void doTestCdcrDocVersions(SolrClient solrClient) throws Exception {
     this.solrServer = solrClient;
 
-    log.info("### STARTING doCdcrTestDocVersions - Add commands, client: " + solrClient);
+    log.info("### STARTING doCdcrTestDocVersions - Add commands, client: {}", solrClient);
 
     vadd("doc1", 10, CdcrUpdateProcessor.CDCR_UPDATE, "", vfield, "10");
     vadd("doc2", 11, CdcrUpdateProcessor.CDCR_UPDATE, "", vfield, "11");

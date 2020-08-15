@@ -156,7 +156,9 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
     if (bean==null) throw new RuntimeException("searcher was never registered");
     ObjectName searcher = nameFactory.createName("gauge", registryName, "SEARCHER.searcher.*");
 
-    log.info("Mbeans in server: " + mbeanServer.queryNames(null, null));
+    if (log.isInfoEnabled()) {
+      log.info("Mbeans in server: {}", mbeanServer.queryNames(null, null));
+    }
 
     Set<ObjectInstance> objects = mbeanServer.queryMBeans(searcher, null);
     assertFalse("No mbean found for SolrIndexSearcher", mbeanServer.queryMBeans(searcher, null).isEmpty());
@@ -171,6 +173,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"try"})
   public void testJmxOnCoreReload() throws Exception {
     // make sure searcher beans are registered
     assertQ(req("q", "*:*"), "//result[@numFound='0']");
@@ -204,7 +207,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
     }
 
     int totalCoreMetrics = mgr.registry(registryName).getMetrics().size();
-    log.info("Before Reload: size of all core metrics: " + totalCoreMetrics + " MBeans: " + oldNumberOfObjects);
+    log.info("Before Reload: size of all core metrics: {} MBeans: {}", totalCoreMetrics, oldNumberOfObjects);
     assertEquals("Number of registered MBeans is not the same as the number of core metrics", totalCoreMetrics, oldNumberOfObjects);
     h.getCoreContainer().reload(coreName);
     assertQ(req("q", "*:*"), "//result[@numFound='0']");
@@ -250,14 +253,14 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
       }
     }
 
-    log.info("After Reload: size of all core metrics: " + totalCoreMetrics + " MBeans: " + newNumberOfObjects);
+    log.info("After Reload: size of all core metrics: {} MBeans: {}", totalCoreMetrics, newNumberOfObjects);
     if (totalCoreMetrics != newNumberOfObjects) {
       Set<String> errors = new TreeSet<>(beanNames);
       errors.removeAll(metricNames);
-      log.error("Unexpected bean names: " + errors);
+      log.error("Unexpected bean names: {}", errors);
       errors = new TreeSet<>(metricNames);
       errors.removeAll(beanNames);
-      log.error("Unexpected metric names: " + errors);
+      log.error("Unexpected metric names: {}", errors);
       fail("Number of registered MBeans is not the same as the number of core metrics: " + totalCoreMetrics + " != " + newNumberOfObjects);
     }
   }

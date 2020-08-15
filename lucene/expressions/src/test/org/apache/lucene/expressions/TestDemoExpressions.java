@@ -30,7 +30,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.store.Directory;
@@ -95,10 +94,10 @@ public class  TestDemoExpressions extends LuceneTestCase {
     Expression expr = JavascriptCompiler.compile("sqrt(_score) + ln(popularity)");
     
     // we use SimpleBindings: which just maps variables to SortField instances
-    SimpleBindings bindings = new SimpleBindings();    
-    bindings.add(new SortField("_score", SortField.Type.SCORE));
-    bindings.add(new SortField("popularity", SortField.Type.INT));
-    
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("_score", DoubleValuesSource.SCORES);
+    bindings.add("popularity", DoubleValuesSource.fromIntField("popularity"));
+
     // create a sort field and sort by it (reverse order)
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
@@ -109,9 +108,9 @@ public class  TestDemoExpressions extends LuceneTestCase {
   public void testSortValues() throws Exception {
     Expression expr = JavascriptCompiler.compile("sqrt(_score)");
     
-    SimpleBindings bindings = new SimpleBindings();    
-    bindings.add(new SortField("_score", SortField.Type.SCORE));
-    
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("_score", DoubleValuesSource.SCORES);
+
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
     TopFieldDocs td = searcher.search(query, 3, sort, true);
@@ -127,8 +126,8 @@ public class  TestDemoExpressions extends LuceneTestCase {
   public void testTwoOfSameBinding() throws Exception {
     Expression expr = JavascriptCompiler.compile("_score + _score");
     
-    SimpleBindings bindings = new SimpleBindings();    
-    bindings.add(new SortField("_score", SortField.Type.SCORE));
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("_score", DoubleValuesSource.SCORES);
     
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
@@ -145,10 +144,10 @@ public class  TestDemoExpressions extends LuceneTestCase {
   public void testDollarVariable() throws Exception {
     Expression expr = JavascriptCompiler.compile("$0+$score");
     
-    SimpleBindings bindings = new SimpleBindings();    
-    bindings.add(new SortField("$0", SortField.Type.SCORE));
-    bindings.add(new SortField("$score", SortField.Type.SCORE));
-    
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("$0", DoubleValuesSource.SCORES);
+    bindings.add("$score", DoubleValuesSource.SCORES);
+
     Sort sort = new Sort(expr.getSortField(bindings, true));
     Query query = new TermQuery(new Term("body", "contents"));
     TopFieldDocs td = searcher.search(query, 3, sort, true);
@@ -165,8 +164,8 @@ public class  TestDemoExpressions extends LuceneTestCase {
     Expression expr1 = JavascriptCompiler.compile("_score");
     Expression expr2 = JavascriptCompiler.compile("2*expr1");
     
-    SimpleBindings bindings = new SimpleBindings();    
-    bindings.add(new SortField("_score", SortField.Type.SCORE));
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("_score", DoubleValuesSource.SCORES);
     bindings.add("expr1", expr1);
     
     Sort sort = new Sort(expr2.getSortField(bindings, true));
@@ -197,7 +196,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
         sb.append("+");
       }
       sb.append("x" + i);
-      bindings.add(new SortField("x" + i, SortField.Type.SCORE));
+      bindings.add("x" + i, DoubleValuesSource.SCORES);
     }
     
     Expression expr = JavascriptCompiler.compile(sb.toString());
@@ -215,8 +214,8 @@ public class  TestDemoExpressions extends LuceneTestCase {
   public void testDistanceSort() throws Exception {
     Expression distance = JavascriptCompiler.compile("haversin(40.7143528,-74.0059731,latitude,longitude)");
     SimpleBindings bindings = new SimpleBindings();
-    bindings.add(new SortField("latitude", SortField.Type.DOUBLE));
-    bindings.add(new SortField("longitude", SortField.Type.DOUBLE));
+    bindings.add("latitude", DoubleValuesSource.fromDoubleField("latitude"));
+    bindings.add("longitude", DoubleValuesSource.fromDoubleField("longitude"));
     Sort sort = new Sort(distance.getSortField(bindings, false));
     TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     

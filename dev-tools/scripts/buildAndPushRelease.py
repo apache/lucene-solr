@@ -307,14 +307,14 @@ def check_key_in_keys(gpgKeyID, local_keys):
       gpgKeyID = gpgKeyID.replace(" ", "")
     if len(gpgKeyID) == 8:
       gpgKeyID8Char = "%s %s" % (gpgKeyID[0:4], gpgKeyID[4:8])
-      re_to_match = r"^pub .*\n\s+\w{4} \w{4} \w{4} \w{4} \w{4}  \w{4} \w{4} \w{4} %s" % gpgKeyID8Char
+      re_to_match = r"^pub .*\n\s+(\w{4} \w{4} \w{4} \w{4} \w{4}  \w{4} \w{4} \w{4} %s|\w{32}%s)" % (gpgKeyID8Char, gpgKeyID)
     elif len(gpgKeyID) == 40:
       gpgKeyID40Char = "%s %s %s %s %s  %s %s %s %s %s" % \
                        (gpgKeyID[0:4], gpgKeyID[4:8], gpgKeyID[8:12], gpgKeyID[12:16], gpgKeyID[16:20],
                        gpgKeyID[20:24], gpgKeyID[24:28], gpgKeyID[28:32], gpgKeyID[32:36], gpgKeyID[36:])
       re_to_match = r"^pub .*\n\s+(%s|%s)" % (gpgKeyID40Char, gpgKeyID)
     else:
-      print('Invalid gpg key id format. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix, no spaces.')
+      print('Invalid gpg key id format [%s]. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix, no spaces.' % gpgKeyID)
       exit(2)
     if re.search(re_to_match, keysFileText, re.MULTILINE):
       print('    Found key %s in KEYS file at %s' % (gpgKeyID, keysFileLocation))

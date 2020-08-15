@@ -92,11 +92,6 @@ def create_and_add_index(source, indextype, index_version, current_version, temp
   print('  adding %s...' % filename, end='', flush=True)
   scriptutil.run('cp %s %s' % (bc_index_file, os.path.join(base_dir, index_dir)))
   os.chdir(base_dir)
-  output = scriptutil.run('svn status %s' % test_file)
-  if not output.strip():
-    # make sure to only add if the file isn't already in svn (we might be regenerating)
-    scriptutil.run('svn add %s' % test_file)
-  os.chdir(base_dir)
   scriptutil.run('rm -rf %s' % bc_index_dir)
   print('done')
 

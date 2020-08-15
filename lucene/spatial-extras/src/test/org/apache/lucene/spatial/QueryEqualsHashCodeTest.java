@@ -103,12 +103,12 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
   }
 
   private SpatialArgs makeArgs1() {
-    final Shape shape1 = ctx.makeRectangle(0, 0, 10, 10);
+    final Shape shape1 = ctx.getShapeFactory().rect(0, 0, 10, 10);
     return new SpatialArgs(predicate, shape1);
   }
 
   private SpatialArgs makeArgs2() {
-    final Shape shape2 = ctx.makeRectangle(0, 0, 20, 20);
+    final Shape shape2 = ctx.getShapeFactory().rect(0, 0, 20, 20);
     return new SpatialArgs(predicate, shape2);
   }
 

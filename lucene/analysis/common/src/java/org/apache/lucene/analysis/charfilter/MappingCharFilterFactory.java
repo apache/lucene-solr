@@ -60,6 +60,11 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public MappingCharFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (mapping != null) {

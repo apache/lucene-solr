@@ -79,12 +79,12 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
         parser = new SimplePreAnalyzedParser();
       } else {
         try {
-          Class<? extends PreAnalyzedParser> implClazz = schema.getResourceLoader().findClass(implName, PreAnalyzedParser.class);
+          Class<? extends PreAnalyzedParser> implClazz = schema.getSolrClassLoader().findClass(implName, PreAnalyzedParser.class);
           Constructor<?> c = implClazz.getConstructor(new Class<?>[0]);
           parser = (PreAnalyzedParser) c.newInstance(new Object[0]);
         } catch (Exception e) {
-          log.warn("Can't use the configured PreAnalyzedParser class '" + implName +
-              "', using default " + DEFAULT_IMPL, e);
+          log.warn("Can't use the configured PreAnalyzedParser class '{}', using defualt {}"
+              , implName, DEFAULT_IMPL, e);
           parser = new JsonPreAnalyzedParser();
         }
       }
@@ -124,7 +124,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     try {
       f = fromString(field, String.valueOf(value));
     } catch (Exception e) {
-      log.warn("Error parsing pre-analyzed field '" + field.getName() + "'", e);
+      log.warn("Error parsing pre-analyzed field '{}'", field.getName(), e);
       return null;
     }
     return f;
@@ -149,7 +149,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f)
           throws IOException {
-    writer.writeStr(name, f.stringValue(), true);
+    writer.writeStr(name, toExternal(f), true);
   }
   
   /** Utility method to convert a field to a string that is parse-able by this
@@ -168,8 +168,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
    */
   public static org.apache.lucene.document.FieldType createFieldType(SchemaField field) {
     if (!field.indexed() && !field.stored()) {
-      if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
+      log.trace("Ignoring unindexed/unstored field: {}", field);
       return null;
     }
     org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();

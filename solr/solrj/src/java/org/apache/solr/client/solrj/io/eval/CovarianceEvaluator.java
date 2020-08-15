@@ -32,6 +32,7 @@ public class CovarianceEvaluator extends RecursiveObjectEvaluator implements Man
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException{
 
     if(values.length == 2) {

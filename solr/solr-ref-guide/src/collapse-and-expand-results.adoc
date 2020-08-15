@@ -116,6 +116,12 @@ Collapse on `group_field` with a hint to use the top level field cache:
 fq={!collapse field=group_field hint=top_fc}
 ----
 
+Collapse with custom `cost` which defaults to `100`
+[source,text]
+----
+fq={!collapse cost=1000 field=group_field}
+----
+
 The CollapsingQParserPlugin fully supports the QueryElevationComponent.
 
 == Expand Component
@@ -138,17 +144,35 @@ The ExpandComponent can now be used to expand the results so you can see the doc
 q=foo&fq={!collapse field=ISBN}&expand=true
 ----
 
-The “expand=true” parameter turns on the ExpandComponent. The ExpandComponent adds a new section to the search output labeled “expanded”.
+[IMPORTANT]
+====
+When used with CollapsingQParserPlugin and there are multiple collapse groups, the field is chosen from the group with least cost.
+If there are multiple collapse groups with same cost then the first specified one is chosen.
+====
 
-Inside the expanded section there is a _map_ with each group head pointing to the expanded documents that are within the group. As applications iterate the main collapsed result set, they can access the _expanded_ map to retrieve the expanded groups.
+When enabled, the ExpandComponent adds a new section to the search output labeled `expanded`.
+
+Inside the `expanded` section there is a _map_ with each group head pointing to the expanded documents that are within the group. As applications iterate the main collapsed result set, they can access the _expanded_ map to retrieve the expanded groups.
 
 The ExpandComponent has the following parameters:
+
+`expand`::
+When `true`, the ExpandComponent is enabled.
+
+`expand.field`::
+Field on which expand documents need to be populated. When `expand=true`, either this parameter needs to be specified or should be used with CollapsingQParserPlugin.
+When both are specified, this parameter is given higher priority.
 
 `expand.sort`::
 Orders the documents within the expanded groups. The default is `score desc`.
 
 `expand.rows`::
 The number of rows to display in each group. The default is 5 rows.
++
+[IMPORTANT]
+====
+When `expand.rows=0`, only the number of documents found for each expanded value is returned. Hence, scores won't be computed even if requested and `maxScore` is set to 0.
+====
 
 `expand.q`::
 Overrides the main query (`q`), determines which documents to include in the main group. The default is to use the main query.

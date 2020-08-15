@@ -52,7 +52,7 @@ import java.util.Map;
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     source.createWeight(context, searcher);
   }
 }

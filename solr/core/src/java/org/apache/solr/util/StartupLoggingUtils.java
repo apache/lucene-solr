@@ -123,8 +123,7 @@ public final class StartupLoggingUtils {
   }
 
   private static void logNotSupported(String msg) {
-    log.warn("{} Dynamic log manipulation currently only supported for Log4j. "
-        + "Please consult your logging framework of choice on how to configure the appropriate logging.", msg);
+    log.warn("{} Dynamic log manipulation currently only supported for Log4j. Please consult your logging framework of choice on how to configure the appropriate logging.", msg);
   }
 
   /**

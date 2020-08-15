@@ -23,6 +23,8 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.SaslZkACLProvider;
@@ -40,6 +42,8 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadZookeeperThreadsFilter.class
 })
 public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
@@ -69,11 +73,13 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    log.info("####SETUP_START " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_START {}", getTestName());
+    }
     createTempDir();
 
     Path zkDir = createTempDir().resolve("zookeeper/server1/data");
-    log.info("ZooKeeper dataDir:" + zkDir);
+    log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new SaslZkTestServer(zkDir, createTempDir().resolve("miniKdc"));
     zkServer.run();
 
@@ -84,7 +90,9 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     }
     setupZNodes();
 
-    log.info("####SETUP_END " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_END {}", getTestName());
+    }
   }
 
   protected void setupZNodes() throws Exception {

@@ -17,18 +17,20 @@
 
 package org.apache.solr.common.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.annotation.JsonProperty;
 
 public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
   public void test() throws IOException {
-    StringWriter writer = new StringWriter();
 
     Map<String, Object> map = new HashMap<>();
     map.put("k1","v1");
@@ -42,10 +44,12 @@ public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
           .add("v632"));
     });
 
-    try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer)) {
-      jsonWriter.setIndent(true).writeObj(map);
+    StringWriter writer = new StringWriter();
+    try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer).setIndent(false)) {
+      jsonWriter.writeObj(map);
     }
-    Object o = Utils.fromJSONString(writer.toString());
+    String json = writer.toString();
+    Object o = Utils.fromJSONString(json);
     assertEquals("v1", Utils.getObjectByPath(o, true, "k1"));
     assertEquals(1l, Utils.getObjectByPath(o, true, "k2"));
     assertEquals(Boolean.FALSE, Utils.getObjectByPath(o, true, "k3"));
@@ -55,5 +59,95 @@ public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
     assertEquals("v62", Utils.getObjectByPath(o, true, "k5/k62"));
     assertEquals("v631", Utils.getObjectByPath(o, true, "k5/k63[0]"));
     assertEquals("v632", Utils.getObjectByPath(o, true, "k5/k63[1]"));
+    C1 c1 = new C1();
+
+    int iters = 10000;
+    writer = new StringWriter();
+    try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer).setIndent(false)) {
+      jsonWriter.writeObj(c1);
+    }
+   assertEquals(json, writer.toString());
+
+
+   /*Used in perf testing
+   System.out.println("JSON REFLECT write time : "+write2String(c1,iters));
+    System.out.println("JSON Map write time : "+write2String(map, iters));
+
+    System.out.println("javabin REFLECT write time : "+write2Javabin(c1,iters));
+    System.out.println("javabin Map write time : "+write2Javabin(map, iters));
+    */
+
+  }
+
+  @SuppressForbidden(reason="used for perf testing numbers only")
+  private long write2String(Object o, int iters) throws IOException {
+    long start = System.currentTimeMillis() ;
+    for
+    (int i = 0;i<iters;i++) {
+      StringWriter writer = new StringWriter();
+
+      try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer)) {
+        jsonWriter.setIndent(true).writeObj(o);
+      }
+    }
+    return System.currentTimeMillis()-start;
+
+  }
+  @SuppressForbidden(reason="used for perf testing numbers only")
+  private long write2Javabin(Object o, int iters) throws IOException {
+    long start = System.currentTimeMillis() ;
+    for (int i = 0;i<iters;i++) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      new JavaBinCodec(null).marshal(o, baos);
+    }
+    return System.currentTimeMillis()-start;
+
+//    JSON REFLECT write time : 76
+//    JSON Map write time : 42
+//    javabin REFLECT write time : 50
+//    javabin Map write time : 32
+//
+//    before
+//    JSON REFLECT write time : 181
+//    JSON Map write time : 38
+//    javabin REFLECT write time : 111
+//    javabin Map write time : 33
+  }
+
+
+  public static class C1 implements ReflectMapWriter {
+    @JsonProperty
+    public String k1 = "v1";
+    @JsonProperty
+    public int k2 = 1;
+    @JsonProperty
+    public boolean k3 = false;
+    @JsonProperty
+    public C2 k4 = new C2();
+
+    @JsonProperty
+    public C3 k5 = new C3() ;
+
+
+  }
+
+  public static class C3 implements ReflectMapWriter {
+    @JsonProperty
+    public String k61 = "v61";
+
+    @JsonProperty
+    public String k62 = "v62";
+
+    @JsonProperty
+    public List<String> k63= List.of("v631","v632");
+  }
+
+  public static class C2 implements ReflectMapWriter {
+    @JsonProperty
+    public String k41 = "v41";
+
+    @JsonProperty
+    public String k42 = "v42";
+
   }
 }

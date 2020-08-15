@@ -111,6 +111,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
     super.init(args);
     threadManager = LTRThreadModule.getInstance(args);

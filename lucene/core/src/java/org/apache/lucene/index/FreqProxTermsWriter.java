@@ -75,9 +75,9 @@ final class FreqProxTermsWriter extends TermsHash {
 
     for (TermsHashPerField f : fieldsToFlush.values()) {
       final FreqProxTermsWriterPerField perField = (FreqProxTermsWriterPerField) f;
-      if (perField.bytesHash.size() > 0) {
-        perField.sortPostings();
-        assert perField.fieldInfo.getIndexOptions() != IndexOptions.NONE;
+      if (perField.getNumTerms() > 0) {
+        perField.sortTerms();
+        assert perField.indexOptions != IndexOptions.NONE;
         allFields.add(perField);
       }
     }

@@ -20,10 +20,11 @@ package org.apache.solr.pkg;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -34,7 +35,7 @@ public class PackageListeners {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String PACKAGE_VERSIONS = "PKG_VERSIONS";
-  private SolrCore core;
+  private final SolrCore core;
 
   public PackageListeners(SolrCore core) {
     this.core = core;
@@ -42,7 +43,7 @@ public class PackageListeners {
 
   // this registry only keeps a weak reference because it does not want to
   // cause a memory leak if the listener forgets to unregister itself
-  private List<Reference<Listener>> listeners = new ArrayList<>();
+  private List<Reference<Listener>> listeners = new CopyOnWriteArrayList<>();
 
   public synchronized void addListener(Listener listener) {
     listeners.add(new SoftReference<>(listener));
@@ -63,23 +64,24 @@ public class PackageListeners {
   }
 
   synchronized void packagesUpdated(List<PackageLoader.Package> pkgs) {
-    if(core != null) MDCLoggingContext.setCore(core);
+    MDCLoggingContext.setCore(core);
+    Listener.Ctx ctx = new Listener.Ctx();
     try {
       for (PackageLoader.Package pkgInfo : pkgs) {
-        invokeListeners(pkgInfo);
+        invokeListeners(pkgInfo, ctx);
       }
     } finally {
-      if(core != null) MDCLoggingContext.clear();
-
+      ctx.runLaterTasks(core::runAsync);
+      MDCLoggingContext.clear();
     }
   }
 
-  private synchronized void invokeListeners(PackageLoader.Package pkg) {
+  private synchronized void invokeListeners(PackageLoader.Package pkg, Listener.Ctx ctx) {
     for (Reference<Listener> ref : listeners) {
       Listener listener = ref.get();
       if(listener == null) continue;
       if (listener.packageName() == null || listener.packageName().equals(pkg.name())) {
-        listener.changed(pkg);
+        listener.changed(pkg, ctx);
       }
     }
   }
@@ -97,15 +99,41 @@ public class PackageListeners {
 
 
   public interface Listener {
-    /**Name of the package or null to loisten to all package changes
-     */
+    /**Name of the package or null to listen to all package changes */
     String packageName();
 
     PluginInfo pluginInfo();
 
-    void changed(PackageLoader.Package pkg);
+    /**A callback when the package is updated */
+    void changed(PackageLoader.Package pkg, Ctx ctx);
 
-    PackageLoader.Package.Version getPackageVersion();
+    default MapWriter getPackageVersion(PluginInfo.ClassName cName) {
+      return null;
+    }
+    class Ctx {
+      private Map<String, Runnable> runLater;
+
+      /**
+       * If there are multiple packages to be updated and there are multiple listeners,
+       * This is executed after all of the {@link Listener#changed(PackageLoader.Package, Ctx)}
+       * calls are invoked. The name is a unique identifier that can be used by consumers to avoid duplicate
+       * If no deduplication is required, use null as the name
+       */
+      public void runLater(String name, Runnable runnable) {
+        if (runLater == null) runLater = new LinkedHashMap<>();
+        if (name == null) {
+          name = runnable.getClass().getSimpleName() + "@" + runnable.hashCode();
+        }
+        runLater.put(name, runnable);
+      }
+
+      private void runLaterTasks(Consumer<Runnable> runnableExecutor) {
+        if (runLater == null) return;
+        for (Runnable r : runLater.values()) {
+          runnableExecutor.accept(r);
+        }
+      }
+    }
 
   }
 }

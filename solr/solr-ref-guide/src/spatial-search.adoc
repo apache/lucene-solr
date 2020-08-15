@@ -304,7 +304,7 @@ The https://github.com/locationtech/jts[JTS Topology Suite] is a popular computa
 It supports a variety of shapes including polygons, buffering shapes, and some invalid polygon repair fall-backs.
 With the help of Spatial4j, included with Solr, the polygons support dateline (anti-meridian) crossing.
 You must download it (a JAR file) and put that in a special location internal to Solr:  `SOLR_INSTALL/server/solr-webapp/webapp/WEB-INF/lib/`.
-You can readily download it here: http://central.maven.org/maven2/org/locationtech/jts/jts-core/1.15.0/.
+You can readily download it here: https://mvnrepository.com/artifact/org.locationtech.jts/jts-core/1.15.0.
 _It will not work if placed in other more typical Solr lib directories, unfortunately._
 
 Set the `spatialContextFactory` attribute on the field type to `JTS`.

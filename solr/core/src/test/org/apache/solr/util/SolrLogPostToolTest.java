@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
+import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -33,7 +34,7 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
 
   @Test
   public void testQueryRecord() throws Exception{
-    String record = "2019-12-09 15:05:01.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  webapp=/solr path=/select params={q=*:*&_=1575835181759&isShard=true&wt=javabin&distrib=false} hits=234868 status=0 QTime=8\n";
+    String record = "2019-12-09 15:05:01.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  webapp=/solr path=/select params={q=*:*&_=1575835181759&shards.purpose=36&isShard=true&wt=javabin&distrib=false} hits=234868 status=0 QTime=8\n";
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
     SolrInputDocument doc = docs.get(0);
@@ -53,6 +54,8 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     SolrInputField isShard = doc.getField("isShard_s");
     SolrInputField ids = doc.getField("ids_s");
     SolrInputField shards = doc.getField("shards_s");
+    SolrInputField purpose = doc.getField("purpose_ss");
+    Object[] purposes = purpose.getValues().toArray();
 
     assertEquals(query.getValue(), "*:*");
     assertEquals(date.getValue(), "2019-12-09T15:05:01.931");
@@ -69,7 +72,47 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals(isShard.getValue(), "true");
     assertEquals(ids.getValue(), "false");
     assertEquals(shards.getValue(), "false");
+    assertEquals("GET_TOP_IDS", purposes[0].toString());
+    assertEquals("REFINE_FACETS", purposes[1].toString());
+  }
 
+  // Requests which have multiple copies of the same param should be parsed so that the first param value only is
+  // indexed, since the log schema expects many of these to be single-valued fields and will throw errors if multiple
+  // values are received.
+  @Test
+  public void testRecordsFirstInstanceOfSingleValuedParams() throws Exception {
+    final String record = "2019-12-09 15:05:01.931 INFO  (qtp2103763750-21) [c:logs4 s:shard1 r:core_node2 x:logs4_shard1_replica_n1] o.a.s.c.S.Request [logs4_shard1_replica_n1]  webapp=/solr path=/select params={q=*:*&q=inStock:true&_=1575835181759&shards.purpose=36&isShard=true&wt=javabin&wt=xml&distrib=false} hits=234868 status=0 QTime=8\n";
+
+    List<SolrInputDocument> docs = readDocs(record);
+    assertEquals(docs.size(), 1);
+    SolrInputDocument doc = docs.get(0);
+
+    assertEquals(doc.getFieldValues("q_s").size(), 1);
+    assertEquals(doc.getFieldValue("q_s"), "*:*");
+
+    assertEquals(doc.getFieldValues("wt_s").size(), 1);
+    assertEquals(doc.getFieldValue("wt_s"), "javabin");
+  }
+
+  @Test
+  public void testRTGRecord() throws Exception {
+    final String record = "2020-03-19 20:00:30.845 INFO  (qtp1635378213-20354) [c:logs4 s:shard8 r:core_node63 x:logs4_shard8_replica_n60] o.a.s.c.S.Request [logs4_shard8_replica_n60]  webapp=/solr path=/get params={qt=/get&_stateVer_=logs4:104&ids=id1&ids=id2&ids=id3&wt=javabin&version=2} status=0 QTime=61";
+
+    List<SolrInputDocument> docs = readDocs(record);
+    assertEquals(docs.size(), 1);
+    SolrInputDocument doc = docs.get(0);
+
+    assertEquals(doc.getField("type_s").getValue(), "get");
+    assertEquals(doc.getField("date_dt").getValue(), "2020-03-19T20:00:30.845");
+    assertEquals(doc.getField("collection_s").getValue(), "logs4");
+    assertEquals(doc.getField("path_s").getValue(), "/get");
+    assertEquals(doc.getField("status_s").getValue(), "0");
+    assertEquals(doc.getField("shard_s").getValue(), "shard8");
+    assertEquals(doc.getField("replica_s").getValue(), "core_node63");
+    assertEquals(doc.getField("core_s").getValue(), "logs4_shard8_replica_n60");
+    assertEquals(doc.getField("wt_s").getValue(), "javabin");
+    assertEquals(doc.getField("distrib_s").getValue(), "true");
+    assertEquals(doc.getField("ids_s").getValue(), "false");
   }
 
   @Test
@@ -244,9 +287,24 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals(core.getValue(), "production_cv_month_201912_shard35_replica_n1");
   }
 
+  // Ensure SolrLogPostTool parses _all_ log lines into searchable records
+  @Test
+  public void testOtherRecord() throws Exception {
+    final String record = "2020-06-11 11:59:08.386 INFO  (main) [   ] o.a.s.c.c.ZkStateReader Updated live nodes from ZooKeeper... (0) -> (2)";
+    final List<SolrInputDocument> docs = readDocs(record);
+    assertEquals(docs.size(), 1);
+
+    SolrInputDocument doc = docs.get(0);
+    final Collection<String> fields = doc.getFieldNames();
+    assertEquals(3, fields.size());
+    assertEquals("2020-06-11T11:59:08.386", doc.getField("date_dt").getValue());
+    assertEquals("other", doc.getField("type_s").getValue());
+    assertEquals(record, doc.getField("line_t").getValue());
+  }
+
   private List<SolrInputDocument> readDocs(String records) throws Exception {
     BufferedReader bufferedReader = new BufferedReader(new StringReader(records));
-    ArrayList<SolrInputDocument> list = new ArrayList();
+    ArrayList<SolrInputDocument> list = new ArrayList<>();
 
     try {
       LogRecordReader logRecordReader = new SolrLogPostTool.LogRecordReader(bufferedReader);

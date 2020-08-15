@@ -147,10 +147,12 @@ ant.fileScanner{
       include(name: 'dev-tools/**/*.' + it)
       include(name: '*.' + it)
     }
-    // TODO: For now we don't scan txt files, so we
+    // TODO: For now we don't scan txt / md files, so we
     // check licenses in top-level folders separately:
     include(name: '*.txt')
     include(name: '*/*.txt')
+    include(name: '*.md')
+    include(name: '*/*.md')
     // excludes:
     exclude(name: '**/build/**')
     exclude(name: '**/dist/**')

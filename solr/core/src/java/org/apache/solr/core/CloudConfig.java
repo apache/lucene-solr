@@ -36,8 +36,6 @@ public class CloudConfig {
 
   private final int leaderConflictResolveWait;
 
-  private final int autoReplicaFailoverWaitAfterExpiration;
-
   private final String zkCredentialsProviderClass;
 
   private final String zkACLProviderClass;
@@ -51,9 +49,9 @@ public class CloudConfig {
   private final String pkiHandlerPublicKeyPath;
 
   CloudConfig(String zkHost, int zkClientTimeout, int hostPort, String hostName, String hostContext, boolean useGenericCoreNames,
-              int leaderVoteWait, int leaderConflictResolveWait, int autoReplicaFailoverWaitAfterExpiration,
-              String zkCredentialsProviderClass, String zkACLProviderClass, int createCollectionWaitTimeTillActive,
-              boolean createCollectionCheckLeaderActive, String pkiHandlerPrivateKeyPath, String pkiHandlerPublicKeyPath) {
+              int leaderVoteWait, int leaderConflictResolveWait, String zkCredentialsProviderClass, String zkACLProviderClass,
+              int createCollectionWaitTimeTillActive, boolean createCollectionCheckLeaderActive, String pkiHandlerPrivateKeyPath,
+              String pkiHandlerPublicKeyPath) {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
@@ -62,7 +60,6 @@ public class CloudConfig {
     this.useGenericCoreNames = useGenericCoreNames;
     this.leaderVoteWait = leaderVoteWait;
     this.leaderConflictResolveWait = leaderConflictResolveWait;
-    this.autoReplicaFailoverWaitAfterExpiration = autoReplicaFailoverWaitAfterExpiration;
     this.zkCredentialsProviderClass = zkCredentialsProviderClass;
     this.zkACLProviderClass = zkACLProviderClass;
     this.createCollectionWaitTimeTillActive = createCollectionWaitTimeTillActive;
@@ -112,10 +109,6 @@ public class CloudConfig {
     return leaderConflictResolveWait;
   }
 
-  public int getAutoReplicaFailoverWaitAfterExpiration() {
-    return autoReplicaFailoverWaitAfterExpiration;
-  }
-
   public boolean getGenericCoreNodeNames() {
     return useGenericCoreNames;
   }
@@ -144,8 +137,6 @@ public class CloudConfig {
     private static final int DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT = 45;  // 45 seconds
     private static final boolean DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE = false;
 
-    private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 120000;
-
     private String zkHost = System.getProperty("zkHost");
     private int zkClientTimeout = Integer.getInteger("zkClientTimeout", DEFAULT_ZK_CLIENT_TIMEOUT);
     private final int hostPort;
@@ -154,7 +145,6 @@ public class CloudConfig {
     private boolean useGenericCoreNames;
     private int leaderVoteWait = DEFAULT_LEADER_VOTE_WAIT;
     private int leaderConflictResolveWait = DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT;
-    private int autoReplicaFailoverWaitAfterExpiration = DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION;
     private String zkCredentialsProviderClass;
     private String zkACLProviderClass;
     private int createCollectionWaitTimeTillActive = DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT;
@@ -196,12 +186,7 @@ public class CloudConfig {
       this.leaderConflictResolveWait = leaderConflictResolveWait;
       return this;
     }
-
-    public CloudConfigBuilder setAutoReplicaFailoverWaitAfterExpiration(int autoReplicaFailoverWaitAfterExpiration) {
-      this.autoReplicaFailoverWaitAfterExpiration = autoReplicaFailoverWaitAfterExpiration;
-      return this;
-    }
-
+    
     public CloudConfigBuilder setZkCredentialsProviderClass(String zkCredentialsProviderClass) {
       this.zkCredentialsProviderClass = zkCredentialsProviderClass;
       return this;
@@ -234,7 +219,7 @@ public class CloudConfig {
 
     public CloudConfig build() {
       return new CloudConfig(zkHost, zkClientTimeout, hostPort, hostName, hostContext, useGenericCoreNames, leaderVoteWait,
-          leaderConflictResolveWait, autoReplicaFailoverWaitAfterExpiration, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
+          leaderConflictResolveWait, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
           createCollectionCheckLeaderActive, pkiHandlerPrivateKeyPath, pkiHandlerPublicKeyPath);
     }
   }

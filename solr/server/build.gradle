@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Solr Server'
+
 configurations {
   api {
     exclude group: "org.slf4j"
@@ -100,7 +102,7 @@ task assemblePackaging(type: Sync) {
     include "resources/**"
     include "scripts/**"
     include "solr/**"
-    include "README.txt"
+    include "README.md"
   })
 
   from(configurations.compileClasspath, {

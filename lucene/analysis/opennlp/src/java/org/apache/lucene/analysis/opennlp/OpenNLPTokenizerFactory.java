@@ -60,6 +60,11 @@ public class OpenNLPTokenizerFactory extends TokenizerFactory implements Resourc
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public OpenNLPTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public OpenNLPTokenizer create(AttributeFactory factory) {
     try {

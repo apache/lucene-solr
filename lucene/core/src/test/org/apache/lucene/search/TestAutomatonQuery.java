@@ -241,8 +241,9 @@ public class TestAutomatonQuery extends LuceneTestCase {
   }
 
   public void testBiggishAutomaton() {
+    int numTerms = TEST_NIGHTLY ? 3000 : 500;
     List<BytesRef> terms = new ArrayList<>();
-    while (terms.size() < 3000) {
+    while (terms.size() < numTerms) {
       terms.add(new BytesRef(TestUtil.randomUnicodeString(random())));
     }
     Collections.sort(terms);

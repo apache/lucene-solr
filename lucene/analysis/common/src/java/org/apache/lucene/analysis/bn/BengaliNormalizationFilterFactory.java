@@ -46,6 +46,11 @@ public class BengaliNormalizationFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public BengaliNormalizationFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new BengaliNormalizationFilter(input);

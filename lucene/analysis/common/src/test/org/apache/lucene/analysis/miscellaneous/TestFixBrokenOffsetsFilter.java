@@ -29,6 +29,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 
+@Deprecated
 public class TestFixBrokenOffsetsFilter extends BaseTokenStreamTestCase {
 
   public void testBogusTermVectors() throws IOException {

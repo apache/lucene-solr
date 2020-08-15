@@ -115,6 +115,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
    * @param extraParams any extra request parameters needed to be passed to DataImportHandler
    * @throws Exception in case of any error
    */
+  @SuppressWarnings({"unchecked"})
   protected void runFullImport(String dataConfig, Map<String, String> extraParams) throws Exception {
     HashMap<String, String> params = new HashMap<>();
     params.put("command", "full-import");
@@ -123,6 +124,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
     params.put("clean", "true");
     params.put("commit", "true");
     params.putAll(extraParams);
+    @SuppressWarnings({"rawtypes"})
     NamedList l = new NamedList();
     for (Map.Entry<String, String> e : params.entrySet()) {
       l.add(e.getKey(),e.getValue());
@@ -136,7 +138,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
    */
   @SuppressWarnings("unchecked")
   public static TestContext getContext(EntityProcessorWrapper parent,
-                                   VariableResolver resolver, DataSource parentDataSource,
+                                   VariableResolver resolver, @SuppressWarnings({"rawtypes"})DataSource parentDataSource,
                                    String currProcess, final List<Map<String, String>> entityFields,
                                    final Map<String, String> entityAttrs) {
     if (resolver == null) resolver = new VariableResolver();
@@ -150,7 +152,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
    * Strings at even index are keys, odd-index strings are values in the
    * returned map
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes"})
   public static Map createMap(Object... args) {
    return Utils.makeMap(args);
   }
@@ -217,6 +219,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public DataSource getDataSource() {
       return delegate.getDataSource();
     }
@@ -257,7 +260,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
     }
 
     @Override
-    public DataSource getDataSource(String name) {
+    @SuppressWarnings({"rawtypes"})public DataSource getDataSource(String name) {
       return delegate.getDataSource(name);
     }
 

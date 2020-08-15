@@ -34,12 +34,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Random;
@@ -64,6 +65,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
   @Test
   public void test() throws Exception {
+    jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(Path.of("_ALL_"))); // Allow non-standard core instance path
     testCoreUnloadAndLeaders(); // long
     testUnloadLotsOfCores(); // long
 
@@ -334,7 +336,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       int numReplicas = atLeast(3);
       ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
           5, TimeUnit.SECONDS, new SynchronousQueue<>(),
-          new DefaultSolrThreadFactory("testExecutor"));
+          new SolrNamedThreadFactory("testExecutor"));
       try {
         // create the cores
         createCollectionInOneInstance(adminClient, jetty.getNodeName(), executor, "multiunload", 2, numReplicas);
@@ -344,7 +346,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
       executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
           TimeUnit.SECONDS, new SynchronousQueue<>(),
-          new DefaultSolrThreadFactory("testExecutor"));
+          new SolrNamedThreadFactory("testExecutor"));
       try {
         for (int j = 0; j < numReplicas; j++) {
           final int freezeJ = j;

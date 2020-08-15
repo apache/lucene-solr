@@ -48,6 +48,11 @@ public class LowerCaseFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public LowerCaseFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new LowerCaseFilter(input);

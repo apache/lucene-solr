@@ -122,7 +122,7 @@ public class GeoPolygonTest extends LuceneTestCase {
 
     GeoPolygonFactory.PolygonDescription pd = new GeoPolygonFactory.PolygonDescription(points);
     c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, pd);
-    //System.out.println(c);
+    //System.out.println(zScaling);
     
     // Middle point should NOT be within!!
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
@@ -143,7 +143,7 @@ public class GeoPolygonTest extends LuceneTestCase {
 
     pd = new GeoPolygonFactory.PolygonDescription(points);
     c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, pd);
-    //System.out.println(c);
+    //System.out.println(zScaling);
     
     // Middle point should be within!!
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
@@ -251,7 +251,7 @@ public class GeoPolygonTest extends LuceneTestCase {
     shapes.add(pd);
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
-    //System.out.println("Large polygon = "+c);
+    //System.out.println("Large polygon = "+zScaling);
     
     // Sample some points within
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
@@ -452,10 +452,10 @@ public class GeoPolygonTest extends LuceneTestCase {
   
   @Test
   public void testGeoPolygonBoundsCase2() {
-    // [junit4]   1> TEST: iter=23 shape=GeoCompositeMembershipShape: {[GeoConvexPolygon: {planetmodel=PlanetModel(ab=0.7563871189161702 c=1.2436128810838298), points=
+    // [junit4]   1> TEST: iter=23 shape=GeoCompositeMembershipShape: {[GeoConvexPolygon: {planetmodel=PlanetModel(xyScaling=0.7563871189161702 zScaling=1.2436128810838298), points=
     // [[lat=0.014071770744627236, lon=0.011030818292803128],
     //  [lat=0.006772117088906782, lon=-0.0012531892445234592],
-    //  [lat=0.0022201615609504792, lon=0.005941293187389326]]}, GeoConcavePolygon: {planetmodel=PlanetModel(ab=0.7563871189161702 c=1.2436128810838298), points=
+    //  [lat=0.0022201615609504792, lon=0.005941293187389326]]}, GeoConcavePolygon: {planetmodel=PlanetModel(xyScaling=0.7563871189161702 zScaling=1.2436128810838298), points=
     // [[lat=-0.005507100238396111, lon=-0.008487706131259667],
     //  [lat=0.014071770744627236, lon=0.011030818292803128],
     //  [lat=0.0022201615609504792, lon=0.005941293187389326]]}]}
@@ -476,7 +476,7 @@ public class GeoPolygonTest extends LuceneTestCase {
     BitSet p2bits = new BitSet();
     p2bits.set(1, true);
     c.addShape(new GeoConcavePolygon(pm, points2, p2bits, false));
-    //System.out.println(c);
+    //System.out.println(zScaling);
     
     // [junit4]   1>   point=[lat=0.003540694517552105, lon=-9.99517927901697E-4]
     // [junit4]   1>   quantized=[X=0.7563849869428783, Y=-7.560204674780763E-4, Z=0.0026781405884151086]
@@ -511,10 +511,10 @@ doc=906 added here:
 
 shape:
    [junit4]   1> TEST: iter=18 shape=GeoCompositeMembershipShape: {[GeoConvexPolygon: {
-   planetmodel=PlanetModel(ab=0.8568069516722363 c=1.1431930483277637), points=
+   planetmodel=PlanetModel(xyScaling=0.8568069516722363 zScaling=1.1431930483277637), points=
    [[lat=1.1577814487635816, lon=1.6283601832010004],
    [lat=0.6664570999069251, lon=2.0855825542851574],
-   [lat=-0.23953537010974632, lon=1.8498724094352876]]}, GeoConcavePolygon: {planetmodel=PlanetModel(ab=0.8568069516722363 c=1.1431930483277637), points=
+   [lat=-0.23953537010974632, lon=1.8498724094352876]]}, GeoConcavePolygon: {planetmodel=PlanetModel(xyScaling=0.8568069516722363 zScaling=1.1431930483277637), points=
    [[lat=1.1577814487635816, lon=1.6283601832010004],
    [lat=-0.23953537010974632, lon=1.8498724094352876],
    [lat=-1.1766904875978805, lon=-2.1346828411344436]]}]}
@@ -535,14 +535,14 @@ shape:
     BitSet p2bits = new BitSet();
     p2bits.set(1, true);
     c.addShape(new GeoConcavePolygon(pm, points2, p2bits, false));
-    //System.out.println(c);
+    //System.out.println(zScaling);
     
     GeoPoint point = new GeoPoint(pm, -0.9825762558001477, 2.4832136904725273);
     GeoPoint quantizedPoint = new GeoPoint(-0.4505446160475436, 0.34850109186970535, -0.8539966368663765);
     
     GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(pm,
       -0.6107484000858642, -0.39518364125756916, -0.8568069517709872, 0.8568069517709872, -1.1431930485939341, 1.1431930485939341);
-    //System.out.println("relationship = "+xyzSolid.getRelationship(c));
+    //System.out.println("relationship = "+xyzSolid.getRelationship(zScaling));
     assertTrue(xyzSolid.getRelationship(c) == GeoArea.OVERLAPS);
   }
   
@@ -1272,7 +1272,7 @@ shape:
     final GeoPoint negativeX = new GeoPoint(PlanetModel.WGS84, 0.0, Math.PI);
     final GeoPoint negativeY = new GeoPoint(PlanetModel.WGS84, 0.0, -Math.PI * 0.5);
     final GeoPoint positiveY = new GeoPoint(PlanetModel.WGS84, 0.0, Math.PI * 0.5);
-    final GeoPoint testPoint = new GeoPoint(-0.07416172733314662, 0.5686488061136892, 0.8178445379402641);
+    final GeoPoint testPoint = new GeoPoint(-0.074161727332972, 0.5686488061123504, 0.8178445379383386);
 
     // Construct a standard polygon first to see what that does.  This winds up being a large polygon under the covers.
     GeoPolygon standard = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pd);

@@ -197,15 +197,3 @@ and prints a regular expression that will match all of them
 
 TBD
 
-### publish-solr-ref-guide.sh
-
-TBD
-
-### prep-solr-ref-guide-rc.sh
-
-TBD
-
-## Tools to be removed
-
-* svnBranchToGit.py
-* createPatch.py (svn)

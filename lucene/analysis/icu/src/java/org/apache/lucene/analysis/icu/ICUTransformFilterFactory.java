@@ -56,6 +56,11 @@ public class ICUTransformFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public ICUTransformFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new ICUTransformFilter(input, transliterator);
