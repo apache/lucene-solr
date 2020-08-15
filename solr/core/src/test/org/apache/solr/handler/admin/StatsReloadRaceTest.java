@@ -64,15 +64,17 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
           CoreAdminParams.CORE, DEFAULT_TEST_CORENAME,
           "async", "" + asyncId), new SolrQueryResponse());
 
-      boolean isCompleted;
+      boolean isCompleted = false;
       do {
         if (random.nextBoolean()) {
-          requestMetrics(true);
+         if (requestMetrics(true)) {
+           isCompleted = true;
+         }
         } else {
           requestCoreStatus();
         }
 
-        isCompleted = checkReloadComlpetion(asyncId);
+        isCompleted = checkReloadComlpetion(asyncId) && isCompleted;
       } while (!isCompleted);
       requestMetrics(false);
     }
@@ -106,7 +108,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     return isCompleted;
   }
 
-  private void requestMetrics(boolean softFail) throws Exception {
+  private boolean requestMetrics(boolean softFail) throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
     String registry = "solr.core." + h.coreName;
     String key = "SEARCHER.searcher.indexVersion";
@@ -123,7 +125,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
       NamedList metrics = (NamedList)values.get("metrics");
       if (metrics == null) {
         if (softFail) {
-          return;
+          return false;
         } else {
           fail("missing 'metrics' element in handler's output: " + values.asMap(5).toString());
         }
@@ -138,9 +140,10 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
       }
     }
     if (softFail && !found) {
-      return;
+      return false;
     }
     assertTrue("Key " + key + " not found in registry " + registry, found);
+    return true;
   }
 
 }
