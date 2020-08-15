@@ -194,6 +194,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request");
   private static final Logger slowLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".SlowRequest");
+  private final boolean failedCreation;
 
   private volatile String name;
   private String logid; // used to show what name is set
@@ -956,6 +957,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private SolrCore(CoreContainer coreContainer, String name, ConfigSet configSet, CoreDescriptor coreDescriptor,
                   String dataDir, UpdateHandler updateHandler,
                   IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
+    boolean failedCreation1;
 
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
     assert ObjectReleaseTracker.track(this);
@@ -1090,17 +1092,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       resourceLoader.inform(this); // last call before the latch is released.
       latch.countDown();
+      failedCreation1 = false;
     } catch (Throwable e) {
       log.error("Error while creating SolrCore", e);
       // release the latch, otherwise we block trying to do the close. This
       // should be fine, since counting down on a latch of 0 is still fine
       latch.countDown();
       ParWork.propegateInterrupt(e);
-
+      failedCreation1 = true;
       try {
         // close down the searcher and any other resources, if it exists, as this
         // is not recoverable
-        onDeckSearchers.set(0);
+        //onDeckSearchers.set(0);
         close();
       } catch (Throwable t) {
         ParWork.propegateInterrupt("Error while closing", t);
@@ -1119,6 +1122,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       //latch.countDown();
     }
 
+    this.failedCreation = failedCreation1;
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -1664,11 +1668,22 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         synchronized (searcherLock) {
           while (onDeckSearchers.get() > 0) {
-            try {
-              searcherLock.wait(10); // nocommit
-            } catch (InterruptedException e) {
-              // ParWork.propegateInterrupt(e);
-            } // nocommit
+            if (failedCreation) {
+              synchronized (searcherLock) {
+                for (RefCounted<SolrIndexSearcher> searcher : _searchers) {
+                  searcher.get().close();
+                }
+                for (RefCounted<SolrIndexSearcher> searcher : _realtimeSearchers) {
+                  searcher.get().close();
+                }
+              }
+            } else {
+              try {
+                searcherLock.wait(250); // nocommit
+              } catch (InterruptedException e) {
+                ParWork.propegateInterrupt(e);
+              } // nocommit
+            }
           }
         }
         return "wait for on deck searchers";

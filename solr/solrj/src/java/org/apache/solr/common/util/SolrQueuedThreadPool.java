@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -667,11 +668,12 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         try
         {
             Thread thread = _threadFactory.newThread(_runnable);
+            ParWork.getEXEC().execute(thread);
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
             _lastShrink.set(System.nanoTime());
-            thread.start();
+            _runnable.waitForStart();
             started = true;
         }
         finally
@@ -824,7 +826,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
                 _tryExecutor);
     }
 
-    private final Runnable _runnable = new SolrQueuedThreadPool.Runner();
+    private final SolrQueuedThreadPool.Runner _runnable = new SolrQueuedThreadPool.Runner();
 
     /**
      * <p>Runs the given job in the {@link Thread#currentThread() current thread}.</p>
@@ -908,6 +910,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     private class Runner implements Runnable
     {
+        CountDownLatch latch = new CountDownLatch(1);
         private Runnable idleJobPoll(long idleTimeout) throws InterruptedException
         {
             if (idleTimeout <= 0)
@@ -915,12 +918,20 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
             return _jobs.poll(idleTimeout, TimeUnit.MILLISECONDS);
         }
 
+        public void waitForStart() {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+
+            }
+        }
+
         @Override
         public void run()
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Runner started for {}", SolrQueuedThreadPool.this);
-
+            latch.countDown();
             boolean idle = true;
             try
             {
