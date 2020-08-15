@@ -38,6 +38,7 @@ import org.w3c.dom.NodeList;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -53,6 +54,55 @@ public final class FieldTypePluginLoader
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static XPathExpression analyzerQueryExp;
+  private static XPathExpression analyzerMultiTermExp;
+
+  private static XPathExpression analyzerIndexExp;
+  private static XPathExpression similarityExp;
+  private static XPathExpression charFilterExp;
+  private static XPathExpression tokenizerExp;
+  private static XPathExpression filterExp;
+
+  static {
+    try {
+      analyzerQueryExp = IndexSchema.getXpath().compile("./analyzer[@type='query']");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      analyzerMultiTermExp = IndexSchema.getXpath().compile("./analyzer[@type='multiterm']");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+    try {
+      analyzerIndexExp = IndexSchema.getXpath().compile("./analyzer[not(@type)] | ./analyzer[@type='index']");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      similarityExp = IndexSchema.getXpath().compile("./similarity");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+
+    try {
+      charFilterExp = IndexSchema.getXpath().compile("./charFilter");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      tokenizerExp = IndexSchema.getXpath().compile("./tokenizer");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      filterExp = IndexSchema.getXpath().compile("./filter");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+  }
 
   /**
    * @param schema The schema that will be used to initialize the FieldTypes
@@ -83,23 +133,19 @@ public final class FieldTypePluginLoader
 
     FieldType ft = loader.newInstance(className, FieldType.class, "schema.");
     ft.setTypeName(name);
-    
-    String expression = "./analyzer[@type='query']";
-    Node anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
+
+    Node anode = (Node) analyzerQueryExp.evaluate(node, XPathConstants.NODE);
     Analyzer queryAnalyzer = readAnalyzer(anode);
 
-    expression = "./analyzer[@type='multiterm']";
-    anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
+    anode = (Node)analyzerMultiTermExp.evaluate(node, XPathConstants.NODE);
     Analyzer multiAnalyzer = readAnalyzer(anode);
 
     // An analyzer without a type specified, or with type="index"
-    expression = "./analyzer[not(@type)] | ./analyzer[@type='index']";
-    anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
+    anode = (Node)analyzerIndexExp.evaluate( node, XPathConstants.NODE);
     Analyzer analyzer = readAnalyzer(anode);
 
     // a custom similarity[Factory]
-    expression = "./similarity";
-    anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
+    anode = (Node)similarityExp.evaluate(node, XPathConstants.NODE);
     SimilarityFactory simFactory = IndexSchema.readSimilarity(loader, anode);
     if (null != simFactory) {
       ft.setSimilarity(simFactory);
@@ -196,16 +242,15 @@ public final class FieldTypePluginLoader
     if (node == null) return null;
     NamedNodeMap attrs = node.getAttributes();
     String analyzerName = DOMUtil.getAttr(attrs,"class");
-    XPath xpath = IndexSchema.getXpath();
 
     // check for all of these up front, so we can error if used in 
     // conjunction with an explicit analyzer class.
-    NodeList charFilterNodes = (NodeList)xpath.evaluate
-      ("./charFilter",  node, XPathConstants.NODESET);
-    NodeList tokenizerNodes = (NodeList)xpath.evaluate
-      ("./tokenizer", node, XPathConstants.NODESET);
-    NodeList tokenFilterNodes = (NodeList)xpath.evaluate
-      ("./filter", node, XPathConstants.NODESET);
+    NodeList charFilterNodes = (NodeList)charFilterExp.evaluate
+      (node, XPathConstants.NODESET);
+    NodeList tokenizerNodes = (NodeList)tokenizerExp.evaluate
+      (node, XPathConstants.NODESET);
+    NodeList tokenFilterNodes = (NodeList)filterExp.evaluate
+      (node, XPathConstants.NODESET);
       
     if (analyzerName != null) {
 
