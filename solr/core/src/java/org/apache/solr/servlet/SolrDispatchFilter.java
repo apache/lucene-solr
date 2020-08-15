@@ -42,11 +42,13 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
@@ -101,6 +103,11 @@ import java.util.regex.Pattern;
  */
 public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  static {
+    log.warn("expected pre init of xml factories {} {} {} {}", XmlConfigFile.xpathFactory, XmlConfigFile.tfactory, XmlConfigFile.tx,
+        FieldTypeXmlAdapter.dbf);
+  }
 
   protected volatile CoreContainer cores;
   protected final CountDownLatch init = new CountDownLatch(1);

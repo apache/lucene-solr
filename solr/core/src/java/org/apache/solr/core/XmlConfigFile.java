@@ -16,9 +16,6 @@
  */
 package org.apache.solr.core;
 
-import com.fasterxml.aalto.AsyncByteBufferFeeder;
-import com.fasterxml.aalto.AsyncXMLStreamReader;
-import com.fasterxml.aalto.stax.InputFactoryImpl;
 import net.sf.saxon.BasicTransformerFactory;
 import net.sf.saxon.dom.DocumentBuilderImpl;
 import net.sf.saxon.jaxp.SaxonTransformerFactory;
@@ -30,7 +27,6 @@ import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.SystemIdResolver;
-import org.codehaus.staxmate.dom.DOMConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -41,17 +37,13 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import static javax.xml.stream.XMLStreamConstants.END_DOCUMENT;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stax.StAXSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -59,7 +51,6 @@ import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -77,7 +68,6 @@ public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
-  public static final DOMConverter convertor = new DOMConverter();
   public static final XPathFactory xpathFactory = new XPathFactoryImpl();
   public static final SaxonTransformerFactory tfactory = new BasicTransformerFactory();
   static  {

@@ -123,6 +123,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -161,6 +162,11 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 public class CoreContainer implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  static {
+    log.warn("expected pre init of xml factories {} {} {} {} {}", XmlConfigFile.xpathFactory, XmlConfigFile.tfactory, XmlConfigFile.tx,
+        FieldTypeXmlAdapter.dbf);
+  }
 
   final SolrCores solrCores = new SolrCores(this);
   private final boolean isZkAware;

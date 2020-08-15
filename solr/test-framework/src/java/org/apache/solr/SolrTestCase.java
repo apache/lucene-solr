@@ -59,6 +59,9 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SysStats;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RandomizeSSL;
@@ -121,6 +124,7 @@ public class SolrTestCase extends LuceneTestCase {
   public static TestRule solrClassRules = 
     RuleChain.outerRule(new SystemPropertiesRestoreRule())
              .around(new RevertDefaultThreadHandlerRule());
+
   private static volatile Random random;
 
   private static volatile boolean failed = false;

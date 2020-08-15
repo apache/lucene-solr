@@ -112,7 +112,6 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
       try {
         log.debug("Reloading enums config file from {}", enumsConfigFile);
         Document doc = SafeXMLParsing.parseConfigXML(log, loader, enumsConfigFile);
-        final XPathFactory xpathFactory = XmlConfigFile.xpathFactory;
         final XPath xpath = IndexSchema.getXpath();
         final String xpathStr = String.format(Locale.ROOT, "/enumsConfig/enum[@name='%s']", enumName);
         final NodeList nodes = (NodeList) xpath.evaluate(xpathStr, doc, XPathConstants.NODESET);

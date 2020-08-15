@@ -1094,6 +1094,8 @@
             <sysproperty key="tests.monster" value="@{tests.monster}"/>
               <!-- set whether or not slow tests should run -->
             <sysproperty key="tests.slow" value="@{tests.slow}"/>
+
+            <sysproperty key="org.apache.xml.dtm.DTMManager" value="org.apache.xml.dtm.ref.DTMManagerDefault"/>
               
             <!-- set whether tests framework should not require java assertions enabled -->
             <sysproperty key="tests.asserts" value="${tests.asserts}"/>
