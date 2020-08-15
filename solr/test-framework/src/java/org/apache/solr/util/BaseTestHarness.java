@@ -15,9 +15,16 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XML;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
+import org.apache.solr.schema.IndexSchema;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -27,16 +34,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ExecutorService;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.XML;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
-import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
-import org.apache.solr.schema.IndexSchema;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
 abstract public class BaseTestHarness {
 

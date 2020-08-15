@@ -17,21 +17,15 @@
 package org.apache.solr.core;
 
 import com.fasterxml.aalto.AsyncByteBufferFeeder;
-import com.fasterxml.aalto.AsyncInputFeeder;
 import com.fasterxml.aalto.AsyncXMLStreamReader;
-import com.fasterxml.aalto.WFCException;
-import com.fasterxml.aalto.dom.DOMWriterImpl;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
-import com.fasterxml.aalto.util.IllegalCharHandler;
 import net.sf.saxon.BasicTransformerFactory;
-import net.sf.saxon.TransformerFactoryImpl;
 import net.sf.saxon.dom.DocumentBuilderImpl;
 import net.sf.saxon.jaxp.SaxonTransformerFactory;
 import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
@@ -54,9 +48,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stax.StAXSource;
@@ -66,10 +58,8 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -102,8 +92,6 @@ public class XmlConfigFile { // formerly simply "Config"
   private final SolrResourceLoader loader;
   private final Properties substituteProperties;
   private int zkVersion = -1;
-
-
 
   /**
    * Builds a config from a resource name with no xpath prefix.  Does no property substitution.

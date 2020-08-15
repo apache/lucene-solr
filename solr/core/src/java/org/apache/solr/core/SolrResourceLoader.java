@@ -16,9 +16,40 @@
  */
 package org.apache.solr.core;
 
-
 import com.google.common.annotations.VisibleForTesting;
-import java.io.*;
+import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.rest.RestManager;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.ManagedIndexSchemaFactory;
+import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.SystemIdResolver;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -32,42 +63,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.util.*;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.highlight.SolrBoundaryScanner;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.rest.RestManager;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.ManagedIndexSchemaFactory;
-import org.apache.solr.schema.SimilarityFactory;
-import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.SystemIdResolver;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.xerces.jaxp.DocumentBuilderFactoryImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * @since solr 1.3
