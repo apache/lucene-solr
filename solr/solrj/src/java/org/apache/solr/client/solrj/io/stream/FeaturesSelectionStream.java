@@ -34,7 +34,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -84,7 +86,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
   protected transient SolrClientCache cache;
   protected transient boolean isCloseCache;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient CloudHttp2SolrClient cloudSolrClient;
 
   protected transient StreamContext streamContext;
   protected ExecutorService executorService;
@@ -249,7 +251,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     }
 
     this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("FeaturesSelectionStream"));
+    this.executorService = ParWork.getExecutor();
   }
 
   public List<TupleStream> children() {
@@ -419,7 +421,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
     public NamedList<Double> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      Http2SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq","{!igain}");

@@ -42,6 +42,8 @@ import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -259,7 +261,7 @@ public class SolrReporter extends ScheduledReporter {
      * @return configured instance of reporter
      * @deprecated use {@link #build(SolrClientCache, Supplier)} instead.
      */
-    public SolrReporter build(HttpClient client, Supplier<String> urlProvider) {
+    public SolrReporter build(Http2SolrClient client, Supplier<String> urlProvider) {
       return new SolrReporter(client, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
           params, skipHistograms, skipAggregateValues, cloudClient, compact);
     }
@@ -342,7 +344,7 @@ public class SolrReporter extends ScheduledReporter {
    * @deprecated use {@link SolrReporter#SolrReporter(SolrClientCache, boolean, Supplier, SolrMetricManager, List, String, String, TimeUnit, TimeUnit, SolrParams, boolean, boolean, boolean, boolean)} instead.
    */
   @Deprecated
-  public SolrReporter(HttpClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
+  public SolrReporter(Http2SolrClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
                       List<Report> metrics, String handler,
                       String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
                       SolrParams params, boolean skipHistograms, boolean skipAggregateValues,

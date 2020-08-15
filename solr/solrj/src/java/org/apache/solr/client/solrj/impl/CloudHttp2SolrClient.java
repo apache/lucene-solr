@@ -20,14 +20,23 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.QoSParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.slf4j.MDC;
 
 /**
  * SolrJ client class to communicate with SolrCloud using Http2SolrClient.
@@ -63,7 +72,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
     assert ObjectReleaseTracker.track(this);
     this.clientIsInternal = builder.httpClient == null;
-    this.myClient = (builder.httpClient == null) ? new Http2SolrClient.Builder().build() : builder.httpClient;
+    this.myClient = (builder.httpClient == null) ? new Http2SolrClient.Builder().withHeaders(builder.headers).build() : builder.httpClient;
     if (builder.stateProvider == null) {
       if (builder.zkHosts != null && builder.solrUrls != null) {
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
@@ -90,6 +99,52 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
   }
 
+  protected void doParallelUpdate(Map<String,? extends LBSolrClient.Req> routes,
+      NamedList<Throwable> exceptions, NamedList<NamedList> shardResponses) {
+    Map<String,Throwable> tsExceptions = new ConcurrentHashMap<>();
+    Map<String,NamedList> tsResponses = new ConcurrentHashMap<>();
+    for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
+      final String url = entry.getKey();
+      final LBSolrClient.Req lbRequest = entry.getValue();
+      lbRequest.request.setBasePath(url);
+      try {
+        MDC.put("CloudSolrClient.url", url);
+        try {
+          myClient.request(lbRequest.request, null, new Http2SolrClient.OnComplete() {
+
+            @Override
+            public void onSuccess(NamedList result) {
+              tsResponses.put(url, result);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              tsExceptions.put(url, t);
+            }});
+        } catch (IOException e) {
+          tsExceptions.put(url, e);
+        } catch (SolrServerException e) {
+          tsExceptions.put(url, e);
+        }
+
+      } finally {
+        MDC.remove("CloudSolrClient.url");
+      }
+    }
+    exceptions.addAll(tsExceptions);
+    shardResponses.addAll(tsResponses);
+    if (exceptions.size() > 0) {
+      Throwable firstException = exceptions.getVal(0);
+      if(firstException instanceof SolrException) {
+        SolrException e = (SolrException) firstException;
+        throw getRouteException(SolrException.ErrorCode.getErrorCode(e.code()),
+            exceptions, routes);
+      } else {
+        throw getRouteException(SolrException.ErrorCode.SERVER_ERROR,
+            exceptions, routes);
+      }
+    }
+  }
 
   @Override
   public void close() throws IOException {
@@ -135,7 +190,8 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     protected Http2SolrClient httpClient;
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
-    protected boolean parallelUpdates = true;
+    protected Map<String,String> headers = new ConcurrentHashMap<>();
+    protected boolean parallelUpdates = true; // always
     protected ClusterStateProvider stateProvider;
 
     /**
@@ -199,6 +255,12 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
       return this;
     }
 
+    //do not set this from an external client
+    public Builder markInternalRequest() {
+      this.headers.put(QoSParams.REQUEST_SOURCE, QoSParams.INTERNAL);
+      return this;
+    }
+
     /**
      * Tells {@link CloudHttp2SolrClient.Builder} that created clients can send updates to any shard replica (shard leaders and non-leaders).
      *
@@ -207,19 +269,6 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
      */
     public Builder sendDirectUpdatesToAnyShardReplica() {
       directUpdatesToLeadersOnly = false;
-      return this;
-    }
-
-    /**
-     * Tells {@link CloudHttp2SolrClient.Builder} whether created clients should send shard updates serially or in parallel
-     *
-     * When an {@link UpdateRequest} affects multiple shards, {@link CloudHttp2SolrClient} splits it up and sends a request
-     * to each affected shard.  This setting chooses whether those sub-requests are sent serially or in parallel.
-     * <p>
-     * If not set, this defaults to 'true' and sends sub-requests in parallel.
-     */
-    public Builder withParallelUpdates(boolean parallelUpdates) {
-      this.parallelUpdates = parallelUpdates;
       return this;
     }
 

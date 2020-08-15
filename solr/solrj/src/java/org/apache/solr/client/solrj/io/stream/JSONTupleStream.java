@@ -44,12 +44,15 @@ import org.noggit.ObjectBuilder;
 public class JSONTupleStream implements TupleStreamParser {
   private List<String> path;  // future... for more general stream handling
   private Reader reader;
+
+  private InputStream stream;
   private JSONParser parser;
   private boolean atDocs;
 
-  public JSONTupleStream(Reader reader) {
-    this.reader = reader;
+  public JSONTupleStream(InputStream stream) {
+    this.reader = new InputStreamReader(stream, StandardCharsets.UTF_8);;
     this.parser = new JSONParser(reader);
+    this.stream = stream;
   }
 
   // temporary...
@@ -66,8 +69,7 @@ public class JSONTupleStream implements TupleStreamParser {
     query.setMethod(SolrRequest.METHOD.POST);
     NamedList<Object> genericResponse = server.request(query);
     InputStream stream = (InputStream)genericResponse.get("stream");
-    InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
-    return new JSONTupleStream(reader);
+    return new JSONTupleStream(stream);
   }
 
 
@@ -91,6 +93,7 @@ public class JSONTupleStream implements TupleStreamParser {
 
   public void close() throws IOException {
     reader.close();
+    stream.close();
   }
 
 

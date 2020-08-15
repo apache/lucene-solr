@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
@@ -33,6 +34,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@SolrTestCase.SuppressObjectReleaseTracker(object = "Http2SolrClient")
 public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
 
   private static JettySolrRunner jetty;

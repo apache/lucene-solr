@@ -29,7 +29,7 @@ public class SolrExampleXMLHttp2Test extends SolrExampleTests {
   protected static JettySolrRunner jetty;
 
   @BeforeClass
-  public static void beforeTest() throws Exception {
+  public static void beforeSolrExampleXMLHttp2Test() throws Exception {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 

@@ -33,6 +33,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -42,6 +43,7 @@ import org.junit.Test;
  * changes to Solr have made it possible for the same data sent with different formats to result in different NamedLists
  * after unmarshalling, so the test duplication is now necessary.  See SOLR-13331 for an example.
  */
+@Ignore // nocommit debug
 public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final int NUM_SHARDS = 1;

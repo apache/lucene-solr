@@ -352,11 +352,8 @@ public class CoreContainer implements Closeable {
 
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
 
-    this.replayUpdatesExecutor = new OrderedExecutor(
-        cfg.getReplayUpdatesThreads(),
-        ExecutorUtil.newMDCAwareCachedThreadPool(
-            cfg.getReplayUpdatesThreads(),
-            new SolrNamedThreadFactory("replayUpdatesExecutor")));
+    this.replayUpdatesExecutor = new OrderedExecutor( cfg.getReplayUpdatesThreads(),
+        ParWork.getExecutorService(cfg.getReplayUpdatesThreads()));
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
@@ -735,7 +732,7 @@ public class CoreContainer implements Closeable {
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
-    solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
+    solrClientCache = new SolrClientCache(updateShardHandler.getUpdateOnlyHttpClient());
 
     // initialize CalciteSolrDriver instance to use this solrClientCache
     CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);

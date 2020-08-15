@@ -58,13 +58,13 @@ public class ExecutorStream extends TupleStream implements Expressible {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private TupleStream stream;
+  private final TupleStream stream;
 
-  private int threads;
+  private final int threads;
 
-  private ExecutorService executorService;
-  private StreamFactory streamFactory;
-  private StreamContext streamContext;
+  private volatile ExecutorService executorService;
+  private final  StreamFactory streamFactory;
+  private volatile StreamContext streamContext;
 
   public ExecutorStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
@@ -82,12 +82,8 @@ public class ExecutorStream extends TupleStream implements Expressible {
     }
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
-    init(stream, threads, factory);
-  }
-
-  private void init(TupleStream tupleStream, int threads, StreamFactory factory) throws IOException{
     this.threads = threads;
-    this.stream = tupleStream;
+    this.stream = stream;
     this.streamFactory = factory;
   }
 
@@ -139,19 +135,13 @@ public class ExecutorStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    executorService = ExecutorUtil.newMDCAwareFixedThreadPool(threads, new SolrNamedThreadFactory("ExecutorStream"));
+    executorService = ParWork.getExecutor();
     stream.open();
   }
 
   public void close() throws IOException {
     stream.close();
-    executorService.shutdown();
-    try {
-      executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-    } catch(InterruptedException e) {
-      ParWork.propegateInterrupt(e);
-      log.error("Interrupted while waiting for termination", e);
-    }
+    ExecutorUtil.shutdownAndAwaitTermination(executorService);
   }
 
   public Tuple read() throws IOException {

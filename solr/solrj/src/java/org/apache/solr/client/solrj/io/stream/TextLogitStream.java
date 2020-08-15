@@ -34,7 +34,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -88,7 +90,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   protected transient SolrClientCache cache;
   protected transient boolean isCloseCache;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient CloudHttp2SolrClient cloudSolrClient;
 
   protected transient StreamContext streamContext;
   protected ExecutorService executorService;
@@ -329,7 +331,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
 
     this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TextLogitSolrStream"));
+    this.executorService = ParWork.getExecutor();
   }
 
   public List<TupleStream> children() {
@@ -618,7 +620,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     public Tuple call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      Http2SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq","{!tlogit}");

@@ -29,6 +29,8 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -40,10 +42,12 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -62,7 +66,7 @@ public class SolrStream extends TupleStream {
   private boolean trace;
   private Map<String, String> fieldMappings;
   private transient TupleStreamParser tupleStreamParser;
-  private transient HttpSolrClient client;
+  private transient Http2SolrClient client;
   private transient SolrClientCache cache;
   private String slice;
   private long checkpoint = -1;
@@ -111,7 +115,7 @@ public class SolrStream extends TupleStream {
 
   public void open() throws IOException {
     if(cache == null) {
-      client = new HttpSolrClient.Builder(baseUrl).markInternalRequest().build();
+      client = new Http2SolrClient.Builder(baseUrl).markInternalRequest().build();
     } else {
       client = cache.getHttpSolrClient(baseUrl);
     }
@@ -189,9 +193,8 @@ public class SolrStream extends TupleStream {
     if (closeableHttpResponse != null) {
       closeableHttpResponse.close();
     }
-    if(cache == null) {
-      client.close();
-    }
+    IOUtils.closeQuietly(tupleStreamParser);
+    tupleStreamParser.close();
   }
 
   /**
@@ -287,15 +290,20 @@ public class SolrStream extends TupleStream {
     if(user != null && password != null) {
       query.setBasicAuthCredentials(user, password);
     }
+    InputStream stream = null;
+    try {
+      NamedList<Object> genericResponse = server.request(query);
+       stream = (InputStream) genericResponse.get("stream");
 
-    NamedList<Object> genericResponse = server.request(query);
-    InputStream stream = (InputStream) genericResponse.get("stream");
-    this.closeableHttpResponse = (CloseableHttpResponse)genericResponse.get("closeableResponse");
-    if (CommonParams.JAVABIN.equals(wt)) {
-      return new JavabinTupleStreamParser(stream, true);
-    } else {
-      InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
-      return new JSONTupleStream(reader);
+      this.closeableHttpResponse = (CloseableHttpResponse) genericResponse.get("closeableResponse");
+      if (CommonParams.JAVABIN.equals(wt)) {
+        return new JavabinTupleStreamParser(stream, true);
+      } else {
+        return new JSONTupleStream(stream);
+      }
+    }catch (Exception e) {
+      IOUtils.closeQuietly(stream);
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "", e);
     }
   }
 }

@@ -20,6 +20,8 @@ import org.apache.commons.io.output.StringBuilderWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -50,21 +52,42 @@ public class ObjectReleaseTracker {
   public static void clear() {
     OBJECTS.clear();
   }
-  
+
   /**
    * @return null if ok else error message
    */
   public static String checkEmpty() {
+    return checkEmpty(null);
+  }
+
+  /**
+   * @return null if ok else error message
+   * @param object
+   */
+  public static String checkEmpty(String object) {
     StringBuilder error = new StringBuilder();
     Set<Entry<Object,String>> entries = OBJECTS.entrySet();
     Set<Entry<Object,String>> entriesCopy = new HashSet<>(entries);
     if (entriesCopy.size() > 0) {
       List<String> objects = new ArrayList<>(entriesCopy.size());
       for (Entry<Object,String> entry : entriesCopy) {
+        if (object != null && entry.getKey().getClass().getSimpleName().equals(object)) {
+          entriesCopy.remove(entry.getKey());
+          if (entry.getKey() instanceof Closeable) {
+            try {
+              ((Closeable) entry.getKey()).close();
+            } catch (IOException e) {
+              log.warn("Exception trying to close", e);
+            }
+          }
+          continue;
+        }
         objects.add(entry.getKey().getClass().getSimpleName());
       }
-      
-      error.append("ObjectTracker found " + entriesCopy.size() + " object(s) that were not released!!! " + objects + "\n");
+      if (objects.isEmpty()) {
+        return null;
+      }
+      error.append("ObjectTracker found " + objects.size() + " object(s) that were not released!!! " + objects + "\n");
       for (Entry<Object,String> entry : entriesCopy) {
         error.append(entry.getKey() + "\n" + "StackTrace:\n" + entry.getValue() + "\n");
       }

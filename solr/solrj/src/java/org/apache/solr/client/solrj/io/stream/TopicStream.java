@@ -34,7 +34,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -293,8 +295,8 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     } else {
       final List<String> hosts = new ArrayList<String>();
       hosts.add(zkHost);
-      cloudSolrClient = new Builder(hosts, Optional.empty())
-          .build();
+      cloudSolrClient = new CloudHttp2SolrClient.Builder(hosts, Optional.empty())
+          .markInternalRequest().build();
       this.cloudSolrClient.connect();
     }
 
@@ -312,7 +314,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
   private void openStreams() throws IOException {
 
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TopicStream"));
+    ExecutorService service = ParWork.getExecutor();
     try {
       List<Future<TupleWrapper>> futures = new ArrayList();
       for (TupleStream solrStream : solrStreams) {
@@ -333,7 +335,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         throw new IOException(e);
       }
     } finally {
-      service.shutdown();
+      ExecutorUtil.shutdownAndAwaitTermination(service);
     }
   }
 
@@ -488,7 +490,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
       Collection<Replica> replicas = slice.getReplicas();
       for(Replica replica : replicas) {
         if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())){
-          HttpSolrClient httpClient = streamContext.getSolrClientCache().getHttpSolrClient(replica.getCoreUrl());
+          Http2SolrClient httpClient = streamContext.getSolrClientCache().getHttpSolrClient(replica.getCoreUrl());
           try {
             SolrDocument doc = httpClient.getById(id);
             if(doc != null) {

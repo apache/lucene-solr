@@ -112,9 +112,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   private final boolean directUpdatesToLeadersOnly;
   private final RequestReplicaListTransformerGenerator requestRLTGenerator;
   boolean parallelUpdates; //TODO final
-  private ExecutorService threadPool = ExecutorUtil
-      .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(
-          "CloudSolrClient ThreadPool"));
+  private ExecutorService threadPool;
   private String idField = ID;
   public static final String STATE_VERSION = "_stateVer_";
   private long retryExpiryTime = TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);//3 seconds or 3 million nanos
@@ -229,6 +227,11 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   protected BaseCloudSolrClient(boolean updatesToLeaders, boolean parallelUpdates, boolean directUpdatesToLeadersOnly) {
+    if (parallelUpdates) {
+      threadPool = ExecutorUtil
+          .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(
+              "CloudSolrClient ThreadPool"));
+    }
     this.updatesToLeaders = updatesToLeaders;
     this.parallelUpdates = parallelUpdates;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
@@ -251,9 +254,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   @Override
   public void close() throws IOException {
-    if(this.threadPool != null && !this.threadPool.isShutdown()) {
-      this.threadPool.shutdown();
-    }
+    ExecutorUtil.shutdownAndAwaitTermination(threadPool);
   }
 
   public ResponseParser getParser() {
@@ -535,42 +536,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     long start = System.nanoTime();
 
     if (parallelUpdates) {
-      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<>(routes.size());
-      for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
-        final String url = entry.getKey();
-        final LBSolrClient.Req lbRequest = entry.getValue();
-        try {
-          MDC.put("CloudSolrClient.url", url);
-          responseFutures.put(url, threadPool.submit(() -> {
-            return getLbClient().request(lbRequest).getResponse();
-          }));
-        } finally {
-          MDC.remove("CloudSolrClient.url");
-        }
-      }
-
-      for (final Map.Entry<String, Future<NamedList<?>>> entry: responseFutures.entrySet()) {
-        final String url = entry.getKey();
-        final Future<NamedList<?>> responseFuture = entry.getValue();
-        try {
-          shardResponses.add(url, responseFuture.get());
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-          exceptions.add(url, e.getCause());
-        }
-      }
-
-      if (exceptions.size() > 0) {
-        Throwable firstException = exceptions.getVal(0);
-        if(firstException instanceof SolrException) {
-          SolrException e = (SolrException) firstException;
-          throw getRouteException(SolrException.ErrorCode.getErrorCode(e.code()), exceptions, routes);
-        } else {
-          throw getRouteException(SolrException.ErrorCode.SERVER_ERROR, exceptions, routes);
-        }
-      }
+      doParallelUpdate(routes, exceptions, shardResponses);
     } else {
       for (Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
         String url = entry.getKey();
@@ -626,6 +592,49 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     rr.setRouteResponses(shardResponses);
     rr.setRoutes(routes);
     return rr;
+  }
+
+  protected void doParallelUpdate(Map<String,? extends LBSolrClient.Req> routes,
+      NamedList<Throwable> exceptions, NamedList<NamedList> shardResponses) {
+    final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<>(
+        routes.size());
+    for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
+      final String url = entry.getKey();
+      final LBSolrClient.Req lbRequest = entry.getValue();
+      try {
+        MDC.put("CloudSolrClient.url", url);
+        responseFutures.put(url, threadPool.submit(() -> {
+          return getLbClient().request(lbRequest).getResponse();
+        }));
+      } finally {
+        MDC.remove("CloudSolrClient.url");
+      }
+    }
+
+    for (final Map.Entry<String, Future<NamedList<?>>> entry: responseFutures.entrySet()) {
+      final String url = entry.getKey();
+      final Future<NamedList<?>> responseFuture = entry.getValue();
+      try {
+        shardResponses.add(url, responseFuture.get());
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(e);
+      } catch (ExecutionException e) {
+        exceptions.add(url, e.getCause());
+      }
+    }
+
+    if (exceptions.size() > 0) {
+      Throwable firstException = exceptions.getVal(0);
+      if(firstException instanceof SolrException) {
+        SolrException e = (SolrException) firstException;
+        throw getRouteException(SolrException.ErrorCode.getErrorCode(e.code()),
+            exceptions, routes);
+      } else {
+        throw getRouteException(SolrException.ErrorCode.SERVER_ERROR,
+            exceptions, routes);
+      }
+    }
   }
 
   protected RouteException getRouteException(SolrException.ErrorCode serverError, NamedList<Throwable> exceptions, Map<String, ? extends LBSolrClient.Req> routes) {

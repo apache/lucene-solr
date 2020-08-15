@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -207,7 +208,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
       builder.append(nodeId);
     }
 
-    CloudSolrClient client = clientCache.getCloudSolrClient(zkHost);
+    CloudHttp2SolrClient client = clientCache.getCloudSolrClient(zkHost);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.QT, "/terms");
     params.add(TermsParams.TERMS, "true");

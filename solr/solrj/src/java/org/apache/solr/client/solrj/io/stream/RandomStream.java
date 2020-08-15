@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -65,7 +66,7 @@ public class RandomStream extends TupleStream implements Expressible  {
   private Map<String, String> props;
   private String collection;
   protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient CloudHttp2SolrClient cloudSolrClient;
   private Iterator<SolrDocument> documentIterator;
   private int x;
   private boolean outputX;
@@ -204,7 +205,7 @@ public class RandomStream extends TupleStream implements Expressible  {
     } else {
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
-      cloudSolrClient = new CloudSolrClient.Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build();
+      cloudSolrClient = new CloudHttp2SolrClient.Builder(hosts, Optional.empty()).markInternalRequest().build();
     }
 
     ModifiableSolrParams params = getParams(this.props);

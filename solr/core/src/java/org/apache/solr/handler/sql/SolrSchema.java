@@ -31,6 +31,7 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.LukeRequest;
@@ -68,7 +69,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
   @Override
   protected Map<String, Table> getTableMap() {
     String zk = this.properties.getProperty("zk");
-    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    CloudHttp2SolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
     ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
 
@@ -92,7 +93,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
     String zk = this.properties.getProperty("zk");
-    CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    CloudHttp2SolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
     try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);

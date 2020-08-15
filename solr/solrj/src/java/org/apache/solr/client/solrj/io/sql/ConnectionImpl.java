@@ -37,6 +37,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 
@@ -44,7 +45,7 @@ class ConnectionImpl implements Connection {
 
   private final String url;
   private final SolrClientCache solrClientCache = new SolrClientCache();
-  private final CloudSolrClient client;
+  private final CloudHttp2SolrClient client;
   private final Properties properties;
   private final DatabaseMetaData databaseMetaData;
   private final Statement connectionStatement;
@@ -65,7 +66,7 @@ class ConnectionImpl implements Connection {
     return url;
   }
 
-  CloudSolrClient getClient() {
+  CloudHttp2SolrClient getClient() {
     return client;
   }
 

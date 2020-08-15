@@ -519,7 +519,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
       ExecutorService threadPool = null;
       try {
-        threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(4, new SolrNamedThreadFactory("GatherNodesStream"));
+        threadPool = ParWork.getExecutor();
 
         Map<String, Node> roots = new HashMap();
 
@@ -608,7 +608,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       } catch(Exception e) {
         throw new RuntimeException(e);
       } finally {
-        threadPool.shutdown();
+        ExecutorUtil.shutdownAndAwaitTermination(threadPool);
       }
     }
 

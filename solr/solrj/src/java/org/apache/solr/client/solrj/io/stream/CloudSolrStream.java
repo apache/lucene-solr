@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -79,7 +80,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected StreamComparator comp;
   private boolean trace;
   protected transient Map<String, Tuple> eofTuples;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient CloudHttp2SolrClient cloudSolrClient;
   protected transient List<TupleStream> solrStreams;
   protected transient TreeSet<TupleWrapper> tuples;
   protected transient StreamContext streamContext;
@@ -397,7 +398,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("CloudSolrStream"));
+    ExecutorService service = ParWork.getExecutor();
     try {
       List<Future<TupleWrapper>> futures = new ArrayList();
       for (TupleStream solrStream : solrStreams) {
@@ -418,7 +419,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         throw new IOException(e);
       }
     } finally {
-      service.shutdown();
+      ExecutorUtil.shutdownAndAwaitTermination(service);
     }
   }
 

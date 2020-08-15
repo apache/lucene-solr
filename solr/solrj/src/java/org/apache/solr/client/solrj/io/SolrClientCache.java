@@ -18,7 +18,9 @@ package org.apache.solr.client.solrj.io;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -44,29 +46,31 @@ public class SolrClientCache implements Serializable, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
-  private final HttpClient httpClient;
+  private final Http2SolrClient httpClient;
+  private boolean closeClient;
 
   public SolrClientCache() {
-    this(null);
+    this(new Http2SolrClient.Builder().markInternalRequest().build());
+    closeClient = true;
   }
 
-  public SolrClientCache(HttpClient httpClient) {
+  public SolrClientCache(Http2SolrClient httpClient) {
     this.httpClient = httpClient;
     assert ObjectReleaseTracker.track(this);
   }
 
-  public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
-    CloudSolrClient client;
+  public synchronized CloudHttp2SolrClient getCloudSolrClient(String zkHost) {
+    CloudHttp2SolrClient client;
     if (solrClients.containsKey(zkHost)) {
-      client = (CloudSolrClient) solrClients.get(zkHost);
+      client = (CloudHttp2SolrClient) solrClients.get(zkHost);
     } else {
       final List<String> hosts = new ArrayList<String>();
       hosts.add(zkHost);
-      CloudSolrClient.Builder builder = new CloudSolrClient.Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000);
+      CloudHttp2SolrClient.Builder builder = new CloudHttp2SolrClient.Builder(hosts, Optional.empty());
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }
-      client = builder.build();
+      client = builder.markInternalRequest().build();
       client.connect();
       solrClients.put(zkHost, client);
     }
@@ -74,12 +78,12 @@ public class SolrClientCache implements Serializable, Closeable {
     return client;
   }
 
-  public synchronized HttpSolrClient getHttpSolrClient(String host) {
-    HttpSolrClient client;
+  public synchronized Http2SolrClient getHttpSolrClient(String host) {
+    Http2SolrClient client;
     if (solrClients.containsKey(host)) {
-      client = (HttpSolrClient) solrClients.get(host);
+      client = (Http2SolrClient) solrClients.get(host);
     } else {
-      HttpSolrClient.Builder builder = new HttpSolrClient.Builder(host);
+      Http2SolrClient.Builder builder = new Http2SolrClient.Builder(host);
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }
@@ -94,6 +98,9 @@ public class SolrClientCache implements Serializable, Closeable {
       for (Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
         closer.collect("solrClient", entry.getValue());
       }
+    }
+    if (closeClient) {
+      httpClient.close();
     }
     solrClients.clear();
     assert ObjectReleaseTracker.release(this);

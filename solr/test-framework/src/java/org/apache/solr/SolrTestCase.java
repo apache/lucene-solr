@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -151,6 +152,18 @@ public class SolrTestCase extends LuceneTestCase {
     /** Point to JIRA entry. */
     public String bugUrl() default "None";
   }
+
+  /**
+   * Annotation for test classes that want to disable SSL
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressObjectReleaseTracker {
+    public String object();
+  }
+
 
   public static final int DEFAULT_ZK_SESSION_TIMEOUT = 20000;  // default socket connection timeout in ms
   public static final int DEFAULT_CONNECTION_TIMEOUT = 10000;  // default socket connection timeout in ms
@@ -460,8 +473,15 @@ public class SolrTestCase extends LuceneTestCase {
       SysStats.getSysStats().stopMonitor();
 
       if (!failed && suiteFailureMarker.wasSuccessful() ) {
+        String object = null;
         // if the tests passed, make sure everything was closed / released
-        String orr = ObjectReleaseTracker.checkEmpty();
+        if (RandomizedTest.getContext().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
+          SuppressObjectReleaseTracker sor = RandomizedTest.getContext().getTargetClass()
+              .getAnnotation(SuppressObjectReleaseTracker.class);
+           object = sor.object();
+        }
+
+        String orr = ObjectReleaseTracker.checkEmpty(object);
         ObjectReleaseTracker.clear();
         assertNull(orr, orr);
       }
@@ -600,20 +620,20 @@ public class SolrTestCase extends LuceneTestCase {
   }
 
   private static void interrupt(Thread thread, String nameContains) {
-    if (nameContains != null && thread.getName().contains(nameContains) && nameContains.startsWith("ParWork")) {
+    if ((nameContains != null && thread.getName().contains(nameContains)) || (interuptThreadWithNameContains != null && thread.getName().contains(interuptThreadWithNameContains)) ) {
 
- //     System.out.println("simulate interrupt on " + thread.getName());
-//      thread.interrupt();
-//      try {
-//        thread.join(5000);
-//      } catch (InterruptedException e) {
-//        ParWork.propegateInterrupt(e);
-//      }
+      System.out.println("interrupt on " + thread.getName());
+      thread.interrupt();
+      try {
+        thread.join(5000);
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+      }
     }
 
-    if (nameContains != null && nameContains.startsWith("ParWork")) {
-      ParWork.closeExecutor();
-    }
+//    if (nameContains != null && nameContains.startsWith("ParWork")) {
+//      ParWork.closeExecutor();
+//    }
   }
 
   public static SolrQueuedThreadPool getQtp() {

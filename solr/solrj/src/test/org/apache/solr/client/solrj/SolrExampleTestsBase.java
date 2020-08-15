@@ -42,7 +42,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   protected static JettySolrRunner jetty;
 
   @BeforeClass
-  public static void beforeTest() throws Exception {
+  public static void beforeSolrExampleTestsBase() throws Exception {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 

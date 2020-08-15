@@ -301,7 +301,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
 
     try {
 
-      threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(threads, new SolrNamedThreadFactory("ShortestPathStream"));
+      threadPool = ParWork.getExecutor();
 
       //Breadth first search
       TRAVERSE:
@@ -373,7 +373,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
         ++depth;
       }
     } finally {
-      threadPool.shutdown();
+      ExecutorUtil.shutdownAndAwaitTermination(threadPool);
     }
 
     Set<String> finalPaths = new HashSet();

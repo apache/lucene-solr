@@ -95,9 +95,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
-  private SolrClientCache solrClientCache;
+  private volatile SolrClientCache solrClientCache;
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
+  private final Map<String, DaemonStream> daemons = new ConcurrentHashMap<>();
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {

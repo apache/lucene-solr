@@ -56,7 +56,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
 
   static final String sqlNonCloudErrorMsg = "/sql handler only works in Solr Cloud mode";
 
-  private boolean isCloud = false;
+  private volatile boolean isCloud = false;
 
   public void inform(SolrCore core) {
     CoreContainer coreContainer = core.getCoreContainer();

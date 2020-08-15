@@ -30,7 +30,7 @@ public class ObjectCache extends MapBackedCache<String, Object> implements SolrC
   private volatile boolean isClosed;
 
   public ObjectCache() {
-    super(new ConcurrentHashMap<>());
+    super(new ConcurrentHashMap<>(64, 0.75f, 12));
   }
 
   private void ensureNotClosed() {
