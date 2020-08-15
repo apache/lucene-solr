@@ -1818,7 +1818,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         CollectorManagerResult result = searchCollectorManagers(len, cmd, query, true, true, true);
         set = result.docSet;
         totalHits = result.totalHits;
-        //assert (totalHits == set.size()) || qr.isPartialResults();
+        assert (totalHits == set.size()) || qr.isPartialResults();
         topDocs = result.topDocs;
         maxScore = result.maxScore;
       }
