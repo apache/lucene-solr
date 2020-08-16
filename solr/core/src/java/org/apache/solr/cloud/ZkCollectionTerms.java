@@ -17,12 +17,13 @@
 
 package org.apache.solr.cloud;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreDescriptor;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Used to manage all ZkShardTerms of a collection
@@ -31,6 +32,7 @@ class ZkCollectionTerms implements AutoCloseable {
   private final String collection;
   private final Map<String, ZkShardTerms> terms;
   private final SolrZkClient zkClient;
+  private boolean closed;
 
   ZkCollectionTerms(String collection, SolrZkClient client) {
     this.collection = collection;
@@ -42,6 +44,7 @@ class ZkCollectionTerms implements AutoCloseable {
 
   public ZkShardTerms getShard(String shardId) {
     synchronized (terms) {
+      if (closed) throw new AlreadyClosedException();
       if (!terms.containsKey(shardId)) terms.put(shardId, new ZkShardTerms(collection, shardId, zkClient));
       return terms.get(shardId);
     }
@@ -49,12 +52,14 @@ class ZkCollectionTerms implements AutoCloseable {
 
   public void register(String shardId, String coreNodeName) {
     synchronized (terms)  {
+      if (closed) throw new AlreadyClosedException();
       getShard(shardId).registerTerm(coreNodeName);
     }
   }
 
   public void remove(String shardId, CoreDescriptor coreDescriptor) {
     synchronized (terms) {
+      if (closed) throw new AlreadyClosedException();
       if (getShard(shardId).removeTerm(coreDescriptor)) {
         terms.remove(shardId).close();
       }
@@ -63,6 +68,7 @@ class ZkCollectionTerms implements AutoCloseable {
 
   public void close() {
     synchronized (terms) {
+      this.closed = true;
       terms.values().forEach(ZkShardTerms::close);
     }
     ObjectReleaseTracker.release(this);

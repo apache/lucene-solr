@@ -25,6 +25,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -360,7 +361,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           recoveryThrottle.minimumWaitBetweenActions();
           recoveryThrottle.markAttemptingAction();
           if (recoveryStrat != null) {
-            ParWork.close(recoveryStrat);
+            IOUtils.closeQuietly(recoveryStrat);
           }
 
           if (prepForClose || cc.isShutDown() || closed) {
@@ -401,23 +402,36 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     if (prepForClose) {
       this.prepForClose = true;
     }
+    try (ParWork closer = new ParWork(this, true)) {
+      if (recoveryStrat != null) {
+        closer.collect("recoveryStrat", (() -> {
+          try {
+            recoveryFuture.cancel(true);
+            recoveryStrat.close();
+          } catch (NullPointerException e) {
+            // okay
+          }
+          try {
+            recoveryStrat.close();
+          } catch (NullPointerException e) {
+            // okay
+          }
+        }));
 
-    if (recoveryStrat != null) {
-      try {
-        recoveryStrat.close();
-      } catch (NullPointerException e) {
-        // okay
-      }
-      if (wait && recoveryStrat != null && recoveryFuture != null) {
-        try {
-          recoveryFuture.get(10, TimeUnit.MINUTES); // nocommit - how long? make configurable too
-        } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        } catch (ExecutionException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        } catch (TimeoutException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        if (wait && recoveryStrat != null && recoveryFuture != null) {
+          closer.collect("recoveryStrat", (() -> {
+            try {
+              recoveryFuture.get(10,
+                  TimeUnit.MINUTES); // nocommit - how long? make configurable too
+            } catch (InterruptedException e) {
+              ParWork.propegateInterrupt(e);
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            } catch (ExecutionException e) {
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            } catch (TimeoutException e) {
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            }
+          }));
         }
       }
       recoveryFuture = null;
@@ -454,7 +468,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
          // iwLock.writeLock().unlock();
         }
       });
-      worker.addCollect();
     }
   }
 

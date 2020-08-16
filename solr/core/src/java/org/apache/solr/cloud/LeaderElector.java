@@ -71,7 +71,7 @@ public  class LeaderElector {
   private final Map<ContextKey,ElectionContext> electionContexts;
   private final ContextKey contextKey;
 
-//  public LeaderElector(SolrZkClient zkClient) {
+  //  public LeaderElector(SolrZkClient zkClient) {
 //    this.zkClient = zkClient;
 //    this.contextKey = null;
 //    this.electionContexts = new ConcurrentHashMap<>(132, 0.75f, 50);
@@ -98,7 +98,9 @@ public  class LeaderElector {
    */
   private boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
           InterruptedException, IOException {
-
+    if (context.isClosed()) {
+      throw new AlreadyClosedException();
+    }
     context.checkIfIamLeaderFired();
     boolean checkAgain = false;
     if (!getContext().isClosed()) {
@@ -163,6 +165,9 @@ public  class LeaderElector {
   // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
           InterruptedException, IOException {
+    if (context.isClosed()) {
+      throw new AlreadyClosedException();
+    }
     context.runLeaderProcess(context, weAreReplacement,0);
   }
 
@@ -215,7 +220,7 @@ public  class LeaderElector {
    * @return sequential node number
    */
   public int joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
-    if (zkClient.isClosed()) {
+    if (context.isClosed() || zkClient.isClosed()) {
       throw new AlreadyClosedException();
     }
 
@@ -297,7 +302,9 @@ public  class LeaderElector {
       }
     }
     while(checkIfIamLeader(context, replacement)) {
-
+      if (context.isClosed()) {
+        throw new AlreadyClosedException();
+      }
     }
 
     return getSeq(context.leaderSeqPath);
@@ -347,11 +354,9 @@ public  class LeaderElector {
         // am I the next leader?
         checkIfIamLeader(context, true);
       } catch (AlreadyClosedException | InterruptedException e) {
-        ParWork.propegateInterrupt(e);
         log.info("Already shutting down");
         return;
       }  catch (Exception e) {
-        ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception canceling election", e);
       }
     }
@@ -372,6 +377,9 @@ public  class LeaderElector {
   }
 
   void retryElection(ElectionContext context, boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
+    if (context.isClosed()) {
+      throw new AlreadyClosedException();
+    }
     ElectionWatcher watcher = this.watcher;
     if (electionContexts != null) {
       ElectionContext prevContext = electionContexts.put(contextKey, context);

@@ -49,7 +49,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   @Override
   void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
           InterruptedException, IOException {
-    if (isClosed()) {
+    if (isClosed() || !zkClient.isConnected()) {
       return;
     }
 
@@ -94,7 +94,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
       if (items.size() == 0) {
         break;
       }
-      for (Pair<String,byte[]> item : items) {
+      for (Pair<String, byte[]> item : items) {
         paths.add(item.first());
       }
       queue.remove(paths);
@@ -107,20 +107,17 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
-    if (!zkClient.isConnected()) {
-      log.info("Can't cancel, zkClient is not connected");
-      return;
-    }
-
     try (ParWork closer = new ParWork(this, true)) {
-      closer.collect("cancelElection", () -> {
-        try {
-          super.cancelElection();
-        } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
-          log.error("Exception closing Overseer", e);
-        }
-      });
+      if (zkClient.isConnected()) {
+        closer.collect("cancelElection", () -> {
+          try {
+            super.cancelElection();
+          } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
+            log.error("Exception closing Overseer", e);
+          }
+        });
+      }
       closer.collect("overseer", () -> {
         try {
           overseer.doClose();
@@ -146,7 +143,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
       });
       closer.collect("Overseer", () -> {
         try {
-          overseer.doClose();
+          cancelElection();
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
           log.error("Exception closing Overseer", e);

@@ -65,6 +65,7 @@ public class ObjectReleaseTracker {
    * @param object
    */
   public static String checkEmpty(String object) {
+   // if (true) return null; // nocommit
     StringBuilder error = new StringBuilder();
     Set<Entry<Object,String>> entries = OBJECTS.entrySet();
     Set<Entry<Object,String>> entriesCopy = new HashSet<>(entries);

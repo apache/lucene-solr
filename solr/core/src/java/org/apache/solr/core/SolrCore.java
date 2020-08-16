@@ -176,6 +176,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1707,7 +1708,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       closer.collect(updateHandler);
       closer.collect("closeSearcher", () -> {
         closeSearcher();
+        //searcherExecutor.shutdownNow();
       });
+    //  closer.addCollect();
       closer.collect(searcherExecutor);
       closer.addCollect();
 
@@ -1741,7 +1744,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     infoRegistry.clear();
 
     //areAllSearcherReferencesEmpty();
-
+    refCount.set(-1);
     ObjectReleaseTracker.release(this);
   }
 
@@ -1756,7 +1759,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * Whether this core is closed.
    */
   public boolean isClosed() {
-    return refCount.get() <= 0;
+    return refCount.get() < 0;
   }
 
   private final Collection<CloseHook> closeHooks = ConcurrentHashMap.newKeySet(128);
@@ -1891,7 +1894,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
-  final ExecutorService searcherExecutor = new ParWorkExecutor("searcherExecutor", 1, 1, 1, new LinkedBlockingQueue<>());
+  final ExecutorService searcherExecutor = new ParWorkExecutor("searcherExecutor", 0, 1, 1, new BlockingArrayQueue<>());
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private final Object searcherLock = new Object();  // the sync object for the searcher

@@ -54,7 +54,7 @@ public class OrderedExecutorTest extends SolrTestCase {
   public void testExecutionInOrder() {
     IntBox intBox = new IntBox();
     OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3,
-            new ParWorkExecutor("executeInOrderTest", TEST_NIGHTLY ? 10 : 3, TEST_NIGHTLY ? 10 : 3));
+        ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3));
     try {
       for (int i = 0; i < 100; i++) {
         orderedExecutor.execute(1, () -> intBox.value.incrementAndGet());
@@ -71,7 +71,7 @@ public class OrderedExecutorTest extends SolrTestCase {
   @Test
   public void testLockWhenQueueIsFull() throws ExecutionException {
     final OrderedExecutor orderedExecutor = new OrderedExecutor
-      (TEST_NIGHTLY ? 10 : 3, new ParWorkExecutor("testLockWhenQueueIsFull_test", TEST_NIGHTLY ? 10 : 3, TEST_NIGHTLY ? 10 : 3));
+      (TEST_NIGHTLY ? 10 : 3, ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3));
     
     try {
       // AAA and BBB events will both depend on the use of the same lockId
@@ -122,7 +122,7 @@ public class OrderedExecutorTest extends SolrTestCase {
     final int parallelism = atLeast(3);
 
     final OrderedExecutor orderedExecutor = new OrderedExecutor
-      (parallelism, new ParWorkExecutor("testRunInParallel_test", parallelism, parallelism));
+      (parallelism, ParWork.getExecutorService(parallelism));
 
     try {
       // distinct lockIds should be able to be used in parallel, up to the size of the executor,
@@ -226,7 +226,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       run.put(i, i);
     }
     OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3,
-            new ParWorkExecutor("testStress", TEST_NIGHTLY ? 10 : 3, TEST_NIGHTLY ? 10 : 3));
+        ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3));
     try {
       for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 55); i++) {
         int key = random().nextInt(N);

@@ -1064,6 +1064,9 @@ public class HttpSolrCall {
                                        Collection<Slice> slices, boolean activeSlices) {
     if (activeSlices) {
       for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
+        if (entry.getValue() == null) {
+          continue;
+        }
         final Slice[] activeCollectionSlices = entry.getValue().getActiveSlicesArr();
         for (Slice s : activeCollectionSlices) {
           slices.add(s);
@@ -1081,7 +1084,7 @@ public class HttpSolrCall {
 
   protected String getRemoteCoreUrl(String collectionName, String origCorename) throws SolrException {
     ClusterState clusterState = cores.getZkController().getClusterState();
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName, true);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName, false);
     Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
     List<Slice> activeSlices = new ArrayList<>();
     boolean byCoreName = false;

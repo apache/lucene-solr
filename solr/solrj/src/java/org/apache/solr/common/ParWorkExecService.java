@@ -203,8 +203,9 @@ public class ParWorkExecService extends AbstractExecutorService {
   public void execute(Runnable runnable) {
 
     if (shutdown) {
-      runIt(runnable, false, true, true);
-      return;
+      throw new RejectedExecutionException();
+//      runIt(runnable, false, true, true);
+//      return;
     }
     running.incrementAndGet();
     if (runnable instanceof ParWork.SolrFutureTask) {
@@ -292,13 +293,9 @@ public class ParWorkExecService extends AbstractExecutorService {
         }
       } finally {
         if (!alreadyShutdown) {
-          try {
-            running.decrementAndGet();
-            synchronized (awaitTerminate) {
-              awaitTerminate.notifyAll();
-            }
-          } finally {
-            if (!callThreadRuns) ParWork.closeExecutor();
+          running.decrementAndGet();
+          synchronized (awaitTerminate) {
+            awaitTerminate.notifyAll();
           }
         }
       }

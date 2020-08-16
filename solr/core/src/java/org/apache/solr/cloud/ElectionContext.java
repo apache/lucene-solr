@@ -47,7 +47,7 @@ public abstract class ElectionContext implements Closeable {
     assert ObjectReleaseTracker.release(this);
   }
 
-  public void cancelElection() throws InterruptedException, KeeperException {
+  protected void cancelElection() throws InterruptedException, KeeperException {
   }
 
   abstract void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException, InterruptedException, IOException;

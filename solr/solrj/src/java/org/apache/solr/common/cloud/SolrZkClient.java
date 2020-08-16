@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.zookeeper.CreateMode;
@@ -853,8 +854,10 @@ public class SolrZkClient implements Closeable {
     log.info("Closing {} instance {}", SolrZkClient.class.getSimpleName(), this);
 
     isClosed = true;
-  //  zkCallbackExecutor.shutdownNow();
     connManager.close();
+  //  ExecutorUtil.shutdownAndAwaitTermination(zkConnManagerCallbackExecutor);
+   // ExecutorUtil.shutdownAndAwaitTermination(zkCallbackExecutor);
+
     closeTracker.close();
     assert ObjectReleaseTracker.release(this);
   }

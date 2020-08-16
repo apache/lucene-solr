@@ -20,6 +20,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
@@ -46,6 +47,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -464,9 +466,15 @@ public class ZkDistributedQueue implements DistributedQueue {
         TreeSet<String> existingChildren = knownChildren;
         
         while (existingChildren == knownChildren) {
-          changed.await(500, TimeUnit.MILLISECONDS);
+          try {
+            changed.await(500, TimeUnit.MILLISECONDS);
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+            throw new AlreadyClosedException();
+          }
           if (timeout.hasTimedOut()) {
-            break;
+            //throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout");
+            return Collections.emptyList();
           }
         }
       } finally {

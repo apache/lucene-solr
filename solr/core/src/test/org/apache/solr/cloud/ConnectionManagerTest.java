@@ -73,6 +73,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Nightly // sleepy test
   public void testLikelyExpired() throws Exception {
 
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing

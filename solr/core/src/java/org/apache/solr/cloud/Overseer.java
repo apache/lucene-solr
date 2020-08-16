@@ -532,11 +532,6 @@ public class Overseer implements SolrCloseable {
     protected volatile boolean isClosed;
     private final Closeable thread;
 
-    public OverseerThread(ThreadGroup tg, Closeable thread) {
-      super(tg, (Runnable) thread);
-      this.thread = thread;
-    }
-
     public OverseerThread(ThreadGroup ccTg, Closeable thread, String name) {
       super(ccTg, (Runnable) thread, name);
       this.thread = thread;
@@ -844,27 +839,15 @@ public class Overseer implements SolrCloseable {
   public void closeAndDone() {
     this.closeAndDone = true;
     this.closed = true;
+    close();
   }
   
   public void close() {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);
     }
-
-
-    if (zkController.getZkClient().isConnected()) {
-      try {
-        context.cancelElection();
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-      } catch (KeeperException e) {
-        log.error("Exception canceling election for overseer");
-      }
-    }
-
+    IOUtils.closeQuietly(context);
     doClose();
-
-    ParWork.close(context);
   }
 
   @Override
@@ -873,37 +856,45 @@ public class Overseer implements SolrCloseable {
   }
 
   void doClose() {
-    if (closed) {
-      return;
-    }
     closed = true;
     if (log.isDebugEnabled()) {
       log.debug("doClose() - start");
     }
 
     if (ccThread != null) {
-        ccThread.interrupt();
+      ccThread.interrupt();
     }
     if (updaterThread != null) {
       updaterThread.interrupt();
     }
+//    if (overseerCollectionConfigSetProcessor != null) {
+//      overseerCollectionConfigSetProcessor.interrupt();
+//    }
+
+
 
     IOUtils.closeQuietly(ccThread);
 
     IOUtils.closeQuietly(updaterThread);
 
     if (ccThread != null) {
-      try {
-        ccThread.join();
-      } catch (InterruptedException e) {
-        // okay
+      while (true) {
+        try {
+          ccThread.join();
+          break;
+        } catch (InterruptedException e) {
+          // okay
+        }
       }
     }
     if (updaterThread != null) {
-      try {
-        updaterThread.join();
-      } catch (InterruptedException e) {
-        // okay
+      while (true) {
+        try {
+          updaterThread.join();
+          break;
+        } catch (InterruptedException e) {
+          // okay
+        }
       }
     }
     //      closer.collect(() -> {

@@ -915,6 +915,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
+  // nocommit
+  @Ignore
   public void testModifyCollectionAttribute() throws IOException, SolrServerException {
     final String collection = "testAddAndDeleteCollectionAttribute";
     CollectionAdminRequest.createCollection(collection, "conf", 1, 1)

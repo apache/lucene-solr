@@ -63,19 +63,20 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
           }
         });
 
-    setRejectedExecutionHandler(new CallerRunsPolicy());
+    //setRejectedExecutionHandler(new CallerRunsPolicy());
   }
 
   public void shutdown() {
-    // wake up idle threads!
-    ThreadPoolExecutor exec = ParWork.getEXEC();
-    for (int i = 0; i < getPoolSize(); i++) {
-      exec.submit(new Runnable() {
-        @Override
-        public void run() {
+    if (!isShutdown()) {
+      // wake up idle threads!
+      for (int i = 0; i < getPoolSize(); i++) {
+        submit(new Runnable() {
+          @Override
+          public void run() {
 
-        }
-      });
+          }
+        });
+      }
     }
     super.shutdown();
   }

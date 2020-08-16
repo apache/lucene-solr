@@ -1181,8 +1181,6 @@ public class CoreContainer implements Closeable {
       closer.addCollect();
 
       closer.collect(zkSys);
-      closer.addCollect();
-
     }
 
     assert ObjectReleaseTracker.release(this);
@@ -1802,9 +1800,7 @@ public class CoreContainer implements Closeable {
     }
 
     SolrCore core = null;
-    boolean close;
     try {
-       close = solrCores.isLoadedNotPendingClose(name);
        core = solrCores.remove(name);
 
       solrCores.removeCoreDescriptor(cd);
@@ -1834,6 +1830,8 @@ public class CoreContainer implements Closeable {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");
         } catch (KeeperException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
+        } catch (AlreadyClosedException e) {
+
         } catch (Exception e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
         }
@@ -1846,9 +1844,7 @@ public class CoreContainer implements Closeable {
 
 
     core.unloadOnClose(cd, deleteIndexDir, deleteDataDir, deleteInstanceDir);
-    if (close) {
-      core.closeAndWait();
-    }
+    core.closeAndWait();
   }
 
   public void rename(String name, String toName) {
@@ -2029,10 +2025,6 @@ public class CoreContainer implements Closeable {
    */
   public boolean isLoaded(String name) {
     return solrCores.isLoaded(name);
-  }
-
-  public boolean isLoadedNotPendingClose(String name) {
-    return solrCores.isLoadedNotPendingClose(name);
   }
 
   // Primarily for transient cores when a core is aged out.

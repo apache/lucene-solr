@@ -96,7 +96,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
       });
       closer.collect(syncStrategy);
-      closer.addCollect();
     }
 
     this.isClosed = true;
@@ -104,7 +103,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   }
 
   @Override
-  public void cancelElection() throws InterruptedException, KeeperException {
+  protected void cancelElection() throws InterruptedException, KeeperException {
     super.cancelElection();
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     try {
@@ -326,10 +325,14 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
 
         } catch (AlreadyClosedException | InterruptedException e) {
-          log.info("Already closed or interrupted, bailing..");
+          ParWork.propegateInterrupt("Already closed or interrupted, bailing..", e);
+          return;
         } catch (Exception e) {
           SolrException.log(log, "There was a problem trying to register as the leader", e);
           ParWork.propegateInterrupt(e);
+          if (isClosed()) {
+            return;
+          }
           if(e instanceof IOException
                   || (e instanceof KeeperException && (!(e instanceof SessionExpiredException)))) {
 
@@ -367,6 +370,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    * false if otherwise
    */
   private boolean waitForEligibleBecomeLeaderAfterTimeout(ZkShardTerms zkShardTerms, CoreDescriptor cd, int timeout) throws InterruptedException {
+    if (isClosed()) {
+      throw new AlreadyClosedException();
+    }
     String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
     AtomicReference<Boolean> foundHigherTerm = new AtomicReference<>();
     try {
@@ -397,6 +403,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    * @return true if other replicas with higher term participated in the election, false if otherwise
    */
   private boolean replicasWithHigherTermParticipated(ZkShardTerms zkShardTerms, String coreNodeName) {
+    if (isClosed()) {
+      throw new AlreadyClosedException();
+    }
     ClusterState clusterState = zkController.getClusterState();
     DocCollection docCollection = clusterState.getCollectionOrNull(collection, true);
     Slice slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
@@ -427,7 +436,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private void rejoinLeaderElection(SolrCore core)
           throws InterruptedException, KeeperException, IOException {
     // remove our ephemeral and re join the election
-    if (cc.isShutDown()) {
+    if (isClosed()) {
       log.debug("Not rejoining election because CoreContainer is closed");
       return;
     }
@@ -436,7 +445,17 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
     cancelElection();
 
+    if (isClosed()) {
+      log.debug("Not rejoining election because CoreContainer is closed");
+      return;
+    }
+
     core.getUpdateHandler().getSolrCoreState().doRecovery(zkController.getCoreContainer(), core.getCoreDescriptor());
+
+    if (isClosed()) {
+      log.debug("Not rejoining election because CoreContainer is closed");
+      return;
+    }
 
     leaderElector.joinElection(this, true);
   }

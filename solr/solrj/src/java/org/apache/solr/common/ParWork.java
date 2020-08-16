@@ -46,6 +46,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -451,13 +452,14 @@ public class ParWork implements Closeable {
             if (closeCalls.size() > 0) {
 
                 List<Future<Object>> results = new ArrayList<>(closeCalls.size());
-                for (Callable<Object> call : closeCalls) {
-                    Future<Object> future = executor.submit(call);
+
+                for (Callable call : closeCalls) {
+                    Future future = executor.submit(call);
                     results.add(future);
                 }
 
 //                List<Future<Object>> results = executor.invokeAll(closeCalls, 8, TimeUnit.SECONDS);
-
+              int i = 0;
                 for (Future<Object> future : results) {
                   try {
                     future.get(
@@ -468,6 +470,8 @@ public class ParWork implements Closeable {
                           future.isDone(), future.isCancelled());
                       //  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A task did nor finish" +future.isDone()  + " " + future.isCancelled());
                     }
+                  } catch (TimeoutException e) {
+                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, objects.get(i).label, e);
                   } catch (InterruptedException e1) {
                     log.warn(WORK_WAS_INTERRUPTED);
                     // TODO: save interrupted status and reset it at end?

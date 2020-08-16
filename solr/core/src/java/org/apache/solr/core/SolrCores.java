@@ -70,6 +70,9 @@ class SolrCores implements Closeable {
   }
   
   protected void addCoreDescriptor(CoreDescriptor p) {
+    if (isClosed()) {
+      throw new AlreadyClosedException();
+    }
     if (p.isTransient()) {
       if (getTransientCacheHandler() != null) {
         getTransientCacheHandler().addTransientDescriptor(p.getName(), p);
@@ -305,26 +308,6 @@ class SolrCores implements Closeable {
     }
 
     return core;
-  }
-
-  // See SOLR-5366 for why the UNLOAD command needs to know whether a core is actually loaded or not, it might have
-  // to close the core. However, there's a race condition. If the core happens to be in the pending "to close" queue,
-  // we should NOT close it in unload core.
-  protected boolean isLoadedNotPendingClose(String name) {
-    if (cores.containsKey(name)) {
-      return true;
-    }
-    if (getTransientCacheHandler() != null && getTransientCacheHandler().containsCore(name)) {
-      // Check pending
-      for (SolrCore core : pendingCloses) {
-        if (core.getName().equals(name)) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-    return false;
   }
 
   protected boolean isLoaded(String name) {

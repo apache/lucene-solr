@@ -613,8 +613,6 @@ public class ZkController implements Closeable {
       closer.collect(cloudSolrClient);
       closer.collect(replicateFromLeaders.values());
       closer.collect(overseerContexts.values());
-      closer.addCollect();
-
       closer.collect("Overseer", () -> {
         if (overseer != null) {
           overseer.closeAndDone();
@@ -1135,7 +1133,6 @@ public class ZkController implements Closeable {
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
             }
           });
-          worker.addCollect();
         }
         // Do this last to signal we're up.
         createEphemeralLiveNode();
@@ -1989,6 +1986,14 @@ public class ZkController implements Closeable {
           ZkStateReader.BASE_URL_PROP, getBaseUrl(),
           ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
       overseerJobQueue.offer(Utils.toJSON(m));
+      zkStateReader.waitForState(cloudDescriptor.getCollectionName(), 10, TimeUnit.SECONDS, (l,c) -> {
+        if (c == null) return true;
+        Slice slice = c.getSlice(cloudDescriptor.getShardId());
+        if (slice == null) return true;
+        Replica r = slice.getReplica(cloudDescriptor.getCoreNodeName());
+        if (r == null) return true;
+        return false;
+      });
     }
   }
 
