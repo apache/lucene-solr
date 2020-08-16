@@ -157,7 +157,7 @@ allprojects {
       }
 
       // Append resolved test properties to the test task.
-      test {
+      tasks.withType(Test) { task ->
         // TODO: we could remove opts with "buildOnly: true" (?)
         systemProperties testOptionsResolved
 
@@ -237,9 +237,10 @@ if (vmName =~ /(?i)(hotspot|openjdk|jrockit)/ &&
   logger.debug("Enabling HashMap assertions.")
   allprojects {
     plugins.withType(JavaPlugin) {
-      test {
+      tasks.withType(Test) { task ->  
         jvmArgs("-da:java.util.HashMap")
       }
     }
   }
 }
+
