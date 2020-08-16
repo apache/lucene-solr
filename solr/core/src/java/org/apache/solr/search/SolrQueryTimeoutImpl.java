@@ -21,6 +21,8 @@ import static java.lang.System.nanoTime;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.index.QueryTimeout;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * Implementation of {@link QueryTimeout} that is used by Solr. 
@@ -31,10 +33,11 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
   /**
    * The ThreadLocal variable to store the time beyond which, the processing should exit.
    */
-  public static ThreadLocal<Long> timeoutAt = new ThreadLocal<Long>();
+  private static final ThreadLocal<Long> timeoutAt = new ThreadLocal<>();
+
+  private static final SolrQueryTimeoutImpl instance = new SolrQueryTimeoutImpl();
 
   private SolrQueryTimeoutImpl() { }
-  private static SolrQueryTimeoutImpl instance = new SolrQueryTimeoutImpl();
 
   /** Return singleton instance */
   public static SolrQueryTimeoutImpl getInstance() { 
@@ -42,7 +45,7 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
   }
 
   /**
-   * Get the current value of timeoutAt.
+   * The time (nanoseconds) at which the request should be considered timed out.
    */
   public static Long get() {
     return timeoutAt.get();
@@ -67,8 +70,21 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
   }
 
   /**
-   * Method to set the time at which the timeOut should happen.
-   * @param timeAllowed set the time at which this thread should timeout.
+   * Sets or clears the time allowed based on how much time remains from the start of the request plus the configured
+   * {@link CommonParams#TIME_ALLOWED}.
+   */
+  public static void set(SolrQueryRequest req) {
+    long timeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1L);
+    if (timeAllowed >= 0L) {
+      set(timeAllowed - (long)req.getRequestTimer().getTime()); // reduce by time already spent
+    } else {
+      reset();
+    }
+  }
+
+  /**
+   * Sets the time allowed (milliseconds), assuming we start a timer immediately.
+   * You should probably invoke {@link #set(SolrQueryRequest)} instead.
    */
   public static void set(Long timeAllowed) {
     long time = nanoTime() + TimeUnit.NANOSECONDS.convert(timeAllowed, TimeUnit.MILLISECONDS);

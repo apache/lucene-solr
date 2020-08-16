@@ -46,6 +46,8 @@ Improvements
 * SOLR-13205: Prevent StringIndexOutOfBoundsException when parsing field names in SolrQueryParserBase
   (pramodkumar9 via Jason Gerlowski)
 
+* SOLR-14722: Track timeAllowed from earlier in the request lifecycle. (David Smiley)
+
 Optimizations
 ---------------------
 
@@ -93,7 +95,7 @@ Other Changes
 
 * SOLR-11868: Deprecate CloudSolrClient.setIdField, use information from Zookeeper (Erick Erickson)
 
-* SOLR-14702: Most references to "master" and "slave" replaced with "leader" and "follower". Some references 
+* SOLR-14702: Most references to "master" and "slave" replaced with "leader" and "follower". Some references
   remain for compatibility purposes and were removed in master. (MarcusSorealheis, Erick Erickson, Tomás Fernández Löbbe)
 
 ==================  8.6.1 ==================
