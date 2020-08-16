@@ -22,23 +22,20 @@ import org.apache.solr.common.ParWork;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 
-public class OrderedExecutor implements Executor {
+public class OrderedExecutor extends ExecutorCompletionService {
   private final ExecutorService delegate;
   private final SparseStripedLock<Integer> sparseStripedLock;
 
   public OrderedExecutor(int numThreads, ExecutorService delegate) {
+    super(delegate);
     this.delegate = delegate;
     this.sparseStripedLock = new SparseStripedLock<>(numThreads);
-  }
-
-  @Override
-  public void execute(Runnable runnable) {
-    execute(null, runnable);
   }
 
   /**
@@ -53,8 +50,9 @@ public class OrderedExecutor implements Executor {
    * @param command the runnable task
    *
    * @throws RejectedExecutionException if this task cannot be accepted for execution
+   * @return
    */
-  public void execute(Integer lockId, Runnable command) {
+  public Future<?> submit(Integer lockId, Runnable command) {
     try {
       sparseStripedLock.add(lockId);
     } catch (InterruptedException e) {
@@ -63,7 +61,7 @@ public class OrderedExecutor implements Executor {
     }
 
     try {
-      delegate.execute(() -> {
+      return delegate.submit(() -> {
         try {
           command.run();
         } finally {

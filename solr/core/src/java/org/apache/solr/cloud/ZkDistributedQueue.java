@@ -47,8 +47,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
@@ -107,7 +107,7 @@ public class ZkDistributedQueue implements DistributedQueue {
   private final Condition changed = updateLock.newCondition();
 
 
-  private AtomicInteger watcherCount = new AtomicInteger();
+  private LongAdder watcherCount = new LongAdder();
 
   private final int maxQueueSize;
 
@@ -542,8 +542,8 @@ public class ZkDistributedQueue implements DistributedQueue {
     }
   }
 
-  @VisibleForTesting int watcherCount() throws InterruptedException {
-    return watcherCount.get();
+  @VisibleForTesting long watcherCount() throws InterruptedException {
+    return watcherCount.sum();
   }
 
   @VisibleForTesting class ChildWatcher implements Watcher {
@@ -558,7 +558,7 @@ public class ZkDistributedQueue implements DistributedQueue {
 
       updateLock.lock();
       try {
-        watcherCount.decrementAndGet();
+        watcherCount.decrement();
         knownChildren = fetchZkChildren(this);
 
         changed.signalAll();

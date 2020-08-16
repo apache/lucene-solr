@@ -58,12 +58,13 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static AtomicInteger REPLICA_CNT = new AtomicInteger(0);
+  private static LongAdder REPLICA_CNT = new LongAdder();
 
   public static String assignCoreNodeName(DistribStateManager stateManager, DocCollection collection) {
     // for backward compatibility;
@@ -124,10 +125,11 @@ public class Assign {
 
   public static int defaultCounterValue(DocCollection collection, String shard) {
     int defaultValue;
+    REPLICA_CNT.increment();
     if (collection.getSlice(shard) != null && collection.getSlice(shard).getReplicas().isEmpty()) {
-      return REPLICA_CNT.incrementAndGet();
+      return REPLICA_CNT.intValue();
     } else {
-      defaultValue = collection.getReplicas().size() + REPLICA_CNT.incrementAndGet();
+      defaultValue = collection.getReplicas().size() + REPLICA_CNT.intValue();
     }
 
     return defaultValue;

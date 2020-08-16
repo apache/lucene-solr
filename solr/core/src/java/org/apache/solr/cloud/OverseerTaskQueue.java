@@ -16,21 +16,8 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Predicate;
-
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Pair;
@@ -40,9 +27,20 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
 /**
  * A {@link ZkDistributedQueue} augmented with helper methods specific to the overseer task queues.
@@ -54,7 +52,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
   private static final String RESPONSE_PREFIX = "qnr-" ;
 
-  private final AtomicInteger pendingResponses = new AtomicInteger(0);
+  private final LongAdder pendingResponses = new LongAdder();
 
   public OverseerTaskQueue(SolrZkClient zookeeper, String dir) {
     this(zookeeper, dir, new Stats());
@@ -65,7 +63,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   }
 
   public void allowOverseerPendingTasksToComplete() {
-    while (pendingResponses.get() > 0) {
+    while (pendingResponses.sum() > 0) {
       try {
         Thread.sleep(250);
       } catch (InterruptedException e) {
@@ -237,7 +235,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       // create the request node
       createRequestNode(data, watchID);
 
-      pendingResponses.incrementAndGet();
+      pendingResponses.increment();
       if (bytes == null) {
         watcher.await(timeout);
         bytes = zookeeper.getData(watchID, null, null);
@@ -250,7 +248,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       return event;
     } finally {
       time.stop();
-      pendingResponses.decrementAndGet();
+      pendingResponses.decrement();
     }
   }
 

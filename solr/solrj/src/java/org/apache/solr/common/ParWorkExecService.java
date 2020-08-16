@@ -188,13 +188,10 @@ public class ParWorkExecService extends AbstractExecutorService {
         awaitTerminate.wait(500);
       }
     }
-//    workQueue.clear();
 
-//    workerFuture.cancel(true);
-    terminated = true;
-  //  workerFuture.cancel(true);
-
-   // worker.interrupt();
+    if (isShutdown()) {
+      terminated = true;
+    }
     return true;
   }
 

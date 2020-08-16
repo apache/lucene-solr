@@ -57,7 +57,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3));
     try {
       for (int i = 0; i < 100; i++) {
-        orderedExecutor.execute(1, () -> intBox.value.incrementAndGet());
+        orderedExecutor.submit(1, () -> intBox.value.incrementAndGet());
       }
       orderedExecutor.shutdownAndAwaitTermination();
       assertEquals(100, intBox.value.get());
@@ -80,7 +80,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       
       // AAA enters executor first so it should execute first (even though it's waiting on latch)
       final CountDownLatch latchAAA = new CountDownLatch(1);
-      orderedExecutor.execute(lockId, () -> {
+      orderedExecutor.submit(lockId, () -> {
           try {
             if (latchAAA.await(10, TimeUnit.SECONDS)) {
               events.add("AAA");
@@ -95,7 +95,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       // BBB doesn't care about the latch, but because it uses the same lockId, it's blocked on AAA
       // so we execute it in a background thread...
       Future<?> future = testExecutor.submit(() -> {
-        orderedExecutor.execute(lockId, () -> {
+        orderedExecutor.submit(lockId, () -> {
           events.add("BBB");
         });
       });
@@ -135,7 +135,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       for (int i = 0; i < parallelism; i++) {
         final int lockId = i;
         futures.add(testExecutor.submit(() -> {
-            orderedExecutor.execute(lockId, () -> {
+            orderedExecutor.submit(lockId, () -> {
                 try {
                   log.info("Worker #{} starting", lockId);
                   preBarrierLatch.countDown();
@@ -231,7 +231,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 55); i++) {
         int key = random().nextInt(N);
         base.put(key, base.get(key) + 1);
-        orderedExecutor.execute(key, () -> run.put(key, run.get(key) + 1));
+        orderedExecutor.submit(key, () -> run.put(key, run.get(key) + 1));
       }
     } finally {
       ParWork.close(orderedExecutor);

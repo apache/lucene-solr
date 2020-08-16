@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
+import org.apache.commons.lang3.concurrent.ConcurrentUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.AlreadyClosedException;
@@ -32,7 +33,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -49,7 +49,6 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,10 +82,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * This holds references to the transaction logs. It also keeps a map of unique key to location in log
@@ -1863,7 +1860,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
         proc = processorChain.createProcessor(req, rsp);
         OrderedExecutor executor = inSortedOrder ? null : req.getCore().getCoreContainer().getReplayUpdatesExecutor();
-        AtomicInteger pendingTasks = new AtomicInteger(0);
+        LongAdder pendingTasks = new LongAdder();
         AtomicReference<SolrException> exceptionOnExecuteUpdate = new AtomicReference<>();
 
         long commitVersion = 0;
@@ -1897,7 +1894,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               if (!finishing) {
                 // about to block all the updates including the tasks in the executor
                 // therefore we must wait for them to be finished
-                waitForAllUpdatesGetExecuted(pendingTasks);
+                waitForAllUpdatesGetExecuted(executor, pendingTasks);
                 // from this point, remain updates will be executed in a single thread
                 executor = null;
                 // block to prevent new adds, but don't immediately unlock since
@@ -1966,7 +1963,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("deleteByQuery {}", cmd);
-                waitForAllUpdatesGetExecuted(pendingTasks);
+                waitForAllUpdatesGetExecuted(executor, pendingTasks);
                 // DBQ will be executed in the same thread
                 execute(cmd, null, pendingTasks, proc, exceptionOnExecuteUpdate);
                 break;
@@ -2003,7 +2000,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           assert TestInjection.injectUpdateLogReplayRandomPause();
         }
 
-        waitForAllUpdatesGetExecuted(pendingTasks);
+        waitForAllUpdatesGetExecuted(executor, pendingTasks);
         if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
 
         CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
@@ -2042,20 +2039,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     }
 
-    private void waitForAllUpdatesGetExecuted(AtomicInteger pendingTasks) {
-      TimeOut timeOut = new TimeOut(Integer.MAX_VALUE, TimeUnit.MILLISECONDS, TimeSource.CURRENT_TIME);
-      try {
-        timeOut.waitFor("Timeout waiting for replay updates finish", () -> {
-          //TODO handle the case when there are no progress after a long time
-          return pendingTasks.get() == 0;
-        });
-      } catch (TimeoutException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    private void waitForAllUpdatesGetExecuted(OrderedExecutor executor, LongAdder pendingTasks) {
+      while (pendingTasks.sum() > 0) {
+        executor.awaitTermination();
       }
-
     }
 
     private Integer getBucketHash(UpdateCommand cmd) {
@@ -2074,14 +2061,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       return null;
     }
 
-    private void execute(UpdateCommand cmd, OrderedExecutor executor,
-                         AtomicInteger pendingTasks, UpdateRequestProcessor proc,
+    private Future execute(UpdateCommand cmd, OrderedExecutor executor,
+                         LongAdder pendingTasks, UpdateRequestProcessor proc,
                          AtomicReference<SolrException> exceptionHolder) {
       assert cmd instanceof AddUpdateCommand || cmd instanceof DeleteUpdateCommand;
 
       if (executor != null) {
         // by using the same hash as DUP, independent updates can avoid waiting for same bucket
-        executor.execute(getBucketHash(cmd), () -> {
+        return executor.submit(getBucketHash(cmd), () -> {
           try {
             // fail fast
             if (exceptionHolder.get() != null) return;
@@ -2102,10 +2089,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: IOException reading log", e);
           } finally {
-            pendingTasks.decrementAndGet();
+            pendingTasks.decrement();
           }
         });
-        pendingTasks.incrementAndGet();
       } else {
         try {
           if (cmd instanceof AddUpdateCommand) {
@@ -2125,6 +2111,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           loglog.warn("REPLAY_ERR: IOException replaying log", e);
         }
       }
+      return ConcurrentUtils.constantFuture(null);
     }
 
 
