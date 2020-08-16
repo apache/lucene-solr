@@ -707,10 +707,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             }
             return remove;
           }, openingSegmentInfos, applyAllDeletes, writeAllDeletes);
+      boolean closeSuccess = false;
       try {
         r.close(); // close and swap in the new reader... close is cool here since we didn't leak this reader yet
+        r = mergedReader;
+        closeSuccess = true;
       } finally {
-        return mergedReader;
+        if (closeSuccess == false) {
+          // close this also if we run into issues while closing the old reader
+          IOUtils.closeWhileHandlingException(mergedReader);
+        }
       }
     }
     return r;
