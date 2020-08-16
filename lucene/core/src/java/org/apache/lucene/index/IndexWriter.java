@@ -641,7 +641,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           assert openingSegmentInfos != null;
           synchronized (this) {
             includeMergeReader.set(false);
-            r = reopenMergedNRTReader(r, mergedReaders, openedReadOnlyClones, openingSegmentInfos,
+            r = maybeReopenMergedNRTReader(r, mergedReaders, openedReadOnlyClones, openingSegmentInfos,
                 applyAllDeletes, writeAllDeletes);
           }
           replaceReaderSuccess = true;
@@ -686,9 +686,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     return r;
   }
 
-  private StandardDirectoryReader reopenMergedNRTReader(StandardDirectoryReader r, Map<String, SegmentReader> mergedReaders,
-                                                        Map<String, SegmentReader> openedReadOnlyClones, SegmentInfos openingSegmentInfos,
-                                                        boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
+  private StandardDirectoryReader maybeReopenMergedNRTReader(StandardDirectoryReader r, Map<String, SegmentReader> mergedReaders,
+                                                             Map<String, SegmentReader> openedReadOnlyClones, SegmentInfos openingSegmentInfos,
+                                                             boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     assert Thread.holdsLock(this);
     boolean openNewReader = mergedReaders.isEmpty() == false;
     if (openNewReader) {
