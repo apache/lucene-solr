@@ -555,7 +555,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
      * We release the two stage full flush after we are done opening the
      * directory reader!
      */
-    MergePolicy.MergeSpecification onCommitMerges = null;
+    MergePolicy.MergeSpecification onGetReaderMerges = null;
     AtomicBoolean includeMergeReader = new AtomicBoolean(true);
     Map<String, SegmentReader> mergedReaders = new HashMap<>();
     Map<String, SegmentReader> openedReadOnlyClones = new HashMap<>();
@@ -614,7 +614,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // they are not closed. Every segment has a corresponding SR in the SDR we opened if we use
               // this SIS
               openingSegmentInfos = r.getSegmentInfos().clone();
-              onCommitMerges = preparePointInTimeMerge(openingSegmentInfos, includeMergeReader, MergeTrigger.GET_READER,
+              onGetReaderMerges = preparePointInTimeMerge(openingSegmentInfos, includeMergeReader, MergeTrigger.GET_READER,
                   sci -> mergedReaders.put(sci.info.name, readerFactory.apply(sci)));
             }
           }
@@ -633,32 +633,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           }
         }
       }
-      if (onCommitMerges != null) { // only relevant if we do merge on getReader
-        boolean replaceReaderSuccess = false;
-        try {
-          mergeScheduler.merge(mergeSource, MergeTrigger.GET_READER);
-          onCommitMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
-          assert openingSegmentInfos != null;
-          synchronized (this) {
-            includeMergeReader.set(false);
-            r = maybeReopenMergedNRTReader(r, mergedReaders, openedReadOnlyClones, openingSegmentInfos,
-                applyAllDeletes, writeAllDeletes);
-          }
-          replaceReaderSuccess = true;
-        } finally {
-          synchronized (this) {
-            if (replaceReaderSuccess == false) {
-              includeMergeReader.set(false); // make sure in the case of an error we stop opening readers
-              // it's enough to simply decRef the remaining ones here since we either store the ref in SDR:open and that means
-              // they are not in the readers map anymore or we didn't even incRef them. it's really only relevant
-              // in the case of an exception which will case this map to be non-empty
-              IOUtils.closeWhileHandlingException(mergedReaders.values());
-            } else {
-              assert includeMergeReader.get() == false;
-              // it is possible to have a merged reader that is not used since we open the reader in a callback
-              // before the openingSegmentInfos is updated this is a small put possible race - it's really best effort
-              IOUtils.close(mergedReaders.values());
-            }
+      if (onGetReaderMerges != null) { // only relevant if we do merge on getReader
+        StandardDirectoryReader mergedReader = finishGetReaderMerge(includeMergeReader, mergedReaders,
+            openedReadOnlyClones, openingSegmentInfos, applyAllDeletes,
+            writeAllDeletes, onGetReaderMerges, maxCommitMergeWaitMillis);
+        if (mergedReader != null) {
+          try {
+            r.close();
+          } finally {
+            r = mergedReader;
           }
         }
       }
@@ -686,13 +669,47 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     return r;
   }
 
-  private StandardDirectoryReader maybeReopenMergedNRTReader(StandardDirectoryReader r, Map<String, SegmentReader> mergedReaders,
+  private StandardDirectoryReader finishGetReaderMerge(AtomicBoolean includeMergeReader, Map<String, SegmentReader> mergedReaders,
+                                                       Map<String, SegmentReader> openedReadOnlyClones, SegmentInfos openingSegmentInfos,
+                                                       boolean applyAllDeletes, boolean writeAllDeletes,
+                                                       MergePolicy.MergeSpecification onCommitMerges, long maxCommitMergeWaitMillis) throws IOException {
+    boolean replaceReaderSuccess = false;
+    try {
+      mergeScheduler.merge(mergeSource, MergeTrigger.GET_READER);
+      onCommitMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
+      assert openingSegmentInfos != null;
+      synchronized (this) {
+        includeMergeReader.set(false);
+        StandardDirectoryReader reader = maybeReopenMergedNRTReader(mergedReaders, openedReadOnlyClones, openingSegmentInfos,
+            applyAllDeletes, writeAllDeletes);
+        replaceReaderSuccess = true;
+        return reader;
+      }
+    } finally {
+      synchronized (this) {
+        if (replaceReaderSuccess == false) {
+          includeMergeReader.set(false); // make sure in the case of an error we stop opening readers
+          // it's enough to simply decRef the remaining ones here since we either store the ref in SDR:open and that means
+          // they are not in the readers map anymore or we didn't even incRef them. it's really only relevant
+          // in the case of an exception which will case this map to be non-empty
+          IOUtils.closeWhileHandlingException(mergedReaders.values());
+        } else {
+          assert includeMergeReader.get() == false;
+          // it is possible to have a merged reader that is not used since we open the reader in a callback
+          // before the openingSegmentInfos is updated this is a small put possible race - it's really best effort
+          IOUtils.close(mergedReaders.values());
+        }
+      }
+    }
+  }
+
+  private StandardDirectoryReader maybeReopenMergedNRTReader(Map<String, SegmentReader> mergedReaders,
                                                              Map<String, SegmentReader> openedReadOnlyClones, SegmentInfos openingSegmentInfos,
                                                              boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     assert Thread.holdsLock(this);
     boolean openNewReader = mergedReaders.isEmpty() == false;
     if (openNewReader) {
-      StandardDirectoryReader mergedReader = StandardDirectoryReader.open(this,
+      return StandardDirectoryReader.open(this,
           sci -> {
             // as soon as we remove the reader and return it the StandardDirectoryReader#open
             // will take care of closing it. We only need to handle the readers that remain in the
@@ -707,19 +724,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             }
             return remove;
           }, openingSegmentInfos, applyAllDeletes, writeAllDeletes);
-      boolean closeSuccess = false;
-      try {
-        r.close(); // close and swap in the new reader... close is cool here since we didn't leak this reader yet
-        r = mergedReader;
-        closeSuccess = true;
-      } finally {
-        if (closeSuccess == false) {
-          // close this also if we run into issues while closing the old reader
-          IOUtils.closeWhileHandlingException(mergedReader);
-        }
-      }
     }
-    return r;
+    return null;
   }
 
   @Override
