@@ -58,7 +58,7 @@ public class DictionaryBuilder {
         .build(inputDir)
         .write(outputDir);
 
-    new UnknownDictionaryBuilder(encoding)
+    new UnknownDictionaryBuilder(format, encoding)
         .build(inputDir)
         .write(outputDir);
 

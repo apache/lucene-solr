@@ -73,8 +73,10 @@ class TokenInfoDictionaryBuilder {
         while ((line = reader.readLine()) != null) {
           String[] entry = CSVUtil.parse(line);
 
-          if (entry.length < 13) {
+          if (this.format == DictionaryFormat.IPADIC && entry.length < 13) {
             throw new IllegalArgumentException("Entry in CSV is not valid (13 field values expected): " + line);
+          } else if (this.format == DictionaryFormat.UNIDIC && entry.length < 21) {
+            throw new IllegalArgumentException("Entry in CSV is not valid (21 field values expected): " + line);
           }
 
           lines.add(formatEntry(entry));
@@ -149,9 +151,10 @@ class TokenInfoDictionaryBuilder {
    * 3   - word cost
    * 4-9 - pos
    * 10  - base form reading
-   * 11  - base form
+   * 11  - lexeme - not used
    * 12  - surface form
    * 13  - surface reading
+   * 14  - orth form
    */
   
   private String[] formatEntry(String[] features) {
@@ -169,7 +172,7 @@ class TokenInfoDictionaryBuilder {
       features2[7] = features[7];
       features2[8] = features[8];
       features2[9] = features[9];
-      features2[10] = features[11];
+      features2[10] = features[14];
       
       // If the surface reading is non-existent, use surface form for reading and pronunciation.
       // This happens with punctuation in UniDic and there are possibly other cases as well
