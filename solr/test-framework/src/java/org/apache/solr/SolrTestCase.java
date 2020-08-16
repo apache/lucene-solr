@@ -308,9 +308,9 @@ public class SolrTestCase extends LuceneTestCase {
       ScheduledTriggers.DEFAULT_TRIGGER_CORE_POOL_SIZE = 2;
 
       System.setProperty("solr.tests.maxBufferedDocs", "1000000");
-      System.setProperty("solr.tests.ramBufferSizeMB", "60");
       System.setProperty("solr.tests.ramPerThreadHardLimitMB", "30");
 
+      System.setProperty("solr.tests.ramBufferSizeMB", "100");
 
       System.setProperty("solr.http2solrclient.default.idletimeout", "10000");
       System.setProperty("distribUpdateSoTimeout", "10000");

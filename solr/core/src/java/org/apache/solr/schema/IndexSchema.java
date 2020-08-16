@@ -61,6 +61,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.Writer;
@@ -95,6 +96,8 @@ import java.util.stream.Stream;
  *
  */
 public class IndexSchema {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String COPY_FIELD = "copyField";
   public static final String COPY_FIELDS = COPY_FIELD + "s";
   public static final String DEFAULT_SCHEMA_FILE = "schema.xml";
@@ -130,7 +133,80 @@ public class IndexSchema {
   private static final String TEXT_FUNCTION = "text()";
   private static final String XPATH_OR = " | ";
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  static XPath xpath = XmlConfigFile.xpathFactory.newXPath();
+
+  private static XPathExpression xpathOrExp;
+  private static XPathExpression schemaNameExp;
+  private static XPathExpression schemaVersionExp;
+  private static XPathExpression schemaSimExp;
+  private static XPathExpression defaultSearchFieldExp;
+  private static XPathExpression solrQueryParserDefaultOpExp;
+  private static XPathExpression schemaUniqueKeyExp;
+
+
+
+  static String schemaNamePath = stepsToPath(SCHEMA, AT + NAME);
+  static String schemaVersionPath = "/schema/@version";
+
+  static String fieldTypeXPathExpressions = getFieldTypeXPathExpressions();
+
+  static String  schemaSimPath = stepsToPath(SCHEMA, SIMILARITY); //   /schema/similarity
+
+  static String defaultSearchFieldPath = stepsToPath(SCHEMA, "defaultSearchField", TEXT_FUNCTION);
+
+  static String solrQueryParserDefaultOpPath = stepsToPath(SCHEMA, "solrQueryParser", AT + "defaultOperator");
+
+  static String schemaUniqueKeyPath = stepsToPath(SCHEMA, UNIQUE_KEY, TEXT_FUNCTION);
+
+  static {
+    try {
+      String expression = stepsToPath(SCHEMA, FIELD)
+          + XPATH_OR + stepsToPath(SCHEMA, DYNAMIC_FIELD)
+          + XPATH_OR + stepsToPath(SCHEMA, FIELDS, FIELD)
+          + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);
+      xpathOrExp = xpath.compile(expression);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+    try {
+
+      schemaNameExp = xpath.compile(schemaNamePath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+    try {
+      schemaVersionExp = xpath.compile(schemaVersionPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      schemaSimExp = xpath.compile(schemaSimPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+
+    try {
+      defaultSearchFieldExp = xpath.compile(defaultSearchFieldPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      solrQueryParserDefaultOpExp = xpath.compile(solrQueryParserDefaultOpPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      schemaUniqueKeyExp = xpath.compile(schemaUniqueKeyPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+  }
+
+
   protected String resourceName;
   protected String name;
   protected final Version luceneVersion;
@@ -170,9 +246,7 @@ public class IndexSchema {
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
-  protected final static ThreadLocal<XPath> THREAD_LOCAL_XPATH= new ThreadLocal<>();
-
-  public static volatile XPath xpath;
+  protected final static ThreadLocal<XPath> THREAD_LOCAL_XPATH = new ThreadLocal<>();
 
   /**
    * Constructs a schema using the specified resource name and stream.
@@ -482,6 +556,10 @@ public class IndexSchema {
     }
   }
 
+  public static String normalize (String path, String prefix){
+    return (prefix == null || path.startsWith("/")) ? path : prefix + path;
+  }
+
   protected void readSchema(InputSource is) {
     assert null != is : "schema InputSource should never be null";
     try {
@@ -490,8 +568,8 @@ public class IndexSchema {
       XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, substitutableProperties);
       Document document = schemaConf.getDocument();
       final XPath xpath = schemaConf.getXPath();
-      String expression = stepsToPath(SCHEMA, AT + NAME);
-      Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+
+      Node nd = (Node) schemaNameExp.evaluate(document, XPathConstants.NODE);
       StringBuilder sb = new StringBuilder();
       // Another case where the initialization from the test harness is different than the "real world"
       if (nd==null) {
@@ -507,20 +585,27 @@ public class IndexSchema {
       }
 
       //                      /schema/@version
-      expression = stepsToPath(SCHEMA, AT + VERSION);
-      version = schemaConf.getFloat(expression, 1.0f);
+      String path = normalize(schemaVersionPath, schemaConf.getPrefix());
+      XPathExpression exp;
+      if (path.equals("/schema/@version")) {
+        exp = schemaVersionExp;
+      } else {
+        throw new UnsupportedOperationException();
+      }
+
+      version = schemaConf.getFloat(exp, path, 1.0f);
 
       // load the Field Types
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
-      expression = getFieldTypeXPathExpressions();
-      NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
+
+      NodeList nodes = (NodeList) xpath.evaluate(fieldTypeXPathExpressions, document, XPathConstants.NODESET);
       typeLoader.load(loader, nodes);
 
       // load the fields
       Map<String,Boolean> explicitRequiredProp = loadFields(document, xpath);
 
-      expression = stepsToPath(SCHEMA, SIMILARITY); //   /schema/similarity
-      Node node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+
+      Node node = (Node) schemaSimExp.evaluate(document, XPathConstants.NODE);
       similarityFactory = readSimilarity(loader, node);
       if (similarityFactory == null) {
         final Class<?> simClass = SchemaSimilarityFactory.class;
@@ -545,22 +630,21 @@ public class IndexSchema {
       }
 
       //                      /schema/defaultSearchField/text()
-      expression = stepsToPath(SCHEMA, "defaultSearchField", TEXT_FUNCTION);
-      node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+
+      node = (Node) defaultSearchFieldExp.evaluate(document, XPathConstants.NODE);
       if (node != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting defaultSearchField in schema not supported since Solr 7");
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
-      expression = stepsToPath(SCHEMA, "solrQueryParser", AT + "defaultOperator");
-      node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+
+      node = (Node) solrQueryParserDefaultOpExp.evaluate(document, XPathConstants.NODE);
       if (node != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting default operator in schema (solrQueryParser/@defaultOperator) not supported");
       }
 
       //                      /schema/uniqueKey/text()
-      expression = stepsToPath(SCHEMA, UNIQUE_KEY, TEXT_FUNCTION);
-      node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+      node = (Node) schemaUniqueKeyExp.evaluate(document, XPathConstants.NODE);
       if (node==null) {
         log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
@@ -658,12 +742,9 @@ public class IndexSchema {
     ArrayList<DynamicField> dFields = new ArrayList<>();
 
     //                  /schema/field | /schema/dynamicField | /schema/fields/field | /schema/fields/dynamicField
-    String expression = stepsToPath(SCHEMA, FIELD)
-        + XPATH_OR + stepsToPath(SCHEMA, DYNAMIC_FIELD)
-        + XPATH_OR + stepsToPath(SCHEMA, FIELDS, FIELD)
-        + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);
 
-    NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
+
+    NodeList nodes = (NodeList)xpathOrExp.evaluate(document, XPathConstants.NODESET);
 
     for (int i=0; i<nodes.getLength(); i++) {
       Node node = nodes.item(i);
@@ -790,7 +871,7 @@ public class IndexSchema {
    * @param steps The steps to join with slashes to form a path
    * @return a rooted path: a leading slash followed by the given steps joined with slashes
    */
-  private String stepsToPath(String... steps) {
+  private static String stepsToPath(String... steps) {
     StringBuilder builder = new StringBuilder();
     for (String step : steps) { builder.append(SLASH).append(step); }
     return builder.toString();
@@ -1949,7 +2030,7 @@ public class IndexSchema {
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
   }
 
-  protected String getFieldTypeXPathExpressions() {
+  protected static String getFieldTypeXPathExpressions() {
     //               /schema/fieldtype | /schema/fieldType | /schema/types/fieldtype | /schema/types/fieldType
     String expression = stepsToPath(SCHEMA, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?)
         + XPATH_OR + stepsToPath(SCHEMA, FIELD_TYPE)

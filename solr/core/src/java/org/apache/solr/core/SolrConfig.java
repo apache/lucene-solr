@@ -20,6 +20,8 @@ package org.apache.solr.core;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -46,6 +48,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.collections.map.UnmodifiableOrderedMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
@@ -108,6 +111,53 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
+
+  private static XPathExpression luceneMatchVersionExp;
+  private static XPathExpression indexDefaultsExp;
+  private static XPathExpression mainIndexExp;
+  private static XPathExpression nrtModeExp;
+  private static XPathExpression unlockOnStartupExp;
+
+  static String luceneMatchVersionPath = "/config/" + IndexSchema.LUCENE_MATCH_VERSION_PARAM;
+
+  static String indexDefaultsPath = "/config/indexDefaults";
+
+  static String mainIndexPath = "/config/mainIndex";
+  static String nrtModePath = "/config/indexConfig/nrtmode";
+
+  static String unlockOnStartupPath = "/config/indexConfig/unlockOnStartup";
+
+  static {
+
+
+    try {
+
+      luceneMatchVersionExp = IndexSchema.getXpath().compile(luceneMatchVersionPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+    try {
+      indexDefaultsExp = IndexSchema.getXpath().compile(indexDefaultsPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      mainIndexExp = IndexSchema.getXpath().compile(mainIndexPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      nrtModeExp = IndexSchema.getXpath().compile(nrtModePath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      unlockOnStartupExp = IndexSchema.getXpath().compile(unlockOnStartupPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+  }
 
   private volatile RequestParams requestParams;
 
@@ -178,21 +228,21 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     getOverlay();//just in case it is not initialized
     getRequestParams();
     initLibs(loader, isConfigsetTrusted);
-    luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(IndexSchema.LUCENE_MATCH_VERSION_PARAM, true));
+    luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(luceneMatchVersionExp, luceneMatchVersionPath, true));
     log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
 
     String indexConfigPrefix;
 
     // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_4_0_0.
     // For older solrconfig.xml's we allow the old sections, but never mixed with the new <indexConfig>
-    boolean hasDeprecatedIndexConfig = (getNode("indexDefaults", false) != null) || (getNode("mainIndex", false) != null);
+    boolean hasDeprecatedIndexConfig = (getNode(indexDefaultsExp, indexDefaultsPath, false) != null) || (getNode(mainIndexExp, mainIndexPath, false) != null);
     if (hasDeprecatedIndexConfig) {
       throw new SolrException(ErrorCode.FORBIDDEN, "<indexDefaults> and <mainIndex> configuration sections are discontinued. Use <indexConfig> instead.");
     } else {
       indexConfigPrefix = "indexConfig";
     }
     assertWarnOrFail("The <nrtMode> config has been discontinued and NRT mode is always used by Solr." +
-            " This config will be removed in future versions.", getNode(indexConfigPrefix + "/nrtMode", false) == null,
+            " This config will be removed in future versions.", getNode(nrtModeExp, nrtModePath, false) == null,
         true
     );
     assertWarnOrFail("Solr no longer supports forceful unlocking via the 'unlockOnStartup' option.  "+
@@ -200,7 +250,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
                      "it would be dangerous and should not be done.  For other lockTypes and/or "+
                      "directoryFactory options it may also be dangerous and users must resolve "+
                      "problematic locks manually.",
-                     null == getNode(indexConfigPrefix + "/unlockOnStartup", false),
+                     null == getNode(unlockOnStartupExp, unlockOnStartupPath, false),
                      true // 'fail' in trunk
                      );
                      
@@ -837,39 +887,53 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return enableStreamBody;
   }
 
-  @Override
   public int getInt(String path) {
     return getInt(path, 0);
   }
 
-  @Override
+  // nocommit
   public int getInt(String path, int def) {
     Object val = overlay.getXPathProperty(path);
     if (val != null) return Integer.parseInt(val.toString());
-    return super.getInt(path, def);
+    try {
+      path = super.normalize(path);
+      return super.getInt(IndexSchema.getXpath().compile(path), path, def);
+    } catch (XPathExpressionException e) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, e);
+    }
   }
 
-  @Override
   public boolean getBool(String path, boolean def) {
     Object val = overlay.getXPathProperty(path);
     if (val != null) return Boolean.parseBoolean(val.toString());
-    return super.getBool(path, def);
+    try {
+      path = super.normalize(path);
+      return super.getBool(IndexSchema.getXpath().compile(path), path, def);
+    } catch (XPathExpressionException e) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, e);
+    }
   }
 
-  @Override
   public String get(String path) {
     Object val = overlay.getXPathProperty(path, true);
-    return val != null ? val.toString() : super.get(path);
+    try {
+      path = super.normalize(path);
+      return val != null ? val.toString() : super.get(IndexSchema.getXpath().compile(path), path);
+    } catch (XPathExpressionException e) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, e);
+    }
   }
 
-  @Override
   public String get(String path, String def) {
     Object val = overlay.getXPathProperty(path, true);
-    return val != null ? val.toString() : super.get(path, def);
-
+    try {
+      path = super.normalize(path);
+      return val != null ? val.toString() : super.get(IndexSchema.getXpath().compile(path), path, def);
+    } catch (XPathExpressionException e) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, e);
+    }
   }
 
-  @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());

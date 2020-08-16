@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
@@ -34,6 +35,7 @@ import org.apache.solr.search.CacheConfig;
 import org.apache.solr.update.SolrIndexConfig;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -77,7 +79,7 @@ public class TestConfig extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testJavaProperty() {
+  public void testJavaProperty() throws XPathExpressionException {
     // property values defined in build.xml
 
     String s = solrConfig.get("propTest");
@@ -95,8 +97,8 @@ public class TestConfig extends SolrTestCaseJ4 {
     NodeList nl = (NodeList) solrConfig.evaluate("propTest", XPathConstants.NODESET);
     assertEquals(1, nl.getLength());
     assertEquals("prefix-proptwo-suffix", nl.item(0).getTextContent());
-
-    Node node = solrConfig.getNode("propTest", true);
+    String path = IndexSchema.normalize("propTest", solrConfig.getPrefix());
+    Node node = solrConfig.getNode(IndexSchema.getXpath().compile(path), path, true);
     assertEquals("prefix-proptwo-suffix", node.getTextContent());
   }
 
@@ -239,6 +241,7 @@ public class TestConfig extends SolrTestCaseJ4 {
   }
 
   // sanity check that sys properties are working as expected
+  @Ignore // nocommit
   public void testSanityCheckTestSysPropsAreUsed() throws Exception {
 
     SolrConfig sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-basic.xml");

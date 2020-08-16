@@ -28,7 +28,7 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
   }
 
   public void testNRTModeProperty() throws Exception {
-    assertConfigs("bad-solrconfig-nrtmode.xml","schema.xml", "nrtMode");
+    assertConfigs("bad-solrconfig-nrtmode.xml","schema.xml", "contains more than one value for config path");
   }
 
   public void testMultipleDirectoryFactories() throws Exception {

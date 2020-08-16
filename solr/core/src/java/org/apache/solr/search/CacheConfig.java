@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +98,14 @@ public class CacheConfig implements MapSerializable{
 
   @SuppressWarnings({"unchecked"})
   public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
-    Node node = solrConfig.getNode(xpath, false);
+    // nocomit look at precompile
+    Node node = null;
+    try {
+      String path = IndexSchema.normalize(xpath, "/config/");
+      node = solrConfig.getNode(IndexSchema.getXpath().compile(path), path, false);
+    } catch (XPathExpressionException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
     if(node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
       Map<String, String> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
       if(m==null) return null;

@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.JmxUtil;
@@ -38,6 +39,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import javax.management.MBeanServer;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -65,6 +67,79 @@ public class SolrXmlConfig {
   public final static String SOLR_DATA_HOME = "solr.data.home";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static XPathExpression shardHandlerFactoryExp;
+  private static XPathExpression counterExp;
+  private static XPathExpression meterExp;
+  private static XPathExpression timerExp;
+  private static XPathExpression histoExp;
+  private static XPathExpression historyExp;
+  private static XPathExpression transientCoreCacheFactoryExp;
+  private static XPathExpression tracerConfigExp;
+
+
+  static String shardHandlerFactoryPath = "solr/shardHandlerFactory";
+
+  static String counterExpPath = "solr/metrics/suppliers/counter";
+  static String meterPath = "solr/metrics/suppliers/meter";
+
+  static String timerPath = "solr/metrics/suppliers/timer";
+
+  static String histoPath = "solr/metrics/suppliers/histogram";
+
+  static String historyPath = "solr/metrics/history";
+
+  static String  transientCoreCacheFactoryPath =  "solr/transientCoreCacheFactory";
+
+  static String  tracerConfigPath = "solr/tracerConfig";
+
+  static {
+
+
+    try {
+
+      shardHandlerFactoryExp = IndexSchema.getXpath().compile(shardHandlerFactoryPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+    try {
+      counterExp = IndexSchema.getXpath().compile(counterExpPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      meterExp = IndexSchema.getXpath().compile(meterPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      timerExp = IndexSchema.getXpath().compile(timerPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      histoExp = IndexSchema.getXpath().compile(histoPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      historyExp = IndexSchema.getXpath().compile(historyPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      transientCoreCacheFactoryExp = IndexSchema.getXpath().compile(transientCoreCacheFactoryPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      tracerConfigExp = IndexSchema.getXpath().compile(tracerConfigPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+  }
 
   public static NodeConfig fromConfig(Path solrHome, XmlConfigFile config, boolean fromZookeeper) {
 
@@ -221,12 +296,13 @@ public class SolrXmlConfig {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Multiple instances of " + section + " section found in solr.xml");
   }
 
+  // nocommit - we should be able to bring this back now
   private static void failIfFound(XmlConfigFile config, String xPath) {
 
-    if (config.getVal(xPath, false) != null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
-          "\n. Please upgrade your solr.xml: https://lucene.apache.org/solr/guide/format-of-solr-xml.html");
-    }
+//    if (config.getVal(xPath, false) != null) {
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
+//          "\n. Please upgrade your solr.xml: https://lucene.apache.org/solr/guide/format-of-solr-xml.html");
+//    }
   }
 
   private static Properties loadProperties(XmlConfigFile config) {
@@ -504,7 +580,7 @@ public class SolrXmlConfig {
   }
 
   private static PluginInfo getShardHandlerFactoryPluginInfo(XmlConfigFile config) {
-    Node node = config.getNode("solr/shardHandlerFactory", false);
+    Node node = config.getNode(shardHandlerFactoryExp, shardHandlerFactoryPath, false);
     return (node == null) ? null : new PluginInfo(node, "shardHandlerFactory", false, true);
   }
 
@@ -521,23 +597,23 @@ public class SolrXmlConfig {
 
   private static MetricsConfig getMetricsConfig(XmlConfigFile config) {
     MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
-    Node node = config.getNode("solr/metrics/suppliers/counter", false);
+    Node node = config.getNode(counterExp, counterExpPath, false);
     if (node != null) {
       builder = builder.setCounterSupplier(new PluginInfo(node, "counterSupplier", false, false));
     }
-    node = config.getNode("solr/metrics/suppliers/meter", false);
+    node = config.getNode(meterExp, meterPath, false);
     if (node != null) {
       builder = builder.setMeterSupplier(new PluginInfo(node, "meterSupplier", false, false));
     }
-    node = config.getNode("solr/metrics/suppliers/timer", false);
+    node = config.getNode(timerExp, timerPath, false);
     if (node != null) {
       builder = builder.setTimerSupplier(new PluginInfo(node, "timerSupplier", false, false));
     }
-    node = config.getNode("solr/metrics/suppliers/histogram", false);
+    node = config.getNode(histoExp, histoPath, false);
     if (node != null) {
       builder = builder.setHistogramSupplier(new PluginInfo(node, "histogramSupplier", false, false));
     }
-    node = config.getNode("solr/metrics/history", false);
+    node = config.getNode(historyExp, historyPath, false);
     if (node != null) {
       builder = builder.setHistoryHandler(new PluginInfo(node, "history", false, false));
     }
@@ -597,12 +673,12 @@ public class SolrXmlConfig {
   }
 
   private static PluginInfo getTransientCoreCacheFactoryPluginInfo(XmlConfigFile config) {
-    Node node = config.getNode("solr/transientCoreCacheFactory", false);
+    Node node = config.getNode(transientCoreCacheFactoryExp, transientCoreCacheFactoryPath, false);
     return (node == null) ? null : new PluginInfo(node, "transientCoreCacheFactory", false, true);
   }
 
   private static PluginInfo getTracerPluginInfo(XmlConfigFile config) {
-    Node node = config.getNode("solr/tracerConfig", false);
+    Node node = config.getNode(tracerConfigExp, tracerConfigPath, false);
     return (node == null) ? null : new PluginInfo(node, "tracerConfig", false, true);
   }
 }

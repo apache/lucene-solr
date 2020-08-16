@@ -37,6 +37,8 @@ import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
+import javax.xml.xpath.XPathExpressionException;
+
 @Ignore // nocommit debug
 public class TestCodecSupport extends SolrTestCaseJ4 {
 
@@ -193,7 +195,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
         thrown.getMessage().contains("Invalid compressionMode: ''"));
   }
   
-  public void testCompressionModeDefault() throws IOException {
+  public void testCompressionModeDefault()
+      throws IOException, XPathExpressionException {
     assertEquals("Default Solr compression mode changed. Is this expected?", 
         SchemaCodecFactory.SOLR_DEFAULT_COMPRESSION_MODE, Mode.valueOf("BEST_SPEED"));
 
@@ -203,8 +206,9 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     
     SolrConfig config = TestHarness.createConfig(testSolrHome, previousCoreName, "solrconfig_codec2.xml");
     assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.get("codecFactory/@class"));
+    String path = IndexSchema.normalize("codecFactory", config.getPrefix());
     assertNull("Unexpected configuration of codec factory for this test. Expecting empty element", 
-        config.getNode("codecFactory", false).getFirstChild());
+        config.getNode(IndexSchema.getXpath().compile(path), path, false).getFirstChild());
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
 
     CoreContainer coreContainer = h.getCoreContainer();

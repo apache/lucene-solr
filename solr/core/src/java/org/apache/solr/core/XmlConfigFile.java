@@ -46,6 +46,7 @@ import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
@@ -77,7 +78,7 @@ public class XmlConfigFile { // formerly simply "Config"
 
   private final Document doc;
 
-  private final String prefix;
+  protected final String prefix;
   private final String name;
   private final SolrResourceLoader loader;
   private final Properties substituteProperties;
@@ -221,7 +222,7 @@ public class XmlConfigFile { // formerly simply "Config"
       return IndexSchema.getXpath();
     }
 
-    private String normalize (String path){
+    String normalize(String path){
       return (prefix == null || path.startsWith("/")) ? path : prefix + path;
     }
 
@@ -239,16 +240,30 @@ public class XmlConfigFile { // formerly simply "Config"
       }
     }
 
-    public Node getNode (String path,boolean errifMissing){
-      return getNode(path, doc, errifMissing);
+    public String getPrefix() {
+      return prefix;
     }
 
-    public Node getNode (String path, Document doc,boolean errIfMissing){
-      String xstr = normalize(path);
+    // nocommit
+    public Node getNode (String expression, boolean errifMissing){
+      String path = normalize(expression);
+      try {
+        return getNode(IndexSchema.getXpath().compile(path), path, doc, errifMissing);
+      } catch (XPathExpressionException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
+    }
+
+    public Node getNode (XPathExpression expression,  String path, boolean errifMissing){
+      return getNode(expression, path, doc, errifMissing);
+    }
+
+    public Node getNode (XPathExpression expression, String path, Document doc, boolean errIfMissing){
+      //String xstr = normalize(path);
 
       try {
-        NodeList nodes = (NodeList) IndexSchema.getXpath()
-            .evaluate(xstr, doc, XPathConstants.NODESET);
+        NodeList nodes = (NodeList) expression
+            .evaluate(doc, XPathConstants.NODESET);
         if (nodes == null || 0 == nodes.getLength()) {
           if (errIfMissing) {
             throw new RuntimeException(name + " missing " + path);
@@ -262,20 +277,20 @@ public class XmlConfigFile { // formerly simply "Config"
               name + " contains more than one value for config path: " + path);
         }
         Node nd = nodes.item(0);
-        log.trace("{}:{}={}", name, path, nd);
+        log.trace("{}:{}={}", name, expression, nd);
         return nd;
 
       } catch (XPathExpressionException e) {
         SolrException.log(log, "Error in xpath", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Error in xpath:" + xstr + " for " + name, e);
+            "Error in xpath:" + path + " for " + name, e);
       } catch (SolrException e) {
         throw (e);
       } catch (Exception e) {
         ParWork.propegateInterrupt(e);
         SolrException.log(log, "Error in xpath", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Error in xpath:" + xstr + " for " + name, e);
+            "Error in xpath:" + path + " for " + name, e);
       }
     }
 
@@ -378,61 +393,71 @@ public class XmlConfigFile { // formerly simply "Config"
       }
     }
 
-    public String getVal (String path,boolean errIfMissing){
-      Node nd = getNode(path, errIfMissing);
+    // nocommit
+    public String getVal (String expression, boolean errIfMissing){
+      String xstr = normalize(expression);
+      try {
+        return getVal(IndexSchema.getXpath().compile(xstr), expression, errIfMissing);
+      } catch (XPathExpressionException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
+    }
+
+    public String getVal (XPathExpression expression, String path, boolean errIfMissing){
+      Node nd = getNode(expression, path, errIfMissing);
       if (nd == null) return null;
 
       String txt = DOMUtil.getText(nd);
 
-      log.debug("{} {}={}", name, path, txt);
+      log.debug("{} {}={}", name, expression, txt);
       return txt;
     }
 
-    public String get (String path){
-      return getVal(path, true);
+    public String get (XPathExpression expression, String path){
+      return getVal(expression, path, true);
     }
 
-    public String get (String path, String def){
-      String val = getVal(path, false);
+    public String get (XPathExpression expression,  String path, String def){
+      String val = getVal(expression, path, false);
       if (val == null || val.length() == 0) {
         return def;
       }
       return val;
     }
 
-    public int getInt (String path){
-      return Integer.parseInt(getVal(path, true));
+    public int getInt (XPathExpression expression, String path){
+      return Integer.parseInt(getVal(expression, path, true));
     }
 
-    public int getInt (String path,int def){
-      String val = getVal(path, false);
+    public int getInt (XPathExpression expression,  String path, int def){
+      String val = getVal(expression, path, false);
       return val != null ? Integer.parseInt(val) : def;
     }
 
-    public boolean getBool (String path){
-      return Boolean.parseBoolean(getVal(path, true));
+    public boolean getBool (XPathExpression expression, String path){
+      return Boolean.parseBoolean(getVal(expression, path, true));
     }
 
-    public boolean getBool (String path,boolean def){
-      String val = getVal(path, false);
+    public boolean getBool (XPathExpression expression, String path, boolean def){
+      String val = getVal(expression, path, false);
       return val != null ? Boolean.parseBoolean(val) : def;
     }
 
-    public float getFloat (String path){
-      return Float.parseFloat(getVal(path, true));
+    public float getFloat (XPathExpression expression, String path){
+      return Float.parseFloat(getVal(expression, path, true));
     }
 
-    public float getFloat (String path,float def){
-      String val = getVal(path, false);
+    public float getFloat (XPathExpression expression, String path, float def){
+      String val = getVal(expression, path, false);
       return val != null ? Float.parseFloat(val) : def;
     }
 
-    public double getDouble (String path){
-      return Double.parseDouble(getVal(path, true));
+    public double getDouble (XPathExpression expression, String path){
+      return Double.parseDouble(getVal(expression, path, true));
     }
 
-    public double getDouble (String path,double def){
-      String val = getVal(path, false);
+    public double getDouble (XPathExpression expression, String path, double def){
+      String val = getVal(expression, path, false);
       return val != null ? Double.parseDouble(val) : def;
     }
 

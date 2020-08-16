@@ -49,6 +49,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
 
 /**
  * This config object encapsulates IndexWriter config params,
@@ -56,6 +58,59 @@ import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
  */
 public class SolrIndexConfig implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static XPathExpression indexConfigExp;
+  private static XPathExpression mergeSchedulerExp;
+  private static XPathExpression mergePolicyExp;
+  private static XPathExpression ramBufferSizeMBExp;
+  private static XPathExpression checkIntegrityAtMergeExp;
+
+
+  static String indexConfigPath = "indexConfig";
+
+  static String mergeSchedulerPath = indexConfigPath + "/mergeScheduler";
+
+  static String mergePolicyPath = indexConfigPath + "/mergePolicy";
+
+
+  static String ramBufferSizeMBPath = indexConfigPath + "/ramBufferSizeMB";
+
+  static String checkIntegrityAtMergePath = indexConfigPath + "/checkIntegrityAtMerge";
+
+
+
+  static {
+
+
+    try {
+
+      indexConfigExp = IndexSchema.getXpath().compile(indexConfigPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+    try {
+      mergeSchedulerExp = IndexSchema.getXpath().compile(mergeSchedulerPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      mergePolicyExp = IndexSchema.getXpath().compile(mergePolicyPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      ramBufferSizeMBExp = IndexSchema.getXpath().compile(ramBufferSizeMBPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      checkIntegrityAtMergeExp = IndexSchema.getXpath().compile(checkIntegrityAtMergePath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+  }
 
   private static final String NO_SUB_PACKAGES[] = new String[0];
 
@@ -114,15 +169,15 @@ public class SolrIndexConfig implements MapSerializable {
 
     // sanity check: this will throw an error for us if there is more then one
     // config section
-    Object unused = solrConfig.getNode(prefix, false);
+    Object unused = solrConfig.getNode(indexConfigExp, indexConfigPath, false);
 
     // Assert that end-of-life parameters or syntax is not in our config.
     // Warn for luceneMatchVersion's before LUCENE_3_6, fail fast above
     assertWarnOrFail("The <mergeScheduler>myclass</mergeScheduler> syntax is no longer supported in solrconfig.xml. Please use syntax <mergeScheduler class=\"myclass\"/> instead.",
-        !((solrConfig.getNode(prefix + "/mergeScheduler", false) != null) && (solrConfig.get(prefix + "/mergeScheduler/@class", null) == null)),
+        !((solrConfig.getNode(mergeSchedulerExp, mergeSchedulerPath, false) != null) && (solrConfig.get(prefix + "/mergeScheduler/@class", null) == null)),
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <mergePolicy>myclass</mergePolicy> is no longer supported, use <mergePolicyFactory> instead.",
-        !((solrConfig.getNode(prefix + "/mergePolicy", false) != null) && (solrConfig.get(prefix + "/mergePolicy/@class", null) == null)),
+        !((solrConfig.getNode(mergePolicyExp,  mergePolicyPath, false) != null) && (solrConfig.get(prefix + "/mergePolicy/@class", null) == null)),
         true);
     assertWarnOrFail("The <luceneAutoCommit>true|false</luceneAutoCommit> parameter is no longer valid in solrconfig.xml.",
         solrConfig.get(prefix + "/luceneAutoCommit", null) == null,
@@ -130,7 +185,7 @@ public class SolrIndexConfig implements MapSerializable {
 
     useCompoundFile = solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
     maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
-    ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
+    ramBufferSizeMB = solrConfig.getDouble(ramBufferSizeMBExp, ramBufferSizeMBPath, def.ramBufferSizeMB);
 
     // how do we validate the value??
     ramPerThreadHardLimitMB = solrConfig.getInt(prefix+"/ramPerThreadHardLimitMB", def.ramPerThreadHardLimitMB);
@@ -175,7 +230,7 @@ public class SolrIndexConfig implements MapSerializable {
     mergedSegmentWarmerInfo = getPluginInfo(prefix + "/mergedSegmentWarmer", solrConfig, def.mergedSegmentWarmerInfo);
 
     assertWarnOrFail("Beginning with Solr 5.0, <checkIntegrityAtMerge> option is no longer supported and should be removed from solrconfig.xml (these integrity checks are now automatic)",
-        (null == solrConfig.getNode(prefix + "/checkIntegrityAtMerge", false)),
+        (null == solrConfig.getNode(checkIntegrityAtMergeExp, checkIntegrityAtMergePath, false)),
         true);
   }
 
