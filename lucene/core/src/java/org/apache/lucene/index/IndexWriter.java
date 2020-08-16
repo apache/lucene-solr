@@ -641,29 +641,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           assert openingSegmentInfos != null;
           synchronized (this) {
             includeMergeReader.set(false);
-            boolean openNewReader = mergedReaders.isEmpty() == false;
-            if (openNewReader) {
-              StandardDirectoryReader mergedReader = StandardDirectoryReader.open(this,
-                  sci -> {
-                    // as soon as we remove the reader and return it the StandardDirectoryReader#open
-                    // will take care of closing it. We only need to handle the readers that remain in the
-                    // mergedReaders map and close them.
-                    SegmentReader remove = mergedReaders.remove(sci.info.name);
-                    if (remove == null) {
-                      remove = openedReadOnlyClones.remove(sci.info.name);
-                      assert remove != null;
-                      // each of the readers we reuse from the previous reader needs to be refInced
-                      // since we reuse them but don't have an implicit refInc in the SDR:open call
-                      remove.incRef();
-                    }
-                    return remove;
-                  }, openingSegmentInfos, applyAllDeletes, writeAllDeletes);
-              try {
-                r.close(); // close and swap in the new reader... close is cool here since we didn't leak this reader yet
-              } finally {
-                r = mergedReader;
-              }
-            }
+            r = reopenMergedNRTReader(r, mergedReaders, openedReadOnlyClones, openingSegmentInfos,
+                applyAllDeletes, writeAllDeletes);
           }
           replaceReaderSuccess = true;
         } finally {
@@ -702,6 +681,36 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         } finally {
           maybeCloseOnTragicEvent();
         }
+      }
+    }
+    return r;
+  }
+
+  private StandardDirectoryReader reopenMergedNRTReader(StandardDirectoryReader r, Map<String, SegmentReader> mergedReaders,
+                                                        Map<String, SegmentReader> openedReadOnlyClones, SegmentInfos openingSegmentInfos,
+                                                        boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
+    assert Thread.holdsLock(this);
+    boolean openNewReader = mergedReaders.isEmpty() == false;
+    if (openNewReader) {
+      StandardDirectoryReader mergedReader = StandardDirectoryReader.open(this,
+          sci -> {
+            // as soon as we remove the reader and return it the StandardDirectoryReader#open
+            // will take care of closing it. We only need to handle the readers that remain in the
+            // mergedReaders map and close them.
+            SegmentReader remove = mergedReaders.remove(sci.info.name);
+            if (remove == null) {
+              remove = openedReadOnlyClones.remove(sci.info.name);
+              assert remove != null;
+              // each of the readers we reuse from the previous reader needs to be refInced
+              // since we reuse them but don't have an implicit refInc in the SDR:open call
+              remove.incRef();
+            }
+            return remove;
+          }, openingSegmentInfos, applyAllDeletes, writeAllDeletes);
+      try {
+        r.close(); // close and swap in the new reader... close is cool here since we didn't leak this reader yet
+      } finally {
+        return mergedReader;
       }
     }
     return r;
