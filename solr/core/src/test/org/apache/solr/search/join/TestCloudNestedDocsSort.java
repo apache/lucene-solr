@@ -172,9 +172,9 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
           final String actParentId = ""+ parent.get("id");
           if (!actParentId.equals(parentId)) {
             final String chDump = children.toString().replace("SolrDocument","\nSolrDocument");
-            System.out.println("\n\n"+chDump+"\n\n");
-            System.out.println("\n\n"+parents.toString().replace("SolrDocument","\nSolrDocument")
-                +"\n\n");
+            //System.out.println("\n\n"+chDump+"\n\n");
+            //System.out.println("\n\n"+parents.toString().replace("SolrDocument","\nSolrDocument")
+             //   +"\n\n");
           }
           assertEquals(""+child+"\n"+parent,actParentId, parentId);
         }

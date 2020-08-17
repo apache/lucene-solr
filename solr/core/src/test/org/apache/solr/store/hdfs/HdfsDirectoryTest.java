@@ -172,7 +172,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
       for (; i< (TEST_NIGHTLY ? 10 : 1); i++) {
         Directory fsDir = new ByteBuffersDirectory();
         String name = getName();
-        System.out.println("Working on pass [" + i  +"] contains [" + names.contains(name) + "]");
+        //System.out.println("Working on pass [" + i  +"] contains [" + names.contains(name) + "]");
         names.add(name);
         createFile(name,fsDir,directory);
         assertInputsEquals(name,fsDir,directory);

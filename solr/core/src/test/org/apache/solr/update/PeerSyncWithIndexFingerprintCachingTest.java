@@ -80,13 +80,13 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
     client0.commit(); client1.commit();
     
     IndexFingerprint before = getFingerprint(client0, Long.MAX_VALUE);
-    System.out.println("before " + before);
+    //System.out.println("before " + before);
     
     del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(-++v)), "2");
     client0.commit(); 
     
     IndexFingerprint after = getFingerprint(client0, Long.MAX_VALUE);
-    System.out.println("after " + after);
+    //System.out.println("after " + after);
     // make sure fingerprint before and after deleting are not the same
     Assert.assertTrue(IndexFingerprint.compare(before, after) != 0);
     

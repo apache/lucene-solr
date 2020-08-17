@@ -81,7 +81,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     when(firstJwkList.getJsonWebKeys()).thenReturn(asList(k1.getJwk(), k2.getJwk()));
     doAnswer(invocation -> {
       keysToReturnFromSecondJwk = (List<JsonWebKey>) refreshSequenceForSecondJwk.next();
-      System.out.println("Refresh called, next to return is " + keysToReturnFromSecondJwk);
+      //System.out.println("Refresh called, next to return is " + keysToReturnFromSecondJwk);
       return null;
     }).when(secondJwkList).refresh();
     when(secondJwkList.getJsonWebKeys()).then(inv -> {

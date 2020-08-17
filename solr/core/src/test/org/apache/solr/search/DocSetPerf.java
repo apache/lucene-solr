@@ -144,9 +144,9 @@ public class DocSetPerf {
       }
     }
 
-    System.out.println("TIME="+timer.getTime());
+    //System.out.println("TIME="+timer.getTime());
 
-    System.out.println("ret="+ret);
+    //System.out.println("ret="+ret);
   }
 
 }

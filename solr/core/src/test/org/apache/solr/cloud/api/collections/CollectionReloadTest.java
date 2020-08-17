@@ -70,7 +70,6 @@ public class CollectionReloadTest extends SolrCloudTestCase {
 //    });
 
     final int initialStateVersion = getCollectionState(testCollectionName).getZNodeVersion();
-    System.out.println("init:" + initialStateVersion);
 
      Replica leader
             = cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", DEFAULT_TIMEOUT);
@@ -79,7 +78,6 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     waitForState("Timed out waiting for core to re-register as ACTIVE after session expiry", testCollectionName, (n, c) -> {
       log.info("Collection state: {}", c);
       Replica expiredReplica = c.getReplica(leader.getName());
-      System.out.println("cversion:" + c.getZNodeVersion());
       return expiredReplica.getState() == Replica.State.ACTIVE && c.getZNodeVersion() > initialStateVersion;
     });
 

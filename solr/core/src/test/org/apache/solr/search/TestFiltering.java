@@ -481,7 +481,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
         if (iiter==-1 && qiter==-1) {
           // set breakpoint here to debug a specific issue
-          System.out.println("request="+params);
+          //System.out.println("request="+params);
         }
 
         try {

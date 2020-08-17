@@ -120,7 +120,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       JettySolrRunner randomJetty = cluster.getRandomJetty(random());
       String baseUrl = randomJetty.getBaseUrl().toString();
-      System.out.println("BaseUrl:" + baseUrl);
+      //System.out.println("BaseUrl:" + baseUrl);
       // to start there is no handler
       zkClient().setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
       //verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);

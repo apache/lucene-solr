@@ -147,7 +147,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     
     Arrays.sort(actualIds);
     Arrays.sort(expectedIds);
-    System.out.println("DEBUG ACTUAL IDS 1: " + Arrays.toString(actualIds));
+    //System.out.println("DEBUG ACTUAL IDS 1: " + Arrays.toString(actualIds));
     assertArrayEquals(expectedIds, actualIds);
 
     queryResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=true mintf=0 mindf=0}30"));
@@ -161,7 +161,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     
     Arrays.sort(actualIds);
     Arrays.sort(expectedIds);
-    System.out.println("DEBUG ACTUAL IDS 2: " + Arrays.toString(actualIds));
+    //System.out.println("DEBUG ACTUAL IDS 2: " + Arrays.toString(actualIds));
     assertArrayEquals(Arrays.toString(expectedIds) + " " + Arrays.toString(actualIds), expectedIds, actualIds);
   }
 

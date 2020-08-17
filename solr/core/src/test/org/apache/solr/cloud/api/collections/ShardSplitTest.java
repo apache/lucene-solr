@@ -97,9 +97,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   @BeforeClass
   public static void beforeShardSplitTest() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
-    System.out.println("Before Split");
     useFactory(null);
-
   }
 
   @Test

@@ -179,7 +179,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
       fail("Test failed on pass [" + i + "]");
     }
     long t2 = System.nanoTime();
-    System.out.println("Total time is " + ((t2 - t1)/1000000) + "ms");
+    //System.out.println("Total time is " + ((t2 - t1)/1000000) + "ms");
   }
 
   @Test

@@ -74,7 +74,7 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
       assertEquals("2", map.get("id"));
       map = parser.next();
       assertEquals("3", map.get("id"));
-      System.out.println();
+      //System.out.println();
       map = parser.next();
       assertNull(map);
     }

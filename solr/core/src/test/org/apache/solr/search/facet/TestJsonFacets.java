@@ -3502,9 +3502,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     all.add(catA);
     all.add(catB);
 
-    System.out.println(str(catA));
-    System.out.println(str(catB));
-    System.out.println(str(all));
+    //System.out.println(str(catA));
+    //System.out.println(str(catB));
+    //System.out.println(str(all));
 
     // 2.0 2.2 3.0 3.8 4.0
     // -9.0 -8.2 -5.0 7.800000000000001 11.0
@@ -3527,9 +3527,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     t1.add(90, 1);
     t1.add(50, 1);
 
-    System.out.println(t1.quantile(0.1));
-    System.out.println(t1.quantile(0.5));
-    System.out.println(t1.quantile(0.9));
+    //System.out.println(t1.quantile(0.1));
+    //System.out.println(t1.quantile(0.5));
+    //System.out.println(t1.quantile(0.9));
 
     assertEquals(t1.quantile(0.5), 50.0, 0.01);
 
@@ -3538,9 +3538,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     t2.add(170, 1);
     t2.add(90, 1);
 
-    System.out.println(t2.quantile(0.1));
-    System.out.println(t2.quantile(0.5));
-    System.out.println(t2.quantile(0.9));
+    //System.out.println(t2.quantile(0.1));
+    //System.out.println(t2.quantile(0.5));
+    //System.out.println(t2.quantile(0.9));
 
     AVLTreeDigest top = new AVLTreeDigest(100);
 
@@ -3552,9 +3552,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     ByteBuffer rbuf = ByteBuffer.wrap(arr1);
     top.add(AVLTreeDigest.fromBytes(rbuf));
 
-    System.out.println(top.quantile(0.1));
-    System.out.println(top.quantile(0.5));
-    System.out.println(top.quantile(0.9));
+    //System.out.println(top.quantile(0.1));
+    //System.out.println(top.quantile(0.5));
+    //System.out.println(top.quantile(0.9));
 
     t2.compress();
     ByteBuffer buf2 = ByteBuffer.allocate(t2.byteSize()); // upper bound
@@ -3564,9 +3564,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     ByteBuffer rbuf2 = ByteBuffer.wrap(arr2);
     top.add(AVLTreeDigest.fromBytes(rbuf2));
 
-    System.out.println(top.quantile(0.1));
-    System.out.println(top.quantile(0.5));
-    System.out.println(top.quantile(0.9));
+    //System.out.println(top.quantile(0.1));
+    //System.out.println(top.quantile(0.5));
+    //System.out.println(top.quantile(0.9));
   }
 
   public void XtestHLL() {

@@ -148,7 +148,7 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
     }
 
     double elapsed = timer.getTime();
-    System.out.println("ret="+ret+ " time="+elapsed+" throughput="+iter*1000/(elapsed+1));
+    //System.out.println("ret="+ret+ " time="+elapsed+" throughput="+iter*1000/(elapsed+1));
 
     req.close();
     assertTrue(ret>0);  // make sure we did some work
@@ -169,7 +169,7 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
     }
 
     double elapsed = timer.getTime();
-    System.out.println("ret="+ret+ " time="+elapsed+" throughput="+iter*1000/(elapsed+1));
+    //System.out.println("ret="+ret+ " time="+elapsed+" throughput="+iter*1000/(elapsed+1));
 
     req.close();
     assertTrue(ret>0);  // make sure we did some work

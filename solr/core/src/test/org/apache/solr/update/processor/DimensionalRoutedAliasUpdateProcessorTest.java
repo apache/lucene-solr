@@ -105,7 +105,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
     SolrParams params = dra.getParams();
     assertEquals("Dimensional[TIME,CATEGORY]", params.get(CollectionAdminRequest.RoutedAliasAdminRequest.ROUTER_TYPE_NAME));
-    System.out.println(params);
+    //System.out.println(params);
     assertEquals("20", params.get("router.1.maxCardinality"));
     assertEquals("2019-07-01T00:00:00Z", params.get("router.0.start"));
 
@@ -366,7 +366,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
     SolrParams params = dra.getParams();
     assertEquals("Dimensional[CATEGORY,TIME]", params.get(CollectionAdminRequest.RoutedAliasAdminRequest.ROUTER_TYPE_NAME));
-    System.out.println(params);
+    //System.out.println(params);
     assertEquals("20", params.get("router.0.maxCardinality"));
     assertEquals("2019-07-01T00:00:00Z", params.get("router.1.start"));
 

@@ -307,10 +307,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != zkClient) {
-      zkClient.printLayoutToStream(System.out);
-    }
-
     System.clearProperty("solr.zkclienttimeout");
 
     if (null != server) {

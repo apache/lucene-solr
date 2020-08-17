@@ -39,12 +39,12 @@ public class TestDocumentBuilder extends SolrTestCase {
     list.add(45);
     list.add(33);
     list.add(20);
-    doc.addField("field5", list);
+    //doc.addField("field5", list);
     
     SolrInputDocument clone = doc.deepCopy();
     
-    System.out.println("doc1: "+ doc);
-    System.out.println("clone: "+ clone);
+    //System.out.println("doc1: "+ doc);
+    //System.out.println("clone: "+ clone);
     
     assertNotSame(doc, clone);
     

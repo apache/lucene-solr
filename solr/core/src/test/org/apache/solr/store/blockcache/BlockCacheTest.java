@@ -80,11 +80,11 @@ public class BlockCacheTest extends SolrTestCase {
         assertTrue("buffer content differs", Arrays.equals(testData, buffer));
       }
     }
-    System.out.println("Cache Hits    = " + hitsInCache.get());
-    System.out.println("Cache Misses  = " + missesInCache.get());
-    System.out.println("Store         = " + (storeTime / (double) passes) / 1000000.0);
-    System.out.println("Fetch         = " + (fetchTime / (double) passes) / 1000000.0);
-    System.out.println("# of Elements = " + blockCache.getSize());
+    //System.out.println("Cache Hits    = " + hitsInCache.get());
+    //System.out.println("Cache Misses  = " + missesInCache.get());
+    //System.out.println("Store         = " + (storeTime / (double) passes) / 1000000.0);
+    //System.out.println("Fetch         = " + (fetchTime / (double) passes) / 1000000.0);
+    //System.out.println("# of Elements = " + blockCache.getSize());
   }
 
   private static byte[] testData(Random random, int size, byte[] buf) {
@@ -189,7 +189,7 @@ public class BlockCacheTest extends SolrTestCase {
               if (buffer[i] != getByte(globalPos)) {
                 failed.set(true);
                 if (validateFails.incrementAndGet() <= showErrors)
-                  System.out.println("ERROR: read was " + "block=" + block + " blockOffset=" + blockOffset + " len=" + len + " globalPos=" + globalPos + " localReadOffset=" + i + " got=" + buffer[i] + " expected=" + getByte(globalPos));
+                  //System.out.println("ERROR: read was " + "block=" + block + " blockOffset=" + blockOffset + " len=" + len + " globalPos=" + globalPos + " localReadOffset=" + i + " got=" + buffer[i] + " expected=" + getByte(globalPos));
                 break;
               }
             }
@@ -220,11 +220,11 @@ public class BlockCacheTest extends SolrTestCase {
       thread.join();
     }
 
-    System.out.println("# of Elements = " + blockCache.getSize());
-    System.out.println("Cache Hits = " + hitsInCache.get());
-    System.out.println("Cache Misses = " + missesInCache.get());
-    System.out.println("Cache Store Fails = " + storeFails.get());
-    System.out.println("Blocks with Errors = " + validateFails.get());
+    //System.out.println("# of Elements = " + blockCache.getSize());
+    //System.out.println("Cache Hits = " + hitsInCache.get());
+    //System.out.println("Cache Misses = " + missesInCache.get());
+    //System.out.println("Cache Store Fails = " + storeFails.get());
+    //System.out.println("Blocks with Errors = " + validateFails.get());
 
     assertFalse("cached bytes differ from expected", failed.get());
   }
@@ -363,7 +363,7 @@ public class BlockCacheTest extends SolrTestCase {
 
     // Thread.sleep(1000); // need to wait if executor is used for listener?
     long cacheSize = cache.estimatedSize();
-    System.out.println("Done! # of Elements = " + cacheSize + " inserts=" + inserts.get() + " removals=" + removals.get() + " hits=" + hits.get() + " maxObservedSize=" + maxObservedSize);
+    //System.out.println("Done! # of Elements = " + cacheSize + " inserts=" + inserts.get() + " removals=" + removals.get() + " hits=" + hits.get() + " maxObservedSize=" + maxObservedSize);
     assertEquals("cache size different from (inserts - removal)", cacheSize,  inserts.get() - removals.get());
     assertFalse(failed.get());
   }

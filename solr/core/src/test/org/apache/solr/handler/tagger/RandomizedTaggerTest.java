@@ -110,17 +110,15 @@ public class RandomizedTaggerTest extends TaggerTestCase {
         madeIt = true;
       } finally {
         if (!madeIt) {
-          System.out.println("Reproduce with:");
-          System.out.print(" buildNames(");
           for (int i = 0; i < NAMES.size(); i++) {
             if (i != 0)
               System.out.print(',');
-            System.out.print('"');
-            System.out.print(NAMES.get(i));
-            System.out.print('"');
+            //System.out.print('"');
+            //System.out.print(NAMES.get(i));
+           // System.out.print('"');
           }
-          System.out.println(");");
-          System.out.println(" assertBruteForce(\"" + input+"\");");
+          //System.out.println(");");
+          //System.out.println(" assertBruteForce(\"" + input+"\");");
         }
       }
     }

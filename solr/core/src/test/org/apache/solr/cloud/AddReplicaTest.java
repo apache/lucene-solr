@@ -165,7 +165,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     boolean success = false;
     for (int i = 0; i < 300; i++) {
       rsp = requestStatus.process(cloudClient);
-      System.out.println("resp:" + rsp);
+      //System.out.println("resp:" + rsp);
       if (rsp.getRequestStatus() == COMPLETED) {
         success = true;
         break;

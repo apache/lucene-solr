@@ -49,8 +49,8 @@ public class BitSetPerf {
 
   public static void main(String[] args) {
     if (args.length<5) {
-      System.out.println("BitSetTest <bitSetSize> <numSets> <numBitsSet> <testName> <iter> <impl>");
-      System.out.println("  impl => open for FixedBitSet");
+      //System.out.println("BitSetTest <bitSetSize> <numSets> <numBitsSet> <testName> <iter> <impl>");
+      //System.out.println("  impl => open for FixedBitSet");
     }
     int bitSetSize = Integer.parseInt(args[0]);
     int numSets = Integer.parseInt(args[1]);
@@ -186,8 +186,8 @@ public class BitSetPerf {
       }
     }
 
-    System.out.println("ret="+ret);
-    System.out.println("TIME="+timer.getTime());
+    //System.out.println("ret="+ret);
+    //System.out.println("TIME="+timer.getTime());
 
   }
 

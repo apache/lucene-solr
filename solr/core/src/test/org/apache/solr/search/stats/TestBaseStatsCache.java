@@ -43,13 +43,13 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
   // remain identical
   @Override
   protected void checkResponse(QueryResponse controlRsp, QueryResponse shardRsp) {
-    System.out.println("======================= Control Response =======================");
-    System.out.println(controlRsp);
-    System.out.println("");
-    System.out.println("");
-    System.out.println("======================= Shard Response =======================");
-    System.out.println("");
-    System.out.println(shardRsp);
+    //System.out.println("======================= Control Response =======================");
+    //System.out.println(controlRsp);
+    //System.out.println("");
+    //System.out.println("");
+    //System.out.println("======================= Shard Response =======================");
+    //System.out.println("");
+    //System.out.println(shardRsp);
     SolrDocumentList shardList = shardRsp.getResults();
     SolrDocumentList controlList = controlRsp.getResults();
     

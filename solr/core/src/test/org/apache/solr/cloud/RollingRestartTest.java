@@ -59,8 +59,6 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
     assertNotNull(leader);
     log.info("Current overseer leader = {}", leader);
 
-    cloudClient.getZkStateReader().getZkClient().printLayoutToStream(System.out);
-
     int numDesignateOverseers = TEST_NIGHTLY ? 16 : 2;
     numDesignateOverseers = Math.max(getShardCount(), numDesignateOverseers);
     List<String> designates = new ArrayList<>();
@@ -75,8 +73,6 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
     }
 
     waitUntilOverseerDesignateIsLeader(cloudClient.getZkStateReader().getZkClient(), designates, MAX_WAIT_TIME);
-
-    cloudClient.getZkStateReader().getZkClient().printLayoutToStream(System.out);
 
     boolean sawLiveDesignate = false;
     int numRestarts = 1 + random().nextInt(TEST_NIGHTLY ? 12 : 2);
@@ -121,8 +117,6 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
     leader = OverseerCollectionConfigSetProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
     assertNotNull(leader);
     log.info("Current overseer leader (after restart) = {}", leader);
-
-    cloudClient.getZkStateReader().getZkClient().printLayoutToStream(System.out);
   }
 
   static boolean waitUntilOverseerDesignateIsLeader(SolrZkClient testZkClient, List<String> overseerDesignates, long timeoutInNanos) throws KeeperException, InterruptedException {

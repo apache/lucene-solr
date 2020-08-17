@@ -202,7 +202,7 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("*******************************************************************");
     log.info("@BeforeClass ------------------------------------------------------");
 
-    //interruptThreadsOnTearDown("ParWork", false);
+    interruptThreadsOnTearDown("ParWork", false);
 
     if (!SysStats.getSysStats().isAlive()) {
       SysStats.reStartSysStats();
@@ -394,26 +394,26 @@ public class SolrTestCase extends LuceneTestCase {
    * Assumption failure occures in a {@link BeforeClass} method
    * @lucene.internal
    */
-  @BeforeClass
-  public static void checkSyspropForceBeforeClassAssumptionFailure() {
-    // ant test -Dargs="-Dtests.force.assumption.failure.beforeclass=true"
-    final String PROP = "tests.force.assumption.failure.beforeclass";
-    assumeFalse(PROP + " == true",
-                systemPropertyAsBoolean(PROP, false));
-  }
+//  @BeforeClass
+//  public static void checkSyspropForceBeforeClassAssumptionFailure() {
+//    // ant test -Dargs="-Dtests.force.assumption.failure.beforeclass=true"
+//    final String PROP = "tests.force.assumption.failure.beforeclass";
+//    assumeFalse(PROP + " == true",
+//                systemPropertyAsBoolean(PROP, false));
+//  }
   
   /** 
    * Special hook for sanity checking if any tests trigger failures when an
    * Assumption failure occures in a {@link Before} method
    * @lucene.internal
    */
-  @Before
-  public void checkSyspropForceBeforeAssumptionFailure() {
-    // ant test -Dargs="-Dtests.force.assumption.failure.before=true"
-    final String PROP = "tests.force.assumption.failure.before";
-    assumeFalse(PROP + " == true",
-                systemPropertyAsBoolean(PROP, false));
-  }
+//  @Before
+//  public void checkSyspropForceBeforeAssumptionFailure() {
+//    // ant test -Dargs="-Dtests.force.assumption.failure.before=true"
+//    final String PROP = "tests.force.assumption.failure.before";
+//    assumeFalse(PROP + " == true",
+//                systemPropertyAsBoolean(PROP, false));
+//  }
 
   public static String TEST_HOME() {
     return getFile("solr/collection1").getParent();
@@ -519,7 +519,7 @@ public class SolrTestCase extends LuceneTestCase {
 
     StartupLoggingUtils.shutdown();
 
-    //checkForInterruptRequest();
+    checkForInterruptRequest();
   }
 
   private static SSLTestConfig buildSSLConfig() {
@@ -567,19 +567,19 @@ public class SolrTestCase extends LuceneTestCase {
       return;
     }
 
-    System.out.println("DO FORCED INTTERUPTS");
+   // System.out.println("DO FORCED INTTERUPTS");
     //  we need to filter and only do this for known threads? dont want users to count on this behavior unless necessary
     String testThread = Thread.currentThread().getName();
-    System.out.println("test thread:" + testThread);
+   // System.out.println("test thread:" + testThread);
     ThreadGroup tg = Thread.currentThread().getThreadGroup();
-    System.out.println("test group:" + tg.getName());
+  //  System.out.println("test group:" + tg.getName());
     Set<Map.Entry<Thread,StackTraceElement[]>> threadSet = Thread.getAllStackTraces().entrySet();
-    System.out.println("thread count: " + threadSet.size());
+  //  System.out.println("thread count: " + threadSet.size());
     for (Map.Entry<Thread,StackTraceElement[]> threadEntry : threadSet) {
       Thread thread = threadEntry.getKey();
       ThreadGroup threadGroup = thread.getThreadGroup();
       if (threadGroup != null) {
-        System.out.println("thread is " + thread.getName());
+    //    System.out.println("thread is " + thread.getName());
         if (threadGroup.getName().equals(tg.getName()) && !thread.getName().startsWith("SUITE")) {
           interrupt(thread, nameContains);
           continue;
@@ -589,7 +589,7 @@ public class SolrTestCase extends LuceneTestCase {
       while (threadGroup != null && threadGroup.getParent() != null && !thread.getName().startsWith("SUITE")) {
         threadGroup = threadGroup.getParent();
         if (nameContains != null && threadGroup.getName().equals(tg.getName())) {
-          System.out.println("thread is " + thread.getName());
+        //  System.out.println("thread is " + thread.getName());
           interrupt(thread, nameContains);
           continue;
         }
@@ -604,13 +604,16 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static void interrupt(Thread thread, String nameContains) {
     if ((nameContains != null && thread.getName().contains(nameContains)) || (interuptThreadWithNameContains != null && thread.getName().contains(interuptThreadWithNameContains)) ) {
-
-      System.out.println("interrupt on " + thread.getName());
-      thread.interrupt();
-      try {
-        thread.join(5000);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+      if (thread.getState() == Thread.State.TERMINATED) {
+        System.out.println("interrupt on " + thread.getName());
+        thread.interrupt();
+        try {
+          thread.join(100);
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+        }
+      } else {
+        System.out.println("state:" + thread.getState());
       }
     }
 

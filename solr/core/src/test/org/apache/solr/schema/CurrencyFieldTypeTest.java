@@ -290,8 +290,9 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
     for (int i = 1; i <= initDocs; i++) {
       assertU(adoc("id", "" + i, fieldName, (r.nextInt(10) + 1.00) + ",USD"));
-      if (i % 1000 == 0)
-        System.out.println(i);
+      if (i % 1000 == 0) {
+        //System.out.println(i);
+      }
     }
 
     assertU(commit());
@@ -308,10 +309,10 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
         assertQ(req("fl", "*,score", "q", fieldName+":[" +  lower + ",USD TO " + (lower + (9.99 - (j * 0.01))) + ",USD]"), "//*");
       }
 
-      System.out.println(timer.getTime());
+      //System.out.println(timer.getTime());
     }
 
-    System.out.println("---");
+    //System.out.println("---");
 
     for (int j = 0; j < 3; j++) {
       final RTimer timer = new RTimer();
@@ -320,7 +321,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
         assertQ(req("fl", "*,score", "q", fieldName+":[" +  lower + ",EUR TO " + (lower + (9.99 - (j * 0.01))) + ",EUR]"), "//*");
       }
 
-      System.out.println(timer.getTime());
+      //System.out.println(timer.getTime());
     }
   }
 

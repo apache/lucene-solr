@@ -116,7 +116,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
 
     final CreateRoutedAliasThread[] threads = new CreateRoutedAliasThread[1];
     int numStart = num;
-    System.out.println("NUM ==> " +num);
+    //System.out.println("NUM ==> " +num);
     for (; num < threads.length + numStart; num++) {
       final String aliasName = "testAliasCplx" + num;
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();

@@ -127,7 +127,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       List<String> collations = collationHolder.getAll("collation");
       assertTrue(collations.size()==1); 
       String collation = collations.iterator().next();    
-      System.out.println(collation);
+      //System.out.println(collation);
       assertTrue("Incorrect collation: " + collation,"id:[1 TO 10] AND lowerfilt:love".equals(collation));
     }
   }

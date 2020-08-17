@@ -718,7 +718,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   public void testDateMathInStart() throws Exception {
     ClusterStateProvider clusterStateProvider = solrClient.getClusterStateProvider();
     Class<? extends ClusterStateProvider> aClass = clusterStateProvider.getClass();
-    System.out.println("CSPROVIDER:" + aClass);
+    //System.out.println("CSPROVIDER:" + aClass);
 
     // This test prevents recurrence of SOLR-13760
 

@@ -172,7 +172,6 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     // start the target first so that we know its zkhost
     MiniSolrCloudCluster target = new MiniSolrCloudCluster(1, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
     try {
-      System.out.println("Target zkHost = " + target.getZkServer().getZkAddress());
       System.setProperty("cdcr.target.zkHost", target.getZkServer().getZkAddress());
 
       MiniSolrCloudCluster source = new MiniSolrCloudCluster(1, createTempDir("cdcr-source"), buildJettyConfig("/solr"));
@@ -257,7 +256,6 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     // start the target first so that we know its zkhost
     MiniSolrCloudCluster target = new MiniSolrCloudCluster(3, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
     try {
-      System.out.println("Target zkHost = " + target.getZkServer().getZkAddress());
       System.setProperty("cdcr.target.zkHost", target.getZkServer().getZkAddress());
 
       MiniSolrCloudCluster source = new MiniSolrCloudCluster(3, createTempDir("cdcr-source"), buildJettyConfig("/solr"));

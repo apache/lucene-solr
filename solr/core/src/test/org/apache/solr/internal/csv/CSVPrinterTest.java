@@ -127,7 +127,7 @@ public class CSVPrinterTest extends SolrTestCase {
     String[][] parseResult = parser.getAllValues();
 
     if (!equals(lines, parseResult)) {
-      System.out.println("Printer output :" + printable(result));
+      //System.out.println("Printer output :" + printable(result));
       assertTrue(false);
     }
   }
@@ -146,8 +146,8 @@ public class CSVPrinterTest extends SolrTestCase {
         String aval = linea[j];
         String bval = lineb[j];
         if (!aval.equals(bval)) {
-          System.out.println("expected  :" + printable(aval));
-          System.out.println("got       :" + printable(bval));
+          //System.out.println("expected  :" + printable(aval));
+          //System.out.println("got       :" + printable(bval));
           return false;
         }
       }

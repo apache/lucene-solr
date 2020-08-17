@@ -137,12 +137,9 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   
   @Before
   public void beforeSolrCloudBridgeTestCase() throws Exception {
-    
-    System.out.println("Before Bridge");
+
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    
-    System.out.println("Make cluster with shard count:" + numJettys);
     
     cluster = configureCluster(numJettys).formatZk(formatZk).withJettyConfig(jettyCfg -> jettyCfg.withServlets(extraServlets).enableProxy(enableProxy)).build();
     
@@ -151,9 +148,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     if (!zkClient.exists("/configs/_default")) {
       zkClient.uploadToZK(Paths.get(TEST_HOME()).resolve("collection1").resolve("conf"), "/configs" + "/" + "_default", filenameExclusions);
     }
-    
-    zkClient.printLayoutToStream(System.out);
-    
     
     if (schemaString != null) {
       //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString), "/configs/_default", null);
@@ -190,10 +184,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       SolrZkClient zkClientControl = controlCluster.getZkClient();
       
       zkClientControl.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf"), "configs" + "/" + "_default", filenameExclusions);
-      
-      zkClientControl.printLayoutToStream(System.out);
-      
-      
+
       if (schemaString != null) {
         //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString), "/configs/_default", null);
         

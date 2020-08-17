@@ -106,7 +106,6 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
     Predicate<StackTraceElement> judge = new Predicate<StackTraceElement>() {
       @Override
       public boolean test(StackTraceElement trace) {
-        System.out.println("trace:" + trace);
         return trace.getClassName().indexOf(className)>=0;
       }
       @Override

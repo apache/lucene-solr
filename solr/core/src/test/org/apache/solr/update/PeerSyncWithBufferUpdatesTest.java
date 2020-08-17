@@ -200,7 +200,7 @@ public class PeerSyncWithBufferUpdatesTest  extends BaseDistributedSearchTestCas
   }
 
   private void validateDocs(Set<Integer> docsAdded, SolrClient client0, SolrClient client1) throws SolrServerException, IOException {
-    System.out.println("commits");
+    //System.out.println("commits");
     client0.commit();
     client1.commit();
     QueryResponse qacResponse;

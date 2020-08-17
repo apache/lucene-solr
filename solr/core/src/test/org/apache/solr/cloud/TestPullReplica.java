@@ -127,68 +127,73 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testCreateDelete() throws Exception {
-    try {
-      switch (random().nextInt(3)) {
-        case 0:
-          // Sometimes use SolrJ
-          CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
-          .setMaxShardsPerNode(100)
-          .process(cluster.getSolrClient());
-          break;
-        case 1:
-          // Sometimes use v1 API
-          String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&pullReplicas=%s&maxShardsPerNode=%s",
-              cluster.getRandomJetty(random()).getBaseUrl(),
-              collectionName, "conf",
-              2,    // numShards
-              3,    // pullReplicas
-              100); // maxShardsPerNode
-          url = url + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1"); // These options should all mean the same
-          Http2SolrClient.GET(url, cluster.getSolrClient().getHttpClient());
-          break;
-        case 2:
-          // Sometimes use V2 API
-          url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
-          String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, pullReplicas:%s, maxShardsPerNode:%s %s}}",
-              collectionName, "conf",
-              2,    // numShards
-              3,    // pullReplicas
-              100, // maxShardsPerNode
-              pickRandom("", ", nrtReplicas:1", ", replicationFactor:1")); // These options should all mean the same
-          Http2SolrClient.SimpleResponse response = Http2SolrClient.POST(url, cluster.getSolrClient().getHttpClient(), requestBody.getBytes("UTF-8"), "application/json");
-          assertEquals(200, response.status);
-          break;
+    switch (random().nextInt(3)) {
+      case 0:
+        // Sometimes use SolrJ
+        CollectionAdminRequest
+            .createCollection(collectionName, "conf", 2, 1, 0, 3)
+            .setMaxShardsPerNode(100).process(cluster.getSolrClient());
+        break;
+      case 1:
+        // Sometimes use v1 API
+        String url = String.format(Locale.ROOT,
+            "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&pullReplicas=%s&maxShardsPerNode=%s",
+            cluster.getRandomJetty(random()).getBaseUrl(), collectionName,
+            "conf", 2,    // numShards
+            3,    // pullReplicas
+            100); // maxShardsPerNode
+        url = url + pickRandom("", "&nrtReplicas=1",
+            "&replicationFactor=1"); // These options should all mean the same
+        Http2SolrClient.GET(url, cluster.getSolrClient().getHttpClient());
+        break;
+      case 2:
+        // Sometimes use V2 API
+        url = cluster.getRandomJetty(random()).getBaseUrl().toString()
+            + "/____v2/c";
+        String requestBody = String.format(Locale.ROOT,
+            "{create:{name:%s, config:%s, numShards:%s, pullReplicas:%s, maxShardsPerNode:%s %s}}",
+            collectionName, "conf", 2,    // numShards
+            3,    // pullReplicas
+            100, // maxShardsPerNode
+            pickRandom("", ", nrtReplicas:1",
+                ", replicationFactor:1")); // These options should all mean the same
+        Http2SolrClient.SimpleResponse response = Http2SolrClient
+            .POST(url, cluster.getSolrClient().getHttpClient(),
+                requestBody.getBytes("UTF-8"), "application/json");
+        assertEquals(200, response.status);
+        break;
+    }
+    boolean reloaded = false;
+    while (true) {
+      DocCollection docCollection = getCollectionState(collectionName);
+      assertNotNull(docCollection);
+      assertEquals("Expecting 4 relpicas per shard", 8,
+          docCollection.getReplicas().size());
+      assertEquals("Expecting 6 pull replicas, 3 per shard", 6,
+          docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+      assertEquals("Expecting 2 writer replicas, one per shard", 2,
+          docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
+      for (Slice s : docCollection.getSlices()) {
+        // read-only replicas can never become leaders
+        assertFalse(s.getLeader().getType() == Replica.Type.PULL);
+        List<String> shardElectionNodes = cluster.getZkClient().getChildren(
+            ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()),
+            null, true);
+        assertEquals(
+            "Unexpected election nodes for Shard: " + s.getName() + ": "
+                + Arrays.toString(shardElectionNodes.toArray()), 1,
+            shardElectionNodes.size());
       }
-      boolean reloaded = false;
-      while (true) {
-        DocCollection docCollection = getCollectionState(collectionName);
-        assertNotNull(docCollection);
-        assertEquals("Expecting 4 relpicas per shard",
-            8, docCollection.getReplicas().size());
-        assertEquals("Expecting 6 pull replicas, 3 per shard",
-            6, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
-        assertEquals("Expecting 2 writer replicas, one per shard",
-            2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-        for (Slice s:docCollection.getSlices()) {
-          // read-only replicas can never become leaders
-          assertFalse(s.getLeader().getType() == Replica.Type.PULL);
-          List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
-          assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()),
-              1, shardElectionNodes.size());
-        }
-        assertUlogPresence(docCollection);
-        if (reloaded) {
-          break;
-        } else {
-          // reload
-          CollectionAdminResponse response = CollectionAdminRequest.reloadCollection(collectionName)
-          .process(cluster.getSolrClient());
-          assertEquals(0, response.getStatus());
-          reloaded = true;
-        }
+      assertUlogPresence(docCollection);
+      if (reloaded) {
+        break;
+      } else {
+        // reload
+        CollectionAdminResponse response = CollectionAdminRequest
+            .reloadCollection(collectionName).process(cluster.getSolrClient());
+        assertEquals(0, response.getStatus());
+        reloaded = true;
       }
-    } finally {
-      zkClient().printLayoutToStream(System.out);
     }
   }
 
@@ -334,7 +339,6 @@ public class TestPullReplica extends SolrCloudTestCase {
     });
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL).process(cluster.getSolrClient());
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
-    zkClient().printLayoutToStream(System.out);
     if (log.isInfoEnabled()) {
       log.info("Saw states: {}", Arrays.toString(statesSeen.toArray()));
     }

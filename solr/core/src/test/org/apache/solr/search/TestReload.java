@@ -68,7 +68,7 @@ public class TestReload extends TestRTGBase {
           assertU(commit("openSearcher","false"));   // should cause a RTG searcher to be opened as well
         } else {
           boolean softCommit = rand.nextBoolean();
-          System.out.println("!!! softCommit" + softCommit);
+          //System.out.println("!!! softCommit" + softCommit);
           // assertU(commit("softCommit", ""+softCommit));
         }
       }

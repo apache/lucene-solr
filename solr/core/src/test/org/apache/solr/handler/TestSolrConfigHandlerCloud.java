@@ -74,7 +74,6 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
         TIMEOUT_S);
 
    NamedList<Object> rsp = cloudClient.request(new LukeRequest());
-   System.out.println(rsp);
   }
 
   private void testReqHandlerAPIs() throws Exception {

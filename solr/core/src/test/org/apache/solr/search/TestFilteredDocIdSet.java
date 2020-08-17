@@ -106,8 +106,8 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     int[] answer = new int[]{4,6,8};
     boolean same = Arrays.equals(answer, docs);
     if (!same) {
-      System.out.println("answer: " + Arrays.toString(answer));
-      System.out.println("gotten: " + Arrays.toString(docs));
+      //System.out.println("answer: " + Arrays.toString(answer));
+      //System.out.println("gotten: " + Arrays.toString(docs));
       fail();
     }
   }

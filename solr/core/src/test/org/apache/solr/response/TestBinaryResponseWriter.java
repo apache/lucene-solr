@@ -84,7 +84,7 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     byte[] bytes1 = new byte[1024];
     int len1 = ByteUtils.UTF16toUTF8(input, 0, input.length(), bytes1, 0);
     BytesRef bytesref = new BytesRef(input);
-    System.out.println();
+    //System.out.println();
     assertEquals(len1, bytesref.length);
     for (int i = 0; i < len1; i++) {
       assertEquals(input + " not matching char at :" + i, bytesref.bytes[i], bytes1[i]);

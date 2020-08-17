@@ -140,7 +140,7 @@ public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
       errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
       return;
     }
-    System.out.println("Got map:" + map);
+    //System.out.println("Got map:" + map);
     //get another node
     Set<String> errmessages = new HashSet<>();
     RestTestHarness harness = randomRestTestHarness(LuceneTestCase.random());

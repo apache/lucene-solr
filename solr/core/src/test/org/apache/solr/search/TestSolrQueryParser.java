@@ -752,7 +752,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     long end = System.nanoTime();
 
-    System.out.println((assertOn ? "WARNING, assertions enabled. " : "") + "ret=" + ret + " Parser QPS:" + ((long)numQueries * iter)*1000000000/(end-start));
+    //System.out.println((assertOn ? "WARNING, assertions enabled. " : "") + "ret=" + ret + " Parser QPS:" + ((long)numQueries * iter)*1000000000/(end-start));
 
     req.close();
   }

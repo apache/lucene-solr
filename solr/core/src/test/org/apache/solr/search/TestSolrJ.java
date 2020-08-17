@@ -80,7 +80,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
           try {
             indexDocs(base, docsPerThread, maxSleep);
           } catch (Exception e) {
-            System.out.println("###############################CAUGHT EXCEPTION");
+            //System.out.println("###############################CAUGHT EXCEPTION");
             e.printStackTrace();
             ex = e;
           }
@@ -100,7 +100,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     }
 
     double elapsed = timer.getTime();
-    System.out.println("time="+elapsed + " throughput="+(nDocs*1000/elapsed) + " Exception="+ex);
+    //System.out.println("time="+elapsed + " throughput="+(nDocs*1000/elapsed) + " Exception="+ex);
 
     // should server threads be marked as daemon?
     // need a server.close()!!!
@@ -136,13 +136,13 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
     for (int i=base; i<count+base; i++) {
       if ((i & 0xfffff) == 0) {
-        System.out.print("\n% " + new Date()+ "\t" + i + "\t");
-        System.out.flush();
+        //System.out.print("\n% " + new Date()+ "\t" + i + "\t");
+        //System.out.flush();
       }
 
       if ((i & 0xffff) == 0) {
-        System.out.print(".");
-        System.out.flush();
+        //System.out.print(".");
+        //System.out.flush();
       }
 
       SolrInputDocument doc = getDocument(i);
@@ -176,7 +176,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
         client.commit(true, true, true);
       }
 
-      System.out.println("TIME: " + timer.getTime());
+      //System.out.println("TIME: " + timer.getTime());
     }
 
   }

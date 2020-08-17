@@ -212,7 +212,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     String baseUrl = shard1Leader.getBaseUrl();
     JettySolrRunner j1 = null;
     for (JettySolrRunner j : cluster.getJettySolrRunners()) {
-      System.out.println("cmp:" + j.getProxyBaseUrl() + " " + baseUrl);
       if (j.getProxyBaseUrl().toString().equals(baseUrl)) {
         j1 = j;
         break;

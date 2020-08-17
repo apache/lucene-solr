@@ -171,7 +171,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       rsp = CollectionAdminRequest.getClusterStatus().setCollectionName(COLLECTION_NAME)
           .process(client).getResponse();
-      System.out.println(rsp);
+
       cluster = (NamedList<Object>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
       collections = (NamedList<Object>) cluster.get("collections");

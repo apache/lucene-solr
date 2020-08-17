@@ -524,7 +524,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     version = "1";
     updateJ(json("[{\"id\": \"a\", \"name\": \"a1\", \"my_version_l\": " + version + "}]"),
             params("update.chain", "external-version-support-missing"));
-    System.out.println("send b");
+    //System.out.println("send b");
     updateJ(json("[{\"id\": \"b\", \"name\": \"b1\", \"my_version_l\": " + version + "}]"),
             params("update.chain", "external-version-support-missing"));
     assertU(commit());

@@ -110,7 +110,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
         String v = getAsString(s, doc);
         str.append(v).append('#');
       }
-      System.out.println( "HELLO: "+str );
+      //System.out.println( "HELLO: "+str );
       doc.setField(name, str.toString());
     }
   }

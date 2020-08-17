@@ -272,7 +272,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     String content = "This is a text that should be copied to a string field and cutoff at 10 characters";
     SolrInputDocument d = processAdd("add-fields-maxchars", doc(f("id", "1"), f(fieldName, content)));
     assertNotNull(d);
-    System.out.println("Document is "+d);
+    //System.out.println("Document is "+d);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertNotNull(schema.getFieldOrNull(strFieldName));
