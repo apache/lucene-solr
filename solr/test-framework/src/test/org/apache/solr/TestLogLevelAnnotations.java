@@ -136,24 +136,25 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
     StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
   }
 
-    private Map<String, Level> savedMethodLogLevels = new HashMap<>();
+  private Map<String,Level> savedMethodLogLevels = new HashMap<>();
 
-    @Before
-    public void initMethodLogLevels() {
-      Method method = RandomizedContext.current().getTargetMethod();
-      LogLevel annotation = method.getAnnotation(LogLevel.class);
-      if (annotation == null) {
-        return;
-      }
-      Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
-      savedMethodLogLevels.putAll(previousLevels);
+  @Before
+  public void initMethodLogLevels() {
+    Method method = RandomizedContext.current().getTargetMethod();
+    LogLevel annotation = method.getAnnotation(LogLevel.class);
+    if (annotation == null) {
+      return;
     }
+    Map<String,Level> previousLevels = LogLevel.Configurer
+        .setLevels(annotation.value());
+    savedMethodLogLevels.putAll(previousLevels);
+  }
 
-    @After
-    public void restoreMethodLogLevels() {
-      LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
-      savedMethodLogLevels.clear();
-    }
+  @After
+  public void restoreMethodLogLevels() {
+    LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
+    savedMethodLogLevels.clear();
+  }
   
   public void testClassLogLevels() {
     assertEquals(DEFAULT_LOG_LEVEL, LogManager.getLogger("org.apache.solr.bogus_logger").getLevel());

@@ -27,10 +27,13 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,6 +68,26 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
     LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
     savedClassLogLevels.clear();
     StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
+  }
+
+  private Map<String, Level> savedMethodLogLevels = new HashMap<>();
+
+  @Before
+  public void initMethodLogLevels() {
+    Method method = RandomizedContext.current().getTargetMethod();
+    LogLevel annotation = method.getAnnotation(LogLevel.class);
+    if (annotation == null) {
+      return;
+    }
+    Map<String,Level> previousLevels = LogLevel.Configurer
+        .setLevels(annotation.value());
+    savedMethodLogLevels.putAll(previousLevels);
+  }
+
+  @After
+  public void restoreMethodLogLevels() {
+    LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
+    savedMethodLogLevels.clear();
   }
 
   @Test
