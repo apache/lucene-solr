@@ -45,7 +45,7 @@ public class CPUCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
 
-  private final boolean isCpuCircuitBreakerEnabled;
+  private final boolean enabled;
   private final double cpuUsageThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
@@ -55,7 +55,7 @@ public class CPUCircuitBreaker extends CircuitBreaker {
   public CPUCircuitBreaker(SolrConfig solrConfig) {
     super(solrConfig);
 
-    this.isCpuCircuitBreakerEnabled = solrConfig.isCpuCircuitBreakerEnabled;
+    this.enabled = solrConfig.cpuCircuitBreakerEnabled;
     this.cpuUsageThreshold = solrConfig.cpuCircuitBreakerThreshold;
   }
 
@@ -65,7 +65,7 @@ public class CPUCircuitBreaker extends CircuitBreaker {
       return false;
     }
 
-    if (!isCpuCircuitBreakerEnabled) {
+    if (!enabled) {
       return false;
     }
 
@@ -91,11 +91,18 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getDebugInfo() {
-    if (seenCPUUsage.get() == 0L || allowedCPUUsage.get() == 0L) {
+
+    if (seenCPUUsage.withInitial(supplier).get() == 0.0 || seenCPUUsage.withInitial(supplier).get() == 0.0) {
       log.warn("CPUCircuitBreaker's monitored values (seenCPUUSage, allowedCPUUsage) not set");
     }
 
-    return "seenCPUUSage=" + seenCPUUsage.get() + " allowedCPUUsage=" + allowedCPUUsage.get();
+    return "seenCPUUSage=" + seenCPUUsage.withInitial(supplier).get() + " allowedCPUUsage=" + allowedCPUUsage.withInitial(supplier).get();
+  }
+
+  @Override
+  public String getErrorMessage() {
+    return "CPU Circuit Breaker Triggered. Seen CPU usage " + seenCPUUsage.withInitial(supplier).get() + " and allocated threshold " +
+        allowedCPUUsage.withInitial(supplier).get();
   }
 
   public double getCpuUsageThreshold() {

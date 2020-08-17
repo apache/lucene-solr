@@ -17,6 +17,8 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import java.util.function.Supplier;
+
 import org.apache.solr.core.SolrConfig;
 
 /**
@@ -27,10 +29,15 @@ import org.apache.solr.core.SolrConfig;
  *  2. Use the circuit breaker in a specific code path(s).
  *
  * TODO: This class should be grown as the scope of circuit breakers grow.
+ *
+ * The class and its derivatives raise a standard exception when a circuit breaker is triggered.
+ * We should make it into a dedicated exception (https://issues.apache.org/jira/browse/SOLR-14755)
  * </p>
  */
 public abstract class CircuitBreaker {
   public static final String NAME = "circuitbreaker";
+
+  protected static Supplier<Double> supplier = () -> 0.0;
 
   protected final SolrConfig solrConfig;
 
@@ -53,4 +60,9 @@ public abstract class CircuitBreaker {
    * Get debug useful info.
    */
   public abstract String getDebugInfo();
+
+  /**
+   * Get error message when the circuit breaker triggers
+   */
+  public abstract String getErrorMessage();
 }

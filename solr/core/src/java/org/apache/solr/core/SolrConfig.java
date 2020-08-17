@@ -229,8 +229,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
 
     useCircuitBreakers = getBool("circuitBreaker/useCircuitBreakers", false);
-    isCpuCircuitBreakerEnabled = getBool("circuitBreaker/isCpuCircuitBreakerEnabled", false);
-    isMemoryCircuitBreakerEnabled = getBool("circuitBreaker/isMemoryCircuitBreakerEnabled", false);
+    cpuCircuitBreakerEnabled = getBool("circuitBreaker/cpuCircuitBreakerEnabled", false);
+    memoryCircuitBreakerEnabled = getBool("circuitBreaker/memoryCircuitBreakerEnabled", false);
     memoryCircuitBreakerThresholdPct = getInt("circuitBreaker/memoryCircuitBreakerThresholdPct", 95);
 
     cpuCircuitBreakerThreshold = getInt("circuitBreaker/cpuCircuitBreakerThreshold", 95);
@@ -535,8 +535,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   // Circuit Breaker Configuration
   public final boolean useCircuitBreakers;
   public final int memoryCircuitBreakerThresholdPct;
-  public final boolean isMemoryCircuitBreakerEnabled;
-  public final boolean isCpuCircuitBreakerEnabled;
+  public final boolean memoryCircuitBreakerEnabled;
+  public final boolean cpuCircuitBreakerEnabled;
   public final int cpuCircuitBreakerThreshold;
 
   // IndexConfig settings
@@ -820,7 +820,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   private void validateCircuitBreakerThresholds() {
     if (useCircuitBreakers) {
-      if (isMemoryCircuitBreakerEnabled) {
+      if (memoryCircuitBreakerEnabled) {
         if (memoryCircuitBreakerThresholdPct > 95 || memoryCircuitBreakerThresholdPct < 50) {
           throw new IllegalArgumentException("Valid value range of memoryCircuitBreakerThresholdPct is 50 -  95");
         }
@@ -898,8 +898,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     m.put("enableLazyFieldLoading", enableLazyFieldLoading);
     m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
     m.put("useCircuitBreakers", useCircuitBreakers);
-    m.put("isCpuCircuitBreakerEnabled", isCpuCircuitBreakerEnabled);
-    m.put("isMemoryCircuitBreakerEnabled", isMemoryCircuitBreakerEnabled);
+    m.put("cpuCircuitBreakerEnabled", cpuCircuitBreakerEnabled);
+    m.put("memoryCircuitBreakerEnabled", memoryCircuitBreakerEnabled);
     m.put("memoryCircuitBreakerThresholdPct", memoryCircuitBreakerThresholdPct);
     m.put("cpuCircuitBreakerThreshold", cpuCircuitBreakerThreshold);
     for (SolrPluginInfo plugin : plugins) {

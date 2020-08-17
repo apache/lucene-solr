@@ -49,7 +49,7 @@ To enable/disable JVM heap usage based circuit breaker, use the following config
 
 [source,xml]
 ----
-<isMemoryCircuitBreakerEnabled>true</isMemoryCircuitBreakerEnabled>
+<memoryCircuitBreakerEnabled>true</memoryCircuitBreakerEnabled>
 ----
 
 Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
@@ -71,14 +71,16 @@ at which the circuit breaker will trip is 3.75GB.
 
 
 === CPU Utilization Based Circuit Breaker
-This circuit breaker tracks CPU utilization and triggers if the average CPU utilization over the last minute
-exceeds a configurable threshold.
+This circuit breaker tracks CPU utilization and triggers if the average CPU utilization over the last one minute
+exceeds a configurable threshold. Note that the value used in computation is over the last one minute -- so a sudden
+spike in traffic that goes down might still cause the circuit breaker to trigger for a short while before it resolves
+and updates the value. For more details of the calculation, please see https://en.wikipedia.org/wiki/Load_(computing)
 
 To enable/disable CPU utilization based circuit breaker, use the following configuration:
 
 [source,xml]
 ----
-<isCpuCircuitBreakerEnabled>true</isCpuCircuitBreakerEnabled>
+<cpuCircuitBreakerEnabled>true</cpuCircuitBreakerEnabled>
 ----
 
 Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
@@ -89,13 +91,12 @@ To set the triggering threshold in units of CPU utilization, use the following p
 ----
 <cpuCircuitBreakerThreshold>75</cpuCircuitBreakerThreshold>
 ----
-The range of valid values for this parameter is [40 to infinity].
 
 Note that both these circuit breakers are checked for each incoming search request and consider the current heap usage of the node and average CPU usage over the last minute, respectively.
 The checks does not impact performance, but any performance regressions that are suspected to be caused by this feature should be reported to the dev list.
 
 == Performance Considerations
-It is worth noting that while JVM or CPU circuit breakers does not add any noticeable overhead per query, having too many
+It is worth noting that while JVM or CPU circuit breakers do not add any noticeable overhead per query, having too many
 circuit breakers checked for a single request can cause a performance overhead.
 
 In addition, it is a good practice to exponentially back off while retrying requests on a busy node.

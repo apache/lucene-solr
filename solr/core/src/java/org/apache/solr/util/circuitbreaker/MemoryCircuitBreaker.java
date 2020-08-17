@@ -43,7 +43,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
 
-  private boolean isMemoryCircuitBreakerEnabled;
+  private boolean enabled;
   private final long heapMemoryThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
@@ -52,6 +52,8 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   public MemoryCircuitBreaker(SolrConfig solrConfig) {
     super(solrConfig);
+
+    this.enabled = solrConfig.memoryCircuitBreakerEnabled;
 
     long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
 
@@ -77,7 +79,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
       return false;
     }
 
-    if (!isMemoryCircuitBreakerEnabled) {
+    if (!enabled) {
       return false;
     }
 
@@ -93,11 +95,17 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getDebugInfo() {
-    if (seenMemory.get() == 0L || allowedMemory.get() == 0L) {
+    if (seenMemory.withInitial(supplier).get() == 0.0 || allowedMemory.withInitial(supplier).get() == 0.0) {
       log.warn("MemoryCircuitBreaker's monitored values (seenMemory, allowedMemory) not set");
     }
 
-    return "seenMemory=" + seenMemory.get() + " allowedMemory=" + allowedMemory.get();
+    return "seenMemory=" + seenMemory.withInitial(supplier).get() + " allowedMemory=" + allowedMemory.withInitial(supplier).get();
+  }
+
+  @Override
+  public String getErrorMessage() {
+    return "Memory Circuit Breaker Triggered. Seen JVM heap memory usage " + seenMemory.withInitial(supplier).get() + " and allocated threshold " +
+        allowedMemory.withInitial(supplier).get();
   }
 
   private long getCurrentMemoryThreshold() {

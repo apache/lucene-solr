@@ -57,8 +57,8 @@
     "boolTofilterOptimizer":1,
     "useCircuitBreakers":10,
     "memoryCircuitBreakerThresholdPct":20,
-    "isMemoryCircuitBreakerEnabled": 10,
-    "isCpuCircuitBreakerEnabled": 10,
+    "memoryCircuitBreakerEnabled": 10,
+    "cpuCircuitBreakerEnabled": 10,
     "cpuCircuitBreakerThreshold":20,
     "maxBooleanClauses":1},
   "jmx":{

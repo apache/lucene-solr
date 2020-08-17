@@ -108,9 +108,7 @@ public class CircuitBreakerManager {
     StringBuilder sb = new StringBuilder();
 
     for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-      sb.append(circuitBreaker.getClass().getName());
-      sb.append(" ");
-      sb.append(circuitBreaker.getDebugInfo());
+      sb.append(circuitBreaker.getErrorMessage());
       sb.append("\n");
     }
 
