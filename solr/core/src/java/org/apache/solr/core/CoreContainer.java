@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
