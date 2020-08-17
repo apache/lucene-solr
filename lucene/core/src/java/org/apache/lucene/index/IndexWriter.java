@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -635,7 +636,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // while holding that lock. Merging outside of the lock ie. after calling docWriter.finishFullFlush(boolean) would
               // yield wrong results because deletes might sneak in during the merge
               openingSegmentInfos = r.getSegmentInfos().clone();
-              onGetReaderMerges = preparePointInTimeMerge(openingSegmentInfos, hasTimedOut, MergeTrigger.GET_READER,
+              onGetReaderMerges = preparePointInTimeMerge(openingSegmentInfos, hasTimedOut::get, MergeTrigger.GET_READER,
                   sci -> {
                     assert hasTimedOut.get() == false : "illegal state  merge reader must be not pulled since we already stopped waiting for merges";
                     mergedReaders.put(sci.info.name, readerFactory.apply(sci));
@@ -3366,7 +3367,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               if (anyChanges && maxCommitMergeWaitMillis > 0) {
                 // we can safely call prepareOnCommitMerge since writeReaderPool(true) above wrote all
                 // necessary files to disk and checkpointed them.
-                onCommitMerges = preparePointInTimeMerge(toCommit, hasTimedOut, MergeTrigger.COMMIT, sci->{});
+                onCommitMerges = preparePointInTimeMerge(toCommit, hasTimedOut::get, MergeTrigger.COMMIT, sci->{});
               }
             }
             success = true;
@@ -3443,7 +3444,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * below.  We also ensure that we pull the merge readers while holding {@code IndexWriter}'s lock.  Otherwise
    * we could see concurrent deletions/updates applied that do not belong to the segment.
    */
-  private MergePolicy.MergeSpecification preparePointInTimeMerge(SegmentInfos mergingSegmentInfos, AtomicBoolean hasTimedOut,
+  private MergePolicy.MergeSpecification preparePointInTimeMerge(SegmentInfos mergingSegmentInfos, BooleanSupplier hasTimedOut,
                                                                  MergeTrigger trigger,
                                                                  IOUtils.IOConsumer<SegmentCommitInfo> mergeFinished) throws IOException {
     assert Thread.holdsLock(this);
@@ -3462,7 +3463,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             // and will not commit our merge to the to-be-commited SegmentInfos
             if (segmentDropped == false
                 && committed
-                && hasTimedOut.get() == false) {
+                && hasTimedOut.getAsBoolean() == false) {
 
               // make sure onMergeComplete really was called:
               assert origInfo != null;
@@ -3504,7 +3505,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
           @Override
           void onMergeComplete() throws IOException {
-            if (hasTimedOut.get() == false
+            if (hasTimedOut.getAsBoolean() == false
                 && isAborted() == false
                 && info.info.maxDoc() > 0/* never do this if the segment if dropped / empty */) {
               assert Thread.holdsLock(IndexWriter.this);
