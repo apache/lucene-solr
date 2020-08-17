@@ -42,6 +42,8 @@ Improvements
 
 * SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
 
+* SOLR-13438: On deleting a collection, its config set will also be deleted iff it has been auto-created, and not used by any other collection.
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
