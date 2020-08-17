@@ -22,7 +22,6 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Map;
@@ -143,7 +142,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       //SolrCloud Sharding
       SolrClientCache solrClientCache = (streamContext != null ? streamContext.getSolrClientCache() : null);
       final SolrClientCache localSolrClientCache; // tracks any locally allocated cache that needs to be closed locally
-      if (solrClientCache == null) {
+      if (solrClientCache == null) { // streamContext was null OR streamContext.getSolrClientCache() returned null
         solrClientCache = localSolrClientCache = new SolrClientCache();
       } else {
         localSolrClientCache = null;
@@ -155,16 +154,19 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       Set<String> liveNodes = clusterState.getLiveNodes();
 
 
+      RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
       final ModifiableSolrParams solrParams;
       if (streamContext != null) {
         solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
+        requestReplicaListTransformerGenerator = streamContext.getRequestReplicaListTransformerGenerator();
       } else {
         solrParams = new ModifiableSolrParams();
+        requestReplicaListTransformerGenerator = null;
+      }
+      if (requestReplicaListTransformerGenerator == null) {
+        requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator();
       }
       solrParams.add(requestParams);
-
-      RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator =
-          Optional.ofNullable(streamContext != null ? streamContext.getRequestReplicaListTransformerGenerator() : null).orElseGet(RequestReplicaListTransformerGenerator::new);
 
       ReplicaListTransformer replicaListTransformer = requestReplicaListTransformerGenerator.getReplicaListTransformer(solrParams);
 
