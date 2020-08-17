@@ -15,14 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster.placement.impl;
 
-/**
- * A cluster related placement request that Solr asks a {@link PlacementPlugin} plugin to resolve and compute a {@link PlacementPlan} for.
- */
-public interface PlacementRequest {
-  /**
-   * "Unique" request ID that can be used for logging in the plugin code and that will also be used in logs on the Solr side.
-   */
-  String getRequestId();
+import java.util.Set;
+
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
+
+class PlacementPlanImpl implements PlacementPlan {
+
+  final PlacementRequest request;
+  final Set<ReplicaPlacement> replicaPlacements;
+
+  PlacementPlanImpl(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
+    this.request = request;
+    this.replicaPlacements = replicaPlacements;
+  }
+
+  @Override
+  public PlacementRequest getRequest() {
+    return request;
+  }
+
+  @Override
+  public Set<ReplicaPlacement> getReplicaPlacements() {
+    return replicaPlacements;
+  }
 }

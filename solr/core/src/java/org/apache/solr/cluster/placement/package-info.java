@@ -21,7 +21,8 @@
  *
  * <p>Initially, only placement related plugins are supported.
  *
- * <p>The entry point is the {@link org.apache.solr.cluster.placement.PlacementPlugin} interface plugins implement.
+ * <p>The entry point is the {@link org.apache.solr.cluster.placement.PlacementPluginFactory} building instances
+ * of the {@link org.apache.solr.cluster.placement.PlacementPlugin} interface where the placement computation is implemented.
  *
  * <p>From there, one will find the family of interfaces that allow navigating the cluster structure: {@link org.apache.solr.cluster.placement.Cluster},
  * {@link org.apache.solr.cluster.placement.Node}, {@link org.apache.solr.cluster.placement.SolrCollection}, {@link org.apache.solr.cluster.placement.Shard} and

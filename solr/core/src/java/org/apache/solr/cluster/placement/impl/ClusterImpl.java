@@ -27,6 +27,7 @@ import org.apache.solr.cluster.placement.Cluster;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.SolrCollection;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 
 class ClusterImpl implements Cluster {
   private final Set<Node> liveNodes;
@@ -48,11 +49,15 @@ class ClusterImpl implements Cluster {
   }
 
   /**
-   * Returns the set of all collections in the cluster. This is a costly method as it potentially builds a large set in
-   * memory. Usage is discouraged.
+   * <p>Returns the set of names of all collections in the cluster. This is a costly method as it potentially builds a
+   * large set in memory. Usage is discouraged.
+   *
+   * <p>Eventually, a similar method allowing efficiently filtering the set of returned collections is desirable. Efficiently
+   * implies filter does not have to be applied to each collection but a regular expression or similar is passed in,
+   * allowing direct access to qualifying collections.
    */
-  public Set<SolrCollection> getAllCollections() {
-    return clusterState.getCollectionsMap().values().stream().map(SolrCollectionImpl::new).collect(Collectors.toSet());
+  public Set<String> getAllCollectionNames() {
+    return clusterState.getCollectionsMap().values().stream().map(DocCollection::getName).collect(Collectors.toSet());
   }
 
   // TODO implement hashCode() and equals() (just in case we end up supporting multiple Cluster instances at some point)

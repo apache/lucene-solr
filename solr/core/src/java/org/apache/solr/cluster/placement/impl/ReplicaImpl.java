@@ -115,5 +115,19 @@ class ReplicaImpl implements Replica {
     return node;
   }
 
+  /**
+   * Translating a plugin visible ReplicaType to the internal Solr enum {@link org.apache.solr.common.cloud.Replica.Type}.
+   * The obvious approach would have been to add the internal Solr enum value as a parameter in the ReplicaType enum,
+   * but that would have leaked an internal SolrCloud implementation class to the plugin API.
+   */
+  static org.apache.solr.common.cloud.Replica.Type toCloudReplicaType(ReplicaType type) {
+    switch (type) {
+      case NRT: return org.apache.solr.common.cloud.Replica.Type.NRT;
+      case TLOG: return org.apache.solr.common.cloud.Replica.Type.TLOG;
+      case PULL: return org.apache.solr.common.cloud.Replica.Type.PULL;
+      default: throw new IllegalArgumentException("Unknown " + type);
+    }
+  }
+
   // TODO implement hashCode() and equals()
 }

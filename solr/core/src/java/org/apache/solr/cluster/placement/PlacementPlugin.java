@@ -18,12 +18,19 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * Implemented by external plugins to control replica placement and movement on the search cluster (as well as other things
+ * <p>Implemented by external plugins to control replica placement and movement on the search cluster (as well as other things
  * such as cluster elasticity?) when cluster changes are required (initiated elsewhere, most likely following a Collection
  * API call).
+ *
+ * <p>Instances of classes implementing this interface are created by {@link PlacementPluginFactory}
  */
 public interface PlacementPlugin {
   /**
+   * <p>Request from plugin code to compute placement. Note this method must be reentrant as a plugin instance may (read
+   * will) get multiple such calls in parallel.
+   *
+   * <p>Configuration is passed upon creation of a new instance of this class by {@link PlacementPluginFactory#createPluginInstance}.
+   *
    * @param cluster initial state of the cluster. Note there are {@link java.util.Set}'s and {@link java.util.Map}'s
    *                accessible from the {@link Cluster} and other reachable instances. These collection will not change
    *                while the plugin is executing and will be thrown away once the plugin is done. The plugin code can

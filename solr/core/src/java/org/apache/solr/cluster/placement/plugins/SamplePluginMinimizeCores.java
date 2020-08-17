@@ -33,6 +33,8 @@ import org.apache.solr.cluster.placement.CreateNewCollectionPlacementRequest;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.PluginConfig;
 import org.apache.solr.cluster.placement.PropertyKey;
 import org.apache.solr.cluster.placement.PropertyKeyFactory;
 import org.apache.solr.cluster.placement.PropertyValue;
@@ -51,6 +53,19 @@ import org.apache.solr.common.util.SuppressForbidden;
  * TODO: code not tested and never run, there are no implementation yet for used interfaces
  */
 public class SamplePluginMinimizeCores implements PlacementPlugin {
+
+  private final PluginConfig config;
+
+  private SamplePluginMinimizeCores(PluginConfig config) {
+    this.config = config;
+  }
+
+  static public class Factory implements PlacementPluginFactory {
+    @Override
+    public PlacementPlugin createPluginInstance(PluginConfig config) {
+      return new SamplePluginMinimizeCores(config);
+    }
+  }
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
   public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
@@ -115,8 +130,7 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
       placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, reqCreateCollection.getPullReplicationFactor(), Replica.ReplicaType.PULL);
     }
 
-    return placementPlanFactory.createPlacementPlanNewCollection(
-        reqCreateCollection, reqCreateCollection.getCollectionName(), replicaPlacements);
+    return placementPlanFactory.createPlacementPlanNewCollection(reqCreateCollection, replicaPlacements);
   }
 
   private void placeReplicas(ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,

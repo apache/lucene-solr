@@ -78,7 +78,7 @@ public interface PropertyKeyFactory {
    * Returns a property key to request the value of a {@link Node} metric. Corresponding {@link PropertyValue}'s are similar
    * to those of {@link #createMetricKey(PropertyValueSource, String)}.
    */
-   PropertyKey createMetricKey(Node metricSource, String metricName, NodeMetricRegistry registry);
+   PropertyKey createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry);
 
   /**
    * Registry options when requesting a {@link Node} metric using {@link #createMetricKey(Node, String, NodeMetricRegistry)}.

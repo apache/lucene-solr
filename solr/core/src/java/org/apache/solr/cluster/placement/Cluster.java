@@ -45,9 +45,9 @@ public interface Cluster extends PropertyValueSource {
   Optional<SolrCollection> getCollection(String collectionName) throws IOException;
 
   /**
-   * <p>Allows getting all {@link SolrCollection} present in the cluster.
+   * <p>Allows getting names of all {@link SolrCollection}'s present in the cluster.
    *
-   * <p><b>WARNING:</b> this call might be extremely inefficient on large clusters. Usage is discouraged.
+   * <p><b>WARNING:</b> this call will be extremely inefficient on large clusters. Usage is discouraged.
    */
-  Set<SolrCollection> getAllCollections();
+  Set<String> getAllCollectionNames();
 }

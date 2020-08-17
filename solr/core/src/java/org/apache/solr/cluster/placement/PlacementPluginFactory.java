@@ -17,12 +17,11 @@
 
 package org.apache.solr.cluster.placement;
 
-/**
- * A cluster related placement request that Solr asks a {@link PlacementPlugin} plugin to resolve and compute a {@link PlacementPlan} for.
- */
-public interface PlacementRequest {
+public interface PlacementPluginFactory {
   /**
-   * "Unique" request ID that can be used for logging in the plugin code and that will also be used in logs on the Solr side.
+   * Returns an instance of the plugin that will be repeatedly (and concurrently) be called to compute placement. Multiple
+   * instances of a plugin can be used in parallel (for example if configuration has to change, but plugin instances with
+   * the previous configuration are still being used).
    */
-  String getRequestId();
+  PlacementPlugin createPluginInstance(PluginConfig config);
 }

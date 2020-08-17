@@ -17,6 +17,8 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Set;
+
 /**
  * A fully specified plan or instructions for placement, deletion or move to be applied to the cluster.<p>
  * Fully specified means the actual {@link Node}'s on which to place replicas have been decided.
@@ -31,4 +33,9 @@ public interface PlacementPlan {
    * that created this instance.
    */
   PlacementRequest getRequest();
+
+  /**
+   * @return the set of {@link ReplicaPlacement}'s computed by the plugin to implement the request
+   */
+  Set<ReplicaPlacement> getReplicaPlacements();
 }

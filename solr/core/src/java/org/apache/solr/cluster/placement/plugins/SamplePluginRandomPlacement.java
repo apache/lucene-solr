@@ -28,6 +28,8 @@ import org.apache.solr.cluster.placement.CreateNewCollectionPlacementRequest;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.PluginConfig;
 import org.apache.solr.cluster.placement.PropertyKeyFactory;
 import org.apache.solr.cluster.placement.PropertyValueFetcher;
 import org.apache.solr.cluster.placement.Replica;
@@ -42,6 +44,19 @@ import org.apache.solr.cluster.placement.PlacementPlanFactory;
  * TODO: code not tested and never run, there are no implementation yet for used interfaces
  */
 public class SamplePluginRandomPlacement implements PlacementPlugin {
+
+  private final PluginConfig config;
+
+  private SamplePluginRandomPlacement(PluginConfig config) {
+    this.config = config;
+  }
+
+  static public class Factory implements PlacementPluginFactory {
+    @Override
+    public PlacementPlugin createPluginInstance(PluginConfig config) {
+      return new SamplePluginRandomPlacement(config);
+    }
+  }
 
   public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
                                         PropertyValueFetcher propertyFetcher, PlacementPlanFactory placementPlanFactory) throws PlacementException {
@@ -75,8 +90,7 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
           shardName, reqCreateCollection.getPullReplicationFactor(), Replica.ReplicaType.PULL);
     }
 
-    return placementPlanFactory.createPlacementPlanNewCollection(
-        reqCreateCollection, reqCreateCollection.getCollectionName(), replicaPlacements);
+    return placementPlanFactory.createPlacementPlanNewCollection(reqCreateCollection, replicaPlacements);
   }
 
   private void placeForReplicaType(ArrayList<Node> nodesToAssign, PlacementPlanFactory placementPlanFactory,

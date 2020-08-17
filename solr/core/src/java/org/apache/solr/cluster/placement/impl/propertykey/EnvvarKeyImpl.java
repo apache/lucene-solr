@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster.placement.impl.propertykey;
 
-/**
- * A cluster related placement request that Solr asks a {@link PlacementPlugin} plugin to resolve and compute a {@link PlacementPlan} for.
- */
-public interface PlacementRequest {
-  /**
-   * "Unique" request ID that can be used for logging in the plugin code and that will also be used in logs on the Solr side.
-   */
-  String getRequestId();
+import org.apache.solr.cluster.placement.Node;
+import org.apache.solr.cluster.placement.PropertyKey;
+
+public class EnvvarKeyImpl extends AbstractPropertyKey implements PropertyKey {
+  private final String envVarName;
+
+  public EnvvarKeyImpl(Node node, String envVarName) {
+    super(node);
+    this.envVarName = envVarName;
+  }
 }

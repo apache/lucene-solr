@@ -30,7 +30,7 @@ public interface PlacementPlanFactory {
    *
    * <p>This is in support of {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd}.
    */
-  PlacementPlan createPlacementPlanNewCollection(CreateNewCollectionPlacementRequest request, String CollectionName, Set<ReplicaPlacement> replicaPlacements);
+  PlacementPlan createPlacementPlanNewCollection(CreateNewCollectionPlacementRequest request, Set<ReplicaPlacement> replicaPlacements);
 
   /**
    * <p>Creates a {@link PlacementPlan} for adding replicas to a given shard of an existing collection.
@@ -43,10 +43,13 @@ public interface PlacementPlanFactory {
    * {@link org.apache.solr.common.params.CollectionAdminParams#WITH_COLLECTION} but this should be removed shortly and
    * the section in parentheses of this comment should be removed when the {@code withCollection} javadoc link appears broken).
    */
-  PlacementPlan createPlacementPlanAddReplicas(AddReplicasPlacementRequest request, String CollectionName, Set<ReplicaPlacement> replicaPlacements);
+  PlacementPlan createPlacementPlanAddReplicas(AddReplicasPlacementRequest request, Set<ReplicaPlacement> replicaPlacements);
 
   /**
-   * Creates a {@link ReplicaPlacement} needed to be passed to some/all {@link PlacementPlan} factory methods.
+   * <p>Creates a {@link ReplicaPlacement} to be passed to {@link PlacementPlan} factory methods.
+   *
+   * <p>Note the plugin can also build its own instances implementing {@link ReplicaPlacement} instead of using this call
+   * (but using this method makes it easier).
    */
   ReplicaPlacement createReplicaPlacement(String shardName, Node node, Replica.ReplicaType replicaType);
 }

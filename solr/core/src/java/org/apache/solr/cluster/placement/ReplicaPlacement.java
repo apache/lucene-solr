@@ -24,6 +24,22 @@ package org.apache.solr.cluster.placement;
  * cluster but does not create them directly for adding new replicas for new or existing shards).
  *
  * <p>Captures the {@link Shard} (via the shard name), {@link Node} and {@link Replica.ReplicaType} of a Replica to be created.
+ *
+ * <p>TODO: discuss (before merge) if this interface really needs to allow access to the data captured in an instance or if calling {@link PlacementPlanFactory#createReplicaPlacement(String, Node, Replica.ReplicaType)} is sufficient for plugin code.
  */
 public interface ReplicaPlacement {
+  /**
+   * @return the name of the {@link Shard} for which the replica should be created
+   */
+  String getShardName();
+
+  /**
+   * @return the {@link Node} on which the replica should be created
+   */
+  Node getNode();
+
+  /**
+   * @return the type of the replica to be created
+   */
+  Replica.ReplicaType getReplicaType();
 }

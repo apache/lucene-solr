@@ -579,9 +579,10 @@ public class Assign {
           List snitches = (List) collection.get(SNITCH);
           return new RulesBasedAssignStrategy(rules, snitches, clusterState);
         case PLUGIN:
-          // TODO need to decide which plugin class to use. Global config (single plugin for all PLUGIN collections?) or per collection config?
-          // TODO hardconding a sample plugin for now. DO NOT MERGE this as is.
-          return new PlacementPluginAssignStrategy(new SamplePluginMinimizeCores());
+          // TODO need to decide which plugin class to use. Factory name (as well as plugin config) will be in Solr config file, will be used for all collections.
+          // TODO hardcoding a sample plugin for now. DO NOT MERGE this as is.
+          // TODO plugin factory allows config to change over time, this might not initially be supported from the Solr side (ans that's ok)
+          return new PlacementPluginAssignStrategy((new SamplePluginMinimizeCores.Factory()).createPluginInstance(null));
         default:
           throw new Assign.AssignmentException("Unknown placement type: " + placement);
       }

@@ -24,15 +24,21 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.placement.Cluster;
 import org.apache.solr.cluster.placement.PlacementException;
+import org.apache.solr.cluster.placement.PlacementPlanFactory;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PropertyKeyFactory;
 import org.apache.solr.common.cloud.ReplicaPosition;
 
 /**
  * This assign strategy delegates placement computation to "plugin" code.
  */
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
+
+  private static final PlacementPlanFactory PLACEMENT_PLAN_FACTORY = new PlacementPlanFactoryImpl();
+  private static final PropertyKeyFactory PROPERTY_KEY_FACTORY = new PropertyKeyFactoryImpl();
+
   private final PlacementPlugin plugin;
   public PlacementPluginAssignStrategy(PlacementPlugin plugin) {
     this.plugin = plugin;
@@ -48,15 +54,12 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
     final PlacementPlan placementPlan;
     try {
-      // TODO Implement factories...
-      placementPlan = plugin.computePlacement(cluster, placementRequest, null, null, null);
+      // TODO Implement factories, likely keep instances around...
+      placementPlan = plugin.computePlacement(cluster, placementRequest, PROPERTY_KEY_FACTORY, null, PLACEMENT_PLAN_FACTORY);
     } catch (PlacementException pe) {
       throw new Assign.AssignmentException(pe);
     }
 
-    // TODO create replicaPositions from placementPlan
-    List<ReplicaPosition> replicaPositions = null;
-
-    return replicaPositions;
+    return ReplicaPlacementImpl.toReplicaPositions(placementPlan.getReplicaPlacements());
   }
 }

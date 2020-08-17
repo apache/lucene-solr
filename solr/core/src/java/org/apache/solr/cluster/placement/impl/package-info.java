@@ -15,14 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
-
 /**
- * A cluster related placement request that Solr asks a {@link PlacementPlugin} plugin to resolve and compute a {@link PlacementPlan} for.
+ * Implementation classes (not visible to plugins, subject to change at any time) for the interfaces in {@link org.apache.solr.cluster.placement}
  */
-public interface PlacementRequest {
-  /**
-   * "Unique" request ID that can be used for logging in the plugin code and that will also be used in logs on the Solr side.
-   */
-  String getRequestId();
-}
+package org.apache.solr.cluster.placement.impl;
