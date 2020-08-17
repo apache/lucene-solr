@@ -574,8 +574,8 @@ public abstract class LuceneTestCase extends Assert {
    * to them (as is the case with ju.logging handlers).
    */
   static {
-    TestRuleLimitSysouts.checkCaptureStreams();
-    Logger.getGlobal().getHandlers();
+//    TestRuleLimitSysouts.checkCaptureStreams();
+//    Logger.getGlobal().getHandlers();
   }
 
   /**
@@ -614,7 +614,8 @@ public abstract class LuceneTestCase extends Assert {
       .around(ignoreAfterMaxFailures)
       .around(suiteFailureMarker = new TestRuleMarkFailure())
       .around(new TestRuleAssertionsRequired())
-      .around(new TestRuleLimitSysouts(suiteFailureMarker))
+        // nocommit - lets stop extending from LuceneTestCase
+      //.around(new TestRuleLimitSysouts(suiteFailureMarker))
       .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker));
     // TODO LUCENE-7595: Java 9 does not allow to look into runtime classes, so we have to fix the RAM usage checker!
     if (!Constants.JRE_IS_MINIMUM_JAVA9) {
