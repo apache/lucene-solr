@@ -36,14 +36,11 @@ public class TimeTracker {
   
   private final long startTime;
   private final PrintStream out;
+  private final String stringout;
 
   private volatile long doneTime;
-
-  private volatile Object trackedObject;
   
   private final List<TimeTracker> children = Collections.synchronizedList(new ArrayList<>(64));
-
-  private final Class<? extends Object> clazz;
 
   private final StringBuilder label = new StringBuilder(2046);
   
@@ -54,14 +51,22 @@ public class TimeTracker {
   }
 
   private TimeTracker(Object object, String label, int i, PrintStream out) {
-    this.trackedObject = object;
-    this.clazz = object == null ? null : object.getClass();
+    if (object == null) throw new NullPointerException();
+    if (object instanceof String) {
+      stringout = object.toString() + "-> " + getElapsedMS() + "ms";
+    } else {
+      stringout =
+          object.getClass().getSimpleName() + "--> " + getElapsedMS() + "ms";
+    }
+
     this.startTime = System.nanoTime();
     this.label.append(label);
     this.depth = i;
     this.out = out;
     if (depth <= 1) {
-      CLOSE_TIMES.put((object != null ? object.hashCode() : 0) + "_" + label.hashCode(), this);
+      CLOSE_TIMES.put(
+          (object != null ? object.hashCode() : 0) + "_" + label.hashCode(),
+          this);
     }
   }
 
@@ -216,14 +221,9 @@ public class TimeTracker {
   public String toString() {
     if (label != null) {
       return (children.size() > 0 ? ":" : "") + label + " " + getElapsedMS() + "ms";
-    } else if (trackedObject != null) {
-      if (trackedObject instanceof String) {
-        return trackedObject.toString() + "-> " + getElapsedMS() + "ms";
-      } else {
-        return trackedObject.getClass().getSimpleName() + "--> " + getElapsedMS() + "ms";
-      }
+    } else {
+      return stringout;
     }
-    return "*InternalError*";
   }
 
   private long getElapsedNS(long startTime, long doneTime) {
@@ -236,10 +236,6 @@ public class TimeTracker {
       log.debug("getElapsedNS(long, long) - end");
     }
     return returnlong;
-  }
-
-  public Class<? extends Object> getClazz() {
-    return clazz;
   }
   
   public long getElapsedMS() {

@@ -410,7 +410,7 @@ public class ParWork implements Closeable {
       for (WorkUnit workUnit : workUnits) {
         if (log.isDebugEnabled()) log.debug("Process workunit {} {}", rootLabel, workUnit.objects);
         TimeTracker workUnitTracker = null;
-        assert (workUnitTracker = workUnit.tracker.startSubClose(rootLabel)) != null;
+        assert (workUnitTracker = workUnit.tracker.startSubClose(workUnit)) != null;
         try {
           List<ParObject> objects = workUnit.objects;
 
@@ -659,6 +659,7 @@ public class ParWork implements Closeable {
   }
 
   public static void close(Object object) {
+    if (object == null) return;
     close(object, false);
   }
 

@@ -202,7 +202,7 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("*******************************************************************");
     log.info("@BeforeClass ------------------------------------------------------");
 
-    interruptThreadsOnTearDown("ParWork", false);
+    //interruptThreadsOnTearDown("ParWork", false);
 
     if (!SysStats.getSysStats().isAlive()) {
       SysStats.reStartSysStats();
@@ -487,28 +487,27 @@ public class SolrTestCase extends LuceneTestCase {
 //                  + testTime);
       }
     } finally {
-      System.out.println("Show Close Times");
       Class<? extends Object> clazz = null;
       Long tooLongTime = 0L;
       String times = null;
-      try {
-        synchronized (TimeTracker.CLOSE_TIMES) {
-          Map<String, TimeTracker> closeTimes = TimeTracker.CLOSE_TIMES;
-          for (TimeTracker closeTime : closeTimes.values()) {
-            int closeTimeout = Integer.getInteger("solr.parWorkTestTimeout", 10000);
-            if (closeTime.getElapsedMS() > closeTimeout) {
-              tooLongTime = closeTime.getElapsedMS();
-              clazz = closeTime.getClazz();
-              times = closeTime.getCloseTimes();
-            }
-            // turn off until layout is fixed again
-            // closeTime.printCloseTimes();
-          }
-        }
-
-      } finally {
+//      try {
+//        synchronized (TimeTracker.CLOSE_TIMES) {
+//          Map<String, TimeTracker> closeTimes = TimeTracker.CLOSE_TIMES;
+//          for (TimeTracker closeTime : closeTimes.values()) {
+//            int closeTimeout = Integer.getInteger("solr.parWorkTestTimeout", 10000);
+//            if (closeTime.getElapsedMS() > closeTimeout) {
+//              tooLongTime = closeTime.getElapsedMS();
+//              clazz = closeTime.getClazz();
+//              times = closeTime.getCloseTimes();
+//            }
+//            // turn off until layout is fixed again
+//            // closeTime.printCloseTimes();
+//          }
+//        }
+//
+//      } finally {
         TimeTracker.CLOSE_TIMES.clear();
-      }
+//      }
 
       if (clazz != null) {
         // nocommit - leave this on
@@ -520,7 +519,7 @@ public class SolrTestCase extends LuceneTestCase {
 
     StartupLoggingUtils.shutdown();
 
-    checkForInterruptRequest();
+    //checkForInterruptRequest();
   }
 
   private static SSLTestConfig buildSSLConfig() {

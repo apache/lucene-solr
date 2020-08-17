@@ -12,11 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-a => aa
-b => b1 b2
-c => c1,c2
-a\=>a => b\=>b
-a\,a => b\,b
-foo,bar,baz
+#a => aa
+#b => b1 b2
+#c => c1,c2
+#a\=>a => b\=>b
+#a\,a => b\,b
+#foo,bar,baz
 
-Television,TV,Televisions
+#Television,TV,Televisions

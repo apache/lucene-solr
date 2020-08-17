@@ -12,20 +12,18 @@
 
 #-----------------------------------------------------------------------
 #some test synonym mappings unlikely to appear in real input text
-aaa => aaaa
-bbb => bbbb1 bbbb2
-ccc => cccc1,cccc2
-a\=>a => b\=>b
-a\,a => b\,b
-fooaaa,baraaa,bazaaa
+#aaafoo => aaabar
+#bbbfoo => bbbfoo bbbbar
+#cccfoo => cccbar cccbaz
+#fooaaa,baraaa,bazaaa
 
 # Some synonym groups specific to this example
-GB,gib,gigabyte,gigabytes
-MB,mib,megabyte,megabytes
-Television, Televisions, TV, TVs
-#notice we use "gib" instead of "GiB" so any WordDelimiterGraphFilter coming
+ #GB,gib,gigabyte,gigabytes
+#MB,mib,megabyte,megabytes
+#Television, Televisions, TV, TVs
+#notice we use "gib" instead of "GiB" so any WordDelimiterFilter coming
 #after us won't split it into two words.
 
 # Synonym mappings can be used for spelling correction too
-pixima => pixma
+#pixima => pixma
 
