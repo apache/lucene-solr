@@ -132,7 +132,6 @@ public class IndexFingerprint implements MapSerializable {
         f.numVersions++;
       }
     }
-    System.out.println("Create new fingerprint:" + f);
     return f;
   }
 

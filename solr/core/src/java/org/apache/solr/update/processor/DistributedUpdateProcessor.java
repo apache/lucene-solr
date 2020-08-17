@@ -455,10 +455,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               // specified it must exist (versionOnUpdate==1) and it does.
             } else {
               if(cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true) == false) {
-                System.out.println("version conflict! DROP!");
                 return true;
               }
-              System.out.println("version conflict!");
               throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId()
                   + " expected=" + versionOnUpdate + " actual=" + foundVersion);
             }
@@ -476,7 +474,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // we're not in an active state, and this update isn't from a replay, so buffer it.
             cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
             ulog.add(cmd);
-            System.out.println(" we're not in an active state, and this update isn't from a replay, so buffer it.");
             return true;
           }
 

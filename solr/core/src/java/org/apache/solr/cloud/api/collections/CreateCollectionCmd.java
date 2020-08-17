@@ -348,10 +348,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
               sreq.params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
               log.info("Set the {} for replica {} to {}", CoreAdminParams.CORE_NODE_NAME, replica, coreNodeName);
             }
-            if (sreq.params.get(CoreAdminParams.CORE_NODE_NAME) == null) {
-              System.out.println(replicas);
-              System.out.println(coresToCreate);
-            }
            
             log.info("Submit request to shard for for replica={}", sreq.actualShards != null ? Arrays.asList(sreq.actualShards) : "null");
             shardHandler.submit(sreq, sreq.shards[0], sreq.params);
@@ -815,11 +811,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     return (liveNodes, collectionState) -> {
     //  log.info("Updated state {}", collectionState);
       if (collectionState == null) {
-         System.out.println("coll is null");
         return false;
       }
       if (collectionState.getSlices() == null) {
-        System.out.println("slices is null");
         return false;
       }
 
@@ -831,10 +825,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
       if (replicas == expectedReplicas) {
-        System.out.println("found replicas  " + expectedReplicas + " " + replicas);
         return true;
       }
-      System.out.println("replica count is  " + expectedReplicas + " " + replicas);
       return false;
     };
   }

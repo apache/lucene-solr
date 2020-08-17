@@ -351,7 +351,6 @@ public class HttpShardHandler extends ShardHandler {
   private ShardResponse take(boolean bailOnError) {
     if (HttpShardHandlerFactory.ASYNC) {
       while (asyncPending.size() > 0) {
-        System.out.println("take");
         ShardResponse srsp = asyncPending.iterator().next();
         assert srsp != null;
         asyncPending.remove(srsp);
