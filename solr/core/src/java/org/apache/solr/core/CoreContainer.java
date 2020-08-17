@@ -1570,6 +1570,13 @@ public class CoreContainer {
     return ret;
   }
 
+  /**Reload the core asynchronously
+   */
+  public void reloadAsync(SolrCore core) {
+    final String name = core.getName();
+    final UUID coreId = core.uniqueId;
+    runAsync(() -> reload(name, coreId));
+  }
   /**
    * reloads a core
    * refer {@link CoreContainer#reload(String, UUID)} for details

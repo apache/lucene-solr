@@ -184,7 +184,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
         filter(o -> scope.equals(o.getObjectName().getKeyProperty("scope")) &&
         o.getObjectName().getDomain().equals(rootName)).count());
 
-    h.getCoreContainer().reload(h.getCore().getName());
+    h.getCoreContainer().reload(h.getCore().getName(), h.getCore().uniqueId);
     PluginInfo pluginInfo = createReporterPluginInfo(rootName, true);
     metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore(),
         pluginInfo, String.valueOf(coreMetricManager.getCore().hashCode()));

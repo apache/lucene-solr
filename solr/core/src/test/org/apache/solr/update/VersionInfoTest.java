@@ -138,7 +138,7 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
 
     // reload the core, which should reset the max
     CoreContainer coreContainer = req.getCore().getCoreContainer();
-    coreContainer.reload(req.getCore().getName());
+    coreContainer.reload(req.getCore().getName(), req.getCore().uniqueId);
     maxVersionFromUlog = ulog.getMaxVersionFromIndex();
     assertEquals("after reload, max version from ulog should be equal to version of last doc added",
                  maxVersionFromUlog, versionFromIndex);

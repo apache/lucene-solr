@@ -21,10 +21,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.ZkController;
@@ -132,7 +129,7 @@ public class SchemaManager {
             latestVersion = ZkController.persistConfigResourceToZooKeeper
                 (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
                  sw.toString().getBytes(StandardCharsets.UTF_8), true);
-            req.getCore().getCoreContainer().reload(req.getCore().getName());
+            req.getCore().getCoreContainer().reloadAsync(req.getCore());
             break;
           } catch (ZkController.ResourceModifiedInZkException e) {
             log.info("Schema was modified by another node. Retrying..");
@@ -142,7 +139,7 @@ public class SchemaManager {
             //only for non cloud stuff
             managedIndexSchema.persistManagedSchema(false);
             core.setLatestSchema(managedIndexSchema);
-            core.getCoreContainer().reload(core.getName());
+            core.getCoreContainer().reloadAsync(core);
           } catch (SolrException e) {
             log.warn(errorMsg);
             errors = singletonList(errorMsg + e.getMessage());
