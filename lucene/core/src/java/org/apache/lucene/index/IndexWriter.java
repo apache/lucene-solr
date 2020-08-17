@@ -576,6 +576,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     final long maxCommitMergeWaitMillis = config.getMaxCommitMergeWaitMillis();
     boolean success2 = false;
     try {
+      /* this is the essential part of the getReader method. We need to take care of the following things:
+       *  - flush all currently in-memory DWPTs to disk
+       *  - apply all deletes & updates to new and to the existing DWPTs
+       *  - prevent flushes and applying deletes of concurrently indexing DWPTs to be applied
+       *  - open a SDR on the updated SIS
+       *
+       * in order do prevent concurrent flushes we call DocumentsWriter#flushAllThreads that swaps out the deleteQueue
+       *  (this enforces a happens before relationship between this and the subsequent full flush) and informs the
+       * FlushControl (#markForFullFlush()) that it should prevent any new DWPTs from flushing until we are \
+       * done (DocumentsWriter#finishFullFlush(boolean)). All this is guarded by the fullFlushLock to prevent multiple
+       * full flushes from happening concurrently. Once the DocWriter has initiated a full flush we can sequentially flush
+       * and apply deletes & updates to the written segments without worrying about concurrently indexing DWPTs. The important
+       * aspect is that it all happens between DocumentsWriter#flushAllThread() and DocumentsWriter#finishFullFlush(boolean)
+       * since once the flush is marked as done deletes start to be applied to the segments on disk without guarantees that
+       * the corresponding added documents (in the update case) are flushed and visible when opening a SDR.
+       *
+       */
       boolean success = false;
       synchronized (fullFlushLock) {
         try {
@@ -613,6 +630,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // this makes pulling the readers below after the merge simpler since we can be safe that
               // they are not closed. Every segment has a corresponding SR in the SDR we opened if we use
               // this SIS
+              // we need to do this rather complicated management of SRs and infos since we can't wait for merges
+              // while we hold the fullFlushLock since the merge might hit a tragic event and that must not be reported
+              // while holding that lock. Merging outside of the lock ie. after calling docWriter.finishFullFlush(boolean) would
+              // yield wrong results because deletes might sneak in during the merge
               openingSegmentInfos = r.getSegmentInfos().clone();
               onGetReaderMerges = preparePointInTimeMerge(openingSegmentInfos, includeMergeReader, MergeTrigger.GET_READER,
                   sci -> mergedReaders.put(sci.info.name, readerFactory.apply(sci)));
