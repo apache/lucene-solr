@@ -604,7 +604,7 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static void interrupt(Thread thread, String nameContains) {
     if ((nameContains != null && thread.getName().contains(nameContains)) || (interuptThreadWithNameContains != null && thread.getName().contains(interuptThreadWithNameContains)) ) {
-      if (thread.getState() == Thread.State.TERMINATED) {
+      if (thread.getState() == Thread.State.TERMINATED || thread.getState() == Thread.State.WAITING) {
         System.out.println("interrupt on " + thread.getName());
         thread.interrupt();
         try {
