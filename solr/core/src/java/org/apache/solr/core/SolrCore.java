@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -1226,15 +1227,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     newSearcherMaxReachedCounter = parentContext.counter("maxReached", Category.SEARCHER.toString(), "new");
     newSearcherOtherErrorsCounter = parentContext.counter("errors", Category.SEARCHER.toString(), "new");
 
-    parentContext.gauge(() -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
-    parentContext.gauge(() -> startTime, true, "startTime", Category.CORE.toString());
-    parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
-    parentContext.gauge(() -> getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
-    parentContext.gauge(() -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
-    parentContext.gauge(() -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
-    parentContext.gauge(() -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
+    parentContext.gauge(() -> name == null ? "(null)" : name, isReloaded, "coreName", Category.CORE.toString());
+    parentContext.gauge(() -> startTime, isReloaded, "startTime", Category.CORE.toString());
+    parentContext.gauge(() -> getOpenCount(), isReloaded, "refCount", Category.CORE.toString());
+    parentContext.gauge(() -> getInstancePath().toString(), isReloaded, "instanceDir", Category.CORE.toString());
+    parentContext.gauge(() -> isClosed() ? "(closed)" : getIndexDir(), isReloaded, "indexDir", Category.CORE.toString());
+    parentContext.gauge(() -> isClosed() ? 0 : getIndexSize(), isReloaded, "sizeInBytes", Category.INDEX.toString());
+    parentContext.gauge(() -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), isReloaded, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      parentContext.gauge(() -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
+      parentContext.gauge(() -> coreContainer.getNamesForCore(this), isReloaded, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
         parentContext.gauge(() -> {
@@ -1894,7 +1895,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
-  final ExecutorService searcherExecutor = new ParWorkExecutor("searcherExecutor", 0, 1, 1, new BlockingArrayQueue<>());
+  final ExecutorService searcherExecutor = new ParWorkExecutor("searcherExecutor", 1, 1, 0, new ArrayBlockingQueue(3, true));
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private final Object searcherLock = new Object();  // the sync object for the searcher

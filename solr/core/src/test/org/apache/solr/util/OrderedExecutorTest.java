@@ -55,17 +55,12 @@ public class OrderedExecutorTest extends SolrTestCase {
     IntBox intBox = new IntBox();
     OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3,
         ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3));
-    try {
-      for (int i = 0; i < 100; i++) {
-        orderedExecutor.submit(1, () -> intBox.value.incrementAndGet());
-      }
-      orderedExecutor.shutdownAndAwaitTermination();
-      assertEquals(100, intBox.value.get());
-    } finally {
-      orderedExecutor.shutdownNow();
-      ParWork.close(orderedExecutor);
-    }
 
+    for (int i = 0; i < 100; i++) {
+      orderedExecutor.submit(1, () -> intBox.value.incrementAndGet());
+    }
+    orderedExecutor.shutdownAndAwaitTermination();
+    assertEquals(100, intBox.value.get());
   }
 
   @Test

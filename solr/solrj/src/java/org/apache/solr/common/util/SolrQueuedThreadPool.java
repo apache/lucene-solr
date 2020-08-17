@@ -50,7 +50,6 @@ import org.eclipse.jetty.util.thread.TryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO we can inherit from jetty impl now and just override newThread
 public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, ThreadPool.SizedThreadPool, Dumpable, TryExecutor, Closeable {
     private static final org.eclipse.jetty.util.log.Logger LOG = Log.getLogger(QueuedThreadPool.class);
     private static Runnable NOOP = () ->
@@ -84,6 +83,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     private boolean _detailedDump = false;
     private int _lowThreadsThreshold = 1;
     private ThreadPoolBudget _budget;
+    private volatile boolean closed;
 
     public SolrQueuedThreadPool() {
         this("solr-jetty-thread");
@@ -205,6 +205,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}", this);
+        this.closed = true;
 
         super.doStop();
 
@@ -521,6 +522,9 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     @Override
     public void execute(Runnable job)
     {
+        if (closed) {
+            throw new RejectedExecutionException();
+        }
         // Determine if we need to start a thread, use and idle thread or just queue this job
         int startThread;
         while (true)
@@ -973,12 +977,21 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
                             }
 
                             // Wait for a job, only after we have checked if we should shrink
-                            job = idleJobPoll(idleTimeout);
+                            if (closed) {
+                                job = _jobs.poll();
+                            } else {
+                                job = idleJobPoll(idleTimeout);
+                            }
+
 
                             // If still no job?
-                            if (job == null)
+                            if (job == null) {
+                                if (closed) {
+                                    break;
+                                }
                                 // continue to try again
                                 continue;
+                            }
                         }
 
                         idle = false;
@@ -1046,15 +1059,15 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     }
 
-    public void fillWithNoops() {
-        int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
-        BlockingQueue<Runnable> jobs = getQueue();
-        // Fill the job queue with noop jobs to wakeup idle threads.
-        for (int i = 0; i < threads; ++i)
-        {
-            jobs.offer(NOOP);
-        }
-    }
+//    public void fillWithNoops() {
+//        int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
+//        BlockingQueue<Runnable> jobs = getQueue();
+//        // Fill the job queue with noop jobs to wakeup idle threads.
+//        for (int i = 0; i < threads; ++i)
+//        {
+//            jobs.offer(NOOP);
+//        }
+//    }
 
     public void stopReserveExecutor() {
 //        try {

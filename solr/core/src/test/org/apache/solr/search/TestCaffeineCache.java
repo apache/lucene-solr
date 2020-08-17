@@ -51,11 +51,6 @@ public class TestCaffeineCache extends SolrTestCase {
   public void testSimple() throws IOException {
     CaffeineCache<Integer, String> lfuCache = new CaffeineCache<>();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
-    lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
-
-    CaffeineCache<Integer, String> newLFUCache = new CaffeineCache<>();
-    newLFUCache.initializeMetrics(solrMetricsContext, scope + "-2");
-
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
@@ -63,6 +58,15 @@ public class TestCaffeineCache extends SolrTestCase {
 
     NoOpRegenerator regenerator = new NoOpRegenerator();
     Object initObj = lfuCache.init(params, null, regenerator);
+
+    lfuCache.init(params, null, regenerator);
+    lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
+
+    CaffeineCache<Integer, String> newLFUCache = new CaffeineCache<>();
+    newLFUCache.init(params, null, regenerator);
+    newLFUCache.initializeMetrics(solrMetricsContext, scope + "-2");
+
+
     lfuCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
       lfuCache.put(i + 1, Integer.toString(i + 1));
@@ -71,7 +75,7 @@ public class TestCaffeineCache extends SolrTestCase {
     assertEquals("75", lfuCache.get(75));
     assertEquals(null, lfuCache.get(110));
     Map<String, Object> nl = lfuCache.getMetricsMap().getValue();
-    assertEquals(3L, nl.get("lookups"));
+    assertEquals(nl.toString(), 3L, nl.get("lookups"));
     assertEquals(2L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
 

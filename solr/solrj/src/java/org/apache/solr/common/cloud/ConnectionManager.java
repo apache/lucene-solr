@@ -19,6 +19,7 @@ package org.apache.solr.common.cloud;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
@@ -348,7 +349,11 @@ public class ConnectionManager implements Watcher, Closeable {
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
     synchronized (keeper) {
+      client.zkCallbackExecutor.shutdownNow();
       keeper.close();
+      client.zkConnManagerCallbackExecutor.shutdown();
+      ExecutorUtil.awaitTermination(client.zkCallbackExecutor);
+      ExecutorUtil.awaitTermination(client.zkConnManagerCallbackExecutor);
     }
     assert ObjectReleaseTracker.release(this);
   }

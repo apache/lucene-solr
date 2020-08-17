@@ -36,8 +36,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Timer;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -76,7 +78,7 @@ public class ParWork implements Closeable {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
-          EXEC = (ThreadPoolExecutor) getParExecutorService(2, 15000);
+          EXEC = (ThreadPoolExecutor) getParExecutorService(2, Integer.MAX_VALUE, 15000, new SynchronousQueue<>());
         }
       }
     }
@@ -87,9 +89,9 @@ public class ParWork implements Closeable {
   public static void shutdownExec() {
     synchronized (ParWork.class) {
       if (EXEC != null) {
-        EXEC.shutdownNow();
         EXEC.setKeepAliveTime(1, TimeUnit.NANOSECONDS);
         EXEC.allowCoreThreadTimeOut(true);
+        EXEC.shutdownNow();
         ExecutorUtil.shutdownAndAwaitTermination(EXEC);
         EXEC = null;
       }
@@ -103,13 +105,20 @@ public class ParWork implements Closeable {
     return sysStats;
   }
 
-    public static void closeExecutor() {
-      ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();
-      if (exec != null) {
-        ParWork.close(exec);
-        THREAD_LOCAL_EXECUTOR.set(null);
+  public static void closeExecutor() {
+    closeExecutor(true);
+  }
+
+  public static void closeExecutor(boolean unlockClose) {
+    ParWorkExecService exec = (ParWorkExecService) THREAD_LOCAL_EXECUTOR.get();
+    if (exec != null) {
+      if (unlockClose) {
+        exec.closeLock(false);
       }
+      ParWork.close(exec);
+      THREAD_LOCAL_EXECUTOR.set(null);
     }
+  }
 
     private static class WorkUnit {
     private final List<ParObject> objects;
@@ -533,6 +542,7 @@ public class ParWork implements Closeable {
       minThreads = 3;
       maxThreads = PROC_COUNT;
       exec = getExecutorService(Math.max(minThreads, maxThreads)); // keep alive directly affects how long a worker might
+      ((ParWorkExecService)exec).closeLock(true);
       // be stuck in poll without an enqueue on shutdown
       THREAD_LOCAL_EXECUTOR.set(exec);
     }
@@ -540,11 +550,10 @@ public class ParWork implements Closeable {
     return exec;
   }
 
-  public static ExecutorService getParExecutorService(int corePoolSize, int keepAliveTime) {
+  public static ExecutorService getParExecutorService(int corePoolSize, int maxPoolSize, int keepAliveTime, BlockingQueue queue) {
     ThreadPoolExecutor exec;
     exec = new ParWorkExecutor("ParWork-" + Thread.currentThread().getName(),
-            corePoolSize, Integer.MAX_VALUE, keepAliveTime, new SynchronousQueue<>());
-
+            corePoolSize, maxPoolSize, keepAliveTime, queue);
     return exec;
   }
 

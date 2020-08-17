@@ -96,22 +96,22 @@ public abstract class StatsCache implements PluginInfoInitialized {
       missingGlobalFieldStats.reset();
     }
 
-    public void getSnapshot(BiConsumer<String, Object> consumer) {
-      consumer.accept(SolrCache.LOOKUPS_PARAM, lookups.longValue());
-      consumer.accept("retrieveStats", retrieveStats.longValue());
-      consumer.accept("receiveGlobalStats", receiveGlobalStats.longValue());
-      consumer.accept("returnLocalStats", returnLocalStats.longValue());
-      consumer.accept("mergeToGlobalStats", mergeToGlobalStats.longValue());
-      consumer.accept("sendGlobalStats", sendGlobalStats.longValue());
-      consumer.accept("useCachedGlobalStats", useCachedGlobalStats.longValue());
-      consumer.accept("missingGlobalTermStats", missingGlobalTermStats.longValue());
-      consumer.accept("missingGlobalFieldStats", missingGlobalFieldStats.longValue());
+    public Map getSnapshot() {
+      Map map = new HashMap(9);
+      map.put(SolrCache.LOOKUPS_PARAM, lookups.longValue());
+      map.put("retrieveStats", retrieveStats.longValue());
+      map.put("receiveGlobalStats", receiveGlobalStats.longValue());
+      map.put("returnLocalStats", returnLocalStats.longValue());
+      map.put("mergeToGlobalStats", mergeToGlobalStats.longValue());
+      map.put("sendGlobalStats", sendGlobalStats.longValue());
+      map.put("useCachedGlobalStats", useCachedGlobalStats.longValue());
+      map.put("missingGlobalTermStats", missingGlobalTermStats.longValue());
+      map.put("missingGlobalFieldStats", missingGlobalFieldStats.longValue());
+      return map;
     }
 
     public String toString() {
-      Map<String, Object> map = new HashMap<>();
-      getSnapshot(map::put);
-      return map.toString();
+      return getSnapshot().toString();
     }
   }
 

@@ -22,6 +22,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.ZooKeeperExposed;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -104,15 +105,24 @@ public class SolrZooKeeper extends ZooKeeper {
 
   @Override
   public void close() {
-    if (closeTracker.isClosed()) {
-      return;
-    }
     closeTracker.close();
-    try {
-      SolrZooKeeper.super.close();
-    } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+    try (ParWork closer = new ParWork(this)) {
+      closer.collect("zookeeper", ()->{
+        try {
+          SolrZooKeeper.super.close();
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+        }
+      });
+//      closer.collect("keep send thread from sleeping", ()->{
+//       // ZooKeeperExposed zk = new ZooKeeperExposed(this, cnxn);
+//
+//      //  zk.interruptSendThread();
+//       // zk.interruptEventThread();
+//      });
     }
+
+
   }
 
 }

@@ -115,7 +115,6 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
         prev = uif;
       }
     } finally {
-      pool.shutdownNow();
       req.close();
     }
   }

@@ -40,6 +40,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
@@ -75,19 +77,19 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   private long priorInserts;
 
   private String description = "Caffeine Cache";
-  private LongAdder inserts;
-  private Cache<K,V> cache;
-  private long warmupTime;
-  private int maxSize;
-  private long maxRamBytes;
-  private int initialSize;
-  private int maxIdleTimeSec;
-  private boolean cleanupThread;
+  private volatile LongAdder inserts;
+  private volatile Cache<K,V> cache;
+  private volatile long warmupTime;
+  private volatile int maxSize;
+  private volatile long maxRamBytes;
+  private volatile int initialSize;
+  private volatile int maxIdleTimeSec;
+  private volatile boolean cleanupThread;
 
-  private MetricsMap cacheMap;
-  private SolrMetricsContext solrMetricsContext;
+  private volatile  MetricsMap cacheMap;
+  private volatile SolrMetricsContext solrMetricsContext;
 
-  private long initialRamBytes = 0;
+  private volatile long initialRamBytes = 0;
   private final LongAdder ramBytes = new LongAdder();
 
   public CaffeineCache() {
@@ -389,7 +391,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         map.put("cumulative_inserts", priorInserts + insertCount);
         map.put("cumulative_evictions", cumulativeStats.evictionCount());
       }
-    });
+    }, false);
     solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 }

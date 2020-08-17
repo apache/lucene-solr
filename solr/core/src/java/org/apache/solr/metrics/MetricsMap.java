@@ -31,8 +31,12 @@ import javax.management.openmbean.SimpleType;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 import com.codahale.metrics.Gauge;
@@ -53,18 +57,22 @@ import org.slf4j.LoggerFactory;
  */
 public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final long CACHE_TIME = TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);
 
   private static Field[] FIELDS = SimpleType.class.getFields();
-
-  // set to true to use cached statistics between getMBeanInfo calls to work
-  // around over calling getStatistics on MBeanInfos when iterating over all attributes (SOLR-6586)
-  private final boolean useCachedStatsBetweenGetMBeanInfoCalls = Boolean.getBoolean("useCachedStatsBetweenGetMBeanInfoCalls");
+  private final boolean allowCache;
 
   private BiConsumer<Boolean, Map<String, Object>> initializer;
-  private Map<String, String> jmxAttributes = new HashMap<>();
+  private Map<String, String> jmxAttributes = new ConcurrentHashMap<>(32);
   private volatile Map<String,Object> cachedValue;
+  private volatile long cachedValueUpdatedAt;
 
   public MetricsMap(BiConsumer<Boolean, Map<String,Object>> initializer) {
+    this(initializer, true);
+  }
+
+  public MetricsMap(BiConsumer<Boolean, Map<String,Object>> initializer, boolean allowCache) {
+    this.allowCache = allowCache;
     this.initializer = initializer;
   }
 
@@ -74,8 +82,19 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
   }
 
   public Map<String,Object> getValue(boolean detailed) {
-    Map<String,Object> map = new HashMap<>();
+    if (allowCache) {
+      Map<String,Object> cachedStats = this.cachedValue;
+      if (cachedStats != null && (System.nanoTime() - cachedValueUpdatedAt) < CACHE_TIME) {
+        return cachedStats;
+      }
+    }
+    Map<String,Object> map = new HashMap<>(32);
     initializer.accept(detailed, map);
+    map = Collections.unmodifiableMap(map);
+    if (allowCache) {
+      cachedValue = map;
+      cachedValueUpdatedAt = System.nanoTime();
+    }
     return map;
   }
 
@@ -91,16 +110,8 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
     if (val != null) {
       return val;
     }
-    Map<String,Object> stats = null;
-    if (useCachedStatsBetweenGetMBeanInfoCalls) {
-      Map<String,Object> cachedStats = this.cachedValue;
-      if (cachedStats != null) {
-        stats = cachedStats;
-      }
-    }
-    if (stats == null) {
-      stats = getValue(true);
-    }
+    Map<String,Object> stats = getValue(true);
+
     val = stats.get(attribute);
 
     if (val != null) {
@@ -149,9 +160,6 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
   public MBeanInfo getMBeanInfo() {
     ArrayList<MBeanAttributeInfo> attrInfoList = new ArrayList<>();
     Map<String,Object> stats = getValue(true);
-    if (useCachedStatsBetweenGetMBeanInfoCalls) {
-      cachedValue = stats;
-    }
     jmxAttributes.forEach((k, v) -> {
       attrInfoList.add(new MBeanAttributeInfo(k, String.class.getName(),
           null, true, false, false));

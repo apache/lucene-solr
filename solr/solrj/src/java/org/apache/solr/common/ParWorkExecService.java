@@ -1,5 +1,6 @@
 package org.apache.solr.common;
 
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SysStats;
 import org.apache.solr.common.util.TimeOut;
@@ -42,7 +43,10 @@ public class ParWorkExecService extends AbstractExecutorService {
   private volatile Worker worker;
   private volatile Future<?> workerFuture;
 
+  private CloseTracker closeTracker = new CloseTracker();
+
   private SysStats sysStats = ParWork.getSysStats();
+  private volatile boolean closeLock;
 
   private class Worker implements Runnable {
 
@@ -127,7 +131,11 @@ public class ParWorkExecService extends AbstractExecutorService {
 
   @Override
   public void shutdown() {
+    if (closeLock) {
+      throw new IllegalCallerException();
+    }
     assert ObjectReleaseTracker.release(this);
+    //closeTracker.close();
     this.shutdown = true;
    // worker.interrupt();
   //  workQueue.clear();
@@ -160,7 +168,7 @@ public class ParWorkExecService extends AbstractExecutorService {
 
   @Override
   public List<Runnable> shutdownNow() {
-    shutdown();
+    shutdown = true;
     return Collections.emptyList();
   }
 
@@ -200,7 +208,7 @@ public class ParWorkExecService extends AbstractExecutorService {
   public void execute(Runnable runnable) {
 
     if (shutdown) {
-      throw new RejectedExecutionException();
+      throw new RejectedExecutionException(closeTracker.getCloseStack());
 //      runIt(runnable, false, true, true);
 //      return;
     }
@@ -316,4 +324,9 @@ public class ParWorkExecService extends AbstractExecutorService {
     }
     return true;
   }
+  
+  public void closeLock(boolean lock) {
+    closeLock = lock;
+  }
+
 }

@@ -102,12 +102,14 @@ public class SolrMetricManager {
    */
   public static final String JVM_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jvm.toString();
 
-  private final ConcurrentMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, MetricRegistry> registries = new ConcurrentHashMap<>(32);
 
-  private final Map<String, Map<String, SolrMetricReporter>> reporters = new ConcurrentHashMap<>();
+  private final Map<String, Map<String, SolrMetricReporter>> reporters = new HashMap<>(32);
 
   private final Lock reportersLock = new ReentrantLock();
   private final Lock swapLock = new ReentrantLock();
+  private final Lock sharedLock = new ReentrantLock();
+
 
   public static final int DEFAULT_CLOUD_REPORTER_PERIOD = 60;
 
@@ -367,8 +369,18 @@ public class SolrMetricManager {
    */
   public Set<String> registryNames() {
     Set<String> set = new HashSet<>();
-    set.addAll(registries.keySet());
-    set.addAll(SharedMetricRegistries.names());
+    swapLock.lock();
+    try {
+      set.addAll(registries.keySet());
+    } finally {
+      swapLock.unlock();
+    }
+    sharedLock.lock();
+    try {
+      set.addAll(SharedMetricRegistries.names());
+    } finally {
+      sharedLock.unlock();
+    }
     return set;
   }
 
@@ -439,7 +451,12 @@ public class SolrMetricManager {
   public MetricRegistry registry(String registry) {
     registry = enforcePrefix(registry);
     if (isSharedRegistry(registry)) {
-      return SharedMetricRegistries.getOrCreate(registry);
+      sharedLock.lock();
+      try {
+        return SharedMetricRegistries.getOrCreate(registry);
+      } finally {
+        sharedLock.unlock();
+      }
     } else {
       swapLock.lock();
       try {
@@ -458,7 +475,7 @@ public class SolrMetricManager {
       if (raced == null) {
         return created;
       } else {
-        return raced;
+        throw new IllegalStateException();
       }
     } else {
       return existing;
@@ -476,9 +493,19 @@ public class SolrMetricManager {
     // make sure we use a name with prefix
     registry = enforcePrefix(registry);
     if (isSharedRegistry(registry)) {
-      SharedMetricRegistries.remove(registry);
+      sharedLock.lock();
+      try {
+        SharedMetricRegistries.remove(registry);
+      } finally {
+        sharedLock.unlock();
+      }
     } else {
-      registries.remove(registry);
+      swapLock.lock();
+      try {
+        registries.remove(registry);
+      } finally {
+        swapLock.unlock();
+      }
     }
   }
 
@@ -542,24 +569,17 @@ public class SolrMetricManager {
    *
    * @param registry   registry name
    * @param metrics    metric set to register
-   * @param strategy   the conflict resolution strategy to use if the named metric already exists.
    * @param metricPath (optional) additional top-most metric name path elements
-   * @throws Exception if a metric with this name already exists.
    */
-  public void registerAll(String registry, MetricSet metrics, ResolutionStrategy strategy, String... metricPath) throws Exception {
+  public void registerAll(String registry, MetricSet metrics, boolean force, String... metricPath) {
     MetricRegistry metricRegistry = registry(registry);
-    synchronized (metricRegistry) {
-      Map<String, Metric> existingMetrics = metricRegistry.getMetrics();
-      for (Map.Entry<String, Metric> entry : metrics.getMetrics().entrySet()) {
-        String fullName = mkName(entry.getKey(), metricPath);
-        if (existingMetrics.containsKey(fullName)) {
-          if (strategy == ResolutionStrategy.REPLACE) {
-            metricRegistry.remove(fullName);
-          } else if (strategy == ResolutionStrategy.IGNORE) {
-            continue;
-          } // strategy == ERROR will fail when we try to register later
-        }
-        metricRegistry.register(fullName, entry.getValue());
+    try (ParWork work = new ParWork(this)) {
+      for (Map.Entry<String,Metric> entry : metrics.getMetrics().entrySet()) {
+        work.collect("registerMetric-" + entry.getKey(), () ->{
+          String fullName = mkName(entry.getKey(), metricPath);
+          metricRegistry.remove(fullName);
+          metricRegistry.register(fullName, entry.getValue());
+        });
       }
     }
   }
@@ -698,11 +718,14 @@ public class SolrMetricManager {
     if (context != null) {
       context.registerMetricName(fullName);
     }
-    synchronized (metricRegistry) { // prevent race; register() throws if metric is already present
-      if (force) { // must remove any existing one if present
-        metricRegistry.remove(fullName);
-      }
+
+    metricRegistry.remove(fullName);
+    try {
       metricRegistry.register(fullName, metric);
+    } catch (IllegalArgumentException e) {
+      if (!force) {
+        throw e;
+      }
     }
   }
 
@@ -1015,7 +1038,7 @@ public class SolrMetricManager {
     try {
       Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
       if (perRegistry == null) {
-        perRegistry = new ConcurrentHashMap<>();
+        perRegistry = new HashMap<>(32);
         reporters.put(registry, perRegistry);
       }
       if (tag != null && !tag.isEmpty()) {
@@ -1105,7 +1128,6 @@ public class SolrMetricManager {
     try {
 
       reportersLock.lock();
-
       if (log.isDebugEnabled()) log.debug("Closing metric reporters for registry=" + registry + ", tag=" + tag);
       // nocommit
       Map<String,SolrMetricReporter> perRegistry = reporters.get(registry);

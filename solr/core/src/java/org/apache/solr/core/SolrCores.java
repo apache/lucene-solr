@@ -57,10 +57,6 @@ class SolrCores implements Closeable {
   // initial load. The rule is, never to any operation on a core that is currently being operated upon.
   private final Set<String> pendingCoreOps = ConcurrentHashMap.newKeySet(64);
 
-  // Due to the fact that closes happen potentially whenever anything is _added_ to the transient core list, we need
-  // to essentially queue them up to be handled via pendingCoreOps.
-  private final Set<SolrCore> pendingCloses = ConcurrentHashMap.newKeySet(64);;
-
   private volatile TransientSolrCoreCacheFactory transientCoreCache;
 
   private volatile TransientSolrCoreCache transientSolrCoreCache = null;
@@ -124,8 +120,6 @@ class SolrCores implements Closeable {
       coreList.addAll(transientSolrCoreCache.prepareForShutdown());
     }
     cores.clear();
-    coreList.addAll(pendingCloses);
-    pendingCloses.forEach((c) -> coreList.add(c));
 
     try (ParWork closer = new ParWork(this, true)) {
       for (SolrCore core : coreList) {

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin;
 
 
+import com.carrotsearch.randomizedtesting.RandomizedContext;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -25,9 +26,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.StartupLoggingUtils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
 
 @SuppressForbidden(reason = "test uses log4j2 because it tests output at a specific level")
 @LogLevel("org.apache.solr.bogus_logger_package.BogusLoggerClass=DEBUG")
@@ -40,10 +45,26 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
 
   // TODO: Would be nice to throw an exception on trying to set a
   // log level that doesn't exist
-  
+
+  protected static Map<String, Level> savedClassLogLevels = new HashMap<>();
+
   @BeforeClass
   public static void beforeClass() throws Exception {
+    Class currentClass = RandomizedContext.current().getTargetClass();
+    LogLevel annotation = (LogLevel) currentClass.getAnnotation(LogLevel.class);
+    if (annotation == null) {
+      return;
+    }
+    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
+    savedClassLogLevels.putAll(previousLevels);
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void checkLogLevelsAfterClass() {
+    LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
+    savedClassLogLevels.clear();
+    StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
   }
 
   @Test

@@ -21,6 +21,8 @@ import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;

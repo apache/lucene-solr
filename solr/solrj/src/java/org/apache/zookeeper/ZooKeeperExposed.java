@@ -21,6 +21,11 @@ public class ZooKeeperExposed {
     }
 
     public void interruptSendThread() {
+        try {
+            clientCnxn.sendThread.join(10);
+        } catch (InterruptedException e) {
+            // okay
+        }
         clientCnxn.sendThread.interrupt();
     }
 

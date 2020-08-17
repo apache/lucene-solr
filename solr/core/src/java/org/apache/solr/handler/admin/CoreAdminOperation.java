@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -369,6 +370,7 @@ enum CoreAdminOperation implements CoreAdminOp {
     try {
       fun.execute(it);
     } catch (SolrException | InterruptedException e) {
+      ParWork.propegateInterrupt(e);
       // No need to re-wrap; throw as-is.
       throw e;
     } catch (Exception e) {

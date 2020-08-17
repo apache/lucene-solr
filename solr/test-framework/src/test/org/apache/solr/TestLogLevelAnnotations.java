@@ -17,14 +17,21 @@
 
 package org.apache.solr;
 
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
+
+import com.carrotsearch.randomizedtesting.RandomizedContext;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.StartupLoggingUtils;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 @SuppressForbidden(reason="We need to use log4J2 classes to access the log levels")
@@ -54,6 +61,9 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
    * @see #checkLogLevelsBeforeClass
    */
   public static final Level DEFAULT_LOG_LEVEL = LogManager.getRootLogger().getLevel();
+
+  @SuppressForbidden(reason = "Using the Level class from log4j2 directly")
+  protected static Map<String, Level> savedClassLogLevels = new HashMap<>();
   
   /** 
    * Sanity check that our <code>AfterClass</code> logic is valid, and isn't broken right from the start
@@ -62,6 +72,14 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
    */
   @BeforeClass
   public static void checkLogLevelsBeforeClass() {
+    Class currentClass = RandomizedContext.current().getTargetClass();
+    LogLevel annotation = (LogLevel) currentClass.getAnnotation(LogLevel.class);
+    if (annotation == null) {
+      return;
+    }
+    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
+    savedClassLogLevels.putAll(previousLevels);
+
     final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
     final Configuration config = ctx.getConfiguration();
 
@@ -113,9 +131,29 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
     assertEquals(DEFAULT_LOG_LEVEL, LogManager.getLogger(bogus_logger_prefix).getLevel());
     assertEquals(Level.ERROR, LogManager.getLogger(bogus_logger_prefix + ".ClassLogLevel").getLevel());
     assertEquals(Level.WARN, LogManager.getLogger(bogus_logger_prefix + ".MethodLogLevel").getLevel());
-    LogLevel.Configurer.restoreLogLevels(SolrTestCaseJ4.savedClassLogLevels);
+    LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
     savedClassLogLevels.clear();
+    StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
   }
+
+    private Map<String, Level> savedMethodLogLevels = new HashMap<>();
+
+    @Before
+    public void initMethodLogLevels() {
+      Method method = RandomizedContext.current().getTargetMethod();
+      LogLevel annotation = method.getAnnotation(LogLevel.class);
+      if (annotation == null) {
+        return;
+      }
+      Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
+      savedMethodLogLevels.putAll(previousLevels);
+    }
+
+    @After
+    public void restoreMethodLogLevels() {
+      LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
+      savedMethodLogLevels.clear();
+    }
   
   public void testClassLogLevels() {
     assertEquals(DEFAULT_LOG_LEVEL, LogManager.getLogger("org.apache.solr.bogus_logger").getLevel());

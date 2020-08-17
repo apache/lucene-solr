@@ -1060,6 +1060,10 @@ public class CoreContainer implements Closeable {
     log.info("Closing CoreContainer");
     isShutDown = true;
 
+    if (solrCores != null) {
+       solrCores.closing();
+     }
+
     solrCoreLoadExecutor.shutdownNow();
 
     // must do before isShutDown=true
@@ -1082,26 +1086,22 @@ public class CoreContainer implements Closeable {
         // overseerCollectionQueue.allowOverseerPendingTasksToComplete();
       }
       log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
-      solrCoreLoadExecutor.shutdown();
+
       if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null) {
         zkSys.zkController.disconnect();
       }
-
-      if (solrCores != null) {
-        solrCores.closing();
-      }
-
-      ExecutorUtil.shutdownAndAwaitTermination(solrCoreLoadExecutor);
-
       if (replayUpdatesExecutor != null) {
         // stop accepting new tasks
-        replayUpdatesExecutor.shutdown();
+        replayUpdatesExecutor.shutdownNow();
       }
-
+      closer.collect("replayUpdateExec", () -> {
+        replayUpdatesExecutor.shutdownAndAwaitTermination();
+      });
+      closer.addCollect();
       closer.collect("metricsHistoryHandler", metricsHistoryHandler);
       closer.collect("MetricsHistorySolrClient", metricsHistoryHandler != null ? metricsHistoryHandler.getSolrClient(): null);
       closer.collect("WaitForSolrCores", solrCores);
-    //  closer.addCollect();
+      closer.addCollect();
       List<Callable<?>> callables = new ArrayList<>();
 
       if (metricManager != null) {
@@ -1165,9 +1165,6 @@ public class CoreContainer implements Closeable {
       }
 
       closer.collect(authPlugin);
-      closer.collect("replayUpdateExec", () -> {
-        replayUpdatesExecutor.shutdownAndAwaitTermination();
-      });
       closer.collect(solrCoreLoadExecutor);
       closer.collect(authenPlugin);
       closer.collect(auditPlugin);
@@ -1936,6 +1933,7 @@ public class CoreContainer implements Closeable {
     // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
     // waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
 
+      // todo: ensure only transient?
       if (core == null) {
         if (isZooKeeperAware()) {
           zkSys.getZkController().throwErrorIfReplicaReplaced(desc);

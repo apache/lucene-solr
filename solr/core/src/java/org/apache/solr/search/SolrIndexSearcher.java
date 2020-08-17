@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -2307,9 +2308,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // statsCache metrics
     parentContext.gauge(
         new MetricsMap((detailed, map) -> {
-          statsCache.getCacheMetrics().getSnapshot(map::put);
+          ConcurrentMap smap = new ConcurrentHashMap(1);
+          smap.putAll(statsCache.getCacheMetrics().getSnapshot());
           map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
-        }), true, "statsCache", Category.CACHE.toString(), scope);
+        }, false), true, "statsCache", Category.CACHE.toString(), scope);
   }
 
   private static class FilterImpl extends Filter {

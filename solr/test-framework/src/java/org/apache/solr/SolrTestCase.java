@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -213,7 +214,8 @@ public class SolrTestCase extends LuceneTestCase {
     testStartTime = System.nanoTime();
 
 
-    testExecutor = new ParWorkExecutor("testExecutor",  Math.max(1, Runtime.getRuntime().availableProcessors()));
+    testExecutor = ParWork.getExecutor();
+    ((ParWorkExecService) testExecutor).closeLock(true);
     // stop zkserver threads that can linger
     //interruptThreadsOnTearDown("nioEventLoopGroup", false);
 
@@ -247,7 +249,7 @@ public class SolrTestCase extends LuceneTestCase {
       //Codec.setDefault(codec);
       System.setProperty("solr.lbclient.live_check_interval", "3000");
       System.setProperty("solr.httpShardHandler.completionTimeout", "3000");
-      System.setProperty("zookeeper.request.timeout", "5000");
+      System.setProperty("zookeeper.request.timeout", "15000");
       System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
       System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.TrieIntField");
       System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.TrieFloatField");
@@ -446,30 +448,8 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("*******************************************************************");
     log.info("@After Class ------------------------------------------------------");
     try {
-//      if (CoreContainer.solrCoreLoadExecutor != null) {
-//        CoreContainer.solrCoreLoadExecutor.shutdownNow();
-//      }
 
-      if (null != testExecutor) {
-        testExecutor.shutdown();
-      }
-
-//      if (CoreContainer.solrCoreLoadExecutor != null) {
-//        synchronized (CoreContainer.class) {
-//          if (CoreContainer.solrCoreLoadExecutor != null) {
-//            ParWork.close(CoreContainer.solrCoreLoadExecutor);
-//            CoreContainer.solrCoreLoadExecutor = null;
-//          }
-//        }
-//      }
-
-      if (null != testExecutor) {
-        ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
-        testExecutor = null;
-      }
-
-
-      ParWork.closeExecutor();
+      ParWork.closeExecutor(true);
 
       ParWork.shutdownExec();
 
@@ -652,7 +632,7 @@ public class SolrTestCase extends LuceneTestCase {
     qtp.setStopTimeout((int) TimeUnit.SECONDS.toMillis(60));
     qtp.setDaemon(true);
     qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
-    // qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(1));
+    qtp.setStopTimeout(1);
     return qtp;
   }
 

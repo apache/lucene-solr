@@ -224,12 +224,12 @@ public class Http2SolrClient extends SolrClient {
       httpClient = new HttpClient(transport, sslContextFactory);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     }
-   // httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(12, ParWork.PROC_COUNT), 6, idleTimeout);
+    httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(12, ParWork.PROC_COUNT), 6, idleTimeout);
    // httpClientExecutor.setReservedThreads(0);
 
     httpClient.setIdleTimeout(idleTimeout);
     try {
-    //  httpClient.setExecutor(httpClientExecutor);
+      httpClient.setExecutor(httpClientExecutor);
       httpClient.setStrictEventOrdering(true);
       httpClient.setConnectBlocking(false);
       httpClient.setFollowRedirects(false);
@@ -268,14 +268,8 @@ public class Http2SolrClient extends SolrClient {
             try {
               httpClient.getScheduler().stop();
             } catch (Exception e) {
-              e.printStackTrace();
+              ParWork.propegateInterrupt(e);
             }
-            // will fill queue with NOOPS and wake sleeping threads
-//              httpClientExecutor.fillWithNoops();
-//            httpClientExecutor.fillWithNoops();
-//            httpClientExecutor.fillWithNoops();
-//            httpClientExecutor.fillWithNoops();
-
           });
         }
       } catch (Exception e) {

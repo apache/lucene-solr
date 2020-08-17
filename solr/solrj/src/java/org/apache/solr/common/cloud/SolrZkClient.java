@@ -43,6 +43,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,9 +100,9 @@ public class SolrZkClient implements Closeable {
 
   private final ConnectionManager connManager;
 
-  private final ExecutorService zkCallbackExecutor = ParWork.getEXEC();
+  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService(1, 1, 1, new BlockingArrayQueue());
 
-  final ExecutorService zkConnManagerCallbackExecutor = ParWork.getEXEC();
+  final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService(1, 1, 1, new BlockingArrayQueue());
 
   private volatile boolean isClosed = false;
 
@@ -856,7 +857,7 @@ public class SolrZkClient implements Closeable {
     isClosed = true;
     connManager.close();
   //  ExecutorUtil.shutdownAndAwaitTermination(zkConnManagerCallbackExecutor);
-   // ExecutorUtil.shutdownAndAwaitTermination(zkCallbackExecutor);
+   //
 
     closeTracker.close();
     assert ObjectReleaseTracker.release(this);

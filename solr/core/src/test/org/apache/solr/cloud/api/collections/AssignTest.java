@@ -116,7 +116,6 @@ public class AssignTest extends SolrTestCaseJ4 {
         zkClient.mkdir("/collections/" + c);
       }
       // TODO: fix this to be independent of ZK
-      ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);
       List<Future<?>> futures = new ArrayList<>();
       AtomicInteger aid = new AtomicInteger();
       for (int i = 0; i < 73; i++) {

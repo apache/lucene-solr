@@ -18,6 +18,7 @@ package org.apache.solr.store.blockcache;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.core.SolrInfoBean;

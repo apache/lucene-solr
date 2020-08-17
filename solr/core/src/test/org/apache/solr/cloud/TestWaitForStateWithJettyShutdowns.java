@@ -128,7 +128,6 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       }
       
     } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
       cluster.shutdown();
     }
   }

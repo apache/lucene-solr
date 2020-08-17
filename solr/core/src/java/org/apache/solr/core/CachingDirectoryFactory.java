@@ -433,10 +433,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       log.debug("get(String path={}, DirContext dirContext={}, String rawLockType={}) - start", path, dirContext, rawLockType);
     }
 
-    if (this.closed) {
-      throw new AlreadyClosedException("");
-    }
-
     String fullPath = normalize(path);
     synchronized (this) {
 

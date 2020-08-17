@@ -19,6 +19,8 @@ package org.apache.solr.handler.admin;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.codahale.metrics.Counter;
 import org.apache.solr.SolrTestCaseJ4;
@@ -435,7 +437,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   public static class DumpRequestHandler extends RequestHandlerBase {
 
     static String key = DumpRequestHandler.class.getName();
-    Map<String, Object> gaugevals ;
+    volatile Map<String, Object> gaugevals ;
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
       rsp.add("key", key);

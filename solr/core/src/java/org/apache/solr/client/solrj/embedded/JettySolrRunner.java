@@ -149,6 +149,7 @@ public class JettySolrRunner implements Closeable {
 
   private static Scheduler scheduler = new SolrHttpClientScheduler("JettySolrRunnerScheduler", true, null, new ThreadGroup("JettySolrRunnerScheduler"), 1);
   private volatile SolrQueuedThreadPool qtp;
+  private volatile boolean closed;
 
   public String getContext() {
     return config.context;
@@ -300,7 +301,7 @@ public class JettySolrRunner implements Closeable {
       qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
       qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 2));
       qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
-      qtp.setStopTimeout(60);
+      qtp.setStopTimeout(1);
       qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
     }
 
@@ -538,6 +539,7 @@ public class JettySolrRunner implements Closeable {
    * @throws Exception if an error occurs on startup
    */
   public void start(boolean reusePort, boolean wait) throws Exception {
+    closed = false;
     // Do not let Jetty/Solr pollute the MDC for this thread
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
@@ -734,6 +736,9 @@ public class JettySolrRunner implements Closeable {
   }
 
   public void close(boolean wait) throws IOException {
+    if (closed) return;
+    closed = true;
+
     // Do not let Jetty/Solr pollute the MDC for this thread
     Map<String,String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();

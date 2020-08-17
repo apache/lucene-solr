@@ -96,13 +96,9 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     String registryName = TestUtil.randomSimpleString(r, 1, 10);
     assertEquals(0, metricManager.registry(registryName).getMetrics().size());
     // There is nothing registered so we should be error-free on the first pass
-    metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.ERROR);
-    // this should simply skip existing names
-    metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.IGNORE);
+    metricManager.registerAll(registryName, mr, false);
     // this should re-register everything, and no errors
-    metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.REPLACE);
-    // this should produce error
-    expectThrows(IllegalArgumentException.class, () -> metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.ERROR));
+    metricManager.registerAll(registryName, mr, true);
   }
 
   @Test

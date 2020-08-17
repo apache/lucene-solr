@@ -298,7 +298,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           }
 
         } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propegateInterrupt(e, true);
           return;
         } catch (KeeperException.SessionExpiredException e) {
           log.warn("Zookeeper expiration");

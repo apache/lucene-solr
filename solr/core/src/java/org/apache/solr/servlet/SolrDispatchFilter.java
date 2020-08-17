@@ -35,6 +35,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CorePropertiesLocator;
 import org.apache.solr.core.NodeConfig;
@@ -89,6 +90,8 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -225,12 +228,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
     final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
     try {
-      metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "buffers");
-      metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "classes");
-      metricManager.registerAll(registryName, new OperatingSystemMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "os");
-      metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "gc");
-      metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "memory");
-      metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+      metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), false, "buffers");
+      metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), false, "classes");
+      // nocommit - yuck
+      //metricManager.registerAll(registryName, new OperatingSystemMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "os");
+      metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), false, "gc");
+      metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), false, "memory");
+      metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), false, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
       MetricsMap sysprops = new MetricsMap((detailed, map) -> {
         System.getProperties().forEach((k, v) -> {
           if (!hiddenSysProps.contains(k)) {
@@ -240,6 +244,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       });
       metricManager.registerGauge(null, registryName, sysprops, metricTag, true, "properties", "system");
     } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       log.warn("Error registering JVM metrics", e);
     }
   }
@@ -371,16 +376,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       if (cc != null) {
         httpClient = null;
         // we may have already shutdown via shutdown hook
-        try {
-          if (!cc.isShutDown()) {
-            ParWork.close(cc);
-          }
-        } finally {
-          if (zkClient != null) {
-            zkClient.disableCloseLock();
-          }
-          ParWork.close(zkClient);
+        IOUtils.closeQuietly(cc);
+        if (zkClient != null) {
+          zkClient.disableCloseLock();
         }
+        ParWork.close(zkClient);
       }
       GlobalTracer.get().close();
     }

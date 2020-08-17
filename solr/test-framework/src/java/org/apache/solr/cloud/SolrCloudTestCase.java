@@ -308,22 +308,7 @@ public class SolrCloudTestCase extends SolrTestCase {
       }
     }
     if (qtp != null) {
-      try (ParWork closer = new ParWork("qtp", false, true)) {
-        closer.collect("qtpStop", () -> {
-          try {
-            qtp.stop();
-          } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
-          }
-        });
-        closer.collect("qtpNoop", () -> {
-
-            qtp.fillWithNoops();
-            qtp.fillWithNoops();
-
-        });
-      }
-
+      qtp.stop();
       qtp = null;
     }
   }

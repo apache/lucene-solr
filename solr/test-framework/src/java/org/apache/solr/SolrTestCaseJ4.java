@@ -168,7 +168,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
-  private static String initialRootLogLevel;
+  protected static String initialRootLogLevel;
 
   protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
     Properties props = new Properties();
@@ -205,7 +205,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   @BeforeClass
   public static void setupTestCases() {
     initialRootLogLevel = StartupLoggingUtils.getLogLevelString();
-    initClassLogLevels();
     resetExceptionIgnores();
 
     // set solr.install.dir needed by some test configs outside of the test sandbox (!)
@@ -260,7 +259,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       // clean up static
       testSolrHome = null;
-      ParWork.closeExecutor();
  //     LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
   //    savedClassLogLevels.clear();
 //      StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
@@ -296,37 +294,25 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  @SuppressForbidden(reason = "Using the Level class from log4j2 directly")
-  protected static Map<String, Level> savedClassLogLevels = new HashMap<>();
 
-  public static void initClassLogLevels() {
-    Class currentClass = RandomizedContext.current().getTargetClass();
-    LogLevel annotation = (LogLevel) currentClass.getAnnotation(LogLevel.class);
-    if (annotation == null) {
-      return;
-    }
-    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
-    savedClassLogLevels.putAll(previousLevels);
-  }
-
-  private Map<String, Level> savedMethodLogLevels = new HashMap<>();
-
-  @Before
-  public void initMethodLogLevels() {
-    Method method = RandomizedContext.current().getTargetMethod();
-    LogLevel annotation = method.getAnnotation(LogLevel.class);
-    if (annotation == null) {
-      return;
-    }
-    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
-    savedMethodLogLevels.putAll(previousLevels);
-  }
-
-  @After
-  public void restoreMethodLogLevels() {
-    LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
-    savedMethodLogLevels.clear();
-  }
+//  private Map<String, Level> savedMethodLogLevels = new HashMap<>();
+//
+//  @Before
+//  public void initMethodLogLevels() {
+//    Method method = RandomizedContext.current().getTargetMethod();
+//    LogLevel annotation = method.getAnnotation(LogLevel.class);
+//    if (annotation == null) {
+//      return;
+//    }
+//    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
+//    savedMethodLogLevels.putAll(previousLevels);
+//  }
+//
+//  @After
+//  public void restoreMethodLogLevels() {
+//    LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
+//    savedMethodLogLevels.clear();
+//  }
 
   protected static JettyConfig buildJettyConfig(String context) {
     return JettyConfig.builder().setContext(context).withSSLConfig(sslConfig.buildServerSSLConfig()).build();

@@ -39,7 +39,7 @@ public class SolrMetricsContext {
   private final String registryName;
   private final SolrMetricManager metricManager;
   final String tag;
-  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private final Set<String> metricNames = ConcurrentHashMap.newKeySet(128);
 
   public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String tag) {
     this.registryName = registryName;

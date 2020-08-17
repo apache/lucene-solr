@@ -34,7 +34,11 @@ public class CloseTracker implements Closeable {
     public boolean isClosed() {
         return closed;
     }
-    
+
+    public String getCloseStack() {
+        return closeStack;
+    }
+
     public void enableCloseLock() {
         closeLock = true;
     }
