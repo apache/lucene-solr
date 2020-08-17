@@ -142,7 +142,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     } else {
       //SolrCloud Sharding
       SolrClientCache solrClientCache = (streamContext != null ? streamContext.getSolrClientCache() : null);
-      final SolrClientCache localSolrClientCache;
+      final SolrClientCache localSolrClientCache; // tracks any locally allocated cache that needs to be closed locally
       if (solrClientCache == null) {
         solrClientCache = localSolrClientCache = new SolrClientCache();
       } else {
