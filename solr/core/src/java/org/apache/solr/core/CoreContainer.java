@@ -1618,8 +1618,6 @@ public class CoreContainer {
     try {
       solrCores.waitAddPendingCoreOps(name);
       cd = reloadCoreDescriptor(core.getCoreDescriptor());
-      //nocommit
-      log.error("EOE old core name {} new core name {}", name, cd.getName());
 
       solrCores.addCoreDescriptor(cd);
       ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
