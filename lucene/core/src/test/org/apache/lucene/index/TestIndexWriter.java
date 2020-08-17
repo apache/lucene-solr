@@ -4206,7 +4206,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testMergeOnCommitKeepFullyDeletedSegments() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setMaxCommitMergeWaitMillis(30 * 1000);
+    iwc.setMaxFullFlushMergeWaitMillis(30 * 1000);
     iwc.mergePolicy = new FilterMergePolicy(newMergePolicy()) {
       @Override
       public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {

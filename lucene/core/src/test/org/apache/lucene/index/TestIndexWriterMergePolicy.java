@@ -304,7 +304,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     firstWriter.close(); // When this writer closes, it does not merge on commit.
 
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.COMMIT)).setMaxCommitMergeWaitMillis(Integer.MAX_VALUE);
+        .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.COMMIT)).setMaxFullFlushMergeWaitMillis(Integer.MAX_VALUE);
 
 
     IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
@@ -356,7 +356,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       CountDownLatch waitForMerge = new CountDownLatch(1);
       CountDownLatch waitForUpdate = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
-          .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.COMMIT)).setMaxCommitMergeWaitMillis(30 * 1000)
+          .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.COMMIT)).setMaxFullFlushMergeWaitMillis(30 * 1000)
           .setSoftDeletesField("soft_delete")
           .setMaxBufferedDocs(Integer.MAX_VALUE)
           .setRAMBufferSizeMB(100)
@@ -439,7 +439,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       CountDownLatch waitForDeleteAll = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
           .setMergePolicy(new MergeOnXMergePolicy(useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
-          .setMaxCommitMergeWaitMillis(30 * 1000)
+          .setMaxFullFlushMergeWaitMillis(30 * 1000)
           .setMergeScheduler(new SerialMergeScheduler() {
             @Override
             public synchronized void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
@@ -494,7 +494,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     try (Directory directory = newDirectory()) {
       try (RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig()
           .setMergePolicy(new MergeOnXMergePolicy(useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
-          .setMaxCommitMergeWaitMillis(10 + random().nextInt(2000))
+          .setMaxFullFlushMergeWaitMillis(10 + random().nextInt(2000))
           .setSoftDeletesField("soft_delete")
           .setMergeScheduler(new ConcurrentMergeScheduler()))) {
         Document d1 = new Document();
@@ -561,7 +561,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     firstWriter.close(); // When this writer closes, it does not merge on commit.
 
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.GET_READER)).setMaxCommitMergeWaitMillis(Integer.MAX_VALUE);
+        .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.GET_READER)).setMaxFullFlushMergeWaitMillis(Integer.MAX_VALUE);
 
     IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
 

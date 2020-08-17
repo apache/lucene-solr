@@ -573,7 +573,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       }
     };
     SegmentInfos openingSegmentInfos = null;
-    final long maxCommitMergeWaitMillis = config.getMaxCommitMergeWaitMillis();
+    final long maxFullFlushMergeWaitMillis = config.getMaxFullFlushMergeWaitMillis();
     boolean success2 = false;
     try {
       /* this is the essential part of the getReader method. We need to take care of the following things:
@@ -625,7 +625,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
             }
-            if (maxCommitMergeWaitMillis > 0) {
+            if (maxFullFlushMergeWaitMillis > 0) {
               // we take the SIS from the reader which has already pruned away fully deleted readers
               // this makes pulling the readers below after the merge simpler since we can be safe that
               // they are not closed. Every segment has a corresponding SR in the SDR we opened if we use
@@ -636,7 +636,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // yield wrong results because deletes might sneak in during the merge
               openingSegmentInfos = r.getSegmentInfos().clone();
               onGetReaderMerges = preparePointInTimeMerge(openingSegmentInfos, includeMergeReader, MergeTrigger.GET_READER,
-                  sci -> mergedReaders.put(sci.info.name, readerFactory.apply(sci)));
+                  sci -> {
+                    assert includeMergeReader.get() : "illegal state  merge reader must be not pulled since we already stopped waiting for merges";
+                    mergedReaders.put(sci.info.name, readerFactory.apply(sci));
+                  });
             }
           }
           success = true;
@@ -657,7 +660,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       if (onGetReaderMerges != null) { // only relevant if we do merge on getReader
         StandardDirectoryReader mergedReader = finishGetReaderMerge(includeMergeReader, mergedReaders,
             openedReadOnlyClones, openingSegmentInfos, applyAllDeletes,
-            writeAllDeletes, onGetReaderMerges, maxCommitMergeWaitMillis);
+            writeAllDeletes, onGetReaderMerges, maxFullFlushMergeWaitMillis);
         if (mergedReader != null) {
           try {
             r.close();
@@ -728,8 +731,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                                                              Map<String, SegmentReader> openedReadOnlyClones, SegmentInfos openingSegmentInfos,
                                                              boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     assert Thread.holdsLock(this);
-    boolean openNewReader = mergedReaders.isEmpty() == false;
-    if (openNewReader) {
+    if (mergedReaders.isEmpty() == false) {
       return StandardDirectoryReader.open(this,
           sci -> {
             // as soon as we remove the reader and return it the StandardDirectoryReader#open
@@ -3301,7 +3303,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       long seqNo;
       MergePolicy.MergeSpecification onCommitMerges = null;
       AtomicBoolean includeInCommit = new AtomicBoolean(true);
-      final long maxCommitMergeWaitMillis = config.getMaxCommitMergeWaitMillis();
+      final long maxCommitMergeWaitMillis = config.getMaxFullFlushMergeWaitMillis();
       // This is copied from doFlush, except it's modified to
       // clone & incRef the flushed SegmentInfos inside the
       // sync block:
