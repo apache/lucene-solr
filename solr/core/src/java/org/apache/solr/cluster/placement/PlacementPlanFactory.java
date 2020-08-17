@@ -26,22 +26,14 @@ import java.util.Set;
  */
 public interface PlacementPlanFactory {
   /**
-   * <p>Creates a {@link PlacementPlan} for adding a new collection and its replicas.
-   *
-   * <p>This is in support of {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd}.
-   */
-  PlacementPlan createPlacementPlanNewCollection(CreateNewCollectionPlacementRequest request, Set<ReplicaPlacement> replicaPlacements);
-
-  /**
-   * <p>Creates a {@link PlacementPlan} for adding replicas to a given shard of an existing collection.
+   * <p>Creates a {@link PlacementPlan} for adding replicas to a given shard(s) of an existing collection. Note this is also
+   * used for creating new collections since such a creation first creates the collection, then adds the replicas.
    *
    * <p>This is in support (directly or indirectly) of {@link org.apache.solr.cloud.api.collections.AddReplicaCmd},
    * {@link org.apache.solr.cloud.api.collections.CreateShardCmd}, {@link org.apache.solr.cloud.api.collections.ReplaceNodeCmd},
    * {@link org.apache.solr.cloud.api.collections.MoveReplicaCmd}, {@link org.apache.solr.cloud.api.collections.SplitShardCmd},
-   * {@link org.apache.solr.cloud.api.collections.RestoreCmd} and {@link org.apache.solr.cloud.api.collections.MigrateCmd}.
-   * (as well as of {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd} in the specific case of
-   * {@link org.apache.solr.common.params.CollectionAdminParams#WITH_COLLECTION} but this should be removed shortly and
-   * the section in parentheses of this comment should be removed when the {@code withCollection} javadoc link appears broken).
+   * {@link org.apache.solr.cloud.api.collections.RestoreCmd}, {@link org.apache.solr.cloud.api.collections.MigrateCmd}
+   * as well as of {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd}.
    */
   PlacementPlan createPlacementPlanAddReplicas(AddReplicasPlacementRequest request, Set<ReplicaPlacement> replicaPlacements);
 

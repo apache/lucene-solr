@@ -20,34 +20,20 @@ package org.apache.solr.cluster.placement.impl;
 import java.util.Set;
 
 import org.apache.solr.cluster.placement.AddReplicasPlacementRequest;
-import org.apache.solr.cluster.placement.CreateNewCollectionPlacementRequest;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PlacementPlan;
 import org.apache.solr.cluster.placement.PlacementPlanFactory;
-import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.Replica;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 
 class PlacementPlanFactoryImpl implements PlacementPlanFactory {
   @Override
-  public PlacementPlan createPlacementPlanNewCollection(CreateNewCollectionPlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
-    return internalCreatePlacementPlan(request, replicaPlacements);
-  }
-
-  @Override
   public PlacementPlan createPlacementPlanAddReplicas(AddReplicasPlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
-    return internalCreatePlacementPlan(request, replicaPlacements);
+    return new PlacementPlanAddReplicasImpl(request, replicaPlacements);
   }
 
   @Override
   public ReplicaPlacement createReplicaPlacement(String shardName, Node node, Replica.ReplicaType replicaType) {
     return new ReplicaPlacementImpl(shardName, node, replicaType);
-  }
-
-  /**
-   * TODO: The two methods above end up doing the same thing. As suggested by AB in https://github.com/apache/lucene-solr/pull/1684#discussion_r468377374 we can make do with a single one. For now keeping the two in the interface but eventually will remove and only keep this one. Decide before merge!
-   */
-  private PlacementPlan internalCreatePlacementPlan(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
-    return new PlacementPlanImpl(request, replicaPlacements);
   }
 }

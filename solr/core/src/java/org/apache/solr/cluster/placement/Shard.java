@@ -43,7 +43,7 @@ public interface Shard extends PropertyValueSource {
   ShardState getState();
 
   enum ShardState {
-    ACTIVE, INACTIVE, CONSTRUCTION, RECOVERY, RECOVERY_FAILED;
+    ACTIVE, INACTIVE, CONSTRUCTION, RECOVERY, RECOVERY_FAILED
   }
 
 }

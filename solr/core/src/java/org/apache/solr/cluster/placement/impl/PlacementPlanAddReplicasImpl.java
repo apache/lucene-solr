@@ -20,21 +20,21 @@ package org.apache.solr.cluster.placement.impl;
 import java.util.Set;
 
 import org.apache.solr.cluster.placement.PlacementPlan;
-import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.cluster.placement.AddReplicasPlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 
-class PlacementPlanImpl implements PlacementPlan {
+class PlacementPlanAddReplicasImpl implements PlacementPlan {
 
-  final PlacementRequest request;
+  final AddReplicasPlacementRequest request;
   final Set<ReplicaPlacement> replicaPlacements;
 
-  PlacementPlanImpl(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
+  PlacementPlanAddReplicasImpl(AddReplicasPlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
     this.request = request;
     this.replicaPlacements = replicaPlacements;
   }
 
   @Override
-  public PlacementRequest getRequest() {
+  public AddReplicasPlacementRequest getRequest() {
     return request;
   }
 

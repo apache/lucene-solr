@@ -23,8 +23,8 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.solr.cluster.placement.AddReplicasPlacementRequest;
 import org.apache.solr.cluster.placement.Cluster;
-import org.apache.solr.cluster.placement.CreateNewCollectionPlacementRequest;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
@@ -61,36 +61,36 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
   public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
                                         PropertyValueFetcher propertyFetcher, PlacementPlanFactory placementPlanFactory) throws PlacementException {
     // This plugin only supports Creating a collection, and only one collection. Real code would be different...
-    if (!(placementRequest instanceof CreateNewCollectionPlacementRequest)) {
-      throw new PlacementException("This plugin only supports creating collections");
+    if (!(placementRequest instanceof AddReplicasPlacementRequest)) {
+      throw new PlacementException("This plugin only supports adding replicas");
     }
 
-    CreateNewCollectionPlacementRequest reqCreateCollection = (CreateNewCollectionPlacementRequest) placementRequest;
+    AddReplicasPlacementRequest reqAddReplicas = (AddReplicasPlacementRequest) placementRequest;
 
-    final int totalReplicasPerShard = reqCreateCollection.getNrtReplicationFactor() +
-        reqCreateCollection.getTlogReplicationFactor() + reqCreateCollection.getPullReplicationFactor();
+    final int totalReplicasPerShard = reqAddReplicas.getCountNrtReplicas() +
+        reqAddReplicas.getCountTlogReplicas() + reqAddReplicas.getCountPullReplicas();
 
     if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
       throw new PlacementException("Cluster size too small for number of replicas per shard");
     }
 
-    Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * reqCreateCollection.getShardNames().size());
+    Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * reqAddReplicas.getShardNames().size());
 
     // Now place randomly all replicas of all shards on available nodes
-    for (String shardName : reqCreateCollection.getShardNames()) {
+    for (String shardName : reqAddReplicas.getShardNames()) {
       // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
       ArrayList<Node> nodesToAssign = new ArrayList<>(cluster.getLiveNodes());
       Collections.shuffle(nodesToAssign, new Random());
 
       placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
-          shardName, reqCreateCollection.getNrtReplicationFactor(), Replica.ReplicaType.NRT);
+          shardName, reqAddReplicas.getCountNrtReplicas(), Replica.ReplicaType.NRT);
       placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
-          shardName, reqCreateCollection.getTlogReplicationFactor(), Replica.ReplicaType.TLOG);
+          shardName, reqAddReplicas.getCountTlogReplicas(), Replica.ReplicaType.TLOG);
       placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
-          shardName, reqCreateCollection.getPullReplicationFactor(), Replica.ReplicaType.PULL);
+          shardName, reqAddReplicas.getCountPullReplicas(), Replica.ReplicaType.PULL);
     }
 
-    return placementPlanFactory.createPlacementPlanNewCollection(reqCreateCollection, replicaPlacements);
+    return placementPlanFactory.createPlacementPlanAddReplicas(reqAddReplicas, replicaPlacements);
   }
 
   private void placeForReplicaType(ArrayList<Node> nodesToAssign, PlacementPlanFactory placementPlanFactory,

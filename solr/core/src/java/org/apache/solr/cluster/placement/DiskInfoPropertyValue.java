@@ -42,6 +42,6 @@ public interface DiskInfoPropertyValue extends PropertyValue {
   DiskType getDiskType();
 
   enum DiskType {
-    SSD, ROTATIONAL;
+    SSD, ROTATIONAL
   }
 }

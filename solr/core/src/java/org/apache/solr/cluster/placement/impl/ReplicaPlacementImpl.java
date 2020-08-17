@@ -39,17 +39,17 @@ class ReplicaPlacementImpl implements ReplicaPlacement {
 
   @Override
   public String getShardName() {
-    return null;
+    return shardName;
   }
 
   @Override
   public Node getNode() {
-    return null;
+    return node;
   }
 
   @Override
   public Replica.ReplicaType getReplicaType() {
-    return null;
+    return replicaType;
   }
 
   /**

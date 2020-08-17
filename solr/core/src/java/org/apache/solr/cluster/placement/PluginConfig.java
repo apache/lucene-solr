@@ -22,5 +22,5 @@ package org.apache.solr.cluster.placement;
  * that can be then used for placement computations.
  */
 public interface PluginConfig {
-  // TODO maje config available. Expose map or method to fetch config...
+  // TODO make config available. Expose map or method to fetch config...
 }

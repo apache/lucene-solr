@@ -17,6 +17,7 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,9 +27,9 @@ class NodeImpl implements Node {
   public final String nodeName;
 
   /**
-   * Transforms a set of node names into a set of {@link Node} instances.
+   * Transforms a collection of node names into a set of {@link Node} instances.
    */
-  static Set<Node> getNodes(Set<String> nodeNames) {
+  static Set<Node> getNodes(Collection<String> nodeNames) {
     return nodeNames.stream().map(NodeImpl::new).collect(Collectors.toSet());
   }
 

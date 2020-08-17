@@ -26,9 +26,10 @@ import org.apache.solr.cluster.placement.Cluster;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlanFactory;
 import org.apache.solr.cluster.placement.PlacementPlugin;
-import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.PlacementPlan;
 import org.apache.solr.cluster.placement.PropertyKeyFactory;
+import org.apache.solr.cluster.placement.PropertyValueFetcher;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ReplicaPosition;
 
 /**
@@ -38,9 +39,18 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
   private static final PlacementPlanFactory PLACEMENT_PLAN_FACTORY = new PlacementPlanFactoryImpl();
   private static final PropertyKeyFactory PROPERTY_KEY_FACTORY = new PropertyKeyFactoryImpl();
+  private static final PropertyValueFetcher PROPERTY_VALUE_FETCHER = new PropertyValueFetcherImpl();
 
   private final PlacementPlugin plugin;
-  public PlacementPluginAssignStrategy(PlacementPlugin plugin) {
+  private final DocCollection collection;
+
+  /**
+   * @param collection the collection for which this assign request is done. In theory would be better to pass it into the
+   *                   {@link #assign} call (which would allow reusing instances of {@link PlacementPluginAssignStrategy},
+   *                   but for now doing it here in order not to change the other Assign.AssignStrategy implementations.
+   */
+  public PlacementPluginAssignStrategy(DocCollection collection, PlacementPlugin plugin) {
+    this.collection = collection;
     this.plugin = plugin;
   }
 
@@ -49,13 +59,11 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
     Cluster cluster = new ClusterImpl(solrCloudManager);
 
-    // TODO create from assignRequest
-    PlacementRequest placementRequest = null;
+    AddReplicasPlacementRequestImpl placementRequest = AddReplicasPlacementRequestImpl.toPlacementRequest(cluster, collection, assignRequest);
 
     final PlacementPlan placementPlan;
     try {
-      // TODO Implement factories, likely keep instances around...
-      placementPlan = plugin.computePlacement(cluster, placementRequest, PROPERTY_KEY_FACTORY, null, PLACEMENT_PLAN_FACTORY);
+      placementPlan = plugin.computePlacement(cluster, placementRequest, PROPERTY_KEY_FACTORY, PROPERTY_VALUE_FETCHER, PLACEMENT_PLAN_FACTORY);
     } catch (PlacementException pe) {
       throw new Assign.AssignmentException(pe);
     }

@@ -17,5 +17,18 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-public class PropertyValueFetcherImpl {
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.solr.cluster.placement.PropertyKey;
+import org.apache.solr.cluster.placement.PropertyValue;
+import org.apache.solr.cluster.placement.PropertyValueFetcher;
+
+public class PropertyValueFetcherImpl implements PropertyValueFetcher {
+  @Override
+  public Map<PropertyKey, PropertyValue> fetchProperties(Set<PropertyKey> props) {
+    // TODO implement! This implementation is as if no property can be fetched. Legal but useless.
+    return new HashMap<>();
+  }
 }

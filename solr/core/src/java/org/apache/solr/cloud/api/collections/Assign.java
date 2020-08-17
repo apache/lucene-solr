@@ -390,12 +390,12 @@ public class Assign {
   }
 
   public static class AssignRequest {
-    public String collectionName;
-    public List<String> shardNames;
-    public List<String> nodes;
-    public int numNrtReplicas;
-    public int numTlogReplicas;
-    public int numPullReplicas;
+    public final String collectionName;
+    public final List<String> shardNames;
+    public final List<String> nodes;
+    public final int numNrtReplicas;
+    public final int numTlogReplicas;
+    public final int numPullReplicas;
 
     public AssignRequest(String collectionName, List<String> shardNames, List<String> nodes, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
       this.collectionName = collectionName;
@@ -582,7 +582,7 @@ public class Assign {
           // TODO need to decide which plugin class to use. Factory name (as well as plugin config) will be in Solr config file, will be used for all collections.
           // TODO hardcoding a sample plugin for now. DO NOT MERGE this as is.
           // TODO plugin factory allows config to change over time, this might not initially be supported from the Solr side (ans that's ok)
-          return new PlacementPluginAssignStrategy((new SamplePluginMinimizeCores.Factory()).createPluginInstance(null));
+          return new PlacementPluginAssignStrategy(collection, (new SamplePluginMinimizeCores.Factory()).createPluginInstance(null));
         default:
           throw new Assign.AssignmentException("Unknown placement type: " + placement);
       }

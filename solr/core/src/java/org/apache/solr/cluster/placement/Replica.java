@@ -37,10 +37,10 @@ public interface Replica extends PropertyValueSource {
   Node getNode();
 
   enum ReplicaType {
-    NRT, TLOG, PULL;
+    NRT, TLOG, PULL
   }
 
   enum ReplicaState {
-    ACTIVE, DOWN, RECOVERING, RECOVERY_FAILED;
+    ACTIVE, DOWN, RECOVERING, RECOVERY_FAILED
   }
 }
