@@ -3101,7 +3101,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (configHandler.getReloadLock().tryLock()) {
 
           try {
-            core.getCoreContainer().reload(core.getName(), core.uniqueId);
+            cc.reload(core.getName(), core.uniqueId);
           } catch (SolrCoreState.CoreIsClosedException e) {
             /*no problem this core is already closed*/
           } finally {
