@@ -156,6 +156,8 @@ Improvements
 * SOLR-14651: The MetricsHistoryHandler can more completely disable itself when you tell it to.
   Also, it now shuts down more thoroughly. (David Smiley)
 
+* SOLR-14722: Track timeAllowed from earlier in the request lifecycle. (David Smiley)
+
 Optimizations
 ---------------------
 
@@ -184,6 +186,8 @@ Bug Fixes
 
 * SOLR-14677: Improve DIH termination logic to close all DataSources, EntityProcessors (Jason Gerlowski)
 
+* SOLR-14703: Fix edismax replacement of all whitespace characters with spaces (Yuriy Koval via Jason Gerlowski)
+
 Other Changes
 ---------------------
 
@@ -207,6 +211,9 @@ Other Changes
 
 Bug Fixes
 ---------------------
+
+* SOLR-14665, SOLR-14706: Revert SOLR-12845 adding of default autoscaling cluster policy, due to performance
+ issues. (Ishan Chattopadhyaya, Houston Putman, Gus Heck, ab)
 
 * SOLR-14671: Parsing dynamic ZK config sometimes cause NuberFormatException (janhoy)
 
