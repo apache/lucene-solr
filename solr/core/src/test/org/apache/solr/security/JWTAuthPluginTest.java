@@ -65,7 +65,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   static {
     // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped in a JWK
     try {
-      rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
+      rsaJsonWebKey = RsaJwkGenerator.generateJwk(512);
       rsaJsonWebKey.setKeyId("k1");
 
       testJwk = new HashMap<>();
