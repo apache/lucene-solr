@@ -17,10 +17,14 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.Lists;
+import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -89,7 +93,7 @@ public class TestUpdateRequest {
     final SolrInputDocument doc1 = new SolrInputDocument("id", "1", "value_s", "foo");
     final SolrInputDocument doc2 = new SolrInputDocument("id", "2", "value_s", "bar");
     final SolrInputDocument doc3 = new SolrInputDocument("id", "3", "value_s", "baz");
-/*
+
     // Different Added/Updated Documents
     {
       final UpdateRequest req1 = new UpdateRequest();
@@ -156,13 +160,13 @@ public class TestUpdateRequest {
 
       assertNotEquals(req1, req2);
     }
-*/
+
     // Identical objects
     {
       final UpdateRequest req1 = createComplicatedUpdate();
       final UpdateRequest req2 = createComplicatedUpdate();
 
-      assertEquals(req1, req2); // TODO fix this test failure
+      assertEquals(req1, req2);
     }
   }
 

@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.solr.common.params.CommonParams;
 
 /**
@@ -292,5 +294,30 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   @Deprecated
   public int getChildDocumentCount() {
     return hasChildDocuments() ? _childDocuments.size(): 0;
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder()
+            .append(_fields)
+            .append(_childDocuments)
+            .toHashCode();
+  }
+
+  @Override
+  public boolean equals(Object rhs) {
+    if (rhs == null || getClass() != rhs.getClass()) {
+      return false;
+    } else if (this == rhs) {
+      return true;
+    } else if (hashCode() != rhs.hashCode()){
+      return false;
+    }
+
+    final SolrInputDocument rhsCast = (SolrInputDocument) rhs;
+    return new EqualsBuilder()
+            .append(_fields, rhsCast._fields)
+            .append(_childDocuments, rhsCast._childDocuments)
+            .isEquals();
   }
 }

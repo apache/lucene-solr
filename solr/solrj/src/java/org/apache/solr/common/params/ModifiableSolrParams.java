@@ -16,10 +16,11 @@
  */
 package org.apache.solr.common.params;
 
-import java.util.LinkedHashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -210,5 +211,42 @@ public class ModifiableSolrParams extends SolrParams
   @Override
   public Iterator<Map.Entry<String, String[]>> iterator() {
     return vals.entrySet().iterator();
+  }
+
+  // The 'values' in the val Map are arrays, which have a naive hashCode implementation.  So rather than calling
+  // vals.hashCode() as we might, we need to manually drag all the values out of the Map and hash them.
+  @Override
+  public int hashCode() {
+    final HashCodeBuilder hashBuilder = new HashCodeBuilder();
+    final List<String> sortedKeyset = vals.keySet().stream().sorted().collect(Collectors.toList());
+    for (String key : sortedKeyset) {
+      hashBuilder.append(key);
+      final String[] values = vals.get(key);
+      for (String value : values) {
+        hashBuilder.append(value);
+      }
+    }
+
+    return hashBuilder.toHashCode();
+  }
+
+  @Override
+  public boolean equals(Object rhs) {
+    if (rhs == null || getClass() != rhs.getClass()) {
+      return false;
+    } else if (this == rhs) {
+      return true;
+    } else if (hashCode() != rhs.hashCode()) {
+        return false;
+    }
+
+    final ModifiableSolrParams rhsCast = (ModifiableSolrParams) rhs;
+    final EqualsBuilder equalsBuilder = new EqualsBuilder();
+    equalsBuilder.append(vals.keySet(), rhsCast.vals.keySet());
+    for (String key : vals.keySet()) {
+      equalsBuilder.append(vals.get(key), rhsCast.vals.get(key));
+    }
+
+    return equalsBuilder.isEquals();
   }
 }

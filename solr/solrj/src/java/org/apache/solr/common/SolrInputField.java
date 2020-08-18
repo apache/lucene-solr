@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,7 +31,7 @@ import java.util.Iterator;
 public class SolrInputField implements Iterable<Object>, Serializable
 {
   String name;
-  Object value = null; 
+  Object value = null;
   
   public SolrInputField( String n )
   {
@@ -189,6 +192,31 @@ public class SolrInputField implements Iterable<Object>, Serializable
         throw new UnsupportedOperationException();
       }
     };
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder()
+            .append(name)
+            .append(value)
+            .toHashCode();
+  }
+
+  @Override
+  public boolean equals(Object rhs) {
+    if (rhs == null || getClass() != rhs.getClass()) {
+      return false;
+    } else if (this == rhs) {
+      return true;
+    } else if (hashCode() != rhs.hashCode()){
+      return false;
+    }
+
+    final SolrInputField rhsCast = (SolrInputField) rhs;
+    return new EqualsBuilder()
+            .append(name, rhsCast.name)
+            .append(value, rhsCast.value)
+            .isEquals();
   }
 
   @Override
