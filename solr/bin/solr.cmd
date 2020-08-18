@@ -551,7 +551,7 @@ echo                             'upconfig' or downloaded to for 'downconfig'. I
 echo                             ...solr/server/solr/configsets' then the configs will be copied from/to
 echo                             that directory. Otherwise it is interpreted as a simple local path.
 echo.
-echo         cp copies files or folders to/from Zookeeper or Zokeeper -^> Zookeeper
+echo         cp copies files or folders to/from Zookeeper or Zookeeper -^> Zookeeper
 echo             -r              Recursively copy ^<src^> to ^<dst^>. Command will fail if ^<src^> has children and
 echo                             -r is not specified. Optional
 echo.
