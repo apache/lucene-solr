@@ -14,11 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud.events;
+package org.apache.solr.cluster.events;
+
+import java.util.Set;
 
 /**
+ * Components that want to be notified of cluster-wide events should use this.
  *
+ * XXX should this work only for ClusterSingleton-s? some types of events may be
+ * XXX difficult (or pointless) to propagate to every node.
  */
-public interface NodeUpEvent extends ClusterEvent {
-  String getNodeName();
+public interface ClusterEventListener {
+
+  // reports types of events that this listener is interested in
+  Set<ClusterEvent.EventType> getEventTypes();
+
+  void onEvent(ClusterEvent event);
+
 }

@@ -1,4 +1,4 @@
-package org.apache.solr.cloud.events;
+package org.apache.solr.cluster.events;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

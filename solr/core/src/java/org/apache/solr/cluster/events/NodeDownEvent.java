@@ -14,27 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud.events;
-
-import java.time.Instant;
+package org.apache.solr.cluster.events;
 
 /**
  *
  */
-public interface ClusterEvent {
+public interface NodeDownEvent extends ClusterEvent {
 
-  enum EventType {
-    NODE_DOWN,
-    NODE_UP,
-    REPLICA_DOWN,
-    SCHEDULED,
-    // other types? eg. Overseer leader change, shard leader change,
-    // node overload (eg. CPU / MEM circuit breakers tripped)?
+  @Override
+  default EventType getType() {
+    return EventType.NODE_DOWN;
   }
 
-  /** Get event type. */
-  EventType getType();
-
-  /** Get event timestamp. */
-  Instant getTimestamp();
+  String getNodeName();
 }

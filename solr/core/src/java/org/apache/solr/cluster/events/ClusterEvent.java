@@ -14,22 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud.events;
+package org.apache.solr.cluster.events;
 
-import java.util.Collection;
+import java.time.Instant;
 
 /**
- * Component that produces {@link ClusterEvent} instances.
+ *
  */
-public interface ClusterEventProducer {
+public interface ClusterEvent {
 
-  void registerListener(ClusterEventListener listener);
-
-  void unregisterListener(ClusterEventListener listener);
-
-  Collection<ClusterEventListener> getEventListeners();
-
-  default void fireEvent(ClusterEvent event) {
-    getEventListeners().forEach(listener -> listener.onEvent(event));
+  enum EventType {
+    NODE_DOWN,
+    NODE_UP,
+    REPLICA_DOWN,
+    SCHEDULED,
+    // other types? eg. Overseer leader change, shard leader change,
+    // node overload (eg. CPU / MEM circuit breakers tripped)?
   }
+
+  /** Get event type. */
+  EventType getType();
+
+  /** Get event timestamp. */
+  Instant getTimestamp();
 }
