@@ -636,7 +636,7 @@ public abstract class MergePolicy {
    * merge, then {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} will throw a {@link IllegalStateException}.
    * Use {@link MergeContext#getMergingSegments()} to determine which segments are currently registered to merge.
    *
-   * @param mergeTrigger the event that triggered the merge (COMMIT or FULL_FLUSH).
+   * @param mergeTrigger the event that triggered the merge (COMMIT or GET_READER).
    * @param segmentInfos the total set of segments in the index (while preparing the commit)
    * @param mergeContext the MergeContext to find the merges on, which should be used to determine which segments are
  *                     already in a registered merge (see {@link MergeContext#getMergingSegments()}).
