@@ -3318,7 +3318,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       boolean anyChanges = false;
       long seqNo;
       MergePolicy.MergeSpecification pointInTimeMerges = null;
-      AtomicBoolean hasTimedOut = new AtomicBoolean(false);
+      AtomicBoolean stopAddingMergedSegments = new AtomicBoolean(false);
       final long maxCommitMergeWaitMillis = config.getMaxFullFlushMergeWaitMillis();
       // This is copied from doFlush, except it's modified to
       // clone & incRef the flushed SegmentInfos inside the
@@ -3382,7 +3382,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               if (anyChanges && maxCommitMergeWaitMillis > 0) {
                 // we can safely call preparePointInTimeMerge since writeReaderPool(true) above wrote all
                 // necessary files to disk and checkpointed them.
-                pointInTimeMerges = preparePointInTimeMerge(toCommit, hasTimedOut::get, MergeTrigger.COMMIT, sci->{});
+                pointInTimeMerges = preparePointInTimeMerge(toCommit, stopAddingMergedSegments::get, MergeTrigger.COMMIT, sci->{});
               }
             }
             success = true;
@@ -3416,7 +3416,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         }
         synchronized (this) {
           // we need to call this under lock since mergeFinished above is also called under the IW lock
-          hasTimedOut.set(true);
+          stopAddingMergedSegments.set(true);
         }
       }
       // do this after handling any pointInTimeMerges since the files will have changed if any merges
