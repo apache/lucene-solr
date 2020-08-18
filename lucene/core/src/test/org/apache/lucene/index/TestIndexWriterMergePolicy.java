@@ -530,8 +530,41 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         waitForForceMergeCalled.countDown();
         writer.forceMerge(1);
         t.join();
-      }}
+      }
+    }
+  }
 
+  public void testFailAfterMergeCommitted() throws IOException {
+    try (Directory directory = newDirectory()) {
+      AtomicBoolean mergeAndFail = new AtomicBoolean(false);
+      try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
+          .setMergePolicy(new MergeOnXMergePolicy(NoMergePolicy.INSTANCE,  MergeTrigger.GET_READER))
+          .setMaxFullFlushMergeWaitMillis(30 * 1000)
+          .setMergeScheduler(new SerialMergeScheduler())) {
+        @Override
+        protected void doAfterFlush() throws IOException {
+          if (mergeAndFail.get() && hasPendingMerges()) {
+            executeMerge(MergeTrigger.GET_READER);
+            throw new RuntimeException("boom");
+          }
+        }
+      }) {
+        Document d1 = new Document();
+        d1.add(new StringField("id", "1", Field.Store.NO));
+        writer.addDocument(d1);
+        writer.flush();
+        Document d2 = new Document();
+        d2.add(new StringField("id", "2", Field.Store.NO));
+        writer.addDocument(d2);
+        mergeAndFail.set(true);
+        try (DirectoryReader reader = writer.getReader()){
+        } catch (RuntimeException e) {
+          assertEquals("boom", e.getMessage());
+        } finally {
+          mergeAndFail.set(false);
+        }
+      }
+    }
   }
 
   public void testStressUpdateSameDocumentWithMergeOnGetReader() throws IOException, InterruptedException {

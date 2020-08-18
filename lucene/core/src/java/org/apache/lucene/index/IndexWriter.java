@@ -576,6 +576,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         release(rld);
       }
     };
+    Closeable onGetReaderMergeResources = null;
     SegmentInfos openingSegmentInfos = null;
     boolean success2 = false;
     try {
@@ -647,6 +648,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                     // removes the segment before we pass it on to the SDR
                     deleter.incRef(sci.files());
                   });
+              onGetReaderMergeResources = () -> {
+                // this needs to be closed once after we are done. In the case of an exception it releases
+                // all resources, closes the merged readers and decrements the files references.
+                // this only happens for readers that haven't been removed from the mergedReaders and release elsewhere
+                synchronized (this) {
+                  stopCollectingMergedReaders.set(true);
+                  IOUtils.close(mergedReaders.values().stream().map(sr -> (Closeable) () -> {
+                    try {
+                      deleter.decRef(sr.getSegmentInfo().files());
+                    } finally {
+                      sr.close();
+                    }
+                  }).collect(Collectors.toList()));
+                }
+              };
             }
           }
           success = true;
@@ -691,10 +707,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     } finally {
       if (!success2) {
         try {
-          IOUtils.closeWhileHandlingException(r);
+          IOUtils.closeWhileHandlingException(r, onGetReaderMergeResources);
         } finally {
           maybeCloseOnTragicEvent();
         }
+      } else {
+        IOUtils.close(onGetReaderMergeResources);
       }
     }
     return r;
@@ -705,32 +723,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                                                        boolean applyAllDeletes, boolean writeAllDeletes,
                                                        MergePolicy.MergeSpecification pointInTimeMerges, long maxCommitMergeWaitMillis) throws IOException {
     assert openingSegmentInfos != null;
-    boolean replaceReaderSuccess = false;
-    try {
-      mergeScheduler.merge(mergeSource, MergeTrigger.GET_READER);
-      pointInTimeMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
-      synchronized (this) {
-        stopCollectingMergedReaders.set(true);
-        StandardDirectoryReader reader = maybeReopenMergedNRTReader(mergedReaders, openedReadOnlyClones, openingSegmentInfos,
-            applyAllDeletes, writeAllDeletes);
-        replaceReaderSuccess = true;
-        return reader;
-      }
-    } finally {
-      synchronized (this) {
-        if (replaceReaderSuccess == false) {
-          stopCollectingMergedReaders.set(true); // make sure in the case of an error we stop opening readers
-          // it's enough to simply decRef the remaining ones here since we either store the ref in SDR:open and that means
-          // they are not in the readers map anymore or we didn't even incRef them. it's really only relevant
-          // in the case of an exception which will case this map to be non-empty
-          IOUtils.closeWhileHandlingException(mergedReaders.values());
-        } else {
-          assert stopCollectingMergedReaders.get();
-          // it is possible to have a merged reader that is not used since we open the reader in a callback
-          // before the openingSegmentInfos is updated this is a small put possible race - it's really best effort
-          IOUtils.close(mergedReaders.values());
-        }
-      }
+    mergeScheduler.merge(mergeSource, MergeTrigger.GET_READER);
+    pointInTimeMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
+    synchronized (this) {
+      stopCollectingMergedReaders.set(true);
+      StandardDirectoryReader reader = maybeReopenMergedNRTReader(mergedReaders, openedReadOnlyClones, openingSegmentInfos,
+          applyAllDeletes, writeAllDeletes);
+      IOUtils.close(mergedReaders.values());
+      mergedReaders.clear();
+      return reader;
     }
   }
 
@@ -739,10 +740,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                                                              boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     assert Thread.holdsLock(this);
     if (mergedReaders.isEmpty() == false) {
-      Set<SegmentCommitInfo> mergedScis = new HashSet<>();
-      for (SegmentReader reader : mergedReaders.values()) {
-        mergedScis.add(reader.getSegmentInfo());
-      }
+      Collection<String> files = new ArrayList<>();
       try {
         return StandardDirectoryReader.open(this,
             sci -> {
@@ -756,14 +754,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 // each of the readers we reuse from the previous reader needs to be incRef'd
                 // since we reuse them but don't have an implicit incRef in the SDR:open call
                 remove.incRef();
+              } else {
+                files.addAll(remove.getSegmentInfo().files());
               }
               return remove;
             }, openingSegmentInfos, applyAllDeletes, writeAllDeletes);
       } finally {
-        for (SegmentCommitInfo info : mergedScis) {
-          // now the SDR#open call has incRef'd the files so we can let them go
-          deleter.decRef(info.files());
-        }
+        // now the SDR#open call has incRef'd the files so we can let them go
+        deleter.decRef(files);
       }
     }
     return null;
@@ -2270,8 +2268,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private final void maybeMerge(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments) throws IOException {
     ensureOpen(false);
     if (updatePendingMerges(mergePolicy, trigger, maxNumSegments) != null) {
-      mergeScheduler.merge(mergeSource, trigger);
+      executeMerge(trigger);
     }
+  }
+
+  protected void executeMerge(MergeTrigger trigger) throws IOException {
+    mergeScheduler.merge(mergeSource, trigger);
   }
 
   private synchronized MergePolicy.MergeSpecification updatePendingMerges(MergePolicy mergePolicy, MergeTrigger trigger, int maxNumSegments)
