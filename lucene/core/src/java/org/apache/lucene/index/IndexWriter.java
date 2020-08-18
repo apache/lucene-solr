@@ -3509,10 +3509,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
           @Override
           void onMergeComplete() throws IOException {
+            assert Thread.holdsLock(IndexWriter.this);
             if (stopCollectingMergeResults.getAsBoolean() == false
                 && isAborted() == false
                 && info.info.maxDoc() > 0/* never do this if the segment if dropped / empty */) {
-              assert Thread.holdsLock(IndexWriter.this);
               mergeFinished.accept(info);
               // clone the target info to make sure we have the original info without the updated del and update gens
               origInfo = info.clone();
