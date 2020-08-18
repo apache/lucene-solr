@@ -29,6 +29,6 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(SOURCE)
 @Target(TYPE)
-public @interface SolrSingleThreaded {
+public @interface SolrThreadUnsafe {
 
 }
