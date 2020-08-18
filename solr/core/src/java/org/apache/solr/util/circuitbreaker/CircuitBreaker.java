@@ -17,8 +17,6 @@
 
 package org.apache.solr.util.circuitbreaker;
 
-import java.util.function.Supplier;
-
 import org.apache.solr.core.SolrConfig;
 
 /**
