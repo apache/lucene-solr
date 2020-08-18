@@ -32,6 +32,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -304,7 +305,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     firstWriter.close(); // When this writer closes, it does not merge on commit.
 
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.COMMIT)).setMaxFullFlushMergeWaitMillis(Integer.MAX_VALUE);
+        .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), MergeTrigger.COMMIT)).setMaxFullFlushMergeWaitMillis(Integer.MAX_VALUE);
 
 
     IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
@@ -356,7 +357,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       CountDownLatch waitForMerge = new CountDownLatch(1);
       CountDownLatch waitForUpdate = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
-          .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.COMMIT)).setMaxFullFlushMergeWaitMillis(30 * 1000)
+          .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), MergeTrigger.COMMIT)).setMaxFullFlushMergeWaitMillis(30 * 1000)
           .setSoftDeletesField("soft_delete")
           .setMaxBufferedDocs(Integer.MAX_VALUE)
           .setRAMBufferSizeMB(100)
@@ -438,7 +439,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       CountDownLatch waitForMerge = new CountDownLatch(1);
       CountDownLatch waitForDeleteAll = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
-          .setMergePolicy(new MergeOnXMergePolicy(useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
+          .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
           .setMaxFullFlushMergeWaitMillis(30 * 1000)
           .setMergeScheduler(new SerialMergeScheduler() {
             @Override
@@ -493,7 +494,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   void stressUpdateSameDocumentWithMergeOnX(boolean useGetReader) throws IOException, InterruptedException {
     try (Directory directory = newDirectory()) {
       try (RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig()
-          .setMergePolicy(new MergeOnXMergePolicy(useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
+          .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
           .setMaxFullFlushMergeWaitMillis(10 + random().nextInt(2000))
           .setSoftDeletesField("soft_delete")
           .setMergeScheduler(new ConcurrentMergeScheduler()))) {
@@ -503,13 +504,17 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         writer.commit();
 
         AtomicInteger iters = new AtomicInteger(100 + random().nextInt(TEST_NIGHTLY ? 5000 : 1000));
+        AtomicInteger numFullFlushes = new AtomicInteger(10 + random().nextInt(TEST_NIGHTLY ? 500 : 100));
         AtomicBoolean done = new AtomicBoolean(false);
         Thread[] threads = new Thread[1 + random().nextInt(4)];
         for (int i = 0; i < threads.length; i++) {
           Thread t = new Thread(() -> {
             try {
-              while (iters.decrementAndGet() > 0) {
+              while (iters.decrementAndGet() > 0 || numFullFlushes.get() > 0) {
                 writer.updateDocument(new Term("id", "1"), d1);
+                if (random().nextBoolean()) {
+                  writer.addDocument(new Document());
+                }
               }
             } catch (Exception e) {
               throw new AssertionError(e);
@@ -525,18 +530,20 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
           while (done.get() == false) {
             if (useGetReader) {
               try (DirectoryReader reader = writer.getReader()) {
-                assertEquals(1, reader.numDocs());
+                assertEquals(1, new IndexSearcher(reader).search(new TermQuery(new Term("id", "1")), 10).totalHits.value);
               }
             } else {
               if (random().nextBoolean()) {
                 writer.commit();
               }
               try (DirectoryReader open = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(directory), "___soft_deletes")) {
-                assertEquals(1, open.numDocs());
+                assertEquals(1, new IndexSearcher(open).search(new TermQuery(new Term("id", "1")), 10).totalHits.value);
               }
             }
+            numFullFlushes.decrementAndGet();
           }
         } finally {
+          numFullFlushes.set(0);
           for (Thread t : threads) {
             t.join();
           }
@@ -561,7 +568,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     firstWriter.close(); // When this writer closes, it does not merge on commit.
 
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(new MergeOnXMergePolicy(MergeTrigger.GET_READER)).setMaxFullFlushMergeWaitMillis(Integer.MAX_VALUE);
+        .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), MergeTrigger.GET_READER)).setMaxFullFlushMergeWaitMillis(Integer.MAX_VALUE);
 
     IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
 
@@ -579,10 +586,11 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     dir.close();
   }
 
-  private static class MergeOnXMergePolicy extends LogDocMergePolicy {
+  private static class MergeOnXMergePolicy extends FilterMergePolicy {
     private final MergeTrigger trigger;
 
-    private MergeOnXMergePolicy(MergeTrigger trigger) {
+    private MergeOnXMergePolicy(MergePolicy in, MergeTrigger trigger) {
+      super(in);
       this.trigger = trigger;
     }
 
