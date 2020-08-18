@@ -156,6 +156,8 @@ Improvements
 * SOLR-14651: The MetricsHistoryHandler can more completely disable itself when you tell it to.
   Also, it now shuts down more thoroughly. (David Smiley)
 
+* SOLR-14722: Track timeAllowed from earlier in the request lifecycle. (David Smiley)
+
 Optimizations
 ---------------------
 

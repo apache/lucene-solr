@@ -201,6 +201,9 @@ Bug Fixes
 * LUCENE-9427: Fix a regression where the unified highlighter didn't produce
   highlights on fuzzy queries that correspond to exact matches. (Julie Tibshirani)
 
+* LUCENE-9467: Fix NRTCachingDirectory to use Directory#fileLength to check if a file
+  already exists instead of opening an IndexInput on the file which might throw a AccessDeniedException
+  in some Directory implementations. (Simon Willnauer)
 
 Documentation
 ---------------------
