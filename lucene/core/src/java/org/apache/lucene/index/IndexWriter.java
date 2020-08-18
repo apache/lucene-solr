@@ -549,6 +549,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     StandardDirectoryReader r = null;
     doBeforeFlush();
     boolean anyChanges;
+    final long maxFullFlushMergeWaitMillis = config.getMaxFullFlushMergeWaitMillis();
     /*
      * for releasing a NRT reader we must ensure that 
      * DW doesn't add any segments or deletes until we are
@@ -567,14 +568,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       try {
         assert Thread.holdsLock(IndexWriter.this);
         SegmentReader segmentReader = rld.getReadOnlyClone(IOContext.READ);
-        openedReadOnlyClones.put(sci.info.name, segmentReader);
+        if (maxFullFlushMergeWaitMillis > 0) { // only track this if we actually do fullFlush merges
+          openedReadOnlyClones.put(sci.info.name, segmentReader);
+        }
         return segmentReader;
       } finally {
         release(rld);
       }
     };
     SegmentInfos openingSegmentInfos = null;
-    final long maxFullFlushMergeWaitMillis = config.getMaxFullFlushMergeWaitMillis();
     boolean success2 = false;
     try {
       /* this is the essential part of the getReader method. We need to take care of the following things:
