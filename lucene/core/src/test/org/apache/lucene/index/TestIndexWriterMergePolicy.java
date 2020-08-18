@@ -464,14 +464,20 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         writer.flush();
         writer.addDocument(d2);
         Thread t = new Thread(() -> {
+          boolean success = false;
           try {
             if (useGetReader) {
               writer.getReader().close();
             } else {
               writer.commit();
             }
+            success = true;
           } catch (IOException e) {
             throw new AssertionError(e);
+          } finally {
+            if (success == false) {
+              waitForMerge.countDown();
+            }
           }
         });
         t.start();
