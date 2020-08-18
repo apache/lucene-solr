@@ -557,7 +557,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
      * directory reader!
      */
     MergePolicy.MergeSpecification onGetReaderMerges = null;
-    AtomicBoolean hasTimedOut = new AtomicBoolean(false);
+    AtomicBoolean stopCollectingMergedReaders = new AtomicBoolean(false);
     Map<String, SegmentReader> mergedReaders = new HashMap<>();
     Map<String, SegmentReader> openedReadOnlyClones = new HashMap<>();
     // this function is used to control which SR are opened in order to keep track of them
@@ -583,7 +583,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
        *  - prevent flushes and applying deletes of concurrently indexing DWPTs to be applied
        *  - open a SDR on the updated SIS
        *
-       * in order do prevent concurrent flushes we call DocumentsWriter#flushAllThreads that swaps out the deleteQueue
+       * in order to prevent concurrent flushes we call DocumentsWriter#flushAllThreads that swaps out the deleteQueue
        *  (this enforces a happens before relationship between this and the subsequent full flush) and informs the
        * FlushControl (#markForFullFlush()) that it should prevent any new DWPTs from flushing until we are \
        * done (DocumentsWriter#finishFullFlush(boolean)). All this is guarded by the fullFlushLock to prevent multiple
@@ -636,9 +636,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // while holding that lock. Merging outside of the lock ie. after calling docWriter.finishFullFlush(boolean) would
               // yield wrong results because deletes might sneak in during the merge
               openingSegmentInfos = r.getSegmentInfos().clone();
-              onGetReaderMerges = preparePointInTimeMerge(openingSegmentInfos, hasTimedOut::get, MergeTrigger.GET_READER,
+              onGetReaderMerges = preparePointInTimeMerge(openingSegmentInfos, stopCollectingMergedReaders::get, MergeTrigger.GET_READER,
                   sci -> {
-                    assert hasTimedOut.get() == false : "illegal state  merge reader must be not pulled since we already stopped waiting for merges";
+                    assert stopCollectingMergedReaders.get() == false : "illegal state  merge reader must be not pulled since we already stopped waiting for merges";
                     mergedReaders.put(sci.info.name, readerFactory.apply(sci));
                   });
             }
@@ -659,7 +659,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         }
       }
       if (onGetReaderMerges != null) { // only relevant if we do merge on getReader
-        StandardDirectoryReader mergedReader = finishGetReaderMerge(hasTimedOut, mergedReaders,
+        StandardDirectoryReader mergedReader = finishGetReaderMerge(stopCollectingMergedReaders, mergedReaders,
             openedReadOnlyClones, openingSegmentInfos, applyAllDeletes,
             writeAllDeletes, onGetReaderMerges, maxFullFlushMergeWaitMillis);
         if (mergedReader != null) {
@@ -694,17 +694,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     return r;
   }
 
-  private StandardDirectoryReader finishGetReaderMerge(AtomicBoolean hasTimedOut, Map<String, SegmentReader> mergedReaders,
+  private StandardDirectoryReader finishGetReaderMerge(AtomicBoolean stopCollectingMergedReaders, Map<String, SegmentReader> mergedReaders,
                                                        Map<String, SegmentReader> openedReadOnlyClones, SegmentInfos openingSegmentInfos,
                                                        boolean applyAllDeletes, boolean writeAllDeletes,
-                                                       MergePolicy.MergeSpecification onCommitMerges, long maxCommitMergeWaitMillis) throws IOException {
+                                                       MergePolicy.MergeSpecification pointInTimeMerges, long maxCommitMergeWaitMillis) throws IOException {
+    assert openingSegmentInfos != null;
     boolean replaceReaderSuccess = false;
     try {
       mergeScheduler.merge(mergeSource, MergeTrigger.GET_READER);
-      onCommitMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
-      assert openingSegmentInfos != null;
+      pointInTimeMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
       synchronized (this) {
-        hasTimedOut.set(true);
+        stopCollectingMergedReaders.set(true);
         StandardDirectoryReader reader = maybeReopenMergedNRTReader(mergedReaders, openedReadOnlyClones, openingSegmentInfos,
             applyAllDeletes, writeAllDeletes);
         replaceReaderSuccess = true;
@@ -713,13 +713,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     } finally {
       synchronized (this) {
         if (replaceReaderSuccess == false) {
-          hasTimedOut.set(true); // make sure in the case of an error we stop opening readers
+          stopCollectingMergedReaders.set(true); // make sure in the case of an error we stop opening readers
           // it's enough to simply decRef the remaining ones here since we either store the ref in SDR:open and that means
           // they are not in the readers map anymore or we didn't even incRef them. it's really only relevant
           // in the case of an exception which will case this map to be non-empty
           IOUtils.closeWhileHandlingException(mergedReaders.values());
         } else {
-          assert hasTimedOut.get();
+          assert stopCollectingMergedReaders.get();
           // it is possible to have a merged reader that is not used since we open the reader in a callback
           // before the openingSegmentInfos is updated this is a small put possible race - it's really best effort
           IOUtils.close(mergedReaders.values());
@@ -742,8 +742,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             if (remove == null) {
               remove = openedReadOnlyClones.remove(sci.info.name);
               assert remove != null;
-              // each of the readers we reuse from the previous reader needs to be refInced
-              // since we reuse them but don't have an implicit refInc in the SDR:open call
+              // each of the readers we reuse from the previous reader needs to be incRef'd
+              // since we reuse them but don't have an implicit incRef in the SDR:open call
               remove.incRef();
             }
             return remove;
@@ -3302,7 +3302,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       SegmentInfos toCommit = null;
       boolean anyChanges = false;
       long seqNo;
-      MergePolicy.MergeSpecification onCommitMerges = null;
+      MergePolicy.MergeSpecification pointInTimeMerges = null;
       AtomicBoolean hasTimedOut = new AtomicBoolean(false);
       final long maxCommitMergeWaitMillis = config.getMaxFullFlushMergeWaitMillis();
       // This is copied from doFlush, except it's modified to
@@ -3367,7 +3367,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               if (anyChanges && maxCommitMergeWaitMillis > 0) {
                 // we can safely call prepareOnCommitMerge since writeReaderPool(true) above wrote all
                 // necessary files to disk and checkpointed them.
-                onCommitMerges = preparePointInTimeMerge(toCommit, hasTimedOut::get, MergeTrigger.COMMIT, sci->{});
+                pointInTimeMerges = preparePointInTimeMerge(toCommit, hasTimedOut::get, MergeTrigger.COMMIT, sci->{});
               }
             }
             success = true;
@@ -3390,12 +3390,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         maybeCloseOnTragicEvent();
       }
 
-      if (onCommitMerges != null) {
+      if (pointInTimeMerges != null) {
         if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "now run merges during commit: " + onCommitMerges.segString(directory));
+          infoStream.message("IW", "now run merges during commit: " + pointInTimeMerges.segString(directory));
         }
         mergeScheduler.merge(mergeSource, MergeTrigger.COMMIT);
-        onCommitMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
+        pointInTimeMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "done waiting for merges during commit");
         }
@@ -3404,7 +3404,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           hasTimedOut.set(true);
         }
       }
-      // do this after handling any onCommitMerges since the files will have changed if any merges
+      // do this after handling any pointInTimeMerges since the files will have changed if any merges
       // did complete
       filesToCommit = toCommit.files(false);
       try {
@@ -3444,12 +3444,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * below.  We also ensure that we pull the merge readers while holding {@code IndexWriter}'s lock.  Otherwise
    * we could see concurrent deletions/updates applied that do not belong to the segment.
    */
-  private MergePolicy.MergeSpecification preparePointInTimeMerge(SegmentInfos mergingSegmentInfos, BooleanSupplier hasTimedOut,
+  private MergePolicy.MergeSpecification preparePointInTimeMerge(SegmentInfos mergingSegmentInfos, BooleanSupplier stopCollectingMergeResults,
                                                                  MergeTrigger trigger,
                                                                  IOUtils.IOConsumer<SegmentCommitInfo> mergeFinished) throws IOException {
     assert Thread.holdsLock(this);
     assert trigger == MergeTrigger.GET_READER || trigger == MergeTrigger.COMMIT : "illegal trigger: " + trigger;
-    MergePolicy.MergeSpecification onCommitMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
+    MergePolicy.MergeSpecification pointInTimeMerges = updatePendingMerges(new OneMergeWrappingMergePolicy(config.getMergePolicy(), toWrap ->
         new MergePolicy.OneMerge(toWrap.segments) {
           SegmentCommitInfo origInfo;
           final AtomicBoolean onlyOnce = new AtomicBoolean(false);
@@ -3460,10 +3460,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
             // includedInCommit will be set (above, by our caller) to false if the allowed max wall clock
             // time (IWC.getMaxCommitMergeWaitMillis()) has elapsed, which means we did not make the timeout
-            // and will not commit our merge to the to-be-commited SegmentInfos
+            // and will not commit our merge to the to-be-committed SegmentInfos
             if (segmentDropped == false
                 && committed
-                && hasTimedOut.getAsBoolean() == false) {
+                && stopCollectingMergeResults.getAsBoolean() == false) {
 
               // make sure onMergeComplete really was called:
               assert origInfo != null;
@@ -3472,7 +3472,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 infoStream.message("IW", "now apply merge during commit: " + toWrap.segString());
               }
 
-              if (trigger == MergeTrigger.COMMIT) { // if we do this in a getReader call here this is obsolete
+              if (trigger == MergeTrigger.COMMIT) {
+                // if we do this in a getReader call here this is obsolete since we already hold a reader that has
+                // incRef'd these files
                 deleter.incRef(origInfo.files());
               }
               Set<String> mergedSegmentNames = new HashSet<>();
@@ -3483,7 +3485,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               for (SegmentCommitInfo sci : mergingSegmentInfos) {
                 if (mergedSegmentNames.contains(sci.info.name)) {
                   toCommitMergedAwaySegments.add(sci);
-                  if (trigger == MergeTrigger.COMMIT) { // if we do this in a getReader call here this is obsolete
+                  if (trigger == MergeTrigger.COMMIT) {
+                    // if we do this in a getReader call here this is obsolete since we already hold a reader that has
+                    // incRef'd these files and will decRef them when it's closed
                     deleter.decRef(sci.files());
                   }
                 }
@@ -3505,7 +3509,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
           @Override
           void onMergeComplete() throws IOException {
-            if (hasTimedOut.getAsBoolean() == false
+            if (stopCollectingMergeResults.getAsBoolean() == false
                 && isAborted() == false
                 && info.info.maxDoc() > 0/* never do this if the segment if dropped / empty */) {
               assert Thread.holdsLock(IndexWriter.this);
@@ -3532,10 +3536,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           }
         }
     ), trigger, UNBOUNDED_MAX_MERGE_SEGMENTS);
-    if (onCommitMerges != null) {
+    if (pointInTimeMerges != null) {
       boolean closeReaders = true;
       try {
-        for (MergePolicy.OneMerge merge : onCommitMerges.merges) {
+        for (MergePolicy.OneMerge merge : pointInTimeMerges.merges) {
           IOContext context = new IOContext(merge.getStoreMergeInfo());
           merge.initMergeReaders(
               sci -> {
@@ -3549,7 +3553,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         closeReaders = false;
       } finally {
         if (closeReaders) {
-          IOUtils.applyToAll(onCommitMerges.merges, merge -> {
+          IOUtils.applyToAll(pointInTimeMerges.merges, merge -> {
             // that merge is broken we need to clean up after it - it's fine we still have the IW lock to do this
             boolean removed = pendingMerges.remove(merge);
             assert removed: "merge should be pending but isn't: " + merge.segString();
@@ -3559,7 +3563,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         }
       }
     }
-    return onCommitMerges;
+    return pointInTimeMerges;
   }
 
   /**

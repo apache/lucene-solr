@@ -83,7 +83,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
   /** Used by near real-time search */
   static StandardDirectoryReader open(IndexWriter writer, IOUtils.IOFunction<SegmentCommitInfo, SegmentReader> readerFunction,
-                              SegmentInfos infos, boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
+                                      SegmentInfos infos, boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     // IndexWriter synchronizes externally before calling
     // us, which ensures infos will not change; so there's
     // no need to process segments in reverse order
