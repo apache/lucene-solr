@@ -37,8 +37,6 @@ import org.apache.solr.core.SolrConfig;
 public abstract class CircuitBreaker {
   public static final String NAME = "circuitbreaker";
 
-  protected static Supplier<Double> supplier = () -> 0.0;
-
   protected final SolrConfig solrConfig;
 
   public CircuitBreaker(SolrConfig solrConfig) {

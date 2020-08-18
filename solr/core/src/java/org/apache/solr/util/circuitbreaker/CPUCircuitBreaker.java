@@ -49,8 +49,9 @@ public class CPUCircuitBreaker extends CircuitBreaker {
   private final double cpuUsageThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
-  private static final ThreadLocal<Double> seenCPUUsage = new ThreadLocal<>();
-  private static final ThreadLocal<Double> allowedCPUUsage = new ThreadLocal<>();
+  private static final ThreadLocal<Double> seenCPUUsage = ThreadLocal.withInitial(() -> 0.0);
+
+  private static final ThreadLocal<Double> allowedCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
   public CPUCircuitBreaker(SolrConfig solrConfig) {
     super(solrConfig);
@@ -92,17 +93,17 @@ public class CPUCircuitBreaker extends CircuitBreaker {
   @Override
   public String getDebugInfo() {
 
-    if (seenCPUUsage.withInitial(supplier).get() == 0.0 || seenCPUUsage.withInitial(supplier).get() == 0.0) {
+    if (seenCPUUsage.get() == 0.0 || seenCPUUsage.get() == 0.0) {
       log.warn("CPUCircuitBreaker's monitored values (seenCPUUSage, allowedCPUUsage) not set");
     }
 
-    return "seenCPUUSage=" + seenCPUUsage.withInitial(supplier).get() + " allowedCPUUsage=" + allowedCPUUsage.withInitial(supplier).get();
+    return "seenCPUUSage=" + seenCPUUsage.get() + " allowedCPUUsage=" + allowedCPUUsage.get();
   }
 
   @Override
   public String getErrorMessage() {
-    return "CPU Circuit Breaker Triggered. Seen CPU usage " + seenCPUUsage.withInitial(supplier).get() + " and allocated threshold " +
-        allowedCPUUsage.withInitial(supplier).get();
+    return "CPU Circuit Breaker Triggered. Seen CPU usage " + seenCPUUsage.get() + " and allocated threshold " +
+        allowedCPUUsage.get();
   }
 
   public double getCpuUsageThreshold() {

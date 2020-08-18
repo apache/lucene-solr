@@ -47,8 +47,8 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private final long heapMemoryThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
-  private final ThreadLocal<Long> seenMemory = new ThreadLocal<>();
-  private final ThreadLocal<Long> allowedMemory = new ThreadLocal<>();
+  private final ThreadLocal<Long> seenMemory = ThreadLocal.withInitial(() -> 0L);
+  private final ThreadLocal<Long> allowedMemory = ThreadLocal.withInitial(() -> 0L);
 
   public MemoryCircuitBreaker(SolrConfig solrConfig) {
     super(solrConfig);
@@ -95,17 +95,17 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getDebugInfo() {
-    if (seenMemory.withInitial(supplier).get() == 0.0 || allowedMemory.withInitial(supplier).get() == 0.0) {
+    if (seenMemory.get() == 0.0 || allowedMemory.get() == 0.0) {
       log.warn("MemoryCircuitBreaker's monitored values (seenMemory, allowedMemory) not set");
     }
 
-    return "seenMemory=" + seenMemory.withInitial(supplier).get() + " allowedMemory=" + allowedMemory.withInitial(supplier).get();
+    return "seenMemory=" + seenMemory.get() + " allowedMemory=" + allowedMemory.get();
   }
 
   @Override
   public String getErrorMessage() {
-    return "Memory Circuit Breaker Triggered. Seen JVM heap memory usage " + seenMemory.withInitial(supplier).get() + " and allocated threshold " +
-        allowedMemory.withInitial(supplier).get();
+    return "Memory Circuit Breaker Triggered. Seen JVM heap memory usage " + seenMemory.get() + " and allocated threshold " +
+        allowedMemory.get();
   }
 
   private long getCurrentMemoryThreshold() {
