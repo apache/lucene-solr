@@ -639,7 +639,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               onGetReaderMerges = preparePointInTimeMerge(openingSegmentInfos, stopCollectingMergedReaders::get, MergeTrigger.GET_READER,
                   sci -> {
                     assert stopCollectingMergedReaders.get() == false : "illegal state  merge reader must be not pulled since we already stopped waiting for merges";
-                    mergedReaders.put(sci.info.name, readerFactory.apply(sci));
+                    SegmentReader apply = readerFactory.apply(sci);
+                    mergedReaders.put(sci.info.name, apply);
+                    // we need to incRef the files of the opened SR otherwise it's possible that another merge
+                    // removes the segment before we pass it on to the SDR
+                    deleter.incRef(sci.files());
                   });
             }
           }
@@ -733,21 +737,32 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                                                              boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     assert Thread.holdsLock(this);
     if (mergedReaders.isEmpty() == false) {
-      return StandardDirectoryReader.open(this,
-          sci -> {
-            // as soon as we remove the reader and return it the StandardDirectoryReader#open
-            // will take care of closing it. We only need to handle the readers that remain in the
-            // mergedReaders map and close them.
-            SegmentReader remove = mergedReaders.remove(sci.info.name);
-            if (remove == null) {
-              remove = openedReadOnlyClones.remove(sci.info.name);
-              assert remove != null;
-              // each of the readers we reuse from the previous reader needs to be incRef'd
-              // since we reuse them but don't have an implicit incRef in the SDR:open call
-              remove.incRef();
-            }
-            return remove;
-          }, openingSegmentInfos, applyAllDeletes, writeAllDeletes);
+      Set<SegmentCommitInfo> mergedScis = new HashSet<>();
+      for (SegmentReader reader : mergedReaders.values()) {
+        mergedScis.add(reader.getSegmentInfo());
+      }
+      try {
+        return StandardDirectoryReader.open(this,
+            sci -> {
+              // as soon as we remove the reader and return it the StandardDirectoryReader#open
+              // will take care of closing it. We only need to handle the readers that remain in the
+              // mergedReaders map and close them.
+              SegmentReader remove = mergedReaders.remove(sci.info.name);
+              if (remove == null) {
+                remove = openedReadOnlyClones.remove(sci.info.name);
+                assert remove != null;
+                // each of the readers we reuse from the previous reader needs to be incRef'd
+                // since we reuse them but don't have an implicit incRef in the SDR:open call
+                remove.incRef();
+              }
+              return remove;
+            }, openingSegmentInfos, applyAllDeletes, writeAllDeletes);
+      } finally {
+        for (SegmentCommitInfo info : mergedScis) {
+          // now the SDR#open call has incRef'd the files so we can let them go
+          deleter.decRef(info.files());
+        }
+      }
     }
     return null;
   }
@@ -3365,7 +3380,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // removed the files we are now syncing.
               deleter.incRef(toCommit.files(false));
               if (anyChanges && maxCommitMergeWaitMillis > 0) {
-                // we can safely call prepareOnCommitMerge since writeReaderPool(true) above wrote all
+                // we can safely call preparePointInTimeMerge since writeReaderPool(true) above wrote all
                 // necessary files to disk and checkpointed them.
                 pointInTimeMerges = preparePointInTimeMerge(toCommit, hasTimedOut::get, MergeTrigger.COMMIT, sci->{});
               }
