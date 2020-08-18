@@ -3576,8 +3576,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             // that merge is broken we need to clean up after it - it's fine we still have the IW lock to do this
             boolean removed = pendingMerges.remove(merge);
             assert removed: "merge should be pending but isn't: " + merge.segString();
-            abortOneMerge(merge);
-            mergeFinish(merge);
+            try {
+              abortOneMerge(merge);
+            } finally {
+              mergeFinish(merge);
+            }
           });
         }
       }
