@@ -78,19 +78,10 @@
 
   </query>
 
-  <circuitBreaker>
-
-    <useCircuitBreakers>true</useCircuitBreakers>
-
-    <memoryCircuitBreakerEnabled>true</memoryCircuitBreakerEnabled>
-
-    <cpuCircuitBreakerEnabled>true</cpuCircuitBreakerEnabled>
-
-    <memoryCircuitBreakerThresholdPct>75</memoryCircuitBreakerThresholdPct>
-
-    <cpuCircuitBreakerThreshold>75</cpuCircuitBreakerThreshold>
-
-  </circuitBreaker>
+  <circuitBreakers enabled="true">
+    <cpuBreaker enabled="true" threshold="75"/>
+    <memBreaker enabled="true" threshold="75"/>
+  </circuitBreakers>
 
   <initParams path="/select">
     <lst name="defaults">

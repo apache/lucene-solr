@@ -53,7 +53,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   public MemoryCircuitBreaker(SolrConfig solrConfig) {
     super(solrConfig);
 
-    this.enabled = solrConfig.memoryCircuitBreakerEnabled;
+    this.enabled = solrConfig.memCBEnabled;
 
     long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
 
@@ -61,7 +61,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
       throw new IllegalArgumentException("Invalid JVM state for the max heap usage");
     }
 
-    int thresholdValueInPercentage = solrConfig.memoryCircuitBreakerThresholdPct;
+    int thresholdValueInPercentage = solrConfig.memCBThreshold;
     double thresholdInFraction = thresholdValueInPercentage / (double) 100;
     heapMemoryThreshold = (long) (currentMaxHeap * thresholdInFraction);
 
@@ -104,7 +104,8 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getErrorMessage() {
-    return "Memory Circuit Breaker Triggered. Seen JVM heap memory usage " + seenMemory.get() + " and allocated threshold " +
+    return "Memory Circuit Breaker triggered as JVM heap usage values are greater than allocated threshold." +
+        "Seen JVM heap memory usage " + seenMemory.get() + " and allocated threshold " +
         allowedMemory.get();
   }
 

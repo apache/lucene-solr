@@ -30,10 +30,9 @@ import org.slf4j.LoggerFactory;
  * Tracks current CPU usage and triggers if the specified threshold is breached.
  *
  * This circuit breaker gets the average CPU load over the last minute and uses
- * that data to take a decision. Ideally, we should be able to cache the value
- * locally and only query once the minute has elapsed. However, that will introduce
- * more complexity than the current structure and might not get us major performance
- * wins. If this ever becomes a performance bottleneck, that can be considered.
+ * that data to take a decision. We depend on OperatingSystemMXBean which does
+ * not allow a configurable interval of collection of data.
+ * //TODO: Use Codahale Meter to calculate the value locally.
  * </p>
  *
  * <p>
@@ -56,8 +55,8 @@ public class CPUCircuitBreaker extends CircuitBreaker {
   public CPUCircuitBreaker(SolrConfig solrConfig) {
     super(solrConfig);
 
-    this.enabled = solrConfig.cpuCircuitBreakerEnabled;
-    this.cpuUsageThreshold = solrConfig.cpuCircuitBreakerThreshold;
+    this.enabled = solrConfig.cpuCBEnabled;
+    this.cpuUsageThreshold = solrConfig.cpuCBThreshold;
   }
 
   @Override
@@ -102,7 +101,8 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getErrorMessage() {
-    return "CPU Circuit Breaker Triggered. Seen CPU usage " + seenCPUUsage.get() + " and allocated threshold " +
+    return "CPU Circuit Breaker triggered as seen CPU usage is above allowed threshold." +
+        "Seen CPU usage " + seenCPUUsage.get() + " and allocated threshold " +
         allowedCPUUsage.get();
   }
 
