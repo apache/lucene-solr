@@ -241,7 +241,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private Counter newSearcherMaxReachedCounter;
   private Counter newSearcherOtherErrorsCounter;
 
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
 
@@ -250,10 +249,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public volatile boolean readOnly = false;
 
   private PackageListeners packageListeners = new PackageListeners(this);
-
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
 
   public Date getStartTimeStamp() {
     return startTime;
