@@ -489,6 +489,51 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     }
   }
 
+  public void testForceMergeWhileGetReader() throws IOException, InterruptedException {
+    try (Directory directory = newDirectory()) {
+      CountDownLatch waitForMerge = new CountDownLatch(1);
+      CountDownLatch waitForForceMergeCalled = new CountDownLatch(1);
+      try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
+          .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(),  MergeTrigger.GET_READER))
+          .setMaxFullFlushMergeWaitMillis(30 * 1000)
+          .setMergeScheduler(new SerialMergeScheduler() {
+            @Override
+            public void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
+              waitForMerge.countDown();
+              try {
+                waitForForceMergeCalled.await();
+              } catch (InterruptedException e) {
+                throw new AssertionError(e);
+              }
+              super.merge(mergeSource, trigger);
+            }
+          }))) {
+        Document d1 = new Document();
+        d1.add(new StringField("id", "1", Field.Store.NO));
+        writer.addDocument(d1);
+        writer.flush();
+        Document d2 = new Document();
+        d2.add(new StringField("id", "2", Field.Store.NO));
+        writer.addDocument(d2);
+        Thread t = new Thread(() -> {
+          try (DirectoryReader reader = writer.getReader()){
+            assertEquals(2, reader.maxDoc());
+          } catch (IOException e) {
+            throw new AssertionError(e);
+          }
+        });
+        t.start();
+        waitForMerge.await();
+        Document d3 = new Document();
+        d3.add(new StringField("id", "3", Field.Store.NO));
+        writer.addDocument(d3);
+        waitForForceMergeCalled.countDown();
+        writer.forceMerge(1);
+        t.join();
+      }}
+
+  }
+
   public void testStressUpdateSameDocumentWithMergeOnGetReader() throws IOException, InterruptedException {
     stressUpdateSameDocumentWithMergeOnX(true);
   }
