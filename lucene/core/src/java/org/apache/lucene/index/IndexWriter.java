@@ -558,9 +558,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
      * directory reader!
      */
     MergePolicy.MergeSpecification onGetReaderMerges = null;
-    AtomicBoolean stopCollectingMergedReaders = new AtomicBoolean(false);
-    Map<String, SegmentReader> mergedReaders = new HashMap<>();
-    Map<String, SegmentReader> openedReadOnlyClones = new HashMap<>();
+    final AtomicBoolean stopCollectingMergedReaders = new AtomicBoolean(false);
+    final Map<String, SegmentReader> mergedReaders = new HashMap<>();
+    final Map<String, SegmentReader> openedReadOnlyClones = new HashMap<>();
     // this function is used to control which SR are opened in order to keep track of them
     // and to reuse them in the case we wait for merges in this getReader call.
     IOUtils.IOFunction<SegmentCommitInfo, SegmentReader> readerFactory = sci -> {
