@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
+@SuppressWarnings({"rawtypes"})
 public class TestCircuitBreaker extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final static int NUM_DOCS = 20;
