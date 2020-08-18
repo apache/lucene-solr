@@ -50,8 +50,9 @@ allprojects {
       }
     }
 
-    test {
+    tasks.withType(Test) {
       reports.junitXml.destination file(propertyOrDefault("reports.dest", "${reports.junitXml.destination.toString()}"))
+
       ext {
         testOutputsDir = file("${reports.junitXml.destination}/outputs")
       }
