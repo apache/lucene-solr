@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -156,28 +157,23 @@ public class HttpShardHandler extends ShardHandler {
       return;
     }
 
-    // all variables that set inside this listener must be at least volatile
-    responseCancellableMap.put(srsp, this.lbClient.asyncReq(lbReq, new AsyncListener<>() {
-      volatile long startTime = System.nanoTime();
-
-      @Override
-      public void onStart() {
-        if (tracer != null && span != null) {
-          tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new SolrRequestCarrier(req));
-        }
-        SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-        if (requestInfo != null) req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
+    long startTime = System.nanoTime();
+    Runnable onStart = () -> {
+      if (tracer != null && span != null) {
+        tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new SolrRequestCarrier(req));
       }
+      SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+      if (requestInfo != null) req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
+    };
 
-      @Override
-      public void onSuccess(LBSolrClient.Rsp rsp) {
+    CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq, onStart);
+    future.whenComplete((rsp, throwable) -> {
+      if (!future.isCompletedExceptionally()) {
         ssr.nl = rsp.getResponse();
         srsp.setShardAddress(rsp.getServer());
         ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
         responses.add(srsp);
-      }
-
-      public void onFailure(Throwable throwable) {
+      } else if (!future.isCancelled()) {
         ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
         srsp.setException(throwable);
         if (throwable instanceof SolrException) {
@@ -185,7 +181,9 @@ public class HttpShardHandler extends ShardHandler {
         }
         responses.add(srsp);
       }
-    }));
+    });
+
+    responseCancellableMap.put(srsp, () -> future.cancel(true));
   }
 
   /**

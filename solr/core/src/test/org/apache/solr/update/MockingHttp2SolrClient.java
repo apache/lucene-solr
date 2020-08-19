@@ -22,6 +22,7 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -123,20 +124,19 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
   }
 
   @Override
-  public Cancellable asyncRequest(@SuppressWarnings({"rawtypes"}) SolrRequest request,
-                                  String collection, AsyncListener<NamedList<Object>> asyncListener) {
+  public CompletableFuture<NamedList<Object>> requestAsync(SolrRequest<?> request, String collection) {
     if (request instanceof UpdateRequest) {
       UpdateRequest ur = (UpdateRequest) request;
       // won't throw exception if request is DBQ
       if (ur.getDeleteQuery() != null && !ur.getDeleteQuery().isEmpty()) {
-        return super.asyncRequest(request, collection, asyncListener);
+        return super.requestAsync(request, collection);
       }
     }
 
     if (exp != null) {
       if (oneExpPerReq) {
         if (reqGotException.contains(request)) {
-          return super.asyncRequest(request, collection, asyncListener);
+          return super.requestAsync(request, collection);
         }
         else
           reqGotException.add(request);
@@ -148,9 +148,10 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
           e = new SolrServerException(e);
         }
       }
-      asyncListener.onFailure(e);
+      //TODO: what to do here
+      //asyncListener.onFailure(e);
     }
 
-    return super.asyncRequest(request, collection, asyncListener);
+    return super.requestAsync(request, collection);
   }
 }
