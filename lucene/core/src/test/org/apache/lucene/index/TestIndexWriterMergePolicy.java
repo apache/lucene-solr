@@ -559,6 +559,8 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         writer.flush();
         mergeAndFail.set(true);
         try (DirectoryReader reader = writer.getReader()){
+          assertNotNull(reader); // make compiler happy and use the reader
+          fail();
         } catch (RuntimeException e) {
           assertEquals("boom", e.getMessage());
         } finally {
