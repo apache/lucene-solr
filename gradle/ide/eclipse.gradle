@@ -43,7 +43,7 @@ configure(rootProject) {
           Set<String> sources = []
           Set<File> jars = []
           projects.each { prj ->
-            prj.sourceSets.matching { it.name == "main" || it.name == "test" }.each { sourceSet ->
+            prj.sourceSets.each { sourceSet ->
               sources += sourceSet.java.srcDirs.findAll { dir -> dir.exists() }.collect { dir -> relativize(dir) }
             }
 
