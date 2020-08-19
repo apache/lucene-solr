@@ -1018,27 +1018,46 @@ class SortingLeafReader extends FilterLeafReader {
    *  defined by <code>sort</code>. If the reader is already sorted, this
    *  method might return the reader as-is. */
   public static LeafReader wrap(LeafReader reader, Sort sort) throws IOException {
-    return wrap(reader, new Sorter(sort).sort(reader));
+    return wrap(reader, new Sorter(sort).sort(reader), sort);
   }
 
   /** Expert: same as {@link #wrap(org.apache.lucene.index.LeafReader, Sort)} but operates directly on a {@link Sorter.DocMap}. */
-  static LeafReader wrap(LeafReader reader, Sorter.DocMap docMap) {
+  static LeafReader wrap(LeafReader reader, Sorter.DocMap docMap, Sort sort) {
+    LeafMetaData metaData = reader.getMetaData();
+    LeafMetaData newMetaData = new LeafMetaData(metaData.getCreatedVersionMajor(), metaData.getMinVersion(), sort);
     if (docMap == null) {
       // the reader is already sorted
-      return reader;
+      return new FilterLeafReader(reader) {
+        @Override
+        public CacheHelper getCoreCacheHelper() {
+          return null;
+        }
+
+        @Override
+        public CacheHelper getReaderCacheHelper() {
+          return null;
+        }
+
+        @Override
+        public LeafMetaData getMetaData() {
+          return newMetaData;
+        }
+      };
     }
     if (reader.maxDoc() != docMap.size()) {
       throw new IllegalArgumentException("reader.maxDoc() should be equal to docMap.size(), got" + reader.maxDoc() + " != " + docMap.size());
     }
     assert Sorter.isConsistent(docMap);
-    return new SortingLeafReader(reader, docMap);
+    return new SortingLeafReader(reader, docMap, newMetaData);
   }
 
   final Sorter.DocMap docMap; // pkg-protected to avoid synthetic accessor methods
+  final LeafMetaData metaData;
 
-  private SortingLeafReader(final LeafReader in, final Sorter.DocMap docMap) {
+  private SortingLeafReader(final LeafReader in, final Sorter.DocMap docMap, LeafMetaData metaData) {
     super(in);
     this.docMap = docMap;
+    this.metaData = metaData;
   }
 
   @Override
@@ -1263,5 +1282,10 @@ class SortingLeafReader extends FilterLeafReader {
   @Override
   public CacheHelper getReaderCacheHelper() {
     return null;
+  }
+
+  @Override
+  public LeafMetaData getMetaData() {
+    return metaData;
   }
 }
