@@ -443,7 +443,7 @@ public class ZkDistributedQueue implements DistributedQueue {
   public Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
     List<String> foundChildren = new ArrayList<>();
     long waitNanos = TimeUnit.MILLISECONDS.toNanos(waitMillis);
-    TimeOut timeout = new TimeOut(waitMillis, TimeUnit.NANOSECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(waitNanos, TimeUnit.NANOSECONDS, TimeSource.NANO_TIME);
 
     while (true && !Thread.currentThread().isInterrupted()) {
       // Trigger a refresh, but only force it if this is not the first iteration.

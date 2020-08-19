@@ -223,14 +223,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
                 MAX_PARALLEL_TASKS - runningTasksSize());
             List<QueueEvent> newTasks = workQueue
                 .peekTopN(toFetch, excludedTasks, 10000);
-            log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(),
+            if (log.isDebugEnabled()) log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(),
                 newTasks);
             heads.addAll(newTasks);
           }
 
           if (isClosed) return;
-
-
 
           taskBatch.batchId++;
 

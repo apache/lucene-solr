@@ -418,7 +418,7 @@ public class ZkStateWriter {
       lastUpdatedTime = System.nanoTime();
 
       updatesToWrite.clear();
-      log.warn("Failed updates {}", failedUpdates.values());
+      if (log.isDebugEnabled()) log.debug("Failed updates {}", failedUpdates.values());
       updatesToWrite.putAll(failedUpdates);
       success = true;
     } finally {

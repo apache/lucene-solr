@@ -578,7 +578,11 @@ public class SolrMetricManager {
         work.collect("registerMetric-" + entry.getKey(), () ->{
           String fullName = mkName(entry.getKey(), metricPath);
           metricRegistry.remove(fullName);
-          metricRegistry.register(fullName, entry.getValue());
+          try {
+            metricRegistry.register(fullName, entry.getValue());
+          } catch (IllegalArgumentException e) {
+            log.warn("Metric already registered: " + fullName);
+          }
         });
       }
     }
