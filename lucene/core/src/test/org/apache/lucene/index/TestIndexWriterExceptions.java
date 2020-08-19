@@ -2023,4 +2023,44 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     dir.close();
   }
+
+
+  public void testOnlyRollbackOnceOnException() throws IOException {
+    AtomicBoolean once = new AtomicBoolean(false);
+    InfoStream stream = new InfoStream() {
+      @Override
+      public void message(String component, String message) {
+        if ("TP".equals(component) && "rollback before checkpoint".equals(message)) {
+          if (once.compareAndSet(false, true)) {
+            throw new RuntimeException("boom");
+          } else {
+            throw new AssertionError("has been rolled back twice");
+          }
+
+        }
+      }
+
+      @Override
+      public boolean isEnabled(String component) {
+        return "TP".equals(component);
+      }
+
+      @Override
+      public void close() {
+      }
+    };
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setInfoStream(stream)){
+        @Override
+        protected boolean isEnableTestPoints() {
+          return true;
+        }
+      }) {
+      }
+    } catch (RuntimeException x) {
+      assertEquals("boom", x.getMessage());
+      assertEquals("has suppressed exceptions: " + Arrays.toString(x.getSuppressed()), 0, x.getSuppressed().length);
+      assertNull(x.getCause());
+    }
+  }
 }
