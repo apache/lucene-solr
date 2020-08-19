@@ -17,6 +17,9 @@
 package org.apache.solr.cluster.events;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Component that produces {@link ClusterEvent} instances.
@@ -32,10 +35,11 @@ public interface ClusterEventProducer {
 
   void unregisterListener(ClusterEventListener listener);
 
-  Collection<ClusterEventListener> getEventListeners();
+  Map<ClusterEvent.EventType, Set<ClusterEventListener>> getEventListeners();
 
   default void fireEvent(ClusterEvent event) {
     // XXX filter here by acceptable event types per listener?
-    getEventListeners().forEach(listener -> listener.onEvent(event));
+    getEventListeners().getOrDefault(event.getType(), Collections.emptySet())
+        .forEach(listener -> listener.onEvent(event));
   }
 }
