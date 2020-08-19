@@ -16,29 +16,51 @@
  */
 package org.apache.solr.cluster.events;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Component that produces {@link ClusterEvent} instances.
  */
 public interface ClusterEventProducer {
 
-  // XXX should we have an option to register only for particular types of
-  // events (the producer would have to filter them per listener)?
-  // if not then each listener will get all event types and will have to
-  // filter itself, which is cumbersome
-  // See also ClusterEventListener.getEventTypes()
-  void registerListener(ClusterEventListener listener);
-
-  void unregisterListener(ClusterEventListener listener);
-
+  /**
+   * Returns a modifiable map of event types and listeners to process events
+   * of a given type.
+   */
   Map<ClusterEvent.EventType, Set<ClusterEventListener>> getEventListeners();
 
+  /**
+   * Register an event listener. This listener will be notified about event
+   * of the types that it declares in {@link ClusterEventListener#getEventTypes()}
+   * @param listener non-null listener. If the same instance of the listener is
+   *                 already registered it will be ignored.
+   */
+  default void registerListener(ClusterEventListener listener) throws Exception {
+    listener.getEventTypes().forEach(type -> {
+      Set<ClusterEventListener> perType = getEventListeners().computeIfAbsent(type, t -> ConcurrentHashMap.newKeySet());
+      perType.add(listener);
+    });
+  }
+
+  /**
+   * Unregister an event listener.
+   * @param listener non-null listener.
+   */
+  default void unregisterListener(ClusterEventListener listener) {
+    listener.getEventTypes().forEach(type ->
+        getEventListeners().getOrDefault(type, Collections.emptySet()).remove(listener)
+    );
+  }
+
+  /**
+   * Fire an event. This method will call registered listeners that subscribed to the
+   * type of event being passed.
+   * @param event cluster event
+   */
   default void fireEvent(ClusterEvent event) {
-    // XXX filter here by acceptable event types per listener?
     getEventListeners().getOrDefault(event.getType(), Collections.emptySet())
         .forEach(listener -> listener.onEvent(event));
   }

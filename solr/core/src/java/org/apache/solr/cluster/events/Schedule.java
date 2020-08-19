@@ -23,8 +23,11 @@ public interface Schedule {
 
   String getName();
 
-  // absolute or date math expr?
+  // date math expr
   String getStartTime();
+
+  // may be null only if getStartTime contained TZ
+  String getTimeZone();
 
   // date math expr
   String getInterval();

@@ -26,9 +26,16 @@ import java.util.Set;
  */
 public interface ClusterEventListener {
 
-  // reports types of events that this listener is interested in
+  /**
+   * The types of events that this listener can process.
+   */
   Set<ClusterEvent.EventType> getEventTypes();
 
+  /**
+   * Handle the event. Implementations should be non-blocking - if any long
+   * processing is needed it should be performed asynchronously.
+   * @param event cluster event
+   */
   void onEvent(ClusterEvent event);
 
 }
