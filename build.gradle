@@ -63,6 +63,8 @@ ext {
   buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
   buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
 
+  minJavaVersion = JavaVersion.VERSION_11
+
   // Declare script dependency versions outside of palantir's
   // version unification control. These are not our main dependencies.
   scriptDepVersions = [

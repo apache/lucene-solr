@@ -64,9 +64,9 @@ configure(rootProject) {
     }
 
     jdt {
-      sourceCompatibility = "11"
-      targetCompatibility = "11"
-      javaRuntimeName = "JavaSE-11"
+      sourceCompatibility = rootProject.minJavaVersion
+      targetCompatibility = rootProject.minJavaVersion
+      javaRuntimeName = "JavaSE-${rootProject.minJavaVersion}"
     }
   }
 
