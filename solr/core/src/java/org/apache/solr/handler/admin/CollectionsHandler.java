@@ -403,10 +403,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             + event.getWatchedEvent().getState() + " type "
             + event.getWatchedEvent().getType() + "]");
       } else {
-        // we have to assume success - it was too quick for us to catch the response
-        NamedList<Object> resp = new NamedList<>();
-        resp.add("success", "true");
-        return new OverseerSolrResponse(resp);
+        throw new SolrException(ErrorCode.SERVER_ERROR, operation
+            + " no response found for collection operation " + operation);
       }
     }
   }
