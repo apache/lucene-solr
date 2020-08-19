@@ -110,7 +110,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertTrue("Should have partial results", (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
 
     assertEquals("Should NOT have inserted partial results in the cache!",
-        (long) queryCacheStats.getValue().get("inserts"), qrInserts);
+        qrInserts, (long) queryCacheStats.getValue().get("inserts"));
 
     assertEquals("Should NOT have another insert", fqInserts, (long) filterCacheStats.getValue().get("inserts"));
 
@@ -118,13 +118,13 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", longTimeout));
 
     // Check that we did insert this one.
-    assertEquals("Hits should still be 0", (long) filterCacheStats.getValue().get("hits"), 0L);
-    assertEquals("Inserts should be bumped", (long) filterCacheStats.getValue().get("inserts"), fqInserts + 1);
+    assertEquals("Hits should still be 0", 0L, (long) filterCacheStats.getValue().get("hits"));
+    assertEquals("Inserts should be bumped", fqInserts + 1, (long) filterCacheStats.getValue().get("inserts"));
 
     res = (Map) fromJSONString(response);
     body = (Map) (res.get("response"));
 
-    assertEquals("Should have exactly " + NUM_DOCS, (long) (body.get("numFound")), NUM_DOCS);
+    assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound")));
     header = (Map) (res.get("responseHeader"));
     assertTrue("Should NOT have partial results", header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null);
   }
