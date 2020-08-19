@@ -46,11 +46,11 @@ public interface SolrMetricProducer extends AutoCloseable {
    * Initialize metrics specific to this producer.
    * @param parentContext parent metrics context. If this component has the same life-cycle as the parent
    *                it can simply use the parent context, otherwise it should obtain a child context
-   *                using {@link SolrMetricsContext#getChildContext(Object)} passing <code>this</code>
-   *                as the child object.
-   * @param scope component scope
+   *                using {@link SolrMetricsContext#getChildContext(Object, String)} passing <code>this</code>
+   *                as the child object and <code>childScope</code> as the scope.
+   * @param childScope component scope
    */
-  void initializeMetrics(SolrMetricsContext parentContext, String scope);
+  void initializeMetrics(SolrMetricsContext parentContext, String childScope);
 
   /**
    * Implementations should return the context used in
@@ -64,14 +64,9 @@ public interface SolrMetricProducer extends AutoCloseable {
    * Implementations should always call <code>SolrMetricProducer.super.close()</code> to ensure that
    * metrics with the same life-cycle as this component are properly unregistered. This prevents
    * obscure memory leaks.
-   *
-   * from: https://docs.oracle.com/javase/8/docs/api/java/lang/AutoCloseable.html
-   * While this interface method is declared to throw Exception, implementers are strongly encouraged
-   * to declare concrete implementations of the close method to throw more specific exceptions, or to
-   * throw no exception at all if the close operation cannot fail.
    */
   @Override
-  default void close() throws IOException {
+  default void close() throws Exception {
     SolrMetricsContext context = getSolrMetricsContext();
     if (context == null) {
       return;

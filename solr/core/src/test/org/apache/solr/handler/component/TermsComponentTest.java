@@ -160,7 +160,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         int expected = Pattern.CASE_INSENSITIVE | Pattern.LITERAL | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNIX_LINES
             | Pattern.UNICODE_CASE | Pattern.DOTALL | Pattern.CANON_EQ;
         assertEquals(expected, flags);
-      } catch (IOException e) {
+      } catch (Exception e) {
         fail("Error closing TermsComponent");
       }
   }

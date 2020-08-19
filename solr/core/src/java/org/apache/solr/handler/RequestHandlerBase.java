@@ -151,22 +151,22 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
-    numErrors = solrMetricsContext.meter("errors", getCategory().toString(), scope);
-    numServerErrors = solrMetricsContext.meter("serverErrors", getCategory().toString(), scope);
-    numClientErrors = solrMetricsContext.meter("clientErrors", getCategory().toString(), scope);
-    numTimeouts = solrMetricsContext.meter("timeouts", getCategory().toString(), scope);
-    requests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
+    this.solrMetricsContext = parentContext.getChildContext(this, scope);
+    numErrors = solrMetricsContext.meter("errors", getCategory().toString());
+    numServerErrors = solrMetricsContext.meter("serverErrors", getCategory().toString());
+    numClientErrors = solrMetricsContext.meter("clientErrors", getCategory().toString());
+    numTimeouts = solrMetricsContext.meter("timeouts", getCategory().toString());
+    requests = solrMetricsContext.counter("requests", getCategory().toString());
     MetricsMap metricsMap = new MetricsMap((detail, map) ->
         shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
-    solrMetricsContext.gauge(metricsMap, true, "shardRequests", getCategory().toString(), scope);
-    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
-    distribRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "distrib");
-    localRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "local");
-    totalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope);
-    distribTotalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope, "distrib");
-    localTotalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope, "local");
-    solrMetricsContext.gauge(() -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, "shardRequests", getCategory().toString());
+    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString());
+    distribRequestTimes = solrMetricsContext.timer("distrib.requestTimes", getCategory().toString());
+    localRequestTimes = solrMetricsContext.timer("local.requestTimes", getCategory().toString());
+    totalTime = solrMetricsContext.counter("totalTime", getCategory().toString());
+    distribTotalTime = solrMetricsContext.counter("distrib.totalTime", getCategory().toString());
+    localTotalTime = solrMetricsContext.counter("local.totalTime", getCategory().toString());
+    solrMetricsContext.gauge(() -> handlerStart, true, "handlerStart", getCategory().toString());
   }
 
   public static SolrParams getSolrParamsFromNamedList(@SuppressWarnings({"rawtypes"})NamedList args, String key) {

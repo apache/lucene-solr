@@ -24,8 +24,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -38,6 +36,9 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.managed.ManagedComponentId;
+import org.apache.solr.managed.SolrResourceContext;
+import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
@@ -87,9 +88,11 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   private int maxIdleTimeSec;
   private boolean cleanupThread;
 
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
+
+  private SolrResourceContext solrResourceContext;
+  private ManagedComponentId managedComponentId;
 
   private long initialRamBytes = 0;
   private final LongAdder ramBytes = new LongAdder();
@@ -104,7 +107,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     super.init(args, regenerator);
     String str = (String) args.get(SIZE_PARAM);
     maxSize = (str == null) ? 1024 : Integer.parseInt(str);
-    str = (String) args.get("initialSize");
+    str = (String) args.get(INITIAL_SIZE_PARAM);
     initialSize = Math.min((str == null) ? 1024 : Integer.parseInt(str), maxSize);
     str = (String) args.get(MAX_IDLE_TIME_PARAM);
     if (str == null) {
@@ -114,7 +117,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     }
     str = (String) args.get(MAX_RAM_MB_PARAM);
     int maxRamMB = str == null ? -1 : Double.valueOf(str).intValue();
-    maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
+    maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * MB;
     str = (String) args.get(CLEANUP_THREAD_PARAM);
     cleanupThread = str != null && Boolean.parseBoolean(str);
     if (cleanupThread) {
@@ -231,7 +234,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() throws Exception {
     SolrCache.super.close();
     cache.invalidateAll();
     cache.cleanUp();
@@ -264,12 +267,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
   @Override
   public int getMaxRamMB() {
-    return maxRamBytes != Long.MAX_VALUE ? (int) (maxRamBytes / 1024L / 1024L) : -1;
+    return maxRamBytes != Long.MAX_VALUE ? (int) (maxRamBytes / MB) : -1;
   }
 
   @Override
   public void setMaxRamMB(int maxRamMB) {
-    long newMaxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
+    long newMaxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * MB;
     if (newMaxRamBytes != maxRamBytes) {
       maxRamBytes = newMaxRamBytes;
       Optional<Eviction<K, V>> evictionOpt = cache.policy().eviction();
@@ -296,6 +299,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     if (regenerator == null) {
       return;
     }
+
+    // inherit also the maxSize / maxRamMB limits from the old cache - these may
+    // be currently set to different values than the static config due to
+    // dynamic adjustments
+    setMaxSize(old.getMaxSize());
+    setMaxRamMB(old.getMaxRamMB());
     
     long warmingStartTime = System.nanoTime();
     Map<K, V> hottest = Collections.emptyMap();
@@ -363,7 +372,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         CacheStats stats = cache.stats();
@@ -378,15 +387,32 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         map.put("warmupTime", warmupTime);
         map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
         map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
+        map.put(MAX_SIZE_PARAM, getMaxSize());
 
         CacheStats cumulativeStats = priorStats.plus(stats);
-        map.put("cumulative_lookups", cumulativeStats.requestCount());
-        map.put("cumulative_hits", cumulativeStats.hitCount());
-        map.put("cumulative_hitratio", cumulativeStats.hitRate());
-        map.put("cumulative_inserts", priorInserts + insertCount);
-        map.put("cumulative_evictions", cumulativeStats.evictionCount());
+        map.put(CUMULATIVE_PREFIX + LOOKUPS_PARAM, cumulativeStats.requestCount());
+        map.put(CUMULATIVE_PREFIX + HITS_PARAM, cumulativeStats.hitCount());
+        map.put(CUMULATIVE_PREFIX + HIT_RATIO_PARAM, cumulativeStats.hitRate());
+        map.put(CUMULATIVE_PREFIX + INSERTS_PARAM, priorInserts + insertCount);
+        map.put(CUMULATIVE_PREFIX + EVICTIONS_PARAM, cumulativeStats.evictionCount());
       }
     });
-    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
+    solrMetricsContext.gauge(cacheMap, true, null, getCategory().toString());
+  }
+
+  @Override
+  public void initializeManagedComponent(ResourceManager resourceManager, String poolName, String... otherPools) {
+    managedComponentId = new ManagedComponentId(this, solrMetricsContext.getRegistryName(), getCategory().toString(), solrMetricsContext.getScope());
+    solrResourceContext = new SolrResourceContext(resourceManager, this, poolName, otherPools);
+  }
+
+  @Override
+  public ManagedComponentId getManagedComponentId() {
+    return managedComponentId;
+  }
+
+  @Override
+  public SolrResourceContext getSolrResourceContext() {
+    return solrResourceContext;
   }
 }

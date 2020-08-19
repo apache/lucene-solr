@@ -53,7 +53,7 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
     assertEquals("RankQParserPlugin.EXPONENT changed in an incompatible way", "exponent", EXPONENT);
   }
   
-  public void testCreateParser() throws IOException {
+  public void testCreateParser() throws Exception {
     try (RankQParserPlugin rankQPPlugin = new RankQParserPlugin()) {
       QParser parser = rankQPPlugin.createParser("", new ModifiableSolrParams(), null, req()); 
       assertNotNull(parser);
@@ -252,6 +252,8 @@ public class RankQParserPluginTest extends SolrTestCaseJ4 {
   private RankQParser getRankQParser(SolrParams localParams, SolrParams params, SolrQueryRequest req) throws IOException {
     try (RankQParserPlugin rankQPPlugin = new RankQParserPlugin()) {
       return (RankQParser) rankQPPlugin.createParser("", localParams, params, req);
+    } catch (Exception e) {
+      throw new IOException(e);
     }
   }
 

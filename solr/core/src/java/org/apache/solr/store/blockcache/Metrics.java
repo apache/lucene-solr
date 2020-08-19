@@ -58,7 +58,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
     metricsMap = new MetricsMap((detailed, map) -> {
       long now = System.nanoTime();
       long delta = Math.max(now - previous, 1);
@@ -102,7 +102,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
       previous = now;
 
     });
-    solrMetricsContext.gauge(metricsMap, true, getName(), getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, getName(), getCategory().toString());
   }
 
   private float getPerSecond(long value, double seconds) {

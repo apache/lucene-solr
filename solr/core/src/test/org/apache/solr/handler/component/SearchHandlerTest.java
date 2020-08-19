@@ -65,8 +65,8 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       assertEquals(1, handler.getComponents().size());
       assertEquals(core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
           handler.getComponents().get(0));
-    } catch (IOException e) {
-      fail("IOExcepiton closing SearchHandler");
+    } catch (Exception e) {
+      fail("Excepiton closing SearchHandler");
     }
 
     // Build an explicit list that includes the debug comp.
@@ -89,7 +89,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
           handler.getComponents().get(1));
       assertEquals(core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
           handler.getComponents().get(2));
-    } catch (IOException e) {
+    } catch (Exception e) {
       fail("Exception when closing SearchHandler");
     }
     
@@ -115,7 +115,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       assertEquals(core.getSearchComponent(FacetComponent.COMPONENT_NAME), comps.get(comps.size() - 2));
       //Debug component is always last in this case
       assertEquals(core.getSearchComponent(DebugComponent.COMPONENT_NAME), comps.get(comps.size() - 1));
-    } catch (IOException e) {
+    } catch (Exception e) {
       fail("Exception when closing SearchHandler");
     }
   }

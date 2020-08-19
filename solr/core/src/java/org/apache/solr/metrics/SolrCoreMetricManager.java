@@ -106,7 +106,7 @@ public class SolrCoreMetricManager implements Closeable {
     if (oldLeaderRegistryName != null) {
       metricManager.closeReporters(oldLeaderRegistryName, solrMetricsContext.getTag());
     }
-    solrMetricsContext = new SolrMetricsContext(metricManager, newRegistryName, solrMetricsContext.getTag());
+    solrMetricsContext = new SolrMetricsContext(metricManager, newRegistryName, "SolrCore", solrMetricsContext.getTag());
     // load reporters again, using the new core name
     loadReporters();
   }

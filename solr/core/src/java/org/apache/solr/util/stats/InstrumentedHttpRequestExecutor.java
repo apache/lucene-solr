@@ -90,7 +90,6 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
     KNOWN_METRIC_NAME_STRATEGIES.put("methodOnly", METHOD_ONLY);
   }
 
-  protected String scope;
   protected HttpClientMetricNameStrategy nameStrategy;
   protected SolrMetricsContext solrMetricsContext;
 
@@ -128,12 +127,11 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
   }
 
   private Timer timer(HttpRequest request) {
-    return solrMetricsContext.timer(null, nameStrategy.getNameFor(scope, request));
+    return solrMetricsContext.timer(null, nameStrategy.getNameFor(solrMetricsContext.getScope(), request));
   }
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
-    this.scope = scope;
+    this.solrMetricsContext = parentContext.getChildContext(this, scope);
   }
 }

@@ -20,7 +20,6 @@ package org.apache.solr.util.stats;
 import org.apache.http.config.Registry;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 
@@ -43,16 +42,12 @@ public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpC
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
-    solrMetricsContext.gauge(() -> getTotalStats().getAvailable(),
-        true, SolrMetricManager.mkName("availableConnections", scope));
+    this.solrMetricsContext = parentContext.getChildContext(this, scope);
+    solrMetricsContext.gauge(() -> getTotalStats().getAvailable(), true, "availableConnections");
     // this acquires a lock on the connection pool; remove if contention sucks
-    solrMetricsContext.gauge(() -> getTotalStats().getLeased(),
-        true, SolrMetricManager.mkName("leasedConnections", scope));
-    solrMetricsContext.gauge(() -> getTotalStats().getMax(),
-        true, SolrMetricManager.mkName("maxConnections", scope));
-    solrMetricsContext.gauge(() -> getTotalStats().getPending(),
-        true, SolrMetricManager.mkName("pendingConnections", scope));
+    solrMetricsContext.gauge(() -> getTotalStats().getLeased(), true, "leasedConnections");
+    solrMetricsContext.gauge(() -> getTotalStats().getMax(), true, "maxConnections");
+    solrMetricsContext.gauge(() -> getTotalStats().getPending(), true, "pendingConnections");
   }
 
   @Override

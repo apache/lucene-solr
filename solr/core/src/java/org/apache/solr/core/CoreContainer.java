@@ -108,6 +108,7 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.sql.CalciteSolrDriver;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.managed.ResourceManagerAPI;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -238,6 +239,8 @@ public class CoreContainer {
   protected volatile MetricsHistoryHandler metricsHistoryHandler;
 
   protected volatile MetricsCollectorHandler metricsCollectorHandler;
+
+  protected volatile ResourceManagerAPI resourceManagerApi;
 
   private volatile SolrClientCache solrClientCache;
 
@@ -603,6 +606,10 @@ public class CoreContainer {
     return metricsHistoryHandler;
   }
 
+  public ResourceManagerAPI getResourceManagerAPI() {
+    return resourceManagerApi;
+  }
+
   public OrderedExecutor getReplayUpdatesExecutor() {
     return replayUpdatesExecutor;
   }
@@ -729,6 +736,13 @@ public class CoreContainer {
     metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH);
 
     createMetricsHistoryHandler();
+
+    resourceManagerApi = new ResourceManagerAPI(this);
+    containerHandlers.getApiBag().registerObject(resourceManagerApi.readPoolApi);
+    containerHandlers.getApiBag().registerObject(resourceManagerApi.editPoolApi);
+    containerHandlers.getApiBag().registerObject(resourceManagerApi.readComponentApi);
+    containerHandlers.getApiBag().registerObject(resourceManagerApi.editComponentApi);
+    resourceManagerApi.initializeMetrics(solrMetricsContext, "resourceMgr");
 
     metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
     // may want to add some configuration here in the future
@@ -1057,6 +1071,14 @@ public class CoreContainer {
 
         if (metricManager != null) {
           metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
+        }
+      }
+
+      if (resourceManagerApi != null) {
+        try {
+          resourceManagerApi.close();
+        } catch (Exception e) {
+          log.warn("Error closing resource manager API, ignoring...", e);
         }
       }
 
@@ -2022,6 +2044,14 @@ public class CoreContainer {
 
   public SolrResourceLoader getResourceLoader() {
     return loader;
+  }
+
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  public ResourceManagerAPI getResourceManagerApi() {
+    return resourceManagerApi;
   }
 
   public boolean isCoreLoading(String name) {

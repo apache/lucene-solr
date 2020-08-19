@@ -29,7 +29,7 @@ public interface SolrInfoBean extends SolrMetricProducer {
    * Category of Solr component.
    */
   enum Category { CONTAINER, ADMIN, CORE, QUERY, UPDATE, CACHE, HIGHLIGHTER, QUERYPARSER, SPELLCHECKER,
-    SEARCHER, REPLICATION, TLOG, INDEX, DIRECTORY, HTTP, SECURITY, OTHER }
+    SEARCHER, REPLICATION, TLOG, INDEX, DIRECTORY, HTTP, SECURITY, RESOURCE, OTHER }
 
   /**
    * Top-level group of beans or metrics for a subsystem.
