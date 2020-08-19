@@ -189,6 +189,9 @@ Optimizations
 * LUCENE-9395: ConstantValuesSource now shares a single DoubleValues
   instance across all segments (Tony Xu)
 
+* LUCENE-9447: BEST_COMPRESSION now provides higher compression ratios on highly
+  compressible data. (Adrien Grand)
+
 Bug Fixes
 ---------------------
 

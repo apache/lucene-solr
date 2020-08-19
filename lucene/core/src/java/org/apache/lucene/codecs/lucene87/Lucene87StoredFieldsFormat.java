@@ -42,7 +42,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
 /**
- * Lucene 8.4 stored fields format.
+ * Lucene 8.7 stored fields format.
  *
  * <p><b>Principle</b>
  * <p>This {@link StoredFieldsFormat} compresses blocks of documents in
