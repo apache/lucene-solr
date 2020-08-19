@@ -943,10 +943,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
-      this.resourceLoader.core = this;
       schemaPluginsLoader = new PackageListeningClassLoader(coreContainer, resourceLoader,
               solrConfig::maxPackageVersion,
-              () -> setLatestSchema(configSet.getIndexSchema(true)));
+              () -> setLatestSchema(configSet.getIndexSchema()));
       this.packageListeners.addListener(schemaPluginsLoader);
       IndexSchema schema = configSet.getIndexSchema();
 

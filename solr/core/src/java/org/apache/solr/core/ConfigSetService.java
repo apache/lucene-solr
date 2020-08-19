@@ -81,8 +81,8 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
-      ConfigSet.SchemaSupplier schema = force -> createIndexSchema(dcore, solrConfig, force);
-      return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
+      IndexSchema indexSchema = createIndexSchema(dcore, solrConfig, false);
+      return new ConfigSet(configSetName(dcore), solrConfig, force -> indexSchema, properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
@@ -135,7 +135,6 @@ public abstract class ConfigSetService {
       if (modVersion != null) {
         // note: luceneMatchVersion influences the schema
         String cacheKey = configSet + "/" + guessSchemaName + "/" + modVersion + "/" + solrConfig.luceneMatchVersion;
-        if(forceFetch) schemaCache.invalidate(cacheKey);
         return schemaCache.get(cacheKey,
             (key) -> indexSchemaFactory.create(cdSchemaName, solrConfig));
       } else {
