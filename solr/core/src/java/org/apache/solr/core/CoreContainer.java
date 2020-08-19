@@ -636,6 +636,7 @@ public class CoreContainer {
       pkiAuthenticationPlugin.initializeMetrics(
           solrMetricsContext.metricManager, solrMetricsContext.registry, solrMetricsContext.tag, "/authentication/pki");
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
+      getZkController().getOverseer().initializeMetrics(solrMetricsContext, "overseer");
     }
 
     MDCLoggingContext.setNode(this);
