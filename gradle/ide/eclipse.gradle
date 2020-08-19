@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
+import org.gradle.plugins.ide.eclipse.model.SourceFolder
+import org.gradle.plugins.ide.eclipse.model.ClasspathEntry
+
 configure(rootProject) {
   apply plugin: "eclipse"
 
-  def projects = [":lucene:core"]
+  def relativize = { other -> rootProject.rootDir.relativePath(other).toString() }
 
   eclipse {
     project {
@@ -27,22 +30,36 @@ configure(rootProject) {
 
     classpath {
       defaultOutputDir = file('build/eclipse')
-      
-        file {
-          beforeMerged { classpath -> classpath.entries.removeAll { it.kind == "src" } }
 
-          whenMerged { classpath ->
-            def sources = []
-            projects.each { name ->
-               project(name).sourceSets.main.java.srcDirs.findAll { dir -> dir.exists() }.each { dir ->
-                 sources += new org.gradle.plugins.ide.eclipse.model.SourceFolder(
-                   dir.toString(), "build/eclipse"
-                 )
-               }
+      file {
+        beforeMerged { classpath -> classpath.entries.removeAll { it.kind == "src" } }
+
+        whenMerged { classpath ->
+          def projects = allprojects.findAll { prj ->
+            return prj.plugins.hasPlugin(JavaPlugin) &&
+                   prj.path != ":solr:solr-ref-guide"
+          }
+
+          Set<String> sources = []
+          Set<File> jars = []
+          projects.each { prj ->
+            prj.sourceSets.matching { it.name == "main" || it.name == "test" }.each { sourceSet ->
+              sources += sourceSet.java.srcDirs.findAll { dir -> dir.exists() }.collect { dir -> relativize(dir) }
             }
 
-            classpath.entries += sources
+            // This is hacky - we take the resolved compile classpath and just
+            // include JAR files from there. We should probably make it smarter
+            // by looking at real dependencies. But then: this Eclipse configuration
+            // doesn't really separate sources anyway so why bother.
+            jars += prj.configurations.compileClasspath.resolve()
+            jars += prj.configurations.testCompileClasspath.resolve()
           }
+
+          classpath.entries += sources.sort().collect {name -> new SourceFolder(name, "build/eclipse/" + name) }
+          classpath.entries += jars.unique().findAll { location -> location.isFile() }.collect { location ->
+            new LibEntry(location.toString())
+          }
+        }
       }
     }
 
@@ -51,5 +68,35 @@ configure(rootProject) {
       targetCompatibility = "11"
       javaRuntimeName = "JavaSE-11"
     }
+  }
+
+  eclipseJdt {
+    doLast {
+      project.sync {
+        from rootProject.file("dev-tools/eclipse/dot.settings")
+        into rootProject.file(".settings")
+      }
+    }
+  }
+}
+
+public class LibEntry implements ClasspathEntry {
+  private String path;
+
+  LibEntry(String path) {
+    this.path = path;
+  }
+
+  @Override
+  String getKind() {
+    return "lib"
+  }
+
+  @Override
+  void appendNode(Node node) {
+    node.appendNode("classpathentry", Map.of(
+        "kind", "lib",
+        "path", path
+    ));
   }
 }
