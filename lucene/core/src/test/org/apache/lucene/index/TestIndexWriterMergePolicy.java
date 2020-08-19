@@ -556,6 +556,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         Document d2 = new Document();
         d2.add(new StringField("id", "2", Field.Store.NO));
         writer.addDocument(d2);
+        writer.flush();
         mergeAndFail.set(true);
         try (DirectoryReader reader = writer.getReader()){
         } catch (RuntimeException e) {

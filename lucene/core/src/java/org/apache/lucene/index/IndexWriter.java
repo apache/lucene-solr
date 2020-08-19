@@ -2272,7 +2272,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
   }
 
-  protected void executeMerge(MergeTrigger trigger) throws IOException {
+  final void executeMerge(MergeTrigger trigger) throws IOException {
     mergeScheduler.merge(mergeSource, trigger);
   }
 
