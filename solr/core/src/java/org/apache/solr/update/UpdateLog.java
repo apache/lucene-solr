@@ -706,7 +706,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   /** Opens a new realtime searcher and clears the id caches.
    * This may also be called when we updates are being buffered (from PeerSync/IndexFingerprint)
-   * @return
+   * @return opened searcher if requested
    */
   public RefCounted<SolrIndexSearcher> openRealtimeSearcher(boolean returnSearcher) {
     synchronized (this) {
