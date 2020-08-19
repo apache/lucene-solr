@@ -50,7 +50,7 @@ public class OrderedExecutor extends ExecutorCompletionService {
    * @param command the runnable task
    *
    * @throws RejectedExecutionException if this task cannot be accepted for execution
-   * @return
+   * @return future for task
    */
   public Future<?> submit(Integer lockId, Runnable command) {
     try {

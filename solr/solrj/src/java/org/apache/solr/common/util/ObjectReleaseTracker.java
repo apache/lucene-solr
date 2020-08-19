@@ -62,7 +62,7 @@ public class ObjectReleaseTracker {
 
   /**
    * @return null if ok else error message
-   * @param object
+   * @param object tmp feature allowing to ignore and close an object
    */
   public static String checkEmpty(String object) {
    // if (true) return null; // nocommit
