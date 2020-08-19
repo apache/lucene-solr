@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.codecs.lucene87;
 
+/**
+ * Test the merge instance of the Lucene50 stored fields format.
+ */
+public class TestLucene87StoredFieldsFormatMergeInstance extends TestLucene87StoredFieldsFormat {
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
-import org.apache.lucene.util.TestUtil;
-
-public class TestLucene50StoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
   @Override
-  protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
+  protected boolean shouldTestMergeInstance() {
+    return true;
   }
+
 }

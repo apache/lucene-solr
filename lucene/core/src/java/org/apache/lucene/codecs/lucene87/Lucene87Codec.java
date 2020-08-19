@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.codecs.lucene86;
+package org.apache.lucene.codecs.lucene87;
 
 import java.util.Objects;
 
@@ -33,11 +33,12 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60FieldInfosFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
+import org.apache.lucene.codecs.lucene86.Lucene86PointsFormat;
+import org.apache.lucene.codecs.lucene86.Lucene86SegmentInfoFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
@@ -52,7 +53,7 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  *
  * @lucene.experimental
  */
-public class Lucene86Codec extends Codec {
+public class Lucene87Codec extends Codec {
   private final TermVectorsFormat vectorsFormat = new Lucene50TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene60FieldInfosFormat();
   private final SegmentInfoFormat segmentInfosFormat = new Lucene86SegmentInfoFormat();
@@ -64,14 +65,14 @@ public class Lucene86Codec extends Codec {
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
-      return Lucene86Codec.this.getPostingsFormatForField(field);
+      return Lucene87Codec.this.getPostingsFormatForField(field);
     }
   };
 
   private final DocValuesFormat docValuesFormat = new PerFieldDocValuesFormat() {
     @Override
     public DocValuesFormat getDocValuesFormatForField(String field) {
-      return Lucene86Codec.this.getDocValuesFormatForField(field);
+      return Lucene87Codec.this.getDocValuesFormatForField(field);
     }
   };
 
@@ -80,8 +81,8 @@ public class Lucene86Codec extends Codec {
   /**
    * Instantiates a new codec.
    */
-  public Lucene86Codec() {
-    this(Lucene50StoredFieldsFormat.Mode.BEST_SPEED);
+  public Lucene87Codec() {
+    this(Lucene87StoredFieldsFormat.Mode.BEST_SPEED);
   }
 
   /**
@@ -90,9 +91,9 @@ public class Lucene86Codec extends Codec {
    * @param mode stored fields compression mode to use for newly
    *             flushed/merged segments.
    */
-  public Lucene86Codec(Lucene50StoredFieldsFormat.Mode mode) {
-    super("Lucene86");
-    this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
+  public Lucene87Codec(Lucene87StoredFieldsFormat.Mode mode) {
+    super("Lucene87");
+    this.storedFieldsFormat = new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode));
     this.defaultFormat = new Lucene84PostingsFormat();
   }
 

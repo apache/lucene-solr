@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene84;
+
+package org.apache.lucene.codecs.lucene86;
 
 import java.util.Objects;
 
@@ -33,45 +34,44 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60FieldInfosFormat;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsFormat;
-import org.apache.lucene.codecs.lucene70.Lucene70SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
- * Implements the Lucene 8.4 index format, with configurable per-field postings
+ * Implements the Lucene 8.6 index format, with configurable per-field postings
  * and docvalues formats.
  * <p>
  * If you want to reuse functionality of this codec in another codec, extend
  * {@link FilterCodec}.
  *
- * @see org.apache.lucene.codecs.lucene84 package documentation for file format details.
+ * @see org.apache.lucene.codecs.lucene86 package documentation for file format details.
  *
  * @lucene.experimental
  */
-public class Lucene84Codec extends Codec {
+public class Lucene86Codec extends Codec {
   private final TermVectorsFormat vectorsFormat = new Lucene50TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene60FieldInfosFormat();
-  private final SegmentInfoFormat segmentInfosFormat = new Lucene70SegmentInfoFormat();
+  private final SegmentInfoFormat segmentInfosFormat = new Lucene86SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
   private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
+  private final PointsFormat pointsFormat = new Lucene86PointsFormat();
   private final PostingsFormat defaultFormat;
 
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
-      return Lucene84Codec.this.getPostingsFormatForField(field);
+      return Lucene86Codec.this.getPostingsFormatForField(field);
     }
   };
 
   private final DocValuesFormat docValuesFormat = new PerFieldDocValuesFormat() {
     @Override
     public DocValuesFormat getDocValuesFormatForField(String field) {
-      return Lucene84Codec.this.getDocValuesFormatForField(field);
+      return Lucene86Codec.this.getDocValuesFormatForField(field);
     }
   };
 
@@ -80,8 +80,8 @@ public class Lucene84Codec extends Codec {
   /**
    * Instantiates a new codec.
    */
-  public Lucene84Codec() {
-    this(Mode.BEST_SPEED);
+  public Lucene86Codec() {
+    this(Lucene50StoredFieldsFormat.Mode.BEST_SPEED);
   }
 
   /**
@@ -90,8 +90,8 @@ public class Lucene84Codec extends Codec {
    * @param mode stored fields compression mode to use for newly
    *             flushed/merged segments.
    */
-  public Lucene84Codec(Mode mode) {
-    super("Lucene84");
+  public Lucene86Codec(Lucene50StoredFieldsFormat.Mode mode) {
+    super("Lucene86");
     this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
     this.defaultFormat = new Lucene84PostingsFormat();
   }
@@ -117,7 +117,7 @@ public class Lucene84Codec extends Codec {
   }
 
   @Override
-  public SegmentInfoFormat segmentInfoFormat() {
+  public final SegmentInfoFormat segmentInfoFormat() {
     return segmentInfosFormat;
   }
 
@@ -132,8 +132,8 @@ public class Lucene84Codec extends Codec {
   }
 
   @Override
-  public PointsFormat pointsFormat() {
-    return new Lucene60PointsFormat();
+  public final PointsFormat pointsFormat() {
+    return pointsFormat;
   }
 
   /** Returns the postings format that should be used for writing

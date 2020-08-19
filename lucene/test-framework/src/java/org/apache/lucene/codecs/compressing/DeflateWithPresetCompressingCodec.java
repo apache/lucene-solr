@@ -14,23 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.compressing;
 
-package org.apache.lucene.codecs.lucene70;
+import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat.DeflateWithPresetDict;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene84.Lucene84RWCodec;
-import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
-import org.apache.lucene.util.Version;
+/** CompressionCodec that uses {@link DeflateWithPresetDict}. */
+public class DeflateWithPresetCompressingCodec extends CompressingCodec {
 
-public class TestLucene70SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
-
-  @Override
-  protected Version[] getVersions() {
-    return new Version[] { Version.LUCENE_8_4_0 };
+  /** Constructor that allows to configure the chunk size. */
+  public DeflateWithPresetCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
+    super("DeflateWithPresetCompressingStoredFieldsData", 
+          withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
+          new DeflateWithPresetDict(chunkSize/10, chunkSize/3), chunkSize, maxDocsPerChunk, blockSize);
   }
 
-  @Override
-  protected Codec getCodec() {
-    return new Lucene84RWCodec();
+  /** No-arg constructor. */
+  public DeflateWithPresetCompressingCodec() {
+    this(1<<18, 512, false, 10);
   }
+
 }
