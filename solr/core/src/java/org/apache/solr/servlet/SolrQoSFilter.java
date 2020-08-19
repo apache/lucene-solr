@@ -44,7 +44,6 @@ public class SolrQoSFilter extends QoSFilter {
 
   protected int _origMaxRequests;
 
-
   private static SysStats sysStats = ParWork.getSysStats();
 
   @Override
@@ -57,19 +56,22 @@ public class SolrQoSFilter extends QoSFilter {
   }
 
   @Override
+  // nocommit - this is all just test/prototype - we should extract an actual strategy for adjusting on load
+  // allow the user to select and configure one
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
       throws IOException, ServletException {
     HttpServletRequest req = (HttpServletRequest) request;
     String source = req.getHeader(QoSParams.REQUEST_SOURCE);
     boolean imagePath = req.getPathInfo() != null && req.getPathInfo().startsWith("/img/");
     if (!imagePath && (source == null || !source.equals(QoSParams.INTERNAL))) {
+      if (log.isDebugEnabled()) log.debug("external request"); //nocommit: remove when testing is done
       double ourLoad = sysStats.getTotalUsage();
-      log.info("Our individual load is {}", ourLoad);
+      if (log.isDebugEnabled()) log.debug("Our individual load is {}", ourLoad);
       if (ourLoad > SysStats.OUR_LOAD_HIGH) {
         int cMax = getMaxRequests();
         if (cMax > 2) {
           int max = Math.max(2, (int) ((double)cMax * 0.60D));
-          log.info("set max concurrent requests to {}", max);
+          log.warn("Our individual load is {}, set max concurrent requests to {}", ourLoad, max);
           setMaxRequests(max);
         }
       } else {
@@ -79,7 +81,7 @@ public class SolrQoSFilter extends QoSFilter {
           int cMax = getMaxRequests();
           if (cMax > 2) {
             int max = Math.max(2, (int) ((double) cMax * 0.60D));
-            log.info("set max concurrent requests to {}", max);
+            log.warn("System load is {}, set max concurrent requests to {}", sLoad, max);
             setMaxRequests(max);
           }
         } else if (sLoad < PROC_COUNT && _origMaxRequests != getMaxRequests()) {
@@ -87,15 +89,12 @@ public class SolrQoSFilter extends QoSFilter {
           log.info("set max concurrent requests to orig value {}", _origMaxRequests);
           setMaxRequests(_origMaxRequests);
         }
-        //if (log.isDebugEnabled()) log.debug("external request, load:" + sLoad); //nocommit: remove when testing is done
-        log.info("external request, load:" + sLoad);
       }
 
       super.doFilter(req, response, chain);
 
     } else {
-      //if (log.isDebugEnabled()) log.debug("internal request"); //nocommit: remove when testing is done
-      log.info("internal request, allow");
+      if (log.isDebugEnabled()) log.debug("internal request, allow");
       chain.doFilter(req, response);
     }
   }
