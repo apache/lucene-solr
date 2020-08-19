@@ -52,6 +52,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -1376,15 +1377,32 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // - we don't want score returned.
 
     // check if we should try and use the filter cache
+    final boolean needSort;
+    if (cmd.getCursorMark() != null) {
+      // nocommit: why does this need to be a special case?
+      needSort = true;
+    } else if (cmd.getLen() < 1) {
+      needSort = false;
+    } else if (q instanceof MatchAllDocsQuery || q instanceof ConstantScoreQuery) {
+      final Sort sort = cmd.getSort();
+      final SortField[] sortFields;
+      // sort by "score" alone is pointless for these constant score queries
+      needSort = sort != null && ((sortFields = sort.getSort()).length > 1 || sortFields[0].getType() != Type.SCORE);
+    } else {
+      needSort = true;
+    }
     boolean useFilterCache = false;
-    if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) == 0 && useFilterForSortedQuery && cmd.getSort() != null
-        && filterCache != null) {
-      useFilterCache = true;
-      SortField[] sfields = cmd.getSort().getSort();
-      for (SortField sf : sfields) {
-        if (sf.getType() == SortField.Type.SCORE) {
-          useFilterCache = false;
-          break;
+    if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) == 0 && filterCache != null) {
+      if (!needSort) {
+        useFilterCache = true;
+      } else if (useFilterForSortedQuery && cmd.getSort() != null) {
+        useFilterCache = true;
+        SortField[] sfields = cmd.getSort().getSort();
+        for (SortField sf : sfields) {
+          if (sf.getType() == SortField.Type.SCORE) {
+            useFilterCache = false;
+            break;
+          }
         }
       }
     }
@@ -1397,13 +1415,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         out.docSet = getDocSet(cmd.getQuery(), cmd.getFilter());
         List<Query> filterList = cmd.getFilterList();
         if (filterList != null && !filterList.isEmpty()) {
-          out.docSet = out.docSet.intersection(getDocSet(cmd.getFilterList()));
+          out.docSet = DocSetUtil.getDocSet(out.docSet.intersection(getDocSet(filterList)), this);
         }
       }
       // todo: there could be a sortDocSet that could take a list of
       // the filters instead of anding them first...
       // perhaps there should be a multi-docset-iterator
-      sortDocSet(qr, cmd);
+      if (needSort) {
+        sortDocSet(qr, cmd);
+      } else {
+        // put unsorted list in place
+        out.docList = constantScoreDocList(cmd.getOffset(), cmd.getLen(), out.docSet);
+      }
     } else {
       // do it the normal way...
       if ((flags & GET_DOCSET) != 0) {
@@ -1999,6 +2022,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     QueryResult qr = new QueryResult();
     search(qr, qc);
     return qr.getDocListAndSet();
+  }
+
+  private DocList constantScoreDocList(int offset, int length, DocSet docs) {
+    final int size = docs.size();
+    if (length == 0 || size <= offset) {
+      return new DocSlice(0, 0, new int[0], null, size, 0f, TotalHits.Relation.EQUAL_TO);
+    }
+    final DocIterator iter = docs.iterator();
+    for (int i = offset; i > 0; i--) {
+      iter.nextDoc(); // discard
+    }
+    final int returnSize = Math.min(length, size - offset);
+    final int[] docIds = new int[returnSize];
+    for (int i = 0; i < returnSize; i++) {
+      docIds[i] = iter.nextDoc();
+    }
+    return new DocSlice(0, returnSize, docIds, null, size, 0f, TotalHits.Relation.EQUAL_TO);
   }
 
   protected void sortDocSet(QueryResult qr, QueryCommand cmd) throws IOException {
