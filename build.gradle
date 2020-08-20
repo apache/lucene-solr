@@ -153,3 +153,4 @@ apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 
 apply from: file('gradle/hacks/findbugs.gradle')
+apply from: file('gradle/hacks/gradle.gradle')
