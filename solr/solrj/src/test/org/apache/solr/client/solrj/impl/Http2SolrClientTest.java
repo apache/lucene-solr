@@ -608,7 +608,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     System.clearProperty("solr.jetty.ssl.verifyClientHostName");
   }
 
-  private void makeRequest(Http2SolrClient client, SolrRequest req, boolean useAsyncClient) throws Exception {
+  private void makeRequest(Http2SolrClient client, SolrRequest<?> req, boolean useAsyncClient) throws Exception {
     if (useAsyncClient) {
       try {
         client.requestAsync(req, null).get();
