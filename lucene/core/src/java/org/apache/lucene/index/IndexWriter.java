@@ -1097,7 +1097,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         flush(true, true);
         waitForMerges();
         commitInternal(config.getMergePolicy());
-        rollbackInternal(); // ie close, since we just committed
       } catch (Throwable t) {
         // Be certain to close the index on any exception
         try {
@@ -1107,6 +1106,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         }
         throw t;
       }
+      rollbackInternal(); // if we got that far lets rollback and close
     }
   }
 
