@@ -621,8 +621,10 @@ groups:
     - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
   - !Todo
     id: new_jira_versions
-    title: Add a new version in JIRA for the next release
+    title: (PMC) Add a new version in JIRA for the next release
     description: |-
+      WARNING: Only PMC members have admin access to JIRA. If you are not a PMC member, please reach out to one to complete this step.
+
       Go to the JIRA "Manage Versions" Administration pages and add the new version:
 
       {% if release_type == 'major' -%}
