@@ -2056,6 +2056,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           return true;
         }
       }) {
+        writer.rollback();
+        fail();
       }
     } catch (RuntimeException e) {
       assertEquals("boom", e.getMessage());
