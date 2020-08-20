@@ -85,7 +85,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
   }
 
   /**
-   * Asynchronously query a server from the list of servers provided in the {@link Req} parameter. Servers are queried
+   * Asynchronously query a server from the list of servers provided in the Req parameter. Servers are queried
    * in the exact order of the server list. This method is similar to {@link LBSolrClient#request(Req)} except that it
    * runs asynchronously.
    *
