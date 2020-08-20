@@ -254,7 +254,7 @@ cleanIfReq() {
 recompileIfReq() {
   if [[ "$RECOMPILE" = true ]]; then
     pushd "$VCS_WORK"/solr
-    ant clean server create-package
+    ant clean create-package
     if [[ "$?" -ne 0 ]]; then
       echo "BUILD FAIL - cloud.sh stopping, see above output for details"; popd; exit 7;
     fi
@@ -288,7 +288,10 @@ copyTarball() {
 # Assume that zookeeper holds it if it is   #
 #############################################
 testZookeeper() {
-  echo "no"
+  PORT_FOUND=$( netstat -an | grep '\b'${ZK_PORT}'\s' | grep LISTEN | awk '{print $4}' | sed -E 's/.*\b('${ZK_PORT}')\s*/\1/');
+  if [[ -z  "$PORT_FOUND" ]]; then
+    echo "No process listening on port ${ZK_PORT}. Please start zookeeper and try again"; exit 8;
+  fi
 }
 
 ##########################
