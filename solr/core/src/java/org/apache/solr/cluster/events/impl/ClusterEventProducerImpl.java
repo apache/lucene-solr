@@ -19,19 +19,12 @@ package org.apache.solr.cluster.events.impl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.text.ParseException;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -41,17 +34,15 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
+import org.apache.solr.cluster.events.ClusterSingleton;
 import org.apache.solr.cluster.events.NodeDownEvent;
 import org.apache.solr.cluster.events.NodeUpEvent;
 import org.apache.solr.cluster.events.Schedule;
 import org.apache.solr.cluster.events.ScheduledEvent;
 import org.apache.solr.cluster.events.ScheduledEventListener;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,9 +55,9 @@ import org.slf4j.LoggerFactory;
  * <p>Scheduled events are triggered at most with {@link #SCHEDULE_INTERVAL_SEC} interval. See also above note
  * on the sequential processing. If the total time of execution exceeds any schedule
  * interval such events will be silently missed and they will be invoked only when the
- * the next event will be generated.</p>
+ * next event will be generated.</p>
  */
-public class ClusterEventProducerImpl implements ClusterEventProducer, Closeable {
+public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSingleton, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final int SCHEDULE_INTERVAL_SEC = 10;
@@ -74,9 +65,10 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, Closeable
   private final Map<ClusterEvent.EventType, Set<ClusterEventListener>> listeners = new HashMap<>();
   private final Map<String, CompiledSchedule> schedules = new ConcurrentHashMap<>();
   private final CoreContainer cc;
-  private final LiveNodesListener liveNodesListener;
-  private final ZkController zkController;
-  private final ScheduledExecutorService scheduler;
+  private LiveNodesListener liveNodesListener;
+  private ZkController zkController;
+  private ScheduledExecutorService scheduler;
+  private boolean running;
 
   private final Set<ClusterEvent.EventType> supportedEvents =
       new HashSet<>() {{
@@ -87,76 +79,22 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, Closeable
 
   private volatile boolean isClosed = false;
 
-  private class CompiledSchedule {
-    final String name;
-    final TimeZone timeZone;
-    final Instant startTime;
-    final String interval;
-    final DateMathParser dateMathParser;
-
-    Instant lastRunAt;
-
-    CompiledSchedule(Schedule schedule) throws Exception {
-      this.name = schedule.getName();
-      this.timeZone = TimeZoneUtils.getTimeZone(schedule.getTimeZone());
-      this.startTime = parseStartTime(new Date(), schedule.getStartTime(), timeZone);
-      this.lastRunAt = startTime;
-      this.interval = schedule.getInterval();
-      this.dateMathParser = new DateMathParser(timeZone);
-    }
-
-    private Instant parseStartTime(Date now, String startTimeStr, TimeZone timeZone) throws Exception {
-      try {
-        // try parsing startTime as an ISO-8601 date time string
-        return DateMathParser.parseMath(now, startTimeStr).toInstant();
-      } catch (SolrException e) {
-        if (e.code() != SolrException.ErrorCode.BAD_REQUEST.code) {
-          throw new Exception("startTime: error parsing value '" + startTimeStr + "': " + e.toString());
-        }
-      }
-      DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder()
-          .append(DateTimeFormatter.ISO_LOCAL_DATE).appendPattern("['T'[HH[:mm[:ss]]]]")
-          .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
-          .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
-          .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
-          .toFormatter(Locale.ROOT).withZone(timeZone.toZoneId());
-      try {
-        return Instant.from(dateTimeFormatter.parse(startTimeStr));
-      } catch (Exception e) {
-        throw new Exception("startTime: error parsing startTime '" + startTimeStr + "': " + e.toString());
-      }
-    }
-
-    boolean shouldRun() {
-      dateMathParser.setNow(new Date(lastRunAt.toEpochMilli()));
-      Instant nextRunTime;
-      try {
-        Date next = dateMathParser.parseMath(interval);
-        nextRunTime = next.toInstant();
-      } catch (ParseException e) {
-        log.warn("Invalid math expression, skipping: " + e);
-        return false;
-      }
-      if (Instant.now().isAfter(nextRunTime)) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    void setLastRunAt(Instant lastRunAt) {
-      this.lastRunAt = lastRunAt;
-    }
-  }
-
   public ClusterEventProducerImpl(CoreContainer coreContainer) {
     this.cc = coreContainer;
     this.zkController = this.cc.getZkController();
+  }
+
+  // ClusterSingleton lifecycle methods
+  @Override
+  public void start() throws Exception {
     if (zkController == null) {
       liveNodesListener = null;
       scheduler = null;
       return;
     }
+
+    // clean up any previous instances
+    doStop();
 
     // register liveNodesListener
     liveNodesListener = (oldNodes, newNodes) -> {
@@ -209,16 +147,44 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, Closeable
     // create scheduler
     scheduler = Executors.newSingleThreadScheduledExecutor(new SolrNamedThreadFactory("cluster-event-scheduler"));
     scheduler.schedule(() -> maybeFireScheduledEvent(), SCHEDULE_INTERVAL_SEC, TimeUnit.SECONDS);
+    running = true;
   }
 
-  private void ensureNotClosed() {
-    if (isClosed) {
-      throw new RuntimeException("ClusterEventProducerImpl already closed");
+  @Override
+  public boolean isRunning() {
+    return running;
+  }
+
+  @Override
+  public void stop() {
+    doStop();
+    running = false;
+  }
+
+  private void doStop() {
+    if (liveNodesListener != null) {
+      zkController.zkStateReader.removeLiveNodesListener(liveNodesListener);
+    }
+    if (scheduler != null) {
+      scheduler.shutdownNow();
+      try {
+        scheduler.awaitTermination(60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        log.warn("Interrupted while waiting for the scheduler to shut down, ignoring");
+      }
+    }
+    liveNodesListener = null;
+    scheduler = null;
+  }
+
+  private void ensureRunning() {
+    if (isClosed || !running) {
+      throw new RuntimeException("ClusterEventProducerImpl is not running.");
     }
   }
 
   private void maybeFireScheduledEvent() {
-    ensureNotClosed();
+    ensureRunning();
     Set<ClusterEventListener> scheduledListeners = listeners.getOrDefault(ClusterEvent.EventType.SCHEDULED, Collections.emptySet());
     if (scheduledListeners.isEmpty()) {
       return;
@@ -252,7 +218,7 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, Closeable
 
   @Override
   public void registerListener(ClusterEventListener listener) throws Exception {
-    ensureNotClosed();
+    ensureRunning();
     try {
       listener.getEventTypes().forEach(type -> {
         if (!supportedEvents.contains(type)) {
@@ -288,25 +254,15 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, Closeable
 
   @Override
   public void close() throws IOException {
+    stop();
     isClosed = true;
-    if (liveNodesListener != null) {
-      zkController.zkStateReader.removeLiveNodesListener(liveNodesListener);
-    }
-    if (scheduler != null) {
-      scheduler.shutdownNow();
-      try {
-        scheduler.awaitTermination(60, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        log.warn("Interrupted while waiting for the scheduler to shut down, ignoring");
-      }
-    }
     schedules.clear();
     listeners.clear();
   }
 
   @Override
   public Map<ClusterEvent.EventType, Set<ClusterEventListener>> getEventListeners() {
-    ensureNotClosed();
+    ensureRunning();
     return listeners;
   }
 }
