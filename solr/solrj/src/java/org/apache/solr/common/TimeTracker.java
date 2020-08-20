@@ -32,7 +32,7 @@ public class TimeTracker {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  public static final Map<String,TimeTracker> CLOSE_TIMES = new ConcurrentHashMap<>(2048, 0.75f, 6);
+  public static final Map<String,TimeTracker> CLOSE_TIMES = new ConcurrentHashMap<>(256, 0.75f, 3);
   
   private final long startTime;
   private final PrintStream out;
@@ -42,7 +42,7 @@ public class TimeTracker {
   
   private final List<TimeTracker> children = Collections.synchronizedList(new ArrayList<>(64));
 
-  private final StringBuilder label = new StringBuilder(2046);
+  private final StringBuilder label;
   
   private final int depth;
   
@@ -60,8 +60,11 @@ public class TimeTracker {
     }
 
     this.startTime = System.nanoTime();
-    this.label.append(label);
     this.depth = i;
+    this.label = new StringBuilder(label.length() + depth + 6);
+
+    this.label.append(label);
+
     this.out = out;
     if (depth <= 1) {
       CLOSE_TIMES.put(
@@ -176,7 +179,7 @@ public class TimeTracker {
       return "";
     }
 
-    StringBuilder sb = new StringBuilder(1024);
+    StringBuilder sb = new StringBuilder(64);
 //    if (trackedObject != null) {
 //      if (trackedObject instanceof String) {
 //        sb.append(label + trackedObject.toString() + " " + getElapsedMS() + "ms");

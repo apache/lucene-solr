@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -51,10 +52,11 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
-    final List<Long> numbers = new ArrayList<>();
-    final List<BytesRef> binary = new ArrayList<>();
-    final List<BytesRef> sorted = new ArrayList<>();
     final int numDocs = TEST_NIGHTLY ? atLeast(100) : 20;
+    final List<Long> numbers = new ArrayList<>(numDocs);
+    final List<BytesRef> binary = new ArrayList<>(numDocs);
+    final List<BytesRef> sorted = new ArrayList<>(numDocs);
+
     for(int i=0;i<numDocs;i++) {
       Document d = new Document();
       long number = random().nextLong();
@@ -86,7 +88,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
           public void run() {
             try {
               startingGun.await();
-              int iters = atLeast(1000);
+              int iters = atLeast(TEST_NIGHTLY ? 1000 : 100);
               for(int iter=0;iter<iters;iter++) {
                 int docID = threadRandom.nextInt(numDocs);
                 switch(threadRandom.nextInt(4)) {
@@ -201,6 +203,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     final long END_TIME = System.nanoTime() + TimeUnit.NANOSECONDS.convert((TEST_NIGHTLY ? 30 : 1), TimeUnit.SECONDS);
 
     final int NUM_THREADS = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, 10) : 2;
+    List<Future>  futures = new ArrayList<>(NUM_THREADS);
     Thread[] threads = new Thread[NUM_THREADS];
     for(int thread=0;thread<NUM_THREADS;thread++) {
       threads[thread] = new Thread() {
@@ -243,11 +246,12 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
             }
           }
         };
-      threads[thread].start();
+      futures.add(testExecutor.submit(threads[thread]));
+
     }
 
-    for(Thread thread : threads) {
-      thread.join();
+    for(Future future : futures) {
+      future.get();
     }
 
     r.close();
