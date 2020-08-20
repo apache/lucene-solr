@@ -116,6 +116,7 @@ if [ "$cygwin" = "true" -o "$msys" = "true" ] ; then
 fi
 GRADLE_WRAPPER_JAR=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
 if ! $JAVACMD --source 11 $APP_HOME/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java $GRADLE_WRAPPER_JAR ; then
+    echo "\nSomething went wrong. Make sure you're using Java 11 or later."
     exit $?
 fi
 
