@@ -500,16 +500,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
     }
 
-//    if (releaseDirectory) {
-//      directoryFactory.release(getIndexReader().directory());
+
+// leave our metrics, they will be replaced and we may be doing a reload
+// and would clear the new cores searcher stats
+//    try {
+//      SolrInfoBean.super.close();
+//    } catch (Exception e) {
+//      log.warn("Exception closing", e);
 //    }
-
-
-    try {
-      SolrInfoBean.super.close();
-    } catch (Exception e) {
-      log.warn("Exception closing", e);
-    }
 
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
@@ -2308,10 +2306,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // statsCache metrics
     parentContext.gauge(
         new MetricsMap((detailed, map) -> {
-          ConcurrentMap smap = new ConcurrentHashMap(1);
-          smap.putAll(statsCache.getCacheMetrics().getSnapshot());
+          map.putAll(statsCache.getCacheMetrics().getSnapshot());
           map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
-        }, false), true, "statsCache", Category.CACHE.toString(), scope);
+        }, true), true, "statsCache", Category.CACHE.toString(), scope);
+    // we have to cache due to the size stuff, maybe improve granularity
   }
 
   private static class FilterImpl extends Filter {

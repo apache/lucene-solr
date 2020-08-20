@@ -523,10 +523,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
     final MetricsMap filterCacheStats =
-        (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache")).getGauge();
+        (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
     assertNotNull(filterCacheStats);
     final MetricsMap queryCacheStats =
-        (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
+        (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
     assertNotNull(queryCacheStats);
 
     final long preQcIn = (Long) queryCacheStats.getValue().get("inserts");

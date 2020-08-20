@@ -383,8 +383,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[5]/str[@name='id'][.='2']"
     );
 
-    MetricsMap metrics = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
-    Map<String,Object> stats = metrics.getValue();
+    MetricsMap metrics = (MetricsMap) h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+    Map<String,Object> stats = metrics.getValue(true, false);
 
     long inserts = (Long) stats.get("inserts");
 

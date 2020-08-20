@@ -54,7 +54,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -252,6 +251,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private volatile boolean isClosed = false;
 
   private final PackageListeners packageListeners = new PackageListeners(this);
+  private volatile boolean unregisterMetrics = true;
 
   public Set<String> getMetricNames() {
     return metricNames;
@@ -712,13 +712,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       } else {
         currentCore = this;
       }
-
+      this.unregisterMetrics = false;
       boolean success = false;
       SolrCore core = null;
       try {
         CoreDescriptor cd = new CoreDescriptor(name, getCoreDescriptor());
         cd.loadExtraProperties(); //Reload the extra properties
-
+        coreMetricManager.close();
         core = new SolrCore(coreContainer, getName(), coreConfig, cd, getDataDir(), updateHandler, solrDelPolicy, currentCore, true);
 
         // we open a new IndexWriter to pick up the latest config
@@ -1618,10 +1618,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       List<Callable<Object>> closeCalls = new ArrayList<Callable<Object>>();
       closeCalls.addAll(closeHookCalls);
-      closeCalls.add(() -> {
-        IOUtils.closeQuietly(coreMetricManager);
-        return "SolrCoreMetricManager";
-      });
+      if (unregisterMetrics) {
+        closeCalls.add(() -> {
+         // IOUtils.closeQuietly(coreMetricManager);
+          return "SolrCoreMetricManager";
+        });
+      }
       closeCalls.add(() -> {
         IOUtils.closeQuietly(reqHandlers);
         return "reqHandlers";
@@ -1712,7 +1714,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       });
 
       closer.addCollect();
-      closeHookCalls = new ArrayList<Callable<Object>>();
+      closeHookCalls = new ArrayList<>();
 
       if (closeHooks != null) {
         for (CloseHook hook : closeHooks) {

@@ -204,7 +204,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     Map<String, Metric> metrics = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName()).getMetrics();
 
     @SuppressWarnings("rawtypes")
-    MetricsMap mm = (MetricsMap)((SolrMetricManager.GaugeWrapper)metrics.get("CACHE.searcher.queryResultCache")).getGauge();
+    MetricsMap mm = (MetricsMap)metrics.get("CACHE.searcher.queryResultCache");
     {
       Map<String,Object> statPre = mm.getValue();
       h.query(req("q", "{!join from=movieId_s to=id score=Avg}title:first", "fl", "id", "omitHeader", "true"));

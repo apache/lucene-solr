@@ -41,8 +41,6 @@ public class SolrMetricsContext {
   final String tag;
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet(128);
 
-  private final Set<String> gaugeNames = ConcurrentHashMap.newKeySet(128);
-
   public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String tag) {
     this.registryName = registryName;
     this.metricManager = metricManager;
@@ -134,7 +132,7 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#registerGauge(SolrMetricsContext, String, Gauge, String, boolean, String, String...)}.
    */
   public void gauge(Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
-    gaugeNames.add(metricManager.registerGauge(this, registryName, gauge, tag, force, metricName, metricPath));
+    metricManager.registerGauge(this, registryName, gauge, tag, force, metricName, metricPath);
   }
 
   /**

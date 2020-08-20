@@ -104,12 +104,13 @@ public class SolrMetricManager {
 
   private final ConcurrentMap<String, MetricRegistry> registries = new ConcurrentHashMap<>(32);
 
+  private static final ConcurrentMap<String, MetricRegistry> REGISTRIES = new ConcurrentHashMap<>(32);
+
   private final Map<String, Map<String, SolrMetricReporter>> reporters = new HashMap<>(32);
 
-  private final Lock reportersLock = new ReentrantLock();
-  private final Lock swapLock = new ReentrantLock();
-  private final Lock sharedLock = new ReentrantLock();
+  private final Map<String, Set<String>> tags = new ConcurrentHashMap<>(32);
 
+  private final Lock reportersLock = new ReentrantLock();
 
   public static final int DEFAULT_CLOUD_REPORTER_PERIOD = 60;
 
@@ -369,18 +370,11 @@ public class SolrMetricManager {
    */
   public Set<String> registryNames() {
     Set<String> set = new HashSet<>();
-    swapLock.lock();
-    try {
-      set.addAll(registries.keySet());
-    } finally {
-      swapLock.unlock();
-    }
-    sharedLock.lock();
-    try {
-      set.addAll(SharedMetricRegistries.names());
-    } finally {
-      sharedLock.unlock();
-    }
+
+    set.addAll(registries.keySet());
+
+    set.addAll(SharedMetricRegistries.names());
+
     return set;
   }
 
@@ -451,19 +445,33 @@ public class SolrMetricManager {
   public MetricRegistry registry(String registry) {
     registry = enforcePrefix(registry);
     if (isSharedRegistry(registry)) {
-      sharedLock.lock();
-      try {
-        return SharedMetricRegistries.getOrCreate(registry);
-      } finally {
-        sharedLock.unlock();
-      }
+
+
+        MetricRegistry reg = REGISTRIES.get(registry);
+        if (reg == null) {
+          reg = new SolrMetricRegistry();
+        }
+
+        MetricRegistry race = REGISTRIES.putIfAbsent(registry, reg);
+        if (race != null) {
+          return race;
+        }
+
+        return reg;
+
     } else {
-      swapLock.lock();
-      try {
-        return getOrCreateRegistry(registries, registry);
-      } finally {
-        swapLock.unlock();
-      }
+
+        MetricRegistry reg = registries.get(registry);
+        if (reg == null) {
+          reg = new SolrMetricRegistry();
+        }
+
+        MetricRegistry race = registries.putIfAbsent(registry, reg);
+        if (race != null) {
+          return race;
+        }
+
+        return reg;
     }
   }
 
@@ -493,19 +501,9 @@ public class SolrMetricManager {
     // make sure we use a name with prefix
     registry = enforcePrefix(registry);
     if (isSharedRegistry(registry)) {
-      sharedLock.lock();
-      try {
-        SharedMetricRegistries.remove(registry);
-      } finally {
-        sharedLock.unlock();
-      }
+      REGISTRIES.remove(registry);
     } else {
-      swapLock.lock();
-      try {
-        registries.remove(registry);
-      } finally {
-        swapLock.unlock();
-      }
+      registries.remove(registry);
     }
   }
 
@@ -523,25 +521,22 @@ public class SolrMetricManager {
     registry1 = enforcePrefix(registry1);
     registry2 = enforcePrefix(registry2);
     if (isSharedRegistry(registry1) || isSharedRegistry(registry2)) {
-      throw new UnsupportedOperationException("Cannot swap shared registry: " + registry1 + ", " + registry2);
+      throw new UnsupportedOperationException(
+          "Cannot swap shared registry: " + registry1 + ", " + registry2);
     }
-    swapLock.lock();
-    try {
-      MetricRegistry from = registries.get(registry1);
-      MetricRegistry to = registries.get(registry2);
-      if (from == to) {
-        return;
-      }
-      MetricRegistry reg1 = registries.remove(registry1);
-      MetricRegistry reg2 = registries.remove(registry2);
-      if (reg2 != null) {
-        registries.put(registry1, reg2);
-      }
-      if (reg1 != null) {
-        registries.put(registry2, reg1);
-      }
-    } finally {
-      swapLock.unlock();
+
+    MetricRegistry from = registries.get(registry1);
+    MetricRegistry to = registries.get(registry2);
+    if (from == to) {
+      return;
+    }
+    MetricRegistry reg1 = registries.remove(registry1);
+    MetricRegistry reg2 = registries.remove(registry2);
+    if (reg2 != null) {
+      registries.put(registry1, reg2);
+    }
+    if (reg1 != null) {
+      registries.put(registry2, reg1);
     }
   }
 
@@ -773,31 +768,77 @@ public class SolrMetricManager {
   }
 
   public String registerGauge(SolrMetricsContext context, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
-    return registerMetric(context, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
+    Set<String> names = tags.get(tag);
+    if (names == null) {
+      names = ConcurrentHashMap.newKeySet();
+      Set<String> race = tags.putIfAbsent(tag, names);
+      if (race != null) {
+        names = race;
+      }
+    }
+
+    String path = registerMetric(context, registry, gauge, force, metricName, metricPath);
+    names.add(path);
+    return path;
   }
 
-  public int unregisterGauges(String registryName, String tagSegment) {
-    if (tagSegment == null) {
-      return 0;
-    }
-    MetricRegistry registry = registry(registryName);
-    if (registry == null) return 0;
-    AtomicInteger removed = new AtomicInteger();
+//  public int unregisterGauges(String registryName, Set<String> gaugeNames) {
+//    if (gaugeNames.size() == 0) {
+//      return 0;
+//    }
+//    MetricRegistry registry = registry(registryName);
+//    if (registry == null) return 0;
+//    AtomicInteger removed = new AtomicInteger();
+//
+//    for (String name : gaugeNames) {
+//      if (registry.remove(name)) {
+//        removed.incrementAndGet();
+//      }
+//    }
+//    return removed.get();
+//  }
 
-    Set<Map.Entry<String,Metric>> entries = registry.getMetrics().entrySet();
-    for (Map.Entry<String,Metric> entry : entries) {
-      Metric metric = entry.getValue();
-        if (metric instanceof GaugeWrapper) {
-          GaugeWrapper wrapper = (GaugeWrapper) metric;
-          boolean toRemove = wrapper.getTag().contains(tagSegment);
-          if (toRemove) {
-            removed.incrementAndGet();
-            registry.remove(entry.getKey());
-          }
+  public int unregisterGauges(String registryName, String tag) {
+    AtomicInteger removed = new AtomicInteger();
+    Set<String> names = tags.get(tag);
+    if (names != null) {
+      MetricRegistry registry = registry(registryName);
+      if (registry == null) return 0;
+
+
+      for (String name : names) {
+        if (registry.remove(name)) {
+          removed.incrementAndGet();
         }
+      }
     }
     return removed.get();
   }
+
+//
+//  public int unregisterGauges(String registryName, String tagSegment) {
+//    if (tagSegment == null) {
+//      return 0;
+//    }
+//    MetricRegistry registry = registry(registryName);
+//    if (registry == null) return 0;
+//    AtomicInteger removed = new AtomicInteger();
+//
+//    Set<Map.Entry<String,Metric>> entries = registry.getMetrics().entrySet();
+//    for (Map.Entry<String,Metric> entry : entries) {
+//      Metric metric = entry.getValue();
+//      if (metric instanceof GaugeWrapper) {
+//        GaugeWrapper wrapper = (GaugeWrapper) metric;
+//        boolean toRemove = wrapper.getTag().contains(tagSegment);
+//        if (toRemove) {
+//          removed.incrementAndGet();
+//          registry.remove(entry.getKey());
+//        }
+//      }
+//    }
+//    return removed.get();
+//  }
+
 
   /**
    * This method creates a hierarchical name with arbitrary levels of hierarchy

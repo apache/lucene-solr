@@ -550,11 +550,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(commit());  // arg... commit no longer "commits" unless there has been a change.
 
 
-    final MetricsMap filterCacheStats = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.filterCache")).getGauge();
+    final MetricsMap filterCacheStats = (MetricsMap)h.getCore().getCoreMetricManager().getRegistry()
+        .getMetrics().get("CACHE.searcher.filterCache");
     assertNotNull(filterCacheStats);
-    final MetricsMap queryCacheStats = (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
+    final MetricsMap queryCacheStats = (MetricsMap)h.getCore().getCoreMetricManager().getRegistry()
+        .getMetrics().get("CACHE.searcher.queryResultCache");
 
     assertNotNull(queryCacheStats);
 

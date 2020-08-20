@@ -77,7 +77,7 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registryName, "foo");
     mbean.initializeMetrics(solrMetricsContext, null);
-    MetricsMap metricsMap = (MetricsMap)((SolrMetricManager.GaugeWrapper)metricManager.registry(registryName).getMetrics().get("CACHE.fieldCache")).getGauge();
+    MetricsMap metricsMap = (MetricsMap)metricManager.registry(registryName).getMetrics().get("CACHE.fieldCache");
     Map<String, Object> metrics = checkJmx ? metricsMap.getValue(true) : metricsMap.getValue();
     assertTrue(((Number)metrics.get("entries_count")).longValue() > 0);
     assertNotNull(metrics.get("total_size"));
@@ -91,7 +91,7 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registryName, "foo");
     mbean.initializeMetrics(solrMetricsContext, null);
-    MetricsMap metricsMap = (MetricsMap)((SolrMetricManager.GaugeWrapper)metricManager.registry(registryName).getMetrics().get("CACHE.fieldCache")).getGauge();
+    MetricsMap metricsMap = (MetricsMap)metricManager.registry(registryName).getMetrics().get("CACHE.fieldCache");
     Map<String, Object> metrics = checkJmx ? metricsMap.getValue(true) : metricsMap.getValue();
     assertTrue(((Number)metrics.get("entries_count")).longValue() > 0);
     assertNull(metrics.get("total_size"));

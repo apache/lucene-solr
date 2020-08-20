@@ -124,6 +124,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
       // small window between core load and before searcher metrics are registered
       // so we may have to check a few times, and then fail softly if reload is not complete yet
       NamedList metrics = (NamedList)values.get("metrics");
+      System.out.println("metrics:" + metrics);
       if (metrics == null) {
         if (softFail) {
           return false;

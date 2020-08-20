@@ -82,6 +82,10 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
   }
 
   public Map<String,Object> getValue(boolean detailed) {
+    return getValue(detailed, allowCache);
+  }
+
+  public Map<String,Object> getValue(boolean detailed, boolean allowCache) {
     if (allowCache) {
       Map<String,Object> cachedStats = this.cachedValue;
       if (cachedStats != null && (System.nanoTime() - cachedValueUpdatedAt) < CACHE_TIME) {
