@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -857,13 +858,18 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   @Override
   public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws SolrServerException, IOException {
-    // synchronous requests should return an already completed future
-    return makeRequest(request, collection, false).getNow(null);
+      // synchronous requests should return an already completed future
+      return getNowOrException(makeRequest(request, collection, false));
   }
 
   CompletableFuture<NamedList<Object>> makeRequest(SolrRequest<?> request,
                                                    String collection,
                                                    boolean isAsyncRequest) throws SolrServerException, IOException {
+    if (isAsyncRequest && !(getLbClient() instanceof LBHttp2SolrClient)) {
+      log.warn("Asynchronous requests require HTTP/2 SolrJ client, defaulting to synchronous request.");
+      isAsyncRequest = false;
+    }
+
     // the collection parameter of the request overrides that of the parameter to this method
     String requestCollection = request.getCollection();
     if (requestCollection != null) {
@@ -944,7 +950,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     try {
       respFuture = sendRequest(request, inputCollections, isAsyncRequest);
       if (!isAsyncRequest) {
-        NamedList<Object> resp = respFuture.getNow(null);
+        NamedList<Object> resp = getNowOrException(respFuture);
         //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
         Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
         if (o != null && o instanceof Map) {
@@ -1077,11 +1083,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     connect();
 
-    if (isAsyncRequest && !(getLbClient() instanceof LBHttp2SolrClient)) {
-      log.warn("Asynchronous requests require HTTP/2 SolrJ client, defaulting to synchronous request.");
-      isAsyncRequest = false;
-    }
-
     boolean sendToLeaders = false;
     boolean isUpdate = false;
 
@@ -1204,6 +1205,23 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     } else {
       LBSolrClient.Rsp rsp = getLbClient().request(req);
       return CompletableFuture.completedFuture(rsp.getResponse());
+    }
+  }
+
+  private NamedList<Object> getNowOrException(CompletableFuture<NamedList<Object>> future) throws SolrServerException, IOException {
+    try {
+      return future.getNow(null);
+    } catch (CompletionException e) {
+      Throwable cause = e.getCause(); // error that caused CF to complete exceptionally
+      if (cause instanceof SolrServerException) {
+        throw (SolrServerException) cause;
+      } else if (cause instanceof IOException) {
+          throw (IOException) cause;
+      } else if (cause instanceof RuntimeException) {
+          throw (RuntimeException) cause;
+      } else {
+          throw new SolrServerException(cause);
+      }
     }
   }
 
