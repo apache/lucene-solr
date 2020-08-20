@@ -330,36 +330,12 @@ public class ParWork implements Closeable {
 
   @SuppressWarnings({ "unchecked", "rawtypes" })
   private void gatherObjects(Object object, List<ParObject> objects) {
-    if (log.isDebugEnabled()) {
-      log.debug("gatherObjects(Object object={}, List<Object> objects={}) - start", object, objects);
-    }
-
     if (object != null) {
-      if (object.getClass().isArray()) {
-        if (log.isDebugEnabled()) {
-          log.debug("Found an array to gather against");
-        }
-
-        for (Object obj : (Object[]) object) {
-          gatherObjects(obj, objects);
-        }
-
-      } else if (object instanceof Collection) {
-        if (log.isDebugEnabled()) {
-          log.debug("Found a Collection to gather against");
-        }
+      if (object instanceof Collection) {
         for (Object obj : (Collection) object) {
           gatherObjects(obj, objects);
         }
-      } else if (object instanceof Map<?, ?>) {
-        if (log.isDebugEnabled()) {
-          log.debug("Found a Map to gather against");
-        }
-        ((Map) object).forEach((k, v) -> gatherObjects(v, objects));
       } else {
-        if (log.isDebugEnabled()) {
-          log.debug("Found a non collection object to add {}", object.getClass().getName());
-        }
         if (object instanceof ParObject) {
           objects.add((ParObject) object);
         } else {
@@ -376,10 +352,13 @@ public class ParWork implements Closeable {
     if (log.isDebugEnabled()) {
       log.debug("add(String label={}, Object object={}, Callable Callables={}) - start", object.label, object);
     }
-
-    List<ParObject> objects = new ArrayList<>();
-
-    gatherObjects(object.object, objects);
+    List<ParObject> objects;
+    if (object.object instanceof  Collection) {
+      objects = new ArrayList<>(((Collection<?>) object.object).size());
+      gatherObjects(object.object, objects);
+    } else {
+      objects = Collections.singletonList(object);
+    }
 
     WorkUnit workUnit = new WorkUnit(objects, tracker);
     workUnits.add(workUnit);
