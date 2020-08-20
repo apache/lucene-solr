@@ -81,7 +81,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
         mockQueryRateLimiter.acceptedNewRequestCount.get() + mockQueryRateLimiter.rejectedRequestCount.get());
   }
 
-  @Test
+  @Nightly
   public void testSlotBorrowing() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(SECOND_COLLECTION);
@@ -101,7 +101,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
     solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
 
-    int numDocs = TEST_NIGHTLY ? 10000 : 100;
+    int numDocs = 10000;
 
     processTest(client, numDocs, 400 /* Number of queries */);
 

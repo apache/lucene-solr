@@ -50,7 +50,7 @@ allprojects {
       }
     }
 
-    test {
+    tasks.withType(Test) {
       ext {
         testOutputsDir = file("${reports.junitXml.destination}/outputs")
       }
