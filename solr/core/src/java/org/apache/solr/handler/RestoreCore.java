@@ -67,6 +67,7 @@ public class RestoreCore implements Callable<Boolean> {
     String indexDirPath = core.getIndexDir();
     Directory restoreIndexDir = null;
     Directory indexDir = null;
+    boolean success = false;
     try {
 
       restoreIndexDir = core.getDirectoryFactory().get(restoreIndexPath,
@@ -106,7 +107,6 @@ public class RestoreCore implements Callable<Boolean> {
       log.debug("Switching directories");
       core.modifyIndexProps(restoreIndexName);
 
-      boolean success;
       try {
         core.getUpdateHandler().newIndexWriter(false);
         openNewSearcher();
@@ -127,8 +127,6 @@ public class RestoreCore implements Callable<Boolean> {
           }
         }
 
-        core.getDirectoryFactory().doneWithDirectory(restoreIndexDir);
-        core.getDirectoryFactory().remove(restoreIndexDir);
         core.getUpdateHandler().newIndexWriter(false);
         openNewSearcher();
         throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
@@ -141,7 +139,9 @@ public class RestoreCore implements Callable<Boolean> {
       return true;
     } finally {
       if (restoreIndexDir != null) {
-        core.getDirectoryFactory().doneWithDirectory(restoreIndexDir);
+        if (!success) {
+          core.getDirectoryFactory().doneWithDirectory(restoreIndexDir);
+        }
         core.getDirectoryFactory().release(restoreIndexDir);
       }
       if (indexDir != null) {
