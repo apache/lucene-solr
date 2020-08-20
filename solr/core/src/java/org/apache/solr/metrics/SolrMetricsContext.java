@@ -41,6 +41,8 @@ public class SolrMetricsContext {
   final String tag;
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet(128);
 
+  private final Set<String> gaugeNames = ConcurrentHashMap.newKeySet(128);
+
   public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String tag) {
     this.registryName = registryName;
     this.metricManager = metricManager;
@@ -83,7 +85,9 @@ public class SolrMetricsContext {
    * do so may result in hard-to-debug memory leaks.</b></p>
    */
   public void unregister() {
-    metricManager.unregisterGauges(registryName, tag);
+    for (String gauge : gaugeNames) {
+      metricManager.unregisterGauges(registryName, tag);
+    }
   }
 
   /**
@@ -132,7 +136,7 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#registerGauge(SolrMetricsContext, String, Gauge, String, boolean, String, String...)}.
    */
   public void gauge(Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
-    metricManager.registerGauge(this, registryName, gauge, tag, force, metricName, metricPath);
+    gaugeNames.add(metricManager.registerGauge(this, registryName, gauge, tag, force, metricName, metricPath));
   }
 
   /**

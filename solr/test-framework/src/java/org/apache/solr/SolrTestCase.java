@@ -202,6 +202,11 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("*******************************************************************");
     log.info("@BeforeClass ------------------------------------------------------");
 
+    System.setProperty("org.eclipse.jetty.util.log.class", "org.apache.logging.log4j.appserver.jetty.Log4j2Logger");
+
+    // we do this because threads can be finished, but waiting
+    // for an idle timeout or in a TERMINATED state, and we don't
+    // want to wait for them - in prod these threads are daemon
     interruptThreadsOnTearDown("ParWork", false);
 
     if (!SysStats.getSysStats().isAlive()) {
@@ -616,10 +621,6 @@ public class SolrTestCase extends LuceneTestCase {
         System.out.println("state:" + thread.getState());
       }
     }
-
-//    if (nameContains != null && nameContains.startsWith("ParWork")) {
-//      ParWork.closeExecutor();
-//    }
   }
 
   public static SolrQueuedThreadPool getQtp() {
@@ -634,7 +635,7 @@ public class SolrTestCase extends LuceneTestCase {
     qtp.setStopTimeout((int) TimeUnit.SECONDS.toMillis(60));
     qtp.setDaemon(true);
     qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
-    qtp.setStopTimeout(1);
+    qtp.setStopTimeout(0);
     return qtp;
   }
 

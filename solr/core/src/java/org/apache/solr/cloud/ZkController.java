@@ -856,7 +856,7 @@ public class ZkController implements Closeable {
 //
     paths.put(ZkStateReader.CLUSTER_STATE, emptyJson);
     //   operations.add(zkClient.createPathOp(ZkStateReader.CLUSTER_PROPS, emptyJson));
-    paths.put(ZkStateReader.SOLR_PKGS_PATH, emptyJson);
+    paths.put(ZkStateReader.SOLR_PKGS_PATH, null);
     paths.put(ZkStateReader.ROLES, emptyJson);
 
 

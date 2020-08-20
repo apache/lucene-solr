@@ -69,7 +69,7 @@ public class ParWork implements Closeable {
   private final boolean requireAnotherThread;
   private final String rootLabel;
 
-  private volatile Set<ParObject> collectSet = ConcurrentHashMap.newKeySet(32);
+  private volatile Set<ParObject> collectSet = ConcurrentHashMap.newKeySet(16);
 
   private static volatile ThreadPoolExecutor EXEC;
 
@@ -278,7 +278,7 @@ public class ParWork implements Closeable {
     }
     ParObject ob = new ParObject();
     ob.object = object;
-    ob.label = object.getClass().getSimpleName();
+    ob.label = object.toString();
     collectSet.add(ob);
   }
 

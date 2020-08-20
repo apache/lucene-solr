@@ -16,8 +16,10 @@
  */
 package org.apache.solr.util;
 
+import net.sf.saxon.dom.DocumentBuilderImpl;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.schema.IndexSchema;
@@ -27,6 +29,7 @@ import org.xml.sax.SAXException;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -73,16 +76,16 @@ abstract public class BaseTestHarness {
 
     if (tests==null || tests.length == 0) return null;
 
-    Document document = null;
-    try {
-      document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
-          (xml.getBytes(StandardCharsets.UTF_8)));
-    } catch (UnsupportedEncodingException e1) {
-      throw new RuntimeException("Totally weird UTF-8 exception", e1);
-    } catch (IOException | ParserConfigurationException e2) {
-      throw new RuntimeException("Parse or IO Exception", e2);
-    }
+    DocumentBuilderImpl b = new DocumentBuilderImpl();
+    b.setConfiguration(XmlConfigFile.xpathFactory.getConfiguration());
 
+    Document document;
+    try {
+      document = b.parse(new ByteArrayInputStream
+          (xml.getBytes(StandardCharsets.UTF_8)));
+    } catch (IOException e) {
+     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
     for (String xp : tests) {
       xp=xp.trim();
       Boolean bool = (Boolean) getXpath().evaluate(xp, document, XPathConstants.BOOLEAN);
@@ -98,16 +101,14 @@ abstract public class BaseTestHarness {
     throws XPathExpressionException, SAXException {
     if (null == xpath) return null;
 
-    Document document = null;
+    DocumentBuilderImpl b = new DocumentBuilderImpl();
+    b.setConfiguration(XmlConfigFile.xpathFactory.getConfiguration());
+    Document document;
     try {
-      document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
+      document = b.parse(new ByteArrayInputStream
           (xml.getBytes(StandardCharsets.UTF_8)));
-    } catch (UnsupportedEncodingException e1) {
-      throw new RuntimeException("Totally weird UTF-8 exception", e1);
-    } catch (IOException e2) {
-      throw new RuntimeException("Totally weird io exception", e2);
-    } catch (ParserConfigurationException e) {
-      throw new RuntimeException("Parse exception", e);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
     xpath = xpath.trim();
@@ -123,7 +124,7 @@ abstract public class BaseTestHarness {
   public static String makeSimpleDoc(String... fieldsAndValues) {
 
     try {
-      StringWriter w = new StringWriter();
+      StringWriter w = new StringWriter(32);
       w.append("<doc>");
       for (int i = 0; i < fieldsAndValues.length; i+=2) {
         XML.writeXML(w, "field", fieldsAndValues[i + 1], "name",
@@ -144,7 +145,7 @@ abstract public class BaseTestHarness {
    */
   public static String deleteByQuery(String q, String... args) {
     try {
-      StringWriter r = new StringWriter();
+      StringWriter r = new StringWriter(64);
       XML.writeXML(r, "query", q);
       return delete(r.getBuffer().toString(), args);
     } catch(IOException e) {

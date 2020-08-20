@@ -419,7 +419,11 @@ public class ZkStateWriter {
 
       updatesToWrite.clear();
       if (log.isDebugEnabled()) log.debug("Failed updates {}", failedUpdates.values());
-      updatesToWrite.putAll(failedUpdates);
+   //   updatesToWrite.putAll(failedUpdates);
+      if (failedUpdates.size() > 0) {
+        throw new AlreadyClosedException();
+      }
+
       success = true;
     } finally {
       timerContext.stop();

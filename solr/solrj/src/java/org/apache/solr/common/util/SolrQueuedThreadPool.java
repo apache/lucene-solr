@@ -16,6 +16,23 @@
  */
 package org.apache.solr.common.util;
 
+import org.apache.solr.common.ParWork;
+import org.eclipse.jetty.util.AtomicBiInteger;
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
+import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPoolBudget;
+import org.eclipse.jetty.util.thread.TryExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -31,27 +48,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.solr.common.ParWork;
-import org.eclipse.jetty.util.AtomicBiInteger;
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
-import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPoolBudget;
-import org.eclipse.jetty.util.thread.TryExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, ThreadPool.SizedThreadPool, Dumpable, TryExecutor, Closeable {
-    private static final org.eclipse.jetty.util.log.Logger LOG = Log.getLogger(QueuedThreadPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static Runnable NOOP = () ->
     {
     };
@@ -206,7 +204,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}", this);
         this.closed = true;
-
+        this.setStopTimeout(0);
         super.doStop();
 
         removeBean(_tryExecutor);
@@ -276,7 +274,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
                 }
                 catch (Throwable t)
                 {
-                    LOG.warn(t);
+                    LOG.warn("", t);
                 }
             }
             else if (job != NOOP)
@@ -1007,11 +1005,10 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("interrupted {} in {}", job, SolrQueuedThreadPool.this);
-                        LOG.ignore(e);
                     }
                     catch (Throwable e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("", e);
                     }
                     finally
                     {

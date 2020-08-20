@@ -716,21 +716,26 @@ public class SolrMetricManager {
    *                   using dotted notation
    * @param metricPath (optional) additional top-most metric name path elements
    */
-  public void registerMetric(SolrMetricsContext context, String registry, Metric metric, boolean force, String metricName, String... metricPath) {
+  public String registerMetric(SolrMetricsContext context, String registry, Metric metric, boolean force, String metricName, String... metricPath) {
     MetricRegistry metricRegistry = registry(registry);
     String fullName = mkName(metricName, metricPath);
     if (context != null) {
       context.registerMetricName(fullName);
     }
 
-    metricRegistry.remove(fullName);
     try {
       metricRegistry.register(fullName, metric);
     } catch (IllegalArgumentException e) {
-      if (!force) {
-        throw e;
+      metricRegistry.remove(fullName);
+      try {
+        metricRegistry.register(fullName, metric);
+      } catch (IllegalArgumentException e2) {
+        if (!force) {
+          throw e2;
+        }
       }
     }
+    return fullName;
   }
 
   /**
@@ -763,8 +768,8 @@ public class SolrMetricManager {
     }
   }
 
-  public void registerGauge(SolrMetricsContext context, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
-    registerMetric(context, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
+  public String registerGauge(SolrMetricsContext context, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
+    return registerMetric(context, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
   }
 
   public int unregisterGauges(String registryName, String tagSegment) {
@@ -787,6 +792,14 @@ public class SolrMetricManager {
 
     });
     return removed.get();
+  }
+
+  public int unregisterGauges(Set<String> names, String registryName) {
+    MetricRegistry registry = registry(registryName);
+    for (String name : names) {
+      registry.remove(name);
+    }
+    return names.size();
   }
 
   /**

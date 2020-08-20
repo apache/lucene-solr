@@ -77,10 +77,6 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     try {
       log.info("Create our collection");
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
-      
-      log.info("Sanity check that our collection has come online");
-      cluster.getSolrClient().waitForState(col_name, 30, TimeUnit.SECONDS,
-                                           SolrCloudTestCase.clusterShape(1, 1));
 
 
       // HACK implementation detail...
@@ -114,8 +110,6 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       log.info("Shutdown 1 node");
       final JettySolrRunner nodeToStop = cluster.getJettySolrRunner(0);
       nodeToStop.stop();
-      log.info("Wait to confirm our node is fully shutdown");
-      cluster.waitForJettyToStop(nodeToStop);
 
       // now that we're confident that node has stoped, check if a waitForState
       // call will detect the missing replica -- shouldn't need long wait times...

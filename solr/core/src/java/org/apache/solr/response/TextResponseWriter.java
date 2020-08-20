@@ -42,7 +42,7 @@ import org.apache.solr.search.ReturnFields;
  */
 public abstract class TextResponseWriter implements TextWriter {
 
-  protected final FastWriter writer;
+  protected final Writer writer;
   protected final IndexSchema schema;
   protected final SolrQueryRequest req;
   protected final SolrQueryResponse rsp;
@@ -80,7 +80,7 @@ public abstract class TextResponseWriter implements TextWriter {
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
   public void close() throws IOException {
-    if(writer != null) writer.flushBuffer();
+    if(writer != null && writer instanceof FastWriter) ((FastWriter) writer).flushBuffer();
   }
 
   @Override

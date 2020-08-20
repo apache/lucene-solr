@@ -79,6 +79,7 @@ public class XmlConfigFile { // formerly simply "Config"
 
       xpathFactory.getConfiguration().setValidation(false);
       xpathFactory.getConfiguration().setExpandAttributeDefaults(false);
+      xpathFactory.getConfiguration().setXIncludeAware(true);
 
     // tfactory.getConfiguration().setBooleanProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
   }
@@ -161,14 +162,14 @@ public class XmlConfigFile { // formerly simply "Config"
 
     try {
       DocumentBuilderImpl b = new DocumentBuilderImpl();
-
+      b.setErrorHandler(xmllog);
       if (is.getSystemId() != null) {
         b.setEntityResolver(loader.getSysIdResolver());
-        b.setXIncludeAware(true);
-        b.setValidating(false);
-        b.setErrorHandler(xmllog);
-        b.getConfiguration().setExpandAttributeDefaults(true);
       }
+      b.setXIncludeAware(true);
+      b.setValidating(false);
+      b.getConfiguration().setExpandAttributeDefaults(false);
+
       try {
         doc = copyDoc(b.parse(is));
       } catch (TransformerException e) {

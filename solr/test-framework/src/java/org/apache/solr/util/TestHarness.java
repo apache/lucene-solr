@@ -338,12 +338,12 @@ public class TestHarness extends BaseTestHarness {
       }
       QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
       if (responseWriter instanceof BinaryQueryResponseWriter) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(32000);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(256);
         BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) responseWriter;
         writer.write(byteArrayOutputStream, req, rsp);
         return new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
       } else {
-        StringWriter sw = new StringWriter(32000);
+        StringWriter sw = new StringWriter(256);
         responseWriter.write(sw,req,rsp);
         return sw.toString();
       }

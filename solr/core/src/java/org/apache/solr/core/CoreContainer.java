@@ -788,7 +788,6 @@ public class CoreContainer implements Closeable {
         infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
       });
 
-
       work.collect("",() -> {
         // metricsHistoryHandler uses metricsHandler, so create it first
         metricsHandler = new MetricsHandler(this);
@@ -824,10 +823,12 @@ public class CoreContainer implements Closeable {
         });
       }
 
-      work.addCollect();
+    //  work.addCollect();
+      work.collect("",() -> {
+        coreAdminHandler = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
+        configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
+      });
 
-      coreAdminHandler = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
-      configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     }
 
       // initialize gauges for reporting the number of cores and disk total/free
