@@ -48,7 +48,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
   public static final String DEFAULT_CONTENT_TYPE = "application/xml";
   public static final String CONTEXT_TRANSFORMER_KEY = "xsltwriter.transformer";
   
-  private Integer xsltCacheLifetimeSeconds = null; 
+  private volatile Integer xsltCacheLifetimeSeconds = null;
   public static final int XSLT_CACHE_DEFAULT = 60;
   private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
 
@@ -97,7 +97,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     final Transformer t = getTransformer(request);
     
     // capture the output of the XMLWriter
-    final CharArrayWriter w = new CharArrayWriter();
+    final CharArrayWriter w = new CharArrayWriter(64);
     XMLWriter.writeResponse(w,request,response);
     
     // and write transformed result to our writer

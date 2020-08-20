@@ -22,6 +22,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
@@ -45,9 +46,9 @@ import java.util.concurrent.TimeUnit;
  */
 
 public class TransformerProvider {
-  private String lastFilename;
-  private Templates lastTemplates = null;
-  private TimeOut cacheExpiresTimeout;
+  private volatile String lastFilename;
+  private volatile Templates lastTemplates = null;
+  private volatile TimeOut cacheExpiresTimeout;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
@@ -66,7 +67,7 @@ public class TransformerProvider {
   /** Return a new Transformer, possibly created from our cached Templates object  
    * @throws IOException If there is a low-level I/O error.
    */ 
-  public synchronized Transformer getTransformer(SolrConfig solrConfig, String filename,int cacheLifetimeSeconds) throws IOException {
+  public Transformer getTransformer(SolrConfig solrConfig, String filename,int cacheLifetimeSeconds) throws IOException {
     // For now, the Templates are blindly reloaded once cacheExpires is over.
     // It'd be better to check the file modification time to reload only if needed.
     if(lastTemplates!=null && filename.equals(lastFilename) &&
@@ -75,7 +76,7 @@ public class TransformerProvider {
         log.debug("Using cached Templates:{}", filename);
       }
     } else {
-      lastTemplates = getTemplates(solrConfig.getResourceLoader(), filename,cacheLifetimeSeconds);
+      lastTemplates = getTemplates(solrConfig.getResourceLoader(), filename, cacheLifetimeSeconds);
     }
     
     Transformer result = null;
@@ -100,7 +101,7 @@ public class TransformerProvider {
         log.debug("compiling XSLT templates:{}", filename);
       }
       final String fn = "xslt/" + filename;
-      final TransformerFactory tFactory = TransformerFactory.newInstance();
+      final TransformerFactory tFactory = XmlConfigFile.tfactory;
       tFactory.setURIResolver(new SystemIdResolver(loader).asURIResolver());
       tFactory.setErrorListener(xmllog);
       final StreamSource src = new StreamSource(loader.openResource(fn),

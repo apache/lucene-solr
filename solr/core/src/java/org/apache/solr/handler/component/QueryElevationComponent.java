@@ -670,7 +670,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       assert priority == 1; // the last priority (lowest)
     }
 
-    if (context != null) {
+    if (context != null && boostDocs != null) {
       //noinspection unchecked
       context.put(BOOSTED_DOCIDS, boostDocs);
     }

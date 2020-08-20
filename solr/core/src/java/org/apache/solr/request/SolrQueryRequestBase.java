@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
@@ -78,8 +79,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   @Override
   public Map<Object,Object> getContext() {
-    // SolrQueryRequest as a whole isn't thread safe, and this isn't either.
-    if (context==null) context = new HashMap<>();
+    if (context==null) context = new ConcurrentHashMap<>();
     return context;
   }
 
