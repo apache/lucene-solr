@@ -237,7 +237,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (dropCmd) {
       // TODO: do we need to add anything to the response?
-      log.info("Dropping update {}", cmd.getPrintableId());
+      if (log.isDebugEnabled()) log.debug("Dropping update {}", cmd.getPrintableId());
       return;
     }
 
@@ -537,7 +537,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
               if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
                 // This update is a repeat, or was reordered. We need to drop this update.
-                log.info("Dropping add update due to version {}", idBytes.utf8ToString());
+                if (log.isDebugEnabled()) log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
                 return true;
               }
             }

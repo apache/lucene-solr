@@ -258,7 +258,7 @@ public class SolrCmdDistributor implements Closeable {
 
         @Override
         public void onSuccess(NamedList result) {
-          log.info("Success for distrib update {}", result);
+          if (log.isDebugEnabled()) log.debug("Success for distrib update {}", result);
           arrive(req);
         }
 

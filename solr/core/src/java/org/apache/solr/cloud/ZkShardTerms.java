@@ -115,7 +115,7 @@ public class ZkShardTerms implements AutoCloseable{
    * @param replicasNeedingRecovery set of replicas in which their terms should be lower than leader's term
    */
   public void ensureTermsIsHigher(String leader, Set<String> replicasNeedingRecovery) {
-    log.info("ensureTermsIsHigher leader={} replicasNeedingRecvoery={}", leader, replicasNeedingRecovery);
+    if (log.isDebugEnabled()) log.debug("ensureTermsIsHigher leader={} replicasNeedingRecvoery={}", leader, replicasNeedingRecovery);
     if (replicasNeedingRecovery.isEmpty()) return;
 
     ShardTerms newTerms;
