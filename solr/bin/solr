@@ -2276,9 +2276,9 @@ function start_solr() {
       do
         running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN)
         if [ -z "$running" ]; then
-	  slept=$((loops * 2))
+	  slept=$((loops))
           if [ $slept -lt $SOLR_STOP_WAIT ]; then
-            sleep 2
+            sleep 1
             loops=$[$loops+1]
           else
             echo -e "Still not seeing Solr listening on $SOLR_PORT after $SOLR_STOP_WAIT seconds!"
