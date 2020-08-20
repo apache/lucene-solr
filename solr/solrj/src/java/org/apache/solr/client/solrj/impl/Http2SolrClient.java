@@ -1185,6 +1185,7 @@ public class Http2SolrClient extends SolrClient {
     sResponse.contentType = response.getEncoding();
     sResponse.size = response.getContent().length;
     sResponse.status = response.getStatus();
+    sResponse.bytes = response.getContent();
     return sResponse;
   }
 

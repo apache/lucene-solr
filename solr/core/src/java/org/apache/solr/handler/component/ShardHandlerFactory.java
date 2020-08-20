@@ -51,7 +51,6 @@ public abstract class ShardHandlerFactory implements Closeable {
     try {
       ShardHandlerFactory shf = loader.findClass(info.className, ShardHandlerFactory.class, "handler.component.").getConstructor().newInstance();
       if (shf instanceof HttpShardHandlerFactory) {
-        ((HttpShardHandlerFactory) shf).setHttpClient(ush.getDefaultHttpClient());
         ((HttpShardHandlerFactory) shf).setHttp2Client(ush.getUpdateOnlyHttpClient());
       }
       if (PluginInfoInitialized.class.isAssignableFrom(shf.getClass()))

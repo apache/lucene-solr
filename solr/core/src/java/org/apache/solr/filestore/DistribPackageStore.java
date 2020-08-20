@@ -40,6 +40,7 @@ import java.util.function.Predicate;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -372,7 +373,7 @@ public class DistribPackageStore implements PackageStore {
         }
         try {
           //fire and forget
-          Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
+          Http2SolrClient.GET(url, coreContainer.getUpdateShardHandler().getUpdateOnlyHttpClient());
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
           log.info("Node: {} failed to respond for file fetch notification",  node, e);

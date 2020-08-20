@@ -28,6 +28,7 @@ import com.codahale.metrics.Timer;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -56,7 +57,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private UpdateHandler uhandler;
   private UpdateLog ulog;
-  private HttpSolrClient clientToLeader;
+  private Http2SolrClient clientToLeader;
 
   private final boolean doFingerprint;
 
@@ -79,8 +80,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     this.doFingerprint = !"true".equals(System.getProperty("solr.disableFingerprint"));
     this.uhandler = core.getUpdateHandler();
     this.ulog = uhandler.getUpdateLog();
-    HttpClient httpClient = core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-    this.clientToLeader = new HttpSolrClient.Builder(leaderUrl).withHttpClient(httpClient).markInternalRequest().build();
+    Http2SolrClient httpClient = core
+        .getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient();
+    this.clientToLeader = new Http2SolrClient.Builder(leaderUrl).withHttpClient(httpClient).markInternalRequest().build();
 
     this.updater = new PeerSync.Updater(msg(), core);
 
@@ -192,7 +194,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       }
       try {
         clientToLeader.close();
-      } catch (IOException e) {
+      } catch (Exception e) {
         log.warn("{} unable to close client to leader", msg(), e);
       }
     }

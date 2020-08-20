@@ -59,6 +59,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -979,8 +980,8 @@ public class CoreContainer implements Closeable {
     if (isZooKeeperAware()) {
       name = getZkController().getNodeName();
       cloudManager = getZkController().getSolrCloudManager();
-      client = new CloudSolrClient.Builder(getZkController().getZkStateReader())
-          .withHttpClient(updateShardHandler.getDefaultHttpClient()).build();
+      client = new CloudHttp2SolrClient.Builder(getZkController().getZkStateReader())
+          .withHttpClient(updateShardHandler.getUpdateOnlyHttpClient()).build();
     } else {
       name = getNodeConfig().getNodeName();
       if (name == null || name.isEmpty()) {

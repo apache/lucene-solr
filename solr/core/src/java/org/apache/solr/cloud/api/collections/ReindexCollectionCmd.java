@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -636,10 +637,11 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   // XXX SolrCore where the daemon is running
   @SuppressWarnings({"unchecked"})
   private void waitForDaemon(String daemonName, String daemonUrl, String sourceCollection, String targetCollection, Map<String, Object> reindexingState) throws Exception {
-    HttpClient client = ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-    try (HttpSolrClient solrClient = new HttpSolrClient.Builder()
-        .withHttpClient(client)
-        .withBaseSolrUrl(daemonUrl).markInternalRequest().build()) {
+    Http2SolrClient client = ocmh.overseer.getCoreContainer()
+        .getUpdateShardHandler().getUpdateOnlyHttpClient();
+    try (Http2SolrClient solrClient = new Http2SolrClient.Builder()
+        .withHttpClient(client).markInternalRequest().build()) {
+      solrClient.setBaseUrl(daemonUrl);
       ModifiableSolrParams q = new ModifiableSolrParams();
       q.set(CommonParams.QT, "/stream");
       q.set("action", "list");
@@ -690,11 +692,12 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   @SuppressWarnings({"unchecked"})
   private void killDaemon(String daemonName, String daemonUrl) throws Exception {
     log.debug("-- killing daemon {} at {}", daemonName, daemonUrl);
-    HttpClient client = ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-    try (HttpSolrClient solrClient = new HttpSolrClient.Builder()
+    Http2SolrClient client = ocmh.overseer.getCoreContainer()
+        .getUpdateShardHandler().getUpdateOnlyHttpClient();
+    try (Http2SolrClient solrClient = new Http2SolrClient.Builder()
         .withHttpClient(client)
-        .markInternalRequest()
-        .withBaseSolrUrl(daemonUrl).build()) {
+        .markInternalRequest().build()) {
+      client.setBaseUrl(daemonUrl);
       ModifiableSolrParams q = new ModifiableSolrParams();
       q.set(CommonParams.QT, "/stream");
       // we should really use 'kill' here, but then we will never

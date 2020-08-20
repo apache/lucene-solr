@@ -24,6 +24,7 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
@@ -819,7 +820,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection)) {
       PerReplicaCallable e = new PerReplicaCallable(
-              zkController.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient()
+              zkController.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient()
               , coreUrl, prop, expectedVersion, maxWaitSecs);
       concurrentTasks.add(e);
     }
@@ -914,14 +915,14 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
   @SuppressWarnings({"rawtypes"})
   private static class PerReplicaCallable extends SolrRequest implements Callable<Boolean> {
-    private final HttpClient httpClient;
+    private final Http2SolrClient httpClient;
     String coreUrl;
     String prop;
     int expectedZkVersion;
     Number remoteVersion = null;
     int maxWait;
 
-    PerReplicaCallable(HttpClient defaultHttpClient, String coreUrl, String prop, int expectedZkVersion, int maxWait) {
+    PerReplicaCallable(Http2SolrClient defaultHttpClient, String coreUrl, String prop, int expectedZkVersion, int maxWait) {
       super(METHOD.GET, "/config/" + ZNODEVER);
       this.coreUrl = coreUrl;
       this.expectedZkVersion = expectedZkVersion;
@@ -942,7 +943,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       final RTimer timer = new RTimer();
       long timeElapsed = (long) timer.getTime() / 1000;
       int attempts = 0;
-      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).withHttpClient(httpClient).markInternalRequest().build()) {
+      try (Http2SolrClient solr = new Http2SolrClient.Builder(coreUrl).withHttpClient(httpClient).markInternalRequest().build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {
           try {
@@ -950,8 +951,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             if (timeElapsed >= maxWait) {
               return false;
             }
-
-            NamedList<Object> resp = solr.httpUriRequest(this).future.get();
+            NamedList<Object> resp = solr.request(this);
             if (resp != null) {
               @SuppressWarnings({"rawtypes"})
               Map m = (Map) resp.get(ZNODEVER);

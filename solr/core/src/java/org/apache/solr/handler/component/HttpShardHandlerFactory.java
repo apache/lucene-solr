@@ -160,7 +160,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   static final String SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE = " set -D"+INIT_SOLR_DISABLE_SHARDS_WHITELIST+"=true to disable shards whitelist checks";
 
   private volatile Http2SolrClient solrClient;
-  private volatile HttpClient httpClient;
 
 
   public HttpShardHandlerFactory() {
@@ -384,10 +383,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   public void setHttp2Client(Http2SolrClient solrClient) {
     this.solrClient = solrClient;
-  }
-
-  public void setHttpClient(HttpClient httpClient) {
-    this.httpClient = httpClient;
   }
 
   /**

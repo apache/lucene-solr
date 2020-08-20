@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -543,7 +544,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     // and we force open a searcher so that we have documents to show upon switching states
     UpdateResponse updateResponse = null;
     try {
-      updateResponse = softCommit(coreUrl, overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
+      updateResponse = softCommit(coreUrl, overseer.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient());
       processResponse(results, null, coreUrl, updateResponse, slice, Collections.emptySet());
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
@@ -553,11 +554,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
 
-  static UpdateResponse softCommit(String url, HttpClient httpClient) throws SolrServerException, IOException {
+  static UpdateResponse softCommit(String url, Http2SolrClient httpClient) throws SolrServerException, IOException {
 
-    try (HttpSolrClient client = new HttpSolrClient.Builder(url)
-        .withConnectionTimeout(Integer.getInteger("solr.connect_timeout.default", 15000))
-        .withSocketTimeout(Integer.getInteger("solr.so_commit_timeout.default", 30000))
+    try (Http2SolrClient client = new Http2SolrClient.Builder(url)
         .withHttpClient(httpClient)
         .markInternalRequest()
         .build()) {

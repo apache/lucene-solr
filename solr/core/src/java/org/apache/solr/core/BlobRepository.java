@@ -38,6 +38,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -212,21 +213,19 @@ public class BlobRepository {
   }
 
   ByteBuffer fetchFromUrl(String key, String url) {
-    HttpClient httpClient = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
+    Http2SolrClient httpClient = coreContainer
+        .getUpdateShardHandler().getUpdateOnlyHttpClient();
     HttpGet httpGet = new HttpGet(url);
     ByteBuffer b;
     HttpResponse response = null;
     HttpEntity entity = null;
     try {
-      response = httpClient.execute(httpGet);
+
+      b = ByteBuffer.wrap(Http2SolrClient.GET(url, httpClient).bytes);
       entity = response.getEntity();
       int statusCode = response.getStatusLine().getStatusCode();
       if (statusCode != 200) {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
-      }
-
-      try (InputStream is = entity.getContent()) {
-        b = SimplePostTool.inputStreamToByteArray(is, MAX_JAR_SIZE);
       }
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);

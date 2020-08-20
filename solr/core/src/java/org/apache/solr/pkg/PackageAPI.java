@@ -26,14 +26,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -236,12 +240,17 @@ public class PackageAPI {
       //first refresh my own
       packageLoader.notifyListeners(p);
       for (String s : coreContainer.getPackageStoreAPI().shuffledNodes()) {
-        Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-            coreContainer.getZkController().zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p,
-            Utils.JAVABINCONSUMER);
+        try {
+          Http2SolrClient.GET(coreContainer.getZkController().
+              zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p, coreContainer.getUpdateShardHandler().getUpdateOnlyHttpClient());
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+        } catch (ExecutionException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (TimeoutException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
       }
-
-
     }
 
 
@@ -409,9 +418,17 @@ public class PackageAPI {
 
   void notifyAllNodesToSync(int expected) {
     for (String s : coreContainer.getPackageStoreAPI().shuffledNodes()) {
-      Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-          coreContainer.getZkController().zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&expectedVersion" + expected,
-          Utils.JAVABINCONSUMER);
+      try {
+        Http2SolrClient.GET(coreContainer.getZkController().zkStateReader.
+            getBaseUrlForNodeName(s).replace("/solr", "/api") +
+            "/cluster/package?wt=javabin&omitHeader=true&expectedVersion" + expected, coreContainer.getUpdateShardHandler().getUpdateOnlyHttpClient());
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+      } catch (ExecutionException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (TimeoutException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
     }
   }
 
