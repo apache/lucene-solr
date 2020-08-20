@@ -90,7 +90,7 @@
 #
 ##################################################################################
 
-DEFAULT_VCS_WORKSPACE='/data2/lucene-solr'
+DEFAULT_VCS_WORKSPACE='../../'
 
 ############## Normally  no need to edit below this line ##############
 
