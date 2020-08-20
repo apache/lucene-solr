@@ -47,8 +47,8 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private final long heapMemoryThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
-  private final ThreadLocal<Long> seenMemory = ThreadLocal.withInitial(() -> 0L);
-  private final ThreadLocal<Long> allowedMemory = ThreadLocal.withInitial(() -> 0L);
+  private static final ThreadLocal<Long> seenMemory = ThreadLocal.withInitial(() -> 0L);
+  private static final ThreadLocal<Long> allowedMemory = ThreadLocal.withInitial(() -> 0L);
 
   public MemoryCircuitBreaker(SolrConfig solrConfig) {
     super(solrConfig);
@@ -95,7 +95,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getDebugInfo() {
-    if (seenMemory.get() == 0.0 || allowedMemory.get() == 0.0) {
+    if (seenMemory.get() == 0L || allowedMemory.get() == 0L) {
       log.warn("MemoryCircuitBreaker's monitored values (seenMemory, allowedMemory) not set");
     }
 

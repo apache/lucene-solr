@@ -136,10 +136,10 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
       h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
-      List<Future> futures = new ArrayList<>();
+      List<Future<?>> futures = new ArrayList<>();
 
       for (int i = 0; i < 5; i++) {
-        Future future = executor.submit(() -> {
+        Future<?> future = executor.submit(() -> {
           try {
             h.query(req("name:\"john smith\""));
           } catch (SolrException e) {
@@ -153,7 +153,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
         futures.add(future);
       }
 
-      for  (Future future : futures) {
+      for  (Future<?> future : futures) {
         try {
           future.get();
         } catch (Exception e) {
@@ -178,11 +178,10 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testFakeCPUCircuitBreaker() {
-    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool(
-        new SolrNamedThreadFactory("TestCircuitBreaker"));
-
     AtomicInteger failureCount = new AtomicInteger();
 
+    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool(
+        new SolrNamedThreadFactory("TestCircuitBreaker"));
     try {
       removeAllExistingCircuitBreakers();
 
@@ -190,10 +189,10 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
       h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
-      List<Future> futures = new ArrayList<>();
+      List<Future<?>> futures = new ArrayList<>();
 
       for (int i = 0; i < 5; i++) {
-        Future future = executor.submit(() -> {
+        Future<?> future = executor.submit(() -> {
           try {
             h.query(req("name:\"john smith\""));
           } catch (SolrException e) {
@@ -207,7 +206,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
         futures.add(future);
       }
 
-      for  (Future future : futures) {
+      for  (Future<?> future : futures) {
         try {
           future.get();
         } catch (Exception e) {
@@ -286,7 +285,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     @Override
     protected long calculateLiveMemoryUsage() {
       // Return a number large enough to trigger a pushback from the circuit breaker
-      System.out.println("I AM SENDING MAX VALUE");
       return Long.MAX_VALUE;
     }
   }
