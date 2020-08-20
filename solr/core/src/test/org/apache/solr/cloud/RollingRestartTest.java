@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Nightly // nocommit - needs some hardening, cores need concurrency fixes, also should be faster
+@LuceneTestCase.Nightly // nocommit - the overseer priority test is disabled because that feature is disabled
 public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -50,9 +50,53 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   @Test
   //commented 2-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
   public void test() throws Exception {
-    restartWithRolesTest();
+    // no overseer designate currently
+    // restartWithRolesTest();
+    restartTest();
   }
 
+  public void restartTest() throws Exception {
+    String leader = OverseerCollectionConfigSetProcessor
+        .getLeaderNode(cloudClient.getZkStateReader().getZkClient());
+    assertNotNull(leader);
+    log.info("Current overseer leader = {}", leader);
+
+    int numRestarts = 1 + random().nextInt(TEST_NIGHTLY ? 12 : 2);
+    for (int i = 0; i < numRestarts; i++) {
+      log.info("Rolling restart #{}", i + 1); // logOk
+      for (CloudJettyRunner cloudJetty : cloudJettys) {
+        log.info("Restarting {}", cloudJetty);
+        chaosMonkey.stopJetty(cloudJetty);
+        cloudClient.getZkStateReader().updateLiveNodes();
+
+        leader = OverseerCollectionConfigSetProcessor
+            .getLeaderNode(cloudClient.getZkStateReader().getZkClient());
+        if (leader == null) log.error("NOOVERSEER election queue is : {}",
+            OverseerCollectionConfigSetProcessor.getSortedElectionNodes(
+                cloudClient.getZkStateReader().getZkClient(),
+                "/overseer_elect/election"));
+
+        cloudJetty.jetty.start();
+
+        leader = OverseerCollectionConfigSetProcessor
+            .getLeaderNode(cloudClient.getZkStateReader().getZkClient());
+        if (leader == null) {
+          log.error("NOOVERSEER election queue is :{}",
+              OverseerCollectionConfigSetProcessor.getSortedElectionNodes(
+                  cloudClient.getZkStateReader().getZkClient(),
+                  "/overseer_elect/election"));
+          fail("No overseer leader found after restart #" + (i + 1) + ": " + leader);
+        }
+
+        cloudClient.getZkStateReader().updateLiveNodes();
+      }
+    }
+
+    leader = OverseerCollectionConfigSetProcessor
+        .getLeaderNode(cloudClient.getZkStateReader().getZkClient());
+    assertNotNull(leader);
+    log.info("Current overseer leader (after restart) = {}", leader);
+  }
 
   public void restartWithRolesTest() throws Exception {
     String leader = OverseerCollectionConfigSetProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
@@ -151,3 +195,5 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
     return false;
   }
 }
+
+

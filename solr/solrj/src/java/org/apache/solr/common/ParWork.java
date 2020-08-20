@@ -346,7 +346,7 @@ public class ParWork implements Closeable {
 
       } else if (object instanceof Collection) {
         if (log.isDebugEnabled()) {
-          log.debug("Found a Collectiom to gather against");
+          log.debug("Found a Collection to gather against");
         }
         for (Object obj : (Collection) object) {
           gatherObjects(obj, objects);

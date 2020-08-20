@@ -58,13 +58,13 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
+// nocommit - this needs work, but lets not hit zk and other nodes if we dont need for base Assign
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static LongAdder REPLICA_CNT = new LongAdder();
+  private static AtomicInteger REPLICA_CNT = new AtomicInteger(0);
 
   public static String assignCoreNodeName(DistribStateManager stateManager, DocCollection collection) {
     // for backward compatibility;
@@ -125,11 +125,10 @@ public class Assign {
 
   public static int defaultCounterValue(DocCollection collection, String shard) {
     int defaultValue;
-    REPLICA_CNT.increment();
     if (collection.getSlice(shard) != null && collection.getSlice(shard).getReplicas().isEmpty()) {
-      return REPLICA_CNT.intValue();
+      return REPLICA_CNT.incrementAndGet();
     } else {
-      defaultValue = collection.getReplicas().size() + REPLICA_CNT.intValue();
+      defaultValue = collection.getReplicas().size() + REPLICA_CNT.incrementAndGet();
     }
 
     return defaultValue;

@@ -193,10 +193,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       ocmh.zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (n, c) -> c != null);
 
-
       // refresh cluster state
       clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
-      //zkStateReader.waitForState(collectionName,  15, TimeUnit.SECONDS, (l,c) -> c != null);
 
       List<ReplicaPosition> replicaPositions = null;
 //      try {
@@ -216,8 +214,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 //        throw exp;
 //      }
 
-      DocCollection docCollection = buildDocCollection(message, false);
-     // DocCollection docCollection = clusterState.getCollection(collectionName);
+      DocCollection docCollection = clusterState.getCollection(collectionName);
       try {
         replicaPositions = buildReplicaPositions(cloudManager, clusterState,
                 docCollection, message, shardNames, sessionWrapper);
@@ -228,10 +225,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
       }
 
-      if (replicaPositions.isEmpty()) {
-        if (log.isDebugEnabled()) log.debug("Finished create command for collection: {}", collectionName);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "No positions found to place replicas " + replicaPositions);
-      }
+//      if (replicaPositions.isEmpty()) {
+//        if (log.isDebugEnabled()) log.debug("Finished create command for collection: {}", collectionName);
+//        throw new SolrException(ErrorCode.SERVER_ERROR, "No positions found to place replicas " + replicaPositions);
+//      }
 
       final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(async);
       if (log.isDebugEnabled()) {
@@ -494,7 +491,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     if (log.isDebugEnabled()) {
       log.debug("buildReplicaPositions(SolrCloudManager, ClusterState, DocCollection, ZkNodeProps, List<String>, AtomicReference<PolicyHelper.SessionWrapper>) - end");
     }
-    if (replicaPositions.size() != (totalNumReplicas * numSlices)) {
+    if (nodeList.size() > 0 && replicaPositions.size() != (totalNumReplicas * numSlices)) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Did not get a position assigned for every replica " + replicaPositions.size() + "/" + (totalNumReplicas * numSlices));
     }
     return replicaPositions;
@@ -511,7 +508,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   public static DocCollection buildDocCollection(ZkNodeProps message, boolean withDocRouter) {
     log.info("buildDocCollection {}", message);
-    withDocRouter = true;
     String cName = message.getStr(NAME);
     DocRouter router = null;
     Map<String,Object> routerSpec = null;

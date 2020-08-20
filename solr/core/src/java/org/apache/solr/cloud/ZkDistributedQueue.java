@@ -425,7 +425,8 @@ public class ZkDistributedQueue implements DistributedQueue {
     for (String childName : childNames) {
       // Check format
       if (!childName.regionMatches(0, PREFIX, 0, PREFIX.length())) {
-        log.warn("Found child node with improper name: {}", childName);
+        // responses can be written to same queue with different naming scheme
+        if (log.isDebugEnabled()) log.debug("Found child node with improper name: {}", childName);
         continue;
       }
       orderedChildren.add(childName);
@@ -554,7 +555,7 @@ public class ZkDistributedQueue implements DistributedQueue {
       if (Event.EventType.None.equals(event.getType())) {
         return;
       }
-      log.info("DistributedQueue changed {} {}", event.getPath(), event.getType());
+      if (log.isDebugEnabled()) log.debug("DistributedQueue changed {} {}", event.getPath(), event.getType());
 
       updateLock.lock();
       try {

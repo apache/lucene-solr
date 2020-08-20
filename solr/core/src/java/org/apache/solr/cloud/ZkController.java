@@ -1079,9 +1079,7 @@ public class ZkController implements Closeable {
         });
         this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
-        log.info("call zkStateReader#createClusterStateWatchersAndUpdate");
         zkStateReader.createClusterStateWatchersAndUpdate();
-
 
         this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getUpdateOnlyHttpClient()), cc.getUpdateShardHandler(),
                 CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
@@ -1366,27 +1364,15 @@ public class ZkController implements Closeable {
   }
 
   private void createEphemeralLiveNode() {
-
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-    String nodeAddedPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
+    String nodeAddedPath =
+        ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:" + nodePath);
 
-   // if (zkStateReader.getClusterState().getLiveNodes().size() == 0) {
-   //   DistributedLock lock = new DistributedLock(zkClient.getSolrZooKeeper(), "/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster_lock"));
-   //   try {
-   ///     log.info("get lock for creating ephem live node");
- //       lock.lock();
-        log.info("do create ephem live node");
+    log.info("Create our ephemeral live node");
 
-        createLiveNodeImpl(nodePath, nodeAddedPath);
-//      } finally {
-//        log.info("unlock");
-//        lock.unlock();
-//      }
-   // } else {
-   //   createLiveNodeImpl(nodePath, nodeAddedPath);
-   // }
+    createLiveNodeImpl(nodePath, nodeAddedPath);
   }
 
   private void createLiveNodeImpl(String nodePath, String nodeAddedPath) {
@@ -1413,7 +1399,7 @@ public class ZkController implements Closeable {
         zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
       } catch (KeeperException.NodeExistsException e) {
         log.warn("Found our ephemeral live node already exists. This must be a quick restart after a hard shutdown, waiting for it to expire {}", nodePath);
-        // TODO nocommit wait for expiration properly and try again
+        // TODO nocommit wait for expiration properly and try again?
         Thread.sleep(15000);
         zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
       }

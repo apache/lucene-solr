@@ -69,9 +69,7 @@ public class SliceMutator {
     // if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
-    DocCollection collection = CreateCollectionCmd
-        .buildDocCollection(message, true);
-  //  DocCollection collection = clusterState.getCollection(coll);
+    DocCollection collection = clusterState.getCollection(coll);
     Slice sl = collection.getSlice(slice);
     if (sl == null) {
       log.error("Invalid Collection/Slice {}/{} {} ", coll, slice, collection);
