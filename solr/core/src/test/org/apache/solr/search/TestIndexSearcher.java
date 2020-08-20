@@ -143,8 +143,11 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     Date sr3SearcherRegAt = g.getValue();
     assertU(commit()); // nothing has changed
     SolrQueryRequest sr4 = req("q","foo");
-    assertSame("nothing changed, searcher should be the same",
-               sr3.getSearcher(), sr4.getSearcher());
+
+    // not necessarily true if there are searchers on deck
+//    assertSame("nothing changed, searcher should be the same",
+//               sr3.getSearcher(), sr4.getSearcher());
+    
     assertEquals("nothing changed, searcher should not have been re-registered",
                  sr3SearcherRegAt, g.getValue());
     IndexReader r4 = sr4.getSearcher().getRawReader();

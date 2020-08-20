@@ -303,8 +303,8 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.disablePublicKeyHandler", "false");
       System.setProperty("solr.dependentupdate.timeout", "1"); // seconds
 
-      System.setProperty("lucene.cms.override_core_count", "3");
-      System.setProperty("lucene.cms.override_spins", "true");
+     // System.setProperty("lucene.cms.override_core_count", "3");
+     // System.setProperty("lucene.cms.override_spins", "false");
 
       // unlimited - System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
