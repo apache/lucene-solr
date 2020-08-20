@@ -39,6 +39,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.index.DefaultMergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactoryArgs;
@@ -84,28 +85,28 @@ public class SolrIndexConfig implements MapSerializable {
 
     try {
 
-      indexConfigExp = IndexSchema.getXpath().compile(indexConfigPath);
+      indexConfigExp = XmlConfigFile.getXpath().compile(indexConfigPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
 
     try {
-      mergeSchedulerExp = IndexSchema.getXpath().compile(mergeSchedulerPath);
+      mergeSchedulerExp = XmlConfigFile.getXpath().compile(mergeSchedulerPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      mergePolicyExp = IndexSchema.getXpath().compile(mergePolicyPath);
+      mergePolicyExp = XmlConfigFile.getXpath().compile(mergePolicyPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      ramBufferSizeMBExp = IndexSchema.getXpath().compile(ramBufferSizeMBPath);
+      ramBufferSizeMBExp = XmlConfigFile.getXpath().compile(ramBufferSizeMBPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      checkIntegrityAtMergeExp = IndexSchema.getXpath().compile(checkIntegrityAtMergePath);
+      checkIntegrityAtMergeExp = XmlConfigFile.getXpath().compile(checkIntegrityAtMergePath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }

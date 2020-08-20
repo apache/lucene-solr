@@ -133,9 +133,6 @@ public class IndexSchema {
   private static final String TEXT_FUNCTION = "text()";
   private static final String XPATH_OR = " | ";
 
-
-  static XPath xpath = XmlConfigFile.xpathFactory.newXPath();
-
   private static XPathExpression xpathOrExp;
   private static XPathExpression schemaNameExp;
   private static XPathExpression schemaVersionExp;
@@ -160,6 +157,7 @@ public class IndexSchema {
   static String schemaUniqueKeyPath = stepsToPath(SCHEMA, UNIQUE_KEY, TEXT_FUNCTION);
 
   static {
+    XPath xpath = XmlConfigFile.getXpath();
     try {
       String expression = stepsToPath(SCHEMA, FIELD)
           + XPATH_OR + stepsToPath(SCHEMA, DYNAMIC_FIELD)
@@ -246,8 +244,6 @@ public class IndexSchema {
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
-  protected final static ThreadLocal<XPath> THREAD_LOCAL_XPATH = new ThreadLocal<>();
-
   /**
    * Constructs a schema using the specified resource name and stream.
    * By default, this follows the normal config path directory searching rules.
@@ -269,15 +265,6 @@ public class IndexSchema {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
     this.substitutableProperties = substitutableProperties;
-  }
-
-  public static XPath getXpath() {
-    XPath xPath = THREAD_LOCAL_XPATH.get();
-    if (xPath == null) {
-      xPath = XmlConfigFile.xpathFactory.newXPath();
-      THREAD_LOCAL_XPATH.set(xPath);
-    }
-    return xPath;
   }
 
   /**
@@ -567,7 +554,7 @@ public class IndexSchema {
       // in the current case though, the stream is valid so we wont load the resource by name
       XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, substitutableProperties);
       Document document = schemaConf.getDocument();
-      final XPath xpath = schemaConf.getXPath();
+      final XPath xpath = XmlConfigFile.getXpath();
 
       Node nd = (Node) schemaNameExp.evaluate(document, XPathConstants.NODE);
       StringBuilder sb = new StringBuilder();

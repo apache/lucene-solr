@@ -95,46 +95,46 @@ public class SolrXmlConfig {
 
   static {
 
-
+    XPath xPath = XmlConfigFile.getXpath();
     try {
 
-      shardHandlerFactoryExp = IndexSchema.getXpath().compile(shardHandlerFactoryPath);
+      shardHandlerFactoryExp = xPath.compile(shardHandlerFactoryPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
 
     try {
-      counterExp = IndexSchema.getXpath().compile(counterExpPath);
+      counterExp = xPath.compile(counterExpPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      meterExp = IndexSchema.getXpath().compile(meterPath);
+      meterExp = xPath.compile(meterPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      timerExp = IndexSchema.getXpath().compile(timerPath);
+      timerExp = xPath.compile(timerPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      histoExp = IndexSchema.getXpath().compile(histoPath);
+      histoExp = xPath.compile(histoPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      historyExp = IndexSchema.getXpath().compile(historyPath);
+      historyExp = xPath.compile(historyPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      transientCoreCacheFactoryExp = IndexSchema.getXpath().compile(transientCoreCacheFactoryPath);
+      transientCoreCacheFactoryExp = xPath.compile(transientCoreCacheFactoryPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      tracerConfigExp = IndexSchema.getXpath().compile(tracerConfigPath);
+      tracerConfigExp = xPath.compile(tracerConfigPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
@@ -308,7 +308,7 @@ public class SolrXmlConfig {
   private static Properties loadProperties(XmlConfigFile config) {
     try {
       Node node = ((NodeList) config.evaluate("solr", XPathConstants.NODESET)).item(0);
-      XPath xpath = config.getXPath();
+      XPath xpath = XmlConfigFile.getXpath();
       NodeList props = (NodeList) xpath.evaluate("property", node, XPathConstants.NODESET);
       Properties properties = new Properties(config.getSubstituteProperties());
       for (int i = 0; i < props.getLength(); i++) {

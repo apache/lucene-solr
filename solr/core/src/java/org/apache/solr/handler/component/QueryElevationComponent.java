@@ -394,7 +394,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    */
   protected ElevationProvider loadElevationProvider(XmlConfigFile config) {
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
-    XPath xpath = IndexSchema.getXpath();
+    XPath xpath = XmlConfigFile.getXpath();
     NodeList nodes = (NodeList) config.evaluate("elevate/query", XPathConstants.NODESET);
     for (int i = 0; i < nodes.getLength(); i++) {
       Node node = nodes.item(i);

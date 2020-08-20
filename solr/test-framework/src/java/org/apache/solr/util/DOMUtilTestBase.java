@@ -46,7 +46,7 @@ public abstract class DOMUtilTestBase extends SolrTestCase {
   }
   
   public Node getNode( Document doc, String path ) throws Exception {
-    XPath xpath = IndexSchema.getXpath();
+    XPath xpath = XmlConfigFile.getXpath();
     return (Node)xpath.evaluate(path, doc, XPathConstants.NODE);
   }
   

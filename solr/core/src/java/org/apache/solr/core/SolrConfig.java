@@ -132,28 +132,28 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     try {
 
-      luceneMatchVersionExp = IndexSchema.getXpath().compile(luceneMatchVersionPath);
+      luceneMatchVersionExp = XmlConfigFile.getXpath().compile(luceneMatchVersionPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
 
     try {
-      indexDefaultsExp = IndexSchema.getXpath().compile(indexDefaultsPath);
+      indexDefaultsExp = XmlConfigFile.getXpath().compile(indexDefaultsPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      mainIndexExp = IndexSchema.getXpath().compile(mainIndexPath);
+      mainIndexExp = XmlConfigFile.getXpath().compile(mainIndexPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      nrtModeExp = IndexSchema.getXpath().compile(nrtModePath);
+      nrtModeExp = XmlConfigFile.getXpath().compile(nrtModePath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      unlockOnStartupExp = IndexSchema.getXpath().compile(unlockOnStartupPath);
+      unlockOnStartupExp = XmlConfigFile.getXpath().compile(unlockOnStartupPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
@@ -897,7 +897,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     if (val != null) return Integer.parseInt(val.toString());
     try {
       path = super.normalize(path);
-      return super.getInt(IndexSchema.getXpath().compile(path), path, def);
+      return super.getInt(XmlConfigFile.getXpath().compile(path), path, def);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
@@ -908,7 +908,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     if (val != null) return Boolean.parseBoolean(val.toString());
     try {
       path = super.normalize(path);
-      return super.getBool(IndexSchema.getXpath().compile(path), path, def);
+      return super.getBool(XmlConfigFile.getXpath().compile(path), path, def);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
@@ -918,7 +918,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     Object val = overlay.getXPathProperty(path, true);
     try {
       path = super.normalize(path);
-      return val != null ? val.toString() : super.get(IndexSchema.getXpath().compile(path), path);
+      return val != null ? val.toString() : super.get(XmlConfigFile.getXpath().compile(path), path);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
@@ -928,7 +928,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     Object val = overlay.getXPathProperty(path, true);
     try {
       path = super.normalize(path);
-      return val != null ? val.toString() : super.get(IndexSchema.getXpath().compile(path), path, def);
+      return val != null ? val.toString() : super.get(XmlConfigFile.getXpath().compile(path), path, def);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }

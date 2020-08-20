@@ -31,6 +31,7 @@ import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
@@ -102,7 +103,7 @@ public class CacheConfig implements MapSerializable{
     Node node = null;
     try {
       String path = IndexSchema.normalize(xpath, "/config/");
-      node = solrConfig.getNode(IndexSchema.getXpath().compile(path), path, false);
+      node = solrConfig.getNode(XmlConfigFile.getXpath().compile(path), path, false);
     } catch (XPathExpressionException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }

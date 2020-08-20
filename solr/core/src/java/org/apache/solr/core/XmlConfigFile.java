@@ -49,6 +49,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import javax.xml.xpath.XPathFactoryConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -68,11 +69,18 @@ import java.util.TreeSet;
 public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+
   public static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
-  public static final XPathFactory xpathFactory = new XPathFactoryImpl();
+
+  protected final static ThreadLocal<XPath> THREAD_LOCAL_XPATH = new ThreadLocal<>();
+  public static final XPathFactoryImpl xpathFactory = new XPathFactoryImpl();
   public static final SaxonTransformerFactory tfactory = new BasicTransformerFactory();
   static  {
-   // tfactory.getConfiguration().setBooleanProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
+
+      xpathFactory.getConfiguration().setValidation(false);
+      xpathFactory.getConfiguration().setExpandAttributeDefaults(false);
+
+    // tfactory.getConfiguration().setBooleanProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
   }
   public static final Transformer tx = tfactory.newTransformer();
 
@@ -83,6 +91,16 @@ public class XmlConfigFile { // formerly simply "Config"
   private final SolrResourceLoader loader;
   private final Properties substituteProperties;
   private int zkVersion = -1;
+
+
+  public static XPath getXpath() {
+    XPath xPath = THREAD_LOCAL_XPATH.get();
+    if (xPath == null) {
+      xPath = XmlConfigFile.xpathFactory.newXPath();
+      THREAD_LOCAL_XPATH.set(xPath);
+    }
+    return xPath;
+  }
 
   /**
    * Builds a config from a resource name with no xpath prefix.  Does no property substitution.
@@ -218,10 +236,6 @@ public class XmlConfigFile { // formerly simply "Config"
       return doc;
     }
 
-    public XPath getXPath () {
-      return IndexSchema.getXpath();
-    }
-
     String normalize(String path){
       return (prefix == null || path.startsWith("/")) ? path : prefix + path;
     }
@@ -231,7 +245,7 @@ public class XmlConfigFile { // formerly simply "Config"
         String xstr = normalize(path);
 
         // TODO: instead of prepending /prefix/, we could do the search rooted at /prefix...
-        Object o = IndexSchema.getXpath().evaluate(xstr, doc, type);
+        Object o = getXpath().evaluate(xstr, doc, type);
         return o;
 
       } catch (XPathExpressionException e) {
@@ -248,7 +262,7 @@ public class XmlConfigFile { // formerly simply "Config"
     public Node getNode (String expression, boolean errifMissing){
       String path = normalize(expression);
       try {
-        return getNode(IndexSchema.getXpath().compile(path), path, doc, errifMissing);
+        return getNode(getXpath().compile(path), path, doc, errifMissing);
       } catch (XPathExpressionException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
@@ -298,7 +312,7 @@ public class XmlConfigFile { // formerly simply "Config"
       String xstr = normalize(path);
 
       try {
-        NodeList nodeList = (NodeList) IndexSchema.getXpath()
+        NodeList nodeList = (NodeList) getXpath()
             .evaluate(xstr, doc, XPathConstants.NODESET);
 
         if (null == nodeList) {
@@ -397,7 +411,7 @@ public class XmlConfigFile { // formerly simply "Config"
     public String getVal (String expression, boolean errIfMissing){
       String xstr = normalize(expression);
       try {
-        return getVal(IndexSchema.getXpath().compile(xstr), expression, errIfMissing);
+        return getVal(getXpath().compile(xstr), expression, errIfMissing);
       } catch (XPathExpressionException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }

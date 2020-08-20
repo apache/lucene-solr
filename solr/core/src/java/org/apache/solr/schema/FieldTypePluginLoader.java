@@ -27,6 +27,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.slf4j.Logger;
@@ -65,40 +67,40 @@ public final class FieldTypePluginLoader
 
   static {
     try {
-      analyzerQueryExp = IndexSchema.getXpath().compile("./analyzer[@type='query']");
+      analyzerQueryExp = XmlConfigFile.getXpath().compile("./analyzer[@type='query']");
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      analyzerMultiTermExp = IndexSchema.getXpath().compile("./analyzer[@type='multiterm']");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-    try {
-      analyzerIndexExp = IndexSchema.getXpath().compile("./analyzer[not(@type)] | ./analyzer[@type='index']");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      similarityExp = IndexSchema.getXpath().compile("./similarity");
+      analyzerMultiTermExp = XmlConfigFile.getXpath().compile("./analyzer[@type='multiterm']");
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
 
+    try {
+      analyzerIndexExp = XmlConfigFile.getXpath().compile("./analyzer[not(@type)] | ./analyzer[@type='index']");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      similarityExp = XmlConfigFile.getXpath().compile("./similarity");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
 
     try {
-      charFilterExp = IndexSchema.getXpath().compile("./charFilter");
+      charFilterExp = XmlConfigFile.getXpath().compile("./charFilter");
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      tokenizerExp = IndexSchema.getXpath().compile("./tokenizer");
+      tokenizerExp = XmlConfigFile.getXpath().compile("./tokenizer");
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
     try {
-      filterExp = IndexSchema.getXpath().compile("./filter");
+      filterExp = XmlConfigFile.getXpath().compile("./filter");
     } catch (XPathExpressionException e) {
       log.error("", e);
     }

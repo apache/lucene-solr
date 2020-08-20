@@ -1058,7 +1058,7 @@ public class SimplePostTool {
    * Gets all nodes matching an XPath
    */
   public static NodeList getNodesFromXP(Node n, String xpath) throws XPathExpressionException {
-    XPath xp = IndexSchema.getXpath();
+    XPath xp = XmlConfigFile.getXpath();
     XPathExpression expr = xp.compile(xpath);
     return (NodeList) expr.evaluate(n, XPathConstants.NODESET);
   }

@@ -89,7 +89,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
 
   protected Node getNode(String xPath) throws XPathExpressionException {
-    return (Node) IndexSchema.getXpath().compile(xPath).evaluate(doc, XPathConstants.NODE);
+    return (Node) XmlConfigFile.getXpath().compile(xPath).evaluate(doc, XPathConstants.NODE);
   }
   private NodeList getNodes(String n1, String n2, String n3, String element, String n4) throws XPathExpressionException {
     // Construct the XPath expression. The form better not change or all these will fail.
@@ -98,7 +98,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
     sb.append("/lst[@name='").append(n3).append("']");
     sb.append("/lst[@name!='(MISSING)']");
     sb.append("//").append(element).append("[@name='").append(n4).append("']");
-    return (NodeList) IndexSchema.getXpath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
+    return (NodeList) XmlConfigFile.getXpath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
 
   }
   protected ArrayList<String> getStringList(String n1, String n2, String n3, String element, String n4)
@@ -337,7 +337,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
 
   protected NodeList getNodes(String xPath) throws XPathExpressionException {
     StringBuilder sb = new StringBuilder(xPath);
-    return (NodeList) IndexSchema.getXpath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
+    return (NodeList) XmlConfigFile.getXpath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
   }
 
 }

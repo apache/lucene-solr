@@ -98,7 +98,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals(1, nl.getLength());
     assertEquals("prefix-proptwo-suffix", nl.item(0).getTextContent());
     String path = IndexSchema.normalize("propTest", solrConfig.getPrefix());
-    Node node = solrConfig.getNode(IndexSchema.getXpath().compile(path), path, true);
+    Node node = solrConfig.getNode(XmlConfigFile.getXpath().compile(path), path, true);
     assertEquals("prefix-proptwo-suffix", node.getTextContent());
   }
 

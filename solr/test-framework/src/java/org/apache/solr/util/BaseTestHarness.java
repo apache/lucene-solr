@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Document;
@@ -55,7 +56,7 @@ abstract public class BaseTestHarness {
   }
 
   public static XPath getXpath() {
-    return IndexSchema.getXpath();
+    return XmlConfigFile.getXpath();
   }
 
 
