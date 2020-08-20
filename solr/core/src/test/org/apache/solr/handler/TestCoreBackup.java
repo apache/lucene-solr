@@ -38,6 +38,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
 
   @Before // unique core per test
   public void coreInit() throws Exception {
+    useFactory(null);
     initCore("solrconfig.xml", "schema.xml");
   }
   @After // unique core per test
