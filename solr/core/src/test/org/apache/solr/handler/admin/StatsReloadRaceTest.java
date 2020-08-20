@@ -27,6 +27,7 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class StatsReloadRaceTest extends SolrTestCaseJ4 {
@@ -136,7 +137,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
         assertTrue(metrics.get(key) instanceof Long);
         break;
       } else {
-        Thread.sleep(50);
+        Thread.sleep(10);
       }
     }
     if (softFail && !found) {

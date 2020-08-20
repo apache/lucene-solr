@@ -85,9 +85,7 @@ public class SolrMetricsContext {
    * do so may result in hard-to-debug memory leaks.</b></p>
    */
   public void unregister() {
-    for (String gauge : gaugeNames) {
-      metricManager.unregisterGauges(registryName, tag);
-    }
+    metricManager.unregisterGauges(registryName, tag);
   }
 
   /**

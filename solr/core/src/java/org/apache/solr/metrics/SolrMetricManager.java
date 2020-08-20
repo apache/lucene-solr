@@ -577,11 +577,15 @@ public class SolrMetricManager {
       for (Map.Entry<String,Metric> entry : metrics.getMetrics().entrySet()) {
         work.collect("registerMetric-" + entry.getKey(), () ->{
           String fullName = mkName(entry.getKey(), metricPath);
-          metricRegistry.remove(fullName);
           try {
             metricRegistry.register(fullName, entry.getValue());
           } catch (IllegalArgumentException e) {
-            log.warn("Metric already registered: " + fullName);
+            metricRegistry.remove(fullName);
+            try {
+              metricRegistry.register(fullName, entry.getValue());
+            } catch (IllegalArgumentException e2) {
+              log.warn("Metric already registered: " + fullName);
+            }
           }
         });
       }
@@ -779,27 +783,20 @@ public class SolrMetricManager {
     MetricRegistry registry = registry(registryName);
     if (registry == null) return 0;
     AtomicInteger removed = new AtomicInteger();
-    registry.removeMatching((name, metric) -> {
-      if (metric instanceof GaugeWrapper) {
-        GaugeWrapper wrapper = (GaugeWrapper) metric;
-        boolean toRemove = wrapper.getTag().contains(tagSegment);
-        if (toRemove) {
-          removed.incrementAndGet();
+
+    Set<Map.Entry<String,Metric>> entries = registry.getMetrics().entrySet();
+    for (Map.Entry<String,Metric> entry : entries) {
+      Metric metric = entry.getValue();
+        if (metric instanceof GaugeWrapper) {
+          GaugeWrapper wrapper = (GaugeWrapper) metric;
+          boolean toRemove = wrapper.getTag().contains(tagSegment);
+          if (toRemove) {
+            removed.incrementAndGet();
+            registry.remove(entry.getKey());
+          }
         }
-        return toRemove;
-      }
-      return false;
-
-    });
-    return removed.get();
-  }
-
-  public int unregisterGauges(Set<String> names, String registryName) {
-    MetricRegistry registry = registry(registryName);
-    for (String name : names) {
-      registry.remove(name);
     }
-    return names.size();
+    return removed.get();
   }
 
   /**
