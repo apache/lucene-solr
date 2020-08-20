@@ -47,6 +47,7 @@ import org.apache.solr.cloud.overseer.ReplicaMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
+import org.apache.solr.cluster.events.ClusterSingleton;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
@@ -66,9 +67,11 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginBag;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -656,6 +659,8 @@ public class Overseer implements SolrCloseable {
       }
     });
 
+    startClusterSingletons();
+
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -775,6 +780,36 @@ public class Overseer implements SolrCloseable {
     }
   }
 
+  /**
+   * Start {@link ClusterSingleton} plugins when we become the leader.
+   */
+  private void startClusterSingletons() {
+    PluginBag<SolrRequestHandler> handlers = getCoreContainer().getRequestHandlers();
+    handlers.keySet().forEach(handlerName -> {
+      SolrRequestHandler handler = handlers.get(handlerName);
+      if (handler instanceof ClusterSingleton) {
+        try {
+          ((ClusterSingleton) handler).start();
+        } catch (Exception e) {
+          log.warn("Exception starting ClusterSingleton " + handler, e);
+        }
+      }
+    });
+  }
+
+  /**
+   * Stop {@link ClusterSingleton} plugins when we lose leadership.
+   */
+  private void stopClusterSingletons() {
+    PluginBag<SolrRequestHandler> handlers = getCoreContainer().getRequestHandlers();
+    handlers.keySet().forEach(handlerName -> {
+      SolrRequestHandler handler = handlers.get(handlerName);
+      if (handler instanceof ClusterSingleton) {
+        ((ClusterSingleton) handler).stop();
+      }
+    });
+  }
+
   public Stats getStats() {
     return stats;
   }
@@ -816,6 +851,8 @@ public class Overseer implements SolrCloseable {
     }
     this.closed = true;
     doClose();
+
+    stopClusterSingletons();
 
     assert ObjectReleaseTracker.release(this);
   }

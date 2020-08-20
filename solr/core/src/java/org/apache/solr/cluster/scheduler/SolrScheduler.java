@@ -14,16 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cluster.events;
+package org.apache.solr.cluster.scheduler;
 
 /**
  *
  */
-public interface ScheduledEventListener extends ClusterEventListener {
+public interface SolrScheduler {
 
-  /**
-   * Return the schedule that this listener needs. This is used when registering the
-   * listener to properly configure the scheduler.
-   */
-  Schedule getSchedule();
+  void registerSchedulable(Schedulable schedulable);
+
+  void unregisterSchedulable(Schedulable schedulable);
 }

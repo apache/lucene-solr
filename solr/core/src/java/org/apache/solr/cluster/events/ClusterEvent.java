@@ -27,7 +27,6 @@ public interface ClusterEvent {
     NODE_DOWN,
     NODE_UP,
     REPLICA_DOWN,
-    SCHEDULED,
     // other types? eg. Overseer leader change, shard leader change,
     // node overload (eg. CPU / MEM circuit breakers tripped)?
   }

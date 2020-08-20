@@ -14,17 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cluster.events;
+package org.apache.solr.cluster.scheduler;
 
 /**
- *
+ * Simple schedule for generating periodically occurring events.
  */
-public interface ScheduledEvent extends ClusterEvent {
+public interface Schedule {
 
-  @Override
-  default EventType getType() {
-    return EventType.SCHEDULED;
-  }
+  String getName();
 
-  Schedule getSchedule();
+  // date math expr
+  String getStartTime();
+
+  // may be null only if getStartTime contained TZ
+  String getTimeZone();
+
+  // date math expr
+  String getInterval();
 }

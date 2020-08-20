@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cluster.events.impl;
+package org.apache.solr.cluster.scheduler.impl;
 
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
@@ -26,7 +26,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import org.apache.solr.cluster.events.Schedule;
+import org.apache.solr.cluster.scheduler.Schedule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.TimeZoneUtils;
