@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
@@ -86,12 +85,12 @@ public class LBHttp2SolrClient extends LBSolrClient {
   /**
    * TODO
    */
-  public CompletableFuture<Rsp> requestAsync(Req req, Runnable onStart) {
+  public CompletableFuture<Rsp> requestAsync(Req req) {
     CompletableFuture<Rsp> apiFuture = new CompletableFuture<>();
     Rsp rsp = new Rsp();
     boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
     ServerIterator it = new ServerIterator(req, zombieServers);
-    onStart.run();
+    //onStart.run();
     final AtomicBoolean cancelled = new AtomicBoolean(false);
     AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture = new AtomicReference<>();
     RetryListener retryListener = new RetryListener() {

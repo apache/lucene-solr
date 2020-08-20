@@ -56,10 +56,8 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.client.solrj.util.Constants;
-import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -371,7 +369,8 @@ public class Http2SolrClient extends SolrClient {
     outStream.flush();
   }
 
-  public CompletableFuture<NamedList<Object>> requestAsync(SolrRequest<?> solrRequest, String collection) {
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> solrRequest, String collection) {
     CompletableFuture<NamedList<Object>> future = new CompletableFuture<>();
     Request req;
     try {

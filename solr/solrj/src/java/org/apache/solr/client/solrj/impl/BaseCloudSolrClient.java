@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -476,8 +477,11 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     assertZKStateProvider().zkStateReader.registerDocCollectionWatcher(collection, watcher);
   }
 
+  // TODO: async direct updates
   @SuppressWarnings({"unchecked"})
-  private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection) throws SolrServerException {
+  private CompletableFuture<NamedList<Object>> directUpdate(AbstractUpdateRequest request,
+                                                            String collection,
+                                                            boolean isAsyncRequest) throws SolrServerException {
     UpdateRequest updateRequest = (UpdateRequest) request;
     SolrParams params = request.getParams();
     ModifiableSolrParams routableParams = new ModifiableSolrParams();
@@ -633,7 +637,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     RouteResponse rr = condenseResponse(shardResponses, (int) TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS));
     rr.setRouteResponses(shardResponses);
     rr.setRoutes(routes);
-    return rr;
+    return CompletableFuture.completedFuture(rr);
   }
 
   protected RouteException getRouteException(SolrException.ErrorCode serverError, NamedList<Throwable> exceptions, Map<String, ? extends LBSolrClient.Req> routes) {
@@ -853,6 +857,13 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   @Override
   public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws SolrServerException, IOException {
+    // synchronous requests should return an already completed future
+    return makeRequest(request, collection, false).getNow(null);
+  }
+
+  CompletableFuture<NamedList<Object>> makeRequest(SolrRequest<?> request,
+                                                   String collection,
+                                                   boolean isAsyncRequest) throws SolrServerException, IOException {
     // the collection parameter of the request overrides that of the parameter to this method
     String requestCollection = request.getCollection();
     if (requestCollection != null) {
@@ -862,7 +873,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
     List<String> inputCollections =
         collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
-    return requestWithRetryOnStaleState(request, 0, inputCollections);
+    return requestWithRetryOnStaleState(request, 0, inputCollections, isAsyncRequest);
   }
 
   /**
@@ -870,7 +881,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * there's a chance that the request will fail due to cached stale state,
    * which means the state must be refreshed from ZK and retried.
    */
-  protected NamedList<Object> requestWithRetryOnStaleState(@SuppressWarnings({"rawtypes"})SolrRequest request, int retryCount, List<String> inputCollections)
+  protected CompletableFuture<NamedList<Object>> requestWithRetryOnStaleState(SolrRequest<?> request,
+                                                                              int retryCount,
+                                                                              List<String> inputCollections,
+                                                                              boolean isAsyncRequest)
       throws SolrServerException, IOException {
     connect(); // important to call this before you start working with the ZkStateReader
 
@@ -926,22 +940,24 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     } // else: ??? how to set this ???
 
-    NamedList<Object> resp = null;
+    CompletableFuture<NamedList<Object>> respFuture = null;
     try {
-      resp = sendRequest(request, inputCollections);
-      //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
-      Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
-      if(o != null && o instanceof Map) {
-        //remove this because no one else needs this and tests would fail if they are comparing responses
-        resp.remove(resp.size()-1);
-        @SuppressWarnings({"rawtypes"})
-        Map invalidStates = (Map) o;
-        for (Object invalidEntries : invalidStates.entrySet()) {
+      respFuture = sendRequest(request, inputCollections, isAsyncRequest);
+      if (!isAsyncRequest) {
+        NamedList<Object> resp = respFuture.getNow(null);
+        //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
+        Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
+        if (o != null && o instanceof Map) {
+          //remove this because no one else needs this and tests would fail if they are comparing responses
+          resp.remove(resp.size() - 1);
           @SuppressWarnings({"rawtypes"})
-          Map.Entry e = (Map.Entry) invalidEntries;
-          getDocCollection((String) e.getKey(), (Integer) e.getValue());
+          Map invalidStates = (Map) o;
+          for (Object invalidEntries : invalidStates.entrySet()) {
+            @SuppressWarnings({"rawtypes"})
+            Map.Entry e = (Map.Entry) invalidEntries;
+            getDocCollection((String) e.getKey(), (Integer) e.getValue());
+          }
         }
-
       }
     } catch (Exception exc) {
 
@@ -995,7 +1011,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           //it is probably not worth trying again and again because
           // the state would not have been updated
           log.info("trying request again");
-          return requestWithRetryOnStaleState(request, retryCount + 1, inputCollections);
+          return requestWithRetryOnStaleState(request, retryCount + 1, inputCollections, isAsyncRequest);
         }
       } else {
         log.info("request was not communication error it seems");
@@ -1042,7 +1058,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       // if the state was stale, then we retry the request once with new state pulled from Zk
       if (stateWasStale) {
         log.warn("Re-trying request to collection(s) {} after stale state error from server.", inputCollections);
-        resp = requestWithRetryOnStaleState(request, retryCount+1, inputCollections);
+        respFuture = requestWithRetryOnStaleState(request, retryCount+1, inputCollections, isAsyncRequest);
       } else {
         if (exc instanceof SolrException || exc instanceof SolrServerException || exc instanceof IOException) {
           throw exc;
@@ -1052,12 +1068,19 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     }
 
-    return resp;
+    return respFuture;
   }
 
-  protected NamedList<Object> sendRequest(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> inputCollections)
+  protected CompletableFuture<NamedList<Object>> sendRequest(SolrRequest<?> request,
+                                                             List<String> inputCollections,
+                                                             boolean isAsyncRequest)
       throws SolrServerException, IOException {
     connect();
+
+    if (isAsyncRequest && !(getLbClient() instanceof LBHttp2SolrClient)) {
+      log.warn("Asynchronous requests require HTTP/2 SolrJ client, defaulting to synchronous request.");
+      isAsyncRequest = false;
+    }
 
     boolean sendToLeaders = false;
     boolean isUpdate = false;
@@ -1070,7 +1093,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
               "or an alias: " + inputCollections);
         }
         String collection = inputCollections.isEmpty() ? null : inputCollections.get(0); // getting first mimics HttpSolrCall
-        NamedList<Object> response = directUpdate((AbstractUpdateRequest) request, collection);
+        CompletableFuture<NamedList<Object>> response = directUpdate((AbstractUpdateRequest) request, collection, isAsyncRequest);
         if (response != null) {
           return response;
         }
@@ -1167,8 +1190,21 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     LBSolrClient.Req req = new LBSolrClient.Req(request, theUrlList);
-    LBSolrClient.Rsp rsp = getLbClient().request(req);
-    return rsp.getResponse();
+    if (isAsyncRequest) {
+      CompletableFuture<LBSolrClient.Rsp> lbFuture = ((LBHttp2SolrClient) getLbClient()).requestAsync(req);
+      CompletableFuture<NamedList<Object>> apiFuture = new CompletableFuture<>();
+      lbFuture.whenComplete((result, throwable) -> {
+        if (lbFuture.isCompletedExceptionally()) {
+          apiFuture.completeExceptionally(throwable);
+        } else {
+          apiFuture.complete(result.getResponse());
+        }
+      });
+      return apiFuture;
+    } else {
+      LBSolrClient.Rsp rsp = getLbClient().request(req);
+      return CompletableFuture.completedFuture(rsp.getResponse());
+    }
   }
 
   /** Resolves the input collections to their possible aliased collections. Doesn't validate collection existence. */

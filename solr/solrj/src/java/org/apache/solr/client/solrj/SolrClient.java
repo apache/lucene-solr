@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
@@ -1288,6 +1289,20 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public final NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request) throws SolrServerException, IOException {
     return request(request, null);
+  }
+
+  /**
+   * Execute an asynchronous request against a Solr server. TODO documentation
+   */
+  public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> request, String collection) {
+    throw new UnsupportedOperationException("Async requests not supported on this Solr Client.");
+  }
+
+  /**
+   * TODO documentation
+   */
+  public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> request) {
+    return requestAsync(request, request.getCollection());
   }
 
   /**
