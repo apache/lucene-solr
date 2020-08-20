@@ -38,7 +38,9 @@ public class SolrQueryRequestContextUtils {
   /** feature logger accessors **/
 
   public static void setFeatureLogger(SolrQueryRequest req, FeatureLogger featureLogger) {
-    req.getContext().put(FEATURE_LOGGER, featureLogger);
+    if (featureLogger != null) {
+      req.getContext().put(FEATURE_LOGGER, featureLogger);
+    }
   }
 
   public static FeatureLogger getFeatureLogger(SolrQueryRequest req) {
@@ -72,7 +74,9 @@ public class SolrQueryRequestContextUtils {
   /** feature vector store name accessors **/
 
   public static void setFvStoreName(SolrQueryRequest req, String fvStoreName) {
-    req.getContext().put(STORE, fvStoreName);
+    if (fvStoreName != null) {
+      req.getContext().put(STORE, fvStoreName);
+    }
   }
 
   public static String getFvStoreName(SolrQueryRequest req) {
