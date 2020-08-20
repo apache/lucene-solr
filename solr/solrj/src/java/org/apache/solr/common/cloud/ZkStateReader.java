@@ -718,8 +718,8 @@ public class ZkStateReader implements SolrCloseable {
     public DocCollection get(boolean allowCached) {
       gets.incrementAndGet();
       if (!allowCached || lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
-        boolean shouldFetch = true;
-        if (cachedDocCollection != null) {
+        DocCollection fcachedDocCollection = cachedDocCollection;
+        if (fcachedDocCollection != null) {
           Stat exists = null;
           try {
             exists = zkClient.exists(getCollectionPath(collName), null);
@@ -727,14 +727,12 @@ public class ZkStateReader implements SolrCloseable {
             ParWork.propegateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
-          if (exists != null && exists.getVersion() == cachedDocCollection.getZNodeVersion()) {
-            shouldFetch = false;
+          if (exists != null && exists.getVersion() == fcachedDocCollection.getZNodeVersion()) {
+            return fcachedDocCollection;
           }
         }
-        if (shouldFetch) {
-          cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
-          lastUpdateTime = System.nanoTime();
-        }
+        cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
+        lastUpdateTime = System.nanoTime();
       }
       return cachedDocCollection;
     }
