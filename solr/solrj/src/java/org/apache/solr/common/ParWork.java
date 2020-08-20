@@ -79,6 +79,7 @@ public class ParWork implements Closeable {
       synchronized (ParWork.class) {
         if (EXEC == null) {
           EXEC = (ThreadPoolExecutor) getParExecutorService(2, Integer.MAX_VALUE, 15000, new SynchronousQueue<>());
+          ((ParWorkExecutor)EXEC).closeLock(true);
         }
       }
     }
@@ -89,6 +90,7 @@ public class ParWork implements Closeable {
   public static void shutdownExec() {
     synchronized (ParWork.class) {
       if (EXEC != null) {
+        ((ParWorkExecutor)EXEC).closeLock(false);
         EXEC.setKeepAliveTime(1, TimeUnit.NANOSECONDS);
         EXEC.allowCoreThreadTimeOut(true);
         EXEC.shutdownNow();

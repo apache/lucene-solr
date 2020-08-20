@@ -195,7 +195,9 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         super.doStart();
         // The threads count set to MIN_VALUE is used to signal to Runners that the pool is stopped.
         _counts.set(0, 0); // threads, idle
-        ensureThreads();
+        if (!closed) {
+            ensureThreads();
+        }
     }
 
     @Override

@@ -20,6 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
@@ -34,6 +36,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
 
   private static AtomicInteger threadNumber = new AtomicInteger(0);
   private volatile boolean closed;
+  private volatile boolean closeLock;
 
   public ParWorkExecutor(String name, int maxPoolsSize) {
     this(name, 0, maxPoolsSize, KEEP_ALIVE_TIME, new SynchronousQueue<>());
@@ -73,7 +76,23 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
   }
 
   public void shutdown() {
+    if (closeLock) {
+      throw new IllegalCallerException();
+    }
     this.closed = true;
     super.shutdown();
+  }
+
+  public List<Runnable> shutdownNow() {
+    if (closeLock) {
+      throw new IllegalCallerException();
+    }
+    this.closed = true;
+    super.shutdownNow();
+    return Collections.emptyList();
+  }
+
+  public void closeLock(boolean lock) {
+    this.closeLock = lock;
   }
 }
