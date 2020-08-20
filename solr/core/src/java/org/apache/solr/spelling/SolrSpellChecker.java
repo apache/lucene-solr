@@ -67,7 +67,7 @@ public abstract class SolrSpellChecker {
       analyzer = schema.getFieldType(field).getQueryAnalyzer();
     }
     fieldTypeName = (String) config.get(FIELD_TYPE);
-    if (schema.getFieldTypes().containsKey(fieldTypeName))  {
+    if (fieldTypeName != null && schema.getFieldTypes().containsKey(fieldTypeName))  {
       FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
       analyzer = fieldType.getQueryAnalyzer();
     }

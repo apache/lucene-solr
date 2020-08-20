@@ -398,6 +398,12 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       newSchema = shallowCopy(true);
 
+      newSchema.fields = new ConcurrentHashMap<>(fields);
+      newSchema.requiredFields = ConcurrentHashMap.newKeySet(requiredFields.size());
+      newSchema.requiredFields.addAll(requiredFields);
+      newSchema.fieldsWithDefaultValue = ConcurrentHashMap.newKeySet(fieldsWithDefaultValue.size());
+      newSchema.fieldsWithDefaultValue.addAll(fieldsWithDefaultValue);
+
       for (SchemaField newField : newFields) {
         if (null != newSchema.fields.get(newField.getName())) {
           String msg = "Field '" + newField.getName() + "' already exists.";
@@ -496,10 +502,10 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema = shallowCopy(true);
       // clone data structures before modifying them
       newSchema.copyFieldsMap = cloneCopyFieldsMap(copyFieldsMap);
-      newSchema.copyFieldTargetCounts
-          = (Map<SchemaField,Integer>)((HashMap<SchemaField,Integer>)copyFieldTargetCounts).clone();
+      newSchema.copyFieldTargetCounts = new ConcurrentHashMap<>(copyFieldTargetCounts);
       newSchema.dynamicCopyFields = new DynamicCopy[dynamicCopyFields.length];
       System.arraycopy(dynamicCopyFields, 0, newSchema.dynamicCopyFields, 0, dynamicCopyFields.length);
+      newSchema.fields = new ConcurrentHashMap<>(fields);
 
       // Drop the old field
       newSchema.fields.remove(fieldName);
@@ -711,8 +717,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema = shallowCopy(true);
 
       // clone data structures before modifying them
-      newSchema.copyFieldTargetCounts
-          = (Map<SchemaField,Integer>)((HashMap<SchemaField,Integer>)copyFieldTargetCounts).clone();
+      newSchema.copyFieldTargetCounts = new ConcurrentHashMap<>(copyFieldTargetCounts);
       newSchema.dynamicCopyFields = new DynamicCopy[dynamicCopyFields.length];
       System.arraycopy(dynamicCopyFields, 0, newSchema.dynamicCopyFields, 0, dynamicCopyFields.length);
 
@@ -955,9 +960,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     // we shallow copied fieldTypes, but since we're changing them, we need to do a true
     // deep copy before adding the new field types
-    HashMap<String,FieldType> clone =
-        (HashMap<String,FieldType>)((HashMap<String,FieldType>)newSchema.fieldTypes).clone();
-    newSchema.fieldTypes = clone;
+    newSchema.fieldTypes = new ConcurrentHashMap<>(fieldTypes);
 
     // do a first pass to validate the field types don't exist already
     for (FieldType fieldType : fieldTypeList) {    
@@ -1399,7 +1402,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema.requiredFields.addAll(requiredFields);
     }
 
-    // These don't need new collections - addFields() won't add members to them 
+    // These don't need new collections - addFields() won't add members to them
     newSchema.fieldTypes = fieldTypes;
     newSchema.dynamicFields = dynamicFields;
     newSchema.dynamicCopyFields = dynamicCopyFields;

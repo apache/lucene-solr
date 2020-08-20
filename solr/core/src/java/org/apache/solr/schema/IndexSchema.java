@@ -140,11 +140,13 @@ public class IndexSchema {
   private static XPathExpression defaultSearchFieldExp;
   private static XPathExpression solrQueryParserDefaultOpExp;
   private static XPathExpression schemaUniqueKeyExp;
-
-
+  private static XPathExpression fieldTypeXPathExpressionsExp;
+  private static XPathExpression copyFieldsExp;
 
   static String schemaNamePath = stepsToPath(SCHEMA, AT + NAME);
   static String schemaVersionPath = "/schema/@version";
+
+  static String copyFieldPath = "//" + COPY_FIELD;
 
   static String fieldTypeXPathExpressions = getFieldTypeXPathExpressions();
 
@@ -202,47 +204,59 @@ public class IndexSchema {
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
+    try {
+      fieldTypeXPathExpressionsExp = xpath.compile(fieldTypeXPathExpressions);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+    try {
+      copyFieldsExp = xpath.compile(copyFieldPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
   }
 
 
-  protected String resourceName;
-  protected String name;
+  protected volatile String resourceName;
+  protected volatile String name;
   protected final Version luceneVersion;
   protected float version;
   protected final SolrResourceLoader loader;
   protected final Properties substitutableProperties;
 
   // some code will add fields after construction, needs to be thread safe
-  protected final Map<String,SchemaField> fields = new ConcurrentHashMap<>(128);
+  protected volatile Map<String,SchemaField> fields = new ConcurrentHashMap<>(128);
 
-  protected Map<String,FieldType> fieldTypes = new HashMap<>(64);
+  protected volatile Map<String,FieldType> fieldTypes = new ConcurrentHashMap<>(64);
 
-  protected List<SchemaField> fieldsWithDefaultValue = new ArrayList<>(64);
-  protected Collection<SchemaField> requiredFields = new HashSet<>(32);
-  protected DynamicField[] dynamicFields = new DynamicField[] {};
+  protected volatile Set<SchemaField> fieldsWithDefaultValue = ConcurrentHashMap.newKeySet(64);
+  protected volatile Collection<SchemaField> requiredFields = ConcurrentHashMap.newKeySet(32);
+  protected volatile DynamicField[] dynamicFields = new DynamicField[] {};
 
   public DynamicField[] getDynamicFields() { return dynamicFields; }
 
   protected final Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
 
-  private Analyzer indexAnalyzer;
-  private Analyzer queryAnalyzer;
+  private volatile Analyzer indexAnalyzer;
+  private volatile Analyzer queryAnalyzer;
 
-  protected List<SchemaAware> schemaAware = new ArrayList<>(64);
+  protected volatile Set<SchemaAware> schemaAware = ConcurrentHashMap.newKeySet(64);
 
-  protected Map<String,Set<CopyField>> copyFieldsMap = new ConcurrentHashMap<>(64);
+  protected volatile Map<String,Set<CopyField>> copyFieldsMap = new ConcurrentHashMap<>(64);
   public Map<String,Set<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
 
-  protected DynamicCopy[] dynamicCopyFields = new DynamicCopy[] {};
+  protected volatile DynamicCopy[] dynamicCopyFields = new DynamicCopy[] {};
   public DynamicCopy[] getDynamicCopyFields() { return dynamicCopyFields; }
 
-  private Map<FieldType, PayloadDecoder> decoders = new ConcurrentHashMap<>();  // cache to avoid scanning token filters repeatedly, unnecessarily
+  private final Map<FieldType, PayloadDecoder> decoders = new ConcurrentHashMap<>();  // cache to avoid scanning token filters repeatedly, unnecessarily
 
   /**
    * keys are all fields copied to, count is num of copyField
    * directives that target them.
    */
-  protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
+  protected volatile Map<SchemaField, Integer> copyFieldTargetCounts = new ConcurrentHashMap<>(32);
 
   /**
    * Constructs a schema using the specified resource name and stream.
@@ -341,7 +355,7 @@ public class IndexSchema {
   /**
    * Provides direct access to the List containing all fields with a default value
    */
-  public List<SchemaField> getFieldsWithDefaultValue() { return fieldsWithDefaultValue; }
+  public Set<SchemaField> getFieldsWithDefaultValue() { return fieldsWithDefaultValue; }
 
   /**
    * Provides direct access to the List containing all required fields.  This
@@ -499,15 +513,15 @@ public class IndexSchema {
   }
 
   private class SolrIndexAnalyzer extends DelegatingAnalyzerWrapper {
-    protected final HashMap<String, Analyzer> analyzers;
+    protected final Map<String, Analyzer> analyzers;
 
     SolrIndexAnalyzer() {
       super(PER_FIELD_REUSE_STRATEGY);
       analyzers = analyzerCache();
     }
 
-    protected HashMap<String, Analyzer> analyzerCache() {
-      HashMap<String, Analyzer> cache = new HashMap<>();
+    protected Map<String, Analyzer> analyzerCache() {
+      Map<String, Analyzer> cache = new ConcurrentHashMap<>();
       for (SchemaField f : getFields().values()) {
         Analyzer analyzer = f.getType().getIndexAnalyzer();
         cache.put(f.getName(), analyzer);
@@ -527,8 +541,8 @@ public class IndexSchema {
     SolrQueryAnalyzer() {}
 
     @Override
-    protected HashMap<String, Analyzer> analyzerCache() {
-      HashMap<String, Analyzer> cache = new HashMap<>();
+    protected Map<String, Analyzer> analyzerCache() {
+      Map<String, Analyzer> cache = new ConcurrentHashMap<>();
        for (SchemaField f : getFields().values()) {
         Analyzer analyzer = f.getType().getQueryAnalyzer();
         cache.put(f.getName(), analyzer);
@@ -554,7 +568,6 @@ public class IndexSchema {
       // in the current case though, the stream is valid so we wont load the resource by name
       XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, substitutableProperties);
       Document document = schemaConf.getDocument();
-      final XPath xpath = XmlConfigFile.getXpath();
 
       Node nd = (Node) schemaNameExp.evaluate(document, XPathConstants.NODE);
       StringBuilder sb = new StringBuilder();
@@ -585,11 +598,11 @@ public class IndexSchema {
       // load the Field Types
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      NodeList nodes = (NodeList) xpath.evaluate(fieldTypeXPathExpressions, document, XPathConstants.NODESET);
+      NodeList nodes = (NodeList) fieldTypeXPathExpressionsExp.evaluate(document, XPathConstants.NODESET);
       typeLoader.load(loader, nodes);
 
       // load the fields
-      Map<String,Boolean> explicitRequiredProp = loadFields(document, xpath);
+      Map<String,Boolean> explicitRequiredProp = loadFields(document);
 
 
       Node node = (Node) schemaSimExp.evaluate(document, XPathConstants.NODE);
@@ -687,7 +700,7 @@ public class IndexSchema {
       // expression = "/schema/copyField";
     
       dynamicCopyFields = new DynamicCopy[] {};
-      loadCopyFields(document, xpath);
+      loadCopyFields(document);
 
       postReadInform();
 
@@ -722,7 +735,7 @@ public class IndexSchema {
    * 
    * @return a map from field name to explicit required value  
    */ 
-  protected synchronized Map<String,Boolean> loadFields(Document document, XPath xpath) throws XPathExpressionException {
+  protected synchronized Map<String,Boolean> loadFields(Document document) throws XPathExpressionException {
     // Hang on to the fields that say if they are required -- this lets us set a reasonable default for the unique key
     Map<String,Boolean> explicitRequiredProp = new HashMap<>();
     
@@ -745,7 +758,7 @@ public class IndexSchema {
       FieldType ft = fieldTypes.get(type);
       if (ft==null) {
         throw new SolrException
-            (ErrorCode.BAD_REQUEST, "Unknown " + FIELD_TYPE + " '" + type + "' specified on field " + name);
+            (ErrorCode.BAD_REQUEST, "Unknown " + FIELD_TYPE + " '" + type + "' specified on field " + name + " types:" + fieldTypes);
       }
 
       Map<String,String> args = DOMUtil.toMapExcept(attrs, NAME, TYPE);
@@ -813,9 +826,9 @@ public class IndexSchema {
   /**
    * Loads the copy fields
    */
-  protected synchronized void loadCopyFields(Document document, XPath xpath) throws XPathExpressionException {
+  protected synchronized void loadCopyFields(Document document) throws XPathExpressionException {
     String expression = "//" + COPY_FIELD;
-    NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
+    NodeList nodes = (NodeList)copyFieldsExp.evaluate(document, XPathConstants.NODESET);
 
     for (int i=0; i<nodes.getLength(); i++) {
       Node node = nodes.item(i);
