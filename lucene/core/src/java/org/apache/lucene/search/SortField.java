@@ -24,6 +24,7 @@ import java.util.Objects;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexSorter;
 import org.apache.lucene.index.SortFieldProvider;
+import org.apache.lucene.search.comparators.DocComparator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
@@ -452,7 +453,7 @@ public class SortField {
       return new FieldComparator.RelevanceComparator(numHits);
 
     case DOC:
-      return new FieldComparator.DocComparator(numHits);
+      return new DocComparator(numHits);
 
     case INT:
       return new FieldComparator.IntComparator(numHits, field, (Integer) missingValue);

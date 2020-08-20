@@ -343,8 +343,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     } else {
       relevanceComparator = null;
       canSetMinScore = false;
-      if (firstComparator instanceof FilteringFieldComparator) {
-        assert hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE;
+      if (hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE) {
         scoreMode = needsScores ? ScoreMode.TOP_DOCS_WITH_SCORES : ScoreMode.TOP_DOCS;
       } else {
         scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
@@ -475,7 +474,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     // here we assume that if hitsThreshold was set, we let a comparator to skip non-competitive docs
     boolean filterNonCompetitiveDocs = hitsThresholdChecker.getHitsThreshold() == Integer.MAX_VALUE ? false : true;
-    FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits, filterNonCompetitiveDocs, after != null);
+    FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits, filterNonCompetitiveDocs);
 
     if (after == null) {
       return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker, minScoreAcc);

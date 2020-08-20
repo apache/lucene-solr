@@ -294,16 +294,19 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
   public void testDocSortOptimizationWithAfter() throws IOException {
     final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
-    final int numDocs = atLeast(1000);
+    final int numDocs = atLeast(1500);
     for (int i = 0; i < numDocs; ++i) {
       final Document doc = new Document();
       writer.addDocument(doc);
+      if ((i > 0) && (i % 500 == 0)) {
+        writer.commit();
+      }
     }
     final IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = new IndexSearcher(reader);
     final int numHits = 3;
     final int totalHitsThreshold = 3;
-    final int searchAfter = 990;
+    final int searchAfter = 1400;
 
     // sort by _doc with search after should trigger optimization
     {
@@ -346,15 +349,19 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
       final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
       searcher.search(new MatchAllDocsQuery(), collector);
       TopDocs topDocs = collector.topDocs();
+      for (int i = 0; i < numHits; i++) {
+        int expectedDocID = searchAfter - 1 - i;
+        assertEquals(expectedDocID, topDocs.scoreDocs[i].doc);
+      }
       assertEquals(topDocs.scoreDocs.length, numHits);
       // assert that many hits were collected including all hits before searchAfter
       assertTrue(topDocs.totalHits.value > searchAfter);
+
     }
 
     writer.close();
     reader.close();
     dir.close();
   }
-
 
 }

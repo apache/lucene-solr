@@ -136,6 +136,13 @@ public abstract class FieldComparator<T> {
     }
   }
 
+  /**
+   * Informs the comparator that sorting is done in reverse.
+   * This is necessary only for skipping functionality.
+   */
+  public void setReverse() {
+  }
+
 
   /**
    * Base FieldComparator class for numeric types
@@ -484,73 +491,6 @@ public abstract class FieldComparator<T> {
       assert !Float.isNaN(docValue);
       return Float.compare(docValue, topValue);
     }
-  }
-
-  /** Sorts by ascending docID */
-  public static final class DocComparator extends FieldComparator<Integer> implements LeafFieldComparator {
-    private final int[] docIDs;
-    private int docBase;
-    private int bottom;
-    private int topValue;
-
-    /** Creates a new comparator based on document ids for {@code numHits} */
-    public DocComparator(int numHits) {
-      docIDs = new int[numHits];
-    }
-
-    @Override
-    public int compare(int slot1, int slot2) {
-      // No overflow risk because docIDs are non-negative
-      return docIDs[slot1] - docIDs[slot2];
-    }
-
-    @Override
-    public int compareBottom(int doc) {
-      // No overflow risk because docIDs are non-negative
-      return bottom - (docBase + doc);
-    }
-
-    @Override
-    public void copy(int slot, int doc) {
-      docIDs[slot] = docBase + doc;
-    }
-
-    @Override
-    public LeafFieldComparator getLeafComparator(LeafReaderContext context) {
-      // TODO: can we "map" our docIDs to the current
-      // reader? saves having to then subtract on every
-      // compare call
-      this.docBase = context.docBase;
-      return this;
-    }
-    
-    @Override
-    public void setBottom(final int bottom) {
-      this.bottom = docIDs[bottom];
-    }
-
-    @Override
-    public void setTopValue(Integer value) {
-      topValue = value;
-    }
-
-    public int getTopValue() {
-      return topValue;
-    }
-
-    @Override
-    public Integer value(int slot) {
-      return Integer.valueOf(docIDs[slot]);
-    }
-
-    @Override
-    public int compareTop(int doc) {
-      int docValue = docBase + doc;
-      return Integer.compare(topValue, docValue);
-    }
-
-    @Override
-    public void setScorer(Scorable scorer) {}
   }
   
   /** Sorts by field's natural Term sort order, using
