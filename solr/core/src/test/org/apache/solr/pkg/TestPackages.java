@@ -63,6 +63,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
@@ -639,6 +640,7 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("rawtypes")
+  @Ignore("SOLR-14750")
   public void testSchemaPlugins() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");

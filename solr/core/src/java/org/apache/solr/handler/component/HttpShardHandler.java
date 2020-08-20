@@ -38,7 +38,7 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.SolrSingleThreaded;
+import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.CommonParams;
@@ -52,7 +52,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
 
-@SolrSingleThreaded
+@SolrThreadUnsafe
 public class HttpShardHandler extends ShardHandler {
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value,

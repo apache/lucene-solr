@@ -37,6 +37,7 @@ buildscript {
 configure(rootProject) {
   ext {
     rootSeed = propertyOrDefault('tests.seed', String.format("%08X", new Random().nextLong()))
+    rootSeedUserProvided = (propertyOrDefault('tests.seed', null) != null)
     rootSeedLong = SeedUtils.parseSeedChain(rootSeed)[0]
     projectSeedLong = rootSeedLong ^ project.path.hashCode()
   }
@@ -62,7 +63,7 @@ allprojects {
       testOptions = [
           // seed, repetition and amplification.
           [propName: 'tests.seed', value: "random", description: "Sets the master randomization seed."],
-          [propName: 'tests.iters', value: null, description: "Duplicate (re-run) each test N times."],
+          [propName: 'tests.iters', value: null, description: "Duplicate (re-run) each test case N times."],
           [propName: 'tests.multiplier', value: 1, description: "Value multiplier for randomized tests."],
           [propName: 'tests.maxfailures', value: null, description: "Skip tests after a given number of failures."],
           [propName: 'tests.timeoutSuite', value: null, description: "Timeout (in millis) for an entire suite."],
@@ -157,7 +158,7 @@ allprojects {
       }
 
       // Append resolved test properties to the test task.
-      test {
+      tasks.withType(Test) { task ->
         // TODO: we could remove opts with "buildOnly: true" (?)
         systemProperties testOptionsResolved
 
@@ -237,9 +238,10 @@ if (vmName =~ /(?i)(hotspot|openjdk|jrockit)/ &&
   logger.debug("Enabling HashMap assertions.")
   allprojects {
     plugins.withType(JavaPlugin) {
-      test {
+      tasks.withType(Test) { task ->  
         jvmArgs("-da:java.util.HashMap")
       }
     }
   }
 }
+
