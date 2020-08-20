@@ -357,7 +357,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       CountDownLatch waitForMerge = new CountDownLatch(1);
       CountDownLatch waitForUpdate = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
-          .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), MergeTrigger.COMMIT)).setMaxFullFlushMergeWaitMillis(30 * 1000)
+          .setMergePolicy(new MergeOnXMergePolicy(NoMergePolicy.INSTANCE, MergeTrigger.COMMIT)).setMaxFullFlushMergeWaitMillis(30 * 1000)
           .setSoftDeletesField("soft_delete")
           .setMaxBufferedDocs(Integer.MAX_VALUE)
           .setRAMBufferSizeMB(100)
