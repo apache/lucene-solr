@@ -189,7 +189,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // should I be leader?
         ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
         if (zkShardTerms.registered(coreNodeName) && !zkShardTerms.canBecomeLeader(coreNodeName)) {
-          if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, cd, leaderVoteWait)) {
+          if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreNodeName, leaderVoteWait)) {
             rejoinLeaderElection(core);
             return;
           } else {
@@ -369,45 +369,34 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    * @return true if after {@code timeout} there are no other replicas with higher term participate in the election,
    * false if otherwise
    */
-  private boolean waitForEligibleBecomeLeaderAfterTimeout(ZkShardTerms zkShardTerms, CoreDescriptor cd, int timeout) throws InterruptedException {
-    if (isClosed()) {
-      throw new AlreadyClosedException();
-    }
-    String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
-    AtomicReference<Boolean> foundHigherTerm = new AtomicReference<>();
-    try {
-      zkController.getZkStateReader().waitForState(cd.getCollectionName(), timeout, TimeUnit.MILLISECONDS, (n,c) -> foundForHigherTermReplica(zkShardTerms, cd, foundHigherTerm));
-    } catch (TimeoutException e) {
-      log.warn("After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (" +
-                      "core_term:{}, highest_term:{})",
-              timeout, cd, zkShardTerms.getTerm(coreNodeName), zkShardTerms.getHighestTerm());
-      return true;
-    }
+  private boolean waitForEligibleBecomeLeaderAfterTimeout(ZkShardTerms zkShardTerms, String coreNodeName, int timeout) throws InterruptedException {
+    long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
+    while (!isClosed()) {
+      if (System.nanoTime() > timeoutAt) {
+        log.warn("After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (core_term:{}, highest_term:{})",
+            timeout, coreNodeName, zkShardTerms.getTerm(coreNodeName), zkShardTerms.getHighestTerm());
+        return true;
+      }
+      if (replicasWithHigherTermParticipated(zkShardTerms, coreNodeName)) {
+        log.info("Can't become leader, other replicas with higher term participated in leader election");
+        return false;
+      }
 
-    return false;
-  }
-
-  private boolean foundForHigherTermReplica(ZkShardTerms zkShardTerms, CoreDescriptor cd, AtomicReference<Boolean> foundHigherTerm) {
-    String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
-    if (replicasWithHigherTermParticipated(zkShardTerms, coreNodeName)) {
-      log.info("Can't become leader, other replicas with higher term participated in leader election");
-      foundHigherTerm.set(true);
-      return true;
+      // TODO: if we know eveyrone has already particpated, we should bail early...
+      
+      Thread.sleep(500L);
     }
-
     return false;
   }
 
   /**
    * Do other replicas with higher term participated in the election
+   *
    * @return true if other replicas with higher term participated in the election, false if otherwise
    */
   private boolean replicasWithHigherTermParticipated(ZkShardTerms zkShardTerms, String coreNodeName) {
-    if (isClosed()) {
-      throw new AlreadyClosedException();
-    }
     ClusterState clusterState = zkController.getClusterState();
-    DocCollection docCollection = clusterState.getCollectionOrNull(collection, true);
+    DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     Slice slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
     if (slices == null) return false;
 
