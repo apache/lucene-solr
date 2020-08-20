@@ -2057,10 +2057,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
       }) {
       }
-    } catch (RuntimeException x) {
-      assertEquals("boom", x.getMessage());
-      assertEquals("has suppressed exceptions: " + Arrays.toString(x.getSuppressed()), 0, x.getSuppressed().length);
-      assertNull(x.getCause());
+    } catch (RuntimeException e) {
+      assertEquals("boom", e.getMessage());
+      assertEquals("has suppressed exceptions: " + Arrays.toString(e.getSuppressed()), 0, e.getSuppressed().length);
+      assertNull(e.getCause());
     }
   }
 }
