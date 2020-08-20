@@ -299,10 +299,10 @@ public class JettySolrRunner implements Closeable {
       qtp = new SolrQueuedThreadPool("JettySolrRunner qtp");
       qtp.setMaxThreads(Integer.getInteger("solr.maxContainerThreads", THREAD_POOL_MAX_THREADS));
       qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
-      qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 2));
+      qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 8));
       qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
       qtp.setStopTimeout(0);
-      qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
+      qtp.setReservedThreads(-1);
     }
 
     server = new Server(qtp);

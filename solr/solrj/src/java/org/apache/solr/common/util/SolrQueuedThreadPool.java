@@ -79,7 +79,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     private int _priority = Thread.NORM_PRIORITY;
     private boolean _daemon = false;
     private boolean _detailedDump = false;
-    private int _lowThreadsThreshold = 1;
+    private int _lowThreadsThreshold = -1;
     private ThreadPoolBudget _budget;
     private volatile boolean closed;
 
@@ -89,7 +89,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     public SolrQueuedThreadPool(String name) {
         this(10000, 15,
-                60000, -1,
+                60000, 0,
                 null, null,
                 new  SolrNamedThreadFactory(name));
         this.name = name;

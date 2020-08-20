@@ -224,8 +224,8 @@ public class Http2SolrClient extends SolrClient {
       httpClient = new HttpClient(transport, sslContextFactory);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     }
-    httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(12, ParWork.PROC_COUNT), 6, idleTimeout);
-   // httpClientExecutor.setReservedThreads(0);
+    httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(12, ParWork.PROC_COUNT), 8, idleTimeout);
+    httpClientExecutor.setLowThreadsThreshold(-1);
 
     httpClient.setIdleTimeout(idleTimeout);
     try {
@@ -264,7 +264,6 @@ public class Http2SolrClient extends SolrClient {
               });
 
           closer.collect("httpClientScheduler", () -> {
-           // httpClientExecutor.stopReserveExecutor();
             try {
               httpClient.getScheduler().stop();
             } catch (Exception e) {
@@ -276,7 +275,6 @@ public class Http2SolrClient extends SolrClient {
         log.error("Exception closing httpClient", e);
       }
     }
-
 
     assert ObjectReleaseTracker.release(this);
   }

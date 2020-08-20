@@ -20,6 +20,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -73,16 +74,16 @@ public abstract class ConfigSetService {
       // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
 
       // there are no flags in non cloud mode, it just returns null
-//      NamedList flags = null;
-//      flags = loadConfigSetFlags(dcore, coreLoader);
+      NamedList flags = null;
+      flags = loadConfigSetFlags(dcore, coreLoader);
 
 
-//      boolean trusted =
-//          (coreLoader instanceof ZkSolrResourceLoader
-//              && flags != null
-//              && flags.get("trusted") != null
-//              && !flags.getBooleanArg("trusted")
-//              ) ? false: true;
+      boolean trusted =
+          (coreLoader instanceof ZkSolrResourceLoader
+              && flags != null
+              && flags.get("trusted") != null
+              && !flags.getBooleanArg("trusted")
+              ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, true);
       IndexSchema schema = createIndexSchema(dcore, solrConfig);

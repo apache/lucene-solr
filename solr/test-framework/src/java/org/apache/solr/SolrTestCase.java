@@ -306,9 +306,9 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("lucene.cms.override_core_count", "3");
       System.setProperty("lucene.cms.override_spins", "true");
 
-      System.setProperty("solr.maxContainerThreads", "300");
+      // unlimited - System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
-      System.setProperty("solr.minContainerThreads", "20");
+      System.setProperty("solr.minContainerThreads", "8");
 
       ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_SECONDS = 1;
       ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS =1;
@@ -630,11 +630,11 @@ public class SolrTestCase extends LuceneTestCase {
     //qtp.setMaxThreads(Integer.getInteger("solr.maxContainerThreads", 50));
     // qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
     qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 8));
-    qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", 30000));
+    qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", 45000));
 
     qtp.setStopTimeout((int) TimeUnit.SECONDS.toMillis(60));
     qtp.setDaemon(true);
-    qtp.setReservedThreads(-1); // -1 auto sizes, important to keep
+    qtp.setReservedThreads(0);
     qtp.setStopTimeout(0);
     return qtp;
   }
