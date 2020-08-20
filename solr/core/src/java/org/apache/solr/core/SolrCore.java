@@ -1048,7 +1048,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         return null;
       });
 
-      this.updateHandler = initUpdateHandler(updateHandler);
+      if (updateHandler != null) {
+        this.updateHandler = new DirectUpdateHandler2(this, updateHandler);
+      } else {
+        this.updateHandler = new DirectUpdateHandler2(this);
+      }
+
+      coreMetricManager.registerMetricProducer("updateHandler", (SolrMetricProducer) this.updateHandler);
+      infoRegistry.put("updateHandler", this.updateHandler);
 
       initSearcher(prev);
 
@@ -1186,25 +1193,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         iwRef.decref();
       }
     }
-  }
-
-  private UpdateHandler initUpdateHandler(UpdateHandler updateHandler) {
-    String updateHandlerClass = solrConfig.getUpdateHandlerInfo().className;
-    if (updateHandlerClass == null) {
-      updateHandlerClass = DirectUpdateHandler2.class.getName();
-    }
-
-    final UpdateHandler newUpdateHandler;
-    if (updateHandler == null) {
-      newUpdateHandler = createUpdateHandler(updateHandlerClass);
-    } else {
-      newUpdateHandler = createUpdateHandler(updateHandlerClass, updateHandler);
-    }
-    if (newUpdateHandler instanceof SolrMetricProducer) {
-      coreMetricManager.registerMetricProducer("updateHandler", (SolrMetricProducer) newUpdateHandler);
-    }
-    infoRegistry.put("updateHandler", newUpdateHandler);
-    return newUpdateHandler;
   }
 
   /**

@@ -819,8 +819,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema = shallowCopy(true);
       // clone data structures before modifying them
       newSchema.copyFieldsMap = cloneCopyFieldsMap(copyFieldsMap);
-      newSchema.copyFieldTargetCounts
-          = (Map<SchemaField,Integer>)((HashMap<SchemaField,Integer>)copyFieldTargetCounts).clone();
+      newSchema.copyFieldTargetCounts = new ConcurrentHashMap<>(copyFieldTargetCounts);
       newSchema.dynamicCopyFields = new DynamicCopy[dynamicCopyFields.length];
       System.arraycopy(dynamicCopyFields, 0, newSchema.dynamicCopyFields, 0, dynamicCopyFields.length);
 
@@ -1058,10 +1057,9 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       newSchema = shallowCopy(true);
       // clone data structures before modifying them
-      newSchema.fieldTypes = (Map<String,FieldType>)((HashMap<String,FieldType>)fieldTypes).clone();
+      newSchema.fieldTypes = new ConcurrentHashMap<>(fieldTypes);
       newSchema.copyFieldsMap = cloneCopyFieldsMap(copyFieldsMap);
-      newSchema.copyFieldTargetCounts
-          = (Map<SchemaField,Integer>)((HashMap<SchemaField,Integer>)copyFieldTargetCounts).clone();
+      newSchema.copyFieldTargetCounts = new ConcurrentHashMap<>(copyFieldTargetCounts);
       newSchema.dynamicCopyFields = new DynamicCopy[dynamicCopyFields.length];
       System.arraycopy(dynamicCopyFields, 0, newSchema.dynamicCopyFields, 0, dynamicCopyFields.length);
       newSchema.dynamicFields = new DynamicField[dynamicFields.length];
