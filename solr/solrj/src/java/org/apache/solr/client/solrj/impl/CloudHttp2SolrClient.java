@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import javax.naming.Name;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;

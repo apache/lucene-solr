@@ -25,6 +25,8 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -83,7 +85,16 @@ public class LBHttp2SolrClient extends LBSolrClient {
   }
 
   /**
-   * TODO
+   * Asynchronously query a server from the list of servers provided in the {@link Req} parameter. Servers are queried
+   * in the exact order of the server list. This method is similar to {@link LBSolrClient#request(Req)} except that it
+   * runs asynchronously.
+   *
+   * @param req contains both the request as well as the list of servers to query
+   *
+   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports cancelling requests via
+   * {@link CompletableFuture#cancel(boolean)}, adding callbacks/error handling using {@link CompletableFuture#whenComplete(BiConsumer)}
+   * and {@link CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture functionality. Will
+   * complete exceptionally in case of either an {@link IOException} or {@link SolrServerException} during the request.
    */
   public CompletableFuture<Rsp> requestAsync(Req req) {
     CompletableFuture<Rsp> apiFuture = new CompletableFuture<>();
@@ -115,7 +126,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
               if (cancelled.get()) {
                 return;
               }
-              CompletableFuture<NamedList<Object>> future = doRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
+              CompletableFuture<NamedList<Object>> future = doAsyncRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
               currentFuture.set(future);
             }
           } finally {
@@ -127,7 +138,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       }
     };
     try {
-      CompletableFuture<NamedList<Object>> future = doRequest(it.nextOrError(), req, rsp, isNonRetryable, it.isServingZombieServer(), retryListener);
+      CompletableFuture<NamedList<Object>> future = doAsyncRequest(it.nextOrError(), req, rsp, isNonRetryable, it.isServingZombieServer(), retryListener);
       currentFuture.set(future);
     } catch (SolrServerException e) {
       apiFuture.completeExceptionally(e);
@@ -151,7 +162,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     void onFailure(Exception e, boolean retryReq);
   }
 
-  private CompletableFuture<NamedList<Object>> doRequest(String baseUrl, Req req, Rsp rsp, boolean isNonRetryable,
+  private CompletableFuture<NamedList<Object>> doAsyncRequest(String baseUrl, Req req, Rsp rsp, boolean isNonRetryable,
                          boolean isZombie, RetryListener listener) {
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);

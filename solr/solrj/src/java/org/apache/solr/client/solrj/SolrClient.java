@@ -25,9 +25,13 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -1292,14 +1296,33 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Execute an asynchronous request against a Solr server. TODO documentation
+   * Execute an asynchronous request against a Solr server for a given collection.
+   * This is only currently supported on the {@link Http2SolrClient} and {@link CloudHttp2SolrClient} for now.
+   * 
+   * @param request the request to execute
+   * @param collection the collection to execute the request against
+   *
+   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports cancelling requests via
+   * {@link CompletableFuture#cancel(boolean)}, adding callbacks/error handling using {@link CompletableFuture#whenComplete(BiConsumer)}
+   * and {@link CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture functionality. Will
+   * complete exceptionally in case of either an {@link IOException} or {@link SolrServerException} during the request.
+   * Once completed, the CompletableFuture will contain a {@link NamedList} with the response from the server.
    */
   public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> request, String collection) {
     throw new UnsupportedOperationException("Async requests not supported on this Solr Client.");
   }
 
   /**
-   * TODO documentation
+   * Execute an asynchronous request against a Solr server using the request's collection parameter.
+   * This is only currently supported on the {@link Http2SolrClient} and {@link CloudHttp2SolrClient} for now.
+   *
+   * @param request the request to execute
+   *
+   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports cancelling requests via
+   * {@link CompletableFuture#cancel(boolean)}, adding callbacks/error handling using {@link CompletableFuture#whenComplete(BiConsumer)}
+   * and {@link CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture functionality. Will
+   * complete exceptionally in case of either an {@link IOException} or {@link SolrServerException} during the request.
+   * Once completed, the CompletableFuture will contain a {@link NamedList} with the response from the server.
    */
   public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> request) {
     return requestAsync(request, request.getCollection());

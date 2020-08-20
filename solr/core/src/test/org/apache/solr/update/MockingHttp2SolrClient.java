@@ -146,8 +146,7 @@ public class MockingHttp2SolrClient extends Http2SolrClient {
           e = new SolrServerException(e);
         }
       }
-      //TODO: what to do here
-      //asyncListener.onFailure(e);
+      return CompletableFuture.failedFuture(e);
     }
 
     return super.requestAsync(request, collection);
