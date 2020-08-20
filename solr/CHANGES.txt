@@ -42,7 +42,7 @@ Improvements
 
 * SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
 
-* SOLR-13438: On deleting a collection, its config set will also be deleted iff it has been auto-created, and not used by any other collection.
+* SOLR-13438: On deleting a collection, its config set will also be deleted iff it has been auto-created, and not used by any other collection (Anderson Dorow)
 
 Other Changes
 ----------------------
