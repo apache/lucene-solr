@@ -34,7 +34,7 @@
     </metrics>
     <!-- intentionally set very low values here to trigger multiple flushes and merges.
          DO NOT USE THESE ABSURD VALUES IN PRODUCTION. -->
-    <maxBufferedDocs>100</maxBufferedDocs>
+    <maxBufferedDocs>${solr.tests.maxBufferedDocs:100}</maxBufferedDocs>
 
     <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
       <!-- intentionally set very low values here to trigger multiple flushes and merges.

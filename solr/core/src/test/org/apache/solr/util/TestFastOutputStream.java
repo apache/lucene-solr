@@ -29,19 +29,19 @@ public class TestFastOutputStream extends SolrTestCase {
   public void testRandomWrites() throws Exception {
     rand = random();
 
-    arr = new byte[20000];
+    arr = new byte[TEST_NIGHTLY ? 20000 : 200];
     for (int i=0; i<arr.length; i++) {
       arr[i] = (byte)rand.nextInt();
     }
 
-    for (int i=0; i<1000; i++) {
+    for (int i=0; i < (TEST_NIGHTLY ? 1000 : 100); i++) {
       doRandomWrites();
     }
 
   }
 
   public void doRandomWrites() throws Exception {
-    int bufSize = ( rand.nextBoolean() ? rand.nextInt(10) : rand.nextInt(20000) )+1;
+    int bufSize = ( rand.nextBoolean() ? rand.nextInt(10) : rand.nextInt(TEST_NIGHTLY ? 20000 : 200) )+1;
     MemOutputStream out = new MemOutputStream(new byte[bufSize]);
 
     int hash = 0;

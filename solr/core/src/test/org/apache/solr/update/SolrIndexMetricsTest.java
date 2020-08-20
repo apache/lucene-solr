@@ -37,7 +37,12 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
   @Before
   public void beforeMethod() {
-    System.setProperty("solr.tests.maxBufferedDocs", "20");
+    if (TEST_NIGHTLY) {
+      System.setProperty("solr.tests.maxBufferedDocs", "20");
+    } else {
+      System.setProperty("solr.tests.maxBufferedDocs", "10");
+    }
+
   }
 
   @After
@@ -49,7 +54,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = lrf.makeRequest();
     UpdateHandler uh = req.getCore().getUpdateHandler();
     AddUpdateCommand add = new AddUpdateCommand(req);
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 100); i++) {
       add.clear();
       add.solrDoc = new SolrInputDocument();
       add.solrDoc.addField("id", "" + i);
