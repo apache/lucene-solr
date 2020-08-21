@@ -21,8 +21,8 @@ import java.time.format.DateTimeFormatter
 plugins {
   id "base"
   id "com.palantir.consistent-versions" version "1.14.0"
-  id 'de.thetaphi.forbiddenapis' version '3.0.1' apply false
   id "org.owasp.dependencycheck" version "5.3.0"
+  id 'de.thetaphi.forbiddenapis' version '3.0.1' apply false
   id "de.undercouch.download" version "4.0.2" apply false
 }
 
@@ -63,6 +63,8 @@ ext {
   buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
   buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
 
+  minJavaVersion = JavaVersion.VERSION_11
+
   // Declare script dependency versions outside of palantir's
   // version unification control. These are not our main dependencies.
   scriptDepVersions = [
@@ -102,6 +104,7 @@ apply from: file('gradle/maven/defaults-maven.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')
+apply from: file('gradle/ide/eclipse.gradle')
 
 // Validation tasks
 apply from: file('gradle/validation/precommit.gradle')
