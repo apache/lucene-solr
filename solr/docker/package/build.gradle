@@ -17,6 +17,7 @@
 
 description = 'Solr Docker Package image'
 
+// The solr package docker image relies on the output of the solr:packaging project.
 Project solrPackagingProject = project(':solr:packaging')
 
 dependencies {
