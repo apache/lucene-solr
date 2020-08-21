@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="solr-langid" default="default">
+
+  <description>
+    Language Identifier contrib for extracting language from a document being indexed
+  </description>
+
+  <import file="../contrib-build.xml"/>
+
+  <property name="test.model.dir" location="${tests.userdir}/langid/solr/collection1/conf"/>
+  <property name="test.leipzig.folder.link" value="http://pcai056.informatik.uni-leipzig.de/downloads/corpora"/><!-- URL broken? -->
+  <property name="test.build.models.dir" location="${build.dir}/build-test-models"/>
+  <property name="test.build.models.data.dir" location="${test.build.models.dir}/data"/>
+  <property name="test.build.models.sentences.dir" location="${test.build.models.dir}/train"/>
+  <property name="test.opennlp.model" value="opennlp-langdetect.eng-swe-spa-rus-deu.bin"/>
+
+  <path id="opennlp.jars">
+    <fileset dir="lib" includes="opennlp*.jar"/>
+  </path>
+  
+  <path id="classpath">
+    <fileset dir="../extraction/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="lib" excludes="${common.classpath.excludes}"/>
+    <path refid="solr.base.classpath"/>   
+  </path>
+
+  <!-- we don't actually need to compile this thing, we just want its libs -->
+  <target name="resolve-extraction-libs">
+    <ant dir="${common-solr.dir}/contrib/extraction" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="compile-core" depends="resolve-extraction-libs,solr-contrib-build.compile-core"/>
+
+  <!--
+  Create test models using data for five languages from the Leipzig corpora.
+  See https://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.langdetect.training.leipzig
+  -->
+  <target name="train-test-models" description="Train small test models for unit tests" depends="resolve">
+    <download-leipzig language.code="eng"/> 
+    <download-leipzig language.code="swe"/>
+    <download-leipzig language.code="spa"/>
+    <download-leipzig language.code="rus"/>
+    <download-leipzig language.code="deu"/>
+
+    <echo message="Train OpenNLP test model over data from the Leipzig corpora"/>
+    <java classname="opennlp.tools.cmdline.CLI" classpathref="opennlp.jars" fork="true" failonerror="true">
+      <arg value="LanguageDetectorTrainer.leipzig"/>
+
+      <arg value="-model"/>
+      <arg value="${test.model.dir}/${test.opennlp.model}"/>
+
+      <arg value="-params"/>
+      <arg value="${tests.userdir}/opennlp.langdetect.trainer.params.txt"/>
+
+      <arg value="-sentencesDir"/> 
+      <arg value="${test.build.models.sentences.dir}"/>
+      
+      <arg value="-sentencesPerSample"/>
+      <arg value="3"/>  
+      
+      <arg value="-samplesPerLanguage"/>
+      <arg value="10000"/>
+    </java>
+  </target>
+
+  <macrodef name="download-leipzig">
+    <attribute name="language.code"/>
+    <attribute name="leipzig.tarball" default="@{language.code}_news_2007_30K.tar.gz"/>
+    <sequential>
+      <mkdir dir="${test.build.models.data.dir}"/>
+      <get src="${test.leipzig.folder.link}/@{leipzig.tarball}" dest="${test.build.models.data.dir}"/>
+      <untar compression="gzip" src="${test.build.models.data.dir}/@{leipzig.tarball}"
+             dest="${test.build.models.sentences.dir}">
+        <patternset>
+          <include name="*-sentences.txt"/>
+        </patternset>
+      </untar>
+    </sequential>
+  </macrodef>
+
+  <target name="regenerate" depends="train-test-models"/>
+</project>

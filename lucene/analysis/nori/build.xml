@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="analyzers-nori" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+  <description>
+    Korean Morphological Analyzer
+  </description>
+
+  <!-- currently whether rat detects this as binary or not
+       is platform dependent?! -->
+  <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
+
+  <!-- we don't want to pull in ipadic/naist etc -->
+  <property name="ivy.default.configuration" value="default"/>
+  <import file="../analysis-module-build.xml"/>
+
+  <!-- default configuration for Korean: uses mecab-ko-dic -->
+  <property name="dict.type" value="mecab-ko-dic"/>
+  <property name="dict.version" value="mecab-ko-dic-2.0.3-20170922" />
+
+  <property name="dict.src.file" value="${dict.version}.tar.gz" />
+  <property name="dict.src.dir" value="${build.dir}/${dict.version}" />
+  <property name="dict.encoding" value="utf-8"/>
+  <property name="dict.normalize" value="false"/>
+  <property name="dict.target.dir" location="${resources.dir}"/>
+
+  <available type="dir" file="${build.dir}/${dict.version}" property="mecab-ko.dict.available"/>
+
+  <path id="classpath">
+    <dirset dir="${build.dir}">
+      <include name="classes/java"/>
+    </dirset>
+    <pathelement path="${analyzers-common.jar}"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
+  <target name="download-dict" depends="ivy-availability-check,ivy-fail,ivy-configure" unless="mecab-ko.dict.available">
+    <ivy:retrieve pattern="${build.dir}/${dict.src.file}" conf="${dict.type}" symlink="${ivy.symlink}"/>
+    <!-- TODO: we should checksum too -->
+    <gunzip src="${build.dir}/${dict.src.file}"/>
+    <untar src="${build.dir}/${dict.version}.tar" dest="${build.dir}"/>
+  </target>
+
+  <target name="build-dict" depends="compile, download-dict">
+    <sequential>
+      <delete verbose="true">
+        <fileset dir="${resources.dir}/org/apache/lucene/analysis/ko/dict" includes="**/*"/>
+      </delete>
+      <!-- TODO: optimize the dictionary construction a bit so that you don't need 1G -->
+      <java fork="true" failonerror="true" maxmemory="1g" classname="org.apache.lucene.analysis.ko.util.DictionaryBuilder">
+        <classpath refid="classpath"/>
+        <assertions>
+          <enable package="org.apache.lucene"/>
+        </assertions>
+        <arg value="${dict.src.dir}"/>
+        <arg value="${dict.target.dir}"/>
+        <arg value="${dict.encoding}"/>
+        <arg value="${dict.normalize}"/>
+      </java>
+    </sequential>
+  </target>
+
+  <target name="compile-test" depends="module-build.compile-test"/>
+
+  <target name="regenerate" depends="build-dict"/>
+</project>
