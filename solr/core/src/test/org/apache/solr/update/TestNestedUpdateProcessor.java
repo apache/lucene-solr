@@ -450,15 +450,32 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
      */
     private SolrParams parentQueryMaker(String parent_path, String inner_child_query) {
       assertValidPathSytax(parent_path);
-
+      final boolean verbose = random().nextBoolean();
+      
       if (parent_path.equals("/")) {
-        return params("q", "{!parent which=$parent_filt v=$child_q}",
-                      "parent_filt", "(*:* -_nest_path_:*)",
-                      "child_q", "(+" + inner_child_query + " +_nest_path_:*)");
+        if (verbose) {
+          return params("q", "{!parent which=$parent_filt v=$child_q}",
+                        "parent_filt", "(*:* -_nest_path_:*)",
+                        "child_q", "(+" + inner_child_query + " +_nest_path_:*)");
+        } else {
+          return params("q", "{!parent which='(*:* -_nest_path_:*)'}(+" + inner_child_query + " +_nest_path_:*)");
+        }
       } // else...
-      return params("q", "{!parent which=$parent_filt v=$child_q})",
-                    "parent_filt", "(*:* -{!prefix f='_nest_path_' v='"+parent_path+"/'})",
-                    "child_q", "(+" + inner_child_query + " +{!prefix f='_nest_path_' v='"+parent_path+"/'})");
+
+      if (verbose) {
+        final String path = parent_path + "/";
+        return params("q", "{!parent which=$parent_filt v=$child_q}",
+                      "parent_filt", "(*:* -{!prefix f='_nest_path_' v='"+path+"'})",
+                      "child_q", "(+" + inner_child_query + " +{!prefix f='_nest_path_' v='"+path+"'})");
+      } else {
+        // '/' has to be escaped other wise it will be treated as a regex query...
+        // (and of course '\' escaping is the java syntax as well, we have to double it)
+        final String path = (parent_path + "/").replace("/", "\\/");
+        // ...and when used inside the 'which' param it has to be escaped *AGAIN* because of
+        // the "quoted" localparam evaluation layer...
+        return params("q", "{!parent which='(*:* -_nest_path_:" + path.replace("\\/","\\\\/") + "*)'}"
+                      + "(+" + inner_child_query + " +_nest_path_:" + path + "*)");
+      }
     }
 
     /** 
@@ -503,14 +520,32 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
      */
     private SolrParams childQueryMaker(String parent_path, String inner_parent_query) {
       assertValidPathSytax(parent_path);
+      final boolean verbose = random().nextBoolean();
+      
       if (parent_path.equals("/")) {
-        return params("q", "{!child of=$parent_filt v=$parent_q})",
-                      "parent_filt", "(*:* -_nest_path_:*)",
-                      "parent_q", "(+" + inner_parent_query + " -_nest_path_:*)");
+        if (verbose) {
+          return params("q", "{!child of=$parent_filt v=$parent_q})",
+                        "parent_filt", "(*:* -_nest_path_:*)",
+                        "parent_q", "(+" + inner_parent_query + " -_nest_path_:*)");
+        } else {
+          return params("q", "{!child of='(*:* -_nest_path_:*)'}(+" + inner_parent_query + " -_nest_path_:*)");
+        }
       } // else...
-      return params("q", "{!child of=$parent_filt v=$parent_q})",
-                    "parent_filt", "(*:* -{!prefix f='_nest_path_' v='"+parent_path+"/'})",
-                    "parent_q", "(+" + inner_parent_query + " +{!field f='_nest_path_' v='"+parent_path+"'})");
+      
+      if (verbose) {
+        return params("q", "{!child of=$parent_filt v=$parent_q})",
+                      "parent_filt", "(*:* -{!prefix f='_nest_path_' v='"+parent_path+"/'})",
+                      "parent_q", "(+" + inner_parent_query + " +{!field f='_nest_path_' v='"+parent_path+"'})");
+      } else {
+        // '/' has to be escaped other wise it will be treated as a regex query...
+        // (and of course '\' escaping is the java syntax as well, we have to double it)
+        final String exact_path = parent_path.replace("/", "\\/");
+        // ...and when used inside the 'which' param it has to be escaped *AGAIN* because of
+        // the "quoted" localparam evaluation layer...
+        final String prefix_path = (parent_path + "/").replace("/","\\\\/");
+        return params("q", "{!child of='(*:* -_nest_path_:"+prefix_path+"*)'}"
+                      + "(+" + inner_parent_query + " +_nest_path_:" + exact_path + ")");
+      }
     }
 
     private void assertValidPathSytax(String path) {
