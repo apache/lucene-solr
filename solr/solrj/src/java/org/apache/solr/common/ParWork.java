@@ -539,6 +539,10 @@ public class ParWork implements Closeable {
     return new ParWorkExecService(getEXEC(), maximumPoolSize);
   }
 
+  public static ExecutorService getExecutorService(int maximumPoolSize, boolean noCallerRuns) {
+    return new ParWorkExecService(getEXEC(), maximumPoolSize, noCallerRuns);
+  }
+
   private void handleObject(AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, ParObject ob) {
     if (log.isDebugEnabled()) {
       log.debug(
@@ -730,6 +734,10 @@ public class ParWork implements Closeable {
   public static class SolrFutureTask extends FutureTask {
     public SolrFutureTask(Callable callable) {
       super(callable);
+    }
+
+    public SolrFutureTask(Runnable runnable, Object value) {
+      super(runnable, value);
     }
   }
 

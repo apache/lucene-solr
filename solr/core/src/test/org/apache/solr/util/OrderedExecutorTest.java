@@ -20,18 +20,17 @@ package org.apache.solr.util;
 import java.lang.invoke.MethodHandles;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
@@ -39,8 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.ParWorkExecutor;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.junit.Test;
 
@@ -89,12 +86,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         });
       // BBB doesn't care about the latch, but because it uses the same lockId, it's blocked on AAA
       // so we execute it in a background thread...
-      Future<?> future = testExecutor.submit(() -> {
-        orderedExecutor.submit(lockId, () -> {
-          events.add("BBB");
-        });
-      });
-      
+      Future<?> future = testExecutor.submit(new MyNoLimitsCallable(orderedExecutor, lockId, events));
       // now if we release the latchAAA, AAA should be garunteed to fire first, then BBB
       latchAAA.countDown();
       try {
@@ -221,7 +213,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       run.put(i, i);
     }
     OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3,
-        ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3));
+        ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3, true));
     try {
       for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 55); i++) {
         int key = random().nextInt(N);
@@ -237,5 +229,24 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   private static class IntBox {
     final AtomicInteger value = new AtomicInteger();
+  }
+
+  private static class MyNoLimitsCallable extends ParWork.NoLimitsCallable {
+    private final OrderedExecutor orderedExecutor;
+    private final Integer lockId;
+    private final BlockingQueue<String> events;
+
+    public MyNoLimitsCallable(OrderedExecutor orderedExecutor, Integer lockId, BlockingQueue<String> events) {
+      this.orderedExecutor = orderedExecutor;
+      this.lockId = lockId;
+      this.events = events;
+    }
+
+    public Object call() {
+      orderedExecutor.submit(lockId, () -> {
+        events.add("BBB");
+      });
+      return null;
+    }
   }
 }

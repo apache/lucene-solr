@@ -32,6 +32,7 @@ public class ParWorkExecService extends AbstractExecutorService {
 
   private final ExecutorService service;
   private final int maxSize;
+  private final boolean noCallerRuns;
   private volatile boolean terminated;
   private volatile boolean shutdown;
 
@@ -104,9 +105,13 @@ public class ParWorkExecService extends AbstractExecutorService {
     this(service, -1);
   }
 
-
   public ParWorkExecService(ExecutorService service, int maxSize) {
+    this(service, maxSize, false);
+  }
+  
+  public ParWorkExecService(ExecutorService service, int maxSize, boolean noCallerRuns) {
     assert service != null;
+    this.noCallerRuns = noCallerRuns; 
     //assert ObjectReleaseTracker.track(this);
     if (maxSize == -1) {
       this.maxSize = MAX_AVAILABLE;
@@ -118,12 +123,16 @@ public class ParWorkExecService extends AbstractExecutorService {
 
   @Override
   protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
+    if (noCallerRuns) {
+      return (RunnableFuture) new ParWork.SolrFutureTask(runnable, value);
+    }
     return new FutureTask(runnable, value);
+
   }
 
   @Override
   protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-    if (callable instanceof ParWork.NoLimitsCallable) {
+    if (noCallerRuns || callable instanceof ParWork.NoLimitsCallable) {
       return (RunnableFuture) new ParWork.SolrFutureTask(callable);
     }
     return new FutureTask(callable);
