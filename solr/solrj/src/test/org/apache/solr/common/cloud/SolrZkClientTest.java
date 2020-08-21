@@ -40,12 +40,10 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit debug
 public class SolrZkClientTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -82,7 +80,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     }
 
     defaultClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT).start();
-    defaultClient.mkdir(PATH);
+    defaultClient.mkdirs(PATH);
 
     aclClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
       @Override
@@ -121,7 +119,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     defaultClient.close();
     zkServer.shutdown();
     solrClient.close();
-    cluster.shutdown();
+    shutdownCluster();
     super.tearDown();
   }
 
