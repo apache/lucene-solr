@@ -331,6 +331,16 @@ groups:
     - http://www.apache.org/dev/openpgp.html#apache-wot
     - https://id.apache.org
     - https://dist.apache.org/repos/dist/release/lucene/KEYS
+  - !Todo
+    id: jira_permissions
+    title: Obtain the neccessary permissions for Apache Jira
+    description: |-
+      If you are not a PMC member and this is your first time as RM, please ask to be granted extra permissions in Jira in order to complete all steps of the release.
+
+      If you are a PMC member, you will already have the necessary permissions.
+    links:
+      - https://issues.apache.org/jira/projects/LUCENE
+      - https://issues.apache.org/jira/projects/SOLR
 - !TodoGroup
   id: preparation
   title: Prepare for the release
@@ -621,10 +631,8 @@ groups:
     - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
   - !Todo
     id: new_jira_versions
-    title: (PMC) Add a new version in JIRA for the next release
+    title: Add a new version in JIRA for the next release
     description: |-
-      WARNING: Only PMC members have admin access to JIRA. If you are not a PMC member, please reach out to one to complete this step.
-
       Go to the JIRA "Manage Versions" Administration pages and add the new version:
 
       {% if release_type == 'major' -%}
@@ -1383,11 +1391,7 @@ groups:
 - !TodoGroup
   id: post_release
   title: Tasks to do after release.
-  description: |-
-    There are many more tasks to do now that the new version is out there, so hang in there for a few more hours.
-
-    The steps that start with "(PMC)" can only be done by PMC members, as they have the necessary permissions in the ASF JIRA.
-    Please reach out to a PMC member to complete these steps.
+  description: There are many more tasks to do now that the new version is out there, so hang in there for a few more hours.
   todos:
   - !Todo
     id: add_version_bugfix
@@ -1619,10 +1623,8 @@ groups:
       {{ set_java_home(release_version) }}
   - !Todo
     id: jira_release
-    title: (PMC) Mark version as released in JIRA
+    title: Mark version as released in JIRA
     description: |-
-      WARNING: If you are not a PMC member, please reach out to one to complete this step.
-
       Go to the JIRA "Manage Versions" Administration pages.
 
       . Next to version {{ release_version }}, click the gear pop-up menu icon and choose "Release"
@@ -1636,11 +1638,9 @@ groups:
     - https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions
   - !Todo
     id: jira_close_resolved
-    title: (PMC) Close all issues resolved in the release
+    title: Close all issues resolved in the release
     description: |-
-      WARNING: If you are not a PMC member, please reach out to one to complete this step.
-
-      Go to JIRA search in both Solr and Lucene and find all issues that were fixed in the release 
+      Go to JIRA search in both Solr and Lucene and find all issues that were fixed in the release
       you just made, whose Status is Resolved.
 
       . Go to https://issues.apache.org/jira/issues/?jql=project+in+(LUCENE,SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version }}
@@ -1653,10 +1653,8 @@ groups:
     - https://issues.apache.org/jira/issues/?jql=project+in+(LUCENE,SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version }}
   - !Todo
     id: jira_change_unresolved
-    title: (PMC) Remove fixVersion for unresolved
+    title: Remove fixVersion for unresolved
     description: |-
-      WARNING: If you are not a PMC member, please reach out to one to complete this step.
-
       Do another JIRA search to find all issues with Resolution=_Unresolved_ and fixVersion=_{{ release_version }}_.
       You need to do this separately for Lucene and Solr.
 
@@ -1682,11 +1680,9 @@ groups:
     - https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
   - !Todo
     id: jira_clear_security
-    title: (PMC) Clear Security Level of Public Solr JIRA Issues
+    title: Clear Security Level of Public Solr JIRA Issues
     description: |-
-      WARNING: If you are not a PMC member, please reach out to one to complete this step.
-
-      ASF JIRA has a deficiency in which issues that have a security level of "Public" are nonetheless not searchable. 
+      ASF JIRA has a deficiency in which issues that have a security level of "Public" are nonetheless not searchable.
       As a maintenance task, we'll clear the security flag for all public Solr JIRAs, even if it is not a task directly
       related to the release:
 
@@ -1700,10 +1696,8 @@ groups:
     - https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+level+=+%22Public%22
   - !Todo
     id: new_jira_versions_bugfix
-    title: (PMC) Add a new version in JIRA for the next release
+    title: Add a new version in JIRA for the next release
     description: |-
-      WARNING: If you are not a PMC member, please reach out to one to complete this step.
-
       Go to the JIRA "Manage Versions" Administration pages and add the new version:
 
       . Create a new (unreleased) version `{{ get_next_version }}`
