@@ -33,7 +33,9 @@ public class CustomTestTask extends Test {
 
   @Override
   protected TestExecuter<JvmTestExecutionSpec> createTestExecuter() {
-    return new CustomTestExecuter(getProcessBuilderFactory(), getActorFactory(), getModuleRegistry(),
+    CustomProgressLogger logger = new CustomProgressLogger(getProgressLoggerFactory());
+
+    return new CustomTestExecuter(logger, getProcessBuilderFactory(), getActorFactory(), getModuleRegistry(),
         getServices().get(WorkerLeaseRegistry.class),
         getServices().get(BuildOperationExecutor.class),
         getServices().get(StartParameter.class).getMaxWorkerCount(),

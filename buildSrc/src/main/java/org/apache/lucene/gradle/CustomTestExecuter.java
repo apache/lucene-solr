@@ -21,7 +21,6 @@ import org.gradle.api.internal.DocumentationRegistry;
 import org.gradle.api.internal.classpath.ModuleRegistry;
 import org.gradle.api.internal.tasks.testing.JvmTestExecutionSpec;
 import org.gradle.api.internal.tasks.testing.TestClassProcessor;
-import org.gradle.api.internal.tasks.testing.TestClassRunInfo;
 import org.gradle.api.internal.tasks.testing.TestExecuter;
 import org.gradle.api.internal.tasks.testing.TestFramework;
 import org.gradle.api.internal.tasks.testing.TestResultProcessor;
@@ -65,9 +64,10 @@ public class CustomTestExecuter implements TestExecuter<JvmTestExecutionSpec> {
     private final DocumentationRegistry documentationRegistry;
     private final DefaultTestFilter testFilter;
     private final int dups;
+    private final CustomProgressLogger logger;
     private TestClassProcessor processor;
 
-    public CustomTestExecuter(WorkerProcessFactory workerFactory, ActorFactory actorFactory, ModuleRegistry moduleRegistry,
+    public CustomTestExecuter(CustomProgressLogger logger, WorkerProcessFactory workerFactory, ActorFactory actorFactory, ModuleRegistry moduleRegistry,
                               WorkerLeaseRegistry workerLeaseRegistry, BuildOperationExecutor buildOperationExecutor, int maxWorkerCount,
                               Clock clock, DocumentationRegistry documentationRegistry, DefaultTestFilter testFilter,
                               int dups) {
@@ -81,6 +81,7 @@ public class CustomTestExecuter implements TestExecuter<JvmTestExecutionSpec> {
         this.documentationRegistry = documentationRegistry;
         this.testFilter = testFilter;
         this.dups = dups;
+        this.logger = logger;
     }
 
     public Set<File> copyOf(Iterable<? extends File> it) {
@@ -113,41 +114,10 @@ public class CustomTestExecuter implements TestExecuter<JvmTestExecutionSpec> {
 
         processor = new MaxNParallelTestClassProcessor(getMaxParallelForks(testExecutionSpec), reforkingProcessorFactory, actorFactory);
 
-        // Duplicates the input suite N times.
-        class DuplicateSuiteTestClassProcessor implements TestClassProcessor {
-            private final TestClassProcessor delegate;
-
-            public DuplicateSuiteTestClassProcessor(TestClassProcessor delegate) {
-                this.delegate = delegate;
-            }
-
-            @Override
-            public void startProcessing(TestResultProcessor testResultProcessor) {
-                delegate.startProcessing(testResultProcessor);
-            }
-
-            @Override
-            public void processTestClass(TestClassRunInfo testClassRunInfo) {
-                for (int i = 0; i < dups; i++) {
-                    delegate.processTestClass(testClassRunInfo);
-                }
-            }
-
-            @Override
-            public void stop() {
-                delegate.stop();
-            }
-
-            @Override
-            public void stopNow() {
-                delegate.stopNow();
-            }
-        }
-
         processor =
             new PatternMatchTestClassProcessor(testFilter,
                  new RunPreviousFailedFirstTestClassProcessor(testExecutionSpec.getPreviousFailedTestClasses(),
-                     new DuplicateSuiteTestClassProcessor(processor)));
+                     new DuplicateSuiteTestClassProcessor(logger, dups, processor)));
 
         final FileTree testClassFiles = testExecutionSpec.getCandidateClassFiles();
 
@@ -163,7 +133,11 @@ public class CustomTestExecuter implements TestExecuter<JvmTestExecutionSpec> {
 
         final Object testTaskOperationId = buildOperationExecutor.getCurrentOperation().getParentId();
 
-        new TestMainAction(detector, processor, testResultProcessor, clock, testTaskOperationId, testExecutionSpec.getPath(), "Gradle Test Run " + testExecutionSpec.getIdentityPath()).run();
+        try {
+            new TestMainAction(detector, processor, testResultProcessor, clock, testTaskOperationId, testExecutionSpec.getPath(), "Gradle Test Run " + testExecutionSpec.getIdentityPath()).run();
+        } finally {
+            logger.completeAll();
+        }
     }
 
     @Override
@@ -181,4 +155,5 @@ public class CustomTestExecuter implements TestExecuter<JvmTestExecutionSpec> {
         }
         return maxParallelForks;
     }
+
 }
