@@ -17,12 +17,14 @@
 
 package org.apache.solr.common.util;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
 /**
  *
  */
+@LuceneTestCase.Nightly // sleepy stuff
 public class TestTimeSource extends SolrTestCaseJ4 {
 
   @Test

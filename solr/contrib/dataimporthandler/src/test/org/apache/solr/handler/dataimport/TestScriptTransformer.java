@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.handler.dataimport.config.DIHConfiguration;
+import org.apache.xerces.jaxp.DocumentBuilderFactoryImpl;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
@@ -131,7 +132,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
   @SuppressWarnings({"unchecked"})
   public void testCheckScript() throws Exception {
     try {
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance()
+      DocumentBuilder builder = new DocumentBuilderFactoryImpl()
               .newDocumentBuilder();
       Document document = builder.parse(new InputSource(new StringReader(xml)));
       DataImporter di = new DataImporter();

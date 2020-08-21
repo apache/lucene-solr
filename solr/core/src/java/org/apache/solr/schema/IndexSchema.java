@@ -16,6 +16,12 @@
  */
 package org.apache.solr.schema;
 
+import net.sf.saxon.dom.DOMNodeList;
+import net.sf.saxon.dom.DocumentOverNodeInfo;
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.tree.tiny.TinyAttributeImpl;
+import net.sf.saxon.tree.tiny.TinyElementImpl;
+import net.sf.saxon.tree.tiny.TinyTextualElement;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.IndexableField;
@@ -567,16 +573,16 @@ public class IndexSchema {
       // pass the config resource loader to avoid building an empty one for no reason:
       // in the current case though, the stream is valid so we wont load the resource by name
       XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, substitutableProperties);
-      Document document = schemaConf.getDocument();
-
-      Node nd = (Node) schemaNameExp.evaluate(document, XPathConstants.NODE);
+      NodeInfo  document = schemaConf.getTreee();
+      Document domDoc = (Document) DocumentOverNodeInfo.wrap(document);
+      TinyAttributeImpl nd = (TinyAttributeImpl) schemaNameExp.evaluate(document, XPathConstants.NODE);
       StringBuilder sb = new StringBuilder();
       // Another case where the initialization from the test harness is different than the "real world"
       if (nd==null) {
         sb.append("schema has no name!");
         log.warn("{}", sb);
       } else {
-        name = nd.getNodeValue();
+        name = nd.getStringValue();
         sb.append("Schema ");
         sb.append(NAME);
         sb.append("=");
@@ -598,15 +604,25 @@ public class IndexSchema {
       // load the Field Types
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      NodeList nodes = (NodeList) fieldTypeXPathExpressionsExp.evaluate(document, XPathConstants.NODESET);
-      typeLoader.load(loader, nodes);
+      ArrayList<NodeInfo> nodes = (ArrayList) fieldTypeXPathExpressionsExp.evaluate(document, XPathConstants.NODESET);
+      typeLoader.load(loader, new NodeList() {
+        @Override
+        public Node item(int i) {
+          return DocumentOverNodeInfo.wrap(nodes.get(i));
+        }
+
+        @Override
+        public int getLength() {
+          return nodes.size();
+        }
+      });
 
       // load the fields
-      Map<String,Boolean> explicitRequiredProp = loadFields(document);
+      Map<String,Boolean> explicitRequiredProp = loadFields(domDoc);
 
 
-      Node node = (Node) schemaSimExp.evaluate(document, XPathConstants.NODE);
-      similarityFactory = readSimilarity(loader, node);
+      TinyElementImpl node = (TinyElementImpl) schemaSimExp.evaluate(domDoc, XPathConstants.NODE);
+      similarityFactory = readSimilarity(loader, DocumentOverNodeInfo.wrap(node));
       if (similarityFactory == null) {
         final Class<?> simClass = SchemaSimilarityFactory.class;
         // use the loader to ensure proper SolrCoreAware handling
@@ -631,24 +647,24 @@ public class IndexSchema {
 
       //                      /schema/defaultSearchField/text()
 
-      node = (Node) defaultSearchFieldExp.evaluate(document, XPathConstants.NODE);
+      node = (TinyElementImpl) defaultSearchFieldExp.evaluate(domDoc, XPathConstants.NODE);
       if (node != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting defaultSearchField in schema not supported since Solr 7");
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
 
-      node = (Node) solrQueryParserDefaultOpExp.evaluate(document, XPathConstants.NODE);
+      node = (TinyElementImpl) solrQueryParserDefaultOpExp.evaluate(domDoc, XPathConstants.NODE);
       if (node != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting default operator in schema (solrQueryParser/@defaultOperator) not supported");
       }
 
       //                      /schema/uniqueKey/text()
-      node = (Node) schemaUniqueKeyExp.evaluate(document, XPathConstants.NODE);
-      if (node==null) {
+      TinyTextualElement.TinyTextualElementText tnode = (TinyTextualElement.TinyTextualElementText) schemaUniqueKeyExp.evaluate(domDoc, XPathConstants.NODE);
+      if (tnode==null) {
         log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
-        uniqueKeyField=getIndexedField(node.getNodeValue().trim());
+        uniqueKeyField=getIndexedField(tnode.getStringValue());
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
         
@@ -700,7 +716,7 @@ public class IndexSchema {
       // expression = "/schema/copyField";
     
       dynamicCopyFields = new DynamicCopy[] {};
-      loadCopyFields(document);
+      loadCopyFields(domDoc);
 
       postReadInform();
 

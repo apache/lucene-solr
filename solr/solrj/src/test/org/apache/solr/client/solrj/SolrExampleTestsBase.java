@@ -65,16 +65,11 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     doc3.addField("price", 10);
     UpdateRequest up = new UpdateRequest();
     up.add(doc3);
-    up.setCommitWithin(500); // a smaller commitWithin caused failures on the
-                             // following assert
+    up.setCommitWithin(50);
     up.process(client);
     
     rsp = client.query(new SolrQuery("*:*"));
     Assert.assertEquals(0, rsp.getResults().getNumFound());
-    
-    // TODO: not a great way to test this - timing is easily out
-    // of whack due to parallel tests and various computer specs/load
-    Thread.sleep(1000); // wait 1 sec
     
     // now check that it comes out...
     rsp = client.query(new SolrQuery("id:id3"));
@@ -88,7 +83,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
         break;
       }
       
-      Thread.sleep(2000); // wait 2 seconds...
+      Thread.sleep(50);
       
       rsp = client.query(new SolrQuery("id:id3"));
     }
@@ -100,7 +95,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     doc4.addField("id", "id4");
     doc4.addField("name", "doc4");
     doc4.addField("price", 10);
-    client.add(doc4, 500);
+    client.add(doc4, 50);
 
     // now check that it comes out...
     rsp = client.query(new SolrQuery("id:id4"));
@@ -114,7 +109,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
         break;
       }
       
-      Thread.sleep(100); // wait 2 seconds...
+      Thread.sleep(50);
       
       rsp = client.query(new SolrQuery("id:id3"));
     }
@@ -123,6 +118,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   }
   
   @Test
+  @Nightly // some silly waiting
   public void testCommitWithinOnDelete() throws Exception {
     // make sure it is empty...
     SolrClient client = getSolrClient(jetty);

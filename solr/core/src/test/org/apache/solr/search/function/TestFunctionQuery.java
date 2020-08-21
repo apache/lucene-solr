@@ -573,8 +573,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   public void testRetrievePayloads() throws Exception {
     clearIndex();
 
-    int numDocs = 100 + random().nextInt(100);
-    int numLocations = 1000 + random().nextInt(2000);
+    int numDocs = 100 + random().nextInt(TEST_NIGHTLY ? 10 : 100);
+    int numLocations = 1000 + random().nextInt(TEST_NIGHTLY ? 2000 : 200);
     for (int docNum = 0 ; docNum < numDocs ; ++docNum) {
       StringBuilder amountsBuilder = new StringBuilder();
       for (int location = 1 ; location <= numLocations ; ++location) {

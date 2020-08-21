@@ -345,7 +345,8 @@ public class TestLegacyNumericUtils extends SolrTestCase {
       0, 4
     ));
   }
-  
+
+  @Nightly
   public void testRandomSplit() throws Exception {
     long num = (long) atLeast(10);
     for (long i=0; i < num; i++) {

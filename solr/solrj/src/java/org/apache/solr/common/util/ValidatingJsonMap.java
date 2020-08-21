@@ -78,11 +78,11 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   }
 
   public ValidatingJsonMap(int i) {
-    delegate = new ConcurrentHashMap<>(i);
+    delegate = new LinkedHashMap<>(i);
   }
 
   public ValidatingJsonMap() {
-    delegate = new ConcurrentHashMap<>(32);
+    delegate = new LinkedHashMap<>();
   }
 
   @Override
@@ -258,15 +258,13 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     return fromJSON(new InputStreamReader(is, UTF_8), includeLocation);
   }
 
-  public static ValidatingJsonMap fromJSON(Reader s, String includeLocation) {
+  public static ValidatingJsonMap fromJSON(Reader r, String includeLocation) {
     try {
-      try (BufferedReader br = new BufferedReader(s)) {
-        ValidatingJsonMap map = (ValidatingJsonMap) getObjectBuilder(new JSONParser(br)).getObject();
-        handleIncludes(map, includeLocation, 4);
-
-        return map;
-      }
-     } catch (IOException e) {
+      ValidatingJsonMap map = (ValidatingJsonMap) getObjectBuilder(
+          new JSONParser(r)).getObject();
+      handleIncludes(map, includeLocation, 2); // nocommit
+      return map;
+    } catch (IOException e) {
       throw new RuntimeException();
     }
   }
@@ -275,7 +273,8 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
    * In the given map, recursively replace "#include":"resource-name" with the key/value pairs
    * parsed from the resource at {location}/{resource-name}.json
    */
-  private static void handleIncludes(ValidatingJsonMap map, String location, int maxDepth) {
+  private static void handleIncludes(ValidatingJsonMap map, String location,
+      int maxDepth) {
     final String loc = location == null ? "" // trim trailing slash
         : (location.endsWith("/") ? location.substring(0, location.length() - 1) : location);
     String resourceToInclude = (String) map.get(INCLUDE);
@@ -286,16 +285,13 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     }
     if (maxDepth > 0) {
       Set<Entry<String,Object>> entrySet = map.entrySet();
-      try (ParWork work = new ParWork("includes")) {
-        for (Entry<String,Object> entry : entrySet) {
-          Object v = entry.getValue();
-          if (v instanceof  Map) {
-            work.collect("includes", () -> {
-              handleIncludes((ValidatingJsonMap) v, loc, maxDepth - 1);
-            });
-          }
+      for (Entry<String,Object> entry : entrySet) {
+        Object v = entry.getValue();
+        if (v instanceof Map) {
+          handleIncludes((ValidatingJsonMap) v, loc, maxDepth - 1);
         }
       }
+
     }
   }
 
@@ -303,7 +299,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   public static ValidatingJsonMap getDeepCopy(Map map, int maxDepth, boolean mutable) {
     if (map == null) return null;
     if (maxDepth < 1) return ValidatingJsonMap.wrap(map);
-    ValidatingJsonMap copy = mutable ? new ValidatingJsonMap(map.size()) : new ValidatingJsonMap();
+    ValidatingJsonMap copy = new ValidatingJsonMap(map.size());
     for (Object o : map.entrySet()) {
       Map.Entry<String, Object> e = (Entry<String, Object>) o;
       Object v = e.getValue();
@@ -331,29 +327,31 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     return new ObjectBuilder(jp) {
       @Override
       public Object newObject() throws IOException {
-        return new ValidatingJsonMap(64);
+        return new ValidatingJsonMap(32);
       }
     };
   }
 
-  public static ValidatingJsonMap parse(String resourceName, String includeLocation) {
-    final URL resource = ValidatingJsonMap.class.getClassLoader().getResource(resourceName);
+  public static ValidatingJsonMap parse(String resourceName,
+      String includeLocation) {
+    InputStream resource = ValidatingJsonMap.class.getClassLoader()
+        .getResourceAsStream(resourceName);
     if (null == resource) {
       throw new RuntimeException("invalid API spec: " + resourceName);
     }
-    ValidatingJsonMap map = null;
-    try (InputStream is = resource.openStream()) { // a buffered reader is used to parse the json
-      try {
-        map = fromJSON(is, includeLocation);
-      } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in JSON : " + resourceName, e);
-      }
-    } catch (IOException ioe) {
+    ValidatingJsonMap map;
+
+    try {
+      map = fromJSON(resource, includeLocation);
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "Unable to read resource: " + resourceName, ioe);
+          "Error in JSON : " + resourceName, e);
     }
-    if (map == null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Empty value for " + resourceName);
+
+    if (map == null)
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Empty value for " + resourceName);
     return getDeepCopy(map, 5, false);
   }
 

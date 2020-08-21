@@ -118,10 +118,10 @@ public class ClientUtils
     XML.Writable valWriter = null;
     if(v instanceof SolrInputDocument) {
       final SolrInputDocument solrDoc = (SolrInputDocument) v;
-      valWriter = (writer1) -> writeXML(solrDoc, writer1);
+      valWriter = new ValWritable(solrDoc, false, null);
     } else if(v != null) {
       final Object val = v;
-      valWriter = (writer1) -> XML.escapeCharData(val.toString(), writer1);
+      valWriter =  new ValWritable(null, true, val.toString());
     }
 
     if (update == null) {
@@ -205,6 +205,27 @@ public class ClientUtils
       String key = slice.getName();
       if (multiCollection) key = collectionName + "_" + key;
       target.put(key, slice);
+    }
+  }
+
+  private static class ValWritable implements XML.Writable {
+    private final SolrInputDocument solrDoc;
+    private final boolean escape;
+    private final String val;
+
+    public ValWritable(SolrInputDocument solrDoc, boolean escape, String val) {
+      this.solrDoc = solrDoc;
+      this.escape = escape;
+      this.val = val;
+    }
+
+    @Override
+    public void write(Writer w) throws IOException {
+      if (solrDoc != null) {
+        writeXML(solrDoc, w);
+      } else {
+        XML.escapeCharData(val, w);
+      }
     }
   }
 }

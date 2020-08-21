@@ -77,7 +77,7 @@ abstract public class BaseTestHarness {
     if (tests==null || tests.length == 0) return null;
 
     DocumentBuilderImpl b = new DocumentBuilderImpl();
-    b.setConfiguration(XmlConfigFile.xpathFactory.getConfiguration());
+    b.setConfiguration(XmlConfigFile.conf);
 
     Document document;
     try {
@@ -102,7 +102,7 @@ abstract public class BaseTestHarness {
     if (null == xpath) return null;
 
     DocumentBuilderImpl b = new DocumentBuilderImpl();
-    b.setConfiguration(XmlConfigFile.xpathFactory.getConfiguration());
+    b.setConfiguration(XmlConfigFile.conf);
     Document document;
     try {
       document = b.parse(new ByteArrayInputStream

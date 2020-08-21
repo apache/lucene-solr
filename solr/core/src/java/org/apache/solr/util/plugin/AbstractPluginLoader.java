@@ -21,6 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import net.sf.saxon.dom.DOMNodeList;
+import net.sf.saxon.dom.DocumentOverNodeInfo;
+import net.sf.saxon.om.NodeInfo;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -30,6 +33,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 

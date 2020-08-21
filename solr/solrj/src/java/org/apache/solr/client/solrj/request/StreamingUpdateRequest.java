@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.util.FastInputStream;
 
 /** A simple update request which streams content to the server
  */
@@ -56,8 +57,8 @@ public class StreamingUpdateRequest extends AbstractUpdateRequest {
     this(path, new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        try (InputStream is = new FileInputStream(f)) {
-          IOUtils.copy(is, os);
+        try (InputStream is = new FastInputStream(new FileInputStream(f))) {
+          is.transferTo(os);
         }
       }
 

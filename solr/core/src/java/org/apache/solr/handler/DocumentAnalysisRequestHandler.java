@@ -91,7 +91,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     super.init(args);
 
     inputFactory = XMLInputFactory.newInstance();
-    EmptyEntityResolver.configureXMLInputFactory(inputFactory);
+    EmptyEntityResolver.configureXpathFactory(inputFactory);
     inputFactory.setXMLReporter(xmllog);
     try {
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe

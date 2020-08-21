@@ -44,13 +44,20 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.xslt.TransformerProvider;
+import org.codehaus.stax2.XMLStreamReader2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.XMLReader;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -61,6 +68,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.sax.SAXSource;
+import javax.xml.transform.stream.StreamSource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -85,15 +93,19 @@ public class XMLLoader extends ContentStreamLoader {
   public static final int XSLT_CACHE_DEFAULT = 60;
 
   private static int xsltCacheLifetimeSeconds = XSLT_CACHE_DEFAULT;
-  private static XMLInputFactory inputFactory = new WstxInputFactory();
-  private static WstxSAXParserFactory saxFactory = new WstxSAXParserFactory();
+  public static WstxInputFactory inputFactory = new WstxInputFactory();
+  public static SAXParserFactory saxFactory = new WstxSAXParserFactory(inputFactory);
   static {
-    EmptyEntityResolver.configureXMLInputFactory(inputFactory);
+
+    inputFactory.configureForSpeed();
+    saxFactory.setNamespaceAware(true);
     inputFactory.setXMLReporter(xmllog);
 
     // Init SAX parser (for XSL):
     saxFactory.setNamespaceAware(true); // XSL needs this!
+
     EmptyEntityResolver.configureSAXParserFactory(saxFactory);
+    EmptyEntityResolver.configureXpathFactory(inputFactory);
   }
 
 
@@ -114,7 +126,7 @@ public class XMLLoader extends ContentStreamLoader {
     final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
     
     InputStream is = null;
-    XMLStreamReader parser = null;
+    XMLStreamReader2 parser = null;
 
     String tr = req.getParams().get(CommonParams.TR,null);
     if(tr!=null) {
@@ -125,6 +137,7 @@ public class XMLLoader extends ContentStreamLoader {
       }
 
       final Transformer t = getTransformer(tr,req);
+
       final DOMResult result = new DOMResult();
       
       // first step: read XML and build DOM using Transformer (this is no overhead, as XSL always produces
@@ -133,10 +146,12 @@ public class XMLLoader extends ContentStreamLoader {
         is = stream.getStream();
         final InputSource isrc = new InputSource(is);
         isrc.setEncoding(charset);
-        final XMLReader xmlr = saxFactory.newSAXParser().getXMLReader();
+        SAXParser saxParser = saxFactory.newSAXParser();
+
+        final XMLReader xmlr = saxParser.getXMLReader();
         xmlr.setErrorHandler(xmllog);
-        xmlr.setFeature("http://xml.org/sax/features/external-general-entities", Boolean.TRUE);
         xmlr.setEntityResolver(EmptyEntityResolver.SAX_INSTANCE);
+
         final SAXSource source = new SAXSource(xmlr, isrc);
         t.transform(source, result);
       } catch(TransformerException te) {
@@ -146,7 +161,8 @@ public class XMLLoader extends ContentStreamLoader {
       }
       // second step: feed the intermediate DOM tree into StAX parser:
       try {
-        parser = inputFactory.createXMLStreamReader(new DOMSource(result.getNode()));
+        parser = (XMLStreamReader2) inputFactory.createXMLStreamReader(new DOMSource(result.getNode()));
+
         this.processUpdate(req, processor, parser);
       } catch (XMLStreamException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
@@ -169,8 +185,9 @@ public class XMLLoader extends ContentStreamLoader {
           IOUtils.closeQuietly(is);
           is = new ByteArrayInputStream(body);
         }
-        parser = (charset == null) ?
-          inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
+        parser = (XMLStreamReader2) ((charset == null) ?
+                  inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset));
+        parser.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
         this.processUpdate(req, processor, parser);
       } catch (XMLStreamException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);

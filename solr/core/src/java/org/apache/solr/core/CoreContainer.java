@@ -114,6 +114,7 @@ import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.handler.sql.CalciteSolrDriver;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -165,8 +166,8 @@ public class CoreContainer implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    log.warn("expected pre init of xml factories {} {} {} {} {}", XmlConfigFile.xpathFactory, XmlConfigFile.tfactory, XmlConfigFile.tx,
-        FieldTypeXmlAdapter.dbf);
+    log.warn("expected pre init of xml factories {} {} {} {}", XmlConfigFile.xpathFactory,
+        FieldTypeXmlAdapter.dbf, XMLLoader.inputFactory, XMLLoader.saxFactory);
   }
 
   final SolrCores solrCores = new SolrCores(this);

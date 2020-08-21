@@ -30,7 +30,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.codehaus.stax2.XMLInputFactory2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -575,7 +574,7 @@ public class XPathRecordReader {
           attribs.put(m.group(3), m.group(5));
           start = m.end(6);
           if (n.attribAndValues == null)
-            n.attribAndValues = new ArrayList<>();
+            n.attribAndValues = new ArrayList<>(attribs.size());
           n.attribAndValues.addAll(attribs.entrySet());
         }
       }
@@ -636,7 +635,7 @@ public class XPathRecordReader {
 
   static XMLInputFactory factory = new WstxInputFactory();
   static {
-    EmptyEntityResolver.configureXMLInputFactory(factory);
+    EmptyEntityResolver.configureXpathFactory(factory);
     factory.setXMLReporter(XMLLOG);
     try {
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe

@@ -56,7 +56,7 @@ public class XMLResponseParser extends ResponseParser
   static final XMLInputFactory factory;
   static {
     factory = XMLInputFactory.newInstance();
-    EmptyEntityResolver.configureXMLInputFactory(factory);
+    EmptyEntityResolver.configureXpathFactory(factory);
 
     try {
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe

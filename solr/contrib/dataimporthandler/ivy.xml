@@ -25,6 +25,7 @@
   <dependencies>
     <dependency org="org.hsqldb" name="hsqldb" rev="${/org.hsqldb/hsqldb}" conf="test"/>
     <dependency org="org.apache.derby" name="derby" rev="${/org.apache.derby/derby}" conf="test"/>
+    <dependency org="xerces" name="xercesImpl" rev="${/xerces/xercesImpl}" conf="compile"/>
 
     <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test"/>
     <dependency org="net.bytebuddy" name="byte-buddy" rev="${/net.bytebuddy/byte-buddy}" conf="test"/>

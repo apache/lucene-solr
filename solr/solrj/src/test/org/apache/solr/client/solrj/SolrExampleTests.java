@@ -1932,7 +1932,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     client.deleteByQuery("*:*");
     client.commit();
     
-    int numRootDocs = TestUtil.nextInt(random(), 10, 100);
+    int numRootDocs = TestUtil.nextInt(random(), 10, TEST_NIGHTLY ? 100 : 10);
     int maxDepth = TestUtil.nextInt(random(), 2, 5);
 
     Map<String,SolrInputDocument> allDocs = new HashMap<>();

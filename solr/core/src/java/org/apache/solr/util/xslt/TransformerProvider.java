@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util.xslt;
 
+import net.sf.saxon.BasicTransformerFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.ParWork;
@@ -83,6 +84,7 @@ public class TransformerProvider {
     
     try {
       result = lastTemplates.newTransformer();
+      result.setURIResolver(new SystemIdResolver(solrConfig.getResourceLoader()).asURIResolver());
     } catch(TransformerConfigurationException tce) {
       log.error(getClass().getName(), "getTransformer", tce);
       throw new IOException("newTransformer fails ( " + lastFilename + ")", tce);
@@ -101,13 +103,13 @@ public class TransformerProvider {
         log.debug("compiling XSLT templates:{}", filename);
       }
       final String fn = "xslt/" + filename;
-      final TransformerFactory tFactory = XmlConfigFile.tfactory;
+      final TransformerFactory tFactory = new BasicTransformerFactory();
       tFactory.setURIResolver(new SystemIdResolver(loader).asURIResolver());
-      tFactory.setErrorListener(xmllog);
       final StreamSource src = new StreamSource(loader.openResource(fn),
         SystemIdResolver.createSystemIdFromResourceName(fn));
       try {
         result = tFactory.newTemplates(src);
+
       } finally {
         // some XML parsers are broken and don't close the byte stream (but they should according to spec)
         IOUtils.closeQuietly(src.getInputStream());

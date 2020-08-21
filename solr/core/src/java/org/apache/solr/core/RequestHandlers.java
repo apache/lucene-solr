@@ -57,9 +57,8 @@ public final class RequestHandlers implements Closeable {
   }
   
   public RequestHandlers(SolrCore core) {
-      this.core = core;
-    // we need a thread safe registry since methods like register are currently documented to be thread safe.
-    handlers =  new PluginBag<>(SolrRequestHandler.class, core, true);
+    this.core = core;
+    handlers =  new PluginBag<>(SolrRequestHandler.class, core);
   }
 
   /**

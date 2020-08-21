@@ -188,31 +188,7 @@ public class SolrXmlConfig {
   }
 
   public static NodeConfig fromFile(Path solrHome, Path configFile, Properties substituteProps) {
-
     log.info("Loading container configuration from {}", configFile);
-
-//    if (!Files.exists(configFile)) {
-//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-//          "solr.xml does not exist in " + configFile.getParent()
-//              + " cannot start Solr");
-//    }
-//    ByteBuffer buffer = null;
-//    try {
-//      FileChannel channel = FileChannel
-//          .open(configFile, StandardOpenOption.READ);
-//
-//      long fileSize = channel.size();
-//      buffer = ByteBuffer.allocate((int) fileSize);
-//      channel.read(buffer);
-//      buffer.flip();
-//      channel.close();
-//
-//    } catch (IOException e) {
-//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-//          "Could not load SOLR configuration", e);
-//    }
-//
-//    return fromInputStream(solrHome, buffer, substituteProps);
     if (!Files.exists(configFile)) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");

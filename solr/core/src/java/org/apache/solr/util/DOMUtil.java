@@ -16,6 +16,9 @@
  */
 package org.apache.solr.util;
 
+import net.sf.saxon.om.AttributeInfo;
+import net.sf.saxon.om.AttributeMap;
+import net.sf.saxon.om.NodeInfo;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -42,6 +45,10 @@ public class DOMUtil {
     return toMapExcept(attrs);
   }
 
+  public static Map<String,String> toMap(AttributeMap attrs) {
+    return toMapExcept(attrs);
+  }
+
   public static Map<String,String> toMapExcept(NamedNodeMap attrs, String... exclusions) {
     Map<String,String> args = new HashMap<>();
     outer: for (int j=0; j<attrs.getLength(); j++) {
@@ -54,6 +61,24 @@ public class DOMUtil {
       for (String ex : exclusions)
         if (ex.equals(attrName)) continue outer;
       String val = attr.getNodeValue();
+      args.put(attrName, val);
+    }
+    return args;
+  }
+
+  public static Map<String,String> toMapExcept(AttributeMap attrMap, String... exclusions) {
+    Map<String,String> args = new HashMap<>();
+    List<AttributeInfo> attrs = attrMap.asList();
+    outer: for (int j=0; j<attrs.size(); j++) {
+      AttributeInfo attr = attrs.get(j);
+
+      // automatically exclude things in the xml namespace, ie: xml:base
+      //if (XML_RESERVED_PREFIX.equals(attr.getPrefix())) continue outer;
+
+      String attrName = attr.getNodeName().getDisplayName();
+      for (String ex : exclusions)
+        if (ex.equals(attrName)) continue outer;
+      String val = attr.getValue();
       args.put(attrName, val);
     }
     return args;

@@ -80,7 +80,7 @@ public class PluginBag<T> implements AutoCloseable {
   /**
    * Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups.
    */
-  public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
+  public PluginBag(Class<T> klass, SolrCore core) {
     this.apiBag = klass == SolrRequestHandler.class ? new ApiBag(core != null) : null;
     this.core = core;
     this.klass = klass;
@@ -93,13 +93,6 @@ public class PluginBag<T> implements AutoCloseable {
     if (meta == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown Plugin : " + klass.getName());
     }
-  }
-
-  /**
-   * Constructs a non-threadsafe plugin registry
-   */
-  public PluginBag(Class<T> klass, SolrCore core) {
-    this(klass, core, true);
   }
 
   public static void initInstance(Object inst, PluginInfo info) {

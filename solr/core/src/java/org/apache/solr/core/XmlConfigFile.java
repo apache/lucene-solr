@@ -16,15 +16,19 @@
  */
 package org.apache.solr.core;
 
-import net.sf.saxon.BasicTransformerFactory;
-import net.sf.saxon.dom.DocumentBuilderImpl;
-import net.sf.saxon.jaxp.SaxonTransformerFactory;
+import net.sf.saxon.Configuration;
+import net.sf.saxon.dom.DocumentOverNodeInfo;
+import net.sf.saxon.event.Sender;
+import net.sf.saxon.lib.ParseOptions;
+import net.sf.saxon.om.NamePool;
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.trans.XPathException;
+import net.sf.saxon.tree.tiny.TinyDocumentImpl;
 import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
@@ -35,21 +39,13 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import javax.xml.namespace.QName;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.dom.DOMResult;
-import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.sax.SAXSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import javax.xml.xpath.XPathFactoryConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -69,30 +65,35 @@ import java.util.TreeSet;
 public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
   public static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   protected final static ThreadLocal<XPath> THREAD_LOCAL_XPATH = new ThreadLocal<>();
+
   public static final XPathFactoryImpl xpathFactory = new XPathFactoryImpl();
-  public static final SaxonTransformerFactory tfactory = new BasicTransformerFactory();
+
+  public static final Configuration conf;
+
+  private static final NamePool pool ;
+
   static  {
+    conf = Configuration.newConfiguration();
+    conf.setValidation(false);
+    conf.setXIncludeAware(true);
+    conf.setExpandAttributeDefaults(true);
+    pool = new NamePool();
+    conf.setNamePool(pool);
 
-      xpathFactory.getConfiguration().setValidation(false);
-      xpathFactory.getConfiguration().setExpandAttributeDefaults(false);
-      xpathFactory.getConfiguration().setXIncludeAware(true);
-
-    // tfactory.getConfiguration().setBooleanProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
+    xpathFactory.setConfiguration(conf);
   }
-  public static final Transformer tx = tfactory.newTransformer();
-
-  private final Document doc;
 
   protected final String prefix;
   private final String name;
   private final SolrResourceLoader loader;
-  private final Properties substituteProperties;
-  private int zkVersion = -1;
 
+  private Document doc;
+  private final Properties substituteProperties;
+  private final TinyDocumentImpl tree;
+  private int zkVersion = -1;
 
   public static XPath getXpath() {
     XPath xPath = THREAD_LOCAL_XPATH.get();
@@ -107,8 +108,7 @@ public class XmlConfigFile { // formerly simply "Config"
    * Builds a config from a resource name with no xpath prefix.  Does no property substitution.
    */
   public XmlConfigFile(SolrResourceLoader loader, String name)
-      throws ParserConfigurationException, IOException, SAXException,
-      XMLStreamException {
+      throws IOException {
     this( loader, name, null, null);
   }
 
@@ -116,8 +116,7 @@ public class XmlConfigFile { // formerly simply "Config"
    * Builds a config.  Does no property substitution.
    */
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix)
-      throws ParserConfigurationException, IOException, SAXException,
-      XMLStreamException {
+      throws IOException {
     this(loader, name, is, prefix, null);
   }
 
@@ -139,7 +138,7 @@ public class XmlConfigFile { // formerly simply "Config"
    * @param substituteProps optional property substitution
    */
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps)
-      throws  IOException, SAXException {
+      throws  IOException {
     if( loader == null ) {
       loader = new SolrResourceLoader(SolrPaths.locateSolrHome());
     }
@@ -161,38 +160,41 @@ public class XmlConfigFile { // formerly simply "Config"
       }
 
     try {
-      DocumentBuilderImpl b = new DocumentBuilderImpl();
-      b.setErrorHandler(xmllog);
+      SAXSource source = new SAXSource(is);
+      Configuration conf2 = Configuration.newConfiguration();
+      conf2.setValidation(false);
+      conf2.setXIncludeAware(true);
+      conf2.setExpandAttributeDefaults(true);
+      conf2.setNamePool(pool);
+      conf2.setDocumentNumberAllocator(conf.getDocumentNumberAllocator());
+      SolrTinyBuilder builder = new SolrTinyBuilder(conf2.makePipelineConfiguration(), substituteProps);
+      builder.setStatistics(conf2.getTreeStatistics().SOURCE_DOCUMENT_STATISTICS);
+
+      ParseOptions parseOptions = new ParseOptions();
       if (is.getSystemId() != null) {
-        b.setEntityResolver(loader.getSysIdResolver());
+        parseOptions.setEntityResolver(loader.getSysIdResolver());
       }
-      b.setXIncludeAware(true);
-      b.setValidating(false);
-      b.getConfiguration().setExpandAttributeDefaults(false);
+      parseOptions.setXIncludeAware(true);
 
-      try {
-        doc = copyDoc(b.parse(is));
-      } catch (TransformerException e) {
-        throw new RuntimeException(e);
-      }
+      parseOptions.setPleaseCloseAfterUse(true);
+      parseOptions.setSchemaValidationMode(0);
 
+      Sender.send(source, builder, parseOptions);
+      TinyDocumentImpl docTree = (TinyDocumentImpl) builder.getCurrentRoot();
+      builder.reset();
+
+      this.tree = docTree;
+      doc = (Document) DocumentOverNodeInfo.wrap(docTree);
+
+      this.substituteProperties = substituteProps;
+    } catch ( XPathException e) {
+      throw new RuntimeException(e);
     } finally {
       // some XML parsers are broken and don't close the byte stream (but they should according to spec)
       ParWork.close(is.getByteStream());
     }
 
-
-    this.substituteProperties = substituteProps;
-    if (substituteProps != null) {
-      DOMUtil.substituteProperties(doc, substituteProperties);
-    }
   }
-    private static Document copyDoc (Document doc) throws TransformerException {
-      DOMSource source = new DOMSource(doc);
-      DOMResult result = new DOMResult();
-      tx.transform(source, result);
-      return (Document) result.getNode();
-    }
 
     /*
      * Assert that assertCondition is true.
@@ -236,6 +238,10 @@ public class XmlConfigFile { // formerly simply "Config"
     public Document getDocument () {
       return doc;
     }
+
+  public NodeInfo getTreee () {
+    return tree;
+  }
 
     String normalize(String path){
       return (prefix == null || path.startsWith("/")) ? path : prefix + path;
