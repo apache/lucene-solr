@@ -158,6 +158,8 @@ Other
 * LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
   Deserves mention here as well as Lucene CHANGES.txt since it affects both.
 
+* LUCENE-9433: Remove Ant support from trunk (Erick Erickson)
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes
