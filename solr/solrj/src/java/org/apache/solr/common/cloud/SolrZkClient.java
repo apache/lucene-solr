@@ -20,13 +20,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.ParWorkExecService;
-import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.CloseTracker;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.zookeeper.CreateMode;
@@ -67,6 +64,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -96,7 +94,6 @@ public class SolrZkClient implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final int zkClientConnectTimeout;
   private final CloseTracker closeTracker;
-  private final ZkCredentialsProvider zkCredentialsToAddAutomatically;
 
   private final ConnectionManager connManager;
 
@@ -124,7 +121,6 @@ public class SolrZkClient implements Closeable {
   public SolrZkClient() {
     closeTracker = new CloseTracker();
     zkClientConnectTimeout = 0;
-    zkCredentialsToAddAutomatically = null;
     connManager = null;
   }
 
@@ -151,13 +147,8 @@ public class SolrZkClient implements Closeable {
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
 
-
     this.zkClientTimeout = zkClientTimeout;
     this.zkClientConnectTimeout = clientConnectTimeout;
-
-
-    zkCredentialsToAddAutomatically = createZkCredentialsToAddAutomatically();
-
 
     if (zkACLProvider == null) {
       this.zkACLProvider = createZkACLProvider();
@@ -167,6 +158,11 @@ public class SolrZkClient implements Closeable {
 
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
         + zkServerAddress, this, zkServerAddress, zkClientTimeout, onReconnect, beforeReconnect);
+
+    ZkCredentialsProvider zkCredentialsToAddAutomatically = createZkCredentialsToAddAutomatically();
+    if (zkCredentialsToAddAutomatically != null) {
+      connManager.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
+    }
   }
 
   public SolrZkClient start() {
@@ -565,6 +561,8 @@ public class SolrZkClient implements Closeable {
       }
     }
 
+    List<String> nodeAlreadyExistsPaths = new LinkedList<>();
+
     CountDownLatch latch = new CountDownLatch(pathsToMake.size());
     int[] code = new int[1];
     String[] path = new String[1];
@@ -578,11 +576,7 @@ public class SolrZkClient implements Closeable {
 
       byte[] data = dataMap.get(makePath);
 
-      CreateMode createMode = createModeMap.get(makePath);
-
-      if (createMode == null) {
-        createMode = CreateMode.PERSISTENT;
-      }
+      CreateMode createMode = createModeMap.getOrDefault(makePath, CreateMode.PERSISTENT);
 
       if (!madePaths.add(makePath)) {
         if (log.isDebugEnabled()) log.debug("skipping already made {}", makePath + " data: " + (data == null ? "none" : data.length + "b"));
@@ -598,10 +592,21 @@ public class SolrZkClient implements Closeable {
       keeper.create(makePath, data, getZkACLProvider().getACLsToAdd(makePath), createMode,
               (resultCode, zkpath, context, name) -> {
                 if (resultCode != 0) {
-                  code[0] = resultCode;
-                  failed[0] = true;
-                  path[0] = "" + zkpath;
-                  nodata[0] = data == null;
+                  final KeeperException.Code keCode = KeeperException.Code.get(resultCode); 
+                  if (keCode == KeeperException.Code.NODEEXISTS) {
+                    nodeAlreadyExistsPaths.add(zkpath);
+                  } else {
+                    log.warn("create znode {} failed due to: {}", zkpath, keCode);
+                    if (path[0] == null) {
+                      // capture the first error for reporting back
+                      code[0] = resultCode;
+                      failed[0] = true;
+                      path[0] = "" + zkpath;
+                      nodata[0] = data == null;
+                    }
+                  }
+                } else {
+                  log.debug("Created znode at path: {}", zkpath);
                 }
 
                 latch.countDown();
@@ -634,11 +639,37 @@ public class SolrZkClient implements Closeable {
     }
 
     if (!success) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for operatoins to complete");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for operations to complete");
     }
-
+    
+    // we optimistically tried to create all the paths in dataMap, but that fails for existing znodes
+    // so send updates to those paths instead (if any)
+    if (!nodeAlreadyExistsPaths.isEmpty()) {
+      updateExistingPaths(nodeAlreadyExistsPaths, dataMap);
+    }
+    
     if (log.isDebugEnabled()) {
       log.debug("mkDirs(String) - end");
+    }
+  }
+
+  // Calls setData for a list of existing paths in parallel
+  private void updateExistingPaths(List<String> pathsToUpdate, Map<String,byte[]> dataMap) throws KeeperException {
+    final KeeperException[] keeperExceptions = new KeeperException[1];
+    pathsToUpdate.parallelStream().forEach(p -> {
+      try {
+        setData(p, dataMap.get(p), -1, true);
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+        log.error("Failed to set data for {}", p, e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (KeeperException ke) {
+        log.error("Failed to set data for {}", p, ke);
+        keeperExceptions[0] = ke;
+      }
+    });
+    if (keeperExceptions[0] != null) {
+      throw keeperExceptions[0];
     }
   }
 
@@ -669,9 +700,9 @@ public class SolrZkClient implements Closeable {
   }
 
   public String mkdir(String path, byte[] data, CreateMode createMode) throws KeeperException {
-    if (log.isDebugEnabled()) log.debug("mkdir path={}");
+    if (log.isDebugEnabled()) log.debug("mkdir path={}", path);
     // nocommit
-    log.info("mkdir path={}");
+    log.info("mkdir path={}", path);
 //    if (path.endsWith("/leader_elect")) {
 //      throw new IllegalStateException("");
 //    }

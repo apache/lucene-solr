@@ -291,7 +291,7 @@ public class ZkMaintenanceUtils {
       }
     }
   }
-  
+
   public static void uploadToZK(SolrZkClient zkClient, final Path fromPath, final String zkPath,
                                 final Pattern filenameExclusions) throws IOException, KeeperException {
 
@@ -301,7 +301,7 @@ public class ZkMaintenanceUtils {
     }
 
     final Path rootPath = Paths.get(path);
-        
+
     if (!Files.exists(rootPath))
       throw new IOException("Path " + rootPath + " does not exist");
     Map<String,byte[]> dataMap = new HashMap(64);
@@ -334,7 +334,7 @@ public class ZkMaintenanceUtils {
     try {
       zkClient.mkdirs(dataMap);
     } catch (KeeperException.NodeExistsException e) {
-      // warn
+      log.debug("mkdirs failed: ", e);
     };
   }
 

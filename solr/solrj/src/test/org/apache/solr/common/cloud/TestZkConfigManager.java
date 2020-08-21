@@ -26,7 +26,6 @@ import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -38,13 +37,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-@Ignore // nocommit debug
 public class TestZkConfigManager extends SolrTestCaseJ4 {
 
   private static ZkTestServer zkServer;
 
   @BeforeClass
   public static void startZkServer() throws Exception {
+    System.setProperty("zookeeper.skipACL", "false");
     zkServer = new ZkTestServer(createTempDir("zkData"));
     zkServer.run();
   }
@@ -107,7 +106,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
 
       // uploading to the same config overwrites
       byte[] overwritten = "new test data".getBytes(StandardCharsets.UTF_8);
-      Files.write(tempConfig.resolve("file1"), overwritten);
+      Path updated = Files.write(tempConfig.resolve("file1"), overwritten);
       configManager.uploadConfigDir(tempConfig, "testconfig");
 
       assertEquals(1, configManager.listConfigs().size());
@@ -176,21 +175,21 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
     Files.createFile(configPath.resolve("file1"));
 
     // Start with all-access client
-    try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable)) {
+    try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable).start()) {
       ZkConfigManager configManager = new ZkConfigManager(client);
       configManager.uploadConfigDir(configPath, "acltest");
       assertEquals(1, configManager.listConfigs().size());
     }
 
     // Readonly access client can get the list of configs, but can't upload
-    try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
+    try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly).start()) {
       ZkConfigManager configManager = new ZkConfigManager(client);
       assertEquals(1, configManager.listConfigs().size());
       configManager.uploadConfigDir(configPath, "acltest2");
       fail ("Should have thrown an ACL exception");
     }
-    catch (IOException e) {
-      assertEquals(KeeperException.NoAuthException.class, Throwables.getRootCause(e).getClass());
+    catch (KeeperException.NoAuthException noAuthException) {
+      // expected ...
     }
 
     // Client with no auth whatsoever can't even get the list of configs
