@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# start solr in the foreground
+set -e
+
+if [[ "$VERBOSE" == "yes" ]]; then
+    set -x
+fi
+
+EXTRA_ARGS=()
+
+# Allow easy setting of the OOM behaviour
+# Test with: docker run -p 8983:8983 -it -e OOM=script -e SOLR_JAVA_MEM="-Xms25m -Xmx25m" solr
+if [[ -z "${OOM:-}" ]]; then
+  OOM='none'
+fi
+case "$OOM" in
+  'script')
+    EXTRA_ARGS+=(-a '-XX:OnOutOfMemoryError=/opt/docker-solr/scripts/oom_solr.sh')
+    ;;
+  'exit')
+    # recommended
+    EXTRA_ARGS+=(-a '-XX:+ExitOnOutOfMemoryError')
+    ;;
+  'crash')
+    EXTRA_ARGS+=(-a '-XX:+CrashOnOutOfMemoryError')
+    ;;
+  'none'|'')
+    ;;
+  *)
+   echo "Unsupported value in OOM=$OOM"
+   exit 1
+esac
+
+echo "Starting Solr $SOLR_VERSION"
+# determine TINI default. If it is already set, assume the user knows what they want
+if [[ -z "${TINI:-}" ]]; then
+  if [[ "$$" == 1 ]]; then
+    # Default to running tini, so we can run with an OOM script and have 'kill -9' work
+    TINI=yes
+  else
+    # Presumably we're already running under tini through 'docker --init', in which case we
+    # don't need to run it twice.
+    # It's also possible that we're run from a wrapper script without exec,
+    # in which case running tini would not be ideal either.
+    TINI=no
+  fi
+fi
+if [[ "$TINI" == yes ]]; then
+  exec /usr/bin/tini -- solr -f "$@" "${EXTRA_ARGS[@]}"
+elif [[ "$TINI" == no ]]; then
+  exec solr -f "$@" "${EXTRA_ARGS[@]}"
+else
+  echo "invalid value TINI=$TINI"
+  exit 1
+fi
