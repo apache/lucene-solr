@@ -80,9 +80,7 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -90,13 +88,11 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -164,7 +160,6 @@ import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
@@ -176,7 +171,6 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -949,6 +943,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return coreContainer;
   }
 
+  final CountDownLatch searcherReadyLatch = new CountDownLatch(1);
 
   /**
    * Creates a new core and register it in the list of cores. If a core with the
@@ -962,8 +957,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
     assert ObjectReleaseTracker.track(this);
     this.coreContainer = coreContainer;
-
-    final CountDownLatch latch = new CountDownLatch(1);
 
     try {
       IndexSchema schema = configSet.getIndexSchema();
@@ -1042,7 +1035,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
       searcherExecutor.submit(() -> {
-        boolean success = latch.await(10000, TimeUnit.MILLISECONDS);
+        searcherReadyLatch.await(10000, TimeUnit.MILLISECONDS);
         return null;
       });
 
@@ -1098,13 +1091,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       resourceLoader.inform(this); // last call before the latch is released.
-      latch.countDown();
-      failedCreation1 = false;
+      searcherReadyLatch.countDown();
     } catch (Throwable e) {
       log.error("Error while creating SolrCore", e);
       // release the latch, otherwise we block trying to do the close. This
       // should be fine, since counting down on a latch of 0 is still fine
-      latch.countDown();
+      searcherReadyLatch.countDown();
       ParWork.propegateInterrupt(e);
       try {
         // close down the searcher and any other resources, if it exists, as this
@@ -1580,9 +1572,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Too many closes on SolrCore");
     }
-    try (ParWork closer = new ParWork(this, true)) {
-      log.info("{} CLOSING SolrCore {}", logid, this);
+    log.info("{} CLOSING SolrCore {}", logid, this);
 
+    searcherReadyLatch.countDown();
+
+    try (ParWork closer = new ParWork(this, true)) {
       List<Callable<Object>> closeHookCalls = new ArrayList<>();
 
       if (closeHooks != null) {
@@ -1594,11 +1588,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
       }
 
-
       this.isClosed = true;
       searcherExecutor.shutdown();
       assert ObjectReleaseTracker.release(searcherExecutor);
-
 
       closer.collect("snapshotsDir", () -> {
         Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
@@ -1606,31 +1598,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         this.directoryFactory.release(snapshotsDir);
         return snapshotsDir;
-      });
-
-
-      closer.collect(searcherExecutor);
-      closer.collect("shutdown", () -> {
-
-        synchronized (searcherLock) {
-              for (RefCounted<SolrIndexSearcher> searcher : _searchers) {
-                try {
-                  searcher.get().close();
-                } catch (IOException e) {
-                  log.error("", e);
-                }          _realtimeSearchers.clear();
-              }
-              _searchers.clear();
-              for (RefCounted<SolrIndexSearcher> searcher : _realtimeSearchers) {
-                try {
-                  searcher.get().close();
-                } catch (IOException e) {
-                  log.error("", e);
-                }
-              }
-               _realtimeSearchers.clear();
-              closeSearcher();
-            }
       });
 
       List<Callable<Object>> closeCalls = new ArrayList<Callable<Object>>();
@@ -1687,6 +1654,37 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       });
 
       closer.collect(updateHandler);
+
+      closer.collect(searcherExecutor);
+
+      closer.addCollect();
+      closer.collect("closeSearcher", () -> {
+
+        synchronized (searcherLock) {
+          closeSearcher();
+        }
+      });
+      closer.collect("ondeck", () -> {
+
+        synchronized (searcherLock) {
+          for (RefCounted<SolrIndexSearcher> searcher : _searchers) {
+            try {
+              searcher.get().close();
+            } catch (IOException e) {
+              log.error("", e);
+            }          _realtimeSearchers.clear();
+          }
+          _searchers.clear();
+          for (RefCounted<SolrIndexSearcher> searcher : _realtimeSearchers) {
+            try {
+              searcher.get().close();
+            } catch (IOException e) {
+              log.error("", e);
+            }
+          }
+          _realtimeSearchers.clear();
+        }
+      });
 
       closer.addCollect();
 
