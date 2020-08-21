@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="analyzers-icu" default="default">
+
+  <description>
+   Analysis integration with ICU (International Components for Unicode).
+  </description>
+
+  <property name="rat.additional-includes" value="src/tools/**"/>
+
+  <import file="../analysis-module-build.xml"/>
+
+  <path id="icujar">
+     <fileset dir="lib"/>
+  </path>
+
+  <path id="classpath">
+    <pathelement path="${analyzers-common.jar}"/>
+    <path refid="icujar"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="test.base.classpath" />
+    <pathelement path="src/test-files" />
+  </path>
+
+  <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
+
+  <property name="utr30.data.dir" location="src/data/utr30"/>
+  <target name="gen-utr30-data-files" depends="compile-tools">
+    <java
+        classname="org.apache.lucene.analysis.icu.GenerateUTR30DataFiles"
+        dir="${utr30.data.dir}"
+        fork="true"
+        failonerror="true">
+      <classpath>
+        <path refid="icujar"/>
+        <pathelement location="${build.dir}/classes/tools"/>
+      </classpath>
+    </java>
+  </target>
+
+  <property name="gennorm2.src.files"
+    value="nfc.txt nfkc.txt nfkc_cf.txt BasicFoldings.txt DiacriticFolding.txt DingbatFolding.txt HanRadicalFolding.txt NativeDigitFolding.txt"/>
+  <property name="gennorm2.tmp" value="${build.dir}/gennorm2/utr30.tmp"/>
+  <property name="gennorm2.dst" value="${resources.dir}/org/apache/lucene/analysis/icu/utr30.nrm"/>
+  <target name="gennorm2" depends="gen-utr30-data-files">
+    <echo>Note that the gennorm2 and icupkg tools must be on your PATH. These tools
+are part of the ICU4C package. See http://site.icu-project.org/ </echo>
+    <mkdir dir="${build.dir}/gennorm2"/>
+    <exec executable="gennorm2" failonerror="true">
+      <arg value="-v"/>
+      <arg value="-s"/>
+      <arg value="${utr30.data.dir}"/>
+      <arg line="${gennorm2.src.files}"/>
+      <arg value="-o"/>
+      <arg value="${gennorm2.tmp}"/>
+    </exec>
+    <!-- now convert binary file to big-endian -->
+    <exec executable="icupkg" failonerror="true">
+      <arg value="-tb"/>
+      <arg value="${gennorm2.tmp}"/>
+      <arg value="${gennorm2.dst}"/>
+    </exec>
+    <delete file="${gennorm2.tmp}"/>
+  </target>
+  
+  <property name="rbbi.src.dir" location="src/data/uax29"/>
+  <property name="rbbi.dst.dir" location="${resources.dir}/org/apache/lucene/analysis/icu/segmentation"/>
+  
+  <target name="genrbbi" depends="compile-tools">
+    <mkdir dir="${rbbi.dst.dir}"/>
+    <java
+      classname="org.apache.lucene.analysis.icu.RBBIRuleCompiler"
+      dir="."
+      fork="true"
+      failonerror="true">
+      <classpath>
+        <path refid="icujar"/>
+        <pathelement location="${build.dir}/classes/tools"/>
+      </classpath>
+      <assertions>
+        <enable package="org.apache.lucene"/>
+      </assertions>
+      <arg value="${rbbi.src.dir}"/>
+      <arg value="${rbbi.dst.dir}"/>
+    </java>
+  </target>
+
+  <target name="compile-tools" depends="init,common.compile-tools">
+    <compile
+      srcdir="src/tools/java"
+      destdir="${build.dir}/classes/tools">
+      <classpath refid="classpath"/>
+    </compile>
+  </target>
+
+  <target name="regenerate" depends="gen-utr30-data-files,gennorm2,genrbbi"/>
+
+</project>

@@ -2,67 +2,78 @@
 
 ## Basic steps:
   
-  0. Install OpenJDK 11 (or greater)
-  1. Download Lucene/Solr from Apache and unpack it
-  2. Connect to the top-level of your installation (parent of the lucene top-level directory)
+  0. Install OpenJDK 11 (or greater), Ant 1.8.2+, Ivy 2.2.0
+  1. Download Lucene from Apache and unpack it
+  2. Connect to the top-level of your Lucene installation
   3. Install JavaCC (optional)
-  4. Run gradle
+  4. Run ant
 
-## Step 0) Set up your development environment (OpenJDK 11 or greater)
+## Step 0) Set up your development environment (OpenJDK 11 or greater, Ant 1.8.2+, Ivy 2.2.0)
 
 We'll assume that you know how to get and set up the JDK - if you
 don't, then we suggest starting at https://www.oracle.com/java/ and learning
 more about Java, before returning to this README. Lucene runs with
 Java 11 and later.
 
-Lucene uses [Gradle](https://gradle.org/) for build control; and includes Gradle wrapper script to download the correct version of it.
+Like many Open Source java projects, Lucene uses Apache Ant for build
+control.  Specifically, you MUST use Ant version 1.8.2+.
 
-NOTE: When Solr moves to a Top Level Project, it will no longer
-be necessary to download Solr to build Lucene. You can track
-progress at: https://issues.apache.org/jira/browse/SOLR-14497 
+Ant is "kind of like make without make's wrinkles".  Ant is
+implemented in java and uses XML-based configuration files.  You can
+get it at:
 
-NOTE: Lucene changed from Ant to Gradle as of release 9.0. Prior releases
-still use Ant.
+  https://ant.apache.org
 
-## Step 1) Download/Checkout Lucene source code
+You'll need to download the Ant binary distribution.  Install it
+according to the instructions at:
+
+  https://ant.apache.org/manual
+
+Finally, you'll need to install ivy into your ant lib folder
+(~/.ant/lib). You can get it from http://ant.apache.org/ivy/.
+If you skip this step, the Lucene build system will offer to do it 
+for you.
+
+## Step 1) Download Lucene from Apache
 
 We'll assume you already did this, or you wouldn't be reading this
 file.  However, you might have received this file by some alternate
 route, or you might have an incomplete copy of the Lucene, so: Lucene
-releases are available as part of Solr for download at:
+releases are available for download at:
 
-  https://lucene.apache.org/solr/downloads.html
-  
-See the note above for why it is necessary currently to download Solr
+  https://www.apache.org/dyn/closer.cgi/lucene/java/
 
 Download either a zip or a tarred/gzipped version of the archive, and
 uncompress it into a directory of your choice.
 
-Or you can directly checkout the source code from GitHub:
+## Step 2) From the command line, change (cd) into the top-level directory of your Lucene installation
 
-  https://github.com/apache/lucene-solr
+Lucene's top-level directory contains the build.xml file. By default,
+you do not need to change any of the settings in this file, but you do
+need to run ant from this location so it knows where to find build.xml.
 
-## Step 2) From the command line, change (cd) into the top-level directory of your Lucene/Solr installation
+If you would like to change settings you can do so by creating one 
+or more of the following files and placing your own property settings
+in there:
 
-The parent directory for both Lucene and Solr contains the base configuration
-file for the combined build, as well as the "gradle wrapper" (gradlew) that
-makes invocation of Gradle easier. By default, you do not need to change any of 
-the settings in this file, but you do need to run Gradle from this location so 
-it knows where to find the necessary configurations.
+    ~/lucene.build.properties
+    ~/build.properties
+    lucene-x.y/build.properties
 
-The first time you run Gradle, it will create a file "gradle.properties" that
-contains machine-specific settings. Normally you can use this file as-is, but it
-can be modified if necessary. 
+The first property which is found in the order with which the files are
+loaded becomes the property setting which is used by the Ant build
+system.
 
-## Step 4) Run Gradle
+NOTE: the ~ character represents your user account home directory.
 
-Assuming you can exectue "./gradlew help" should show you the main tasks that
-can be executed to show help sub-topics.
+## Step 4) Run ant
 
-If you want to build Lucene independent of Solr, type:
-  ./gradlew -p lucene assemble
+Assuming you have ant in your PATH and have set ANT_HOME to the
+location of your ant installation, typing "ant" at the shell prompt
+and command prompt should run ant.  Ant will by default look for the
+"build.xml" file in your current directory, and compile Lucene.
 
-If you want to build the documentation, type "./gradlew buildSite".
+If you want to build the documentation, type "ant documentation".
 
 For further information on Lucene, go to:
 
@@ -75,3 +86,7 @@ Please join the Lucene-User mailing list by visiting this site:
 Please post suggestions, questions, corrections or additions to this
 document to the lucene-user mailing list.
 
+This file was originally written by Steven J. Owens <puff@darksleep.com>.
+This file was modified by Jon S. Stevens <jon@latchkey.com>.
+
+Copyright (c) 2001-2020 The Apache Software Foundation.  All rights reserved.

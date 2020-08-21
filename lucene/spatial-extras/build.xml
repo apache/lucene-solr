@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.
+-->
+<project name="spatial-extras" default="default">
+  <description>
+    Geospatial search
+  </description>
+
+  <import file="../module-build.xml"/>
+
+  <path id="spatialjar">
+     <fileset dir="lib"/>
+  </path>
+
+  <path id="classpath">
+    <path refid="base.classpath"/>
+    <path refid="spatialjar"/>
+    <pathelement path="${spatial3d.jar}" />
+  </path>
+
+  <path id="test.classpath">
+    <path refid="test.base.classpath" />
+    <path refid="spatialjar"/>
+    <pathelement path="src/test-files" />
+    <pathelement path="${common.dir}/build/spatial3d/classes/test" />
+  </path>
+
+  <target name="compile-core" depends="jar-spatial3d,common.compile-core" />
+
+  <target name="compile-test" depends="compile-spatial3d-tests,common.compile-test" />
+
+  <target name="compile-spatial3d-tests">
+    <ant dir="${common.dir}/spatial3d" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="javadocs" depends="javadocs-spatial3d,compile-core,check-javadocs-uptodate"
+          unless="javadocs-uptodate-${name}">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../spatial3d"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
+</project>

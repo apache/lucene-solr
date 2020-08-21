@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="analyzers-opennlp" default="default">
+
+  <description>
+    OpenNLP Library Integration
+  </description>
+
+  <path id="opennlpjars">
+    <fileset dir="lib"/>
+  </path>
+
+  <property name="test.model.data.dir" location="src/tools/test-model-data"/>
+  <property name="tests.userdir" location="src/test-files"/>
+  <property name="test.model.dir" location="${tests.userdir}/org/apache/lucene/analysis/opennlp"/>
+
+  <import file="../analysis-module-build.xml"/>
+
+  <property name="analysis-extras.conf.dir"
+            location="${common.dir}/../solr/contrib/analysis-extras/src/test-files/analysis-extras/solr/collection1/conf"/>
+
+  <path id="classpath">
+    <pathelement path="${analyzers-common.jar}"/>
+    <path refid="opennlpjars"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="test.base.classpath"/>
+    <pathelement path="${tests.userdir}"/>
+  </path>
+
+  <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
+
+  <!--
+    This does not create real NLP models, just small unencumbered ones for the unit tests.
+    All text taken from reuters corpus.
+    Tags applied with online demos at CCG Urbana-Champaign.
+    -->
+  <target name="train-test-models" description="Train all small test models for unit tests" depends="resolve">
+    <mkdir dir="${test.model.dir}"/>
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.sentdetect.training -->
+    <trainModel command="SentenceDetectorTrainer" lang="en" data="sentences.txt" model="en-test-sent.bin"/>
+    <copy file="${test.model.dir}/en-test-sent.bin" todir="${analysis-extras.conf.dir}"/>
+
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.tokenizer.training -->
+    <trainModel command="TokenizerTrainer" lang="en" data="tokenizer.txt" model="en-test-tokenizer.bin"/>
+    <copy file="${test.model.dir}/en-test-tokenizer.bin" todir="${analysis-extras.conf.dir}"/>
+
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.postagger.training -->
+    <trainModel command="POSTaggerTrainer" lang="en" data="pos.txt" model="en-test-pos-maxent.bin"/>
+
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.chunker.training -->
+    <trainModel command="ChunkerTrainerME" lang="en" data="chunks.txt" model="en-test-chunker.bin"/>
+
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.namefind.training -->
+    <trainModel command="TokenNameFinderTrainer" lang="en" data="ner.txt" model="en-test-ner.bin">
+      <extra-args>
+        <arg value="-params"/>
+        <arg value="ner_TrainerParams.txt"/>
+      </extra-args>
+    </trainModel>
+    <copy file="${test.model.dir}/en-test-ner.bin" todir="${analysis-extras.conf.dir}"/>
+
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.lemmatizer.training -->
+    <trainModel command="LemmatizerTrainerME" lang="en" data="lemmas.txt" model="en-test-lemmatizer.bin"/>
+  </target>
+
+  <macrodef name="trainModel">
+    <attribute name="command"/>
+    <attribute name="lang"/>
+    <attribute name="data"/>
+    <attribute name="model"/>
+    <element name="extra-args" optional="true"/>
+    <sequential>
+      <java classname="opennlp.tools.cmdline.CLI"
+            dir="${test.model.data.dir}"
+            fork="true"
+            failonerror="true">
+        <classpath>
+          <path refid="opennlpjars"/>
+        </classpath>
+
+        <arg value="@{command}"/>
+
+        <arg value="-lang"/>
+        <arg value="@{lang}"/>
+
+        <arg value="-data"/>
+        <arg value="@{data}"/>
+
+        <arg value="-model"/>
+        <arg value="${test.model.dir}/@{model}"/>
+
+        <extra-args/>
+      </java>
+    </sequential>
+  </macrodef>
+
+  <target name="regenerate" depends="train-test-models"/>
+</project>

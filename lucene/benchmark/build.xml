@@ -1,0 +1,289 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="benchmark" default="default">
+
+    <description>
+      System for benchmarking Lucene
+    </description>
+
+    <import file="../module-build.xml"/>
+    <property name="working.dir" location="work"/>
+
+    <!-- benchmark creates lots of sysout stuff, so dont run forbidden! -->
+    <target name="-check-forbidden-sysout"/>
+
+    <target name="check-files">
+        <available file="temp/news20.tar.gz" property="news20.exists"/>
+
+        <available file="${working.dir}/20_newsgroup" property="news20.expanded"/>
+
+        <available file="temp/reuters21578.tar.gz" property="reuters.exists"/>
+        <available file="${working.dir}/reuters" property="reuters.expanded"/>
+        <available file="${working.dir}/reuters-out" property="reuters.extracted"/>
+        <available file="temp/20news-18828.tar.gz" property="20news-18828.exists"/>
+        <available file="${working.dir}/20news-18828" property="20news-18828.expanded"/>
+        <available file="${working.dir}/mini_newsgroups" property="mini.expanded"/>
+        <available file="temp/allCountries.txt.bz2" property="geonames.exists"/>
+        <available file="${working.dir}/geonames" property="geonames.expanded"/>
+        
+        <available file="temp/enwiki-20070527-pages-articles.xml.bz2" property="enwiki.exists"/>
+        <available file="temp/enwiki-20070527-pages-articles.xml" property="enwiki.expanded"/>
+        <available file="${working.dir}/enwiki.txt" property="enwiki.extracted"/>
+      <available file="temp/${top.100k.words.archive.filename}"
+                   property="top.100k.words.archive.present"/>
+      <available file="${working.dir}/top100k-out" 
+                   property="top.100k.word.files.expanded"/>
+    </target>
+
+    <target name="enwiki-files" depends="check-files">
+        <mkdir dir="temp"/>
+        <antcall target="get-enwiki"/>
+        <antcall target="expand-enwiki"/>
+    </target>
+
+    <target name="get-enwiki" unless="enwiki.exists">
+        <get src="https://home.apache.org/~dsmiley/data/enwiki-20070527-pages-articles.xml.bz2"
+             dest="temp/enwiki-20070527-pages-articles.xml.bz2"/>
+    </target>
+
+    <target name="expand-enwiki"  unless="enwiki.expanded">
+        <bunzip2 src="temp/enwiki-20070527-pages-articles.xml.bz2" dest="temp"/>
+    </target>
+
+    <target name="geonames-files" depends="check-files" description="Get data for spatial.alg">
+        <mkdir dir="temp"/>
+        <antcall target="get-geonames"/>
+        <antcall target="expand-geonames"/>
+    </target>
+
+    <target name="get-geonames" unless="geonames.exists">
+        <!-- note: latest data is at: https://download.geonames.org/export/dump/allCountries.zip
+         and then randomize with: gsort -R -S 1500M file.txt > file_random.txt
+         and then compress with: bzip2 -9 -k file_random.txt -->
+      <get src="https://home.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
+             dest="temp/allCountries.txt.bz2"/>
+    </target>
+
+    <target name="expand-geonames" unless="geonames.expanded">
+        <mkdir dir="${working.dir}/geonames"/>
+        <bunzip2 src="temp/allCountries.txt.bz2" dest="${working.dir}/geonames"/>
+    </target>
+
+    <target name="get-news-20" unless="20news-18828.exists">
+        <get src="https://www-2.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/news20.tar.gz"
+             dest="temp/news20.tar.gz"/>
+
+    </target>
+    <target name="get-reuters" unless="reuters.exists">
+        <!-- Please note: there is no HTTPS url. As this is only test data, we don't care: -->
+        <get src="http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
+            dest="temp/reuters21578.tar.gz"/>
+    </target>
+
+    <target name="expand-news-20"  unless="news20.expanded">
+        <gunzip src="temp/news20.tar.gz" dest="temp"/>
+        <untar src="temp/news20.tar" dest="${working.dir}"/>
+    </target>
+    <target name="expand-reuters" unless="reuters.expanded">
+        <gunzip src="temp/reuters21578.tar.gz" dest="temp"/>
+        <mkdir dir="${working.dir}/reuters"/>
+        <untar src="temp/reuters21578.tar" dest="${working.dir}/reuters"/>
+        <delete >
+            <fileset dir="${working.dir}/reuters">
+                <include name="*.txt"/>
+            </fileset>
+        </delete>
+
+    </target>
+    <target name="extract-reuters" depends="check-files" unless="reuters.extracted">
+        <java classname="org.apache.lucene.benchmark.utils.ExtractReuters" maxmemory="1024M" fork="true">
+            <classpath refid="run.classpath"/>
+            <arg file="${working.dir}/reuters"/>
+            <arg file="${working.dir}/reuters-out"/>
+        </java>
+    </target>
+    <target name="get-20news-18828" unless="20news-18828.exists">
+        <!-- TODO: URL no longer works (404 Not found): -->
+        <get src="https://people.csail.mit.edu/u/j/jrennie/public_html/20Newsgroups/20news-18828.tar.gz"
+             dest="temp/20news-18828.tar.gz"/>
+
+    </target>
+    <target name="expand-20news-18828" unless="20news-18828.expanded">
+        <gunzip src="temp/20news-18828.tar.gz" dest="temp"/>
+        <untar src="temp/20news-18828.tar" dest="${working.dir}"/>
+    </target>
+    <target name="get-mini-news" unless="mini.exists">
+        <get src="https://kdd.ics.uci.edu/databases/20newsgroups/mini_newsgroups.tar.gz"
+             dest="temp/mini_newsgroups.tar.gz"/>
+    </target>
+    <target name="expand-mini-news" unless="mini.expanded">
+        <gunzip src="temp/mini_newsgroups.tar.gz" dest="temp"/>
+        <untar src="temp/mini_newsgroups.tar" dest="${working.dir}"/>
+    </target>
+
+  <property name="top.100k.words.archive.filename" 
+            value="top.100k.words.de.en.fr.uk.wikipedia.2009-11.tar.bz2"/>
+  <property name="top.100k.words.archive.base.url"
+            value="https://home.apache.org/~rmuir/wikipedia"/>
+  <target name="get-top-100k-words-archive" unless="top.100k.words.archive.present">
+    <mkdir dir="temp"/>
+      <get src="${top.100k.words.archive.base.url}/${top.100k.words.archive.filename}"
+           dest="temp/${top.100k.words.archive.filename}"/>
+  </target>
+  <target name="expand-top-100k-word-files" unless="top.100k.word.files.expanded">
+    <mkdir dir="${working.dir}/top100k-out"/>
+      <untar src="temp/${top.100k.words.archive.filename}"
+             overwrite="true" compression="bzip2" dest="${working.dir}/top100k-out"/>
+  </target>
+  
+  <target name="top-100k-wiki-word-files" depends="check-files">
+    <mkdir dir="${working.dir}"/>
+    <antcall target="get-top-100k-words-archive"/>
+    <antcall target="expand-top-100k-word-files"/>
+  </target>
+  
+    <target name="get-files" depends="check-files">
+        <mkdir dir="temp"/>
+        <antcall target="get-reuters"/>
+        <antcall target="expand-reuters"/>
+        <antcall target="extract-reuters"/>
+    </target>
+
+    <path id="classpath">
+      <pathelement path="${memory.jar}"/>
+      <pathelement path="${highlighter.jar}"/>
+      <pathelement path="${analyzers-common.jar}"/>
+      <pathelement path="${queryparser.jar}"/>
+      <pathelement path="${facet.jar}"/>
+      <pathelement path="${spatial-extras.jar}"/>
+      <pathelement path="${queries.jar}"/>
+      <pathelement path="${codecs.jar}"/>
+      <pathelement path="${join.jar}"/>
+      <path refid="base.classpath"/>
+      <fileset dir="lib"/>
+    </path>
+    <path id="run.classpath">
+        <path refid="classpath"/>
+        <pathelement location="${build.dir}/classes/java"/>
+        <pathelement path="${benchmark.ext.classpath}"/>
+    </path>
+
+    <target name="javadocs" depends="javadocs-memory,javadocs-highlighter,javadocs-analyzers-common,
+      javadocs-queryparser,javadocs-facet,javadocs-spatial-extras,compile-core,check-javadocs-uptodate"
+            unless="javadocs-uptodate-${name}">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../memory"/>
+        <link href="../highlighter"/>
+        <link href="../analyzers-common"/>
+        <link href="../queryparser"/>
+        <link href="../facet"/>
+        <link href="../spatial-extras"/>
+      </links>
+    </invoke-module-javadoc>
+    </target>
+
+    <property name="task.alg" location="conf/micro-standard.alg"/>
+    <property name="task.mem" value="140M"/>
+
+    <target name="run-task" depends="compile,check-files,get-files" 
+     description="Run compound penalty perf test (optional: -Dtask.alg=your-algorithm-file -Dtask.mem=java-max-mem)">
+        <echo>Working Directory: ${working.dir}</echo>
+        <java classname="org.apache.lucene.benchmark.byTask.Benchmark" maxmemory="${task.mem}" fork="true">
+            <classpath refid="run.classpath"/>
+            <arg file="${task.alg}"/>
+        </java>
+    </target>
+
+    <target name="enwiki" depends="compile,check-files,enwiki-files">
+        <echo>Working Directory: ${working.dir}</echo>
+        <java classname="org.apache.lucene.benchmark.byTask.Benchmark" maxmemory="1024M" fork="true">
+            <assertions>
+              <enable/>
+            </assertions>
+            <classpath refid="run.classpath"/>
+            <arg file="conf/extractWikipedia.alg"/>
+        </java>
+    </target>
+
+  <property name="collation.alg.file" location="conf/collation.alg"/>
+  <property name="collation.output.file" 
+            value="${working.dir}/collation.benchmark.output.txt"/>
+  <property name="collation.jira.output.file" 
+            value="${working.dir}/collation.bm2jira.output.txt"/>
+  
+  <path id="collation.runtime.classpath">
+    <path refid="run.classpath"/>
+      <pathelement path="${analyzers-icu.jar}"/>
+  </path>
+  
+  <target name="collation" depends="compile,jar-analyzers-icu,top-100k-wiki-word-files">
+      <echo>Running benchmark with alg file: ${collation.alg.file}</echo>
+      <java fork="true" classname="org.apache.lucene.benchmark.byTask.Benchmark" 
+            maxmemory="${task.mem}" output="${collation.output.file}">
+        <classpath refid="collation.runtime.classpath"/>
+        <arg file="${collation.alg.file}"/>
+      </java>
+      <echo>Benchmark output is in file: ${collation.output.file}</echo>
+      <echo>Converting to JIRA table format...</echo>
+      <exec executable="${perl.exe}" output="${collation.jira.output.file}" failonerror="true">
+        <arg value="-CSD"/>
+        <arg value="scripts/collation.bm2jira.pl"/>
+        <arg value="${collation.output.file}"/>
+      </exec>
+      <echo>Benchmark output in JIRA table format is in file: ${collation.jira.output.file}</echo>
+  </target>
+  
+    <property name="shingle.alg.file" location="conf/shingle.alg"/>
+    <property name="shingle.output.file" 
+              value="${working.dir}/shingle.benchmark.output.txt"/>
+    <property name="shingle.jira.output.file" 
+              value="${working.dir}/shingle.bm2jira.output.txt"/>
+  
+    <path id="shingle.runtime.classpath">
+      <path refid="run.classpath"/>
+    </path>
+  
+    <target name="shingle" depends="compile,get-files">
+      <echo>Running benchmark with alg file: ${shingle.alg.file}</echo>
+      <java fork="true" classname="org.apache.lucene.benchmark.byTask.Benchmark" 
+            maxmemory="${task.mem}" output="${shingle.output.file}">
+        <classpath refid="run.classpath"/>
+        <arg file="${shingle.alg.file}"/>
+      </java>
+      <echo>Benchmark output is in file: ${shingle.output.file}</echo>
+      <echo>Converting to JIRA table format...</echo>
+      <exec executable="${perl.exe}" output="${shingle.jira.output.file}" failonerror="true">
+        <arg value="-CSD"/>
+        <arg value="scripts/shingle.bm2jira.pl"/>
+        <arg value="${shingle.output.file}"/>
+      </exec>
+      <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
+    </target>
+
+    <target name="init" depends="module-build.init,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet,jar-spatial-extras,jar-codecs,jar-join"/>
+  
+    <target name="compile-test" depends="copy-alg-files-for-testing,module-build.compile-test"/>
+    <target name="copy-alg-files-for-testing" description="copy .alg files as resources for testing">
+      <copy todir="${build.dir}/classes/test/conf">
+        <fileset dir="conf"/>
+      </copy>
+    </target>
+</project>

@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+<project name="expressions" default="default">
+
+  <description>
+    Dynamically computed values to sort/facet/search on based on a pluggable grammar.
+  </description>
+
+  <import file="../module-build.xml"/>
+
+  <path id="classpath">
+    <path refid="base.classpath"/>
+    <fileset dir="lib"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="test.base.classpath"/>
+    <fileset dir="lib"/>
+    <pathelement path="src/test-files"/>
+  </path>
+
+  <target name="regenerate" depends="run-antlr"/>
+
+  <target name="resolve-antlr" xmlns:ivy="antlib:org.apache.ivy.ant">
+    <ivy:cachepath organisation="org.antlr" module="antlr4" revision="4.5.1-1"
+                  inline="true" conf="default" type="jar" pathid="antlr.classpath"/>
+  </target>
+
+  <target name="run-antlr" depends="resolve-antlr">
+    <regen-grammar package="js" grammar="Javascript"/>
+  </target>
+  
+  <macrodef name="replace-value">
+    <attribute name="value" />
+    <attribute name="property" />
+    <attribute name="from" />
+    <attribute name="to" />
+    <sequential>
+      <loadresource property="@{property}">
+        <string value="@{value}"/>
+        <filterchain>
+          <tokenfilter>
+            <filetokenizer/>
+            <replacestring from="@{from}" to="@{to}"/>
+          </tokenfilter>
+        </filterchain>
+      </loadresource>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="regen-grammar">
+    <attribute name="package" />
+    <attribute name="grammar" />
+    <sequential>
+      <local name="grammar.path"/>
+      <patternset id="grammar.@{grammar}.patternset">
+        <include name="@{grammar}Lexer.java" />
+        <include name="@{grammar}Parser.java" />
+        <include name="@{grammar}Visitor.java" />
+        <include name="@{grammar}BaseVisitor.java" />
+      </patternset>
+      <property name="grammar.path" location="src/java/org/apache/lucene/expressions/@{package}"/>
+      <!-- delete parser and lexer so files will be generated -->
+      <delete dir="${grammar.path}">
+        <patternset refid="grammar.@{grammar}.patternset"/>
+      </delete>
+      <!-- invoke ANTLR4 -->
+      <java classname="org.antlr.v4.Tool" fork="true" failonerror="true" classpathref="antlr.classpath" taskname="antlr">
+        <sysproperty key="file.encoding" value="UTF-8"/>
+        <sysproperty key="user.language" value="en"/>
+        <sysproperty key="user.country" value="US"/>
+        <sysproperty key="user.variant" value=""/>
+        <arg value="-package"/>
+        <arg value="org.apache.lucene.expressions.@{package}"/>
+        <arg value="-no-listener"/>
+        <arg value="-visitor"/>
+        <arg value="-o"/>
+        <arg path="${grammar.path}"/>
+        <arg path="${grammar.path}/@{grammar}.g4"/>
+      </java>
+      <!-- fileset with files to edit -->
+      <fileset id="grammar.fileset" dir="${grammar.path}">
+        <patternset refid="grammar.@{grammar}.patternset"/>
+      </fileset>
+      <!-- remove files that are not needed to compile or at runtime -->
+      <delete dir="${grammar.path}" includes="@{grammar}*.tokens"/>
+      <!-- make the generated classes package private -->
+      <replaceregexp match="public ((interface|class) \Q@{grammar}\E\w+)" replace="\1" encoding="UTF-8">
+        <fileset refid="grammar.fileset"/>
+      </replaceregexp>
+      <!-- nuke timestamps/filenames in generated files -->
+      <replaceregexp match="\Q// Generated from \E.*" replace="\/\/ ANTLR GENERATED CODE: DO NOT EDIT" encoding="UTF-8">
+        <fileset refid="grammar.fileset"/>
+      </replaceregexp>
+      <!-- remove tabs in antlr generated files -->
+      <replaceregexp match="\t" flags="g" replace="  " encoding="UTF-8">
+        <fileset refid="grammar.fileset"/>
+      </replaceregexp>
+      <!-- fix line endings -->
+      <fixcrlf srcdir="${grammar.path}">
+        <patternset refid="grammar.@{grammar}.patternset"/>
+      </fixcrlf>
+    </sequential>
+  </macrodef>
+</project>
