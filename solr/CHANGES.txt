@@ -190,6 +190,8 @@ Bug Fixes
 
 * SOLR-14703: Fix edismax replacement of all whitespace characters with spaces (Yuriy Koval via Jason Gerlowski)
 
+* SOLR-14752: Fix error in Zookeeper status when Prometheus plugin is enabled in ZK (Philipp Trulson)
+
 Other Changes
 ---------------------
 
