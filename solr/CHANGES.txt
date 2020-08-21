@@ -58,6 +58,8 @@ Optimizations
 * SOLR-13132: JSON Facet perf improvements to support "sweeping" collection of "relatedness()"
   (hossman, Michael Gibney)
 
+* SOLR-13438: On deleting a collection, its config set will also be deleted iff it has been auto-created, and not used by any other collection (Anderson Dorow)
+
 Bug Fixes
 ---------------------
 
