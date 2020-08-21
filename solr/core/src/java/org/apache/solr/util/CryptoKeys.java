@@ -351,7 +351,7 @@ public final class CryptoKeys {
       } catch (NoSuchAlgorithmException e) {
         throw new AssertionError("JVM spec is required to support RSA", e);
       }
-      keyGen.initialize(DEFAULT_KEYPAIR_LENGTH);
+      keyGen.initialize(Integer.getInteger("solr.keypair.keypair_length", DEFAULT_KEYPAIR_LENGTH));
       java.security.KeyPair keyPair = keyGen.genKeyPair();
       privateKey = keyPair.getPrivate();
       publicKey = keyPair.getPublic();

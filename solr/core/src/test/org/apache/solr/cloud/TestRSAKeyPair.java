@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.CryptoKeys;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.URL;
@@ -27,6 +28,12 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 
 public class TestRSAKeyPair extends SolrTestCase {
+
+    @BeforeClass
+    public static void beforeTestRSAKeyPair() {
+        System.setProperty("solr.keypair.keypair_length", "512");
+    }
+
     @Test
     public void testGenKeyPair() throws Exception {
         testRoundTrip(new CryptoKeys.RSAKeyPair());

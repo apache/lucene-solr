@@ -155,7 +155,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     };
   }
 
-  private class GraphTermsQuery extends Query implements ExtendedQuery {
+  private static class GraphTermsQuery extends Query implements ExtendedQuery {
 
     private Term[] queryTerms;
     private String field;
@@ -216,10 +216,12 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     public GraphTermsQuery clone() {
-      GraphTermsQuery clone = new GraphTermsQuery(this.field,
-                                                  this.queryTerms,
-                                                  this.maxDocFreq,
-                                                  this.id);
+      GraphTermsQuery clone = null;
+      try {
+        clone = (GraphTermsQuery) super.clone();
+      } catch (CloneNotSupportedException e) {
+        throw new IllegalStateException(e);
+      }
       return clone;
     }
 

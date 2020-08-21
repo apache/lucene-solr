@@ -71,19 +71,23 @@ public class XmlConfigFile { // formerly simply "Config"
 
   public static final XPathFactoryImpl xpathFactory = new XPathFactoryImpl();
 
-  public static final Configuration conf;
+  public static Configuration conf = null;
 
-  private static final NamePool pool ;
+  private static NamePool pool = null;
 
   static  {
-    conf = Configuration.newConfiguration();
-    conf.setValidation(false);
-    conf.setXIncludeAware(true);
-    conf.setExpandAttributeDefaults(true);
-    pool = new NamePool();
-    conf.setNamePool(pool);
+    try {
+      conf = Configuration.newConfiguration();
+      conf.setValidation(false);
+      conf.setXIncludeAware(true);
+      conf.setExpandAttributeDefaults(true);
+      pool = new NamePool();
+      conf.setNamePool(pool);
 
-    xpathFactory.setConfiguration(conf);
+      xpathFactory.setConfiguration(conf);
+    } catch (Exception e) {
+      log.error("", e);
+    }
   }
 
   protected final String prefix;
@@ -167,6 +171,7 @@ public class XmlConfigFile { // formerly simply "Config"
       conf2.setExpandAttributeDefaults(true);
       conf2.setNamePool(pool);
       conf2.setDocumentNumberAllocator(conf.getDocumentNumberAllocator());
+
       SolrTinyBuilder builder = new SolrTinyBuilder(conf2.makePipelineConfiguration(), substituteProps);
       builder.setStatistics(conf2.getTreeStatistics().SOURCE_DOCUMENT_STATISTICS);
 

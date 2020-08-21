@@ -130,11 +130,9 @@ public class XMLLoader extends ContentStreamLoader {
 
     String tr = req.getParams().get(CommonParams.TR,null);
     if(tr!=null) {
-      if (req.getCore().getCoreDescriptor().isConfigSetTrusted() == false) {
-          throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
-                  + " and this operation is not available for collections with untrusted configsets. To use this feature, re-upload the configset"
-                  + " after enabling authentication and authorization.");
-      }
+      if (req.getCore().getCoreDescriptor().isConfigSetTrusted() == false) throw new SolrException(ErrorCode.UNAUTHORIZED,
+          "The configset for this collection was uploaded without any authentication in place,"
+              + " and this operation is not available for collections with untrusted configsets. To use this feature, re-upload the configset" + " after enabling authentication and authorization.");
 
       final Transformer t = getTransformer(tr,req);
 
@@ -188,6 +186,7 @@ public class XMLLoader extends ContentStreamLoader {
         parser = (XMLStreamReader2) ((charset == null) ?
                   inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset));
         parser.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
+
         this.processUpdate(req, processor, parser);
       } catch (XMLStreamException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
