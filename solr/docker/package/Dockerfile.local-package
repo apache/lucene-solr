@@ -1,0 +1,7 @@
+ARG BASE_IMAGE=alpine:3.12
+
+FROM $BASE_IMAGE
+
+ARG SOLR_VERSION
+
+COPY . /opt/solr-build/solr-$SOLR_VERSION
