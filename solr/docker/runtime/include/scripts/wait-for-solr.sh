@@ -22,8 +22,8 @@ function usage {
 max_attempts=12
 wait_seconds=5
 
-if [[ -v SOLR_PORT ]] && ! grep -E -q '^[0-9]+$' <<<"$SOLR_PORT"; then
-  echo "Invalid SOLR_PORT=$SOLR_PORT environment variable specified"
+if ! [[ ${SOLR_PORT:-8983} =~ ^[0-9]+$ ]]; then
+  echo "Invalid SOLR_PORT=${SOLR_PORT:-} environment variable specified"
   exit 1
 fi
 

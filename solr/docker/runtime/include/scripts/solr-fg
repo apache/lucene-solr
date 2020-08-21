@@ -47,7 +47,7 @@ if [[ -z "${TINI:-}" ]]; then
   fi
 fi
 if [[ "$TINI" == yes ]]; then
-  exec /usr/bin/tini -- solr -f "$@" "${EXTRA_ARGS[@]}"
+  exec tini -- solr -f "$@" "${EXTRA_ARGS[@]}"
 elif [[ "$TINI" == no ]]; then
   exec solr -f "$@" "${EXTRA_ARGS[@]}"
 else
