@@ -29,23 +29,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class TimeTracker {
-  
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  public static final Map<String,TimeTracker> CLOSE_TIMES = new ConcurrentHashMap<>(256, 0.75f, 3);
-  
+
+  public static final Map<String,TimeTracker> CLOSE_TIMES = new ConcurrentHashMap<>(16, 0.75f, 3);
+
   private final long startTime;
   private final PrintStream out;
   private final String stringout;
 
   private volatile long doneTime;
-  
-  private final List<TimeTracker> children = Collections.synchronizedList(new ArrayList<>(32));
+
+  private final List<TimeTracker> children = new ArrayList<>(16);
 
   private final StringBuilder label;
-  
+
   private final int depth;
-  
+
   public TimeTracker(Object object, String label) {
     this(object, label, 1, System.out);
   }
@@ -55,8 +55,7 @@ public class TimeTracker {
     if (object instanceof String) {
       stringout = object.toString() + "-> " + getElapsedMS() + "ms";
     } else {
-      stringout =
-          object.getClass().getSimpleName() + "--> " + getElapsedMS() + "ms";
+      stringout = object.getClass().getSimpleName() + "--> " + getElapsedMS() + "ms";
     }
 
     this.startTime = System.nanoTime();
@@ -67,9 +66,7 @@ public class TimeTracker {
 
     this.out = out;
     if (depth <= 1) {
-      CLOSE_TIMES.put(
-          (object != null ? object.hashCode() : 0) + "_" + label.hashCode(),
-          this);
+      CLOSE_TIMES.put((object != null ? object.hashCode() : 0) + "_" + label.hashCode(), this);
     }
   }
 
@@ -86,27 +83,27 @@ public class TimeTracker {
     }
     return true;
   }
-  
+
   public boolean doneClose(String label) {
     if (log.isDebugEnabled()) {
       log.debug("doneClose(String label={}) - start", label);
     }
 
-   // if (theObject == null) return;
-   // log.info(theObject instanceof String ? theObject.getClass().getName() : theObject.toString() +  " was closed");
+    // if (theObject == null) return;
+    // log.info(theObject instanceof String ? theObject.getClass().getName() : theObject.toString() +  " was closed");
     doneTime = System.nanoTime();
-    
+
     //this.label.append(label);
     StringBuilder spacer = new StringBuilder(depth);
-    for (int i =0; i < depth; i++) {
+    for (int i = 0; i < depth; i++) {
       spacer.append(' ');
     }
-    
+
     String extra = "";
     if (label.trim().length() != 0) {
       extra = label + "->";
     }
-    
+
     this.label.insert(0, spacer.toString() + extra);
 
     if (log.isDebugEnabled()) {
@@ -132,7 +129,7 @@ public class TimeTracker {
       log.debug("startSubClose(String label={}) - start", label);
     }
 
-    TimeTracker subTracker = new TimeTracker(null, label, depth+1, out);
+    TimeTracker subTracker = new TimeTracker(null, label, depth + 1, out);
     children.add(subTracker);
 
     if (log.isDebugEnabled()) {
@@ -140,13 +137,13 @@ public class TimeTracker {
     }
     return subTracker;
   }
-  
+
   public TimeTracker startSubClose(Object object) {
     if (log.isDebugEnabled()) {
       log.debug("startSubClose(Object object={}) - start", object);
     }
 
-    TimeTracker subTracker = new TimeTracker(object, object.getClass().getName(), depth+1, out);
+    TimeTracker subTracker = new TimeTracker(object, object.getClass().getName(), depth + 1, out);
     children.add(subTracker);
 
     if (log.isDebugEnabled()) {
@@ -154,15 +151,15 @@ public class TimeTracker {
     }
     return subTracker;
   }
-  
+
   public void printCloseTimes() {
     if (log.isDebugEnabled()) {
       log.debug("printCloseTimes() - start");
     }
 
     String times = getCloseTimes();
-    if (times.trim().length()>0) {
-      out.println("\n------" +  times + "------\n");
+    if (times.trim().length() > 0) {
+      out.println("\n------" + times + "------\n");
     }
 
     if (log.isDebugEnabled()) {
@@ -174,33 +171,31 @@ public class TimeTracker {
     if (log.isDebugEnabled()) {
       log.debug("getCloseTimes() - start");
     }
-    
-    if ( getElapsedMS() <=0) {
+
+    if (getElapsedMS() <= 0) {
       return "";
     }
 
     StringBuilder sb = new StringBuilder(64);
-//    if (trackedObject != null) {
-//      if (trackedObject instanceof String) {
-//        sb.append(label + trackedObject.toString() + " " + getElapsedMS() + "ms");
-//      } else {
-//        sb.append(label + trackedObject.getClass().getName() + " " + getElapsedMS() + "ms");
-//      }
-//    } else {
-      sb.append(label + " " + getElapsedMS() + "ms");
-//    }
-     // sb.append("[\n");
-    synchronized (children) {
-     // sb.append(" children(" + children.size() + ")");
-      for (TimeTracker entry : children) {
-        if (entry.getElapsedMS() >= 0) {
-          sb.append("\n");
-          for (int i = 0; i < depth; i++) {
-            sb.append(' ');
-          }
-
-          sb.append(entry.getCloseTimes());
+    //    if (trackedObject != null) {
+    //      if (trackedObject instanceof String) {
+    //        sb.append(label + trackedObject.toString() + " " + getElapsedMS() + "ms");
+    //      } else {
+    //        sb.append(label + trackedObject.getClass().getName() + " " + getElapsedMS() + "ms");
+    //      }
+    //    } else {
+    sb.append(label + " " + getElapsedMS() + "ms");
+    //    }
+    // sb.append("[\n");
+    // sb.append(" children(" + children.size() + ")");
+    for (TimeTracker entry : children) {
+      if (entry.getElapsedMS() >= 0) {
+        sb.append("\n");
+        for (int i = 0; i < depth; i++) {
+          sb.append(' ');
         }
+
+        sb.append(entry.getCloseTimes());
       }
     }
     //sb.append("]\n");
@@ -220,7 +215,7 @@ public class TimeTracker {
     // }
     // }
   }
-  
+
   public String toString() {
     if (label != null) {
       return (children.size() > 0 ? ":" : "") + label + " " + getElapsedMS() + "ms";
@@ -230,41 +225,14 @@ public class TimeTracker {
   }
 
   private long getElapsedNS(long startTime, long doneTime) {
-    if (log.isDebugEnabled()) {
-      log.debug("getElapsedNS(long startTime={}, long doneTime={}) - start", startTime, doneTime);
-    }
-
     long returnlong = doneTime - startTime;
-    if (log.isDebugEnabled()) {
-      log.debug("getElapsedNS(long, long) - end");
-    }
     return returnlong;
   }
-  
+
   public long getElapsedMS() {
-    if (log.isDebugEnabled()) {
-      log.debug("getElapsedMS() - start");
-    }
-
-    long ms = getElapsedMS(startTime, doneTime);
+    long ms = TimeUnit.MILLISECONDS.convert(doneTime - startTime, TimeUnit.NANOSECONDS);
+    ;
     long returnlong = ms < 0 ? 0 : ms;
-    if (log.isDebugEnabled()) {
-      log.debug("getElapsedMS() - end");
-    }
     return returnlong;
   }
-
-  public long getElapsedMS(long startTime, long doneTime) {
-    if (log.isDebugEnabled()) {
-      log.debug("getElapsedMS(long startTime={}, long doneTime={}) - start", startTime, doneTime);
-    }
-
-    long returnlong = TimeUnit.MILLISECONDS.convert(doneTime - startTime, TimeUnit.NANOSECONDS);
-    if (log.isDebugEnabled()) {
-      log.debug("getElapsedMS(long, long) - end");
-    }
-    return returnlong;
-  }
-
-
 }

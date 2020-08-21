@@ -160,25 +160,20 @@ public class ParWork implements Closeable {
     }
   }
 
-  private static final Set<Class> OK_CLASSES = new HashSet<>();
+  private static final Set<Class> OK_CLASSES;
+
 
   static {
-    OK_CLASSES.add(ExecutorService.class);
-
-    OK_CLASSES.add(OrderedExecutor.class);
-
-    OK_CLASSES.add(Closeable.class);
-
-    OK_CLASSES.add(AutoCloseable.class);
-
-    OK_CLASSES.add(Callable.class);
-
-    OK_CLASSES.add(Runnable.class);
-
-    OK_CLASSES.add(Timer.class);
-
-    OK_CLASSES.add(CloseableHttpClient.class);
-
+    Set set = new HashSet<>(8);
+    set.add(ExecutorService.class);
+    set.add(OrderedExecutor.class);
+    set.add(Closeable.class);
+    set.add(AutoCloseable.class);
+    set.add(Callable.class);
+    set.add(Runnable.class);
+    set.add(Timer.class);
+    set.add(CloseableHttpClient.class);
+    OK_CLASSES = Collections.unmodifiableSet(set);
   }
 
   private final List<WorkUnit> workUnits = Collections.synchronizedList(new ArrayList<>());
@@ -465,9 +460,6 @@ public class ParWork implements Closeable {
                   }
 
                 }
-
-
-
             }
           }
         } finally {
