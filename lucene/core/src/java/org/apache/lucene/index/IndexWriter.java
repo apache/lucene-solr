@@ -5737,8 +5737,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   private class Merges {
-    boolean closed = false;
-    boolean mergesEnabled = true;
+    private boolean mergesEnabled = true;
 
     boolean areEnabled() {
       assert Thread.holdsLock(IndexWriter.this);
