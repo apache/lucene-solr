@@ -46,15 +46,17 @@ public class JsonSchemaValidator {
     this((Map) Utils.fromJSONString(jsonString));
   }
 
-  public JsonSchemaValidator(Map jsonSchema) {
+  public JsonSchemaValidator(Map<?,?> jsonSchema) {
     this.validators = new LinkedList<>();
-    for (Object fname : jsonSchema.keySet()) {
+    for (Map.Entry<?,?> entry : jsonSchema.entrySet()) {
+      Object fname = entry.getKey();
+      Object value = entry.getValue();
       if (KNOWN_FNAMES.contains(fname.toString())) continue;
 
       Function<Pair<Map, Object>, Validator> initializeFunction = VALIDATORS.get(fname.toString());
       if (initializeFunction == null) throw new RuntimeException("Unknown key : " + fname);
 
-      this.validators.add(initializeFunction.apply(new Pair<>(jsonSchema, jsonSchema.get(fname))));
+      this.validators.add(initializeFunction.apply(new Pair<>(jsonSchema, value)));
     }
   }
 
@@ -279,15 +281,17 @@ class PropertiesValidator extends Validator<Map<String, Map>> {
   @SuppressWarnings({"rawtypes"})
   boolean validate(Object o, List<String> errs) {
     if (o instanceof Map) {
-      @SuppressWarnings({"rawtypes"})
-      Map map = (Map) o;
-      for (Object key : map.keySet()) {
+      @SuppressWarnings({"unchecked"})
+      Map<Object,Object> map = (Map) o;
+      for (Map.Entry<Object,Object> entry : map.entrySet()) {
+        Object key = entry.getKey();
+        Object value = entry.getValue();
         JsonSchemaValidator jsonSchema = jsonSchemas.get(key.toString());
         if (jsonSchema == null && !additionalProperties) {
           errs.add("Unknown field '" + key + "' in object : " + Utils.toJSONString(o));
           return false;
         }
-        if (jsonSchema != null && !jsonSchema.validate(map.get(key), errs)) {
+        if (jsonSchema != null && !jsonSchema.validate(value, errs)) {
           return false;
         }
       }
