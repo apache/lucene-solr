@@ -21,7 +21,6 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -144,7 +143,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       apiFuture.completeExceptionally(e);
     }
     apiFuture.exceptionally((error) -> {
-      if (error instanceof CancellationException) {
+      if (apiFuture.isCancelled()) {
         synchronized (cancelled) {
           cancelled.set(true);
           if (currentFuture.get() != null) {

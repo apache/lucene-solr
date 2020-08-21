@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -407,9 +406,7 @@ public class Http2SolrClient extends SolrClient {
           }
         });
     future.exceptionally((error) -> {
-      if (error instanceof CancellationException) {
-        req.abort(new Exception());
-      }
+      req.abort(error);
       return null;
     });
     return future;

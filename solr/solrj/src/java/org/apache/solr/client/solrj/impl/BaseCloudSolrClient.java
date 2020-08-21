@@ -862,6 +862,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       return getNowOrException(makeRequest(request, collection, false));
   }
 
+  /**
+   * Makes a request either synchronously or asynchronously depending on the isAsyncRequest parameter. The returned
+   * CompletableFuture will already be completed in the case of a sync request.
+   *
+   * For async requests, the internal LB Solr client given by getLbClient() must be an LBHttp2SolrClient.
+   */
   CompletableFuture<NamedList<Object>> makeRequest(SolrRequest<?> request,
                                                    String collection,
                                                    boolean isAsyncRequest) throws SolrServerException, IOException {
@@ -946,24 +952,11 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     } // else: ??? how to set this ???
 
-    CompletableFuture<NamedList<Object>> respFuture = null;
+    CompletableFuture<NamedList<Object>> rspFuture;
     try {
-      respFuture = sendRequest(request, inputCollections, isAsyncRequest);
+      rspFuture = sendRequest(request, inputCollections, isAsyncRequest);
       if (!isAsyncRequest) {
-        NamedList<Object> resp = getNowOrException(respFuture);
-        //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
-        Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
-        if (o != null && o instanceof Map) {
-          //remove this because no one else needs this and tests would fail if they are comparing responses
-          resp.remove(resp.size() - 1);
-          @SuppressWarnings({"rawtypes"})
-          Map invalidStates = (Map) o;
-          for (Object invalidEntries : invalidStates.entrySet()) {
-            @SuppressWarnings({"rawtypes"})
-            Map.Entry e = (Map.Entry) invalidEntries;
-            getDocCollection((String) e.getKey(), (Integer) e.getValue());
-          }
-        }
+        processStateVersion(getNowOrException(rspFuture));
       }
     } catch (Exception exc) {
 
@@ -1064,7 +1057,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       // if the state was stale, then we retry the request once with new state pulled from Zk
       if (stateWasStale) {
         log.warn("Re-trying request to collection(s) {} after stale state error from server.", inputCollections);
-        respFuture = requestWithRetryOnStaleState(request, retryCount+1, inputCollections, isAsyncRequest);
+        rspFuture = requestWithRetryOnStaleState(request, retryCount+1, inputCollections, isAsyncRequest);
       } else {
         if (exc instanceof SolrException || exc instanceof SolrServerException || exc instanceof IOException) {
           throw exc;
@@ -1074,7 +1067,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     }
 
-    return respFuture;
+    return rspFuture;
   }
 
   protected CompletableFuture<NamedList<Object>> sendRequest(SolrRequest<?> request,
@@ -1209,8 +1202,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   private NamedList<Object> getNowOrException(CompletableFuture<NamedList<Object>> future) throws SolrServerException, IOException {
+    NamedList<Object> result;
     try {
-      return future.getNow(null);
+       result = future.getNow(null);
     } catch (CompletionException e) {
       Throwable cause = e.getCause(); // error that caused CF to complete exceptionally
       if (cause instanceof SolrServerException) {
@@ -1221,6 +1215,27 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           throw (RuntimeException) cause;
       } else {
           throw new SolrServerException(cause);
+      }
+    }
+    if (result == null) {
+      // unexpected -- result should never be null when called from a synchronous request method
+      throw new IllegalStateException("CompletableFuture was either incomplete or completed with value null");
+    }
+    return result;
+  }
+
+  private void processStateVersion(NamedList<Object> rsp) {
+    //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
+    Object o = rsp == null || rsp.size() == 0 ? null : rsp.get(STATE_VERSION, rsp.size() - 1);
+    if (o != null && o instanceof Map) {
+      //remove this because no one else needs this and tests would fail if they are comparing responses
+      rsp.remove(rsp.size() - 1);
+      @SuppressWarnings({"rawtypes"})
+      Map invalidStates = (Map) o;
+      for (Object invalidEntries : invalidStates.entrySet()) {
+        @SuppressWarnings({"rawtypes"})
+        Map.Entry e = (Map.Entry) invalidEntries;
+        getDocCollection((String) e.getKey(), (Integer) e.getValue());
       }
     }
   }
