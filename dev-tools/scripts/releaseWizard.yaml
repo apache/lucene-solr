@@ -1305,7 +1305,7 @@ groups:
       - !Command
         cmd: git show HEAD
         stdout: true
-        comment: Ensure the only change is the adding the new version.
+        comment: Ensure the only change is adding the new version.
       - !Command
         cmd: git push origin
         logfile: push.log
@@ -1323,7 +1323,7 @@ groups:
       - !Command
         cmd: git show HEAD
         stdout: true
-        comment: Ensure the only change is the adding the new version.
+        comment: Ensure the only change is adding the new version.
       - !Command
         cmd: git push origin
         logfile: push.log
