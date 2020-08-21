@@ -168,6 +168,8 @@ Optimizations
 * SOLR-13132: JSON Facet perf improvements to support "sweeping" collection of "relatedness()"
   (hossman, Michael Gibney)
 
+* SOLR-14765: Optimize DocList creation for sort-irrelevant cases (Michael Gibney)
+
 Bug Fixes
 ---------------------
 
