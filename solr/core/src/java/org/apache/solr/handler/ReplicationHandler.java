@@ -1064,7 +1064,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               currFileSizeDownloaded = (Long) currentFile.get("bytesDownloaded");
               bytesDownloaded += currFileSizeDownloaded;
               if (currFileSize > 0)
-                percentDownloaded = (currFileSizeDownloaded * 100) / currFileSize;
+                percentDownloaded = (currFileSizeDownloaded * 100) / (float) currFileSize;
             }
           }
           slave.add("filesDownloaded", filesDownloaded);
@@ -1084,7 +1084,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           float totalPercent = 0;
           long downloadSpeed = 0;
           if (bytesToDownload > 0)
-            totalPercent = (bytesDownloaded * 100) / bytesToDownload;
+            totalPercent = (bytesDownloaded * 100) / (float) bytesToDownload;
           if (elapsed > 0)
             downloadSpeed = (bytesDownloaded / elapsed);
           if (currFile != null)

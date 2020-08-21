@@ -18,6 +18,7 @@ package org.apache.solr.search.grouping.distributed.command;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.search.Collector;
@@ -175,7 +176,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
       }
     }
     filterCollector = new FilterCollector(docSet, subCollector);
-    return Arrays.asList((Collector) filterCollector);
+    return Collections.singletonList(filterCollector);
   }
 
   @Override

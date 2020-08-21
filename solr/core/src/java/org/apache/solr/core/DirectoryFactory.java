@@ -353,15 +353,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     }
 
     final File currentIndexDir = new File(currentIndexDirPath);
-    File[] oldIndexDirs = dataDir.listFiles(new FileFilter() {
-      @Override
-      public boolean accept(File file) {
-        String fileName = file.getName();
-        return file.isDirectory() &&
-               !file.equals(currentIndexDir) &&
-               (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
-      }
-    });
+    File[] oldIndexDirs = dataDir.listFiles(new FileFilter(currentIndexDir));
 
     if (oldIndexDirs == null || oldIndexDirs.length == 0)
       return; // nothing to do (no log message needed)
@@ -432,5 +424,21 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
       dirFactory.initCoreContainer(cc);
     }
     return dirFactory;
+  }
+
+  private static class FileFilter implements java.io.FileFilter {
+    private final File currentIndexDir;
+
+    public FileFilter(File currentIndexDir) {
+      this.currentIndexDir = currentIndexDir;
+    }
+
+    @Override
+    public boolean accept(File file) {
+      String fileName = file.getName();
+      return file.isDirectory() &&
+             !file.equals(currentIndexDir) &&
+             (fileName.equals("index") || fileName.matches(INDEX_W_TIMESTAMP_REGEX));
+    }
   }
 }

@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1119,9 +1120,7 @@ public abstract class FieldType extends FieldProperties {
       }
     } else { // Don't show defaults
       Set<String> fieldProperties = new HashSet<>();
-      for (String propertyName : FieldProperties.propertyNames) {
-        fieldProperties.add(propertyName);
-      }
+      fieldProperties.addAll(Arrays.asList(FieldProperties.propertyNames));
 
       for (Map.Entry<String, String> entry : args.entrySet()) {
         String key = entry.getKey();

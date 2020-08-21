@@ -35,15 +35,21 @@ public class FieldQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-      @Override
-      public Query parse() {
-        String field = localParams.get(QueryParsing.F);
-        String queryText = localParams.get(QueryParsing.V);
-        SchemaField sf = req.getSchema().getField(field);
-        FieldType ft = sf.getType();
-        return ft.getFieldQuery(this, sf, queryText);
-      }
-    };
+    return new QParser(qstr, localParams, params, req);
+  }
+
+  private static class QParser extends org.apache.solr.search.QParser {
+    public QParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse() {
+      String field = localParams.get(QueryParsing.F);
+      String queryText = localParams.get(QueryParsing.V);
+      SchemaField sf = req.getSchema().getField(field);
+      FieldType ft = sf.getType();
+      return ft.getFieldQuery(this, sf, queryText);
+    }
   }
 }

@@ -63,7 +63,7 @@ public class RequestParams implements MapSerializable {
         Map.Entry e = (Map.Entry) o;
         if (e.getValue() instanceof Map) {
           Map value = (Map) e.getValue();
-          this.paramsets.put((String) e.getKey(), createParamSet(value, 0l));
+          this.paramsets.put((String) e.getKey(), createParamSet(value, 0L));
         }
       }
     }
@@ -240,7 +240,7 @@ public class RequestParams implements MapSerializable {
     }
 
     public Long getVersion() {
-      return meta == null ? Long.valueOf(0l) : (Long) meta.get("v");
+      return meta == null ? Long.valueOf(0L) : (Long) meta.get("v");
     }
 
     @Override

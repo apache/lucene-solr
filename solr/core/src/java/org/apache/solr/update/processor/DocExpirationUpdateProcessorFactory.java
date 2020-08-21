@@ -260,12 +260,7 @@ public final class DocExpirationUpdateProcessorFactory
 
   private void initDeleteExpiredDocsScheduler(SolrCore core) {
     executor = new ScheduledThreadPoolExecutor
-      (1, new SolrNamedThreadFactory("autoExpireDocs"),
-       new RejectedExecutionHandler() {
-        public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
-          log.warn("Skipping execution of '{}' using '{}'", r, e);
-        }
-      });
+      (1, new SolrNamedThreadFactory("autoExpireDocs"), new RejectedExecutionHandler());
 
     core.addCloseHook(new CloseHook() {
       public void postClose(SolrCore core) {
@@ -514,6 +509,11 @@ public final class DocExpirationUpdateProcessorFactory
 
   private static final Comparator<Slice> COMPARE_SLICES_BY_NAME = (a, b) -> a.getName().compareTo(b.getName());
 
+  private static class RejectedExecutionHandler implements java.util.concurrent.RejectedExecutionHandler {
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+      log.warn("Skipping execution of '{}' using '{}'", r, e);
+    }
+  }
 }
 
 

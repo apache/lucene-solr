@@ -32,7 +32,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.ParWork;
@@ -262,7 +261,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     try {
       ValidatingJsonMap map = (ValidatingJsonMap) getObjectBuilder(
           new JSONParser(r)).getObject();
-      handleIncludes(map, includeLocation, 2); // nocommit
+      handleIncludes(map, includeLocation, 4);
       return map;
     } catch (IOException e) {
       throw new RuntimeException();

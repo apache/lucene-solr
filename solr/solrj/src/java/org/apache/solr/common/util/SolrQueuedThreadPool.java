@@ -88,7 +88,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     }
 
     public SolrQueuedThreadPool(String name) {
-        this(10000, 15,
+        this(Integer.MAX_VALUE, 12,
                 60000, 0,
                 null, null,
                 new  SolrNamedThreadFactory(name));

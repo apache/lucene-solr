@@ -95,6 +95,21 @@ public class DistribPackageStore implements PackageStore {
         File.separator + PackageStoreAPI.PACKAGESTORE_DIRECTORY + path).toPath();
   }
 
+  private static class SolrFileEntry extends PackageStore.FileEntry {
+    private final InputStream is;
+
+    public SolrFileEntry(String path, InputStream is) {
+      super(null, null, path);
+      this.is = is;
+    }
+
+    //no metadata for metadata file
+    @Override
+    public InputStream getInputStream() {
+      return is;
+    }
+  }
+
   class FileInfo {
     final String path;
     String metaPath;
@@ -258,7 +273,6 @@ public class DistribPackageStore implements PackageStore {
       return null;
 
     }
-
 
     public FileDetails getDetails() {
       FileType type = getType(path, false);
@@ -432,13 +446,7 @@ public class DistribPackageStore implements PackageStore {
     String simpleName = file.getName();
     if (isMetaDataFile(simpleName)) {
       try (InputStream is = new FileInputStream(file)) {
-        consumer.accept(new FileEntry(null, null, path) {
-          //no metadata for metadata file
-          @Override
-          public InputStream getInputStream() {
-            return is;
-          }
-        });
+        consumer.accept(new SolrFileEntry(path, is));
       }
       return;
     }

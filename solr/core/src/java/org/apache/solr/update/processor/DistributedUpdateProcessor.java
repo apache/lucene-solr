@@ -901,12 +901,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       });
-      work.addCollect();
-
     }
-
-
-
 
     if (returnVersions && rsp != null) {
       if (deleteByQueryResponse == null) {

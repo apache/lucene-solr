@@ -132,7 +132,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   }
 
   public ConcurrentLRUCache(int size, int lowerWatermark) {
-    this(size, lowerWatermark, (int) Math.floor((lowerWatermark + size) / 2),
+    this(size, lowerWatermark, (int) Math.floor((lowerWatermark + size) / 2.0f),
             (int) Math.ceil(0.75 * size), false, false, null, -1);
   }
 

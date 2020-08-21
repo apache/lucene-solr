@@ -771,7 +771,7 @@ public class TransactionLog implements Closeable {
     }
   }
 
-  public abstract class ReverseReader {
+  public abstract static class ReverseReader {
 
     /** Returns the next object from the log, or null if none available.
      *

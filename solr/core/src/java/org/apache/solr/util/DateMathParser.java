@@ -408,7 +408,7 @@ public class DateMathParser  {
             ("Not a Number: \"" + ops[pos-1] + "\"", pos-1);
         }
         if ('-' == command) {
-          val = 0 - val;
+          val = -val;
         }
         try {
           String unit = ops[pos++];

@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -138,11 +139,11 @@ public class SpellCheckCollator {
         // creating a request here... make sure to close it!
         ResponseBuilder checkResponse = new ResponseBuilder(
             new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),
-            new SolrQueryResponse(), Arrays.asList(queryComponent));
+            new SolrQueryResponse(), Collections.singletonList(queryComponent));
         checkResponse.setQparser(ultimateResponse.getQparser());
         checkResponse.setFilters(ultimateResponse.getFilters());
         checkResponse.setQueryString(collationQueryStr);
-        checkResponse.components = Arrays.asList(queryComponent);
+        checkResponse.components = Collections.singletonList(queryComponent);
 
         try {
           queryComponent.prepare(checkResponse);

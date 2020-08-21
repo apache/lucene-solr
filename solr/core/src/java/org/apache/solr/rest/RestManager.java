@@ -123,9 +123,7 @@ public class RestManager {
     public Registry() {
       reservedEndpoints.add(SCHEMA_BASE_PATH + MANAGED_ENDPOINT);
 
-      for (String reservedEndpoint : SolrSchemaRestApi.getReservedEndpoints()) {
-        reservedEndpoints.add(reservedEndpoint);
-      }
+      reservedEndpoints.addAll(SolrSchemaRestApi.getReservedEndpoints());
 
       reservedEndpointsPattern = getReservedEndpointsPattern();
     }

@@ -29,13 +29,11 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrQoSFilter;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -108,7 +106,6 @@ public class JettySolrRunner implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int THREAD_POOL_MAX_THREADS = 10000;
   // NOTE: should be larger than HttpClientUtil.DEFAULT_SO_TIMEOUT or typical client SO timeout
   private static final int THREAD_POOL_MAX_IDLE_TIME_MS = HttpClientUtil.DEFAULT_SO_TIMEOUT + 30000;
 
@@ -147,7 +144,7 @@ public class JettySolrRunner implements Closeable {
   private volatile boolean isClosed;
 
 
-  private static Scheduler scheduler = new SolrHttpClientScheduler("JettySolrRunnerScheduler", true, null, new ThreadGroup("JettySolrRunnerScheduler"), 1);
+  private static final Scheduler scheduler = new SolrHttpClientScheduler("JettySolrRunnerScheduler", true, null, new ThreadGroup("JettySolrRunnerScheduler"), 3);
   private volatile SolrQueuedThreadPool qtp;
   private volatile boolean closed;
 
@@ -158,7 +155,7 @@ public class JettySolrRunner implements Closeable {
   public static class DebugFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private AtomicLong nRequests = new AtomicLong();
+    private final AtomicLong nRequests = new AtomicLong();
 
     private Set<Delay> delays = ConcurrentHashMap.newKeySet(50);
 
@@ -202,7 +199,7 @@ public class JettySolrRunner implements Closeable {
     private void executeDelay() {
       int delayMs = 0;
       for (Delay delay: delays) {
-        this.log.info("Delaying {}, for reason: {}", delay.delayValue, delay.reason);
+        log.info("Delaying {}, for reason: {}", delay.delayValue, delay.reason);
         if (delay.counter.decrementAndGet() == 0) {
           delayMs += delay.delayValue;
         }
@@ -296,17 +293,11 @@ public class JettySolrRunner implements Closeable {
     if (config.qtp != null) {
       qtp = config.qtp;
     } else {
+      // leave as match with prod setup
       qtp = new SolrQueuedThreadPool("JettySolrRunner qtp");
-      qtp.setMaxThreads(Integer.getInteger("solr.maxContainerThreads", THREAD_POOL_MAX_THREADS));
-      qtp.setLowThreadsThreshold(Integer.getInteger("solr.lowContainerThreadsThreshold", -1)); // we don't use this or connections will get cut
-      qtp.setMinThreads(Integer.getInteger("solr.minContainerThreads", 8));
-      qtp.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
-      qtp.setStopTimeout(0);
-      qtp.setReservedThreads(-1);
     }
 
     server = new Server(qtp);
-
 
     server.setStopTimeout(60); // will wait gracefull for stoptime / 2, then interrupts
     assert config.stopAtShutdown;
@@ -575,11 +566,9 @@ public class JettySolrRunner implements Closeable {
         if (cloudConf != null) {
           String localHostContext = ZkController.trimLeadingAndTrailingSlashes(cloudConf.getSolrHostContext());
 
-          String zkServerAddress = cloudConf.getZkHost();
           int localHostPort = cloudConf.getSolrHostPort();
           String hostName = ZkController.normalizeHostName(cloudConf.getHost());
           nodeName = ZkController.generateNodeName(hostName, Integer.toString(localHostPort), localHostContext);
-
         }
       }
 
@@ -601,32 +590,7 @@ public class JettySolrRunner implements Closeable {
         SolrZkClient zkClient = getCoreContainer().getZkController().getZkStateReader().getZkClient();
         CountDownLatch latch = new CountDownLatch(1);
 
-        Watcher watcher = new Watcher() {
-
-          @Override
-          public void process(WatchedEvent event) {
-            if (Event.EventType.None.equals(event.getType())) {
-              return;
-            }   log.info("Got event on live node watcher {}", event.toString());
-            if (event.getType() == Event.EventType.NodeCreated) {
-              latch.countDown();
-            } else {
-              try {
-                Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, this);
-                if (stat != null) {
-                  latch.countDown();
-                }
-              } catch (KeeperException e) {
-                SolrException.log(log, e);
-                return;
-              } catch (InterruptedException e) {
-                ParWork.propegateInterrupt(e);
-                return;
-              }
-            }
-
-          }
-        };
+        Watcher watcher = new ClusterReadyWatcher(latch, zkClient);
         try {
           Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, watcher);
           if (stat == null) {
@@ -685,31 +649,6 @@ public class JettySolrRunner implements Closeable {
     this.host = c.getHost();
   }
 
-  private void retryOnPortBindFailure(int portRetryTime, int port) throws Exception, InterruptedException {
-    TimeOut timeout = new TimeOut(portRetryTime, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    int tryCnt = 1;
-    while (true) {
-      try {
-        log.info("Trying to start Jetty on port {} try number {} ...", port, tryCnt);
-        tryCnt++;
-        server.start();
-        break;
-      } catch (IOException ioe) {
-        Exception e = lookForBindException(ioe);
-        if (e instanceof BindException) {
-          log.info("Port is in use, will try again until timeout of {}", timeout);
-          server.stop();
-          Thread.sleep(3000);
-          if (!timeout.hasTimedOut()) {
-            continue;
-          }
-        }
-
-        throw e;
-      }
-    }
-  }
-
   /**
    * Traverses the cause chain looking for a BindException. Returns either a bind exception
    * that was found in the chain or the original argument.
@@ -766,6 +705,30 @@ public class JettySolrRunner implements Closeable {
         ParWork.propegateInterrupt(e);
       }
 
+      if (wait && coreContainer != null && coreContainer
+          .isZooKeeperAware()) {
+        log.info("waitForJettyToStop: {}", getLocalPort());
+        String nodeName = getNodeName();
+        if (nodeName == null) {
+          log.info("Cannot wait for Jetty with null node name");
+        } else {
+
+          log.info("waitForNode: {}", getNodeName());
+
+          ZkStateReader reader = coreContainer.getZkController().getZkStateReader();
+
+          try {
+            if (!reader.isClosed() && reader.getZkClient().isConnected()) {
+              reader.waitForLiveNodes(10, TimeUnit.SECONDS, (o, n) -> !n.contains(nodeName));
+            }
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+          } catch (TimeoutException e) {
+            log.error("Timeout waiting for live node");
+          }
+        }
+      }
+
     } catch (Exception e) {
       SolrZkClient.checkInterrupted(e);
       log.error("", e);
@@ -774,32 +737,6 @@ public class JettySolrRunner implements Closeable {
 
       if (enableProxy) {
         proxy.close();
-      }
-      if (wait && coreContainer != null && coreContainer
-          .isZooKeeperAware()) {
-        log.info("waitForJettyToStop: {}", getLocalPort());
-        String nodeName = getNodeName();
-        if (nodeName == null) {
-          log.info("Cannot wait for Jetty with null node name");
-          return;
-        }
-
-        log.info("waitForNode: {}", getNodeName());
-
-        ZkStateReader reader = coreContainer.getZkController()
-            .getZkStateReader();
-
-        try {
-          if (!reader.isClosed() && reader.getZkClient().isConnected()) {
-            reader.waitForLiveNodes(10, TimeUnit.SECONDS, (o, n) -> !n.contains(nodeName));
-          }
-        } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "interrupted", e);
-        } catch (TimeoutException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        }
       }
 
       assert ObjectReleaseTracker.release(this);
@@ -979,7 +916,7 @@ public class JettySolrRunner implements Closeable {
     return proxy;
   }
 
-  private final class NoopSessionManager implements SessionIdManager {
+  private static final class NoopSessionManager implements SessionIdManager {
     @Override
     public void stop() throws Exception {
     }
@@ -1079,4 +1016,35 @@ public class JettySolrRunner implements Closeable {
     }
   }
 
+  private static class ClusterReadyWatcher implements Watcher {
+
+    private final CountDownLatch latch;
+    private final SolrZkClient zkClient;
+
+    public ClusterReadyWatcher(CountDownLatch latch, SolrZkClient zkClient) {
+      this.latch = latch;
+      this.zkClient = zkClient;
+    }
+
+    @Override
+    public void process(WatchedEvent event) {
+      if (Event.EventType.None.equals(event.getType())) {
+        return;
+      }   log.info("Got event on live node watcher {}", event.toString());
+      if (event.getType() == Event.EventType.NodeCreated) {
+        latch.countDown();
+      } else {
+        try {
+          Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, this);
+          if (stat != null) {
+            latch.countDown();
+          }
+        } catch (KeeperException e) {
+          SolrException.log(log, e);
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+        }
+      }
+    }
+  }
 }

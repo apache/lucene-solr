@@ -106,7 +106,7 @@ public class XCJFQuery extends Query {
     DocSet getDocSet() throws IOException;
   }
 
-  private class TermsJoinKeyCollector implements JoinKeyCollector {
+  private static class TermsJoinKeyCollector implements JoinKeyCollector {
 
     FieldType fieldType;
     SolrIndexSearcher searcher;

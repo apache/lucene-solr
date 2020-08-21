@@ -963,7 +963,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       } else {
         if (plugin.options.contains(MULTI_OK)) {
           ArrayList<MapSerializable> l = new ArrayList<>();
-          for (PluginInfo info : infos) l.add(info);
+          l.addAll(infos);
           result.put(tag, l);
         } else {
           result.put(tag, infos.get(0));

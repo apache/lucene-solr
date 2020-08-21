@@ -139,14 +139,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
         AutoScalingConfig autoScalingConf = cloudManager.getDistribStateManager().getAutoScalingConfig();
         if (parts.size() == 2) {
-          autoScalingConf.writeMap(new MapWriter.EntryWriter() {
-
-            @Override
-            public MapWriter.EntryWriter put(CharSequence k, Object v) {
-              rsp.getValues().add(k.toString(), v);
-              return this;
-            }
-          });
+          autoScalingConf.writeMap(new MapEntryWriter(rsp));
         } else {
           getSubpathExecutor(parts, req).ifPresent(it -> it.accept(rsp, autoScalingConf));
         }
@@ -747,5 +740,20 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   public SolrRequestHandler getSubHandler(String path) {
     if (path.equals("/diagnostics") || path.equals("/suggestions")) return this;
     return null;
+  }
+
+  private static class MapEntryWriter implements MapWriter.EntryWriter {
+
+    private final SolrQueryResponse rsp;
+
+    public MapEntryWriter(SolrQueryResponse rsp) {
+      this.rsp = rsp;
+    }
+
+    @Override
+    public MapWriter.EntryWriter put(CharSequence k, Object v) {
+      rsp.getValues().add(k.toString(), v);
+      return this;
+    }
   }
 }

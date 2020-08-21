@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1327,9 +1328,7 @@ public class RealTimeGetComponent extends SearchComponent
       final List<String> allIds = new ArrayList<>((null == id ? 0 : id.length)
                                                   + (null == ids ? 0 : (2 * ids.length)));
       if (null != id) {
-        for (String singleId : id) {
-          allIds.add(singleId);
-        }
+        allIds.addAll(Arrays.asList(id));
       }
       if (null != ids) {
         for (String idList : ids) {

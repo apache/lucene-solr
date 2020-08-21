@@ -537,8 +537,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
     //the df=text here is a kluge for the test to supply a default field in case there is none in schema.xml
     // alternatively, the resulting assertion could be modified to assert that no default field is specified.
-    ex = expectThrows(SolrException.class, () -> client.deleteByQuery( "{!df=text} ??::?? ignore_exception" ));
-    assertTrue(ex.getMessage().indexOf("??::?? ignore_exception")>0);  // The reason should get passed through
+    Exception ex2 = expectThrows(Exception.class, () -> client.deleteByQuery( "{!df=text} ??::?? ignore_exception" ));
+    assertTrue(ex2.getMessage().indexOf("??::?? ignore_exception")>0);  // The reason should get passed through
     assertEquals(400, ex.code());
 
     SolrInputDocument doc = new SolrInputDocument();

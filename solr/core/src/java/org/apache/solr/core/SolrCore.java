@@ -1612,10 +1612,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         IOUtils.closeQuietly(reqHandlers);
         return "reqHandlers";
       });
-      closeCalls.add(() -> {
-        IOUtils.closeQuietly(responseWriters);
-        return "responseWriters";
-      });
+      closeCalls.add(this::call);
       closeCalls.add(() -> {
         IOUtils.closeQuietly(searchComponents);
         return "searchComponents";
@@ -2839,6 +2836,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   public MemClassLoader getMemClassLoader() {
     return memClassLoader;
+  }
+
+  private Object call() {
+    IOUtils.closeQuietly(responseWriters);
+    return "responseWriters";
   }
 
   public interface RawWriter {

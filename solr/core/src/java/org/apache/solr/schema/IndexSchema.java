@@ -138,6 +138,7 @@ public class IndexSchema {
   private static final String SOURCE_EXPLICIT_FIELDS = "sourceExplicitFields";
   private static final String TEXT_FUNCTION = "text()";
   private static final String XPATH_OR = " | ";
+  public static final DynamicField[] TS = new DynamicField[0];
 
   private static XPathExpression xpathOrExp;
   private static XPathExpression schemaNameExp;
@@ -829,7 +830,7 @@ public class IndexSchema {
     // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
     // rather than Collections.sort() then converting to an array, since Collections.sort()
     // copies to an array first, then sets each collection member from the array. 
-    DynamicField[] dFields = dynamicFieldList.toArray(new DynamicField[dynamicFieldList.size()]);
+    DynamicField[] dFields = dynamicFieldList.toArray(TS);
     Arrays.sort(dFields);
 
     if (log.isTraceEnabled()) {

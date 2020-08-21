@@ -102,63 +102,7 @@ public class OrdFieldSource extends ValueSource {
     }
     // if it's e.g. tokenized/multivalued, emulate old behavior of single-valued fc
     final SortedDocValues sindex = SortedSetSelector.wrap(DocValues.getSortedSet(r, field), SortedSetSelector.Type.MIN);
-    return new IntDocValues(this) {
-
-      private int lastDocID;
-
-      private int getOrdForDoc(int docID) throws IOException {
-        if (docID < lastDocID) {
-          throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
-        }
-        if (docID > sindex.docID()) {
-          sindex.advance(docID);
-        }
-        if (docID == sindex.docID()) {
-          return sindex.ordValue();
-        } else {
-          return -1;
-        }
-      }
-      
-      protected String toTerm(String readableValue) {
-        return readableValue;
-      }
-      @Override
-      public int intVal(int doc) throws IOException {
-        return getOrdForDoc(doc+off);
-      }
-      @Override
-      public int ordVal(int doc) throws IOException {
-        return getOrdForDoc(doc+off);
-      }
-      @Override
-      public int numOrd() {
-        return sindex.getValueCount();
-      }
-
-      @Override
-      public boolean exists(int doc) throws IOException {
-        return getOrdForDoc(doc+off) != 0;
-      }
-
-      @Override
-      public ValueFiller getValueFiller() {
-        return new ValueFiller() {
-          private final MutableValueInt mval = new MutableValueInt();
-
-          @Override
-          public MutableValue getValue() {
-            return mval;
-          }
-
-          @Override
-          public void fillValue(int doc) throws IOException {
-            mval.value = getOrdForDoc(doc);
-            mval.exists = mval.value!=0;
-          }
-        };
-      }
-    };
+    return new IntDocValues(sindex, off);
   }
 
   @Override
@@ -172,4 +116,72 @@ public class OrdFieldSource extends ValueSource {
     return hcode + field.hashCode();
   }
 
+  private class IntDocValues extends org.apache.lucene.queries.function.docvalues.IntDocValues {
+
+    private final SortedDocValues sindex;
+    private final int off;
+    private int lastDocID;
+
+    public IntDocValues(SortedDocValues sindex, int off) {
+      super(OrdFieldSource.this);
+      this.sindex = sindex;
+      this.off = off;
+    }
+
+    private int getOrdForDoc(int docID) throws IOException {
+      if (docID < lastDocID) {
+        throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
+      }
+      if (docID > sindex.docID()) {
+        sindex.advance(docID);
+      }
+      if (docID == sindex.docID()) {
+        return sindex.ordValue();
+      } else {
+        return -1;
+      }
+    }
+
+    protected String toTerm(String readableValue) {
+      return readableValue;
+    }
+
+    @Override
+    public int intVal(int doc) throws IOException {
+      return getOrdForDoc(doc+ off);
+    }
+
+    @Override
+    public int ordVal(int doc) throws IOException {
+      return getOrdForDoc(doc+ off);
+    }
+
+    @Override
+    public int numOrd() {
+      return sindex.getValueCount();
+    }
+
+    @Override
+    public boolean exists(int doc) throws IOException {
+      return getOrdForDoc(doc+ off) != 0;
+    }
+
+    @Override
+    public ValueFiller getValueFiller() {
+      return new ValueFiller() {
+        private final MutableValueInt mval = new MutableValueInt();
+
+        @Override
+        public MutableValue getValue() {
+          return mval;
+        }
+
+        @Override
+        public void fillValue(int doc) throws IOException {
+          mval.value = getOrdForDoc(doc);
+          mval.exists = mval.value!=0;
+        }
+      };
+    }
+  }
 }

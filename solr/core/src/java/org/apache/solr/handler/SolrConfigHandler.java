@@ -157,7 +157,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   }
 
 
-  private class Command {
+  private static class Command {
     private final SolrQueryRequest req;
     private final SolrQueryResponse resp;
     private final String method;

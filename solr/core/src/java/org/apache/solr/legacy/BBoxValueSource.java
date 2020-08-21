@@ -57,20 +57,7 @@ class BBoxValueSource extends ShapeValuesSource {
     //reused
     final Rectangle rect = strategy.getSpatialContext().makeRectangle(0,0,0,0);
 
-    return new ShapeValues() {
-
-      @Override
-      public boolean advanceExact(int doc) throws IOException {
-        return minX.advanceExact(doc) && maxX.advanceExact(doc) && minY.advanceExact(doc) && maxY.advanceExact(doc);
-      }
-
-      @Override
-      public Shape value() throws IOException {
-        rect.reset(minX.doubleValue(), maxX.doubleValue(), minY.doubleValue(), maxY.doubleValue());
-        return rect;
-      }
-
-    };
+    return new ShapeValues(minX, maxX, minY, maxY, rect);
   }
 
   @Override
@@ -94,5 +81,34 @@ class BBoxValueSource extends ShapeValuesSource {
   @Override
   public int hashCode() {
     return strategy.hashCode();
+  }
+
+  private static class ShapeValues extends org.apache.lucene.spatial.ShapeValues {
+
+    private final DoubleValues minX;
+    private final DoubleValues maxX;
+    private final DoubleValues minY;
+    private final DoubleValues maxY;
+    private final Rectangle rect;
+
+    public ShapeValues(DoubleValues minX, DoubleValues maxX, DoubleValues minY, DoubleValues maxY, Rectangle rect) {
+      this.minX = minX;
+      this.maxX = maxX;
+      this.minY = minY;
+      this.maxY = maxY;
+      this.rect = rect;
+    }
+
+    @Override
+    public boolean advanceExact(int doc) throws IOException {
+      return minX.advanceExact(doc) && maxX.advanceExact(doc) && minY.advanceExact(doc) && maxY.advanceExact(doc);
+    }
+
+    @Override
+    public Shape value() throws IOException {
+      rect.reset(minX.doubleValue(), maxX.doubleValue(), minY.doubleValue(), maxY.doubleValue());
+      return rect;
+    }
+
   }
 }

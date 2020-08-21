@@ -369,40 +369,6 @@ public abstract class SlotAcc implements Closeable {
     }
   }
 
-  abstract class IntSlotAcc extends SlotAcc {
-    int[] result; // use LongArray32
-    int initialValue;
-
-    public IntSlotAcc(FacetContext fcontext, int numSlots, int initialValue) {
-      super(fcontext);
-      this.initialValue = initialValue;
-      result = new int[numSlots];
-      if (initialValue != 0) {
-        reset();
-      }
-    }
-
-    @Override
-    public int compare(int slotA, int slotB) {
-      return Integer.compare(result[slotA], result[slotB]);
-    }
-
-    @Override
-    public Object getValue(int slot) {
-      return result[slot];
-    }
-
-    @Override
-    public void reset() {
-      Arrays.fill(result, initialValue);
-    }
-
-    @Override
-    public void resize(Resizer resizer) {
-      result = resizer.resize(result, initialValue);
-    }
-  }
-
   static class SumSlotAcc extends DoubleFuncSlotAcc {
     public SumSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots);

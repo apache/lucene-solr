@@ -77,7 +77,10 @@ import org.slf4j.LoggerFactory;
  */
 public class Grouping {
 
+  public static final Integer[] TS1 = new Integer[0];
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final Collector[] TS = new Collector[0];
+  public static final Float[] TS2 = new Float[0];
 
   private final SolrIndexSearcher searcher;
   private final QueryResult qr;
@@ -381,7 +384,7 @@ public class Grouping {
     }
 
     if (!collectors.isEmpty()) {
-      Collector secondPhaseCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
+      Collector secondPhaseCollectors = MultiCollector.wrap(collectors.toArray(TS));
       if (collectors.size() > 0) {
         if (cachedCollector != null) {
           if (cachedCollector.isCached()) {
@@ -678,8 +681,8 @@ public class Grouping {
       }
 
       int len = docsGathered > offset ? docsGathered - offset : 0;
-      int[] docs = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
-      float[] docScores = ArrayUtils.toPrimitive(scores.toArray(new Float[scores.size()]));
+      int[] docs = ArrayUtils.toPrimitive(ids.toArray(TS1));
+      float[] docScores = ArrayUtils.toPrimitive(scores.toArray(TS2));
       DocSlice docSlice = new DocSlice(offset, len, docs, docScores, getMatches(), maxScore, TotalHits.Relation.EQUAL_TO);
 
       if (getDocList) {

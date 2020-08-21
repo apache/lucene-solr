@@ -578,7 +578,7 @@ public class DocTermOrds implements Accountable {
     if (a != 0) {
       arr[pos++] = (byte)(a | 0x80);
     }
-    a = (x >>> (7*1));
+    a = (x >>> (7));
     if (a != 0) {
       arr[pos++] = (byte)(a | 0x80);
     }

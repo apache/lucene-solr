@@ -166,6 +166,19 @@ public class Overseer implements SolrCloseable {
     return closeAndDone;
   }
 
+  private static class StringBiConsumer implements BiConsumer<String, Object> {
+    boolean firstPair = true;
+
+    @Override
+    public void accept(String s, Object o) {
+      if (firstPair) {
+        log.warn("WARNING: Collection '.system' may need re-indexing due to compatibility issues listed below. See REINDEXCOLLECTION documentation for more details.");
+        firstPair = false;
+      }
+      log.warn("WARNING: *\t{}:\t{}", s, o);
+    }
+  }
+
   /**
    * <p>This class is responsible for dequeueing state change requests from the ZooKeeper queue at <code>/overseer/queue</code>
    * and executing the requested cluster change (essentially writing or updating <code>state.json</code> for a collection).</p>
@@ -678,17 +691,7 @@ public class Overseer implements SolrCloseable {
       triggerThread.start();
     }
 
-    systemCollectionCompatCheck(new BiConsumer<String, Object>() {
-      boolean firstPair = true;
-      @Override
-      public void accept(String s, Object o) {
-        if (firstPair) {
-          log.warn("WARNING: Collection '.system' may need re-indexing due to compatibility issues listed below. See REINDEXCOLLECTION documentation for more details.");
-          firstPair = false;
-        }
-        log.warn("WARNING: *\t{}:\t{}", s, o);
-      }
-    });
+    systemCollectionCompatCheck(new StringBiConsumer());
 
     assert ObjectReleaseTracker.track(this);
   }

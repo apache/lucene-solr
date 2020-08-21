@@ -228,16 +228,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource a = fp.parseValueSource();
         ValueSource b = fp.parseValueSource();
-        return new DualFloatFunction(a, b) {
-          @Override
-          protected String name() {
-            return "mod";
-          }
-          @Override
-          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
-            return aVals.floatVal(doc) % bVals.floatVal(doc);
-          }
-        };
+        return new DualFloatFunction(a, b);
       }
     });
     addParser("map", new ValueSourceParser() {
@@ -256,17 +247,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource source = fp.parseValueSource();
-        return new SimpleFloatFunction(source) {
-          @Override
-          protected String name() {
-            return "abs";
-          }
-
-          @Override
-          protected float func(int doc, FunctionValues vals) throws IOException {
-            return Math.abs(vals.floatVal(doc));
-          }
-        };
+        return new SimpleFloatFunction(source);
       }
     });
     addParser("cscore", new ValueSourceParser() {
@@ -279,7 +260,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
-        return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+        return new SumFloatFunction(sources.toArray(new ValueSource[0]));
       }
     });
     alias("sum","add");    
@@ -288,7 +269,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
-        return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+        return new ProductFloatFunction(sources.toArray(new ValueSource[0]));
       }
     });
     alias("product","mul");
@@ -298,17 +279,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource a = fp.parseValueSource();
         ValueSource b = fp.parseValueSource();
-        return new DualFloatFunction(a, b) {
-          @Override
-          protected String name() {
-            return "sub";
-          }
-
-          @Override
-          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
-            return aVals.floatVal(doc) - bVals.floatVal(doc);
-          }
-        };
+        return new MyDualFloatFunction(a, b);
       }
     });
     addParser("vector", new ValueSourceParser(){
@@ -781,16 +752,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource vs = fp.parseValueSource();
-        return new SimpleBoolFunction(vs) {
-          @Override
-          protected String name() {
-            return "exists";
-          }
-          @Override
-          protected boolean func(int doc, FunctionValues vals) throws IOException {
-            return vals.exists(doc);
-          }
-        };
+        return new SimpleBoolFunction(vs);
       }
     });
 
@@ -798,16 +760,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource vs = fp.parseValueSource();
-        return new SimpleBoolFunction(vs) {
-          @Override
-          protected boolean func(int doc, FunctionValues vals) throws IOException {
-            return !vals.boolVal(doc);
-          }
-          @Override
-          protected String name() {
-            return "not";
-          }
-        };
+        return new SimpleBoolFunction2(vs);
       }
     });
 
@@ -816,18 +769,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
-        return new MultiBoolFunction(sources) {
-          @Override
-          protected String name() {
-            return "and";
-          }
-          @Override
-          protected boolean func(int doc, FunctionValues[] vals) throws IOException {
-            for (FunctionValues dv : vals)
-              if (!dv.boolVal(doc)) return false;
-            return true;
-          }
-        };
+        return new MultiBoolFunction(sources);
       }
     });
 
@@ -835,18 +777,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
-        return new MultiBoolFunction(sources) {
-          @Override
-          protected String name() {
-            return "or";
-          }
-          @Override
-          protected boolean func(int doc, FunctionValues[] vals) throws IOException {
-            for (FunctionValues dv : vals)
-              if (dv.boolVal(doc)) return true;
-            return false;
-          }
-        };
+        return new MultiBoolFunction2(sources);
       }
     });
 
@@ -854,21 +785,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
-        return new MultiBoolFunction(sources) {
-          @Override
-          protected String name() {
-            return "xor";
-          }
-          @Override
-          protected boolean func(int doc, FunctionValues[] vals) throws IOException {
-            int nTrue=0, nFalse=0;
-            for (FunctionValues dv : vals) {
-              if (dv.boolVal(doc)) nTrue++;
-              else nFalse++;
-            }
-            return nTrue != 0 && nFalse != 0;
-          }
-        };
+        return new MultiBoolFunction3(sources);
       }
     });
 
@@ -1243,49 +1160,72 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
       // "dv"
       if (d1 != null && v2 != null)
-        return new DualFloatFunction(new LongConstValueSource(ms1), v2) {
-          @Override
-          protected String name() {
-            return "ms";
-          }
-
-          @Override
-          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
-            return ms1 - bVals.longVal(doc);
-          }
-        };
+        return new SolrDualFloatFunction(ms1, v2);
 
       // "vd"
       if (v1 != null && d2 != null)
-        return new DualFloatFunction(v1, new LongConstValueSource(ms2)) {
-          @Override
-          protected String name() {
-            return "ms";
-          }
-
-          @Override
-          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
-            return aVals.longVal(doc) - ms2;
-          }
-        };
+        return new SolrDualFloatFunction2(v1, ms2);
 
       // "vv"
       if (v1 != null && v2 != null)
-        return new DualFloatFunction(v1, v2) {
-          @Override
-          protected String name() {
-            return "ms";
-          }
-
-          @Override
-          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
-            return aVals.longVal(doc) - bVals.longVal(doc);
-          }
-        };
+        return new SolrDualFloatFunction3(v1, v2);
 
       return null; // shouldn't happen
     }
 
+    private static class SolrDualFloatFunction extends ValueSourceParser.DualFloatFunction {
+      private final long ms1;
+
+      public SolrDualFloatFunction(long ms1, ValueSource v2) {
+        super(new LongConstValueSource(ms1), v2);
+        this.ms1 = ms1;
+      }
+
+      @Override
+      protected String name() {
+        return "ms";
+      }
+
+      @Override
+      protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
+        return ms1 - bVals.longVal(doc);
+      }
+    }
+
+    private static class SolrDualFloatFunction2 extends DualFloatFunction {
+      private final long ms2;
+
+      public SolrDualFloatFunction2(ValueSource v1, long ms2) {
+        super(v1, new LongConstValueSource(ms2));
+        this.ms2 = ms2;
+      }
+
+      @Override
+      protected String name() {
+        return "ms";
+      }
+
+      @Override
+      protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
+        return aVals.longVal(doc) - ms2;
+      }
+    }
+
+    private static class SolrDualFloatFunction3 extends DualFloatFunction {
+      public SolrDualFloatFunction3(ValueSource v1, ValueSource v2) {
+        super(v1, v2);
+      }
+
+      @Override
+      protected String name() {
+        return "ms";
+      }
+
+      @Override
+      protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
+        return aVals.longVal(doc) - bVals.longVal(doc);
+      }
+    }
   }
 
   // Private for now - we need to revisit how to handle typing in function queries
@@ -1609,6 +1549,143 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     @Override
     public SortField getSortField(boolean reverse) {
       return super.getSortField(reverse);
+    }
+  }
+
+  private static class DualFloatFunction extends org.apache.lucene.queries.function.valuesource.DualFloatFunction {
+    public DualFloatFunction(ValueSource a, ValueSource b) {
+      super(a, b);
+    }
+
+    @Override
+    protected String name() {
+      return "mod";
+    }
+
+    @Override
+    protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
+      return aVals.floatVal(doc) % bVals.floatVal(doc);
+    }
+  }
+
+  private static class SimpleFloatFunction extends org.apache.lucene.queries.function.valuesource.SimpleFloatFunction {
+    public SimpleFloatFunction(ValueSource source) {
+      super(source);
+    }
+
+    @Override
+    protected String name() {
+      return "abs";
+    }
+
+    @Override
+    protected float func(int doc, FunctionValues vals) throws IOException {
+      return Math.abs(vals.floatVal(doc));
+    }
+  }
+
+  private static class SimpleBoolFunction extends org.apache.lucene.queries.function.valuesource.SimpleBoolFunction {
+    public SimpleBoolFunction(ValueSource vs) {
+      super(vs);
+    }
+
+    @Override
+    protected String name() {
+      return "exists";
+    }
+
+    @Override
+    protected boolean func(int doc, FunctionValues vals) throws IOException {
+      return vals.exists(doc);
+    }
+  }
+
+  private static class SimpleBoolFunction2 extends SimpleBoolFunction {
+    public SimpleBoolFunction2(ValueSource vs) {
+      super(vs);
+    }
+
+    @Override
+    protected boolean func(int doc, FunctionValues vals) throws IOException {
+      return !vals.boolVal(doc);
+    }
+
+    @Override
+    protected String name() {
+      return "not";
+    }
+  }
+
+  private static class MultiBoolFunction extends org.apache.lucene.queries.function.valuesource.MultiBoolFunction {
+    public MultiBoolFunction(List<ValueSource> sources) {
+      super(sources);
+    }
+
+    @Override
+    protected String name() {
+      return "and";
+    }
+
+    @Override
+    protected boolean func(int doc, FunctionValues[] vals) throws IOException {
+      for (FunctionValues dv : vals)
+        if (!dv.boolVal(doc)) return false;
+      return true;
+    }
+  }
+
+  private static class MultiBoolFunction2 extends MultiBoolFunction {
+    public MultiBoolFunction2(List<ValueSource> sources) {
+      super(sources);
+    }
+
+    @Override
+    protected String name() {
+      return "or";
+    }
+
+    @Override
+    protected boolean func(int doc, FunctionValues[] vals) throws IOException {
+      for (FunctionValues dv : vals)
+        if (dv.boolVal(doc)) return true;
+      return false;
+    }
+  }
+
+  private static class MultiBoolFunction3 extends MultiBoolFunction {
+    public MultiBoolFunction3(List<ValueSource> sources) {
+      super(sources);
+    }
+
+    @Override
+    protected String name() {
+      return "xor";
+    }
+
+    @Override
+    protected boolean func(int doc, FunctionValues[] vals) throws IOException {
+      int nTrue=0, nFalse=0;
+      for (FunctionValues dv : vals) {
+        if (dv.boolVal(doc)) nTrue++;
+        else nFalse++;
+      }
+      return nTrue != 0 && nFalse != 0;
+    }
+  }
+
+  private static class MyDualFloatFunction extends DualFloatFunction {
+    public MyDualFloatFunction(ValueSource a, ValueSource b) {
+      super(a, b);
+    }
+
+    @Override
+    protected String name() {
+      return "sub";
+    }
+
+    @Override
+    protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
+      return aVals.floatVal(doc) - bVals.floatVal(doc);
     }
   }
 }

@@ -68,69 +68,83 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
   @Override
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
     
-    return new SortedSetFieldSource(f.getName(), choice) {
+    return new SortedSetFieldSource(f, choice);
+  }
+
+  private static class SortedSetFieldSource extends org.apache.lucene.queries.function.valuesource.SortedSetFieldSource {
+    public SortedSetFieldSource(SchemaField f, SortedSetSelector.Type choice) {
+      super(f.getName(), choice);
+    }
+
+    @Override
+    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+      org.apache.lucene.queries.function.valuesource.SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
+
+      SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
+      SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
+
+      return new DoubleDocValues(thisAsSortedSetFieldSource, view);
+    }
+
+    private static class DoubleDocValues extends org.apache.lucene.queries.function.docvalues.DoubleDocValues {
+      private final SortedDocValues view;
+      private int lastDocID;
+
+      public DoubleDocValues(org.apache.lucene.queries.function.valuesource.SortedSetFieldSource thisAsSortedSetFieldSource, SortedDocValues view) {
+        super(thisAsSortedSetFieldSource);
+        this.view = view;
+      }
+
+      private boolean setDoc(int docID) throws IOException {
+        if (docID < lastDocID) {
+          throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
+        }
+        if (docID > view.docID()) {
+          lastDocID = docID;
+          return docID == view.advance(docID);
+        } else {
+          return docID == view.docID();
+        }
+      }
+
       @Override
-      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-        SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
-        
-        SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
-        SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
-        
-        return new DoubleDocValues(thisAsSortedSetFieldSource) {
-          private int lastDocID;
+      public double doubleVal(int doc) throws IOException {
+        if (setDoc(doc)) {
+          BytesRef bytes = view.binaryValue();
+          assert bytes.length > 0;
+          return NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(bytes));
+        } else {
+          return 0D;
+        }
+      }
 
-          private boolean setDoc(int docID) throws IOException {
-            if (docID < lastDocID) {
-              throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
-            }
-            if (docID > view.docID()) {
-              lastDocID = docID;
-              return docID == view.advance(docID);
-            } else {
-              return docID == view.docID();
-            }
-          }
-          
+      @Override
+      public boolean exists(int doc) throws IOException {
+        return setDoc(doc);
+      }
+
+      @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final MutableValueDouble mval = new MutableValueDouble();
+
           @Override
-          public double doubleVal(int doc) throws IOException {
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
-              assert bytes.length > 0;
-              return NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(bytes));
+              mval.exists = true;
+              mval.value = NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(view.binaryValue()));
             } else {
-              return 0D;
+              mval.exists = false;
+              mval.value = 0D;
             }
-          }
-
-          @Override
-          public boolean exists(int doc) throws IOException {
-            return setDoc(doc);
-          }
-
-          @Override
-          public ValueFiller getValueFiller() {
-            return new ValueFiller() {
-              private final MutableValueDouble mval = new MutableValueDouble();
-              
-              @Override
-              public MutableValue getValue() {
-                return mval;
-              }
-              
-              @Override
-              public void fillValue(int doc) throws IOException {
-                if (setDoc(doc)) {
-                  mval.exists = true;
-                  mval.value = NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(view.binaryValue()));
-                } else {
-                  mval.exists = false;
-                  mval.value = 0D;
-                }
-              }
-            };
           }
         };
       }
-    };
+    }
   }
 }

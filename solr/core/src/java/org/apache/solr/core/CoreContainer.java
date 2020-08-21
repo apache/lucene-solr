@@ -565,22 +565,10 @@ public class CoreContainer implements Closeable {
 
       SolrHttpClientContextBuilder httpClientBuilder = new SolrHttpClientContextBuilder();
       if (builder.getCredentialsProviderProvider() != null) {
-        httpClientBuilder.setDefaultCredentialsProvider(new CredentialsProviderProvider() {
-
-          @Override
-          public CredentialsProvider getCredentialsProvider() {
-            return builder.getCredentialsProviderProvider().getCredentialsProvider();
-          }
-        });
+        httpClientBuilder.setDefaultCredentialsProvider(new CredentialsProviderProvider(builder));
       }
       if (builder.getAuthSchemeRegistryProvider() != null) {
-        httpClientBuilder.setAuthSchemeRegistryProvider(new AuthSchemeRegistryProvider() {
-
-          @Override
-          public Lookup<AuthSchemeProvider> getAuthSchemeRegistry() {
-            return builder.getAuthSchemeRegistryProvider().getAuthSchemeRegistry();
-          }
-        });
+        httpClientBuilder.setAuthSchemeRegistryProvider(new AuthSchemeRegistryProvider(builder));
       }
 
       HttpClientUtil.setHttpClientRequestContextBuilder(httpClientBuilder);
@@ -989,12 +977,7 @@ public class CoreContainer implements Closeable {
         name = "localhost";
       }
       cloudManager = null;
-      client = new EmbeddedSolrServer(this, null) {
-        @Override
-        public void close() throws IOException {
-          // do nothing - we close the container ourselves
-        }
-      };
+      client = new EmbeddedSolrServer();
       // enable local metrics unless specifically set otherwise
       if (!initArgs.containsKey(MetricsHistoryHandler.ENABLE_NODES_PROP)) {
         initArgs.put(MetricsHistoryHandler.ENABLE_NODES_PROP, true);
@@ -2131,5 +2114,43 @@ public class CoreContainer implements Closeable {
     ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
   }
 
+  private static class CredentialsProviderProvider extends SolrHttpClientContextBuilder.CredentialsProviderProvider {
+
+    private final SolrHttpClientBuilder builder;
+
+    public CredentialsProviderProvider(SolrHttpClientBuilder builder) {
+      this.builder = builder;
+    }
+
+    @Override
+    public CredentialsProvider getCredentialsProvider() {
+      return builder.getCredentialsProviderProvider().getCredentialsProvider();
+    }
+  }
+
+  private static class AuthSchemeRegistryProvider extends SolrHttpClientContextBuilder.AuthSchemeRegistryProvider {
+
+    private final SolrHttpClientBuilder builder;
+
+    public AuthSchemeRegistryProvider(SolrHttpClientBuilder builder) {
+      this.builder = builder;
+    }
+
+    @Override
+    public Lookup<AuthSchemeProvider> getAuthSchemeRegistry() {
+      return builder.getAuthSchemeRegistryProvider().getAuthSchemeRegistry();
+    }
+  }
+
+  private class EmbeddedSolrServer extends org.apache.solr.client.solrj.embedded.EmbeddedSolrServer {
+    public EmbeddedSolrServer() {
+      super(CoreContainer.this, null);
+    }
+
+    @Override
+    public void close() throws IOException {
+      // do nothing - we close the container ourselves
+    }
+  }
 }
 

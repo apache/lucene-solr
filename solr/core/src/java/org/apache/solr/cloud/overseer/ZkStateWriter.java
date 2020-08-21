@@ -260,8 +260,7 @@ public class ZkStateWriter {
           }
           ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Failed processing update=" + c + "\n" + prevState, e) {
-          };
+              "Failed processing update=" + c + "\n" + prevState, e);
         }
       }
       // }
@@ -383,8 +382,7 @@ public class ZkStateWriter {
 //          }
           ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Failed processing update=" + c, e) {
-          };
+              "Failed processing update=" + c, e);
         }
       }
 

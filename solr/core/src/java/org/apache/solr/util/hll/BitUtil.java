@@ -58,7 +58,7 @@ class BitUtil {
     // REF:  http://www-graphics.stanford.edu/~seander/bithacks.html
     public static int leastSignificantBit(final long value) {
         if(value == 0L) return -1/*by contract*/;
-        if((value & 0xFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>>  0) & 0xFF)] +  0;
+        if((value & 0xFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int) ((value) & 0xFF)];
         if((value & 0xFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>>  8) & 0xFF)] +  8;
         if((value & 0xFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 16) & 0xFF)] + 16;
         if((value & 0xFFFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 24) & 0xFF)] + 24;

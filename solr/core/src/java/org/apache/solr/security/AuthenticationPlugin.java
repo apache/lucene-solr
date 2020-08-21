@@ -96,12 +96,7 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
   }
 
   HttpServletRequest wrapWithPrincipal(HttpServletRequest request, Principal principal) {
-    return new HttpServletRequestWrapper(request) {
-      @Override
-      public Principal getUserPrincipal() {
-        return principal;
-      }
-    };
+    return new MyHttpServletRequestWrapper(request, principal);
   }
 
   /**
@@ -179,5 +174,19 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
   @Override
   public Category getCategory() {
     return Category.SECURITY;
+  }
+
+  private static class MyHttpServletRequestWrapper extends HttpServletRequestWrapper {
+    private final Principal principal;
+
+    public MyHttpServletRequestWrapper(HttpServletRequest request, Principal principal) {
+      super(request);
+      this.principal = principal;
+    }
+
+    @Override
+    public Principal getUserPrincipal() {
+      return principal;
+    }
   }
 }

@@ -69,6 +69,8 @@ import org.slf4j.MDC;
 
 public class HttpShardHandler extends ShardHandler {
 
+  public static final String[] TS = new String[0];
+  public static final String[] TS1 = new String[0];
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value,
    * {@link #prepDistributed(ResponseBuilder)} will only include {@link org.apache.solr.common.cloud.Replica.Type#NRT} replicas as possible
@@ -451,7 +453,7 @@ public class HttpShardHandler extends ShardHandler {
 
     if (shards != null) {
       List<String> lst = StrUtils.splitSmart(shards, ",", true);
-      rb.shards = lst.toArray(new String[lst.size()]);
+      rb.shards = lst.toArray(TS);
       rb.slices = new String[rb.shards.length];
 
       if (zkController != null) {
@@ -502,7 +504,7 @@ public class HttpShardHandler extends ShardHandler {
       // Store the logical slices in the ResponseBuilder and create a new
       // String array to hold the physical shards (which will be mapped
       // later).
-      rb.slices = slices.keySet().toArray(new String[slices.size()]);
+      rb.slices = slices.keySet().toArray(TS1);
       rb.shards = new String[rb.slices.length];
     }
 

@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -510,9 +511,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         String[] shards = shardString.split(",");
         @SuppressWarnings({"rawtypes"})
         List<String> shardList = new ArrayList<>();
-        for (String shard : shards) {
-          shardList.add(shard);
-        }
+        shardList.addAll(Arrays.asList(shards));
         collectionShards.put(collection, shardList);
       }
     }

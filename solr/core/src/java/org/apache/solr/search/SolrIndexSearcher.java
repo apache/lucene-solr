@@ -25,13 +25,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -92,6 +90,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrInfoBean {
 
+  public static final int[] DOCS = new int[0];
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String STATS_SOURCE = "org.apache.solr.stats_source";
@@ -103,6 +102,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static final Map<String,SolrCache> NO_GENERIC_CACHES = Collections.emptyMap();
   @SuppressWarnings({"rawtypes"})
   private static final SolrCache[] NO_CACHES = new SolrCache[0];
+  public static final SolrCache[] SOLR_CACHES = new SolrCache[0];
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -307,7 +307,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }
 
-      cacheList = clist.toArray(new SolrCache[clist.size()]);
+      cacheList = clist.toArray(SOLR_CACHES);
     } else {
       this.filterCache = null;
       this.queryResultCache = null;
@@ -1549,38 +1549,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       Collector collector;
 
       if (!needScores) {
-        collector = new SimpleCollector() {
-          @Override
-          public void collect(int doc) {
-            numHits[0]++;
-          }
-
-          @Override
-          public ScoreMode scoreMode() {
-            return ScoreMode.COMPLETE_NO_SCORES;
-          }
-        };
+        collector = new SimpleCollector(numHits);
       } else {
-        collector = new SimpleCollector() {
-          Scorable scorer;
-
-          @Override
-          public void setScorer(Scorable scorer) {
-            this.scorer = scorer;
-          }
-
-          @Override
-          public void collect(int doc) throws IOException {
-            numHits[0]++;
-            float score = scorer.score();
-            if (score > topscore[0]) topscore[0] = score;
-          }
-
-          @Override
-          public ScoreMode scoreMode() {
-            return ScoreMode.COMPLETE;
-          }
-        };
+        collector = new SimpleCollectorScore(numHits, topscore);
       }
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
@@ -1662,26 +1633,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (!needScores) {
         collector = setCollector;
       } else {
-        final Collector topScoreCollector = new SimpleCollector() {
-
-          Scorable scorer;
-
-          @Override
-          public void setScorer(Scorable scorer) throws IOException {
-            this.scorer = scorer;
-          }
-
-          @Override
-          public void collect(int doc) throws IOException {
-            float score = scorer.score();
-            if (score > topscore[0]) topscore[0] = score;
-          }
-
-          @Override
-          public ScoreMode scoreMode() {
-            return ScoreMode.TOP_SCORES;
-          }
-        };
+        final Collector topScoreCollector = new SimpleCollector2(topscore);
 
         collector = MultiCollector.wrap(setCollector, topScoreCollector);
       }
@@ -2011,7 +1963,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int nDocs = cmd.getSupersetMaxDoc();
     if (nDocs == 0) {
       // SOLR-2923
-      qr.getDocListAndSet().docList = new DocSlice(0, 0, new int[0], null, set.size(), 0f, TotalHits.Relation.EQUAL_TO);
+      qr.getDocListAndSet().docList = new DocSlice(0, 0, DOCS, null, set.size(), 0f, TotalHits.Relation.EQUAL_TO);
       qr.setNextCursorMark(cmd.getCursorMark());
       return;
     }
@@ -2325,7 +2277,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
       final DocIdSet sub = topFilter == null ? null : topFilter.getDocIdSet(context, acceptDocs);
       if (weights.size() == 0) return sub;
-      return new FilterSet(sub, context);
+      return new SolrFilterSet(sub, context, weights);
     }
 
     @Override
@@ -2338,13 +2290,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       visitor.visitLeaf(this);
     }
 
-    private class FilterSet extends DocIdSet {
+    private static class SolrFilterSet extends DocIdSet {
       private final DocIdSet docIdSet;
       private final LeafReaderContext context;
+      private final List<Weight> weights;
 
-      public FilterSet(DocIdSet docIdSet, LeafReaderContext context) {
+      public SolrFilterSet(DocIdSet docIdSet, LeafReaderContext context, List<Weight> weights) {
         this.docIdSet = docIdSet;
         this.context = context;
+        this.weights = weights;
       }
 
       @Override
@@ -2487,4 +2441,76 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return warmupTime;
   }
 
+  private static class SimpleCollector extends org.apache.lucene.search.SimpleCollector {
+    private final int[] numHits;
+
+    public SimpleCollector(int[] numHits) {
+      this.numHits = numHits;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      numHits[0]++;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
+    }
+  }
+
+  private static class SimpleCollectorScore extends org.apache.lucene.search.SimpleCollector {
+    private final int[] numHits;
+    private final float[] topscore;
+    Scorable scorer;
+
+    public SimpleCollectorScore(int[] numHits, float[] topscore) {
+      this.topscore = topscore;
+      this.numHits = numHits;
+    }
+
+    @Override
+    public void setScorer(Scorable scorer) {
+      this.scorer = scorer;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      numHits[0]++;
+      float score = scorer.score();
+      if (score > topscore[0]) topscore[0] = score;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
+    }
+  }
+
+  private static class SimpleCollector2 extends org.apache.lucene.search.SimpleCollector {
+
+    private final float[] topscore;
+    Scorable scorer;
+
+    public SimpleCollector2(float[] topscore) {
+      super();
+      this.topscore = topscore;
+    }
+
+    @Override
+    public void setScorer(Scorable scorer) throws IOException {
+      this.scorer = scorer;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      float score = scorer.score();
+      if (score > topscore[0]) topscore[0] = score;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.TOP_SCORES;
+    }
+  }
 }

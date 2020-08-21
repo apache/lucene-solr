@@ -1244,19 +1244,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         // subtract these away
         automaton = Operations.minus(automaton, falsePositives, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
       }
-      return new AutomatonQuery(term, automaton) {
-        // override toString so it's completely transparent
-        @Override
-        public String toString(String field) {
-          StringBuilder buffer = new StringBuilder();
-          if (!getField().equals(field)) {
-            buffer.append(getField());
-            buffer.append(":");
-          }
-          buffer.append(term.text());
-          return buffer.toString();
-        }
-      };
+      return new AutomatonQuery(term, automaton);
     }
 
     // Solr has always used constant scoring for wildcard queries.  This should return constant scoring by default.
@@ -1291,4 +1279,21 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     return new FilterQuery(q);
   }
 
+  private static class AutomatonQuery extends org.apache.lucene.search.AutomatonQuery {
+    public AutomatonQuery(Term term, Automaton automaton) {
+      super(term, automaton);
+    }
+
+    // override toString so it's completely transparent
+    @Override
+    public String toString(String field) {
+      StringBuilder buffer = new StringBuilder();
+      if (!getField().equals(field)) {
+        buffer.append(getField());
+        buffer.append(":");
+      }
+      buffer.append(term.text());
+      return buffer.toString();
+    }
+  }
 }

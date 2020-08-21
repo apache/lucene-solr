@@ -50,6 +50,8 @@ import static org.apache.solr.common.util.StrUtils.splitSmart;
  * to actions and old parameter names to new parameter names
  */
 public abstract class BaseHandlerApiSupport implements ApiSupport {
+  public static final Object[] TS = new Object[0];
+  public static final String[] TS1 = new String[0];
   protected final Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping;
 
   protected BaseHandlerApiSupport() {
@@ -163,7 +165,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (o instanceof List) {
               @SuppressWarnings({"rawtypes"})
               List l = (List) o;
-              return l.toArray(new String[l.size()]);
+              return l.toArray(TS);
             }
 
             return o;
@@ -203,7 +205,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
               } else if (List.class.isAssignableFrom(oClass) && ((List)o).get(0) instanceof String ) {
                 @SuppressWarnings({"unchecked"})
                 List<String> l = (List<String>) o;
-                suppliedMap.put( param, l.toArray(new String[0]));
+                suppliedMap.put( param, l.toArray(TS1));
               } else {
                 // Lists pass through but will require special handling downstream
                 // if they contain non-string elements.

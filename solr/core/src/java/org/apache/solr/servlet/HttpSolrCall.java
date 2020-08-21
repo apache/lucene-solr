@@ -29,6 +29,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -1068,9 +1069,7 @@ public class HttpSolrCall {
           continue;
         }
         final Slice[] activeCollectionSlices = entry.getValue().getActiveSlicesArr();
-        for (Slice s : activeCollectionSlices) {
-          slices.add(s);
-        }
+        slices.addAll(Arrays.asList(activeCollectionSlices));
       }
     } else {
       for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
@@ -1099,9 +1098,7 @@ public class HttpSolrCall {
         getSlicesForCollections(clusterState, activeSlices, false);
       }
     } else {
-      for (Slice s : slices) {
-        activeSlices.add(s);
-      }
+      activeSlices.addAll(Arrays.asList(slices));
     }
 
     for (Slice s: activeSlices) {

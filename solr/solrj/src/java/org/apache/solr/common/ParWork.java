@@ -30,13 +30,11 @@ import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
@@ -69,7 +67,7 @@ public class ParWork implements Closeable {
   private final boolean requireAnotherThread;
   private final String rootLabel;
 
-  private volatile Set<ParObject> collectSet = ConcurrentHashMap.newKeySet(16);
+  private final Set<ParObject> collectSet = ConcurrentHashMap.newKeySet(16);
 
   private static volatile ThreadPoolExecutor EXEC;
 
@@ -78,7 +76,7 @@ public class ParWork implements Closeable {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
-          EXEC = (ThreadPoolExecutor) getParExecutorService(2, Integer.MAX_VALUE, 15000, new SynchronousQueue<>());
+          EXEC = (ThreadPoolExecutor) getParExecutorService(12, Integer.MAX_VALUE, 30000, new SynchronousQueue<>());
           ((ParWorkExecutor)EXEC).closeLock(true);
         }
       }
@@ -101,7 +99,7 @@ public class ParWork implements Closeable {
   }
 
 
-  private static SysStats sysStats = SysStats.getSysStats();
+  private static final SysStats sysStats = SysStats.getSysStats();
 
   public static SysStats getSysStats() {
     return sysStats;
@@ -183,13 +181,13 @@ public class ParWork implements Closeable {
 
   }
 
-  private List<WorkUnit> workUnits = Collections.synchronizedList(new ArrayList<>());
+  private final List<WorkUnit> workUnits = Collections.synchronizedList(new ArrayList<>());
 
   private volatile TimeTracker tracker;
 
   private final boolean ignoreExceptions;
 
-  private Set<Throwable> warns = ParWork.concSetSmallO();
+  private final Set<Throwable> warns = ParWork.concSetSmallO();
 
   // TODO should take logger as well
   public static class Exp extends Exception {
@@ -330,7 +328,6 @@ public class ParWork implements Closeable {
     }
   }
 
-  @SuppressWarnings({ "unchecked", "rawtypes" })
   private void gatherObjects(Object object, List<ParObject> objects) {
     if (object != null) {
       if (object instanceof Collection) {
@@ -352,7 +349,7 @@ public class ParWork implements Closeable {
 
   private void add(ParObject object) {
     if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, Object object={}, Callable Callables={}) - start", object.label, object);
+      log.debug("add(String label={}, Object object={}) - start", object.label, object);
     }
     List<ParObject> objects;
     if (object.object instanceof  Collection) {
@@ -410,7 +407,7 @@ public class ParWork implements Closeable {
               if (requireAnotherThread) {
                 closeCalls.add(new NoLimitsCallable<Object>() {
                   @Override
-                  public Object call() throws Exception {
+                  public Object call() {
                     try {
                       handleObject(exception, finalWorkUnitTracker,
                           object);

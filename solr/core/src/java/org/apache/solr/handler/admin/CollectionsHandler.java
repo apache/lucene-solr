@@ -689,7 +689,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       // Now filter out just the parameters we care about from the request
-      assert routedAlias != null;
+    //  assert routedAlias != null;
       Map<String, Object> result = copy(finalParams, null, routedAlias.getRequiredParams());
       copy(finalParams, result, routedAlias.getOptionalParams());
 
