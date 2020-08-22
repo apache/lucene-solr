@@ -108,7 +108,7 @@ Let's consider again the `description_t:staplers` query used above -- if we wrap
 
 [source,bash]
 ----
-$ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q={!child+of="*:*+-_nest_path_:*"}description_t:staplers'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d omitHeader=true -d 'q={!child+of="*:* -_nest_path_:*"}description_t:staplers'
 {
   "response":{"numFound":5,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
       {
@@ -139,11 +139,17 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
   }}
 ----
 
-NOTE: The `of` local param is neccessary to tell the `{!child}` parser the set of _all_ "ancestor" documents to consider when looking for matching children.  In this example we've used `\*:* -\_nest_path_:*` to indicate we want to consider all documents which don't have a nest path field -- ie: all "root" level document.  When dealing with multiple levels of nested documents, it can be very tricky to define a correct `of` param -- see the <<other-parsers.adoc#block-join-children-query-parser,`{!child}` parser section>> for details.
+In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers#block-mask,`of` parameter>> to indicate we want to consider all documents which don't have a nest path -- ie: all "root" level document -- as the set of possible parents.
+
+nocommit: example with more interesting `of` param - ie: only manuals that are attached to SKUs
+
+nocommit: show both the "inline" nest path (explain escaping) and the param deref using "prefix" parser
 
 === Parent Query Parser
 
 The inverse of the `{!child}` query parser is the `{!parent}` query parser, which let's you search for the _ancestor_ documents of some child documents matching a wrapped query.  For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-parent-query-parser,Block Join Parent Query Parser>>.
+
+nocommit: change this example to a query that matches "manuals"...
 
 Let's first consider this example of searching for all "sku" type documents that have a color of "RED"...
 
@@ -165,7 +171,11 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=color
   }}
 ----
 
+nocommit: change this query to match all "ancestors" of the above query (products & skus)
+
 We can wrap that query in a `{!parent}` query to return the details of all products that have "RED" skus...
+
+nocommit: switch curl command to use `-d` for readability...
 
 [source,bash]
 ----
@@ -185,8 +195,9 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
   }}
 ----
 
+In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers#block-mask,`which` parameter>> to indicate we want to consider all documents which don't have a nest path -- ie: all "root" level document -- as the set of possible parents.
 
-NOTE: The `which` local param of the `{!parent}` parser serves the same purpse as the `{!child}` parser's `of` param: to define the set of _all_ "ancestor" documents to consider for matching based on their children.  In this example we've again used `\*:* -\_nest_path_:*` to indicate we want to consider all documents which don't have a nest path field -- ie: all "root" level document.  When dealing with multiple levels of nested documents, it can be very tricky to define a correct `which` param -- see the <<other-parsers.adoc#block-join-parent-query-parser,`{!parent}` parser section>> for details.
+nocommit: now give a more interesting example, using which to only match the "sku" parents
 
 
 
