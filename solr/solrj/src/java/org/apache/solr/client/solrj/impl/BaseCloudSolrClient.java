@@ -1204,17 +1204,17 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   private NamedList<Object> getNowOrException(CompletableFuture<NamedList<Object>> future) throws SolrServerException, IOException {
     NamedList<Object> result;
     try {
-       result = future.getNow(null);
+      result = future.getNow(null);
     } catch (CompletionException e) {
       Throwable cause = e.getCause(); // error that caused CF to complete exceptionally
       if (cause instanceof SolrServerException) {
         throw (SolrServerException) cause;
       } else if (cause instanceof IOException) {
-          throw (IOException) cause;
+        throw (IOException) cause;
       } else if (cause instanceof RuntimeException) {
-          throw (RuntimeException) cause;
+        throw (RuntimeException) cause;
       } else {
-          throw new SolrServerException(cause);
+        throw new SolrServerException(cause);
       }
     }
     if (result == null) {
