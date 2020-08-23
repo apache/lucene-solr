@@ -100,7 +100,7 @@ configure(project(":lucene:analysis:common")) {
 
     doLast {
       project.exec {
-        executable "bash"
+        executable "bash" // TODO: does not work with windows, use project.externalToolExecutables[] instead
         args = [snowballScript, snowballStemmerDir, snowballWebsiteDir, snowballDataDir, projectDir]
       }
     }
