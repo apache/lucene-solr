@@ -88,6 +88,7 @@ allprojects {
           [propName: 'tests.weekly', value: false, description: "Enables or disables @Weekly tests."],
           [propName: 'tests.monster', value: false, description: "Enables or disables @Monster tests."],
           [propName: 'tests.awaitsfix', value: null, description: "Enables or disables @AwaitsFix tests."],
+          [propName: 'tests.badapples', value: null, description: "Enables or disables @BadApple tests."],
           [propName: 'tests.file.encoding', value: "random", description: "Sets the default file.encoding on test JVM.", buildOnly: true],
           // test data
           [propName: 'tests.linedocsfile', value: 'europarl.lines.txt.gz', description: "Test data file path."],
