@@ -52,7 +52,7 @@ class CheckBrokenLinksTask extends DefaultTask {
     def result
     outputFile.withOutputStream { output ->
       result = project.exec {
-        executable "python3"
+        executable project.externalToolExecutables["python3"]
         ignoreExitValue = true
         standardOutput = output
         errorOutput = output

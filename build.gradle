@@ -89,6 +89,13 @@ ext {
       "jgit": "5.3.0.201903130848-r",
       "flexmark": "0.61.24",
   ]
+  
+  // read some external tool locations from system props
+  externalToolExecutables = [
+      "python3": propertyOrDefault('python3.exe', 'python3'),
+      "python2": propertyOrDefault('python2.exe', 'python2'),
+      "perl": propertyOrDefault('perl.exe', 'perl'),
+  ]
 }
 
 // Include smaller chunks configuring dedicated build areas.
