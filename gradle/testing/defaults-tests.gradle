@@ -66,6 +66,8 @@ allprojects {
 
       minHeapSize = propertyOrDefault("tests.minheapsize", "256m")
       maxHeapSize = propertyOrDefault("tests.heapsize", "512m")
+      
+      ignoreFailures = (propertyOrDefault("tests.haltonfailure", "true").toBoolean() == false)
 
       jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", System.getenv('TEST_JVM_ARGS') ?: "-XX:TieredStopAtLevel=1"))
 
