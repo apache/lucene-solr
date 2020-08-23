@@ -42,7 +42,6 @@ allprojects {
         "-Xlint:finally",
         "-Xlint:options",
         "-Xlint:overrides",
-        "-Xlint:path",
         "-Xlint:processing",
         "-Xlint:rawtypes",
         "-Xlint:static",
