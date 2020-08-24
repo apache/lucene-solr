@@ -192,6 +192,9 @@ Bug Fixes
 
 * SOLR-14703: Fix edismax replacement of all whitespace characters with spaces (Yuriy Koval via Jason Gerlowski)
 
+* SOLR-14700: Avoid NullPointerException in TupleStream.getShards() when streamContext is null.
+  (Mads Bondo Dydensborg, Christine Poerschke, Mike Drob)
+
 Other Changes
 ---------------------
 
