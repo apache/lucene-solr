@@ -573,6 +573,8 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     }
   }
 
+  // we use a static method to get this lambda since we previously introduced a memory leak since it would
+  // implicitly reference this.nextSeqNo which holds on to this del queue. see LUCENE-9478 for reference
   private static LongSupplier getPrevMaxSeqIdSupplier(AtomicLong nextSeqNo) {
     return () -> nextSeqNo.get() - 1;
   }
