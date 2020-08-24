@@ -779,7 +779,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       // Must carefully compute fileName from "generation"
       // since lastGeneration isn't incremented:
       final String pending = IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS, "", generation);
-
       // Suppress so we keep throwing the original exception
       // in our caller
       IOUtils.deleteFilesIgnoringExceptions(dir, pending);
@@ -829,16 +828,24 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     if (pendingCommit == false) {
       throw new IllegalStateException("prepareCommit was not called");
     }
-    boolean success = false;
+    boolean successRenameAndSync = false;
     final String dest;
     try {
       final String src = IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS, "", generation);
       dest = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", generation);
       dir.rename(src, dest);
-      dir.syncMetaData();
-      success = true;
+      try {
+        dir.syncMetaData();
+        successRenameAndSync = true;
+      } finally {
+        if (successRenameAndSync == false) {
+          // at this point we already created the file but missed to sync directory let's also remove the
+          // renamed file
+          IOUtils.deleteFilesIgnoringExceptions(dir, dest);
+        }
+      }
     } finally {
-      if (!success) {
+      if (successRenameAndSync == false) {
         // deletes pending_segments_N:
         rollbackCommit(dir);
       }
