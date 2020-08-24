@@ -172,6 +172,10 @@ New Features
 
 * LUCENE-9386: RegExpQuery added case insensitive matching option. (Mark Harwood)
 
+* LUCENE-8962: Add IndexWriter merge-on-refresh feature to selectively merge
+  small segments on getReader, subject to a configurable timeout, to improve
+  search performance by reducing the number of small segments for searching. (Simon Willnauer)
+
 Improvements
 ---------------------
 
@@ -216,6 +220,14 @@ Documentation
 Other
 ---------------------
 (No changes)
+
+======================= Lucene 8.6.2 =======================
+
+Bug Fixes
+---------------------
+* LUCENE-9478: Prevent DWPTDeleteQueue from referencing itself and leaking memory. The queue
+  passed an implicit this reference to the next queue instance on flush which leaked about 500byte
+  of memory on each full flush, commit or getReader call. (Simon Willnauer)
 
 ======================= Lucene 8.6.1 =======================
 

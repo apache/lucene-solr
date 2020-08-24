@@ -73,7 +73,7 @@ public class SolrIndexConfig implements MapSerializable {
    * When using a custom merge policy that allows triggering synchronous merges on commit
    * (see {@link MergePolicy#findFullFlushMerges(org.apache.lucene.index.MergeTrigger, org.apache.lucene.index.SegmentInfos, org.apache.lucene.index.MergePolicy.MergeContext)}),
    * a timeout (in milliseconds) can be set for those merges to finish. Use {@code <maxCommitMergeWaitTime>1000</maxCommitMergeWaitTime>} in the {@code <indexConfig>} section.
-   * See {@link IndexWriterConfig#setMaxCommitMergeWaitMillis(long)}.
+   * See {@link IndexWriterConfig#setMaxFullFlushMergeWaitMillis(long)}.
    * </p>
    * <p>
    * Note that as of Solr 8.6, no {@code MergePolicy} shipped with Lucene/Solr make use of
@@ -248,7 +248,7 @@ public class SolrIndexConfig implements MapSerializable {
     }
     
     if (maxCommitMergeWaitMillis > 0) {
-      iwc.setMaxCommitMergeWaitMillis(maxCommitMergeWaitMillis);
+      iwc.setMaxFullFlushMergeWaitMillis(maxCommitMergeWaitMillis);
     }
 
     iwc.setSimilarity(schema.getSimilarity());
