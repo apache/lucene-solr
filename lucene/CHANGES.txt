@@ -162,7 +162,6 @@ Other
 
 API Changes
 ---------------------
-(No changes)
 
 * LUCENE-9437: Lucene's facet module's DocValuesOrdinalsReader.decode method
   is now public, making it easier for applications to decode facet
@@ -195,12 +194,18 @@ Optimizations
 * LUCENE-9395: ConstantValuesSource now shares a single DoubleValues
   instance across all segments (Tony Xu)
 
+* LUCENE-9373: FunctionMatchQuery now accepts a "matchCost" optimization hint.
+  (Maxim Glazkov, David Smiley)
+
 Bug Fixes
 ---------------------
 
 * LUCENE-9427: Fix a regression where the unified highlighter didn't produce
   highlights on fuzzy queries that correspond to exact matches. (Julie Tibshirani)
 
+* LUCENE-9467: Fix NRTCachingDirectory to use Directory#fileLength to check if a file
+  already exists instead of opening an IndexInput on the file which might throw a AccessDeniedException
+  in some Directory implementations. (Simon Willnauer)
 
 Documentation
 ---------------------

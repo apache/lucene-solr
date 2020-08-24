@@ -105,7 +105,7 @@ task standaloneAssemble(type: Sync) {
   from configurations.runtimeClasspath
 
   from(file("src/distribution"), {
-    filesMatching("README.txt", {
+    filesMatching("README.md", {
       filteringCharset = 'UTF-8'
       filter(ExpandProperties, project: antHelper)
     })

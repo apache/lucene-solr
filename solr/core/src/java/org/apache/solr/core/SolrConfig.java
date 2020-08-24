@@ -228,10 +228,13 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     queryResultMaxDocsCached = getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
     enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
 
-    useCircuitBreakers = getBool("circuitBreaker/useCircuitBreakers", false);
-    memoryCircuitBreakerThresholdPct = getInt("circuitBreaker/memoryCircuitBreakerThresholdPct", 95);
+    useCircuitBreakers = getBool("circuitBreakers/@enabled", false);
+    cpuCBEnabled = getBool("circuitBreakers/cpuBreaker/@enabled", false);
+    memCBEnabled = getBool("circuitBreakers/memBreaker/@enabled", false);
+    memCBThreshold = getInt("circuitBreakers/memBreaker/@threshold", 95);
+    cpuCBThreshold = getInt("circuitBreakers/cpuBreaker/@threshold", 95);
 
-    validateMemoryBreakerThreshold();
+    validateCircuitBreakerThresholds();
     
     filterCacheConfig = CacheConfig.getConfig(this, "query/filterCache");
     queryResultCacheConfig = CacheConfig.getConfig(this, "query/queryResultCache");
@@ -530,7 +533,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   // Circuit Breaker Configuration
   public final boolean useCircuitBreakers;
-  public final int memoryCircuitBreakerThresholdPct;
+  public final int memCBThreshold;
+  public final boolean memCBEnabled;
+  public final boolean cpuCBEnabled;
+  public final int cpuCBThreshold;
 
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
@@ -811,10 +817,12 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     loader.reloadLuceneSPI();
   }
 
-  private void validateMemoryBreakerThreshold() {
+  private void validateCircuitBreakerThresholds() {
     if (useCircuitBreakers) {
-      if (memoryCircuitBreakerThresholdPct > 95 || memoryCircuitBreakerThresholdPct < 50) {
-        throw new IllegalArgumentException("Valid value range of memoryCircuitBreakerThresholdPct is 50 -  95");
+      if (memCBEnabled) {
+        if (memCBThreshold > 95 || memCBThreshold < 50) {
+          throw new IllegalArgumentException("Valid value range of memoryCircuitBreakerThresholdPct is 50 -  95");
+        }
       }
     }
   }
@@ -889,7 +897,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     m.put("enableLazyFieldLoading", enableLazyFieldLoading);
     m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
     m.put("useCircuitBreakers", useCircuitBreakers);
-    m.put("memoryCircuitBreakerThresholdPct", memoryCircuitBreakerThresholdPct);
+    m.put("cpuCircuitBreakerEnabled", cpuCBEnabled);
+    m.put("memoryCircuitBreakerEnabled", memCBEnabled);
+    m.put("memoryCircuitBreakerThresholdPct", memCBThreshold);
+    m.put("cpuCircuitBreakerThreshold", cpuCBThreshold);
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
