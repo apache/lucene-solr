@@ -66,6 +66,14 @@ Other
 ---------------------
 (No changes)
 
+======================= Lucene 8.6.2 =======================
+
+Bug Fixes
+---------------------
+* LUCENE-9478: Prevent DWPTDeleteQueue from referencing itself and leaking memory. The queue
+  passed an implicit this reference to the next queue instance on flush which leaked about 500byte
+  of memory on each full flush, commit or getReader call. (Simon Willnauer)
+
 ======================= Lucene 8.6.1 =======================
 
 Bug Fixes
