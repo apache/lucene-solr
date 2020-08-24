@@ -402,7 +402,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private final Set<MergePolicy.OneMerge> runningMerges = new HashSet<>();
   private final List<MergePolicy.OneMerge> mergeExceptions = new ArrayList<>();
   private long mergeGen;
-  private boolean stopMerges; // TODO make sure this is only changed once and never set back to false
+  private Merges merges = new Merges();
   private boolean didMessageState;
   private final AtomicInteger flushCount = new AtomicInteger();
   private final AtomicInteger flushDeletesCount = new AtomicInteger();
@@ -2285,7 +2285,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
     assert maxNumSegments == UNBOUNDED_MAX_MERGE_SEGMENTS || maxNumSegments > 0;
     assert trigger != null;
-    if (stopMerges) {
+    if (merges.areEnabled() == false) {
       return null;
     }
 
@@ -2403,10 +2403,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     
     try {
       synchronized (this) {
-        // must be synced otherwise register merge might throw and exception if stopMerges
+        // must be synced otherwise register merge might throw and exception if merges
         // changes concurrently, abortMerges is synced as well
-        stopMerges = true; // this disables merges forever
-        abortMerges();
+        abortMerges(); // this disables merges forever since we are closing and can't reenable them
         assert mergingSegments.isEmpty() : "we aborted all merges but still have merging segments: " + mergingSegments;
       }
       if (infoStream.isEnabled("IW")) {
@@ -2569,7 +2568,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           synchronized (this) {
             try {
               // Abort any running merges
-              abortMerges();
+              try {
+                abortMerges();
+                assert merges.areEnabled() == false : "merges should be disabled - who enabled them?";
+                assert mergingSegments.isEmpty() : "found merging segments but merges are disabled: " + mergingSegments;
+              } finally {
+                // abortMerges disables all merges and we need to re-enable them here to make sure
+                // IW can function properly. An exception in abortMerges() might be fatal for IW but just to be sure
+                // lets re-enable merges anyway.
+                merges.enable();
+              }
               adjustPendingNumDocs(-segmentInfos.totalMaxDoc());
               // Remove all segments
               segmentInfos.clear();
@@ -2593,6 +2601,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               return seqNo;
             } finally {
               if (success == false) {
+
                 if (infoStream.isEnabled("IW")) {
                   infoStream.message("IW", "hit exception during deleteAll");
                 }
@@ -2611,6 +2620,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    *  method: when you abort a long-running merge, you lose
    *  a lot of work that must later be redone. */
   private synchronized void abortMerges() throws IOException {
+    merges.disable();
     // Abort all pending & running merges:
     IOUtils.applyToAll(pendingMerges, merge -> {
       if (infoStream.isEnabled("IW")) {
@@ -3111,7 +3121,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       synchronized (this) {
         ensureOpen();
-        assert stopMerges == false;
+        assert merges.areEnabled();
         runningAddIndexesMerges.add(merger);
       }
       try {
@@ -3132,7 +3142,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       final MergePolicy mergePolicy = config.getMergePolicy();
       boolean useCompoundFile;
       synchronized(this) { // Guard segmentInfos
-        if (stopMerges) {
+        if (merges.areEnabled() == false) {
           // Safe: these files must exist
           deleteNewFiles(infoPerCommit.files());
 
@@ -3168,7 +3178,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       // Register the new segment
       synchronized(this) {
-        if (stopMerges) {
+        if (merges.areEnabled() == false) {
           // Safe: these files must exist
           deleteNewFiles(infoPerCommit.files());
 
@@ -4395,7 +4405,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
     assert merge.segments.size() > 0;
 
-    if (stopMerges) {
+    if (merges.areEnabled() == false) {
       abortOneMerge(merge);
       throw new MergePolicy.MergeAbortedException("merge is aborted: " + segString(merge.segments));
     }
@@ -5889,6 +5899,26 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
     public String toString() {
       return writer.segString();
+    }
+  }
+
+  private class Merges {
+    private boolean mergesEnabled = true;
+
+    boolean areEnabled() {
+      assert Thread.holdsLock(IndexWriter.this);
+      return mergesEnabled;
+    }
+
+    void disable() {
+      assert Thread.holdsLock(IndexWriter.this);
+      mergesEnabled = false;
+    }
+
+    void enable() {
+      ensureOpen();
+      assert Thread.holdsLock(IndexWriter.this);
+      mergesEnabled = true;
     }
   }
 }
