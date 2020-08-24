@@ -162,7 +162,6 @@ Other
 
 API Changes
 ---------------------
-(No changes)
 
 * LUCENE-9437: Lucene's facet module's DocValuesOrdinalsReader.decode method
   is now public, making it easier for applications to decode facet
@@ -194,6 +193,9 @@ Optimizations
 
 * LUCENE-9395: ConstantValuesSource now shares a single DoubleValues
   instance across all segments (Tony Xu)
+
+* LUCENE-9373: FunctionMatchQuery now accepts a "matchCost" optimization hint.
+  (Maxim Glazkov, David Smiley)
 
 Bug Fixes
 ---------------------
