@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
@@ -327,11 +328,23 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
 
     int readerIndex = ReaderUtil.subIndex(ordinal, indexReader.leaves());
     LeafReader leafReader = indexReader.leaves().get(readerIndex).reader();
+    // TODO: Use LUCENE-9476 to get the bulk lookup API for extracting BinaryDocValues
     BinaryDocValues values = leafReader.getBinaryDocValues(Consts.FULL);
-    boolean found = values.advanceExact(ordinal-indexReader.leaves().get(readerIndex).docBase);
-    assert found;
 
-    FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(values.binaryValue().utf8ToString()));
+    FacetLabel ret;
+
+    if (values == null) {
+      // The index uses the older StringField format to store the mapping
+      // On recreating the index, the values will be stored using the BinaryDocValuesField format
+      Document doc = indexReader.document(ordinal);
+      ret = new FacetLabel(FacetsConfig.stringToPath(doc.get(Consts.FULL)));
+    } else {
+      // The index uses the BinaryDocValuesField format to store the mapping
+      boolean found = values.advanceExact(ordinal-indexReader.leaves().get(readerIndex).docBase);
+      assert found;
+      ret = new FacetLabel(FacetsConfig.stringToPath(values.binaryValue().utf8ToString()));
+    }
+
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }
