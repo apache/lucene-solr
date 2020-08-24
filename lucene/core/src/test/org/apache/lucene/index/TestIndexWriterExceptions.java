@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -40,6 +41,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -2063,6 +2065,66 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals("boom", e.getMessage());
       assertEquals("has suppressed exceptions: " + Arrays.toString(e.getSuppressed()), 0, e.getSuppressed().length);
       assertNull(e.getCause());
+    }
+  }
+
+  public void testExceptionOnSyncMetadata() throws IOException {
+    try (MockDirectoryWrapper dir = newMockDirectory()) {
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setCommitOnClose(false));
+        writer.commit();
+        AtomicBoolean maybeFailDelete = new AtomicBoolean(false);
+        BooleanSupplier failDelete = () -> random().nextBoolean() && maybeFailDelete.get();
+        dir.failOn(new MockDirectoryWrapper.Failure() {
+          @Override
+          public void eval(MockDirectoryWrapper dir)  {
+            if (callStackContains(MockDirectoryWrapper.class, "syncMetaData")
+                && callStackContains(SegmentInfos.class, "finishCommit")) {
+              throw new RuntimeException("boom");
+            } else if (failDelete.getAsBoolean() &&
+                callStackContains(IndexWriter.class, "rollbackInternalNoCommit") && callStackContains(IndexFileDeleter.class, "deleteFiles")) {
+              throw new RuntimeException("bang");
+            }
+          }});
+        for (int i = 0; i < 5; i++) {
+          Document doc = new Document();
+          doc.add(newStringField("id", Integer.toString(i), Field.Store.NO));
+          doc.add(new NumericDocValuesField("dv", i));
+          doc.add(new BinaryDocValuesField("dv2", new BytesRef(Integer.toString(i))));
+          doc.add(new SortedDocValuesField("dv3", new BytesRef(Integer.toString(i))));
+          doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i))));
+          doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i - 1))));
+          doc.add(new SortedNumericDocValuesField("dv5", i));
+          doc.add(new SortedNumericDocValuesField("dv5", i - 1));
+          doc.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
+          // ensure we store something
+          doc.add(new StoredField("stored1", "foo"));
+          doc.add(new StoredField("stored1", "bar"));
+          // ensure we get some payloads
+          doc.add(newTextField("text_payloads", TestUtil.randomAnalysisString(random(), 6, true), Field.Store.NO));
+          // ensure we get some vectors
+          FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+          ft.setStoreTermVectors(true);
+          doc.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
+          doc.add(new IntPoint("point", random().nextInt()));
+          doc.add(new IntPoint("point2d", random().nextInt(), random().nextInt()));
+          writer.addDocument(new Document());
+        }
+        try {
+          writer.commit();
+          fail();
+        } catch (RuntimeException e) {
+          assertEquals("boom", e.getMessage());
+        }
+        try {
+          maybeFailDelete.set(true);
+          writer.rollback();
+        } catch (RuntimeException e) {
+          assertEquals("bang", e.getMessage());
+        }
+        maybeFailDelete.set(false);
+        assertTrue(writer.isClosed());
+        assertTrue(DirectoryReader.indexExists(dir));
+        DirectoryReader.open(dir).close();
     }
   }
 }
