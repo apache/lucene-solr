@@ -110,7 +110,7 @@ public class LiveIndexWriterConfig {
   protected String softDeletesField = null;
 
   /** Amount of time to wait for merges returned by MergePolicy.findFullFlushMerges(...) */
-  protected volatile long maxCommitMergeWaitMillis;
+  protected volatile long maxFullFlushMergeWaitMillis;
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
@@ -134,7 +134,7 @@ public class LiveIndexWriterConfig {
     flushPolicy = new FlushByRamOrCountsPolicy();
     readerPooling = IndexWriterConfig.DEFAULT_READER_POOLING;
     perThreadHardLimitMB = IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
-    maxCommitMergeWaitMillis = IndexWriterConfig.DEFAULT_MAX_COMMIT_MERGE_WAIT_MILLIS;
+    maxFullFlushMergeWaitMillis = IndexWriterConfig.DEFAULT_MAX_FULL_FLUSH_MERGE_WAIT_MILLIS;
   }
   
   /** Returns the default analyzer to use for indexing documents. */
@@ -469,8 +469,8 @@ public class LiveIndexWriterConfig {
    * If this time is reached, we proceed with the commit based on segments merged up to that point.
    * The merges are not cancelled, and may still run to completion independent of the commit.
    */
-  public long getMaxCommitMergeWaitMillis() {
-    return maxCommitMergeWaitMillis;
+  public long getMaxFullFlushMergeWaitMillis() {
+    return maxFullFlushMergeWaitMillis;
   }
 
   @Override
@@ -496,7 +496,7 @@ public class LiveIndexWriterConfig {
     sb.append("indexSort=").append(getIndexSort()).append("\n");
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
     sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
-    sb.append("maxCommitMergeWaitMillis=").append(getMaxCommitMergeWaitMillis()).append("\n");
+    sb.append("maxFullFlushMergeWaitMillis=").append(getMaxFullFlushMergeWaitMillis()).append("\n");
     return sb.toString();
   }
 }
