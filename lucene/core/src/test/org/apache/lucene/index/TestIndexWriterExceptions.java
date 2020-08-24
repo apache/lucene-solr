@@ -2126,7 +2126,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         assertTrue(writer.isClosed());
         assertTrue(DirectoryReader.indexExists(dir));
         DirectoryReader.open(dir).close();
-      System.out.println(Arrays.toString(dir.listAll()));
     }
   }
 }
