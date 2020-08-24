@@ -2431,6 +2431,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                 assert merges.areEnabled() == false : "merges should be disabled - who enabled them?";
                 assert mergingSegments.isEmpty() : "found merging segments but merges are disabled: " + mergingSegments;
               } finally {
+                // abortMerges disables all merges and we need to re-enable them here to make sure
+                // IW can function properly. An exception in abortMerges() might be fatal for IW but just to be sure
+                // lets re-enable merges anyway.
                 merges.enable();
               }
               adjustPendingNumDocs(-segmentInfos.totalMaxDoc());
