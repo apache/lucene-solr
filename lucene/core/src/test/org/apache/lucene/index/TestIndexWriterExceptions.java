@@ -2118,7 +2118,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         try {
           maybeFailDelete.set(true);
           writer.rollback();
-          fail();
         } catch (RuntimeException e) {
           assertEquals("bang", e.getMessage());
         }
