@@ -53,4 +53,8 @@ public enum MergeTrigger {
    * Merge was triggered on commit.
    */
   COMMIT,
+  /**
+   * Merge was triggered on opening NRT readers.
+   */
+  GET_READER,
 }
