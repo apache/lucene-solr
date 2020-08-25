@@ -25,6 +25,10 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexSorter;
 import org.apache.lucene.index.SortFieldProvider;
 import org.apache.lucene.search.comparators.DocComparator;
+import org.apache.lucene.search.comparators.DoubleComparator;
+import org.apache.lucene.search.comparators.FloatComparator;
+import org.apache.lucene.search.comparators.IntComparator;
+import org.apache.lucene.search.comparators.LongComparator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
@@ -453,19 +457,19 @@ public class SortField {
       return new FieldComparator.RelevanceComparator(numHits);
 
     case DOC:
-      return new DocComparator(numHits);
+      return new DocComparator(numHits, reverse);
 
     case INT:
-      return new FieldComparator.IntComparator(numHits, field, (Integer) missingValue);
+      return new IntComparator(numHits, field, (Integer) missingValue, reverse);
 
     case FLOAT:
-      return new FieldComparator.FloatComparator(numHits, field, (Float) missingValue);
+      return new FloatComparator(numHits, field, (Float) missingValue, reverse);
 
     case LONG:
-      return new FieldComparator.LongComparator(numHits, field, (Long) missingValue);
+      return new LongComparator(numHits, field, (Long) missingValue, reverse);
 
     case DOUBLE:
-      return new FieldComparator.DoubleComparator(numHits, field, (Double) missingValue);
+      return new DoubleComparator(numHits, field, (Double) missingValue, reverse);
 
     case CUSTOM:
       assert comparatorSource != null;

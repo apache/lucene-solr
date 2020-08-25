@@ -26,6 +26,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.search.comparators.DoubleComparator;
 
 /**
  * Base class for producing {@link DoubleValues}
@@ -485,20 +486,26 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
     @Override
     public FieldComparator<Double> newComparator(String fieldname, int numHits,
                                                int sortPos, boolean reversed) {
-      return new FieldComparator.DoubleComparator(numHits, fieldname, missingValue){
-
-        LeafReaderContext ctx;
-        DoubleValuesHolder holder = new DoubleValuesHolder();
-
+      return new DoubleComparator(numHits, fieldname, missingValue, reversed) {
         @Override
-        protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-          ctx = context;
-          return asNumericDocValues(holder, Double::doubleToLongBits);
-        }
+        public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          DoubleValuesHolder holder = new DoubleValuesHolder();
 
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-          holder.values = producer.getValues(ctx, fromScorer(scorer));
+          return new DoubleComparator.DoubleLeafComparator(context) {
+            LeafReaderContext ctx;
+            
+            @Override
+            protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) {
+              ctx = context;
+              return asNumericDocValues(holder, Double::doubleToLongBits);
+            }
+
+            @Override
+            public void setScorer(Scorable scorer) throws IOException {
+              holder.values = producer.getValues(ctx, fromScorer(scorer));
+              super.setScorer(scorer);
+            }
+          };
         }
       };
     }

@@ -20,7 +20,6 @@ package org.apache.lucene.search.comparators;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.FilteringLeafFieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorable;
 
@@ -31,13 +30,16 @@ import java.io.IOException;
  */
 public class DocComparator extends FieldComparator<Integer> {
     private final int[] docIDs;
+    private final boolean reverse; // only used to check if skipping functionality should be enabled
+    private int bottom;
     private int topValue;
-    private boolean topValueSet;
-    private boolean reverse = false; // only used to check if skipping functionality should be enabled
+    private boolean enableSkipping;
+    private boolean hitsThresholdReached;
 
     /** Creates a new comparator based on document ids for {@code numHits} */
-    public DocComparator(int numHits) {
-        docIDs = new int[numHits];
+    public DocComparator(int numHits, boolean reverse) {
+        this.docIDs = new int[numHits];
+        this.reverse = reverse;
     }
 
     @Override
@@ -58,17 +60,13 @@ public class DocComparator extends FieldComparator<Integer> {
     @Override
     public void setTopValue(Integer value) {
         topValue = value;
-        topValueSet = true;
+        // skipping functionality is enabled if topValue is set and sort is asc
+        enableSkipping = (reverse == false);
     }
 
     @Override
     public Integer value(int slot) {
         return Integer.valueOf(docIDs[slot]);
-    }
-
-    @Override
-    public void setReverse() {
-        reverse = true;
     }
 
 
@@ -77,11 +75,8 @@ public class DocComparator extends FieldComparator<Integer> {
      * When sort by _doc asc and "after" document is set,
      * the comparator provides an iterator that can quickly skip to the desired "after" document.
      */
-    private class DocLeafComparator implements FilteringLeafFieldComparator {
+    private class DocLeafComparator implements LeafFieldComparator {
         private final int docBase;
-        private int bottom;
-
-        private final boolean enableSkipping;
         private final int minDoc;
         private final int maxDoc;
         private DocIdSetIterator topValueIterator; // iterator that starts from topValue
@@ -90,8 +85,6 @@ public class DocComparator extends FieldComparator<Integer> {
 
         public DocLeafComparator(LeafReaderContext context) {
             this.docBase = context.docBase;
-            // skipping functionality is enabled if topValue is set and sort is asc
-            this.enableSkipping = topValueSet && reverse == false ? true: false;
             if (enableSkipping) {
                 this.minDoc = topValue + 1;
                 this.maxDoc = context.reader().maxDoc();
@@ -127,6 +120,8 @@ public class DocComparator extends FieldComparator<Integer> {
 
         @Override
         public void setScorer(Scorable scorer) throws IOException {
+            // update an iterator on a new segment
+            updateIterator();
         }
 
         @Override
@@ -162,7 +157,12 @@ public class DocComparator extends FieldComparator<Integer> {
 
         @Override
         public void setHitsThresholdReached() {
-            if (enableSkipping == false) return;
+            hitsThresholdReached = true;
+            updateIterator();
+        }
+
+        private void updateIterator() {
+            if (enableSkipping == false || hitsThresholdReached == false) return;
             if (iteratorUpdated) return; // iterator for a segment needs to be updated only once
             if (docBase + maxDoc <= minDoc) {
                 topValueIterator = DocIdSetIterator.empty(); // skip this segment
@@ -171,15 +171,6 @@ public class DocComparator extends FieldComparator<Integer> {
                 topValueIterator = new MinDocIterator(segmentMinDoc, maxDoc);
             }
             iteratorUpdated = true;
-        }
-
-        @Override
-        public void setQueueFull() {
-        }
-
-        @Override
-        public boolean iteratorUpdated() {
-            return enableSkipping ? iteratorUpdated : false;
         }
     }
 }
