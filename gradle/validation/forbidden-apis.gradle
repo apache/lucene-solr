@@ -26,8 +26,9 @@ allprojects { prj ->
     // This helper method appends signature files based on a set of true
     // dependencies from a given configuration.
     def dynamicSignatures = { configuration, suffix ->
-      def deps = configuration.resolvedConfiguration.resolvedArtifacts
+      def resolvedMods = configuration.resolvedConfiguration.resolvedArtifacts
           .collect { a -> a.moduleVersion.id }
+      def deps = resolvedMods
           .collect { id -> [
               "${id.group}.${id.name}.all.txt",
               "${id.group}.${id.name}.${suffix}.txt",
@@ -46,6 +47,11 @@ allprojects { prj ->
           logger.debug("Signature file omitted (does not exist): ${sig}")
         }
       }
+      
+      // commons-io is special: forbiddenapis has a versioned bundledSignature.
+      bundledSignatures += resolvedMods
+        .findAll { id -> id.group == 'commons-io' && id.name == 'commons-io' }
+        .collect { id -> "${id.name}-unsafe-${id.version}" as String }
     }
 
     // Configure defaults for sourceSets.main
