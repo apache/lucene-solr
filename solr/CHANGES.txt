@@ -160,6 +160,8 @@ Improvements
 
 * SOLR-14722: Track timeAllowed from earlier in the request lifecycle. (David Smiley)
 
+* SOLR-13438: On deleting a collection, its config set will also be deleted iff it has been auto-created, and not used by any other collection (Anderson Dorow)
+
 Optimizations
 ---------------------
 
@@ -189,6 +191,9 @@ Bug Fixes
 * SOLR-14677: Improve DIH termination logic to close all DataSources, EntityProcessors (Jason Gerlowski)
 
 * SOLR-14703: Fix edismax replacement of all whitespace characters with spaces (Yuriy Koval via Jason Gerlowski)
+
+* SOLR-14700: Avoid NullPointerException in TupleStream.getShards() when streamContext is null.
+  (Mads Bondo Dydensborg, Christine Poerschke, Mike Drob)
 
 Other Changes
 ---------------------
