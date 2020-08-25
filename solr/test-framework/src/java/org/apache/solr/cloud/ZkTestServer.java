@@ -360,8 +360,8 @@ public class ZkTestServer implements Closeable {
         FileTxnSnapLog ftxn = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
 
         zooKeeperServer = new ZooKeeperServer(ftxn, config.getTickTime(),
-                config.getMinSessionTimeout(), config.getMaxSessionTimeout(),
-                new TestZKDatabase(ftxn, limiter));
+            config.getMinSessionTimeout(), config.getMaxSessionTimeout(),
+            new TestZKDatabase(ftxn, limiter));
         cnxnFactory = new TestServerCnxnFactory(limiter);
         cnxnFactory.configure(config.getClientPortAddress(),
                 config.getMaxClientCnxns());
