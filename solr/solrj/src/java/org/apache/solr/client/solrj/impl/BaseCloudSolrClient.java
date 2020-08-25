@@ -38,7 +38,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -720,6 +719,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         } catch (Exception e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, urlList.get(0), e);
         }
+        finishDirectUpdate(shardResponses, apiFuture, start, routes);
       }
     } else {
       finishDirectUpdate(shardResponses, apiFuture, start, routes);
