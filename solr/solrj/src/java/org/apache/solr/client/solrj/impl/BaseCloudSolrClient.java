@@ -478,8 +478,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     assertZKStateProvider().zkStateReader.registerDocCollectionWatcher(collection, watcher);
   }
 
-  // TODO: async direct updates
-  @SuppressWarnings({"unchecked"})
+  // TODO: async direct updates - cancelling request
   private CompletableFuture<NamedList<Object>> directUpdate(AbstractUpdateRequest request,
                                                             String collection,
                                                             boolean isAsyncRequest) throws SolrServerException {
@@ -542,40 +541,92 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     }
 
-    final NamedList<Throwable> exceptions = new NamedList<>();
-    @SuppressWarnings({"rawtypes"})
-    final NamedList<NamedList> shardResponses = new NamedList<>(routes.size()+1); // +1 for deleteQuery
+    final NamedList<NamedList<?>> shardResponses = new NamedList<>(routes.size()+1); // +1 for deleteQuery
 
     long start = System.nanoTime();
 
+    CompletableFuture<Void> updateFuture;
     if (parallelUpdates) {
-      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<>(routes.size());
-      for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
-        final String url = entry.getKey();
-        final LBSolrClient.Req lbRequest = entry.getValue();
-        try {
-          MDC.put("CloudSolrClient.url", url);
-          responseFutures.put(url, threadPool.submit(() -> {
-            return getLbClient().request(lbRequest).getResponse();
+      updateFuture = doUpdatesWithExecutor(routes, shardResponses, isAsyncRequest);
+    } else {
+      updateFuture = doUpdatesWithoutExecutor(routes, shardResponses, isAsyncRequest);
+    }
+
+    CompletableFuture<NamedList<Object>> apiFuture = new CompletableFuture<>();
+    if (!isAsyncRequest) {
+      try {
+        updateFuture.get();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(e);
+      } catch (ExecutionException e) {
+        Throwable cause = e.getCause();
+        if (cause instanceof SolrServerException) {
+          throw (SolrServerException) cause;
+        } else if (cause instanceof RuntimeException) {
+          throw (RuntimeException) cause;
+        } else {
+          throw new SolrServerException(cause);
+        }
+      }
+      doDeleteQuery(updateRequest, nonRoutableParams, routes, shardResponses, apiFuture, start, isAsyncRequest);
+    } else {
+      updateFuture.whenComplete((result, error) -> {
+        if (updateFuture.isCompletedExceptionally()) {
+          apiFuture.completeExceptionally(error);
+        } else {
+          doDeleteQuery(updateRequest, nonRoutableParams, routes, shardResponses, apiFuture, start, isAsyncRequest);
+        }
+      });
+    }
+
+    return apiFuture;
+  }
+
+  private CompletableFuture<Void> doUpdatesWithExecutor(final Map<String, ? extends LBSolrClient.Req> routes,
+                                                        NamedList<NamedList<?>> shardResponses,
+                                                        boolean isAsyncRequest) {
+    final NamedList<Throwable> exceptions = new NamedList<>();
+    final Map<String, CompletableFuture<NamedList<Object>>> responseFutures = new HashMap<>(routes.size());
+    for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
+      final String url = entry.getKey();
+      final LBSolrClient.Req lbRequest = entry.getValue();
+      try {
+        MDC.put("CloudSolrClient.url", url);
+        final CompletableFuture<NamedList<Object>> future = new CompletableFuture<>();
+        if (isAsyncRequest) {
+          CompletableFuture<LBSolrClient.Rsp> reqFuture = ((LBHttp2SolrClient) getLbClient()).requestAsync(lbRequest);
+          reqFuture.whenComplete((result, error) -> {
+            if (!reqFuture.isCompletedExceptionally()) {
+              future.complete(result.getResponse());
+            } else {
+              future.completeExceptionally(error);
+            }
+          });
+        } else {
+          threadPool.submit(() -> {
+            try {
+              future.complete(getLbClient().request(lbRequest).getResponse());
+            } catch (Exception e) {
+              future.completeExceptionally(e);
+            }
+          });
+
+          responseFutures.put(url, future.whenComplete((result, error) -> {
+            if (!future.isCompletedExceptionally()) {
+              shardResponses.add(url, result);
+            } else {
+              exceptions.add(url, error);
+            }
           }));
-        } finally {
-          MDC.remove("CloudSolrClient.url");
         }
+      } finally {
+        MDC.remove("CloudSolrClient.url");
       }
+    }
 
-      for (final Map.Entry<String, Future<NamedList<?>>> entry: responseFutures.entrySet()) {
-        final String url = entry.getKey();
-        final Future<NamedList<?>> responseFuture = entry.getValue();
-        try {
-          shardResponses.add(url, responseFuture.get());
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-          exceptions.add(url, e.getCause());
-        }
-      }
-
+    CompletableFuture<NamedList<Object>>[] futuresArray = responseFutures.values().toArray(new CompletableFuture[responseFutures.size()]);
+    return CompletableFuture.allOf(futuresArray).handle((result, error) -> {
       if (exceptions.size() > 0) {
         Throwable firstException = exceptions.getVal(0);
         if(firstException instanceof SolrException) {
@@ -585,23 +636,51 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           throw getRouteException(SolrException.ErrorCode.SERVER_ERROR, exceptions, routes);
         }
       }
-    } else {
-      for (Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
-        String url = entry.getKey();
-        LBSolrClient.Req lbRequest = entry.getValue();
+      return null;
+    });
+  }
+
+  private CompletableFuture<Void> doUpdatesWithoutExecutor(final Map<String, ? extends LBSolrClient.Req> routes,
+                                                           NamedList<NamedList<?>> shardResponses,
+                                                           boolean isAsyncRequest) {
+    List<CompletableFuture<LBSolrClient.Rsp>> futures = null;
+    if (isAsyncRequest) {
+      futures = new ArrayList<>(routes.size());
+    }
+    for (Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
+      String url = entry.getKey();
+      LBSolrClient.Req lbRequest = entry.getValue();
+      if (isAsyncRequest) {
+        CompletableFuture<LBSolrClient.Rsp> future = ((LBHttp2SolrClient) getLbClient()).requestAsync(lbRequest);
+        future.whenComplete((result, error) -> {
+          if (!future.isCompletedExceptionally()) {
+            shardResponses.add(url, result.getResponse());
+          }
+        });
+        futures.add(future);
+      } else {
         try {
           NamedList<Object> rsp = getLbClient().request(lbRequest).getResponse();
           shardResponses.add(url, rsp);
         } catch (Exception e) {
-          if(e instanceof SolrException) {
-            throw (SolrException) e;
-          } else {
-            throw new SolrServerException(e);
-          }
+          return CompletableFuture.failedFuture(e);
         }
       }
     }
+    if (isAsyncRequest) {
+      return CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+    } else {
+      return CompletableFuture.completedFuture(null);
+    }
+  }
 
+  private void doDeleteQuery(UpdateRequest updateRequest,
+                             ModifiableSolrParams nonRoutableParams,
+                             final Map<String, ? extends LBSolrClient.Req> routes,
+                             NamedList<NamedList<?>> shardResponses,
+                             CompletableFuture<NamedList<Object>> apiFuture,
+                             long start,
+                             boolean isAsyncRequest) {
     UpdateRequest nonRoutableRequest = null;
     List<String> deleteQuery = updateRequest.getDeleteQuery();
     if (deleteQuery != null && deleteQuery.size() > 0) {
@@ -620,17 +699,37 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         nonRoutableRequest = new UpdateRequest();
       }
       nonRoutableRequest.setParams(nonRoutableParams);
-      nonRoutableRequest.setBasicAuthCredentials(request.getBasicAuthUser(), request.getBasicAuthPassword());
+      nonRoutableRequest.setBasicAuthCredentials(updateRequest.getBasicAuthUser(), updateRequest.getBasicAuthPassword());
       List<String> urlList = new ArrayList<>(routes.keySet());
       Collections.shuffle(urlList, rand);
       LBSolrClient.Req req = new LBSolrClient.Req(nonRoutableRequest, urlList);
-      try {
-        LBSolrClient.Rsp rsp = getLbClient().request(req);
-        shardResponses.add(urlList.get(0), rsp.getResponse());
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, urlList.get(0), e);
+      if (isAsyncRequest) {
+        CompletableFuture<LBSolrClient.Rsp> future = ((LBHttp2SolrClient) getLbClient()).requestAsync(req);
+        future.whenComplete((result, throwable) -> {
+          if (future.isCompletedExceptionally()) {
+            apiFuture.completeExceptionally(throwable);
+          } else {
+            shardResponses.add(urlList.get(0), result.getResponse());
+            finishDirectUpdate(shardResponses, apiFuture, start, routes);
+          }
+        });
+      } else {
+        try {
+          LBSolrClient.Rsp rsp = getLbClient().request(req);
+          shardResponses.add(urlList.get(0), rsp.getResponse());
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, urlList.get(0), e);
+        }
       }
+    } else {
+      finishDirectUpdate(shardResponses, apiFuture, start, routes);
     }
+  }
+
+  private void finishDirectUpdate(NamedList<NamedList<?>> shardResponses,
+                                  CompletableFuture<NamedList<Object>> apiFuture,
+                                  long start,
+                                  final Map<String, ? extends LBSolrClient.Req> routes) {
 
     long end = System.nanoTime();
 
@@ -638,7 +737,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     RouteResponse rr = condenseResponse(shardResponses, (int) TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS));
     rr.setRouteResponses(shardResponses);
     rr.setRoutes(routes);
-    return CompletableFuture.completedFuture(rr);
+    apiFuture.complete(rr);
   }
 
   protected RouteException getRouteException(SolrException.ErrorCode serverError, NamedList<Throwable> exceptions, Map<String, ? extends LBSolrClient.Req> routes) {
