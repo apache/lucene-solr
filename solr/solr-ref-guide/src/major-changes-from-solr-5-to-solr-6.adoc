@@ -44,7 +44,7 @@ Built on streaming expressions, new in Solr 6 is a <<parallel-sql-interface.adoc
 
 === Cross Data Center Replication
 
-Replication across data centers is now possible with <<cross-data-center-replication-cdcr.adoc#cross-data-center-replication-cdcr,Cross Data Center Replication>>. Using an active-passive model, a SolrCloud cluster can be replicated to another data center, and monitored with a new API.
+Replication across data centers is now possible with Cross Data Center Replication. Using an active-passive model, a SolrCloud cluster can be replicated to another data center, and monitored with a new API.
 
 === Graph QueryParser
 
