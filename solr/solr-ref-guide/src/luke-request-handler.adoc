@@ -28,10 +28,10 @@ The data about the index to include in the response.  Options are `schema`, `ind
 Get a document using the uniqueKeyField specified in schema.xml.
 
 `docId`::
-Get a document using a lucene documentID.
+Get a document using a Lucene documentID.
 
 `fl`::
-Which fields you want to list the top terms for.
+Limit the returned values to a set of fields. This is useful if you want to increase the `numTerms` and don't want a massive response.
 
 `numTerms`::
 How many top terms for each field. The default is 10.
@@ -52,7 +52,7 @@ bin/solr start -e techproducts
 To return summary information about the index:
 
 [source,text]
-ttp://localhost:8983/solr/techproducts/admin/luke?numTerms=0
+http://localhost:8983/solr/techproducts/admin/luke?numTerms=0
 
 To return schema details about the index:
 
