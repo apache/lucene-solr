@@ -17,8 +17,6 @@
 
 package org.apache.solr.util.circuitbreaker;
 
-import org.apache.solr.core.SolrConfig;
-
 /**
  * Default class to define circuit breakers for Solr.
  * <p>
