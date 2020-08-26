@@ -195,6 +195,8 @@ Bug Fixes
 * SOLR-14700: Avoid NullPointerException in TupleStream.getShards() when streamContext is null.
   (Mads Bondo Dydensborg, Christine Poerschke, Mike Drob)
 
+* SOLR-14752: Fix error in Zookeeper status when Prometheus plugin is enabled in ZK (Philipp Trulson via janhoy)
+
 Other Changes
 ---------------------
 
