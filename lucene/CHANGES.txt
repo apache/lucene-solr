@@ -176,6 +176,8 @@ New Features
   small segments on getReader, subject to a configurable timeout, to improve
   search performance by reducing the number of small segments for searching. (Simon Willnauer)
 
+* LUCENE-9313: Add SerbianAnalyzer based on the snowball stemmer. (Dragan Ivanovic)
+
 Improvements
 ---------------------
 
