@@ -25,19 +25,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -60,8 +56,6 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
@@ -309,34 +303,6 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
     constructStreams();
     openStreams();
-  }
-
-
-  private void openStreams() throws IOException {
-
-    ExecutorService service = ParWork.getExecutor();
-    try {
-      List<Future<TupleWrapper>> futures = new ArrayList();
-      for (TupleStream solrStream : solrStreams) {
-        StreamOpener so = new StreamOpener((SolrStream) solrStream, comp);
-        Future<TupleWrapper> future = service.submit(so);
-        futures.add(future);
-      }
-
-      try {
-        for (Future<TupleWrapper> f : futures) {
-          TupleWrapper w = f.get();
-          if (w != null) {
-            tuples.add(w);
-          }
-        }
-      } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
-        throw new IOException(e);
-      }
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(service);
-    }
   }
 
   public void close() throws IOException {

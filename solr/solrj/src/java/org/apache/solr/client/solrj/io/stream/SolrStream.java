@@ -16,11 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -30,9 +27,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -68,7 +63,6 @@ public class SolrStream extends TupleStream {
   private Map<String, String> fieldMappings;
   private transient TupleStreamParser tupleStreamParser;
   private transient Http2SolrClient client;
-  private transient Closeable closeableHttp2SolrClient;
   private transient SolrClientCache cache;
   private String slice;
   private long checkpoint = -1;
@@ -118,10 +112,8 @@ public class SolrStream extends TupleStream {
   public void open() throws IOException {
     if(cache == null) {
       client = new Http2SolrClient.Builder(baseUrl).markInternalRequest().build();
-      closeableHttp2SolrClient = client;
     } else {
       client = cache.getHttpSolrClient(baseUrl);
-      closeableHttp2SolrClient = null;
     }
 
     try {
@@ -199,8 +191,10 @@ public class SolrStream extends TupleStream {
     }
     IOUtils.closeQuietly(tupleStreamParser);
     tupleStreamParser.close();
-    if (closeableHttp2SolrClient != null) {
-      closeableHttp2SolrClient.close();
+
+    // if the cache is null, then we opened the client
+    if (cache == null && client != null) {
+      client.close();
     }
   }
 

@@ -51,8 +51,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ROWS;
@@ -348,28 +346,19 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service = ParWork.getExecutor();
+    final ExecutorService service = ParWork.getExecutor();
+    List<Future<TupleWrapper>> futures =
+        solrStreams.stream().map(ss -> service.submit(new StreamOpener((SolrStream)ss, comp))).collect(Collectors.toList());
     try {
-      List<Future<TupleWrapper>> futures = new ArrayList();
-      for (TupleStream solrStream : solrStreams) {
-        StreamOpener so = new StreamOpener((SolrStream) solrStream, comp);
-        Future<TupleWrapper> future = service.submit(so);
-        futures.add(future);
-      }
-
-      try {
-        for (Future<TupleWrapper> f : futures) {
-          TupleWrapper w = f.get();
-          if (w != null) {
-            tuples.add(w);
-          }
+      for (Future<TupleWrapper> f : futures) {
+        TupleWrapper w = f.get();
+        if (w != null) {
+          tuples.add(w);
         }
-      } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
-        throw new IOException(e);
       }
-    } finally {
-      service.shutdown();
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+      throw new IOException(e);
     }
   }
 

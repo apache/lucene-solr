@@ -35,9 +35,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -58,9 +56,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
@@ -313,9 +309,10 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       cache.close();
     }
 
-    if (executorService != null) {
-      executorService.shutdown();
-    }
+    // We don't own the executorService, so no shutdown
+    //if (executorService != null) {
+    //  executorService.shutdown();
+    //}
   }
 
   /** Return the stream sort - ie, the order in which records are returned */

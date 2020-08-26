@@ -32,7 +32,6 @@ import java.util.concurrent.Future;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -49,9 +48,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
@@ -266,7 +263,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       cache.close();
     }
 
-    executorService.shutdown();
+    // I don't own the executorService anymore, so no shutting it down
+    // executorService.shutdown();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
