@@ -65,6 +65,7 @@
     <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test"/>
     <dependency org="net.bytebuddy" name="byte-buddy" rev="${/net.bytebuddy/byte-buddy}" conf="test"/>
     <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test"/>
+    <dependency org="org.awaitility" name="awaitility" rev="${/org.awaitility/awaitility}" conf="test"/>
 
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
