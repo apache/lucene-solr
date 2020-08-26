@@ -14,21 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.annotation;
+package org.apache.lucene.search.matchhighlight;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import java.util.function.Function;
 
 /**
- * Annotation for classes in Solr that are not thread safe. This provides a clear indication of the thread safety of the class.
+ * A per-field supplier of {@link OffsetsRetrievalStrategy}.
  */
-@Documented
-@Retention(SOURCE)
-@Target(TYPE)
-public @interface SolrSingleThreaded {
-
+@FunctionalInterface
+public interface OffsetsRetrievalStrategySupplier extends Function<String, OffsetsRetrievalStrategy> {
 }

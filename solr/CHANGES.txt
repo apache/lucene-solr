@@ -42,6 +42,8 @@ Improvements
 
 * SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
 
+* SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -156,6 +158,10 @@ Improvements
 * SOLR-14651: The MetricsHistoryHandler can more completely disable itself when you tell it to.
   Also, it now shuts down more thoroughly. (David Smiley)
 
+* SOLR-14722: Track timeAllowed from earlier in the request lifecycle. (David Smiley)
+
+* SOLR-13438: On deleting a collection, its config set will also be deleted iff it has been auto-created, and not used by any other collection (Anderson Dorow)
+
 Optimizations
 ---------------------
 
@@ -184,6 +190,11 @@ Bug Fixes
 
 * SOLR-14677: Improve DIH termination logic to close all DataSources, EntityProcessors (Jason Gerlowski)
 
+* SOLR-14703: Fix edismax replacement of all whitespace characters with spaces (Yuriy Koval via Jason Gerlowski)
+
+* SOLR-14700: Avoid NullPointerException in TupleStream.getShards() when streamContext is null.
+  (Mads Bondo Dydensborg, Christine Poerschke, Mike Drob)
+
 Other Changes
 ---------------------
 
@@ -203,10 +214,16 @@ Other Changes
 
 * SOLR-14641: PeerSync, remove canHandleVersionRanges check (Cao Manh Dat)
 
+* SOLR-14731: Rename @SolrSingleThreaded to @SolrThreadUnsafe, mark DistribPackageStore with the annotation
+  (marcussorealheis)
+
 ==================  8.6.1 ==================
 
 Bug Fixes
 ---------------------
+
+* SOLR-14665, SOLR-14706: Revert SOLR-12845 adding of default autoscaling cluster policy, due to performance
+ issues. (Ishan Chattopadhyaya, Houston Putman, Gus Heck, ab)
 
 * SOLR-14671: Parsing dynamic ZK config sometimes cause NuberFormatException (janhoy)
 
