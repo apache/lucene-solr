@@ -46,7 +46,6 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -54,13 +53,12 @@ import org.junit.Test;
  *
  * Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference Guide.
  */
-@Ignore // nocommit debug - flakey test
 public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   private static final int NUM_INDEXED_DOCUMENTS = 3;
   private static final int NUM_LIVE_NODES = 1;
   
-  private Queue<String> expectedLines = new ArrayDeque();
+  private final Queue<String> expectedLines = new ArrayDeque<>();
 
   @BeforeClass
   public static void setUpCluster() throws Exception {
@@ -215,13 +213,14 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void otherSolrApisExample() throws Exception {
     expectLine("Found "+NUM_LIVE_NODES+" live nodes");
     // tag::solrj-other-apis[]
     final SolrClient client = getSolrClient();
 
-    final SolrRequest request = new CollectionAdminRequest.ClusterStatus();
+    final SolrRequest<CollectionAdminResponse> request = new CollectionAdminRequest.ClusterStatus();
 
     final NamedList<Object> response = client.request(request);
     final NamedList<Object> cluster = (NamedList<Object>) response.get("cluster");

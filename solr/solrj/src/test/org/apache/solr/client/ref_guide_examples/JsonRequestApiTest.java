@@ -44,7 +44,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -52,7 +51,6 @@ import org.junit.Test;
  *
  * Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference Guide.
  */
-@Ignore // nocommit debug some leak
 public class JsonRequestApiTest extends SolrCloudTestCase {
   private static final String COLLECTION_NAME = "techproducts";
   private static final String CONFIG_NAME = "techproducts_config";
