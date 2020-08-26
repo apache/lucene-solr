@@ -983,7 +983,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
     List<String> inputCollections =
         collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
-    return requestWithRetryOnStaleState(request, 0, inputCollections, isAsyncRequest);
+
+    CompletableFuture<NamedList<Object>> apiFuture = new CompletableFuture<>();
+    requestWithRetryOnStaleState(request, 0, inputCollections, isAsyncRequest, apiFuture);
+    return apiFuture;
   }
 
   /**
@@ -991,10 +994,11 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * there's a chance that the request will fail due to cached stale state,
    * which means the state must be refreshed from ZK and retried.
    */
-  protected CompletableFuture<NamedList<Object>> requestWithRetryOnStaleState(SolrRequest<?> request,
-                                                                              int retryCount,
-                                                                              List<String> inputCollections,
-                                                                              boolean isAsyncRequest)
+  protected void requestWithRetryOnStaleState(SolrRequest<?> request,
+                                              int retryCount,
+                                              List<String> inputCollections,
+                                              boolean isAsyncRequest,
+                                              CompletableFuture<NamedList<Object>> apiFuture)
       throws SolrServerException, IOException {
     connect(); // important to call this before you start working with the ZkStateReader
 
@@ -1024,7 +1028,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
         }
         int collVer = coll.getZNodeVersion();
-        if(requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
+        if (requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
         requestedCollections.add(coll);
 
         if (stateVerParamBuilder == null) {
@@ -1050,122 +1054,175 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     } // else: ??? how to set this ???
 
-    CompletableFuture<NamedList<Object>> rspFuture;
+    requestWithRetryOnStaleStateHelper(request, retryCount, inputCollections, requestedCollections, isAdmin, isAsyncRequest, apiFuture);
+  }
+
+  private void requestWithRetryOnStaleStateHelper(final SolrRequest<?> request,
+                                                  int retryCount,
+                                                  List<String> inputCollections,
+                                                  List<DocCollection> requestedCollections,
+                                                  boolean isAdmin,
+                                                  boolean isAsyncRequest,
+                                                  CompletableFuture<NamedList<Object>> apiFuture)
+      throws SolrServerException, IOException{
+
     try {
-      rspFuture = sendRequest(request, inputCollections, isAsyncRequest);
+      CompletableFuture<NamedList<Object>> rspFuture = sendRequest(request, inputCollections, isAsyncRequest);
       if (!isAsyncRequest) {
-        processStateVersion(getNowOrException(rspFuture));
+        NamedList<Object> rsp = getNowOrException(rspFuture);
+        processRequestResult(rsp, apiFuture);
+      } else {
+        rspFuture.whenComplete((result, error) -> {
+          if (!rspFuture.isCompletedExceptionally()) {
+            processRequestResult(result, apiFuture);
+          } else {
+            try {
+              handleRequestException(request, retryCount, inputCollections, requestedCollections, isAdmin, isAsyncRequest, apiFuture, error);
+            } catch (Exception e) {
+              apiFuture.completeExceptionally(e);
+            }
+          }
+        });
       }
     } catch (Exception exc) {
+      handleRequestException(request, retryCount, inputCollections, requestedCollections, isAdmin, isAsyncRequest, apiFuture, exc);
+    }
+  }
 
-      Throwable rootCause = SolrException.getRootCause(exc);
-      // don't do retry support for admin requests
-      // or if the request doesn't have a collection specified
-      // or request is v2 api and its method is not GET
-      if (inputCollections.isEmpty() || isAdmin || (request instanceof V2Request && request.getMethod() != SolrRequest.METHOD.GET)) {
-        if (exc instanceof SolrServerException) {
-          throw (SolrServerException)exc;
-        } else if (exc instanceof IOException) {
-          throw (IOException)exc;
-        }else if (exc instanceof RuntimeException) {
-          throw (RuntimeException) exc;
-        }
-        else {
-          throw new SolrServerException(rootCause);
-        }
+  private void processRequestResult(NamedList<Object> rsp, CompletableFuture<NamedList<Object>> apiFuture) {
+    //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
+    Object o = rsp == null || rsp.size() == 0 ? null : rsp.get(STATE_VERSION, rsp.size() - 1);
+    if (o != null && o instanceof Map) {
+      //remove this because no one else needs this and tests would fail if they are comparing responses
+      rsp.remove(rsp.size() - 1);
+      @SuppressWarnings({"rawtypes"})
+      Map invalidStates = (Map) o;
+      for (Object invalidEntries : invalidStates.entrySet()) {
+        @SuppressWarnings({"rawtypes"})
+        Map.Entry e = (Map.Entry) invalidEntries;
+        getDocCollection((String) e.getKey(), (Integer) e.getValue());
       }
+    }
+    apiFuture.complete(rsp);
+  }
 
-      int errorCode = (rootCause instanceof SolrException) ?
-          ((SolrException)rootCause).code() : SolrException.ErrorCode.UNKNOWN.code;
-
-      boolean wasCommError =
-          (rootCause instanceof ConnectException ||
-              rootCause instanceof SocketException ||
-              wasCommError(rootCause));
-
-      log.error("Request to collection {} failed due to ({}) {}, retry={} commError={} errorCode={} ",
-          inputCollections, errorCode, rootCause, retryCount, wasCommError, errorCode);
-
-      if (wasCommError
-          || (exc instanceof RouteException && (errorCode == 503)) // 404 because the core does not exist 503 service unavailable
-        //TODO there are other reasons for 404. We need to change the solr response format from HTML to structured data to know that
-      ) {
-        // it was a communication error. it is likely that
-        // the node to which the request to be sent is down . So , expire the state
-        // so that the next attempt would fetch the fresh state
-        // just re-read state for all of them, if it has not been retried
-        // in retryExpiryTime time
-        if (requestedCollections != null) {
-          for (DocCollection ext : requestedCollections) {
-            ExpiringCachedDocCollection cacheEntry = collectionStateCache.get(ext.getName());
-            if (cacheEntry == null) continue;
-            cacheEntry.maybeStale = true;
-          }
-        }
-        if (retryCount < MAX_STALE_RETRIES) {//if it is a communication error , we must try again
-          //may be, we have a stale version of the collection state
-          // and we could not get any information from the server
-          //it is probably not worth trying again and again because
-          // the state would not have been updated
-          log.info("trying request again");
-          return requestWithRetryOnStaleState(request, retryCount + 1, inputCollections, isAsyncRequest);
-        }
+  private void handleRequestException(SolrRequest<?> request,
+                                      int retryCount,
+                                      List<String> inputCollections,
+                                      List<DocCollection> requestedCollections,
+                                      boolean isAdmin,
+                                      boolean isAsyncRequest,
+                                      CompletableFuture<NamedList<Object>> apiFuture,
+                                      Throwable exc) throws SolrServerException, IOException {
+    Throwable rootCause = SolrException.getRootCause(exc);
+    // don't do retry support for admin requests
+    // or if the request doesn't have a collection specified
+    // or request is v2 api and its method is not GET
+    if (inputCollections.isEmpty() || isAdmin || (request instanceof V2Request && request.getMethod() != SolrRequest.METHOD.GET)) {
+      if (exc instanceof SolrServerException) {
+        throw (SolrServerException)exc;
+      } else if (exc instanceof IOException) {
+        throw (IOException)exc;
+      } else if (exc instanceof RuntimeException) {
+        throw (RuntimeException) exc;
       } else {
-        log.info("request was not communication error it seems");
+        throw new SolrServerException(rootCause);
       }
+    }
 
-      boolean stateWasStale = false;
-      if (retryCount < MAX_STALE_RETRIES  &&
-          requestedCollections != null    &&
-          !requestedCollections.isEmpty() &&
-          (SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE || errorCode == 404))
-      {
-        // cached state for one or more external collections was stale
-        // re-issue request using updated state
-        stateWasStale = true;
+    int errorCode = (rootCause instanceof SolrException) ?
+        ((SolrException)rootCause).code() : SolrException.ErrorCode.UNKNOWN.code;
 
-        // just re-read state for all of them, which is a little heavy handed but hopefully a rare occurrence
-        for (DocCollection ext : requestedCollections) {
-          collectionStateCache.remove(ext.getName());
-        }
-      }
+    boolean wasCommError =
+        (rootCause instanceof ConnectException ||
+            rootCause instanceof SocketException ||
+            wasCommError(rootCause));
 
-      // if we experienced a communication error, it's worth checking the state
-      // with ZK just to make sure the node we're trying to hit is still part of the collection
-      if (retryCount < MAX_STALE_RETRIES &&
-          !stateWasStale &&
-          requestedCollections != null &&
-          !requestedCollections.isEmpty() &&
-          wasCommError) {
-        for (DocCollection ext : requestedCollections) {
-          DocCollection latestStateFromZk = getDocCollection(ext.getName(), null);
-          if (latestStateFromZk.getZNodeVersion() != ext.getZNodeVersion()) {
-            // looks like we couldn't reach the server because the state was stale == retry
-            stateWasStale = true;
-            // we just pulled state from ZK, so update the cache so that the retry uses it
-            collectionStateCache.put(ext.getName(), new ExpiringCachedDocCollection(latestStateFromZk));
-          }
-        }
-      }
+    log.error("Request to collection {} failed due to ({}) {}, retry={} commError={} errorCode={} ",
+        inputCollections, errorCode, rootCause, retryCount, wasCommError, errorCode);
 
+    if (wasCommError
+        || (exc instanceof RouteException && (errorCode == 503)) // 404 because the core does not exist 503 service unavailable
+      //TODO there are other reasons for 404. We need to change the solr response format from HTML to structured data to know that
+    ) {
+      // it was a communication error. it is likely that
+      // the node to which the request to be sent is down . So , expire the state
+      // so that the next attempt would fetch the fresh state
+      // just re-read state for all of them, if it has not been retried
+      // in retryExpiryTime time
       if (requestedCollections != null) {
-        requestedCollections.clear(); // done with this
+        for (DocCollection ext : requestedCollections) {
+          ExpiringCachedDocCollection cacheEntry = collectionStateCache.get(ext.getName());
+          if (cacheEntry == null) continue;
+          cacheEntry.maybeStale = true;
+        }
       }
+      if (retryCount < MAX_STALE_RETRIES) {//if it is a communication error , we must try again
+        //may be, we have a stale version of the collection state
+        // and we could not get any information from the server
+        //it is probably not worth trying again and again because
+        // the state would not have been updated
+        log.info("trying request again");
+        requestWithRetryOnStaleState(request, retryCount + 1, inputCollections, isAsyncRequest, apiFuture);
+        return;
+      }
+    } else {
+      log.info("request was not communication error it seems");
+    }
 
-      // if the state was stale, then we retry the request once with new state pulled from Zk
-      if (stateWasStale) {
-        log.warn("Re-trying request to collection(s) {} after stale state error from server.", inputCollections);
-        rspFuture = requestWithRetryOnStaleState(request, retryCount+1, inputCollections, isAsyncRequest);
-      } else {
-        if (exc instanceof SolrException || exc instanceof SolrServerException || exc instanceof IOException) {
-          throw exc;
-        } else {
-          throw new SolrServerException(rootCause);
+    boolean stateWasStale = false;
+    if (retryCount < MAX_STALE_RETRIES  &&
+        requestedCollections != null    &&
+        !requestedCollections.isEmpty() &&
+        (SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE || errorCode == 404))
+    {
+      // cached state for one or more external collections was stale
+      // re-issue request using updated state
+      stateWasStale = true;
+
+      // just re-read state for all of them, which is a little heavy handed but hopefully a rare occurrence
+      for (DocCollection ext : requestedCollections) {
+        collectionStateCache.remove(ext.getName());
+      }
+    }
+
+    // if we experienced a communication error, it's worth checking the state
+    // with ZK just to make sure the node we're trying to hit is still part of the collection
+    if (retryCount < MAX_STALE_RETRIES &&
+        !stateWasStale &&
+        requestedCollections != null &&
+        !requestedCollections.isEmpty() &&
+        wasCommError) {
+      for (DocCollection ext : requestedCollections) {
+        DocCollection latestStateFromZk = getDocCollection(ext.getName(), null);
+        if (latestStateFromZk.getZNodeVersion() != ext.getZNodeVersion()) {
+          // looks like we couldn't reach the server because the state was stale == retry
+          stateWasStale = true;
+          // we just pulled state from ZK, so update the cache so that the retry uses it
+          collectionStateCache.put(ext.getName(), new ExpiringCachedDocCollection(latestStateFromZk));
         }
       }
     }
 
-    return rspFuture;
+    if (requestedCollections != null) {
+      requestedCollections.clear(); // done with this
+    }
+
+    // if the state was stale, then we retry the request once with new state pulled from Zk
+    if (stateWasStale) {
+      log.warn("Re-trying request to collection(s) {} after stale state error from server.", inputCollections);
+      requestWithRetryOnStaleState(request, retryCount+1, inputCollections, isAsyncRequest, apiFuture);
+    } else {
+      if (exc instanceof SolrServerException) {
+        throw (SolrServerException) exc;
+      } else if (exc instanceof IOException) {
+        throw (IOException) exc;
+      } else if (exc instanceof RuntimeException) {
+        throw (RuntimeException) exc;
+      } else {
+        throw new SolrServerException(rootCause);
+      }
+    }
   }
 
   protected CompletableFuture<NamedList<Object>> sendRequest(SolrRequest<?> request,
@@ -1320,22 +1377,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       throw new IllegalStateException("CompletableFuture was either incomplete or completed with value null");
     }
     return result;
-  }
-
-  private void processStateVersion(NamedList<Object> rsp) {
-    //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
-    Object o = rsp == null || rsp.size() == 0 ? null : rsp.get(STATE_VERSION, rsp.size() - 1);
-    if (o != null && o instanceof Map) {
-      //remove this because no one else needs this and tests would fail if they are comparing responses
-      rsp.remove(rsp.size() - 1);
-      @SuppressWarnings({"rawtypes"})
-      Map invalidStates = (Map) o;
-      for (Object invalidEntries : invalidStates.entrySet()) {
-        @SuppressWarnings({"rawtypes"})
-        Map.Entry e = (Map.Entry) invalidEntries;
-        getDocCollection((String) e.getKey(), (Integer) e.getValue());
-      }
-    }
   }
 
   /** Resolves the input collections to their possible aliased collections. Doesn't validate collection existence. */
