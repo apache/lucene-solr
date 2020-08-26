@@ -64,7 +64,7 @@ public interface PropertyKeyFactory {
    *   <li>And possibly more complex types (maps?) in the future...</li>
    * </ul>
    *
-   * <p>TODO: implementation node (to remove) SolrInfoBean.Group can be inferred from metricSource representing replica, shard, collection.
+   * <p>TODO: implementation note (to remove) SolrInfoBean.Group can be inferred from metricSource representing replica, shard, collection.
    *
    * @param metricSource The registry of the metric. For example a specific {@link Replica}.
    *                     <p>This method <b>does not</b> accept

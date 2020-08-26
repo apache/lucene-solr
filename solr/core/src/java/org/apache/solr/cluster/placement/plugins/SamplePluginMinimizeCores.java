@@ -33,8 +33,8 @@ import org.apache.solr.cluster.placement.CoresCountPropertyValue;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.cluster.placement.PluginConfig;
 import org.apache.solr.cluster.placement.PropertyKey;
 import org.apache.solr.cluster.placement.PropertyKeyFactory;
 import org.apache.solr.cluster.placement.PropertyValue;
@@ -54,15 +54,23 @@ import org.apache.solr.common.util.SuppressForbidden;
  */
 public class SamplePluginMinimizeCores implements PlacementPlugin {
 
-  private final PluginConfig config;
+  private final PlacementPluginConfig config;
 
-  private SamplePluginMinimizeCores(PluginConfig config) {
+  private SamplePluginMinimizeCores(PlacementPluginConfig config) {
     this.config = config;
   }
 
   static public class Factory implements PlacementPluginFactory {
+
+    /**
+     * Empty public constructor is used to instantiate this factory based on configuration in solr.xml, element
+     * {@code <placementPluginFactory>} in element {@code <solrcloud>}.
+     */
+    public Factory() {
+    }
+
     @Override
-    public PlacementPlugin createPluginInstance(PluginConfig config) {
+    public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
       return new SamplePluginMinimizeCores(config);
     }
   }
@@ -93,6 +101,11 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
       final PropertyKey coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
       Map<PropertyKey, PropertyValue> propMap = propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey));
       PropertyValue returnedValue = propMap.get(coresCountPropertyKey);
+
+      // TODO: property fetching not yet implemented. Placement computation fails if we don't cheat here. DO NOT MERGE.
+      nodesByCores.put(1, node);
+      if (true) continue;
+
       if (returnedValue == null) {
         throw new PlacementException("Can't get number of cores in " + node);
       }

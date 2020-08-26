@@ -47,11 +47,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public static final String SHARDS = "shards";
   public static final String RULE = "rule";
   public static final String SNITCH = "snitch";
-  /**
-   * When this parameter is present, a placement plugin is used to compute placement for the collection.
-   * TODO: allow specific plugin per collection? Use single plugin class configuration in properties?
-   */
-  public static final String PLACEMENT = "placement";
 
   private final int znodeVersion;
 

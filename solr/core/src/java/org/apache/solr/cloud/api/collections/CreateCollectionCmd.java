@@ -379,8 +379,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           .assignPullReplicas(numPullReplicas)
           .onNodes(nodeList)
           .build();
-      Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(cloudManager);
-      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, cloudConfig, docCollection);
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(clusterState, cloudConfig, docCollection);
       replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
     }
     return replicaPositions;

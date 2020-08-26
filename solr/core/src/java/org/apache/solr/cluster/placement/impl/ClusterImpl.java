@@ -25,10 +25,16 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cluster.placement.Cluster;
 import org.apache.solr.cluster.placement.Node;
+import org.apache.solr.cluster.placement.PropertyValueSource;
 import org.apache.solr.cluster.placement.SolrCollection;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 
+/**
+ * This class implements {@link PropertyValueSource} and as such can (and likely will) end up as a key in a Map.
+ * Leaving the default implementation of {@link #equals} and {@link #hashCode} to handle things. This will not be
+ * an issue for placement plugins that will only be handed a single instance of {@link Cluster}.
+ */
 class ClusterImpl implements Cluster {
   private final Set<Node> liveNodes;
   private final ClusterState clusterState;
@@ -59,6 +65,4 @@ class ClusterImpl implements Cluster {
   public Set<String> getAllCollectionNames() {
     return clusterState.getCollectionsMap().values().stream().map(DocCollection::getName).collect(Collectors.toSet());
   }
-
-  // TODO implement hashCode() and equals() (just in case we end up supporting multiple Cluster instances at some point)
 }

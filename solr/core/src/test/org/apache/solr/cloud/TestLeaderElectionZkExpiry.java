@@ -52,7 +52,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
       CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984, "solr")
           .setLeaderConflictResolveWait(180000)
           .setLeaderVoteWait(180000)
-          .build();
+          .build(null);
       final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, () -> Collections.emptyList());
       try {
         Thread killer = new Thread() {

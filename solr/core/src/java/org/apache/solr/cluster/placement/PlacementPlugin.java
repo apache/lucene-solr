@@ -23,6 +23,9 @@ package org.apache.solr.cluster.placement;
  * API call).
  *
  * <p>Instances of classes implementing this interface are created by {@link PlacementPluginFactory}
+ *
+ * <p>Implementations of this interface <b>must</b> be reentrant. {@link #computePlacement} <b>will</b> be called concurrently
+ * from many threads.
  */
 public interface PlacementPlugin {
   /**

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import org.apache.solr.cluster.placement.impl.PlacementPluginFactoryFacade;
 import org.apache.solr.common.SolrException;
 
 public class CloudConfig {
@@ -48,10 +49,13 @@ public class CloudConfig {
 
   private final String pkiHandlerPublicKeyPath;
 
+  /** When this instance is {@code null} it means placement plugins are not configured for the cluster */
+  private final PlacementPluginFactoryFacade placementPluginFactoryFacade;
+
   CloudConfig(String zkHost, int zkClientTimeout, int hostPort, String hostName, String hostContext, boolean useGenericCoreNames,
               int leaderVoteWait, int leaderConflictResolveWait, String zkCredentialsProviderClass, String zkACLProviderClass,
               int createCollectionWaitTimeTillActive, boolean createCollectionCheckLeaderActive, String pkiHandlerPrivateKeyPath,
-              String pkiHandlerPublicKeyPath) {
+              String pkiHandlerPublicKeyPath, PluginInfo placementPluginFactoryConfig, SolrResourceLoader loader) {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
@@ -71,6 +75,10 @@ public class CloudConfig {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "'hostPort' must be configured to run SolrCloud");
     if (this.hostContext == null)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "'hostContext' must be configured to run SolrCloud");
+
+    // The placement plugin factory configuration is being resolved here in CloudConfig when most other configs are
+    // resolved (loading required resources and validating config makes sense) in CoreContainer for some reason.
+    placementPluginFactoryFacade = PlacementPluginFactoryFacade.newInstance(placementPluginFactoryConfig, loader);
   }
 
   public String getZkHost() {
@@ -129,6 +137,11 @@ public class CloudConfig {
     return pkiHandlerPublicKeyPath;
   }
 
+  /** When returned value is {@code null} it means placement plugins are not configured for the cluster */
+  public PlacementPluginFactoryFacade getPlacementPluginFactoryFacade() {
+    return placementPluginFactoryFacade;
+  }
+
   public static class CloudConfigBuilder {
 
     private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 45000;
@@ -151,6 +164,7 @@ public class CloudConfig {
     private boolean createCollectionCheckLeaderActive = DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE;
     private String pkiHandlerPrivateKeyPath;
     private String pkiHandlerPublicKeyPath;
+    private PluginInfo placementPluginFactoryConfig;
 
     public CloudConfigBuilder(String hostName, int hostPort) {
       this(hostName, hostPort, null);
@@ -217,10 +231,23 @@ public class CloudConfig {
       return this;
     }
 
-    public CloudConfig build() {
+    public CloudConfigBuilder setPlacementPluginFactoryConfig(PluginInfo placementPluginFactoryConfig) {
+      this.placementPluginFactoryConfig = placementPluginFactoryConfig;
+      return this;
+    }
+
+    public String getHostName() {
+      return this.hostName;
+    }
+
+    /**
+     * @param loader Must not be {@code null} if {@link #setPlacementPluginFactoryConfig} got called with a non null
+     *              {@link PluginInfo} because then it would not be possible to load the configured class.
+     */
+    public CloudConfig build(SolrResourceLoader loader) {
       return new CloudConfig(zkHost, zkClientTimeout, hostPort, hostName, hostContext, useGenericCoreNames, leaderVoteWait,
           leaderConflictResolveWait, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
-          createCollectionCheckLeaderActive, pkiHandlerPrivateKeyPath, pkiHandlerPublicKeyPath);
+          createCollectionCheckLeaderActive, pkiHandlerPrivateKeyPath, pkiHandlerPublicKeyPath, placementPluginFactoryConfig, loader);
     }
   }
 }

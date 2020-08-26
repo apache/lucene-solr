@@ -289,7 +289,7 @@ public class NodeConfig {
     private String infoHandlerClass = DEFAULT_INFOHANDLERCLASS;
     private String configSetsHandlerClass = DEFAULT_CONFIGSETSHANDLERCLASS;
     private LogWatcherConfig logWatcherConfig = new LogWatcherConfig(true, null, null, 50);
-    private CloudConfig cloudConfig;
+    private CloudConfig.CloudConfigBuilder cloudConfigBuilder;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
     @Deprecated
@@ -406,8 +406,8 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setCloudConfig(CloudConfig cloudConfig) {
-      this.cloudConfig = cloudConfig;
+    public NodeConfigBuilder setCloudConfigBuilder(CloudConfig.CloudConfigBuilder cloudConfigBuilder) {
+      this.cloudConfigBuilder = cloudConfigBuilder;
       return this;
     }
 
@@ -481,7 +481,7 @@ public class NodeConfig {
       return new NodeConfig(nodeName, coreRootDirectory, solrDataHome, booleanQueryMaxClauseCount,
                             configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
-                            logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
+                            logWatcherConfig, cloudConfigBuilder.build(loader), coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
                             solrHome, loader, solrProperties,
                             backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, fromZookeeper, allowPaths);
     }

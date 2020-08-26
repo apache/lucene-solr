@@ -29,7 +29,7 @@ import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.cluster.placement.PluginConfig;
+import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PropertyKeyFactory;
 import org.apache.solr.cluster.placement.PropertyValueFetcher;
 import org.apache.solr.cluster.placement.Replica;
@@ -45,15 +45,15 @@ import org.apache.solr.cluster.placement.PlacementPlanFactory;
  */
 public class SamplePluginRandomPlacement implements PlacementPlugin {
 
-  private final PluginConfig config;
+  private final PlacementPluginConfig config;
 
-  private SamplePluginRandomPlacement(PluginConfig config) {
+  private SamplePluginRandomPlacement(PlacementPluginConfig config) {
     this.config = config;
   }
 
   static public class Factory implements PlacementPluginFactory {
     @Override
-    public PlacementPlugin createPluginInstance(PluginConfig config) {
+    public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
       return new SamplePluginRandomPlacement(config);
     }
   }

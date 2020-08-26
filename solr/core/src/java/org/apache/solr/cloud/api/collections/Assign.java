@@ -45,7 +45,7 @@ import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
-import org.apache.solr.cluster.placement.plugins.SamplePluginMinimizeCores;
+import org.apache.solr.cluster.placement.impl.PlacementPluginFactoryFacade;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -300,8 +300,7 @@ public class Assign {
         .assignPullReplicas(pullReplicas)
         .onNodes(createNodeList)
         .build();
-    AssignStrategyFactory assignStrategyFactory = new AssignStrategyFactory(cloudManager);
-    AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, cloudConfig, coll);
+    AssignStrategy assignStrategy = createAssignStrategy(clusterState, cloudConfig, coll);
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
@@ -507,7 +506,7 @@ public class Assign {
     }
 
     @Override
-    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
+    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException {
       if (assignRequest.numTlogReplicas + assignRequest.numPullReplicas != 0) {
         throw new Assign.AssignmentException(
             Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules or cluster policies");
@@ -546,50 +545,29 @@ public class Assign {
     }
   }
 
-  public static class AssignStrategyFactory {
-    public SolrCloudManager solrCloudManager;
+  /**
+   * Creates the appropriate instance of {@link AssignStrategy} based on how the cluster or individual collections are
+   * configured.
+   */
+  public static AssignStrategy createAssignStrategy(ClusterState clusterState, CloudConfig cloudConfig, DocCollection collection) {
+    PlacementPluginFactoryFacade placementPluginFactoryFacade = cloudConfig.getPlacementPluginFactoryFacade();
 
-    public AssignStrategyFactory(SolrCloudManager solrCloudManager) {
-      this.solrCloudManager = solrCloudManager;
-    }
-
-    public AssignStrategy create(ClusterState clusterState, CloudConfig cloudConfig, DocCollection collection) throws IOException, InterruptedException {
+    if (placementPluginFactoryFacade != null) {
+      // Placement plugin
+      return new PlacementPluginAssignStrategy(collection, placementPluginFactoryFacade.getPlacementPluginInstance());
+    } else {
       @SuppressWarnings({"unchecked", "rawtypes"})
       List<Map> ruleMaps = (List<Map>) collection.get(DocCollection.RULE);
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      String placementProp = (String) collection.get(DocCollection.PLACEMENT);
 
-
-      final Placement placement;
       if (ruleMaps != null && !ruleMaps.isEmpty()) {
-        placement = Placement.RULES;
-      } else if (placementProp != null) {
-        placement = Placement.PLUGIN;
+        List<Rule> rules = new ArrayList<>();
+        for (Object map : ruleMaps) rules.add(new Rule((Map) map));
+        @SuppressWarnings({"rawtypes"})
+        List snitches = (List) collection.get(SNITCH);
+        return new RulesBasedAssignStrategy(rules, snitches, clusterState);
       } else {
-        placement = Placement.LEGACY;
+        return new LegacyAssignStrategy();
       }
-      
-      switch (placement) {
-        case LEGACY:
-          return new LegacyAssignStrategy();
-        case RULES:
-          List<Rule> rules = new ArrayList<>();
-          for (Object map : ruleMaps) rules.add(new Rule((Map) map));
-          @SuppressWarnings({"rawtypes"})
-          List snitches = (List) collection.get(SNITCH);
-          return new RulesBasedAssignStrategy(rules, snitches, clusterState);
-        case PLUGIN:
-          // TODO need to decide which plugin class to use. Factory name (as well as plugin config) will be in Solr config file, will be used for all collections.
-          // TODO hardcoding a sample plugin for now. DO NOT MERGE this as is.
-          // TODO plugin factory allows config to change over time, this might not initially be supported from the Solr side (ans that's ok)
-          return new PlacementPluginAssignStrategy(collection, (new SamplePluginMinimizeCores.Factory()).createPluginInstance(null));
-        default:
-          throw new Assign.AssignmentException("Unknown placement type: " + placement);
-      }
-    }
-
-    private enum Placement {
-      LEGACY, RULES, PLUGIN;
     }
   }
 }

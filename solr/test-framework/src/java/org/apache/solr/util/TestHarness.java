@@ -174,13 +174,12 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public static NodeConfig buildTestNodeConfig(Path solrHome) {
-    CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
+    CloudConfig.CloudConfigBuilder cloudConfigBuilder = new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
                                                                  Integer.getInteger("hostPort", 8983),
                                                                  System.getProperty("hostContext", ""))
-        .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
-        .build();
+        .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000));
     if (System.getProperty("zkHost") == null)
-      cloudConfig = null;
+      cloudConfigBuilder = null;
     UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(
         HttpClientUtil.DEFAULT_MAXCONNECTIONS,
         HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
@@ -200,7 +199,7 @@ public class TestHarness extends BaseTestHarness {
 
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
-        .setCloudConfig(cloudConfig)
+        .setCloudConfigBuilder(cloudConfigBuilder)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)
         .setMetricsConfig(metricsConfig)
         .build();

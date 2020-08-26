@@ -19,8 +19,10 @@ package org.apache.solr.cluster.placement.impl;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 import com.google.common.collect.Maps;
+import org.apache.solr.cluster.placement.PropertyValueSource;
 import org.apache.solr.cluster.placement.Replica;
 import org.apache.solr.cluster.placement.Shard;
 import org.apache.solr.cluster.placement.SolrCollection;
@@ -95,5 +97,22 @@ class ShardImpl implements Shard {
     return shardState;
   }
 
-  // TODO need to implement hashCode() and equals()
+  /**
+   * This class implements {@link PropertyValueSource} and will end up as a key in a Map for fetching {@link org.apache.solr.cluster.placement.PropertyKey}'s
+   */
+  public boolean equals(Object obj) {
+    if (obj == null) { return false; }
+    if (obj == this) { return true; }
+    if (obj.getClass() != getClass()) { return false; }
+    ShardImpl other = (ShardImpl) obj;
+    return Objects.equals(this.shardName, other.shardName)
+        && Objects.equals(this.collection, other.collection)
+        && Objects.equals(this.shardState, other.shardState)
+        && Objects.equals(this.replicas, other.replicas)
+        && Objects.equals(this.leader, other.leader);
+  }
+
+  public int hashCode() {
+    return Objects.hash(shardName, collection, shardState);
+  }
 }

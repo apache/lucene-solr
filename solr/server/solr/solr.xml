@@ -46,6 +46,18 @@
     <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
     <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
 
+    <!--
+      TODO: Do not merge this file with this configuration not commented out!
+      If the section below is not commented out of this file, replica placement in SolrCloud for all collections is done
+      by the placement plugin returned by the configured factory.
+      The configured factory implementing PlacementPluginFactory will be instantiated by its no arg constructor.
+      Configuration values in subelements are passed to the factory method createPluginInstance() using PlacementPluginConfig.
+      Supported types are: bool, double, float, int, long and str.
+    -->
+    <placementPluginFactory class="org.apache.solr.cluster.placement.plugins.SamplePluginMinimizeCores$Factory">
+      <int name="maxReplicasPerNode">${maxReplicasPerNode:1}</int>
+    </placementPluginFactory>
+
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"

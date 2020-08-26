@@ -75,19 +75,31 @@ public class SolrXmlConfig {
 
     checkForIllegalConfig(config);
 
-    CloudConfig cloudConfig = null;
+    CloudConfig.CloudConfigBuilder cloudConfigBuilder = null;
     UpdateShardHandlerConfig deprecatedUpdateConfig = null;
 
     if (config.getNodeList("solr/solrcloud", false).getLength() > 0) {
       NamedList<Object> cloudSection = readNodeListAsNamedList(config, "solr/solrcloud/*[@name]", "<solrcloud>");
       deprecatedUpdateConfig = loadUpdateConfig(cloudSection, false);
-      cloudConfig = fillSolrCloudSection(cloudSection);
+
+      // Remove a node that is going to be processed differently so it doesn't appear as an unknown config param
+      if (cloudSection != null) {
+        cloudSection.remove("placementPluginFactory");
+      }
+
+      cloudConfigBuilder = fillSolrCloudSection(cloudSection);
+
+      // Process placementPluginFactory element as plugin definition having configuration subnodes
+      Node node = config.getNode("/solr/solrcloud/placementPluginFactory", false);
+      if (node != null) {
+        cloudConfigBuilder.setPlacementPluginFactoryConfig(new PluginInfo(node, "solrcloud/placementPluginFactory", false, true));
+      }
     }
 
     NamedList<Object> entries = readNodeListAsNamedList(config, "solr/*[@name]", "<solr>");
     String nodeName = (String) entries.remove("nodeName");
-    if (Strings.isNullOrEmpty(nodeName) && cloudConfig != null)
-      nodeName = cloudConfig.getHost();
+    if (Strings.isNullOrEmpty(nodeName) && cloudConfigBuilder != null)
+      nodeName = cloudConfigBuilder.getHostName();
 
     UpdateShardHandlerConfig updateConfig;
     if (deprecatedUpdateConfig == null) {
@@ -109,8 +121,8 @@ public class SolrXmlConfig {
     configBuilder.setTracerConfig(getTracerPluginInfo(config));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(config, "solr/logging/*[@name]", "solr/logging/watcher/*[@name]"));
     configBuilder.setSolrProperties(loadProperties(config));
-    if (cloudConfig != null)
-      configBuilder.setCloudConfig(cloudConfig);
+    if (cloudConfigBuilder != null)
+      configBuilder.setCloudConfigBuilder(cloudConfigBuilder);
     configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
     configBuilder.setMetricsConfig(getMetricsConfig(config));
     configBuilder.setFromZookeeper(fromZookeeper);
@@ -390,7 +402,13 @@ public class SolrXmlConfig {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, section + " section missing required entry '" + key + "'");
   }
 
-  private static CloudConfig fillSolrCloudSection(NamedList<Object> nl) {
+
+  /**
+   * Creates a separate builder for the {@code <solrcloud>} section of {@code solr.xml}. The resulting {@link CloudConfig}
+   * instance accessible through the {@link NodeConfig} instance will be passed to SolrCloud code so code can access
+   * specific config params where needed.
+   */
+  private static CloudConfig.CloudConfigBuilder fillSolrCloudSection(NamedList<Object> nl) {
 
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
     int hostPort = parseInt("hostPort", required("solrcloud", "hostPort", removeValue(nl, "hostPort")));
@@ -442,7 +460,7 @@ public class SolrXmlConfig {
       }
     }
 
-    return builder.build();
+    return builder;
   }
 
   private static LogWatcherConfig loadLogWatcherConfig(XmlConfigFile config, String loggingPath, String watcherPath) {

@@ -17,11 +17,15 @@
 
 package org.apache.solr.cluster.placement;
 
+/**
+ * Factory implemented by client code and configured in {@code solr.xml} allowing the creation of instances of
+ * {@link PlacementPlugin} to be used for replica placement computation.
+ */
 public interface PlacementPluginFactory {
   /**
    * Returns an instance of the plugin that will be repeatedly (and concurrently) be called to compute placement. Multiple
    * instances of a plugin can be used in parallel (for example if configuration has to change, but plugin instances with
    * the previous configuration are still being used).
    */
-  PlacementPlugin createPluginInstance(PluginConfig config);
+  PlacementPlugin createPluginInstance(PlacementPluginConfig config);
 }

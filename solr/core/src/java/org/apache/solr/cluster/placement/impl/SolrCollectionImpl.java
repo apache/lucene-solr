@@ -18,8 +18,10 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
+import org.apache.solr.cluster.placement.PropertyValueSource;
 import org.apache.solr.cluster.placement.Shard;
 import org.apache.solr.cluster.placement.SolrCollection;
 import org.apache.solr.common.cloud.ClusterState;
@@ -60,5 +62,21 @@ class SolrCollectionImpl implements SolrCollection {
   @Override
   public String getCustomProperty(String customPropertyName) {
     return docCollection.getStr(customPropertyName);
+  }
+
+  /**
+   * This class implements {@link PropertyValueSource} and will end up as a key in a Map for fetching {@link org.apache.solr.cluster.placement.PropertyKey}'s
+   */
+  public boolean equals(Object obj) {
+    if (obj == null) { return false; }
+    if (obj == this) { return true; }
+    if (obj.getClass() != getClass()) { return false; }
+    SolrCollectionImpl other = (SolrCollectionImpl) obj;
+    return Objects.equals(this.collectionName, other.collectionName)
+        && Objects.equals(this.shards, other.shards);
+  }
+
+  public int hashCode() {
+    return Objects.hashCode(collectionName);
   }
 }
