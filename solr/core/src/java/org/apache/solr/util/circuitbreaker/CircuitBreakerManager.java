@@ -20,6 +20,7 @@ package org.apache.solr.util.circuitbreaker;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.core.SolrConfig;
 
 /**
@@ -107,9 +108,7 @@ public class CircuitBreakerManager {
     StringBuilder sb = new StringBuilder();
 
     for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-      sb.append(circuitBreaker.getClass().getName());
-      sb.append(" ");
-      sb.append(circuitBreaker.getDebugInfo());
+      sb.append(circuitBreaker.getErrorMessage());
       sb.append("\n");
     }
 
@@ -127,8 +126,16 @@ public class CircuitBreakerManager {
 
     // Install the default circuit breakers
     CircuitBreaker memoryCircuitBreaker = new MemoryCircuitBreaker(solrConfig);
+    CircuitBreaker cpuCircuitBreaker = new CPUCircuitBreaker(solrConfig);
+
     circuitBreakerManager.register(memoryCircuitBreaker);
+    circuitBreakerManager.register(cpuCircuitBreaker);
 
     return circuitBreakerManager;
+  }
+
+  @VisibleForTesting
+  public List<CircuitBreaker> getRegisteredCircuitBreakers() {
+    return circuitBreakerList;
   }
 }

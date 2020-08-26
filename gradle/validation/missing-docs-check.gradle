@@ -89,7 +89,7 @@ class CheckMissingDocsTask extends DefaultTask {
   def checkMissingJavadocs(File dir, String level) {
     def output = new ByteArrayOutputStream()
     def result = project.exec {
-      executable "python3"
+      executable project.externalToolExecutables["python3"]
       ignoreExitValue = true
       standardOutput = output
       errorOutput = output

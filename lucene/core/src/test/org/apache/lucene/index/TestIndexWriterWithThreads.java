@@ -59,7 +59,6 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     private final CyclicBarrier syncStart;
     boolean diskFull;
     Throwable error;
-    AlreadyClosedException ace;
     IndexWriter writer;
     boolean noErrors;
     volatile int addCount;

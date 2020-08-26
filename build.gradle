@@ -21,15 +21,29 @@ import java.time.format.DateTimeFormatter
 plugins {
   id "base"
   id "com.palantir.consistent-versions" version "1.14.0"
-  id 'de.thetaphi.forbiddenapis' version '3.0.1' apply false
   id "org.owasp.dependencycheck" version "5.3.0"
+  id 'de.thetaphi.forbiddenapis' version '3.0.1' apply false
   id "de.undercouch.download" version "4.0.2" apply false
 }
 
-// Project version.
-version = "9.0.0-SNAPSHOT"
+apply from: file('gradle/defaults.gradle')
 
 // General metadata.
+
+// Calculate project version:
+version = {
+  // Release manager: update base version here after release:
+  String baseVersion = '9.0.0'
+
+  // On a release explicitly set release version in one go:
+  //  -Dversion.release=x.y.z
+  
+  // Jenkins can just set just a suffix, overriding SNAPSHOT, e.g. using build id:
+  //  -Dversion.suffix=jenkins123
+  
+  String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
+  return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
+}()
 description = 'Grandparent project for Apache Lucene Core and Apache Solr'
 
 // Propagate version and derived properties across projects.
@@ -63,6 +77,8 @@ ext {
   buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
   buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
 
+  minJavaVersion = JavaVersion.VERSION_11
+
   // Declare script dependency versions outside of palantir's
   // version unification control. These are not our main dependencies.
   scriptDepVersions = [
@@ -72,6 +88,13 @@ ext {
       "jflex": "1.7.0",
       "jgit": "5.3.0.201903130848-r",
       "flexmark": "0.61.24",
+  ]
+  
+  // read some external tool locations from system props
+  externalToolExecutables = [
+      "python3": propertyOrDefault('python3.exe', 'python3'),
+      "python2": propertyOrDefault('python2.exe', 'python2'),
+      "perl": propertyOrDefault('perl.exe', 'perl'),
   ]
 }
 
@@ -89,7 +112,6 @@ apply from: file('gradle/ant-compat/folder-layout.gradle')
 
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
-apply from: file('gradle/defaults.gradle')
 apply from: file('gradle/defaults-java.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
@@ -102,6 +124,7 @@ apply from: file('gradle/maven/defaults-maven.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')
+apply from: file('gradle/ide/eclipse.gradle')
 
 // Validation tasks
 apply from: file('gradle/validation/precommit.gradle')
@@ -132,6 +155,7 @@ apply from: file('gradle/testing/per-project-summary.gradle')
 apply from: file('gradle/testing/slowest-tests-at-end.gradle')
 apply from: file('gradle/testing/failed-tests-at-end.gradle')
 apply from: file('gradle/testing/profiling.gradle')
+apply from: file('gradle/testing/beasting.gradle')
 apply from: file('gradle/help.gradle')
 
 // Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
@@ -152,3 +176,4 @@ apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 
 apply from: file('gradle/hacks/findbugs.gradle')
+apply from: file('gradle/hacks/gradle.gradle')
