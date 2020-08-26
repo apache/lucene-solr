@@ -28,7 +28,8 @@ ENV SOLR_USER="solr" \
     SOLR_HOME=/var/solr/data \
     SOLR_PID_DIR=/var/solr \
     SOLR_LOGS_DIR=/var/solr/logs \
-    LOG4J_PROPS=/var/solr/log4j2.xml
+    LOG4J_PROPS=/var/solr/log4j2.xml \
+    SOLR_JETTY_HOST="0.0.0.0"
 
 RUN set -ex; \
   groupadd -r --gid "$SOLR_GID" "$SOLR_GROUP"; \

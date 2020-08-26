@@ -40,7 +40,13 @@ assemble.dependsOn tasks.docker
 tasks.docker.dependsOn(project(':solr:docker:package').tasks.docker)
 
 task test(type:Exec) {
-  commandLine './tests/test.sh', "${version}"
+  def tests = []
+  def sourceDir = "tests/cases"
+  file(sourceDir).eachFile  { file ->
+    exec {
+      commandLine "bash","$file/test.sh", "apache/solr:$version"
+    }
+  }
 }
 
 //testing.dependsOn dockerIntegrationTests
