@@ -25,15 +25,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import junit.framework.Assert;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Test SolrPing in Solrj
  */
-@Ignore // nocommit flakey
 public class SolrPingTest extends EmbeddedSolrServerTestBase {
   
   @BeforeClass
@@ -65,7 +63,7 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     ping.process(getSolrClient());
     ping.removeAction();
     rsp = ping.process(getSolrClient());
-    Assert.assertNotNull(rsp);
+    assertNotNull(rsp);
   }
   
   @Test(expected = SolrException.class)
@@ -81,6 +79,6 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     ping.setActionPing();
     rsp = ping.process(getSolrClient());
     // the above line should fail with a 503 SolrException.
-    Assert.assertNotNull(rsp);
+    assertNotNull(rsp);
   }
 }
