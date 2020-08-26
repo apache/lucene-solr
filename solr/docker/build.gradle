@@ -39,12 +39,14 @@ assemble.dependsOn tasks.docker
 // In order to create the solr docker image, the solr package image must be created first.
 tasks.docker.dependsOn(project(':solr:docker:package').tasks.docker)
 
-task test(type:Exec) {
-  def tests = []
-  def sourceDir = "tests/cases"
-  file(sourceDir).eachFile  { file ->
-    exec {
-      commandLine "bash","$file/test.sh", "apache/solr:$version"
+def ignoredTests = ['empty-varsolr-dir-ramdomuser-rootgroup', 'empty-varsolr-dir-user', 'empty-varsolr-dir-solr', 'initdb', 'user_volume', 'test_log4j'].toSet()
+task test() {
+  def sourceDir = file("tests/cases")
+  sourceDir.eachFile  { file ->
+    if (!ignoredTests.contains(file.getName())) {
+      exec {
+        commandLine "bash","$file/test.sh", "apache/solr:$version"
+      }
     }
   }
 }
