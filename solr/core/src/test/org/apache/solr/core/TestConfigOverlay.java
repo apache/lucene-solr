@@ -46,6 +46,11 @@ public class TestConfigOverlay extends SolrTestCase {
     assertTrue(isEditableProp("query.queryResultMaxDocsCached", false, null));
     assertTrue(isEditableProp("query.enableLazyFieldLoading", false, null));
     assertTrue(isEditableProp("query.boolTofilterOptimizer", false, null));
+    assertTrue(isEditableProp("query.circuitBreakers.enabled", false, null));
+    assertTrue(isEditableProp("query.circuitBreakers.memBreaker.enabled", false, null));
+    assertTrue(isEditableProp("query.circuitBreakers.memBreaker.threshold", false, null));
+    assertTrue(isEditableProp("query.circuitBreakers.cpuBreaker.enabled", false, null));
+    assertTrue(isEditableProp("query.circuitBreakers.cpuBreaker.threshold", false, null));
     assertTrue(isEditableProp("jmx.agentId", false, null));
     assertTrue(isEditableProp("jmx.serviceUrl", false, null));
     assertTrue(isEditableProp("jmx.rootName", false, null));
@@ -65,6 +70,7 @@ public class TestConfigOverlay extends SolrTestCase {
   }
 
   public void testSetProperty(){
+    @SuppressWarnings({"unchecked"})
     ConfigOverlay overlay = new ConfigOverlay(Collections.EMPTY_MAP,0);
     overlay = overlay.setProperty("query.filterCache.initialSize",100);
     assertEquals(100, overlay.getXPathProperty("query/filterCache/@initialSize"));

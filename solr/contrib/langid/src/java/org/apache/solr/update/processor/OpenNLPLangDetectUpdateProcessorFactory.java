@@ -61,7 +61,7 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
   private SolrResourceLoader solrResourceLoader;
 
   @Override
-  public void init( NamedList args )
+  public void init( @SuppressWarnings({"rawtypes"})NamedList args )
   {
     if (args != null) {
       Object o;

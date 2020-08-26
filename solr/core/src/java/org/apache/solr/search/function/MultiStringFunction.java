@@ -60,7 +60,8 @@ public abstract class MultiStringFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  @SuppressWarnings({"unchecked"})
+  public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues[] valsArr = new FunctionValues[sources.length];
     for (int i=0; i<sources.length; i++) {
       valsArr[i] = sources[i].getValues(context, readerContext);

@@ -20,6 +20,7 @@ import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
+import java.util.Collections;
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -29,6 +30,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.search.CacheConfig;
 import org.apache.solr.update.SolrIndexConfig;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -114,25 +116,45 @@ public class TestConfig extends SolrTestCaseJ4 {
    assertNull(sc.filterCacheConfig);
    assertNull(sc.queryResultCacheConfig);
    assertNull(sc.documentCacheConfig);
+   //
+   assertNotNull(sc.userCacheConfigs);
+   assertEquals(Collections.<String, CacheConfig>emptyMap(), sc.userCacheConfigs);
    
-   // enable all the caches via system properties and verify 
+   // enable all the core caches (and one user cache) via system properties and verify 
    System.setProperty("filterCache.enabled", "true");
    System.setProperty("queryResultCache.enabled", "true");
    System.setProperty("documentCache.enabled", "true");
+   System.setProperty("user_definied_cache_XXX.enabled","true");
+   // user_definied_cache_ZZZ.enabled defaults to false in config
+   
    sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-cache-enable-disable.xml");
    assertNotNull(sc.filterCacheConfig);
    assertNotNull(sc.queryResultCacheConfig);
    assertNotNull(sc.documentCacheConfig);
+   //
+   assertNotNull(sc.userCacheConfigs);
+   assertEquals(1, sc.userCacheConfigs.size());
+   assertNotNull(sc.userCacheConfigs.get("user_definied_cache_XXX"));
    
-   // disable all the caches via system properties and verify
+   // disable all the core caches (and enable both user caches) via system properties and verify
    System.setProperty("filterCache.enabled", "false");
    System.setProperty("queryResultCache.enabled", "false");
    System.setProperty("documentCache.enabled", "false");
+   System.setProperty("user_definied_cache_XXX.enabled","true");
+   System.setProperty("user_definied_cache_ZZZ.enabled","true");
+
    sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-cache-enable-disable.xml");
    assertNull(sc.filterCacheConfig);
    assertNull(sc.queryResultCacheConfig);
    assertNull(sc.documentCacheConfig);
+   //
+   assertNotNull(sc.userCacheConfigs);
+   assertEquals(2, sc.userCacheConfigs.size());
+   assertNotNull(sc.userCacheConfigs.get("user_definied_cache_XXX"));
+   assertNotNull(sc.userCacheConfigs.get("user_definied_cache_ZZZ"));
    
+   System.clearProperty("user_definied_cache_XXX.enabled");
+   System.clearProperty("user_definied_cache_ZZZ.enabled");
    System.clearProperty("filterCache.enabled");
    System.clearProperty("queryResultCache.enabled");
    System.clearProperty("documentCache.enabled");
@@ -161,6 +183,8 @@ public class TestConfig extends SolrTestCaseJ4 {
     ++numDefaultsTested; assertEquals("default infoStream", InfoStream.NO_OUTPUT, sic.infoStream);
 
     ++numDefaultsTested; assertNotNull("default metrics", sic.metricsInfo);
+
+    ++numDefaultsTested; assertEquals("default maxCommitMergeWaitTime", -1, sic.maxCommitMergeWaitMillis);
 
     ++numDefaultsTested; ++numNullDefaults;
     assertNull("default mergePolicyFactoryInfo", sic.mergePolicyFactoryInfo);

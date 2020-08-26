@@ -287,9 +287,11 @@ public class TestGrouping extends LuceneTestCase {
 
   private Collection<SearchGroup<BytesRef>> getSearchGroups(FirstPassGroupingCollector<?> c, int groupOffset) throws IOException {
     if (TermGroupSelector.class.isAssignableFrom(c.getGroupSelector().getClass())) {
+      @SuppressWarnings("unchecked")
       FirstPassGroupingCollector<BytesRef> collector = (FirstPassGroupingCollector<BytesRef>) c;
       return collector.getTopGroups(groupOffset);
     } else if (ValueSourceGroupSelector.class.isAssignableFrom(c.getGroupSelector().getClass())) {
+      @SuppressWarnings("unchecked")
       FirstPassGroupingCollector<MutableValue> collector = (FirstPassGroupingCollector<MutableValue>) c;
       Collection<SearchGroup<MutableValue>> mutableValueGroups = collector.getTopGroups(groupOffset);
       if (mutableValueGroups == null) {

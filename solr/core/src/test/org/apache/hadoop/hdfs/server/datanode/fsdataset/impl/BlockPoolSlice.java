@@ -418,7 +418,7 @@ public class BlockPoolSlice {
           try {
             fileIoProvider.mkdirsWithExistsCheck(volume, targetDir);
           } catch(IOException ioe) {
-            LOG.warn("Failed to mkdirs " + targetDir);
+            LOG.warn("Failed to mkdirs {}", targetDir);
             continue;
           }
 
@@ -426,8 +426,7 @@ public class BlockPoolSlice {
           try {
             fileIoProvider.rename(volume, metaFile, targetMetaFile);
           } catch (IOException e) {
-            LOG.warn("Failed to move meta file from "
-                + metaFile + " to " + targetMetaFile, e);
+            LOG.warn("Failed to move meta file from {} to {}", metaFile, targetMetaFile, e);
             continue;
           }
 
@@ -435,8 +434,7 @@ public class BlockPoolSlice {
           try {
             fileIoProvider.rename(volume, blockFile, targetBlockFile);
           } catch (IOException e) {
-            LOG.warn("Failed to move block file from "
-                + blockFile + " to " + targetBlockFile, e);
+            LOG.warn("Failed to move block file from {} to {}", blockFile, targetBlockFile, e);
             continue;
           }
 
@@ -444,7 +442,7 @@ public class BlockPoolSlice {
             ++numRecovered;
           } else {
             // Failure should be rare.
-            LOG.warn("Failed to move " + blockFile + " to " + targetDir);
+            LOG.warn("Failed to move {} to {}", blockFile, targetDir);
           }
         }
       }
@@ -655,8 +653,7 @@ public class BlockPoolSlice {
     replicaToDelete = (replicaToKeep == replica1) ? replica2 : replica1;
 
     if (LOG.isDebugEnabled()) {
-      LOG.debug("resolveDuplicateReplicas decide to keep " + replicaToKeep
-          + ".  Will try to delete " + replicaToDelete);
+      LOG.debug("resolveDuplicateReplicas decide to keep {}.  Will try to delete {}", replicaToKeep, replicaToDelete);
     }
     return replicaToDelete;
   }
@@ -664,10 +661,10 @@ public class BlockPoolSlice {
   private void deleteReplica(final ReplicaInfo replicaToDelete) {
     // Delete the files on disk. Failure here is okay.
     if (!replicaToDelete.deleteBlockData()) {
-      LOG.warn("Failed to delete block file for replica " + replicaToDelete);
+      LOG.warn("Failed to delete block file for replica {}", replicaToDelete);
     }
     if (!replicaToDelete.deleteMetadata()) {
-      LOG.warn("Failed to delete meta file for replica " + replicaToDelete);
+      LOG.warn("Failed to delete meta file for replica {}", replicaToDelete);
     }
   }
 
@@ -765,18 +762,21 @@ public class BlockPoolSlice {
     File replicaFile = new File(currentDir, REPLICA_CACHE_FILE);
     // Check whether the file exists or not.
     if (!replicaFile.exists()) {
-      LOG.info("Replica Cache file: "+  replicaFile.getPath() +
-          " doesn't exist ");
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Replica Cache file: {} doesn't exist", replicaFile.getPath());
+      }
       return false;
     }
     long fileLastModifiedTime = replicaFile.lastModified();
     if (System.currentTimeMillis() > fileLastModifiedTime + replicaCacheExpiry) {
-      LOG.info("Replica Cache file: " + replicaFile.getPath() +
-          " has gone stale");
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Replica Cache file: {} has gone stale", replicaFile.getPath());
+      }
       // Just to make findbugs happy
       if (!replicaFile.delete()) {
-        LOG.info("Replica Cache file: " + replicaFile.getPath() +
-            " cannot be deleted");
+        if (LOG.isInfoEnabled()) {
+          LOG.info("Replica Cache file: {} cannot be deleted", replicaFile.getPath());
+        }
       }
       return false;
     }
@@ -814,14 +814,16 @@ public class BlockPoolSlice {
         iter.remove();
         volumeMap.add(bpid, info);
       }
-      LOG.info("Successfully read replica from cache file : "
-          + replicaFile.getPath());
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Successfully read replica from cache file : {}", replicaFile.getPath());
+      }
       return true;
     } catch (Exception e) {
       // Any exception we need to revert back to read from disk
       // Log the error and return false
-      LOG.info("Exception occurred while reading the replicas cache file: "
-          + replicaFile.getPath(), e );
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Exception occurred while reading the replicas cache file: {}", replicaFile.getPath(), e);
+      }
       return false;
     }
     finally {
@@ -829,8 +831,9 @@ public class BlockPoolSlice {
       IOUtils.closeStream(inputStream);
 
       if (!fileIoProvider.delete(volume, replicaFile)) {
-        LOG.info("Failed to delete replica cache file: " +
-            replicaFile.getPath());
+        if (LOG.isInfoEnabled()) {
+          LOG.info("Failed to delete replica cache file: {}", replicaFile.getPath());
+        }
       }
     }
   }
@@ -922,8 +925,7 @@ public class BlockPoolSlice {
         addToReplicasMap(volumeMap, dir, lazyWriteReplicaMap, isFinalized,
             exceptions, subTaskQueue);
       } catch (IOException e) {
-        LOG.warn("Caught exception while adding replicas from " + volume
-            + " in subtask. Will throw later.", e);
+        LOG.warn("Caught exception while adding replicas from {} in subtask. Will throw later.", volume, e);
         exceptions.add(e);
       }
     }

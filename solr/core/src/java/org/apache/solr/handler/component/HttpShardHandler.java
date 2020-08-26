@@ -16,32 +16,29 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
-import java.net.ConnectException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
+import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.CommonParams;
@@ -54,8 +51,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
-import org.slf4j.MDC;
 
+@SolrThreadUnsafe
 public class HttpShardHandler extends ShardHandler {
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value,
@@ -66,16 +63,18 @@ public class HttpShardHandler extends ShardHandler {
   public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
 
   private HttpShardHandlerFactory httpShardHandlerFactory;
-  private CompletionService<ShardResponse> completionService;
-  private Set<Future<ShardResponse>> pending;
+  private Map<ShardResponse, Cancellable> responseCancellableMap;
+  private BlockingQueue<ShardResponse> responses;
+  private AtomicInteger pending;
   private Map<String, List<String>> shardToURLs;
-  private Http2SolrClient httpClient;
+  private LBHttp2SolrClient lbClient;
 
-  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, Http2SolrClient httpClient) {
-    this.httpClient = httpClient;
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
     this.httpShardHandlerFactory = httpShardHandlerFactory;
-    completionService = httpShardHandlerFactory.newCompletionService();
-    pending = new HashSet<>();
+    this.lbClient = httpShardHandlerFactory.loadbalancer;
+    this.pending = new AtomicInteger(0);
+    this.responses = new LinkedBlockingQueue<>();
+    this.responseCancellableMap = new HashMap<>();
 
     // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
     // This is primarily to keep track of what order we should use to query the replicas of a shard
@@ -86,9 +85,9 @@ public class HttpShardHandler extends ShardHandler {
 
   private static class SimpleSolrResponse extends SolrResponse {
 
-    long elapsedTime;
+    volatile long elapsedTime;
 
-    NamedList<Object> nl;
+    volatile NamedList<Object> nl;
 
     @Override
     public long getElapsedTime() {
@@ -111,7 +110,6 @@ public class HttpShardHandler extends ShardHandler {
     }
   }
 
-
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
   private List<String> getURLs(String shard) {
@@ -130,82 +128,64 @@ public class HttpShardHandler extends ShardHandler {
     final Tracer tracer = GlobalTracer.getTracer();
     final Span span = tracer != null ? tracer.activeSpan() : null;
 
-    Callable<ShardResponse> task = () -> {
+    params.remove(CommonParams.WT); // use default (currently javabin)
+    params.remove(CommonParams.VERSION);
+    QueryRequest req = makeQueryRequest(sreq, params, shard);
+    req.setMethod(SolrRequest.METHOD.POST);
 
-      ShardResponse srsp = new ShardResponse();
-      if (sreq.nodeName != null) {
-        srsp.setNodeName(sreq.nodeName);
-      }
-      srsp.setShardRequest(sreq);
-      srsp.setShard(shard);
-      SimpleSolrResponse ssr = new SimpleSolrResponse();
-      srsp.setSolrResponse(ssr);
-      long startTime = System.nanoTime();
+    LBSolrClient.Req lbReq = httpShardHandlerFactory.newLBHttpSolrClientReq(req, urls);
 
-      try {
-        params.remove(CommonParams.WT); // use default (currently javabin)
-        params.remove(CommonParams.VERSION);
+    ShardResponse srsp = new ShardResponse();
+    if (sreq.nodeName != null) {
+      srsp.setNodeName(sreq.nodeName);
+    }
+    srsp.setShardRequest(sreq);
+    srsp.setShard(shard);
+    SimpleSolrResponse ssr = new SimpleSolrResponse();
+    srsp.setSolrResponse(ssr);
 
-        QueryRequest req = makeQueryRequest(sreq, params, shard);
+    pending.incrementAndGet();
+    // if there are no shards available for a slice, urls.size()==0
+    if (urls.size() == 0) {
+      // TODO: what's the right error code here? We should use the same thing when
+      // all of the servers for a shard are down.
+      SolrException exception = new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
+      srsp.setException(exception);
+      srsp.setResponseCode(exception.code());
+      responses.add(srsp);
+      return;
+    }
+
+    // all variables that set inside this listener must be at least volatile
+    responseCancellableMap.put(srsp, this.lbClient.asyncReq(lbReq, new AsyncListener<>() {
+      volatile long startTime = System.nanoTime();
+
+      @Override
+      public void onStart() {
         if (tracer != null && span != null) {
           tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new SolrRequestCarrier(req));
         }
-        req.setMethod(SolrRequest.METHOD.POST);
         SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
         if (requestInfo != null) req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
-
-        // no need to set the response parser as binary is the defaultJab
-        // req.setResponseParser(new BinaryResponseParser());
-
-        // if there are no shards available for a slice, urls.size()==0
-        if (urls.size() == 0) {
-          // TODO: what's the right error code here? We should use the same thing when
-          // all of the servers for a shard are down.
-          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
-        }
-
-        if (urls.size() <= 1) {
-          String url = urls.get(0);
-          srsp.setShardAddress(url);
-          ssr.nl = request(url, req);
-        } else {
-          LBSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
-          ssr.nl = rsp.getResponse();
-          srsp.setShardAddress(rsp.getServer());
-        }
-      } catch (ConnectException cex) {
-        srsp.setException(cex); //????
-      } catch (Exception th) {
-        srsp.setException(th);
-        if (th instanceof SolrException) {
-          srsp.setResponseCode(((SolrException) th).code());
-        } else {
-          srsp.setResponseCode(-1);
-        }
       }
 
-      ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-
-      return transfomResponse(sreq, srsp, shard);
-    };
-
-    try {
-      if (shard != null) {
-        MDC.put("ShardRequest.shards", shard);
+      @Override
+      public void onSuccess(LBSolrClient.Rsp rsp) {
+        ssr.nl = rsp.getResponse();
+        srsp.setShardAddress(rsp.getServer());
+        ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+        responses.add(srsp);
       }
-      if (urls != null && !urls.isEmpty()) {
-        MDC.put("ShardRequest.urlList", urls.toString());
-      }
-      pending.add(completionService.submit(task));
-    } finally {
-      MDC.remove("ShardRequest.shards");
-      MDC.remove("ShardRequest.urlList");
-    }
-  }
 
-  protected NamedList<Object> request(String url, SolrRequest req) throws IOException, SolrServerException {
-    req.setBasePath(url);
-    return httpClient.request(req);
+      public void onFailure(Throwable throwable) {
+        ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+        srsp.setException(throwable);
+        if (throwable instanceof SolrException) {
+          srsp.setResponseCode(((SolrException) throwable).code());
+        }
+        responses.add(srsp);
+      }
+    }));
   }
 
   /**
@@ -217,7 +197,7 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   /**
-   * Subclasses could modify the Response based on the the shard
+   * Subclasses could modify the Response based on the shard
    */
   protected ShardResponse transfomResponse(final ShardRequest sreq, ShardResponse rsp, String shard) {
     return rsp;
@@ -243,12 +223,12 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   private ShardResponse take(boolean bailOnError) {
+    try {
+      while (pending.get() > 0) {
+        ShardResponse rsp = responses.take();
+        responseCancellableMap.remove(rsp);
 
-    while (pending.size() > 0) {
-      try {
-        Future<ShardResponse> future = completionService.take();
-        pending.remove(future);
-        ShardResponse rsp = future.get();
+        pending.decrementAndGet();
         if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
         // add response to the response list... we do this after the take() and
         // not after the completion of "call" so we know when the last response
@@ -258,13 +238,9 @@ public class HttpShardHandler extends ShardHandler {
         if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
           return rsp;
         }
-      } catch (InterruptedException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (ExecutionException e) {
-        // should be impossible... the problem with catching the exception
-        // at this level is we don't know what ShardRequest it applied to
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Impossible Exception", e);
       }
+    } catch (InterruptedException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     return null;
   }
@@ -272,9 +248,11 @@ public class HttpShardHandler extends ShardHandler {
 
   @Override
   public void cancelAll() {
-    for (Future<ShardResponse> future : pending) {
-      future.cancel(false);
+    for (Cancellable cancellable : responseCancellableMap.values()) {
+      cancellable.cancel();
+      pending.decrementAndGet();
     }
+    responseCancellableMap.clear();
   }
 
   @Override

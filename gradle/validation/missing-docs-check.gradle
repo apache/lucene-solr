@@ -35,7 +35,7 @@ allprojects {
     ]
 
     task checkMissingDocsDefault(type: CheckMissingDocsTask, dependsOn: 'renderJavadoc') {
-      dirs += [ project.file(project.javadocDestDir) ]
+      dirs += [ project.javadoc.destinationDir ]
 
       // TODO: add missing docs for all classes and bump this to level=class
       if (project.path.startsWith(":solr")) {
@@ -71,7 +71,7 @@ configure(project(':lucene:core')) {
         "org/apache/lucene/search/similarities",
         "org/apache/lucene/index",
         "org/apache/lucene/codecs"
-    ].collect { path -> file("${project.javadocDestDir}/${path}") }
+    ].collect { path -> file("${project.javadoc.destinationDir}/${path}") }
 
     checkMissingDocs {
       dependsOn checkMissingDocsMethod
@@ -89,7 +89,7 @@ class CheckMissingDocsTask extends DefaultTask {
   def checkMissingJavadocs(File dir, String level) {
     def output = new ByteArrayOutputStream()
     def result = project.exec {
-      executable "python3"
+      executable project.externalToolExecutables["python3"]
       ignoreExitValue = true
       standardOutput = output
       errorOutput = output

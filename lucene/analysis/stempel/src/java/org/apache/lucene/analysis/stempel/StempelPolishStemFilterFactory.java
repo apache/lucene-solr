@@ -41,6 +41,11 @@ public class StempelPolishStemFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public StempelPolishStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new StempelFilter(input, new StempelStemmer(PolishAnalyzer.getDefaultTable()));

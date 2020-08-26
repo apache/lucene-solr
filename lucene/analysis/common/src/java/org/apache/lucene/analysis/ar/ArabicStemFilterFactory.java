@@ -49,6 +49,11 @@ public class ArabicStemFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public ArabicStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public ArabicStemFilter create(TokenStream input) {
     return new ArabicStemFilter(input);

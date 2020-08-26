@@ -132,11 +132,16 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   //       that the size could not be reliably determined.
   //
 
+  /**
+   * This method will be removed in Solr 9
+   * @deprecated Use {{@link #writeStartDocumentList(String, long, int, long, Float, Boolean)}.
+   */
   @Override
+  @Deprecated
   public void writeStartDocumentList(String name,
       long start, int size, long numFound, Float maxScore) throws IOException
   {
-    writeMapOpener((maxScore==null) ? 3 : 4);
+    writeMapOpener(headerSize(maxScore, null));
     incLevel();
     writeKey("numFound",false);
     writeLong(null,numFound);
@@ -155,6 +160,42 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     writeArrayOpener(size);
 
     incLevel();
+  }
+  
+  @Override
+  public void writeStartDocumentList(String name,
+      long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {
+    writeMapOpener(headerSize(maxScore, numFoundExact));
+    incLevel();
+    writeKey("numFound",false);
+    writeLong(null,numFound);
+    writeMapSeparator();
+    writeKey("start",false);
+    writeLong(null,start);
+
+    if (maxScore != null) {
+      writeMapSeparator();
+      writeKey("maxScore",false);
+      writeFloat(null,maxScore);
+    }
+    
+    if (numFoundExact != null) {
+      writeMapSeparator();
+      writeKey("numFoundExact",false);
+      writeBool(null, numFoundExact);
+    }
+    writeMapSeparator();
+    writeKey("docs",false);
+    writeArrayOpener(size);
+
+    incLevel();
+  } 
+
+  protected int headerSize(Float maxScore, Boolean numFoundExact) {
+    int headerSize = 3;
+    if (maxScore != null) headerSize++;
+    if (numFoundExact != null) headerSize++;
+    return headerSize;
   }
 
   @Override

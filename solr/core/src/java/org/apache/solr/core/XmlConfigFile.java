@@ -136,7 +136,7 @@ public class XmlConfigFile { // formerly simply "Config"
           dbf.setXIncludeAware(true);
           dbf.setNamespaceAware(true);
         } catch(UnsupportedOperationException e) {
-          log.warn(name + " XML parser doesn't support XInclude option");
+          log.warn("{} XML parser doesn't support XInclude option", name);
         }
       }
       
@@ -252,7 +252,7 @@ public class XmlConfigFile { // formerly simply "Config"
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.trace(name + " missing optional " + path);
+          log.trace("{} missing optional {}", name, path);
           return null;
         }
       }
@@ -261,7 +261,7 @@ public class XmlConfigFile { // formerly simply "Config"
                                  name + " contains more than one value for config path: " + path);
       }
       Node nd = nodes.item(0);
-      log.trace(name + ":" + path + "=" + nd);
+      log.trace("{}:{}={}", name, path, nd);
       return nd;
 
     } catch (XPathExpressionException e) {
@@ -286,12 +286,12 @@ public class XmlConfigFile { // formerly simply "Config"
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.trace(name + " missing optional " + path);
+          log.trace("{} missing optional {}", name, path);
           return null;
         }
       }
 
-      log.trace(name + ":" + path + "=" + nodeList);
+      log.trace("{}:{}={}", name, path, nodeList);
       return nodeList;
 
     } catch (XPathExpressionException e) {
@@ -373,7 +373,7 @@ public class XmlConfigFile { // formerly simply "Config"
 
     String txt = DOMUtil.getText(nd);
 
-    log.debug(name + ' '+path+'='+txt);
+    log.debug("{} {}={}", name, path, txt);
     return txt;
   }
 

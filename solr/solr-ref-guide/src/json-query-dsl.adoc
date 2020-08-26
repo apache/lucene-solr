@@ -303,6 +303,30 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-c
 ====
 --
 
+Example of referencing <<Additional Queries,additional queries>>, <<Tagging in JSON Query DSL,tagging>> and <<other-parsers.adoc#boolean-query-parser,exclusions>>:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/solr/techproducts/query -d '
+{
+    "queries": {
+       "query_filters":[                                            // 1.
+           {"#size_tag":{"field":{"f":"size","query":"XL"}}},
+           {"#color_tag":{"field":{"f":"color","query":"Red"}}}     // 2.
+       ]
+    },
+    "query": {
+        "bool": {
+            "must": {"param":"query_filters"},                      // refer both of 1.
+            "excludeTags": "color_tag"                              // excluding 2.
+        }
+    }
+}'
+
+----
+
+Thus, the query above will return only docs matching `size:XL`.
+
 == Filter Queries
 The syntaxes discussed above can also be used to specify query filters (under the `filter` key) in addition to the main query itself.
 
@@ -341,7 +365,13 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-f
 
 == Additional Queries
 
-Multiple additional queries might be specified under `queries` key with all syntax alternatives described above. Every entry might have multiple values in array. Notice that old-style referencing `"{!v=$query_name}"` picks only the first element in array ignoring everything beyond, e.g., if one changes the reference below from `"{!v=$electronic}"` to `"{!v=$manufacturers}"` it's equivalent to querying for `manu:apple`, ignoring the later query. These queries don't impact query result until explicit referencing.
+Multiple additional queries might be specified under `queries` key with all syntax alternatives described above.
+Every entry might have multiple values in an array.
+To reference these queries one can use `{"param":"query_name"}`, as well as old-style referencing `"{!v=$query_name}"`.
+Beware of arity for these references.
+
+Depending on the context, a reference might be resolved into the first element in array ignoring the later elements, e.g., if one changes the reference below from `{"param":"electronic"}` to `{"param":"manufacturers"}` it's equivalent to querying for `manu:apple`, ignoring the later query.
+These queries don't impact query result until explicit referencing.
 
 [source,bash]
 ----
@@ -354,11 +384,11 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
            {"field": {"f":"manu", "query":"belkin"}}
         ]
     },
-    "query":"{!v=$electronic}"
+    "query":{"param":"electronic"}
 }'
 ----
 
-Overall this example doesn't make much sense, but just demonstrates the syntax. This feature is useful in <<json-faceting-domain-changes.adoc#adding-domain-filters,filtering domain>> in JSON Facet API <<json-facet-api.adoc#changing-the-domain,domain changes>>.
+Overall this example doesn't make much sense, but just demonstrates the syntax. This feature is useful in <<json-faceting-domain-changes.adoc#adding-domain-filters,filtering domain>> in JSON Facet API <<json-facet-api.adoc#changing-the-domain,domain changes>>. Note that these declarations add request parameters underneath, so using same names with other parameters might cause unexpected behavior.
 
 == Tagging in JSON Query DSL
 Query and filter clauses can also be individually "tagged".  Tags serve as handles for query clauses, allowing them to be referenced from elsewhere in the request.  This is most commonly used by the filter-exclusion functionality offered by both <<faceting.adoc#tagging-and-excluding-filters,traditional>> and <<json-faceting-domain-changes.adoc#filter-exclusions,JSON>> faceting.

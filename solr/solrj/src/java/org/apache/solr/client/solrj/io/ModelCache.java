@@ -136,7 +136,7 @@ public class ModelCache {
       this.maxSize = maxSize;
     }
 
-    public boolean removeEldestEntry(Map.Entry eldest) {
+    public boolean removeEldestEntry(@SuppressWarnings({"rawtypes"})Map.Entry eldest) {
       if(size()> maxSize) {
         return true;
       } else {

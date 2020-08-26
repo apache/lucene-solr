@@ -135,10 +135,12 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
         req.setPath(path);
         final QueryResponse rsp = req.process(getRandClient(random()));
         try {
+          @SuppressWarnings({"unchecked"})
           NamedList<Object> phrases = (NamedList<Object>) rsp.getResponse().get("phrases");
           assertEquals("input", input, phrases.get("input"));
           assertEquals("summary", expected, phrases.get("summary"));
           
+          @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> details = (List<NamedList<Object>>) phrases.get("details");
           assertNotNull("null details", details);
           assertEquals("num phrases found", 2, details.size());
@@ -167,10 +169,12 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
         req.setPath("/phrases");
         final QueryResponse rsp = req.process(getRandClient(random()));
         try {
+          @SuppressWarnings({"unchecked"})
           NamedList<Object> phrases = (NamedList<Object>) rsp.getResponse().get("phrases");
           assertEquals("input", input, phrases.get("input"));
           assertEquals("summary", input, phrases.get("summary"));
           
+          @SuppressWarnings({"unchecked"})
           final List<NamedList<Object>> details = (List<NamedList<Object>>) phrases.get("details");
           assertNotNull("null details", details);
           assertEquals("num phrases found", 0, details.size());

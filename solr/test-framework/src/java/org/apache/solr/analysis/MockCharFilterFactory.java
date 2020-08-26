@@ -41,6 +41,11 @@ public class MockCharFilterFactory extends CharFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public MockCharFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public MockCharFilter create(Reader input) {
     return new MockCharFilter(input, remainder);

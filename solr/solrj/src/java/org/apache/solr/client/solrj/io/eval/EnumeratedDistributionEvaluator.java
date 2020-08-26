@@ -39,13 +39,19 @@ public class EnumeratedDistributionEvaluator extends RecursiveNumericEvaluator i
     }
 
     if(values.length == 1) {
+      @SuppressWarnings({"unchecked"})
       List<Number> first = (List<Number>)values[0];
+      @SuppressWarnings({"unchecked", "rawtypes"})
       int[] samples = ((List) first).stream().mapToInt(value -> ((Number) value).intValue()).toArray();
       return new EnumeratedIntegerDistribution(samples);
     } else {
+      @SuppressWarnings({"unchecked"})
       List<Number> first = (List<Number>)values[0];
+      @SuppressWarnings({"unchecked"})
       List<Number> second = (List<Number>)values[1];
+      @SuppressWarnings({"unchecked", "rawtypes"})
       int[] singletons = ((List) first).stream().mapToInt(value -> ((Number) value).intValue()).toArray();
+      @SuppressWarnings({"unchecked", "rawtypes"})
       double[] probs = ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       return new EnumeratedIntegerDistribution(singletons, probs);
     }

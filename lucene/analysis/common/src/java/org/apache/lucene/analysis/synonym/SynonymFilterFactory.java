@@ -123,6 +123,11 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public SynonymFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     // if the fst is null, it means there's actually no synonyms... just return the original stream

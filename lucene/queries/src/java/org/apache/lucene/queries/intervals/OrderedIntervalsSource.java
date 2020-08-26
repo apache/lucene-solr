@@ -133,12 +133,13 @@ class OrderedIntervalsSource extends ConjunctionIntervalsSource {
     public int nextInterval() throws IOException {
       start = end = slop = IntervalIterator.NO_MORE_INTERVALS;
       int lastStart = Integer.MAX_VALUE;
+      boolean minimizing = false;
       i = 1;
       while (true) {
         while (true) {
           if (subIterators.get(i - 1).end() >= lastStart)
             return start;
-          if (i == subIterators.size() || subIterators.get(i).start() > subIterators.get(i - 1).end())
+          if (i == subIterators.size() || (minimizing && subIterators.get(i).start() > subIterators.get(i - 1).end()))
             break;
           do {
             if (subIterators.get(i).end() >= lastStart || subIterators.get(i).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
@@ -160,6 +161,7 @@ class OrderedIntervalsSource extends ConjunctionIntervalsSource {
         i = 1;
         if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
           return start;
+        minimizing = true;
       }
     }
 

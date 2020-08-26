@@ -18,6 +18,7 @@ limitations under the License.
 
   <div ng-show="!hasHandlers">The solrconfig.xml file for this index does not have an operational DataImportHandler defined!</div>
   <div id="frame" ng-show="hasHandlers">
+    <div id="deprecation_message">The Data Import Handler is deprecated as of Solr 8.6 and may be removed in a future release. A community supported package for may be used instead (See SOLR-14066 for details).</div>
 
     <div id="error" ng-show="error"></div>
 

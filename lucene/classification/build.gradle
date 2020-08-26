@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Classification module for Lucene'
+
 dependencies {
   api project(':lucene:core')
 

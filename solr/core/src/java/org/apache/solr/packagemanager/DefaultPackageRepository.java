@@ -112,6 +112,8 @@ public class DefaultPackageRepository extends PackageRepository {
     } catch (IOException ex) {
       throw new SolrException(ErrorCode.INVALID_STATE, ex);
     }
-    log.debug("Found {} packages in repository '{}'", packages.size(), name);
+    if (log.isDebugEnabled()) {
+      log.debug("Found {} packages in repository '{}'", packages.size(), name);
+    }
   }
 }

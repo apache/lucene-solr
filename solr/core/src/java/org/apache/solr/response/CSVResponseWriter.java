@@ -47,7 +47,7 @@ import org.apache.solr.search.ReturnFields;
 public class CSVResponseWriter implements QueryResponseWriter {
 
   @Override
-  public void init(NamedList n) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
   }
 
   @Override
@@ -323,8 +323,10 @@ class CSVWriter extends TabularResponseWriter {
   }
 
   //NOTE: a document cannot currently contain another document
+  @SuppressWarnings({"rawtypes"})
   List tmpList;
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
     if (tmpList == null) {
       tmpList = new ArrayList(1);

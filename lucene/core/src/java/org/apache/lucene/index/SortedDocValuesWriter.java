@@ -21,7 +21,6 @@ import java.util.Arrays;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
@@ -35,7 +34,7 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 /** Buffers up pending byte[] per doc, deref and sorting via
  *  int ord, then flushes when segment flushes. */
-class SortedDocValuesWriter extends DocValuesWriter {
+class SortedDocValuesWriter extends DocValuesWriter<SortedDocValues> {
   final BytesRefHash hash;
   private PackedLongValues.Builder pending;
   private DocsWithFieldSet docsWithField;
@@ -79,11 +78,6 @@ class SortedDocValuesWriter extends DocValuesWriter {
     lastDocID = docID;
   }
 
-  @Override
-  public void finish(int maxDoc) {
-    updateBytesUsed();
-  }
-
   private void addOneValue(BytesRef value) {
     int termID = hash.add(value);
     if (termID < 0) {
@@ -107,20 +101,20 @@ class SortedDocValuesWriter extends DocValuesWriter {
   }
 
   @Override
-  Sorter.DocComparator getDocComparator(int maxDoc, SortField sortField) throws IOException {
-    assert sortField.getType().equals(SortField.Type.STRING);
-    assert finalSortedValues == null && finalOrdMap == null &&finalOrds == null;
+  SortedDocValues getDocValues() {
     int valueCount = hash.size();
-    finalSortedValues = hash.sort();
-    finalOrds = pending.build();
-    finalOrdMap = new int[valueCount];
+    if (finalSortedValues == null) {
+      updateBytesUsed();
+      assert finalOrdMap == null && finalOrds == null;
+      finalSortedValues = hash.sort();
+      finalOrds = pending.build();
+      finalOrdMap = new int[valueCount];
+    }
     for (int ord = 0; ord < valueCount; ord++) {
       finalOrdMap[finalSortedValues[ord]] = ord;
     }
-    final SortedDocValues docValues =
-        new BufferedSortedDocValues(hash, valueCount, finalOrds, finalSortedValues, finalOrdMap,
+    return new BufferedSortedDocValues(hash, valueCount, finalOrds, finalSortedValues, finalOrdMap,
             docsWithField.iterator());
-    return Sorter.getDocComparator(maxDoc, sortField, () -> docValues, () -> null);
   }
 
   private int[] sortDocValues(int maxDoc, Sorter.DocMap sortMap, SortedDocValues oldValues) throws IOException {
@@ -137,26 +131,20 @@ class SortedDocValuesWriter extends DocValuesWriter {
   @Override
   public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
     final int valueCount = hash.size();
-    final PackedLongValues ords;
-    final int[] sortedValues;
-    final int[] ordMap;
     if (finalOrds == null) {
-      sortedValues = hash.sort();
-      ords = pending.build();
-      ordMap = new int[valueCount];
+      updateBytesUsed();
+      finalSortedValues = hash.sort();
+      finalOrds = pending.build();
+      finalOrdMap = new int[valueCount];
       for (int ord = 0; ord < valueCount; ord++) {
-        ordMap[sortedValues[ord]] = ord;
+        finalOrdMap[finalSortedValues[ord]] = ord;
       }
-    } else {
-      sortedValues = finalSortedValues;
-      ords = finalOrds;
-      ordMap = finalOrdMap;
     }
 
     final int[] sorted;
     if (sortMap != null) {
       sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap,
-          new BufferedSortedDocValues(hash, valueCount, ords, sortedValues, ordMap, docsWithField.iterator()));
+          new BufferedSortedDocValues(hash, valueCount, finalOrds, finalSortedValues, finalOrdMap, docsWithField.iterator()));
     } else {
       sorted = null;
     }
@@ -168,7 +156,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
                                     throw new IllegalArgumentException("wrong fieldInfo");
                                   }
                                   final SortedDocValues buf =
-                                      new BufferedSortedDocValues(hash, valueCount, ords, sortedValues, ordMap, docsWithField.iterator());
+                                      new BufferedSortedDocValues(hash, valueCount, finalOrds, finalSortedValues, finalOrdMap, docsWithField.iterator());
                                   if (sorted == null) {
                                    return buf;
                                   }
@@ -245,8 +233,4 @@ class SortedDocValuesWriter extends DocValuesWriter {
     }
   }
 
-  @Override
-  DocIdSetIterator getDocIdSet() {
-    return docsWithField.iterator();
-  }
 }

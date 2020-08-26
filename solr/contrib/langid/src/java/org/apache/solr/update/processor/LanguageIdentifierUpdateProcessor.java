@@ -149,7 +149,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
           if(keyVal.length == 2) {
             lcMap.put(keyVal[0], keyVal[1]);
           } else {
-            log.error("Unsupported format for langid.lcmap: "+mapping+". Skipping this mapping.");
+            log.error("Unsupported format for langid.lcmap: {}. Skipping this mapping.", mapping);
           }
         }
       }
@@ -162,7 +162,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
           if(keyVal.length == 2) {
             mapLcMap.put(keyVal[0], keyVal[1]);
           } else {
-            log.error("Unsupported format for langid.map.lcmap: "+mapping+". Skipping this mapping.");
+            log.error("Unsupported format for langid.map.lcmap: {}. Skipping this mapping.", mapping);
           }
         }
       }
@@ -175,13 +175,15 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       if (maxFieldValueChars > maxTotalChars) {
         if (maxTotalChars == MAX_TOTAL_CHARS_DEFAULT) {
           // If the user specified only maxFieldValueChars, make maxTotalChars the same as it
-          log.warn(MAX_FIELD_VALUE_CHARS + " (" + maxFieldValueChars + ") is less than " + MAX_TOTAL_CHARS + " ("
-              + maxTotalChars + ").  Setting " + MAX_TOTAL_CHARS + " to " + maxFieldValueChars + ".");
+          log.warn("{} ({}) is less than {} ({}).  Setting {} to {}."
+              , MAX_FIELD_VALUE_CHARS, maxFieldValueChars, MAX_TOTAL_CHARS
+              , maxTotalChars, MAX_TOTAL_CHARS, maxFieldValueChars);
           maxTotalChars = maxFieldValueChars;
         } else {
           // If the user specified maxTotalChars, make maxFieldValueChars the same as it
-          log.warn(MAX_FIELD_VALUE_CHARS + " (" + maxFieldValueChars + ") is less than " + MAX_TOTAL_CHARS + " ("
-              + maxTotalChars + ").  Setting " + MAX_FIELD_VALUE_CHARS + " to " + maxTotalChars + ".");
+          log.warn("{} ({}) is less than {} ({}).  Setting {} to {}."
+              , MAX_FIELD_VALUE_CHARS, maxFieldValueChars, MAX_TOTAL_CHARS
+              , maxTotalChars, MAX_FIELD_VALUE_CHARS, maxTotalChars );
           maxFieldValueChars = maxTotalChars;
         }
       }
@@ -219,10 +221,14 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       List<DetectedLanguage> languagelist = detectLanguage(doc);
       docLang = resolveLanguage(languagelist, fallbackLang);
       docLangs.add(docLang);
-      log.debug("Detected main document language from fields "+ Arrays.toString(inputFields) +": "+docLang);
+      if (log.isDebugEnabled()) {
+        log.debug("Detected main document language from fields {}: {}", Arrays.toString(inputFields), docLang);
+      }
 
       if(doc.containsKey(langField) && overwrite) {
-        log.debug("Overwritten old value "+doc.getFieldValue(langField));
+        if (log.isDebugEnabled()) {
+          log.debug("Overwritten old value {}", doc.getFieldValue(langField));
+        }
       }
       if(langField != null && langField.length() != 0) {
         doc.setField(langField, docLang);
@@ -231,7 +237,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       // langField is set, we sanity check it against whitelist and fallback
       docLang = resolveLanguage(doc.getFieldValue(langField).toString(), fallbackLang);
       docLangs.add(docLang);
-      log.debug("Field "+langField+" already contained value "+docLang+", not overwriting.");
+      log.debug("Field {} already contained value {}, not overwriting.", langField, docLang);
     }
 
     if(enableMapping) {
@@ -242,15 +248,17 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
             List<DetectedLanguage> languagelist = detectLanguage(solrDocReader(doc, new String[]{fieldName}));
             fieldLang = resolveLanguage(languagelist, docLang);
             docLangs.add(fieldLang);
-            log.debug("Mapping field "+fieldName+" using individually detected language "+fieldLang);
+            log.debug("Mapping field {} using individually detected language {}", fieldName, fieldLang);
           } else {
             fieldLang = docLang;
-            log.debug("Mapping field "+fieldName+" using document global language "+fieldLang);
+            log.debug("Mapping field {} using document global language {}", fieldName, fieldLang);
           }
           String mappedOutputField = getMappedField(fieldName, fieldLang);
 
           if (mappedOutputField != null) {
-            log.debug("Mapping field {} to {}", doc.getFieldValue(docIdField), fieldLang);
+            if (log.isDebugEnabled()) {
+              log.debug("Mapping field {} to {}", doc.getFieldValue(docIdField), fieldLang);
+            }
             SolrInputField inField = doc.getField(fieldName);
             doc.setField(mappedOutputField, inField.getValue());
             if(!mapKeepOrig) {
@@ -282,12 +290,12 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
     for(String field : fallbackFields) {
       if(doc.containsKey(field)) {
         lang = (String) doc.getFieldValue(field);
-        log.debug("Language fallback to field "+field);
+        log.debug("Language fallback to field {}", field);
         break;
       }
     }
     if(lang == null) {
-      log.debug("Language fallback to value "+fallbackValue);
+      log.debug("Language fallback to value {}", fallbackValue);
       lang = fallbackValue;
     }
     return lang;
@@ -337,7 +345,9 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       DetectedLanguage lang = languages.get(0);
       String normalizedLang = normalizeLangCode(lang.getLangCode());
       if(langWhitelist.isEmpty() || langWhitelist.contains(normalizedLang)) {
-        log.debug("Language detected {} with certainty {}", normalizedLang, lang.getCertainty());
+        if (log.isDebugEnabled()) {
+          log.debug("Language detected {} with certainty {}", normalizedLang, lang.getCertainty());
+        }
         if(lang.getCertainty() >= threshold) {
           langStr = normalizedLang;
         } else {
@@ -345,7 +355,9 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
           langStr = fallbackLang;
         }
       } else {
-        log.debug("Detected a language not in whitelist ({}), using fallback {}", lang.getLangCode(), fallbackLang);
+        if (log.isDebugEnabled()) {
+          log.debug("Detected a language not in whitelist ({}), using fallback {}", lang.getLangCode(), fallbackLang);
+        }
         langStr = fallbackLang;
       }
     }
@@ -366,7 +378,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   protected String normalizeLangCode(String langCode) {
     if (lcMap.containsKey(langCode)) {
       String lc = lcMap.get(langCode);
-      log.debug("Doing langcode normalization mapping from "+langCode+" to "+lc);
+      log.debug("Doing langcode normalization mapping from {} to {}", langCode, lc);
       return lc;
     }
     return langCode;
@@ -389,7 +401,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       log.warn("Unsuccessful field name mapping from {} to {}, field does not exist and enforceSchema=true; skipping mapping.", currentField, newFieldName);
       return null;
     } else {
-      log.debug("Doing mapping from "+currentField+" with language "+language+" to field "+newFieldName);
+      log.debug("Doing mapping from {} with language {} to field {}", currentField, language, newFieldName);
     }
     return newFieldName;
   }

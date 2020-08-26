@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Additional analysis components'
+
 dependencies {
   api project(':solr:core')
 

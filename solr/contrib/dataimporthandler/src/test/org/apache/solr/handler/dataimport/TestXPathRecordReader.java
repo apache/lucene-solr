@@ -510,6 +510,7 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testPutNullTest(){
     String xml = "<root>\n" +
             "  <i>\n" +

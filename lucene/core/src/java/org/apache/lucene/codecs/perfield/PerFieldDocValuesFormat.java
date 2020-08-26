@@ -135,6 +135,9 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
 
       // Group each consumer by the fields it handles
       for (FieldInfo fi : mergeState.mergeFieldInfos) {
+        if (fi.getDocValuesType() == DocValuesType.NONE) {
+          continue;
+        }
         // merge should ignore current format for the fields being merged
         DocValuesConsumer consumer = getInstance(fi, true);
         Collection<String> fieldsForConsumer = consumersToField.get(consumer);

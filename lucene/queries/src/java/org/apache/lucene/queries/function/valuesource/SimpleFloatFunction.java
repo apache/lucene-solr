@@ -34,7 +34,7 @@ import java.util.Map;
   protected abstract float func(int doc, FunctionValues vals) throws IOException;
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues vals =  source.getValues(context, readerContext);
     return new FloatDocValues(this) {
       @Override

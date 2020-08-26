@@ -80,7 +80,7 @@ public class TaggerTest extends TaggerTestCase {
         "    </arr>\n" +
         "  </lst>\n" +
         "</arr>\n" +
-        "<result name=\"response\" numFound=\"1\" start=\"0\">\n" +
+        "<result name=\"response\" numFound=\"1\" start=\"0\" numFoundExact=\"true\">\n" +
         "  <doc>\n" +
         "    <str name=\"id\">1</str>\n" +
         "    <str name=\"name\">London Business School</str>\n" +
@@ -109,7 +109,7 @@ public class TaggerTest extends TaggerTestCase {
         "    </arr>\n" +
         "  </lst>\n" +
         "</arr>\n" +
-        "<result name=\"response\" numFound=\"1\" start=\"0\">\n" +
+        "<result name=\"response\" numFound=\"1\" start=\"0\" numFoundExact=\"true\">\n" +
         "  <doc>\n" +
         "    <str name=\"id\">1</str>\n" +
         "    <str name=\"name\">London Business School</str>\n" +
@@ -293,6 +293,24 @@ public class TaggerTest extends TaggerTestCase {
     }
     endOffset = startOffset+ substring.length();//1 greater (exclusive)
     return new TestTag(startOffset, endOffset, substring, lookupByName(name.getName()));
+  }
+
+
+  public void testEmptyCollection() throws Exception {
+    //SOLR-14396: Ensure tagger handler doesn't fail on empty collections
+    SolrQueryRequest req = reqDoc("anything", "indent", "on", "omitHeader", "on", "matchText", "false");
+    String rspStr = h.query(req);
+    req.close();
+
+    String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        "<response>\n" +
+        "\n" +
+        "<int name=\"tagsCount\">0</int>\n" +
+        "<arr name=\"tags\"/>\n" +
+        "<result name=\"response\" numFound=\"0\" start=\"0\" numFoundExact=\"true\">\n" +
+        "</result>\n" +
+        "</response>\n";
+    assertEquals(expected, rspStr);
   }
 
 }

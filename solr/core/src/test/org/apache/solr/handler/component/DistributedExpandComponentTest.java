@@ -90,6 +90,19 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     //Test page 2
     query("q", "*:*", "start","1", "rows", "1", "fq", "{!collapse field="+group+"}", "defType", "edismax", "bf", "field(test_i)", "expand", "true", "fl","*,score");
 
+    // multiple collapse and equal cost
+    ModifiableSolrParams baseParams = params("q", "*:*", "defType", "edismax", "expand", "true", "fl", "*,score",
+        "bf", "field(test_i)", "expand.sort", "id asc");
+    baseParams.set("fq", "{!collapse field="+group+"}", "{!collapse field=test_i}");
+    query(baseParams);
+
+    // multiple collapse and unequal cost case1
+    baseParams.set("fq", "{!collapse cost=1000 field="+group+"}", "{!collapse cost=2000 field=test_i}");
+    query(baseParams);
+
+    // multiple collapse and unequal cost case2
+    baseParams.set("fq", "{!collapse cost=1000 field="+group+"}", "{!collapse cost=200 field=test_i}");
+    query(baseParams);
 
     ignoreException("missing expand field");
     SolrException e = expectThrows(SolrException.class, () -> query("q", "*:*", "expand", "true"));

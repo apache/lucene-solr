@@ -46,7 +46,7 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings("unchecked")
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String leaderNode = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     results.add("leader", leaderNode);
@@ -60,10 +60,15 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat, true);
     results.add("overseer_collection_queue_size", stat.getNumChildren());
 
+    @SuppressWarnings({"rawtypes"})
     NamedList overseerStats = new NamedList();
+    @SuppressWarnings({"rawtypes"})
     NamedList collectionStats = new NamedList();
+    @SuppressWarnings({"rawtypes"})
     NamedList stateUpdateQueueStats = new NamedList();
+    @SuppressWarnings({"rawtypes"})
     NamedList workQueueStats = new NamedList();
+    @SuppressWarnings({"rawtypes"})
     NamedList collectionQueueStats = new NamedList();
     Stats stats = ocmh.stats;
     for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {

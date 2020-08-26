@@ -53,20 +53,20 @@ public interface NavigableObject {
   /**Iterate through the entries of a navigable Object at a certain path
    * @param path the json path
    */
-  default void _forEachEntry(String path, BiConsumer fun) {
+  default void _forEachEntry(String path, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
     Utils.forEachMapEntry(this, path, fun);
   }
 
   /**Iterate through the entries of a navigable Object at a certain path
    * @param path the json path
    */
-  default void _forEachEntry(List<String> path, BiConsumer fun) {
+  default void _forEachEntry(List<String> path, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
     Utils.forEachMapEntry(this, path, fun);
   }
 
   /**Iterate through each entry in this object
    */
-  default void _forEachEntry(BiConsumer fun) {
+  default void _forEachEntry(@SuppressWarnings({"rawtypes"})BiConsumer fun) {
     Utils.forEachMapEntry(this, fun);
   }
 

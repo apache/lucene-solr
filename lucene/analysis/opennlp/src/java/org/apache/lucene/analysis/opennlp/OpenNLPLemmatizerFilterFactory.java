@@ -71,6 +71,11 @@ public class OpenNLPLemmatizerFilterFactory extends TokenFilterFactory implement
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public OpenNLPLemmatizerFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public OpenNLPLemmatizerFilter create(TokenStream in) {
     try {

@@ -64,6 +64,11 @@ public class DaitchMokotoffSoundexFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public DaitchMokotoffSoundexFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public DaitchMokotoffSoundexFilter create(TokenStream input) {
     return new DaitchMokotoffSoundexFilter(input, inject);

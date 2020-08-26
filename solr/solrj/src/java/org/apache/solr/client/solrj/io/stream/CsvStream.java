@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -130,7 +129,7 @@ public class CsvStream extends TupleStream implements Expressible {
         if(fields.length != headers.length) {
           throw new IOException("Headers and lines must have the same number of fields [file:"+file+" line number:"+lineNumber+"]");
         }
-        Tuple out = new Tuple(new HashMap());
+        Tuple out = new Tuple();
         out.put("id", file+"_"+lineNumber);
         for(int i=0; i<headers.length; i++) {
           if(fields[i] != null && fields[i].length() > 0) {

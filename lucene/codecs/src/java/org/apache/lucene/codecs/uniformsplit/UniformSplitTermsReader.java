@@ -34,14 +34,14 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
-import static org.apache.lucene.codecs.uniformsplit.UniformSplitPostingsFormat.NAME;
-import static org.apache.lucene.codecs.uniformsplit.UniformSplitPostingsFormat.TERMS_BLOCKS_EXTENSION;
-import static org.apache.lucene.codecs.uniformsplit.UniformSplitPostingsFormat.TERMS_DICTIONARY_EXTENSION;
-import static org.apache.lucene.codecs.uniformsplit.UniformSplitPostingsFormat.VERSION_CURRENT;
+import static org.apache.lucene.codecs.uniformsplit.UniformSplitPostingsFormat.*;
 
 /**
  * A block-based terms index and dictionary based on the Uniform Split technique.
@@ -51,12 +51,11 @@ import static org.apache.lucene.codecs.uniformsplit.UniformSplitPostingsFormat.V
  */
 public class UniformSplitTermsReader extends FieldsProducer {
 
-  protected static final int VERSION_START = 0;
-
   private static final long BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(UniformSplitTermsReader.class)
       + RamUsageEstimator.shallowSizeOfInstance(IndexInput.class) * 2;
 
   protected final PostingsReaderBase postingsReader;
+  protected final int version;
   protected final IndexInput blockInput;
   protected final IndexInput dictionaryInput;
 
@@ -93,7 +92,7 @@ public class UniformSplitTermsReader extends FieldsProducer {
        String termsName = IndexFileNames.segmentFileName(segmentName, state.segmentSuffix, termsBlocksExtension);
        blockInput = state.directory.openInput(termsName, state.context);
 
-       int version = CodecUtil.checkIndexHeader(blockInput, codecName, versionStart,
+       version = CodecUtil.checkIndexHeader(blockInput, codecName, versionStart,
            versionCurrent, state.segmentInfo.getId(), state.segmentSuffix);
        String indexName = IndexFileNames.segmentFileName(segmentName, state.segmentSuffix, dictionaryExtension);
        dictionaryInput = state.directory.openInput(indexName, state.context);
@@ -105,7 +104,8 @@ public class UniformSplitTermsReader extends FieldsProducer {
        CodecUtil.retrieveChecksum(blockInput);
 
        seekFieldsMetadata(blockInput);
-       Collection<FieldMetadata> fieldMetadataCollection = parseFieldsMetadata(blockInput, state.fieldInfos, fieldMetadataReader, state.segmentInfo.maxDoc());
+       Collection<FieldMetadata> fieldMetadataCollection =
+           readFieldsMetadata(blockInput, blockDecoder, state.fieldInfos, fieldMetadataReader, state.segmentInfo.maxDoc());
 
        fieldToTermsMap = new HashMap<>();
        this.blockInput = blockInput;
@@ -143,16 +143,36 @@ public class UniformSplitTermsReader extends FieldsProducer {
   /**
    * @param indexInput {@link IndexInput} must be positioned to the fields metadata
    *                   details by calling {@link #seekFieldsMetadata(IndexInput)} before this call.
+   * @param blockDecoder Optional block decoder, may be null if none.
    */
-  protected static Collection<FieldMetadata> parseFieldsMetadata(IndexInput indexInput, FieldInfos fieldInfos,
-                                                                 FieldMetadata.Serializer fieldMetadataReader, int maxNumDocs) throws IOException {
+  protected Collection<FieldMetadata> readFieldsMetadata(IndexInput indexInput, BlockDecoder blockDecoder, FieldInfos fieldInfos,
+                                                                FieldMetadata.Serializer fieldMetadataReader, int maxNumDocs) throws IOException {
     int numFields = indexInput.readVInt();
     if (numFields < 0) {
       throw new CorruptIndexException("Illegal number of fields= " + numFields, indexInput);
     }
+    return (blockDecoder != null && version >= VERSION_ENCODABLE_FIELDS_METADATA) ?
+        readEncodedFieldsMetadata(numFields, indexInput, blockDecoder, fieldInfos, fieldMetadataReader, maxNumDocs)
+        : readUnencodedFieldsMetadata(numFields, indexInput, fieldInfos, fieldMetadataReader, maxNumDocs);
+  }
+
+  protected Collection<FieldMetadata> readEncodedFieldsMetadata(int numFields, DataInput metadataInput, BlockDecoder blockDecoder,
+                                                                FieldInfos fieldInfos, FieldMetadata.Serializer fieldMetadataReader,
+                                                                int maxNumDocs) throws IOException {
+    long encodedLength = metadataInput.readVLong();
+    if (encodedLength < 0) {
+      throw new CorruptIndexException("Illegal encoded length: " + encodedLength, metadataInput);
+    }
+    BytesRef decodedBytes = blockDecoder.decode(metadataInput, encodedLength);
+    DataInput decodedMetadataInput = new ByteArrayDataInput(decodedBytes.bytes, 0, decodedBytes.length);
+    return readUnencodedFieldsMetadata(numFields, decodedMetadataInput, fieldInfos, fieldMetadataReader, maxNumDocs);
+  }
+
+  protected Collection<FieldMetadata> readUnencodedFieldsMetadata(int numFields, DataInput metadataInput, FieldInfos fieldInfos,
+                                                                  FieldMetadata.Serializer fieldMetadataReader, int maxNumDocs) throws IOException {
     Collection<FieldMetadata> fieldMetadataCollection = new ArrayList<>(numFields);
     for (int i = 0; i < numFields; i++) {
-      fieldMetadataCollection.add(fieldMetadataReader.read(indexInput, fieldInfos, maxNumDocs));
+      fieldMetadataCollection.add(fieldMetadataReader.read(metadataInput, fieldInfos, maxNumDocs));
     }
     return fieldMetadataCollection;
   }
@@ -212,7 +232,7 @@ public class UniformSplitTermsReader extends FieldsProducer {
   /**
    * Positions the given {@link IndexInput} at the beginning of the fields metadata.
    */
-  protected static void seekFieldsMetadata(IndexInput indexInput) throws IOException {
+  protected void seekFieldsMetadata(IndexInput indexInput) throws IOException {
     indexInput.seek(indexInput.length() - CodecUtil.footerLength() - 8);
     indexInput.seek(indexInput.readLong());
   }

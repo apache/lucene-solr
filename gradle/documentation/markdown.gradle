@@ -1,0 +1,204 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import com.vladsch.flexmark.ast.Heading;
+import com.vladsch.flexmark.ext.abbreviation.AbbreviationExtension;
+import com.vladsch.flexmark.ext.attributes.AttributesExtension;
+import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
+import com.vladsch.flexmark.parser.ParserEmulationProfile;
+import com.vladsch.flexmark.util.ast.Document;
+import com.vladsch.flexmark.util.data.MutableDataSet;
+import com.vladsch.flexmark.util.sequence.Escaping;
+import groovy.text.SimpleTemplateEngine;
+
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath "com.vladsch.flexmark:flexmark:${scriptDepVersions['flexmark']}"
+    classpath "com.vladsch.flexmark:flexmark-ext-abbreviation:${scriptDepVersions['flexmark']}"
+    classpath "com.vladsch.flexmark:flexmark-ext-attributes:${scriptDepVersions['flexmark']}"
+    classpath "com.vladsch.flexmark:flexmark-ext-autolink:${scriptDepVersions['flexmark']}"
+  }
+}
+
+configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
+  task markdownToHtml(type: Copy) {
+    dependsOn copyDocumentationAssets
+    
+    filteringCharset = 'UTF-8'
+    includeEmptyDirs = false
+    into project.docroot
+    rename(/\.md$/, '.html')
+    filter(MarkdownFilter)
+  }
+}
+
+configure(project(':lucene')) {
+  markdownToHtml {
+    from('.') {
+      include 'MIGRATE.md'
+      include 'JRE_VERSION_MIGRATION.md'
+      include 'SYSTEM_REQUIREMENTS.md'
+    }
+  }
+  
+  task createDocumentationIndex(type: MarkdownTemplateTask) {
+    dependsOn copyDocumentationAssets,markdownToHtml
+
+    outputFile = file("${project.docroot}/index.html")
+    templateFile = file('site/xsl/index.template.md')
+    
+    def defaultCodecFile = project(':lucene:core').file('src/java/org/apache/lucene/codecs/Codec.java')
+    inputs.file(defaultCodecFile)
+    
+    // list all properties used by the template here to allow uptodate checks to be correct:
+    inputs.property('version', project.version)
+
+    binding.put('defaultCodecPackage', providers.provider{
+      // static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"  )   ;
+      def regex = ~/\bdefaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*"([^"]+)"\s*\)\s*;/
+      def matcher = regex.matcher(defaultCodecFile.getText('UTF-8'))
+      if (!matcher.find()) {
+        throw GradleException("Cannot determine default codec from file ${defaultCodecFile}")
+      }
+      return matcher.group(1).toLowerCase(Locale.ROOT)
+    })
+    
+    withProjectList()
+  }
+}
+
+configure(project(':solr')) {
+  markdownToHtml {
+    from('site') {
+      include '**/*.md'
+      exclude '**/*.template.md'
+    }
+  }
+  
+  task createDocumentationIndex(type: MarkdownTemplateTask) {
+    dependsOn copyDocumentationAssets,markdownToHtml
+  
+    outputFile = file("${project.docroot}/index.html")
+    templateFile = file('site/index.template.md')
+    
+    // list all properties used by the template here to allow uptodate checks to be correct:
+    inputs.property('version', project.version)
+    inputs.property('solrRefguideUrl', project.solrRefguideUrl)
+    inputs.property('luceneDocUrl', project.luceneDocUrl)
+    
+    withProjectList()
+  }
+  
+  task createOnlineDocumentationIndex(type: MarkdownTemplateTask) {
+    dependsOn copyOnlineDocumentationAssets
+  
+    outputFile = file("${project.docrootOnline}/index.html")
+    templateFile = file('site/online-link.template.md')
+
+    // list all properties used by the template here to allow uptodate checks to be correct:
+    inputs.property('version', project.version)
+    inputs.property('solrDocUrl', project.solrDocUrl)
+  }
+}
+
+// filter that can be used with the "copy" task of Gradle that transforms Markdown files
+// from source location to HTML (adding HTML header, styling,...)
+class MarkdownFilter extends FilterReader {
+
+  public MarkdownFilter(Reader reader) throws IOException {
+    // this is not really a filter: it reads whole file in ctor,
+    // converts it and provides result downstream as a StringReader
+    super(new StringReader(convert(reader.text)));
+  }
+  
+  public static String convert(String markdownSource) {
+    // first replace LUCENE and SOLR issue numbers with a markdown link
+    markdownSource = markdownSource.replaceAll(/(?s)\b(LUCENE|SOLR)\-\d+\b/,
+      '[$0](https://issues.apache.org/jira/browse/$0)');
+  
+    // convert the markdown
+    MutableDataSet options = new MutableDataSet();
+    options.setFrom(ParserEmulationProfile.MARKDOWN);
+    options.set(Parser.EXTENSIONS, [ AbbreviationExtension.create(), AutolinkExtension.create(), AttributesExtension.create() ]);
+    options.set(HtmlRenderer.RENDER_HEADER_ID, true);
+    options.set(HtmlRenderer.MAX_TRAILING_BLANK_LINES, 0);
+    Document parsed = Parser.builder(options).build().parse(markdownSource);
+
+    StringBuilder html = new StringBuilder('<html>\n<head>\n');
+    CharSequence title = parsed.getFirstChildAny(Heading.class)?.getText();          
+    if (title != null) {
+      html.append('<title>').append(Escaping.escapeHtml(title, false)).append('</title>\n');
+    }
+    html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
+      .append('</head>\n<body>\n');
+    HtmlRenderer.builder(options).build().render(parsed, html);
+    html.append('</body>\n</html>\n');
+    return html;
+  }
+}
+
+// Applies a binding of variables using a template and
+// produces Markdown, which is converted to HTML
+class MarkdownTemplateTask extends DefaultTask {
+
+  @InputFile
+  File templateFile
+
+  @OutputFile
+  File outputFile
+  
+  @Input
+  @Optional
+  final MapProperty<String,Object> binding = project.objects.mapProperty(String, Object)
+  
+  /** adds a property "projectList" containing all subprojects with javadocs as markdown bullet list */
+  void withProjectList() {
+    binding.put('projectList', project.providers.provider{
+      def projects = project.subprojects.findAll{ it.tasks.findByName('renderSiteJavadoc')?.enabled }
+        .sort(false, Comparator.comparing{ (it.name != 'core') as Boolean }
+          .thenComparing(Comparator.comparing{ (it.name != 'solrj') as Boolean })
+          .thenComparing(Comparator.comparing{ (it.name == 'test-framework') as Boolean })
+          .thenComparing(Comparator.comparing{ it.path }));
+      return projects.collect{ project ->
+        def text = "**[${project.relativeDocPath.replace('/','-')}](${project.relativeDocPath}/index.html):** ${project.description}"
+        if (project.name == 'core') {
+          text = text.concat(' {style="font-size:larger; margin-bottom:.5em"}')
+        }
+        return '* ' + text;
+      }.join('\n')
+    })
+  }
+
+  @TaskAction
+  void transform() {
+    def engine = new SimpleTemplateEngine();
+    def resolvedBinding = binding.get() + [
+      project : project
+    ]
+    String markdown = templateFile.withReader('UTF-8') {
+      engine.createTemplate(it).make(resolvedBinding).toString();
+    }
+    outputFile.getParentFile().mkdirs();
+    outputFile.write(MarkdownFilter.convert(markdown), 'UTF-8');
+  }
+}

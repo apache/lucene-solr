@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.search.TotalHits;
 
 /**
  * <code>DocList</code> represents the result of a query: an ordered list of document ids with optional score.
@@ -45,6 +46,8 @@ public interface DocList {
    * @return number of matches for the search(query &amp; any filters)
    */
   public long matches();
+  
+  public TotalHits.Relation hitCountRelation();
 
 
   /***

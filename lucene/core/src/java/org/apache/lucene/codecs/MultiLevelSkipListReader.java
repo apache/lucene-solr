@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.MathUtil;
 
@@ -80,8 +79,7 @@ public abstract class MultiLevelSkipListReader implements Closeable {
   /** childPointer of last read skip entry with docId &lt;=
    *  target. */
   private long lastChildPointer;
-  
-  private boolean inputIsBuffered;
+
   private final int skipMultiplier;
 
   /** Creates a {@code MultiLevelSkipListReader}. */
@@ -94,7 +92,6 @@ public abstract class MultiLevelSkipListReader implements Closeable {
     this.skipInterval = new int[maxSkipLevels];
     this.skipMultiplier = skipMultiplier;
     this.skipStream [0]= skipStream;
-    this.inputIsBuffered = (skipStream instanceof BufferedIndexInput);
     this.skipInterval[0] = skipInterval;
     for (int i = 1; i < maxSkipLevels; i++) {
       // cache skip intervals
@@ -237,9 +234,6 @@ public abstract class MultiLevelSkipListReader implements Closeable {
       } else {
         // clone this stream, it is already at the start of the current level
         skipStream[i] = skipStream[0].clone();
-        if (inputIsBuffered && length < BufferedIndexInput.BUFFER_SIZE) {
-          ((BufferedIndexInput) skipStream[i]).setBufferSize(Math.max(BufferedIndexInput.MIN_BUFFER_SIZE, (int) length));
-        }
         
         // move base stream beyond the current level
         skipStream[0].seek(skipStream[0].getFilePointer() + length);

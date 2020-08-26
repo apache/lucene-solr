@@ -43,7 +43,7 @@ public class ColumnAtEvaluator extends RecursiveObjectEvaluator implements TwoVa
       Matrix matrix = (Matrix) value1;
       Number index = (Number) value2;
       double[][] data = matrix.getData();
-      List<Number> list = new ArrayList();
+      List<Number> list = new ArrayList<>();
       for(double[] row : data) {
         list.add(row[index.intValue()]);
       }

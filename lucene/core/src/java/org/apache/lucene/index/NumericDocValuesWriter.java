@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
@@ -31,7 +30,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** Buffers up pending long per doc, then flushes when
  *  segment flushes. */
-class NumericDocValuesWriter extends DocValuesWriter {
+class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
 
   private PackedLongValues.Builder pending;
   private PackedLongValues finalValues;
@@ -70,21 +69,11 @@ class NumericDocValuesWriter extends DocValuesWriter {
   }
 
   @Override
-  public void finish(int maxDoc) {
-  }
-
-  @Override
-  Sorter.DocComparator getDocComparator(int maxDoc, SortField sortField) throws IOException {
-    assert finalValues == null;
-    finalValues = pending.build();
-    final BufferedNumericDocValues docValues =
-        new BufferedNumericDocValues(finalValues, docsWithField.iterator());
-    return Sorter.getDocComparator(maxDoc, sortField, () -> null, () -> docValues);
-  }
-
-  @Override
-  DocIdSetIterator getDocIdSet() {
-    return docsWithField.iterator();
+  NumericDocValues getDocValues() {
+    if (finalValues == null) {
+      finalValues = pending.build();
+    }
+    return new BufferedNumericDocValues(finalValues, docsWithField.iterator());
   }
 
   static SortingLeafReader.CachedNumericDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, NumericDocValues oldDocValues) throws IOException {
@@ -104,16 +93,12 @@ class NumericDocValuesWriter extends DocValuesWriter {
 
   @Override
   public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
-    final PackedLongValues values;
     if (finalValues == null) {
-      values = pending.build();
-    } else {
-      values = finalValues;
+      finalValues = pending.build();
     }
-
     final SortingLeafReader.CachedNumericDVs sorted;
     if (sortMap != null) {
-      NumericDocValues oldValues = new BufferedNumericDocValues(values, docsWithField.iterator());
+      NumericDocValues oldValues = new BufferedNumericDocValues(finalValues, docsWithField.iterator());
       sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap, oldValues);
     } else {
       sorted = null;
@@ -127,7 +112,7 @@ class NumericDocValuesWriter extends DocValuesWriter {
                                      throw new IllegalArgumentException("wrong fieldInfo");
                                    }
                                    if (sorted == null) {
-                                     return new BufferedNumericDocValues(values, docsWithField.iterator());
+                                     return new BufferedNumericDocValues(finalValues, docsWithField.iterator());
                                    } else {
                                      return new SortingLeafReader.SortingNumericDocValues(sorted);
                                    }

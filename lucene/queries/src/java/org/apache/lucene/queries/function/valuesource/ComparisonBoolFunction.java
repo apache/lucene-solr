@@ -50,7 +50,7 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues lhsVal = this.lhs.getValues(context, readerContext);
     final FunctionValues rhsVal = this.rhs.getValues(context, readerContext);
     final String compLabel = this.name();
@@ -97,7 +97,7 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     lhs.createWeight(context, searcher);
     rhs.createWeight(context, searcher);
   }

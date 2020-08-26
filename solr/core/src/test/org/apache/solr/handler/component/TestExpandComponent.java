@@ -419,6 +419,48 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
         "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']"
     );
+
+    // With multiple collapse
+
+    // with different cost
+    params = params("q", "*:*", "defType", "edismax", "expand", "true",  "bf", "field(test_i)", "expand.sort", "id asc");
+    params.set("fq", "{!collapse cost=1000 field="+group+"}", "{!collapse cost=2000 field=test_f}");
+    assertQ(req(params),
+        "*[count(/response/result/doc)=1]",
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']"
+    );
+
+    // with same cost (default cost)
+    params.set("fq", "{!collapse field="+group+"}", "{!collapse field=test_f}");
+    assertQ(req(params),
+        "*[count(/response/result/doc)=1]",
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']"
+    );
+
+    // with different cost but choose the test_f
+    params.set("fq", "{!collapse cost=3000 field="+group+"}", "{!collapse cost=2000 field=test_f}");
+    assertQ(req(params),
+        "*[count(/response/result/doc)=1]",
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/lst[@name='expanded']/result[@name='200.0']/doc[1]/str[@name='id'][.='3']",
+        "/response/lst[@name='expanded']/result[@name='200.0']/doc[2]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='200.0']/doc[3]/str[@name='id'][.='8']"
+    );
+
+    // with different cost and nullPolicy
+    params.set("bf", "ord(id)");
+    params.set("fq", "{!collapse cost=1000 field="+group+" nullPolicy=collapse}", "{!collapse cost=2000 field=test_f}");
+    assertQ(req(params),
+        "*[count(/response/result/doc)=2]",
+        "/response/result/doc[1]/str[@name='id'][.='8']",
+        "/response/result/doc[2]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']"
+    );
   }
 
   @Test

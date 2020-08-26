@@ -1,6 +1,5 @@
 = Collection Management Commands
-:page-toclevels: 1
-:page-tocclass: right
+:toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -63,13 +62,6 @@ The number of TLOG replicas to create for this collection. This type of replica 
 `pullReplicas`::
 The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
-`maxShardsPerNode`::
-When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node.
-+
-If a node is not live when the CREATE action is called, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining `maxShardsPerNode` sets a limit on the number of replicas the CREATE action will spread to each node.
-+
-If the entire collection can not be fit into the live nodes, no collection will be created at all. The default `maxShardsPerNode` value is `1`. A value of `-1` means unlimited. If a `policy` is also specified then the stricter of `maxShardsPerNode` and policy rules apply.
-
 `createNodeSet`::
 Allows defining the nodes to spread the new collection across. The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 +
@@ -95,11 +87,6 @@ Please note that <<realtime-get.adoc#realtime-get,RealTime Get>> or retrieval by
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
-`autoAddReplicas`::
-When set to `true`, enables automatic addition of replicas when the number of active replicas falls below the value set for `replicationFactor`. This may occur if a replica goes down, for example. The default is `false`, which means new replicas will not be added.
-+
-While this parameter is provided as part of Solr's set of features to provide autoscaling of clusters, it is available even when you have not implemented any other part of autoscaling (such as a policy). See the section <<solrcloud-autoscaling-auto-add-replicas.adoc#the-autoaddreplicas-parameter,SolrCloud Autoscaling Automatically Adding Replicas>> for more details about this option and how it can be used.
-
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
@@ -109,14 +96,8 @@ Replica placement rules. See the section <<rule-based-replica-placement.adoc#rul
 `snitch`::
 Details of the snitch provider. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
 
-`policy`:: Name of the collection-level policy. See <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, Defining Collection-Specific Policies >> for details.
-
 `waitForFinalState`::
 If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
-
-`withCollection`::
-The name of the collection with which all replicas of this collection must be co-located. The collection must already exist and must have a single shard named `shard1`.
-See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
 
 `alias`::
 Starting with version 8.1 when a collection is created additionally an alias can be created
@@ -242,9 +223,7 @@ At least one `_attribute_` parameter is required.
 
 The attributes that can be modified are:
 
-* maxShardsPerNode
 * replicationFactor
-* autoAddReplicas
 * collection.configName
 * rule
 * snitch
@@ -721,9 +700,9 @@ source collection.
 
 There's a number of optional parameters that determine the target collection layout. If they
 are not specified in the request then their values are copied from the source collection.
-The following parameters are currently supported (described in details in the <<create,CREATE collection>> section):
-`numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`, `maxShardsPerNode`,
-`autoAddReplicas`, `shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
+The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
+`numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`,
+`shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
 
 `removeSource`::
 Optional boolean. If true then after the processing is successfully finished the source collection will
@@ -904,11 +883,8 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
         "QTime": 50
     },
     "gettingstarted": {
-        "stateFormat": 2,
         "znodeVersion": 16,
         "properties": {
-            "autoAddReplicas": "false",
-            "maxShardsPerNode": "-1",
             "nrtReplicas": "2",
             "pullReplicas": "0",
             "replicationFactor": "2",
@@ -1050,11 +1026,8 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
         "QTime": 26812
     },
     "gettingstarted": {
-        "stateFormat": 2,
         "znodeVersion": 33,
         "properties": {
-            "autoAddReplicas": "false",
-            "maxShardsPerNode": "-1",
             "nrtReplicas": "2",
             "pullReplicas": "0",
             "replicationFactor": "2",
@@ -1283,35 +1256,16 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 `repository`::
 The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
 
-*Override Parameters*
+There's a number of optional parameters that determine the target collection layout.
+The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
+`createNodeSet`, `createNodeSet.shuffle`.
 
-Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup:
+Note: for `createNodeSet` the special value of `EMPTY` is not allowed with this command.
 
-`collection.configName`::
-Defines the name of the configurations to use for this collection. These must already be stored in ZooKeeper. If not provided, Solr will default to the collection name as the configuration name.
+*Overridable Parameters*
 
-`replicationFactor`::
-The number of replicas to be created for each shard.
-
-`nrtReplicas`::
-The number of NRT (Near-Real-Time) replicas to create for this collection. This type of replica maintains a transaction log and updates its index locally. This parameter behaves the same way as setting replicationFactor parameter.
-
-`tlogReplicas`::
-The number of TLOG replicas to create for this collection. This type of replica maintains a transaction log but only updates its index via replication from a leader. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
-
-`pullReplicas`::
-The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
-
-`maxShardsPerNode`::
-When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node.
-+
-If a node is not live when the CREATE operation is called, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining `maxShardsPerNode` sets a limit on the number of replicas CREATE will spread to each node. If the entire collection can not be fit into the live nodes, no collection will be created at all.
-
-`autoAddReplicas`::
-When set to `true`, enables auto addition of replicas on shared file systems. See the section <<running-solr-on-hdfs.adoc#automatically-add-replicas-in-solrcloud,Automatically Add Replicas in SolrCloud>> for more details on settings and overrides.
-
-`property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup (described in detail in the <<create,CREATE collection>> section):
+`collection.configName`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`, `property._name_=_value_`.
 
 [[rebalanceleaders]]
 == REBALANCELEADERS: Rebalance Leaders

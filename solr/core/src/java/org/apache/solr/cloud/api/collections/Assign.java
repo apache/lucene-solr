@@ -16,6 +16,10 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.common.cloud.DocCollection.SNITCH;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -29,19 +33,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
+import org.apache.solr.client.solrj.cloud.BadVersionException;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
@@ -52,19 +52,14 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import com.google.common.collect.ImmutableMap;
 
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -200,7 +195,7 @@ public class Assign {
     }
     return defaultValue;
   }
-  
+
   private static int defaultCounterValue(DocCollection collection, boolean newCollection) {
     if (newCollection) return 0;
     int defaultValue = collection.getReplicas().size();
@@ -255,56 +250,6 @@ public class Assign {
     return nodeList;
   }
 
-  /**
-   * <b>Note:</b> where possible, the {@link #usePolicyFramework(DocCollection, SolrCloudManager)} method should
-   * be used instead of this method
-   *
-   * @return true if autoscaling policy framework should be used for replica placement
-   */
-  public static boolean usePolicyFramework(SolrCloudManager cloudManager) throws IOException, InterruptedException {
-    Objects.requireNonNull(cloudManager, "The SolrCloudManager instance cannot be null");
-    return usePolicyFramework(Optional.empty(), cloudManager);
-  }
-
-  /**
-   * @return true if auto scaling policy framework should be used for replica placement
-   * for this collection, otherwise false
-   */
-  public static boolean usePolicyFramework(DocCollection collection, SolrCloudManager cloudManager)
-      throws IOException, InterruptedException {
-    Objects.requireNonNull(collection, "The DocCollection instance cannot be null");
-    Objects.requireNonNull(cloudManager, "The SolrCloudManager instance cannot be null");
-    return usePolicyFramework(Optional.of(collection), cloudManager);
-  }
-
-  private static boolean usePolicyFramework(Optional<DocCollection> collection, SolrCloudManager cloudManager) throws IOException, InterruptedException {
-    boolean useLegacyAssignment = true;
-    Map<String, Object> clusterProperties = cloudManager.getClusterStateProvider().getClusterProperties();
-    if (clusterProperties.containsKey(CollectionAdminParams.DEFAULTS))  {
-      Map<String, Object> defaults = (Map<String, Object>) clusterProperties.get(CollectionAdminParams.DEFAULTS);
-      Map<String, Object> collectionDefaults = (Map<String, Object>) defaults.getOrDefault(CollectionAdminParams.CLUSTER, Collections.emptyMap());
-      useLegacyAssignment = Boolean.parseBoolean(collectionDefaults.getOrDefault(CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT, "true").toString());
-    }
-
-    if (!useLegacyAssignment) {
-      // if legacy assignment is not selected then autoscaling is always available through the implicit policy/preferences
-      return true;
-    }
-
-    // legacy assignment is turned on, which means we must look at the actual autoscaling config
-    // to determine whether policy framework can be used or not for this collection
-
-    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-    // if no autoscaling configuration exists then obviously we cannot use the policy framework
-    if (autoScalingConfig.getPolicy().isEmpty()) return false;
-    // do custom preferences exist
-    if (!autoScalingConfig.getPolicy().isEmptyPreferences()) return true;
-    // does a cluster policy exist
-    if (!autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) return true;
-    // finally we check if the current collection has a policy
-    return !collection.isPresent() || collection.get().getPolicyName() != null;
-  }
-
   static class ReplicaCount {
     public final String nodeName;
     public int thisCollectionNodes = 0;
@@ -321,14 +266,15 @@ public class Assign {
 
   // Only called from addReplica (and by extension createShard) (so far).
   //
-  // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if not enough replicas
-  // could be created on live nodes given maxShardsPerNode, Replication factor (if from createShard) etc.
+  // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if the AssignStrategy
+  // can't allocate valid positions.
+  @SuppressWarnings({"unchecked"})
   public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
                                                           String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
                                                           Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
-    log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}", shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet );
+    log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
+        , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
     DocCollection coll = clusterState.getCollection(collectionName);
-    Integer maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
     List<String> createNodeList = null;
 
     if (createNodeSet instanceof List) {
@@ -338,22 +284,10 @@ public class Assign {
       createNodeList = createNodeSet == null ? null : new ArrayList<>(new LinkedHashSet<>(StrUtils.splitSmart((String) createNodeSet, ",", true)));
     }
 
-    HashMap<String, ReplicaCount> nodeNameVsShardCount = getNodeNameVsShardCount(collectionName, clusterState, createNodeList);
-
-    if (createNodeList == null) { // We only care if we haven't been told to put new replicas on specific nodes.
-      long availableSlots = 0;
-      for (Map.Entry<String, ReplicaCount> ent : nodeNameVsShardCount.entrySet()) {
-        //ADDREPLICA can put more than maxShardsPerNode on an instance, so this test is necessary.
-        if (maxShardsPerNode > ent.getValue().thisCollectionNodes) {
-          availableSlots += (maxShardsPerNode - ent.getValue().thisCollectionNodes);
-        }
-      }
-      if (availableSlots < nrtReplicas + tlogReplicas + pullReplicas) {
-        throw new AssignmentException(
-            String.format(Locale.ROOT, "Cannot create %d new replicas for collection %s given the current number of eligible live nodes %d and a maxShardsPerNode of %d",
-                nrtReplicas, collectionName, nodeNameVsShardCount.size(), maxShardsPerNode));
-      }
-    }
+    // produces clear message when down nodes are the root cause, without this the user just
+    // gets a log message of detail about the nodes that are up, and a message that policies could not
+    // be satisfied which then requires study to diagnose the issue.
+    checkLiveNodes(createNodeList,clusterState);
 
     AssignRequest assignRequest = new AssignRequestBuilder()
         .forCollection(collectionName)
@@ -368,61 +302,24 @@ public class Assign {
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
-  public static List<ReplicaPosition> getPositionsUsingPolicy(String collName, List<String> shardNames,
-                                                              int nrtReplicas,
-                                                              int tlogReplicas,
-                                                              int pullReplicas,
-                                                              String policyName, SolrCloudManager cloudManager,
-                                                              List<String> nodesList) throws IOException, InterruptedException, AssignmentException {
-    log.debug("shardnames {} NRT {} TLOG {} PULL {} , policy {}, nodeList {}", shardNames, nrtReplicas, tlogReplicas, pullReplicas, policyName, nodesList);
-    List<ReplicaPosition> replicaPositions = null;
-    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
-    try {
-      Map<String, String> kvMap = Collections.singletonMap(collName, policyName);
-      replicaPositions = PolicyHelper.getReplicaLocations(
-          collName,
-          autoScalingConfig,
-          cloudManager,
-          kvMap,
-          shardNames,
-          nrtReplicas,
-          tlogReplicas,
-          pullReplicas,
-          nodesList);
-      return replicaPositions;
-    } catch (Exception e) {
-      throw new AssignmentException("Error getting replica locations : " + e.getMessage(), e);
-    } finally {
-      if (log.isTraceEnabled()) {
-        if (replicaPositions != null)
-          log.trace("REPLICA_POSITIONS: " + Utils.toJSONString(Utils.getDeepCopy(replicaPositions, 7, true)));
-        log.trace("AUTOSCALING_CONF: " + Utils.toJSONString(autoScalingConfig));
-      }
-    }
-  }
-
   static HashMap<String, ReplicaCount> getNodeNameVsShardCount(String collectionName,
                                                                        ClusterState clusterState, List<String> createNodeList) {
-    Set<String> nodes = clusterState.getLiveNodes();
-
-    List<String> nodeList = new ArrayList<>(nodes.size());
-    nodeList.addAll(nodes);
-    if (createNodeList != null) nodeList.retainAll(createNodeList);
-
     HashMap<String, ReplicaCount> nodeNameVsShardCount = new HashMap<>();
-    for (String s : nodeList) {
+    List<String> liveNodes = createNodeList == null || createNodeList.isEmpty() ?
+        new ArrayList<>(clusterState.getLiveNodes()) :
+        checkLiveNodes(createNodeList, clusterState);
+
+    for (String s : liveNodes) {
       nodeNameVsShardCount.put(s, new ReplicaCount(s));
     }
-    if (createNodeList != null) { // Overrides petty considerations about maxShardsPerNode
-      if (createNodeList.size() != nodeNameVsShardCount.size()) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "At least one of the node(s) specified " + createNodeList + " are not currently active in "
-                + nodeNameVsShardCount.keySet() + ", no action taken.");
-      }
+
+    // if we were given a list, just use that, don't worry about counts
+    if (createNodeList != null) {
       return nodeNameVsShardCount;
     }
+
+    // if we get here we were not given a createNodeList, build a map with real counts.
     DocCollection coll = clusterState.getCollection(collectionName);
-    int maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
       DocCollection c = entry.getValue();
@@ -435,7 +332,6 @@ public class Assign {
             count.totalNodes++; // Used to "weigh" whether this node should be used later.
             if (entry.getKey().equals(collectionName)) {
               count.thisCollectionNodes++;
-              if (count.thisCollectionNodes >= maxShardsPerNode) nodeNameVsShardCount.remove(replica.getNodeName());
             }
           }
         }
@@ -443,6 +339,22 @@ public class Assign {
     }
 
     return nodeNameVsShardCount;
+  }
+
+  // throw an exception if any node int the supplied list is not live.
+  // Empty or null list always succeeds and returns the input.
+  private static List<String> checkLiveNodes(List<String> createNodeList, ClusterState clusterState) {
+    Set<String> liveNodes = clusterState.getLiveNodes();
+    if (createNodeList != null) {
+      if (!liveNodes.containsAll(createNodeList)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "At least one of the node(s) specified " + createNodeList + " are not currently active in "
+                + createNodeList + ", no action taken.");
+      }
+      // the logic that was extracted to this method used to create a defensive copy but no code
+      // was modifying the copy, if this method is made protected or public we want to go back to that
+    }
+    return createNodeList; // unmodified, but return for inline use
   }
 
   /**
@@ -542,37 +454,50 @@ public class Assign {
     @Override
     public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
       ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
-      List<String> nodeList = assignRequest.nodes;
+      List<String> nodeList = assignRequest.nodes; // can this be empty list?
 
-      HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount = Assign.getNodeNameVsShardCount(assignRequest.collectionName, clusterState, assignRequest.nodes);
       if (nodeList == null || nodeList.isEmpty()) {
+        HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount =
+            Assign.getNodeNameVsShardCount(assignRequest.collectionName, clusterState, nodeList);
+        // if nodelist was empty, this map will be empty too. (passing null above however gets a full map)
         ArrayList<Assign.ReplicaCount> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
         sortedNodeList.sort(Comparator.comparingInt(Assign.ReplicaCount::weight));
         nodeList = sortedNodeList.stream().map(replicaCount -> replicaCount.nodeName).collect(Collectors.toList());
       }
 
+      // otherwise we get a div/0 below
+      assert !nodeList.isEmpty();
+
       int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();
-      for (String aShard : assignRequest.shardNames)
-        for (Map.Entry<Replica.Type, Integer> e : ImmutableMap.of(Replica.Type.NRT, assignRequest.numNrtReplicas,
-            Replica.Type.TLOG, assignRequest.numTlogReplicas,
-            Replica.Type.PULL, assignRequest.numPullReplicas
-        ).entrySet()) {
+      for (String aShard : assignRequest.shardNames) {
+        for (Map.Entry<Replica.Type, Integer> e : countsPerReplicaType(assignRequest).entrySet()) {
           for (int j = 0; j < e.getValue(); j++) {
             result.add(new ReplicaPosition(aShard, j, e.getKey(), nodeList.get(i % nodeList.size())));
             i++;
           }
         }
+      }
       return result;
+    }
+
+    // keeps this big ugly construction block out of otherwise legible code
+    private ImmutableMap<Replica.Type, Integer> countsPerReplicaType(AssignRequest assignRequest) {
+      return ImmutableMap.of(
+          Replica.Type.NRT, assignRequest.numNrtReplicas,
+          Replica.Type.TLOG, assignRequest.numTlogReplicas,
+          Replica.Type.PULL, assignRequest.numPullReplicas
+      );
     }
   }
 
   public static class RulesBasedAssignStrategy implements AssignStrategy {
     public List<Rule> rules;
+    @SuppressWarnings({"rawtypes"})
     public List snitches;
     public ClusterState clusterState;
 
-    public RulesBasedAssignStrategy(List<Rule> rules, List snitches, ClusterState clusterState) {
+    public RulesBasedAssignStrategy(List<Rule> rules, @SuppressWarnings({"rawtypes"})List snitches, ClusterState clusterState) {
       this.rules = rules;
       this.snitches = snitches;
       this.clusterState = clusterState;
@@ -618,22 +543,6 @@ public class Assign {
     }
   }
 
-  public static class PolicyBasedAssignStrategy implements AssignStrategy {
-    public String policyName;
-
-    public PolicyBasedAssignStrategy(String policyName) {
-      this.policyName = policyName;
-    }
-
-    @Override
-    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
-      return Assign.getPositionsUsingPolicy(assignRequest.collectionName,
-          assignRequest.shardNames, assignRequest.numNrtReplicas,
-          assignRequest.numTlogReplicas, assignRequest.numPullReplicas,
-          policyName, solrCloudManager, assignRequest.nodes);
-    }
-  }
-
   public static class AssignStrategyFactory {
     public SolrCloudManager solrCloudManager;
 
@@ -642,19 +551,18 @@ public class Assign {
     }
 
     public AssignStrategy create(ClusterState clusterState, DocCollection collection) throws IOException, InterruptedException {
+      @SuppressWarnings({"unchecked", "rawtypes"})
       List<Map> ruleMaps = (List<Map>) collection.get("rule");
-      String policyName = collection.getStr(POLICY);
+      @SuppressWarnings({"rawtypes"})
       List snitches = (List) collection.get(SNITCH);
 
       Strategy strategy = null;
-      if ((ruleMaps == null || ruleMaps.isEmpty()) && !usePolicyFramework(collection, solrCloudManager)) {
-        strategy = Strategy.LEGACY;
-      } else if (ruleMaps != null && !ruleMaps.isEmpty()) {
+      if (ruleMaps != null && !ruleMaps.isEmpty()) {
         strategy = Strategy.RULES;
       } else {
-        strategy = Strategy.POLICY;
+        strategy = Strategy.LEGACY;        
       }
-
+      
       switch (strategy) {
         case LEGACY:
           return new LegacyAssignStrategy();
@@ -662,15 +570,13 @@ public class Assign {
           List<Rule> rules = new ArrayList<>();
           for (Object map : ruleMaps) rules.add(new Rule((Map) map));
           return new RulesBasedAssignStrategy(rules, snitches, clusterState);
-        case POLICY:
-          return new PolicyBasedAssignStrategy(policyName);
         default:
           throw new Assign.AssignmentException("Unknown strategy type: " + strategy);
       }
     }
 
     private enum Strategy {
-      LEGACY, RULES, POLICY;
+      LEGACY, RULES;
     }
   }
 }

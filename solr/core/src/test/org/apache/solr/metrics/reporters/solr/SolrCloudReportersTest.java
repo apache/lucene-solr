@@ -67,7 +67,6 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
     cluster.uploadConfigSet(Paths.get(TEST_PATH().toString(), "configsets", "minimal", "conf"), "test");
 
     CollectionAdminRequest.createCollection("test_collection", "test", 2, 2)
-        .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("test_collection", 2, 4);
     
@@ -140,7 +139,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
         String key = "QUERY./select.requests";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
-        key = "UPDATE./update/json.requests";
+        key = "UPDATE./update.requests";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
       }
@@ -150,7 +149,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
         String key = "jvm.memory.heap.init";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
-        key = "leader.test_collection.shard1.UPDATE./update/json.requests.max";
+        key = "leader.test_collection.shard1.UPDATE./update.requests.max";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
       }
@@ -169,7 +168,6 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
     cluster.uploadConfigSet(Paths.get(TEST_PATH().toString(), "configsets", "minimal", "conf"), "test");
 
     CollectionAdminRequest.createCollection("test_collection", "test", 2, 2)
-        .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("test_collection", 2, 4);
     waitForState("Expected test_collection with 2 shards and 2 replicas", "test_collection", clusterShape(2, 4));

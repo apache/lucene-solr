@@ -129,6 +129,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
 
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void sanityCheckIndividualShards() throws Exception {
     // sanity check that our expectations about each shard (non-distrib) are correct
 
@@ -147,7 +148,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       for (int j = 0; j < 5; j++) {
         NamedList bucket = shardFooBuckets[i].get(j);
         assertEquals(bucket.toString(), "aaa"+j, bucket.get("val"));
-        assertEquals(bucket.toString(), 100, bucket.get("count"));
+        assertEquals(bucket.toString(), 100L, bucket.get("count"));
       }
     }
     // top 6-10 same on shard0 & shard1
@@ -155,19 +156,19 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       for (int j = 5; j < 10; j++) {
         NamedList bucket = shardFooBuckets[i].get(j);
         assertTrue(bucket.toString(), bucket.get("val").toString().startsWith("bbb"));
-        assertEquals(bucket.toString(), 50, bucket.get("count"));
+        assertEquals(bucket.toString(), 50L, bucket.get("count"));
       }
     }
 
     // 6-10 on shard2
     assertEquals("junkA", shardFooBuckets[2].get(5).get("val"));
-    assertEquals(50, shardFooBuckets[2].get(5).get("count"));
+    assertEquals(50L, shardFooBuckets[2].get(5).get("count"));
     assertEquals("tail", shardFooBuckets[2].get(6).get("val"));
-    assertEquals(45, shardFooBuckets[2].get(6).get("count"));
+    assertEquals(45L, shardFooBuckets[2].get(6).get("count"));
     for (int j = 7; j < 10; j++) {
       NamedList bucket = shardFooBuckets[2].get(j);
       assertTrue(bucket.toString(), bucket.get("val").toString().startsWith("ZZZ"));
-      assertEquals(bucket.toString(), 1, bucket.get("count"));
+      assertEquals(bucket.toString(), 1L, bucket.get("count"));
     }
     
     // check 'bar' sub buckets on "tail" from shard2
@@ -176,14 +177,15 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       for (int j = 0; j < 5; j++) {
         NamedList bucket = bar_buckets.get(j);
         assertTrue(bucket.toString(), bucket.get("val").toString().startsWith("junkB"));
-        assertEquals(bucket.toString(), 8, bucket.get("count"));
+        assertEquals(bucket.toString(), 8L, bucket.get("count"));
       }
       NamedList bucket = bar_buckets.get(5);
       assertEquals("tailB", bucket.get("val"));
-      assertEquals(5, bucket.get("count"));
+      assertEquals(5L, bucket.get("count"));
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void checkRefinementAndOverrequesting() throws Exception {
     // // distributed queries // //
 
@@ -372,6 +374,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
   
   private void checkSubFacetStats(String extraJson) throws Exception {
     String commonJson = "type: terms, " + extraJson;
+    @SuppressWarnings({"unchecked", "rawtypes"})
     NamedList<NamedList> all_facets = (NamedList) queryServer
       ( params( "q", "*:*", "shards", getShardsString(), "rows" , "0", "json.facet",
                 "{ foo : { " + commonJson + " field: foo_s, facet: { " +
@@ -383,8 +386,10 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     
     assertNotNull(all_facets);
 
-    List<NamedList> foo_buckets = (List) ((NamedList)all_facets.get("foo")).get("buckets");
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    List<NamedList> foo_buckets = (List) (all_facets.get("foo")).get("buckets");
 
+    @SuppressWarnings({"rawtypes"})
     NamedList aaa0_Bucket = foo_buckets.get(0);
     assertEquals(ALL_STATS.size() + 3, aaa0_Bucket.size()); // val,count,facet
     assertEquals("aaa0", aaa0_Bucket.get("val"));
@@ -402,6 +407,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(284L, aaa0_Bucket.get("unique"));
     assertEquals(284L, aaa0_Bucket.get("hll"));
 
+    @SuppressWarnings({"rawtypes"})
     NamedList tail_Bucket = foo_buckets.get(5);
     assertEquals(ALL_STATS.size() + 3, tail_Bucket.size()); // val,count,facet
     assertEquals("tail", tail_Bucket.get("val"));
@@ -419,8 +425,10 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(45L, tail_Bucket.get("unique"));
     assertEquals(45L, tail_Bucket.get("hll"));
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<NamedList> tail_bar_buckets = (List) ((NamedList)tail_Bucket.get("bar")).get("buckets");
    
+    @SuppressWarnings({"rawtypes"})
     NamedList tailB_Bucket = tail_bar_buckets.get(0);
     assertEquals(ALL_STATS.size() + 3, tailB_Bucket.size()); // val,count,skg ... NO SUB FACETS
     assertEquals("tailB", tailB_Bucket.get("val"));
@@ -439,6 +447,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(6L, tailB_Bucket.get("hll"));
 
     // check the SKG stats on our tailB bucket
+    @SuppressWarnings({"rawtypes"})
     NamedList tailB_skg = (NamedList) tailB_Bucket.get("skg");
     assertEquals(tailB_skg.toString(),
                  3, tailB_skg.size()); 

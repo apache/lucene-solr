@@ -57,7 +57,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
@@ -91,7 +91,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
   public FeaturesSelectionStream(String zkHost,
                      String collectionName,
-                     Map params,
+                     @SuppressWarnings({"rawtypes"})Map params,
                      String field,
                      String outcome,
                      String featureSet,
@@ -213,9 +213,10 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     return expression;
   }
 
+  @SuppressWarnings({"unchecked"})
   private void init(String collectionName,
                     String zkHost,
-                    Map params,
+                    @SuppressWarnings({"rawtypes"})Map params,
                     String field,
                     String outcome,
                     String featureSet,
@@ -248,7 +249,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     }
 
     this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("FeaturesSelectionStream"));
+    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("FeaturesSelectionStream"));
   }
 
   public List<TupleStream> children() {
@@ -288,6 +289,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List<Future<NamedList>> callShards(List<String> baseUrls) throws IOException {
 
     List<Future<NamedList>> futures = new ArrayList<>();
@@ -336,10 +338,13 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
 
         long numDocs = 0;
-        for (Future<NamedList> getTopTermsCall : callShards(getShardUrls())) {
+        for (@SuppressWarnings({"rawtypes"})Future<NamedList> getTopTermsCall : callShards(getShardUrls())) {
+          @SuppressWarnings({"rawtypes"})
           NamedList resp = getTopTermsCall.get();
 
+          @SuppressWarnings({"unchecked"})
           NamedList<Double> shardTopTerms = (NamedList<Double>)resp.get("featuredTerms");
+          @SuppressWarnings({"unchecked"})
           NamedList<Integer> shardDocFreqs = (NamedList<Integer>)resp.get("docFreq");
 
           numDocs += (Integer)resp.get("numDocs");
@@ -362,21 +367,19 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
         for (Map.Entry<String, Double> termScore : termScores.entrySet()) {
           if (tuples.size() == numTerms) break;
           index++;
-          Map map = new HashMap();
-          map.put(ID, featureSet + "_" + index);
-          map.put("index_i", index);
-          map.put("term_s", termScore.getKey());
-          map.put("score_f", termScore.getValue());
-          map.put("featureSet_s", featureSet);
+          Tuple tuple = new Tuple();
+          tuple.put(ID, featureSet + "_" + index);
+          tuple.put("index_i", index);
+          tuple.put("term_s", termScore.getKey());
+          tuple.put("score_f", termScore.getValue());
+          tuple.put("featureSet_s", featureSet);
           long docFreq = docFreqs.get(termScore.getKey());
           double d = Math.log(((double)numDocs / (double)(docFreq + 1)));
-          map.put("idf_d", d);
-          tuples.add(new Tuple(map));
+          tuple.put("idf_d", d);
+          tuples.add(tuple);
         }
 
-        Map map = new HashMap();
-        map.put("EOF", true);
-        tuples.add(new Tuple(map));
+        tuples.add(Tuple.EOF());
 
         tupleIterator = tuples.iterator();
       }
@@ -399,6 +402,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     return result;
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected class FeaturesSelectionCall implements Callable<NamedList> {
 
     private String baseUrl;
@@ -417,6 +421,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       this.paramsMap = paramsMap;
     }
 
+    @SuppressWarnings({"unchecked"})
     public NamedList<Double> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);

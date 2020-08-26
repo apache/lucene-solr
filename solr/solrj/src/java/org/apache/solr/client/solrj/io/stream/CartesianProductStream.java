@@ -199,6 +199,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return generatedTuples.pop();
   }
   
+  @SuppressWarnings({"unchecked"})
   private LinkedList<Tuple> generateTupleList(Tuple original) throws IOException{
     Map<String, Object> evaluatedValues = new HashMap<>();
     

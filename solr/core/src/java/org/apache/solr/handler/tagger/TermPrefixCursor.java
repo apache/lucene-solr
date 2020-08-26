@@ -107,6 +107,7 @@ class TermPrefixCursor {
 
   /** Seeks to prefixBuf or the next term that is prefixed by prefixBuf plus the separator char.
    * Sets docIds. **/
+  @SuppressWarnings({"fallthrough"})
   private boolean seekPrefix() throws IOException {
     TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(prefixBuf);
 

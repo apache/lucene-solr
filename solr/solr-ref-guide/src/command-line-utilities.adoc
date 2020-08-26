@@ -36,7 +36,7 @@ ZooKeeper's `zkCli.sh` provides a completely general, application-agnostic shell
 
 == Using Solr's ZooKeeper CLI
 
-Use the `help` option to get a list of available commands from the script itself, as in `./server/scripts/cloud-scrips/zkcli.sh help`.
+Use the `help` option to get a list of available commands from the script itself, as in `./server/scripts/cloud-scripts/zkcli.sh help`.
 
 Both `zkcli.sh` (for Unix environments) and `zkcli.bat` (for Windows environments) support the following command line options:
 

@@ -145,6 +145,7 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
     public ShapeValues getValues(LeafReaderContext readerContext) throws IOException {
       final ShapeValues targetFuncValues = targetValueSource.getValues(readerContext);
       // The key is a pair of leaf reader with a docId relative to that reader. The value is a Map from field to Shape.
+      @SuppressWarnings({"unchecked"})
       final SolrCache<PerSegCacheKey,Shape> cache =
           SolrRequestInfo.getRequestInfo().getReq().getSearcher().getCache(CACHE_KEY_PREFIX + fieldName);
       if (cache == null) {

@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Geospatial search'
+
 dependencies {
   api project(':lucene:core')
   api project(':lucene:spatial3d')

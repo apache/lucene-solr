@@ -75,7 +75,7 @@ public class IntegrateEvaluator extends RecursiveObjectEvaluator implements Many
 
       double[] x = (double[])vectorFunction.getFromContext("x");
       double[] y = (double[])vectorFunction.getFromContext("y");
-      ArrayList<Number> out = new ArrayList();
+      ArrayList<Number> out = new ArrayList<>();
       out.add(0);
       for(int i=1; i<x.length; i++) {
         out.add(integrator.integrate(5000, func, x[0], x[i]));

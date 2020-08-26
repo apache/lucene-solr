@@ -434,7 +434,7 @@ public class MultiDocValues {
       LeafReaderContext context = leaves.get(i);
       SortedNumericDocValues v = context.reader().getSortedNumericDocValues(field);
       if (v == null) {
-        v = DocValues.emptySortedNumeric(context.reader().maxDoc());
+        v = DocValues.emptySortedNumeric();
       } else {
         anyReal = true;
       }

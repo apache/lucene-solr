@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -39,6 +40,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -709,6 +711,24 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType","edismax", "q","Zapp Pig", "qf","myalias^100 name", "f.myalias.qf","trait_ss^0.1"), "//result/doc[1]/str[@name='id']=47", "//result/doc[2]/str[@name='id']=42");//Now the order should be inverse
   }
   
+  /** SOLR-13203 **/
+  public void testUfDynamicField() throws Exception {
+    try {
+      ignoreException("dynamic field");
+
+      SolrException exception = expectThrows(SolrException.class,
+          () -> h.query(req("uf", "fl=trait*,id", "defType", "edismax")));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+      assertEquals("dynamic field name must start or end with *",
+          exception.getMessage());
+    } finally {
+      resetExceptionIgnores();
+    }
+
+    // simple test to validate dynamic uf parsing works
+    assertQ(req("uf", "trait* id", "defType", "edismax"));
+  }
+
   public void testCyclicAliasing() throws Exception {
     try {
       ignoreException(".*Field aliases lead to a cycle.*");
@@ -946,6 +966,62 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     );
   }
 
+    @Test
+    public void testWhitespaceCharacters() throws Exception {
+        assertU(adoc("id", "whitespaceChars",
+                "cat_s", "foo\nfoo"));
+        assertU(commit());
+
+        assertQ(req("q", "(\"foo\nfoo\")",
+                        "qf", "cat_s",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "cat_s:[\"foo\nfoo\" TO \"foo\nfoo\"]",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "cat_s:[ \"foo\nfoo\" TO \"foo\nfoo\"]",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "{!edismax qf=cat_s v='[\"foo\nfoo\" TO \"foo\nfoo\"]'}")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "{!edismax qf=cat_s v='[ \"foo\nfoo\" TO \"foo\nfoo\"]'}")
+                , "*[count(//doc)=1]");
+
+    }
+
+    @Test
+    public void testDoubleQuoteCharacters() throws Exception {
+        assertU(adoc("id", "doubleQuote",
+                "cat_s", "foo\"foo"));
+        assertU(commit());
+
+        assertQ(req("q", "cat_s:[\"foo\\\"foo\" TO \"foo\\\"foo\"]",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "cat_s:\"foo\\\"foo\"",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "cat_s:foo\\\"foo",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+
+        assertQ(req("q", "cat_s:foo\"foo",
+                        "qf", "name",
+                        "defType", "edismax")
+                , "*[count(//doc)=1]");
+    }
+
   /**
    * verify that all reserved characters are properly escaped when being set in
    * {@link org.apache.solr.search.ExtendedDismaxQParser.Clause#val}.
@@ -993,8 +1069,92 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "*[count(//doc)=3]");    
     
   }
-  
-  /**
+
+
+    /**
+     * Repeating some of test cases as direct calls to splitIntoClauses
+     */
+    @Test
+    public void testSplitIntoClauses() throws Exception {
+        String query = "(\"foo\nfoo\")";
+        SolrQueryRequest request = req("q", query,
+                "qf", "cat_s",
+                "defType", "edismax");
+        ExtendedDismaxQParser parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
+        List<ExtendedDismaxQParser.Clause> clauses = parser.splitIntoClauses(query, false);
+        Assert.assertEquals(3, clauses.size());
+        assertClause(clauses.get(0), "\\(", false, true);
+        assertClause(clauses.get(1), "foo\nfoo", true, false);
+        assertClause(clauses.get(2), "\\)", false, true);
+
+        query = "cat_s:[\"foo\nfoo\" TO \"foo\nfoo\"]";
+        request = req("q", query,
+                "qf", "cat_s",
+                "defType", "edismax");
+        parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
+        clauses = parser.splitIntoClauses(query, false);
+        Assert.assertEquals(5, clauses.size());
+        assertClause(clauses.get(0), "\\[", false, true, "cat_s");
+        assertClause(clauses.get(1), "foo\nfoo", true, false);
+        assertClause(clauses.get(2), "TO", true, false);
+        assertClause(clauses.get(3), "foo\nfoo", true, false);
+        assertClause(clauses.get(4), "\\]", false, true);
+
+        query = "cat_s:[ \"foo\nfoo\" TO \"foo\nfoo\"]";
+        request = req("q", query,
+                "qf", "cat_s",
+                "defType", "edismax");
+        parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
+        clauses = parser.splitIntoClauses(query, false);
+        Assert.assertEquals(5, clauses.size());
+        assertClause(clauses.get(0), "\\[", true, true, "cat_s");
+        assertClause(clauses.get(1), "foo\nfoo", true, false);
+        assertClause(clauses.get(2), "TO", true, false);
+        assertClause(clauses.get(3), "foo\nfoo", true, false);
+        assertClause(clauses.get(4), "\\]", false, true);
+
+        String allReservedCharacters = "!():^[]{}~*?\"+-\\|&/";
+        // the backslash needs to be manually escaped (the query parser sees the raw backslash as an escape the subsequent
+        // character)
+        query = allReservedCharacters.replace("\\", "\\\\");
+
+        request = req("q", query,
+                "qf", "name",
+                "mm", "100%",
+                "defType", "edismax");
+
+        parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
+        clauses = parser.splitIntoClauses(query, false);
+        Assert.assertEquals(1, clauses.size());
+        assertClause(clauses.get(0), "\\!\\(\\)\\:\\^\\[\\]\\{\\}\\~\\*\\?\\\"\\+\\-\\\\\\|\\&\\/", false, true);
+
+        query = "foo/";
+        request = req("q", query,
+                "qf", "name",
+                "mm", "100%",
+                "defType", "edismax");
+
+        parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
+        clauses = parser.splitIntoClauses(query, false);
+        Assert.assertEquals(1, clauses.size());
+        assertClause(clauses.get(0), "foo\\/", false, true);
+    }
+
+    private static void assertClause(ExtendedDismaxQParser.Clause clause, String value, boolean hasWhitespace,
+                                     boolean hasSpecialSyntax, String field) {
+        Assert.assertEquals(value, clause.val);
+        Assert.assertEquals(hasWhitespace, clause.hasWhitespace);
+        Assert.assertEquals(hasSpecialSyntax, clause.hasSpecialSyntax);
+        Assert.assertEquals(field, clause.field);
+    }
+
+    private static void assertClause(ExtendedDismaxQParser.Clause clause, String value, boolean hasWhitespace,
+                                     boolean hasSpecialSyntax) {
+        assertClause(clause, value, hasWhitespace, hasSpecialSyntax, null);
+
+    }
+
+    /**
    * SOLR-3589: Edismax parser does not honor mm parameter if analyzer splits a token
    */
   public void testCJK() throws Exception {
@@ -1220,12 +1380,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=4]");
 
-      assertQ("test minShouldMatch (top level optional terms only and sow=false)",
-          req("q", "stocks oil gold", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold))~1)
-              "qf", "text_sw",
-              "mm", "50%",
-              "sow", sow,
-              "defType", "edismax")
+      assertQ("test minShouldMatch (top level optional terms only) local mm=50%",
+          req("q", "{!edismax qf=text_sw mm=50% sow=" + sow + " v='stocks oil gold'}")
           , "*[count(//doc)=4]");
 
       assertQ("test minShouldMatch (top level optional and negative terms mm=50%)",
@@ -1236,12 +1392,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=3]");
 
+      assertQ("test minShouldMatch (top level optional and negative terms local mm=50%)",
+          req("q", "{!edismax qf=text_sw mm=50% sow=" + sow + " v='stocks oil gold -stockade'}")
+          , "*[count(//doc)=3]");
+
       assertQ("test minShouldMatch (top level optional and negative terms mm=100%)",
           req("q", "stocks gold -stockade", // +(((text_sw:stock) (text_sw:oil) (text_sw:gold) -(text_sw:stockad))~2)
               "qf", "text_sw",
               "mm", "100%",
               "sow", sow,
               "defType", "edismax")
+          , "*[count(//doc)=1]");
+
+      assertQ("test minShouldMatch (top level optional and negative terms local mm=100%)",
+          req("q", "{!edismax qf=text_sw mm=100% sow=" + sow + " v='stocks gold -stockade'}")
           , "*[count(//doc)=1]");
 
       assertQ("test minShouldMatch (top level required terms only)",
@@ -1252,6 +1416,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=1]");
 
+      assertQ("test minShouldMatch (top level required terms only) local mm=50%)",
+          req("q", "{!edismax qf=text_sw mm=50% sow=" + sow + " v='stocks AND oil'}")
+          , "*[count(//doc)=1]");
+
       assertQ("test minShouldMatch (top level optional and required terms)",
           req("q", "oil gold +stocks", // +(((text_sw:oil) (text_sw:gold) +(text_sw:stock))~1)
               "qf", "text_sw",
@@ -1260,12 +1428,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=3]");
 
+      assertQ("test minShouldMatch (top level optional and required terms) local mm=50%)",
+          req("q", "{!edismax qf=text_sw mm=50% sow=" + sow + " v='oil gold +stocks'}")
+          , "*[count(//doc)=3]");
+
       assertQ("test minShouldMatch (top level optional with explicit OR and parens)",
           req("q", "(snake OR stocks) oil",
               "qf", "text_sw",
               "mm", "100%",
               "sow", sow,
               "defType", "edismax")
+          , "*[count(//doc)=2]");
+
+      assertQ("test minShouldMatch (top level optional with explicit OR and parens) local mm=100%)",
+          req("q", "{!edismax qf=text_sw mm=100% sow=" + sow + " v='(snake OR stocks) oil'}")
           , "*[count(//doc)=2]");
 
       // The results for these two appear odd, but are correct as per BooleanQuery processing.
@@ -1280,6 +1456,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "sow", sow,
               "defType", "edismax")
           , "*[count(//doc)=0]");
+
+      assertQ("test minShouldMatch (top level optional with explicit OR without parens) local mm=100%)",
+          req("q", "{!edismax qf=text_sw q.op=OR mm=100% sow=" + sow + " v='snake OR stocks oil'}")
+          , "*[count(//doc)=0]");
+
       assertQ("test minShouldMatch (top level optional with explicit OR without parens)",
           req("q", "snake OR stocks oil",
               "qf", "text_sw",
@@ -1289,6 +1470,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=0]");
 
+      assertQ("test minShouldMatch (top level optional with explicit OR without parens) local mm=100%)",
+          req("q", "{!edismax qf=text_sw q.op=AND mm=100% sow=" + sow + " v='snake OR stocks oil'}")
+          , "*[count(//doc)=0]");
+
       // SOLR-9174
       assertQ("test minShouldMatch=1<-1 with explicit OR, one impossible clause, and no explicit q.op",
           req("q", "barbie OR (hair AND nonexistentword)",
@@ -1296,6 +1481,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "mm", "1<-1",
               "sow", sow,
               "defType", "edismax")
+          , "*[count(//doc)=3]");
+
+      assertQ("test local minShouldMatch=1<-1 with explicit OR, one impossible clause, and no explicit q.op",
+          req("q", "{!edismax qf=text_sw mm=1<-1 sow=" + sow + " v='barbie OR (hair AND nonexistentword)'}")
           , "*[count(//doc)=3]");
     }
   }
@@ -1772,6 +1961,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
 
+    @SuppressWarnings({"rawtypes"})
     Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;

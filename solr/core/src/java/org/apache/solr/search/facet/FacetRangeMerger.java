@@ -89,7 +89,7 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
     return refinement;
   }
   
-  public void merge(SimpleOrderedMap facetResult, Context mcontext) {
+  public void merge(@SuppressWarnings("rawtypes") SimpleOrderedMap facetResult, Context mcontext) {
     boolean all = freq.others.contains(FacetParams.FacetRangeOther.ALL);
 
     if (all || freq.others.contains(FacetParams.FacetRangeOther.BEFORE)) {
@@ -131,12 +131,14 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
       }
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<SimpleOrderedMap> bucketList = (List<SimpleOrderedMap>) facetResult.get("buckets");
     mergeBucketList(bucketList , mcontext);
   }
 
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object getMergedResult() {
     // TODO: use sortedBuckets
     SimpleOrderedMap result = new SimpleOrderedMap(4);

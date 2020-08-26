@@ -209,12 +209,14 @@ public abstract class FieldMutatingUpdateProcessor
   private static final class ConfigurableFieldNameSelectorHelper {
 
     final SelectorParams params;
+    @SuppressWarnings({"rawtypes"})
     final Collection<Class> classes;
 
     private ConfigurableFieldNameSelectorHelper(final SolrResourceLoader loader,
                                           final SelectorParams params) {
       this.params = params;
 
+      @SuppressWarnings({"rawtypes"})
       final Collection<Class> classes = new ArrayList<>(params.typeClass.size());
 
       for (String t : params.typeClass) {
@@ -267,8 +269,9 @@ public abstract class FieldMutatingUpdateProcessor
      * returns true if the Object 'o' is an instance of any class in 
      * the Collection
      */
-    private static boolean instanceOfAny(Object o, Collection<Class> classes) {
-      for (Class c : classes) {
+    private static boolean instanceOfAny(Object o,
+                                         @SuppressWarnings({"rawtypes"})Collection<Class> classes) {
+      for (@SuppressWarnings({"rawtypes"})Class c : classes) {
         if ( c.isInstance(o) ) return true;
       }
       return false;

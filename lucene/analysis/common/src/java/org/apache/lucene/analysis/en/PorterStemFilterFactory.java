@@ -49,6 +49,11 @@ public class PorterStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public PorterStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public PorterStemFilter create(TokenStream input) {
     return new PorterStemFilter(input);

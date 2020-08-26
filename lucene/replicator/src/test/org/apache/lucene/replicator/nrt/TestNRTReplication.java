@@ -271,7 +271,7 @@ public class TestNRTReplication extends LuceneTestCase {
     waitForVersionAndHits(replica, primaryVersion3, 10);
 
     primaryC.close();
-
+    docs.close();
     replica.close();
     primary.close();
   }
@@ -320,7 +320,7 @@ public class TestNRTReplication extends LuceneTestCase {
     waitForVersionAndHits(replica, primaryVersion3, 20);
 
     primaryC.close();
-
+    docs.close();
     replica.close();
     primary.close();
   }
@@ -366,7 +366,7 @@ public class TestNRTReplication extends LuceneTestCase {
     // Ask replica to sync:
     replica.newNRTPoint(primaryVersion1, 0, primary.tcpPort);
     waitForVersionAndHits(replica, primaryVersion1, 10);
-
+    docs.close();
     replica.close();
     primary.close();
   }
@@ -409,7 +409,7 @@ public class TestNRTReplication extends LuceneTestCase {
 
     // On startup the replica searches the last commit:
     assertVersionAndHits(replica, primaryVersion1, 10);
-
+    docs.close();
     replica.close();
     primary.close();
   }
@@ -474,7 +474,7 @@ public class TestNRTReplication extends LuceneTestCase {
     replica.newNRTPoint(primaryVersion2, 0, primary.tcpPort);
 
     waitForVersionAndHits(replica, primaryVersion2, 20);
-
+    docs.close();
     replica.close();
     primary.close();
   }
@@ -507,6 +507,8 @@ public class TestNRTReplication extends LuceneTestCase {
 
     // Wait for replica to sync up:
     waitForVersionAndHits(replica, primaryVersion1, 10);
+
+    docs.close();
 
     // Crash primary:
     primary.crash();
@@ -586,6 +588,7 @@ public class TestNRTReplication extends LuceneTestCase {
     // Wait for replica to sync up:
     waitForVersionAndHits(replica, primaryVersion2, 20);
 
+    docs.close();
     primary.close();
     replica.close();
   }
@@ -693,7 +696,7 @@ public class TestNRTReplication extends LuceneTestCase {
         assertEquals(100, hitCount);
       }
     }
-
+    docs.close();
     primary.close();
     replica.close();
   }
@@ -763,6 +766,7 @@ public class TestNRTReplication extends LuceneTestCase {
     // Make sure it sees all docs that were indexed while it was down:
     assertVersionAndHits(primary, primaryVersion2, 110);
 
+    docs.close();
     replica.close();
     primary.close();
   }
@@ -832,6 +836,7 @@ public class TestNRTReplication extends LuceneTestCase {
     assertVersionAndHits(replica1, primary.initInfosVersion, 50);
     assertVersionAndHits(replica2, primary.initInfosVersion, 50);
 
+    docs.close();
     primary.close();
     replica1.close();
     replica2.close();

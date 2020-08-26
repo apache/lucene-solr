@@ -28,9 +28,11 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
 
 public class TestExpressionValueSource extends LuceneTestCase {
   DirectoryReader reader;
@@ -78,8 +80,8 @@ public class TestExpressionValueSource extends LuceneTestCase {
   public void testDoubleValuesSourceTypes() throws Exception {
     Expression expr = JavascriptCompiler.compile("2*popularity + count");
     SimpleBindings bindings = new SimpleBindings();
-    bindings.add(new SortField("popularity", SortField.Type.LONG));
-    bindings.add(new SortField("count", SortField.Type.LONG));
+    bindings.add("popularity", DoubleValuesSource.fromLongField("popularity"));
+    bindings.add("count", DoubleValuesSource.fromLongField("count"));
     DoubleValuesSource vs = expr.getDoubleValuesSource(bindings);
 
     assertEquals(1, reader.leaves().size());
@@ -98,8 +100,8 @@ public class TestExpressionValueSource extends LuceneTestCase {
     Expression expr = JavascriptCompiler.compile("sqrt(a) + ln(b)");
 
     SimpleBindings bindings = new SimpleBindings();
-    bindings.add(new SortField("a", SortField.Type.INT));
-    bindings.add(new SortField("b", SortField.Type.INT));
+    bindings.add("a", DoubleValuesSource.fromIntField("a"));
+    bindings.add("b", DoubleValuesSource.fromIntField("b"));
 
     DoubleValuesSource vs1 = expr.getDoubleValuesSource(bindings);
     // same instance
@@ -114,16 +116,100 @@ public class TestExpressionValueSource extends LuceneTestCase {
     assertEquals(vs1, vs2);
     // equiv bindings (different instance)
     SimpleBindings bindings2 = new SimpleBindings();
-    bindings2.add(new SortField("a", SortField.Type.INT));
-    bindings2.add(new SortField("b", SortField.Type.INT));
+    bindings2.add("a", DoubleValuesSource.fromIntField("a"));
+    bindings2.add("b", DoubleValuesSource.fromIntField("b"));
     DoubleValuesSource vs3 = expr.getDoubleValuesSource(bindings2);
     assertEquals(vs1, vs3);
     // different bindings (same names, different types)
     SimpleBindings bindings3 = new SimpleBindings();
-    bindings3.add(new SortField("a", SortField.Type.LONG));
-    bindings3.add(new SortField("b", SortField.Type.FLOAT));
+    bindings3.add("a", DoubleValuesSource.fromLongField("a"));
+    bindings3.add("b", DoubleValuesSource.fromFloatField("b"));
     DoubleValuesSource vs4 = expr.getDoubleValuesSource(bindings3);
     assertFalse(vs1.equals(vs4));
+  }
+
+  public void testFibonacciExpr() throws Exception {
+    int n = 40;
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("f0", DoubleValuesSource.constant(0));
+    bindings.add("f1", DoubleValuesSource.constant(1));
+    for (int i = 2; i < n + 1; i++) {
+      // Without using CachingExpressionValueSource this test will fail after 1 min around because of out of heap space when n=40
+      bindings.add("f" + Integer.toString(i), new CachingExpressionValueSource(
+          (ExpressionValueSource) JavascriptCompiler.compile("f" + Integer.toString(i - 1)+" + f" + Integer.toString(i - 2)).getDoubleValuesSource(bindings)));
+    }
+    DoubleValues values = bindings.getDoubleValuesSource("f" + Integer.toString(n)).getValues(null, null);
+
+    assertTrue(values.advanceExact(0));
+    assertEquals(fib(n), (int)values.doubleValue());
+  }
+
+  private int fib(int n) {
+    if (n == 0) {
+      return 0;
+    }
+    int prev = 0, curr = 1, tmp;
+    for (int i = 1; i < n; i++) {
+      tmp = curr;
+      curr += prev;
+      prev = tmp;
+    }
+    return curr;
+  }
+
+  public void testRewrite() throws Exception {
+    Expression expr = JavascriptCompiler.compile("a");
+
+    ExpressionValueSource rewritingExpressionSource = new ExpressionValueSource(
+            new DoubleValuesSource[]{createDoubleValuesSourceMock(true)},
+            expr,
+            false);
+    ExpressionValueSource notRewritingExpressionSource = new ExpressionValueSource(
+            new DoubleValuesSource[]{createDoubleValuesSourceMock(false)},
+            expr,
+            false);
+
+    assertNotSame(rewritingExpressionSource, rewritingExpressionSource.rewrite(null));
+    assertSame(notRewritingExpressionSource, notRewritingExpressionSource.rewrite(null));
+  }
+
+  private static DoubleValuesSource createDoubleValuesSourceMock(boolean rewriting) {
+    return new DoubleValuesSource() {
+      @Override
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        return null;
+      }
+
+      @Override
+      public boolean needsScores() {
+        return false;
+      }
+
+      @Override
+      public DoubleValuesSource rewrite(IndexSearcher reader) throws IOException {
+        return rewriting ? createDoubleValuesSourceMock(true) : this;
+      }
+
+      @Override
+      public int hashCode() {
+        return 0;
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        return false;
+      }
+
+      @Override
+      public String toString() {
+        return null;
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return false;
+      }
+    };
   }
 
 }

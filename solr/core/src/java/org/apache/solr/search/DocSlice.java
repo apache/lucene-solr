@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -37,6 +38,7 @@ public class DocSlice implements DocList, Accountable {
 
   final float[] scores;  // optional score list
   final long matches;
+  final TotalHits.Relation matchesRelation;
   final float maxScore;
   final long ramBytesUsed; // cached value
 
@@ -48,8 +50,9 @@ public class DocSlice implements DocList, Accountable {
    * @param docs    array of docids starting at position 0
    * @param scores  array of scores that corresponds to docs, may be null
    * @param matches total number of matches for the query
+   * @param matchesRelation Indicates if {@code matches} is exact or an approximation
    */
-  public DocSlice(int offset, int len, int[] docs, float[] scores, long matches, float maxScore) {
+  public DocSlice(int offset, int len, int[] docs, float[] scores, long matches, float maxScore, TotalHits.Relation matchesRelation) {
     this.offset=offset;
     this.len=len;
     this.docs=docs;
@@ -57,6 +60,7 @@ public class DocSlice implements DocList, Accountable {
     this.matches=matches;
     this.maxScore=maxScore;
     this.ramBytesUsed = BASE_RAM_BYTES_USED + (docs == null ? 0 : ((long)docs.length << 2)) + (scores == null ? 0 : ((long)scores.length<<2)+RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
+    this.matchesRelation = matchesRelation;
   }
 
   @Override
@@ -70,7 +74,7 @@ public class DocSlice implements DocList, Accountable {
     int realEndDoc = Math.min(requestedEnd, docs.length);
     int realLen = Math.max(realEndDoc-offset,0);
     if (this.offset == offset && this.len == realLen) return this;
-    return new DocSlice(offset, realLen, docs, scores, matches, maxScore);
+    return new DocSlice(offset, realLen, docs, scores, matches, maxScore, matchesRelation);
   }
 
   @Override
@@ -138,5 +142,10 @@ public class DocSlice implements DocList, Accountable {
   @Override
   public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
+  }
+
+  @Override
+  public TotalHits.Relation hitCountRelation() {
+    return matchesRelation;
   }
 }

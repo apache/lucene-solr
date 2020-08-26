@@ -22,7 +22,6 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Map;
@@ -123,13 +122,14 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     return getShards(zkHost, collection, streamContext, new ModifiableSolrParams());
   }
 
+  @SuppressWarnings({"unchecked"})
   public static List<String> getShards(String zkHost,
                                        String collection,
                                        StreamContext streamContext,
                                        SolrParams requestParams)
       throws IOException {
     Map<String, List<String>> shardsMap = null;
-    List<String> shards = new ArrayList();
+    List<String> shards = new ArrayList<>();
 
     if(streamContext != null) {
       shardsMap = (Map<String, List<String>>)streamContext.get("shards");
@@ -140,19 +140,33 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       shards = shardsMap.get(collection);
     } else {
       //SolrCloud Sharding
-      CloudSolrClient cloudSolrClient =
-          Optional.ofNullable(streamContext.getSolrClientCache()).orElseGet(SolrClientCache::new).getCloudSolrClient(zkHost);
+      SolrClientCache solrClientCache = (streamContext != null ? streamContext.getSolrClientCache() : null);
+      final SolrClientCache localSolrClientCache; // tracks any locally allocated cache that needs to be closed locally
+      if (solrClientCache == null) { // streamContext was null OR streamContext.getSolrClientCache() returned null
+        solrClientCache = localSolrClientCache = new SolrClientCache();
+      } else {
+        localSolrClientCache = null;
+      }
+      CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zkHost);
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
 
 
-      ModifiableSolrParams solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
+      RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
+      final ModifiableSolrParams solrParams;
+      if (streamContext != null) {
+        solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
+        requestReplicaListTransformerGenerator = streamContext.getRequestReplicaListTransformerGenerator();
+      } else {
+        solrParams = new ModifiableSolrParams();
+        requestReplicaListTransformerGenerator = null;
+      }
+      if (requestReplicaListTransformerGenerator == null) {
+        requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator();
+      }
       solrParams.add(requestParams);
-
-      RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator =
-          Optional.ofNullable(streamContext.getRequestReplicaListTransformerGenerator()).orElseGet(RequestReplicaListTransformerGenerator::new);
 
       ReplicaListTransformer replicaListTransformer = requestReplicaListTransformerGenerator.getReplicaListTransformer(solrParams);
 
@@ -169,10 +183,15 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
           shards.add(sortedReplicas.get(0).getCoreUrl());
         }
       }
+      if (localSolrClientCache != null) {
+        localSolrClientCache.close();
+      }
     }
-    Object core = streamContext.get("core");
-    if (streamContext != null && streamContext.isLocal() && core != null) {
-      shards.removeIf(shardUrl -> !shardUrl.contains((CharSequence) core));
+    if (streamContext != null) {
+      Object core = streamContext.get("core");
+      if (streamContext.isLocal() && core != null) {
+        shards.removeIf(shardUrl -> !shardUrl.contains((CharSequence) core));
+      }
     }
 
     return shards;

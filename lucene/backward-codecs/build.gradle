@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Codecs for older versions of Lucene'
+
 dependencies { 
   api project(':lucene:core')
   testImplementation project(':lucene:test-framework')

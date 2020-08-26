@@ -625,7 +625,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
     # TODO: clean this up to not be a list of modules that we must maintain
     extras = ('analysis', 'backward-codecs', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'luke', 'memory', 'misc', 'monitor', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial-extras', 'spatial3d', 'suggest', 'test-framework', 'licenses')
     if isSrc:
-      extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'top-level-ivy-settings.xml', 'default-nested-ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'version.properties', 'tools', 'site', 'dev-docs')
+      extras += ('build.gradle', 'build.xml', 'common-build.xml', 'module-build.xml', 'top-level-ivy-settings.xml', 'default-nested-ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'version.properties', 'tools', 'site', 'dev-docs')
   else:
     extras = ()
 
@@ -1317,7 +1317,7 @@ def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
   command = 'ant test -Dtestcase=TestBackwardsCompatibility -Dtests.verbose=true'
   p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   stdout, stderr = p.communicate()
-  if p.returncode is not 0:
+  if p.returncode != 0:
     # Not good: the test failed!
     raise RuntimeError('%s failed:\n%s' % (command, stdout))
   stdout = stdout.decode('utf-8',errors='replace').replace('\r\n','\n')

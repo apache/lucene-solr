@@ -139,8 +139,7 @@ public class ZkConfigManager {
         List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null, true);
         if (children.size() == 0) {
           final String toZkFilePath = toZkPath + "/" + file;
-          log.info("Copying zk node {} to {}",
-              fromZkPath + "/" + file, toZkFilePath);
+          log.info("Copying zk node {}/{} to {}", fromZkPath, file, toZkFilePath);
           byte[] data = zkClient.getData(fromZkPath + "/" + file, null, null, true);
           zkClient.makePath(toZkFilePath, data, true);
           if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);

@@ -41,12 +41,17 @@ public class ListCacheEvaluator extends RecursiveObjectEvaluator implements Many
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... values) throws IOException {
+    @SuppressWarnings({"rawtypes"})
     ConcurrentMap objectCache = this.streamContext.getObjectCache();
+    @SuppressWarnings({"rawtypes"})
     List list = new ArrayList();
 
     if(values.length == 0) {
+      @SuppressWarnings({"rawtypes"})
       ConcurrentHashMap m = (ConcurrentHashMap)objectCache;
+      @SuppressWarnings({"rawtypes"})
       Enumeration en = m.keys();
       while(en.hasMoreElements()) {
         list.add(en.nextElement());
@@ -55,9 +60,12 @@ public class ListCacheEvaluator extends RecursiveObjectEvaluator implements Many
     } else if(values.length == 1) {
       String space = (String)values[0];
       space = space.replace("\"", "");
+      @SuppressWarnings({"rawtypes"})
       ConcurrentMap spaceCache = (ConcurrentMap)objectCache.get(space);
       if(spaceCache != null) {
+        @SuppressWarnings({"rawtypes"})
         ConcurrentHashMap spaceMap = (ConcurrentHashMap)objectCache.get(space);
+        @SuppressWarnings({"rawtypes"})
         Enumeration en = spaceMap.keys();
         while(en.hasMoreElements()) {
           list.add(en.nextElement());

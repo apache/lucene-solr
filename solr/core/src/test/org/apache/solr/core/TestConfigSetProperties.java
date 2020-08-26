@@ -62,19 +62,23 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Test
   public void testEmptyMap() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList list = createConfigSetProps(Utils.toJSONString(ImmutableMap.of()));
     assertEquals(0, list.size());
   }
 
   @Test
   public void testMultipleProps() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Map map = ImmutableMap.of("immutable", "true", "someOtherProp", "true");
+    @SuppressWarnings({"rawtypes"})
     NamedList list = createConfigSetProps(Utils.toJSONString(map));
     assertEquals(2, list.size());
     assertEquals("true", list.get("immutable"));
     assertEquals("true", list.get("someOtherProp"));
   }
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList createConfigSetProps(String props) throws Exception {
     Path testDirectory = createTempDir();
     String filename = "configsetprops.json";

@@ -73,7 +73,7 @@ configure(project(":lucene:analysis:kuromoji")) {
       // Apply patch via local git.
       project.exec {
         workingDir = unpackedDir
-        executable "git"
+        executable "git" // TODO: better use jgit to apply patch, this is not portable!!!
         args += [
             "apply",
             file("src/tools/patches/Noun.proper.csv.patch").absolutePath

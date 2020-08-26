@@ -126,7 +126,7 @@ public class SliceMutator {
     DocCollection coll = clusterState.getCollectionOrNull(collectionName);
 
     if (coll == null) {
-      log.error("Could not mark shard leader for non existing collection:" + collectionName);
+      log.error("Could not mark shard leader for non existing collection: {}", collectionName);
       return ZkStateWriter.NO_OP;
     }
 
@@ -157,7 +157,7 @@ public class SliceMutator {
   public ZkWriteCommand updateShardState(ClusterState clusterState, ZkNodeProps message) {
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
-    log.info("Update shard state invoked for collection: " + collectionName + " with message: " + message);
+    log.info("Update shard state invoked for collection: {} with message: {}", collectionName, message);
 
     DocCollection collection = clusterState.getCollection(collectionName);
     Map<String, Slice> slicesCopy = new LinkedHashMap<>(collection.getSlicesMap());
@@ -169,7 +169,9 @@ public class SliceMutator {
       if (slice == null) {
         throw new RuntimeException("Overseer.updateShardState unknown collection: " + collectionName + " slice: " + key);
       }
-      log.info("Update shard state " + key + " to " + message.getStr(key));
+      if (log.isInfoEnabled()) {
+        log.info("Update shard state {} to {}", key, message.getStr(key));
+      }
       Map<String, Object> props = slice.shallowCopy();
       
       if (Slice.State.getState(message.getStr(key)) == Slice.State.ACTIVE) {
@@ -235,13 +237,13 @@ public class SliceMutator {
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String routeKeyStr = message.getStr("routeKey");
 
-    log.info("Overseer.removeRoutingRule invoked for collection: " + collectionName
-        + " shard: " + shard + " routeKey: " + routeKeyStr);
+    log.info("Overseer.removeRoutingRule invoked for collection: {} shard: {} routeKey: {}"
+        , collectionName, shard, routeKeyStr);
 
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shard);
     if (slice == null) {
-      log.warn("Unknown collection: " + collectionName + " shard: " + shard);
+      log.warn("Unknown collection: {} shard: {}", collectionName, shard);
       return ZkStateWriter.NO_OP;
     }
     Map<String, RoutingRule> routingRules = slice.getRoutingRules();

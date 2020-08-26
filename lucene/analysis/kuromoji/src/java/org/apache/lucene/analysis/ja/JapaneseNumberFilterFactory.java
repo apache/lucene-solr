@@ -51,6 +51,11 @@ public class JapaneseNumberFilterFactory extends TokenFilterFactory {
     }
   }
 
+  /** Default ctor for compatibility with SPI */
+  public JapaneseNumberFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new JapaneseNumberFilter(input);

@@ -56,7 +56,6 @@ public class TestExportTool extends SolrCloudTestCase {
     try {
       CollectionAdminRequest
           .createCollection(COLLECTION_NAME, "conf", 2, 1)
-          .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
@@ -131,7 +130,6 @@ public class TestExportTool extends SolrCloudTestCase {
     try {
       CollectionAdminRequest
           .createCollection(COLLECTION_NAME, "conf", 8, 1)
-          .setMaxShardsPerNode(10)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 8, 8);
 

@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Single-document in-memory index implementation'
+
 dependencies {
   api project(':lucene:core')
 
