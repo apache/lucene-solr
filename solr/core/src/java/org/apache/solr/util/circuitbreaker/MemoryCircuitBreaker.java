@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 
-import org.apache.solr.core.SolrConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
