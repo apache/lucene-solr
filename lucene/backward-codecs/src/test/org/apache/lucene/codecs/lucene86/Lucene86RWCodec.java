@@ -14,21 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.codecs.lucene86;
 
-
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseNormsFormatTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50RWStoredFieldsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 
 /**
- * Tests Lucene80NormsFormat
+ * RW impersonation of {@link Lucene86Codec}.
  */
-public class TestLucene80NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = TestUtil.getDefaultCodec();
-  
-  @Override
-  protected Codec getCodec() {
-    return codec;
+public class Lucene86RWCodec extends Lucene86Codec {
+
+  private final StoredFieldsFormat storedFieldsFormat;
+
+  /** No arguments constructor. */
+  public Lucene86RWCodec() {
+    storedFieldsFormat = new Lucene50RWStoredFieldsFormat();
   }
+
+  /** Constructor that takes a mode. */
+  public Lucene86RWCodec(Lucene50StoredFieldsFormat.Mode mode) {
+    storedFieldsFormat = new Lucene50RWStoredFieldsFormat(mode);
+  }
+
+  @Override
+  public StoredFieldsFormat storedFieldsFormat() {
+    return storedFieldsFormat;
+  }
+
 }

@@ -16,7 +16,7 @@
  */
 
 /**
- * Lucene 8.6 file format.
+ * Lucene 8.7 file format.
  *
  * <h2>Apache Lucene - Index File Formats</h2>
  * <div>
@@ -137,7 +137,7 @@
  *    This contains the set of field names used in the index.
  * </li>
  * <li>
- * Stored Field values.
+ * {@link org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat Stored Field values}.
  * This contains, for each document, a list of attribute-value pairs, where the attributes
  * are field names. These are used to store auxiliary information about the document, such as
  * its title, url, or an identifier to access a database. The set of stored fields are what is
@@ -250,12 +250,12 @@
  * <td>Stores information about the fields</td>
  * </tr>
  * <tr>
- * <td>Field Index</td>
+ * <td>{@link org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat Field Index}</td>
  * <td>.fdx</td>
  * <td>Contains pointers to field data</td>
  * </tr>
  * <tr>
- * <td>Field Data</td>
+ * <td>{@link org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat Field Data}</td>
  * <td>.fdt</td>
  * <td>The stored fields for documents</td>
  * </tr>
@@ -413,4 +413,4 @@
  * better yet, {@link org.apache.lucene.store.DataOutput#writeVInt VInt} values which have no limit.</p>
  * </div>
  */
-package org.apache.lucene.codecs.lucene86;
+package org.apache.lucene.codecs.lucene87;
