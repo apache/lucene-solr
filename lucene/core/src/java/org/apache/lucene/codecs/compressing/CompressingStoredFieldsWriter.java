@@ -57,7 +57,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   /** Extension of stored fields file */
   public static final String FIELDS_EXTENSION = "fdt";
   /** Extension of stored fields index */
-  public static final String INDEX_EXTENSION_PREFIX = "fd";
+  public static final String INDEX_EXTENSION = "fdx";
+  /** Extension of stored fields meta */
+  public static final String META_EXTENSION = "fdm";
   /** Codec name for the index. */
   public static final String INDEX_CODEC_NAME = "Lucene85FieldsIndex";
 
@@ -73,11 +75,14 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   static final int VERSION_START = 1;
   static final int VERSION_OFFHEAP_INDEX = 2;
-  static final int VERSION_CURRENT = VERSION_OFFHEAP_INDEX;
+  /** Version where all metadata were moved to the meta file. */
+  static final int VERSION_META = 3;
+  static final int VERSION_CURRENT = VERSION_META;
+  static final int META_VERSION_START = 0;
 
   private final String segment;
   private FieldsIndexWriter indexWriter;
-  private IndexOutput fieldsStream;
+  private IndexOutput metaStream, fieldsStream;
 
   private Compressor compressor;
   private final CompressionMode compressionMode;
@@ -110,19 +115,23 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
     boolean success = false;
     try {
+      metaStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, META_EXTENSION), context);
+      CodecUtil.writeIndexHeader(metaStream, INDEX_CODEC_NAME + "Meta", VERSION_CURRENT, si.getId(), segmentSuffix);
+      assert CodecUtil.indexHeaderLength(INDEX_CODEC_NAME + "Meta", segmentSuffix) == metaStream.getFilePointer();
+
       fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION), context);
       CodecUtil.writeIndexHeader(fieldsStream, formatName, VERSION_CURRENT, si.getId(), segmentSuffix);
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix) == fieldsStream.getFilePointer();
 
-      indexWriter = new FieldsIndexWriter(directory, segment, segmentSuffix, INDEX_EXTENSION_PREFIX, INDEX_CODEC_NAME, si.getId(), blockShift, context);
+      indexWriter = new FieldsIndexWriter(directory, segment, segmentSuffix, INDEX_EXTENSION, INDEX_CODEC_NAME, si.getId(), blockShift, context);
 
-      fieldsStream.writeVInt(chunkSize);
-      fieldsStream.writeVInt(PackedInts.VERSION_CURRENT);
+      metaStream.writeVInt(chunkSize);
+      metaStream.writeVInt(PackedInts.VERSION_CURRENT);
 
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(fieldsStream, indexWriter);
+        IOUtils.closeWhileHandlingException(metaStream, fieldsStream, indexWriter);
       }
     }
   }
@@ -130,8 +139,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   @Override
   public void close() throws IOException {
     try {
-      IOUtils.close(fieldsStream, indexWriter, compressor);
+      IOUtils.close(metaStream, fieldsStream, indexWriter, compressor);
     } finally {
+      metaStream = null;
       fieldsStream = null;
       indexWriter = null;
       compressor = null;
@@ -460,9 +470,10 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     if (docBase != numDocs) {
       throw new RuntimeException("Wrote " + docBase + " docs, finish called with numDocs=" + numDocs);
     }
-    indexWriter.finish(numDocs, fieldsStream.getFilePointer());
-    fieldsStream.writeVLong(numChunks);
-    fieldsStream.writeVLong(numDirtyChunks);
+    indexWriter.finish(numDocs, fieldsStream.getFilePointer(), metaStream);
+    metaStream.writeVLong(numChunks);
+    metaStream.writeVLong(numDirtyChunks);
+    CodecUtil.writeFooter(metaStream);
     CodecUtil.writeFooter(fieldsStream);
     assert bufferedDocs.getPosition() == 0;
   }

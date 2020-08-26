@@ -59,12 +59,16 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   static final int MAX_DOCUMENTS_PER_CHUNK = 128;
 
   static final String VECTORS_EXTENSION = "tvd";
-  static final String VECTORS_INDEX_EXTENSION_PREFIX = "tv";
+  static final String VECTORS_INDEX_EXTENSION = "tvx";
+  static final String VECTORS_META_EXTENSION = "tvm";
   static final String VECTORS_INDEX_CODEC_NAME = "Lucene85TermVectorsIndex";
 
   static final int VERSION_START = 1;
   static final int VERSION_OFFHEAP_INDEX = 2;
-  static final int VERSION_CURRENT = VERSION_OFFHEAP_INDEX;
+  /** Version where all metadata were moved to the meta file. */
+  static final int VERSION_META = 3;
+  static final int VERSION_CURRENT = VERSION_META;
+  static final int META_VERSION_START = 0;
 
   static final int PACKED_BLOCK_SIZE = 64;
 
@@ -75,7 +79,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
   private final String segment;
   private FieldsIndexWriter indexWriter;
-  private IndexOutput vectorsStream;
+  private IndexOutput metaStream, vectorsStream;
 
   private final CompressionMode compressionMode;
   private final Compressor compressor;
@@ -218,15 +222,19 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
     boolean success = false;
     try {
+      metaStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_META_EXTENSION), context);
+      CodecUtil.writeIndexHeader(metaStream, VECTORS_INDEX_CODEC_NAME + "Meta", VERSION_CURRENT, si.getId(), segmentSuffix);
+      assert CodecUtil.indexHeaderLength(VECTORS_INDEX_CODEC_NAME + "Meta", segmentSuffix) == metaStream.getFilePointer();
+
       vectorsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION),
                                                      context);
       CodecUtil.writeIndexHeader(vectorsStream, formatName, VERSION_CURRENT, si.getId(), segmentSuffix);
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix) == vectorsStream.getFilePointer();
 
-      indexWriter = new FieldsIndexWriter(directory, segment, segmentSuffix, VECTORS_INDEX_EXTENSION_PREFIX, VECTORS_INDEX_CODEC_NAME, si.getId(), blockShift, context);
+      indexWriter = new FieldsIndexWriter(directory, segment, segmentSuffix, VECTORS_INDEX_EXTENSION, VECTORS_INDEX_CODEC_NAME, si.getId(), blockShift, context);
 
-      vectorsStream.writeVInt(PackedInts.VERSION_CURRENT);
-      vectorsStream.writeVInt(chunkSize);
+      metaStream.writeVInt(PackedInts.VERSION_CURRENT);
+      metaStream.writeVInt(chunkSize);
       writer = new BlockPackedWriter(vectorsStream, PACKED_BLOCK_SIZE);
 
       positionsBuf = new int[1024];
@@ -237,7 +245,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(vectorsStream, indexWriter, indexWriter);
+        IOUtils.closeWhileHandlingException(metaStream, vectorsStream, indexWriter, indexWriter);
       }
     }
   }
@@ -245,8 +253,9 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   @Override
   public void close() throws IOException {
     try {
-      IOUtils.close(vectorsStream, indexWriter);
+      IOUtils.close(metaStream, vectorsStream, indexWriter);
     } finally {
+      metaStream = null;
       vectorsStream = null;
       indexWriter = null;
     }
@@ -640,9 +649,10 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     if (numDocs != this.numDocs) {
       throw new RuntimeException("Wrote " + this.numDocs + " docs, finish called with numDocs=" + numDocs);
     }
-    indexWriter.finish(numDocs, vectorsStream.getFilePointer());
-    vectorsStream.writeVLong(numChunks);
-    vectorsStream.writeVLong(numDirtyChunks);
+    indexWriter.finish(numDocs, vectorsStream.getFilePointer(), metaStream);
+    metaStream.writeVLong(numChunks);
+    metaStream.writeVLong(numDirtyChunks);
+    CodecUtil.writeFooter(metaStream);
     CodecUtil.writeFooter(vectorsStream);
   }
 
