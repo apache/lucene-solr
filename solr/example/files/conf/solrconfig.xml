@@ -550,7 +550,7 @@
      Circuit Breaker Section - This section consists of configurations for
      circuit breakers
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-  <circuitBreaker>
+  <circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
     <!-- Enable Circuit Breakers
 
     Circuit breakers are designed to allow stability and predictable query
@@ -563,7 +563,6 @@
     they are free to add their specific configuration but need to ensure that this flag is always
     respected - this should have veto over all independent configuration flags.
     -->
-    <str name="enabled">true</str>
 
     <!-- Memory Circuit Breaker Control Flag
 

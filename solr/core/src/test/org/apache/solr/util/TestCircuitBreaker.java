@@ -96,7 +96,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
 
-    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo.initArgs);
+    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
 
     CircuitBreaker circuitBreaker = new MockCircuitBreaker(circuitBreakerConfig);
 
@@ -117,7 +117,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
 
-    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo.initArgs);
+    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
     CircuitBreaker circuitBreaker = new FakeMemoryPressureCircuitBreaker(circuitBreakerConfig);
 
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);
@@ -142,7 +142,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
       PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
 
-      CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo.initArgs);
+      CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
       CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker(circuitBreakerConfig);
 
       h.getCore().getCircuitBreakerManager().register(circuitBreaker);
@@ -198,7 +198,7 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
       PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
 
-      CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo.initArgs);
+      CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
       CircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(circuitBreakerConfig);
 
       h.getCore().getCircuitBreakerManager().register(circuitBreaker);

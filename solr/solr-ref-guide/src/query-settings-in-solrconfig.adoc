@@ -178,17 +178,12 @@ This set of configurations control the behaviour of circuit breakers.
 
 [source,xml]
 ----
-<circuitBreaker class="solr.CircuitBreakerManager">
+<circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
   <!-- All specific configs in this section -->
 </circuitBreaker>
 ----
 
-To control whether Circuit Breakers are globally enabled, use the following flag:
-
-[source,xml]
-----
-<str name="enabled">true</str>
-----
+To control whether Circuit Breakers are globally enabled, use the "enabled" attribute.
 
 === Memory Circuit Breaker Settings
 

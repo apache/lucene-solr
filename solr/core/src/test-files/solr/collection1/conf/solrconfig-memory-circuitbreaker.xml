@@ -78,8 +78,7 @@
 
   </query>
 
-  <circuitBreaker class="solr.CircuitBreakerManager">
-    <str name="enabled">true</str>
+  <circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
     <str name="memEnabled">true</str>
     <str name="memThreshold">75</str>
     <str name="cpuEnabled">true</str>

@@ -1175,7 +1175,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private CircuitBreakerManager initCircuitBreakerManager() {
     final PluginInfo info = solrConfig.getPluginInfo(CircuitBreakerManager.class.getName());
-    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(info.initArgs);
+    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(info);
 
     return circuitBreakerManager;
   }
