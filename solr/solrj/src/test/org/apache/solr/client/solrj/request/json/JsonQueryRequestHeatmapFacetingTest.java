@@ -23,18 +23,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.json.HeatmapJsonFacet;
 import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class JsonQueryRequestHeatmapFacetingTest extends SolrCloudTestCase {
+
   private static final String COLLECTION_NAME = "spatialdata";
   private static final String CONFIG_NAME = "spatialdata_config";
   private static final String FIELD = "location_srpt";
@@ -46,7 +48,7 @@ public class JsonQueryRequestHeatmapFacetingTest extends SolrCloudTestCase {
         .configure();
 
     final List<String> solrUrls = new ArrayList<>();
-    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
+    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl());
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1).process(cluster.getSolrClient());
 
@@ -58,20 +60,20 @@ public class JsonQueryRequestHeatmapFacetingTest extends SolrCloudTestCase {
     final SolrInputDocument doc2 = new SolrInputDocument("id", "1", FIELD, "ENVELOPE(-120, -110, 80, 20)");
     final SolrInputDocument doc3 = new SolrInputDocument("id", "3", FIELD, "POINT(70 60)");
     final SolrInputDocument doc4 = new SolrInputDocument("id", "4", FIELD, "POINT(91 89)");
-    final List<SolrInputDocument> docs = new ArrayList<>();
-    docs.add(doc1);
-    docs.add(doc2);
-    docs.add(doc3);
-    docs.add(doc4);
+    final List<SolrInputDocument> docs = Arrays.asList(doc1, doc2, doc3, doc4);
 
-    cluster.getSolrClient().add(COLLECTION_NAME, docs);
-    cluster.getSolrClient().commit(COLLECTION_NAME);
+    UpdateResponse updateResponse = cluster.getSolrClient().add(COLLECTION_NAME, docs);
+    assertTrue(updateResponse.getStatus() == 0);
+
+    updateResponse = cluster.getSolrClient().commit(COLLECTION_NAME);
+    assertTrue(updateResponse.getStatus() == 0);
+
+    QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION_NAME, new SolrQuery("*:*"));
+    assertTrue("Expected "+docs.size()+" docs in "+COLLECTION_NAME,
+        queryResponse.getResults().getNumFound() == docs.size());
   }
 
-
-
   @Test
-  @Ignore // nocommit check this out
   public void testHeatmapFacet() throws Exception {
     final List<List<Integer>> expectedHeatmapGrid = Arrays.asList(
         Arrays.asList(0, 0, 2, 1, 0, 0),

@@ -38,10 +38,8 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
 public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION_NAME = "techproducts";
@@ -63,7 +61,7 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
         .configure();
 
     final List<String> solrUrls = new ArrayList<>();
-    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
+    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl());
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1).process(cluster.getSolrClient());
 

@@ -44,7 +44,6 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
   private static final double DEFAULT_DELTA = .0000001;
 
   protected static final String COLLECTIONORALIAS = "collection1";
-  protected static final int TIMEOUT = DEFAULT_TIMEOUT;
   protected static final String id = "id";
 
   private static UpdateRequest cloudReq;
@@ -62,7 +61,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1).process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTIONORALIAS, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+        false, true, DEFAULT_TIMEOUT);
 
     new UpdateRequest()
         .deleteByQuery("*:*")

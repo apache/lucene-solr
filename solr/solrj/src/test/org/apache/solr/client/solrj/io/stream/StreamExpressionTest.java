@@ -67,12 +67,10 @@ import org.junit.Test;
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-@Ignore // nocommit debug
 public class StreamExpressionTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
   private static final String FILESTREAM_COLLECTION = "filestream_collection";
-  private static final int TIMEOUT = DEFAULT_TIMEOUT;
   private static final String id = "id";
 
   private static boolean useAlias;
@@ -3136,6 +3134,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  @Nightly // this test creates a lot of data and is slow
   public void testSignificantTermsStream() throws Exception {
 
     UpdateRequest updateRequest = new UpdateRequest();

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -37,8 +36,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,11 +138,10 @@ public class ExecutorStream extends TupleStream implements Expressible {
 
   public void close() throws IOException {
     stream.close();
-    ExecutorUtil.shutdownAndAwaitTermination(executorService);
   }
 
   public Tuple read() throws IOException {
-    ArrayBlockingQueue<Tuple> queue = new ArrayBlockingQueue(10000);
+    ArrayBlockingQueue<Tuple> queue = new ArrayBlockingQueue<>(10000);
     while(true) {
       Tuple tuple = stream.read();
       if (!tuple.EOF) {

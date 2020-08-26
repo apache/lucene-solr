@@ -395,7 +395,7 @@ public class MiniSolrCloudCluster {
 
     ZkStateReader reader = getSolrClient().getZkStateReader();
 
-    reader.waitForLiveNodes(30, TimeUnit.SECONDS, (o, n) -> n != null && jetty != null && jetty.getNodeName() != null && n.contains(jetty.getNodeName()));
+    reader.waitForLiveNodes(timeoutSeconds, TimeUnit.SECONDS, (o, n) -> n != null && jetty != null && jetty.getNodeName() != null && n.contains(jetty.getNodeName()));
 
   }
 

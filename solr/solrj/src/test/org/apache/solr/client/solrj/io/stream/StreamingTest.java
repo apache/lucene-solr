@@ -70,7 +70,6 @@ import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-@Ignore // nocommit debug
 public class StreamingTest extends SolrCloudTestCase {
 
 public static final String COLLECTIONORALIAS = "streams";
@@ -1298,6 +1297,7 @@ public void testParallelRankStream() throws Exception {
   };
 
   @Test
+  @Slow
   public void testMissingFields() throws Exception {
 
     new UpdateRequest()
@@ -1869,12 +1869,13 @@ public void testParallelRankStream() throws Exception {
       List<Tuple> tuples = getTuples(rollupStream);
       assertEquals(3, tuples.size());
 
-
       List<String> shardUrls = TupleStream.getShards(cluster.getZkServer().getZkAddress(), COLLECTIONORALIAS, streamContext);
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.add("qt", "/stream");
       solrParams.add("expr", "rollup(search(" + COLLECTIONORALIAS + ",q=\"*:*\",fl=\"a_s,a_i,a_f\",sort=\"a_s desc\",partitionKeys=\"a_s\", qt=\"/export\"),over=\"a_s\")\n");
       SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      // since we're using a new StreamContext here, SolrStream opens a new Http2SolrClient
+      // which has to get closed else this test hangs the runner
       streamContext = new StreamContext();
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);

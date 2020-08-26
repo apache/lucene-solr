@@ -20,16 +20,12 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -99,6 +95,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
   }
 
+  @Override
   protected void doParallelUpdate(Map<String,? extends LBSolrClient.Req> routes,
       NamedList<Throwable> exceptions, NamedList<NamedList> shardResponses) {
     Map<String,Throwable> tsExceptions = new ConcurrentHashMap<>();
@@ -131,6 +128,10 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
         MDC.remove("CloudSolrClient.url");
       }
     }
+
+    // wait until the async requests we fired off above are done
+    myClient.waitForOutstandingRequests();
+
     exceptions.addAll(tsExceptions);
     shardResponses.addAll(tsResponses);
     if (exceptions.size() > 0) {

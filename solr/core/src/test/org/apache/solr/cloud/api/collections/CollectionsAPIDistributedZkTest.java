@@ -187,8 +187,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     }
     solrClient.add(docs);
 
-    Replica leader
-            = solrClient.getZkStateReader().getLeaderRetry(collectionName, "shard1", DEFAULT_TIMEOUT);
+    Replica leader = solrClient.getZkStateReader().getLeaderRetry(collectionName, "shard1", 15000);
 
     final AtomicReference<Long> coreStartTime = new AtomicReference<>(getCoreStatus(leader).getCoreStartTime().getTime());
 

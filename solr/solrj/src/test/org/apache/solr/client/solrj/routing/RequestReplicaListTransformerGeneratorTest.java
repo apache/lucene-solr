@@ -25,10 +25,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
 public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
 
   @Test
