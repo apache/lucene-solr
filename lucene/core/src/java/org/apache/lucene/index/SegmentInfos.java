@@ -373,7 +373,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         throw new CorruptIndexException("invalid deletion count: " + softDelCount + " vs maxDoc=" + info.maxDoc(), input);
       }
       if (softDelCount + delCount > info.maxDoc()) {
-        throw new CorruptIndexException("invalid deletion count: " + softDelCount + delCount + " vs maxDoc=" + info.maxDoc(), input);
+        throw new CorruptIndexException("invalid deletion count: " + (softDelCount + delCount) + " vs maxDoc=" + info.maxDoc(), input);
       }
       SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, dvGen);
       siPerCommit.setFieldInfosFiles(input.readSetOfStrings());
