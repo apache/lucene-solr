@@ -100,7 +100,7 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  * larger than (<tt>2<sup>31</sup> - 2<sup>14</sup></tt>) bytes.
  * @lucene.experimental
  */
-public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
+public class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
   
   /** Configuration option for stored fields. */
   public static enum Mode {
@@ -126,7 +126,7 @@ public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
   }
 
   @Override
-  public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
+  public final StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
     String value = si.getAttribute(MODE_KEY);
     if (value == null) {
       throw new IllegalStateException("missing value for " + MODE_KEY + " for segment: " + si.name);
@@ -137,12 +137,7 @@ public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException {
-    String previous = si.putAttribute(MODE_KEY, mode.name());
-    if (previous != null && previous.equals(mode.name()) == false) {
-      throw new IllegalStateException("found existing value for " + MODE_KEY + " for segment: " + si.name +
-                                      "old=" + previous + ", new=" + mode.name());
-    }
-    return impl(mode).fieldsWriter(directory, si, context);
+    throw new UnsupportedOperationException("Old codecs may only be used for reading");
   }
   
   StoredFieldsFormat impl(Mode mode) {

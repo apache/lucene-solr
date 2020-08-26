@@ -50,7 +50,7 @@ public class TestLucene86PointsFormat extends BasePointsFormatTestCase {
   
   public TestLucene86PointsFormat() {
     // standard issue
-    Codec defaultCodec = new Lucene86Codec();
+    Codec defaultCodec = TestUtil.getDefaultCodec();
     if (random().nextBoolean()) {
       // randomize parameters
       maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);

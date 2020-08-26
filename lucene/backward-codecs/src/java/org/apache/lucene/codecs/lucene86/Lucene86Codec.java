@@ -14,7 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene70;
+
+package org.apache.lucene.codecs.lucene86;
+
+import java.util.Objects;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
@@ -31,80 +34,93 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60FieldInfosFormat;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsFormat;
+import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
- * Implements the Lucene 7.0 index format, with configurable per-field postings
+ * Implements the Lucene 8.6 index format, with configurable per-field postings
  * and docvalues formats.
  * <p>
  * If you want to reuse functionality of this codec in another codec, extend
  * {@link FilterCodec}.
  *
- * @see org.apache.lucene.codecs.lucene70 package documentation for file format details.
+ * @see org.apache.lucene.codecs.lucene86 package documentation for file format details.
  *
  * @lucene.experimental
  */
-public class Lucene70Codec extends Codec {
+public class Lucene86Codec extends Codec {
   private final TermVectorsFormat vectorsFormat = new Lucene50TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene60FieldInfosFormat();
-  private final SegmentInfoFormat segmentInfosFormat = new Lucene70SegmentInfoFormat();
+  private final SegmentInfoFormat segmentInfosFormat = new Lucene86SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
   private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
-  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene70");
+  private final PointsFormat pointsFormat = new Lucene86PointsFormat();
+  private final PostingsFormat defaultFormat;
 
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
-      throw new IllegalStateException("This codec should only be used for reading, not writing");
+      return Lucene86Codec.this.getPostingsFormatForField(field);
     }
   };
-  
+
   private final DocValuesFormat docValuesFormat = new PerFieldDocValuesFormat() {
     @Override
     public DocValuesFormat getDocValuesFormatForField(String field) {
-      return defaultDVFormat;
+      return Lucene86Codec.this.getDocValuesFormatForField(field);
     }
   };
-  
-  private final StoredFieldsFormat storedFieldsFormat = new Lucene50StoredFieldsFormat(Mode.BEST_SPEED);
 
-  /** 
+  private final StoredFieldsFormat storedFieldsFormat;
+
+  /**
    * Instantiates a new codec.
    */
-  public Lucene70Codec() {
-    super("Lucene70");
+  public Lucene86Codec() {
+    this(Lucene50StoredFieldsFormat.Mode.BEST_SPEED);
   }
-  
+
+  /**
+   * Instantiates a new codec, specifying the stored fields compression
+   * mode to use.
+   * @param mode stored fields compression mode to use for newly
+   *             flushed/merged segments.
+   */
+  public Lucene86Codec(Lucene50StoredFieldsFormat.Mode mode) {
+    super("Lucene86");
+    this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
+    this.defaultFormat = new Lucene84PostingsFormat();
+  }
+
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
     return storedFieldsFormat;
   }
-  
+
   @Override
   public final TermVectorsFormat termVectorsFormat() {
     return vectorsFormat;
   }
 
   @Override
-  public PostingsFormat postingsFormat() {
+  public final PostingsFormat postingsFormat() {
     return postingsFormat;
   }
-  
+
   @Override
   public final FieldInfosFormat fieldInfosFormat() {
     return fieldInfosFormat;
   }
-  
+
   @Override
-  public SegmentInfoFormat segmentInfoFormat() {
+  public final SegmentInfoFormat segmentInfoFormat() {
     return segmentInfosFormat;
   }
-  
+
   @Override
   public final LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;
@@ -117,15 +133,43 @@ public class Lucene70Codec extends Codec {
 
   @Override
   public final PointsFormat pointsFormat() {
-    return new Lucene60PointsFormat();
+    return pointsFormat;
   }
-  
+
+  /** Returns the postings format that should be used for writing
+   *  new segments of <code>field</code>.
+   *
+   *  The default implementation always returns "Lucene84".
+   *  <p>
+   *  <b>WARNING:</b> if you subclass, you are responsible for index
+   *  backwards compatibility: future version of Lucene are only
+   *  guaranteed to be able to read the default implementation.
+   */
+  public PostingsFormat getPostingsFormatForField(String field) {
+    return defaultFormat;
+  }
+
+  /** Returns the docvalues format that should be used for writing
+   *  new segments of <code>field</code>.
+   *
+   *  The default implementation always returns "Lucene80".
+   *  <p>
+   *  <b>WARNING:</b> if you subclass, you are responsible for index
+   *  backwards compatibility: future version of Lucene are only
+   *  guaranteed to be able to read the default implementation.
+   */
+  public DocValuesFormat getDocValuesFormatForField(String field) {
+    return defaultDVFormat;
+  }
+
   @Override
   public final DocValuesFormat docValuesFormat() {
     return docValuesFormat;
   }
 
-  private final NormsFormat normsFormat = new Lucene70NormsFormat();
+  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene80");
+
+  private final NormsFormat normsFormat = new Lucene80NormsFormat();
 
   @Override
   public final NormsFormat normsFormat() {

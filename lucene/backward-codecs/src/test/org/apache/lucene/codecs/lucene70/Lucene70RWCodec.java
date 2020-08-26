@@ -14,24 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene84;
+package org.apache.lucene.codecs.lucene70;
 
-import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50RWPostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50RWStoredFieldsFormat;
-import org.apache.lucene.codecs.lucene60.Lucene60RWPointsFormat;
-import org.apache.lucene.codecs.lucene70.Lucene70RWSegmentInfoFormat;
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
- * RW impersonation of {@link Lucene84Codec}.
+ * RW impersonation of {@link Lucene70Codec}.
  */
-public class Lucene84RWCodec extends Lucene84Codec {
+public final class Lucene70RWCodec extends Lucene70Codec {
 
-  @Override
-  public PointsFormat pointsFormat() {
-    return new Lucene60RWPointsFormat();
-  }
+  private final PostingsFormat defaultPF = new Lucene50RWPostingsFormat();
+  private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
+    @Override
+    public PostingsFormat getPostingsFormatForField(String field) {
+      return defaultPF;
+    }
+  };
+
+  /** Sole constructor. */
+  public Lucene70RWCodec() {}
 
   @Override
   public SegmentInfoFormat segmentInfoFormat() {
@@ -43,4 +49,8 @@ public class Lucene84RWCodec extends Lucene84Codec {
     return new Lucene50RWStoredFieldsFormat();
   }
 
+  @Override
+  public PostingsFormat postingsFormat() {
+    return postingsFormat;
+  }
 }
