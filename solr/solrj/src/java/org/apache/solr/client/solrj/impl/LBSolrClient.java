@@ -33,11 +33,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -366,6 +369,24 @@ public abstract class LBSolrClient extends SolrClient {
       }
     }
     throw new SolrServerException("No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
+  }
+
+  /**
+   * Asynchronously query a server from the list of servers provided in the Req parameter. Servers are queried
+   * in the exact order of the server list. This method is similar to {@link LBSolrClient#request(Req)} except that it
+   * runs asynchronously.
+   *
+   * This method is currently only implemented in the LBHttp2SolrClient.
+   *
+   * @param req contains both the request as well as the list of servers to query
+   *
+   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports cancelling requests via
+   * {@link CompletableFuture#cancel(boolean)}, adding callbacks/error handling using {@link CompletableFuture#whenComplete(BiConsumer)}
+   * and {@link CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture functionality. Will
+   * complete exceptionally in case of either an {@link IOException} or {@link SolrServerException} during the request.
+   */
+  public CompletableFuture<Rsp> requestAsync(Req req) {
+    throw new UnsupportedOperationException("Async requests not supported on this Solr Client.");
   }
 
   /**

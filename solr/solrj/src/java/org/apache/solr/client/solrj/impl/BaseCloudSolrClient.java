@@ -594,7 +594,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         MDC.put("CloudSolrClient.url", url);
         final CompletableFuture<NamedList<Object>> future = new CompletableFuture<>();
         if (isAsyncRequest) {
-          CompletableFuture<LBSolrClient.Rsp> reqFuture = ((LBHttp2SolrClient) getLbClient()).requestAsync(lbRequest);
+          CompletableFuture<LBSolrClient.Rsp> reqFuture = getLbClient().requestAsync(lbRequest);
           reqFuture.whenComplete((result, error) -> {
             if (!reqFuture.isCompletedExceptionally()) {
               future.complete(result.getResponse());
@@ -650,7 +650,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       String url = entry.getKey();
       LBSolrClient.Req lbRequest = entry.getValue();
       if (isAsyncRequest) {
-        CompletableFuture<LBSolrClient.Rsp> future = ((LBHttp2SolrClient) getLbClient()).requestAsync(lbRequest);
+        CompletableFuture<LBSolrClient.Rsp> future = getLbClient().requestAsync(lbRequest);
         future.whenComplete((result, error) -> {
           if (!future.isCompletedExceptionally()) {
             shardResponses.add(url, result.getResponse());
@@ -703,7 +703,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       Collections.shuffle(urlList, rand);
       LBSolrClient.Req req = new LBSolrClient.Req(nonRoutableRequest, urlList);
       if (isAsyncRequest) {
-        CompletableFuture<LBSolrClient.Rsp> future = ((LBHttp2SolrClient) getLbClient()).requestAsync(req);
+        CompletableFuture<LBSolrClient.Rsp> future = getLbClient().requestAsync(req);
         future.whenComplete((result, throwable) -> {
           if (future.isCompletedExceptionally()) {
             apiFuture.completeExceptionally(throwable);
@@ -970,11 +970,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   CompletableFuture<NamedList<Object>> makeRequest(SolrRequest<?> request,
                                                    String collection,
                                                    boolean isAsyncRequest) throws SolrServerException, IOException {
-    if (isAsyncRequest && !(getLbClient() instanceof LBHttp2SolrClient)) {
-      log.warn("Asynchronous requests require HTTP/2 SolrJ client, defaulting to synchronous request.");
-      isAsyncRequest = false;
-    }
-
     // the collection parameter of the request overrides that of the parameter to this method
     String requestCollection = request.getCollection();
     if (requestCollection != null) {
@@ -1284,7 +1279,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
     LBSolrClient.Req req = new LBSolrClient.Req(request, theUrlList);
     if (isAsyncRequest) {
-      CompletableFuture<LBSolrClient.Rsp> lbFuture = ((LBHttp2SolrClient) getLbClient()).requestAsync(req);
+      CompletableFuture<LBSolrClient.Rsp> lbFuture = getLbClient().requestAsync(req);
       CompletableFuture<NamedList<Object>> apiFuture = new CompletableFuture<>();
       lbFuture.whenComplete((result, throwable) -> {
         if (lbFuture.isCompletedExceptionally()) {

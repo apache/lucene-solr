@@ -83,18 +83,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     return httpClient;
   }
 
-  /**
-   * Asynchronously query a server from the list of servers provided in the Req parameter. Servers are queried
-   * in the exact order of the server list. This method is similar to {@link LBSolrClient#request(Req)} except that it
-   * runs asynchronously.
-   *
-   * @param req contains both the request as well as the list of servers to query
-   *
-   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports cancelling requests via
-   * {@link CompletableFuture#cancel(boolean)}, adding callbacks/error handling using {@link CompletableFuture#whenComplete(BiConsumer)}
-   * and {@link CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture functionality. Will
-   * complete exceptionally in case of either an {@link IOException} or {@link SolrServerException} during the request.
-   */
+  @Override
   public CompletableFuture<Rsp> requestAsync(Req req) {
     CompletableFuture<Rsp> apiFuture = new CompletableFuture<>();
     Rsp rsp = new Rsp();
