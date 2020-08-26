@@ -624,6 +624,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     CompletableFuture<NamedList<Object>>[] futuresArray = responseFutures.values().toArray(new CompletableFuture[responseFutures.size()]);
     return CompletableFuture.allOf(futuresArray).handle((result, error) -> {
       if (exceptions.size() > 0) {
@@ -667,7 +668,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     }
     if (isAsyncRequest) {
-      return CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+      @SuppressWarnings({"rawtypes", "unchecked"})
+      CompletableFuture<NamedList<Object>>[] futuresArray = futures.toArray(new CompletableFuture[futures.size()]);
+      return CompletableFuture.allOf(futuresArray);
     } else {
       return CompletableFuture.completedFuture(null);
     }
@@ -726,6 +729,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void finishDirectUpdate(NamedList<NamedList<?>> shardResponses,
                                   CompletableFuture<NamedList<Object>> apiFuture,
                                   long start,
