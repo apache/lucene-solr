@@ -52,11 +52,11 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
   private static final ThreadLocal<Double> allowedCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
-  public CPUCircuitBreaker(SolrConfig solrConfig) {
-    super(solrConfig);
+  public CPUCircuitBreaker(CircuitBreakerConfig config) {
+    super(config);
 
-    this.enabled = solrConfig.cpuCBEnabled;
-    this.cpuUsageThreshold = solrConfig.cpuCBThreshold;
+    this.enabled = config.getCpuCBEnabled();
+    this.cpuUsageThreshold = config.getCpuCBThreshold();
   }
 
   @Override

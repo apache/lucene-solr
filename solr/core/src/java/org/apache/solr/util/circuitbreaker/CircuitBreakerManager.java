@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Manages all registered circuit breaker instances. Responsible for a holistic view
@@ -121,17 +121,53 @@ public class CircuitBreakerManager {
    *
    * Any default circuit breakers should be registered here.
    */
-  public static CircuitBreakerManager build(SolrConfig solrConfig) {
-    CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(solrConfig.useCircuitBreakers);
+  @SuppressWarnings({"rawtypes"})
+  public static CircuitBreakerManager build(NamedList args) {
+    boolean enabled = false;
 
+    if (args != null) {
+      Boolean enabledBoxed = args.getBooleanArg("enabled");
+
+      if (enabledBoxed) {
+        enabled = args.getBooleanArg("enabled");
+      }
+    }
+
+    CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(enabled);
+
+    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = buildCBConfig(args);
     // Install the default circuit breakers
-    CircuitBreaker memoryCircuitBreaker = new MemoryCircuitBreaker(solrConfig);
-    CircuitBreaker cpuCircuitBreaker = new CPUCircuitBreaker(solrConfig);
+    CircuitBreaker memoryCircuitBreaker = new MemoryCircuitBreaker(circuitBreakerConfig);
+    CircuitBreaker cpuCircuitBreaker = new CPUCircuitBreaker(circuitBreakerConfig);
 
     circuitBreakerManager.register(memoryCircuitBreaker);
     circuitBreakerManager.register(cpuCircuitBreaker);
 
     return circuitBreakerManager;
+  }
+
+  @VisibleForTesting
+  @SuppressWarnings({"rawtypes"})
+  public static CircuitBreaker.CircuitBreakerConfig buildCBConfig(NamedList args) {
+    boolean enabled = false;
+    boolean cpuCBEnabled = false;
+    boolean memCBEnabled = false;
+    int memCBThreshold = 100;
+    int cpuCBThreshold = 100;
+
+    if (args != null) {
+      enabled = args.getBooleanArg("enabled");
+      cpuCBEnabled = args.getBooleanArg("cpuEnabled");
+      memCBEnabled = args.getBooleanArg("memEnabled");
+      memCBThreshold = Integer.parseInt((String) args.get("memThreshold"));
+      cpuCBThreshold = Integer.parseInt((String) args.get("cpuThreshold"));
+    }
+
+    return new CircuitBreaker.CircuitBreakerConfig(enabled, memCBEnabled, memCBThreshold, cpuCBEnabled, cpuCBThreshold);
+  }
+
+  public boolean isEnabled() {
+    return enableCircuitBreakerManager;
   }
 
   @VisibleForTesting

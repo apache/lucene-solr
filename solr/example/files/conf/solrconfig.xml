@@ -563,7 +563,13 @@
     they are free to add their specific configuration but need to ensure that this flag is always
     respected - this should have veto over all independent configuration flags.
     -->
-    <useCircuitBreakers>false</useCircuitBreakers>
+    <str name="enabled">true</str>
+
+    <!-- Memory Circuit Breaker Control Flag
+
+    Use the following flag to control the behaviour of this circuit breaker
+    -->
+    <str name="memEnabled">true</str>
 
     <!-- Memory Circuit Breaker Threshold In Percentage
 
@@ -580,7 +586,20 @@
     in logs and the corresponding error message should tell you what transpired (if the failure
     was caused by tripped circuit breakers).
     -->
-    <memoryCircuitBreakerThresholdPct>100</memoryCircuitBreakerThresholdPct>
+    <str name="memThreshold">75</str>
+
+    <!-- CPU Based Circuit Breaker Control Flag
+
+    Use the following flag to control the behaviour of this circuit breaker
+    -->
+    <str name="cpuEnabled">true</str>
+
+    <!-- CPU Based Circuit Breaker Triggering Threshold
+
+    The triggering threshold is defined in units of CPU utilization. The configuration to control this is as below:
+    -->
+    <str name="cpuThreshold">75</str>
+
 
   </circuitBreaker>
 
