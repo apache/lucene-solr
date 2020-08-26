@@ -39,16 +39,12 @@ import java.util.function.Predicate;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -60,7 +56,6 @@ import org.apache.solr.common.cloud.LiveNodesPredicate;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -93,7 +88,8 @@ public class SolrCloudTestCase extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final int DEFAULT_TIMEOUT = 15000;
+  public static final int DEFAULT_TIMEOUT = 15; // this is SECONDS, not MILLIS
+  public static final TimeUnit DEFAULT_TIMEOUT_UNIT = TimeUnit.SECONDS;
   private static volatile SolrQueuedThreadPool qtp;
 
   private static class Config {
@@ -328,13 +324,11 @@ public class SolrCloudTestCase extends SolrTestCase {
   }
 
   protected static void waitForState(String message, String collection, CollectionStatePredicate predicate) {
-    waitForState(message, collection, predicate, DEFAULT_TIMEOUT, TimeUnit.SECONDS);
+    waitForState(message, collection, predicate, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT_UNIT);
   }
 
   /**
    * Wait for a particular collection state to appear in the cluster client's state reader
-   * <p>
-   * This is a convenience method using the {@link #DEFAULT_TIMEOUT}
    *
    * @param message    a message to report on failure
    * @param collection the collection to watch

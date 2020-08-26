@@ -133,7 +133,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     }
     
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
-      cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+      cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT_UNIT,
                                            (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     }
 

@@ -18,21 +18,17 @@
 package org.apache.solr.common.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -40,8 +36,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
+
 /** @see TestCollectionStateWatchers */
-@Ignore // nocommit, look at why this got slow
+@LuceneTestCase.Nightly
 public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -50,29 +48,21 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
   private static final int MAX_WAIT_TIMEOUT = 10; // seconds, only use for await -- NO SLEEP!!!
 
-  private ExecutorService executor = null;
-
   @Before
   public void prepareCluster() throws Exception {
     configureCluster(CLUSTER_SIZE)
       .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
       .configure();
-    executor = ExecutorUtil.newMDCAwareCachedThreadPool("backgroundWatchers");
   }
   
   @After
   public void tearDownCluster() throws Exception {
-    if (null!= executor) {
-      executor.shutdown();
-    }
     shutdownCluster();
-    executor.awaitTermination(15, TimeUnit.SECONDS);
-    executor = null;
   }
 
   private Future<Boolean> waitInBackground(String collection, long timeout, TimeUnit unit,
                                            Predicate<DocCollection> predicate) {
-    return executor.submit(() -> {
+    return testExecutor.submit(() -> {
       try {
         cluster.getSolrClient().waitForState(collection, timeout, unit, predicate);
       } catch (InterruptedException | TimeoutException e) {
@@ -80,33 +70,6 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
       }
       return Boolean.TRUE;
     });
-  }
-
-  private void waitFor(String message, long timeout, TimeUnit unit, Callable<Boolean> predicate)
-      throws InterruptedException, ExecutionException {
-    
-    Future<Boolean> future = executor.submit(() -> {
-      try {
-        while (true) {
-          if (predicate.call())
-            return true;
-          TimeUnit.MILLISECONDS.sleep(10);
-        }
-      }
-      catch (InterruptedException e) {
-        return false;
-      }
-    });
-    try {
-      if (future.get(timeout, unit) == true) {
-        return;
-      }
-    }
-    catch (TimeoutException e) {
-      // pass failure message on
-    }
-    future.cancel(true);
-    fail(message);
   }
 
   @Test
@@ -135,8 +98,10 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
     assertTrue("DocCollectionWatcher isn't called when registering for already-watched collection",
                latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
-    waitFor("DocCollectionWatcher should be removed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-            () -> client.getZkStateReader().getStateWatchers("currentstate").size() == 1);
+
+    await("DocCollectionWatcher should be removed")
+        .atMost(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS)
+        .until(() -> client.getZkStateReader().getStateWatchers("currentstate").size() == 1);
   }
 
   @Test
@@ -181,10 +146,10 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
       client.waitForState("nosuchcollection", 1, TimeUnit.SECONDS,
                           ((liveNodes, collectionState) -> false));
     });
-    waitFor("Watchers for collection should be removed after timeout",
-            MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-            () -> client.getZkStateReader().getStateWatchers("nosuchcollection").isEmpty());
 
+    await("Watchers for collection should be removed after timeout")
+        .atMost(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS)
+        .until(() -> client.getZkStateReader().getStateWatchers("nosuchcollection").isEmpty());
   }
 
   @Test
@@ -232,9 +197,10 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     // now confirm watcher is invoked & removed
     assertTrue("watcher never succeeded", future.get());
     assertTrue(runCountSnapshot < runCount.get());
-    waitFor("DocCollectionWatcher should be removed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-            () -> client.getZkStateReader().getStateWatchers("falsepredicate").size() == 0);
-    
+
+    await("DocCollectionWatcher should be removed")
+        .atMost(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS)
+        .until(() -> client.getZkStateReader().getStateWatchers("falsepredicate").size() == 0);
   }
 
   @Test
@@ -248,10 +214,9 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
                           (c) -> (false));
     });
 
-    waitFor("Watchers for collection should be removed after timeout",
-            MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-            () -> client.getZkStateReader().getStateWatchers("no-such-collection").isEmpty());
-
+    await("Watchers for collection should be removed after timeout")
+        .atMost(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS)
+        .until(() -> client.getZkStateReader().getStateWatchers("no-such-collection").isEmpty());
   }
 
   @Test
@@ -289,10 +254,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     Future<Boolean> migrated = waitInBackground("stateformat1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
                                                 (c) -> c != null && c.getStateFormat() == 2);
 
-    CollectionAdminRequest.migrateCollectionFormat("stateformat1")
-      .processAndWait(client, MAX_WAIT_TIMEOUT);
+    CollectionAdminRequest.migrateCollectionFormat("stateformat1").processAndWait(client, MAX_WAIT_TIMEOUT);
     assertTrue("DocCollectionWatcher did not persist over state format migration", migrated.get());
-
   }
-
 }

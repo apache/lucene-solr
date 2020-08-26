@@ -200,7 +200,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
                      .setCreateNodeSet(leaderToPartition.getNodeName() + "," + otherLeader.getNodeName())
                      .processAndWait(cloudClient, DEFAULT_TIMEOUT));
 
-        cloudClient.waitForState(collectionName, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+        cloudClient.waitForState(collectionName, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT_UNIT,
                                  (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
         { // HACK: Check the leaderProps for the shard hosted on the node we're going to kill...

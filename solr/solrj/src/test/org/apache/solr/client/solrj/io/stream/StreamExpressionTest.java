@@ -72,7 +72,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
   private static final String FILESTREAM_COLLECTION = "filestream_collection";
-  private static final int TIMEOUT = DEFAULT_TIMEOUT;
   private static final String id = "id";
 
   private static boolean useAlias;

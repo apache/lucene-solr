@@ -86,7 +86,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     final ZkStateReader stateReader = cluster.getSolrClient().getZkStateReader();
-    stateReader.waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+    stateReader.waitForState(COLLECTION, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT_UNIT,
         (n, c) -> DocCollection.isFullyActive(n, c, 1, 3));
 
     final Replica leader = stateReader.getLeaderRetry(COLLECTION, shardId);

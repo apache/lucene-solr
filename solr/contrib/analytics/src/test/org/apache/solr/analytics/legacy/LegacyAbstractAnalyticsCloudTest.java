@@ -40,7 +40,6 @@ import org.junit.BeforeClass;
 public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
 
   protected static final String COLLECTIONORALIAS = "collection1";
-  protected static final int TIMEOUT = DEFAULT_TIMEOUT;
   protected static final String id = "id";
 
   @BeforeClass

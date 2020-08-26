@@ -118,7 +118,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     setAuthIfNeeded(CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2))
       .process(cluster.getSolrClient());
 
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT_UNIT,
         (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
   }
 

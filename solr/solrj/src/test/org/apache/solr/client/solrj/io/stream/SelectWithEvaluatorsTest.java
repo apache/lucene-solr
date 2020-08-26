@@ -51,7 +51,6 @@ import org.junit.Test;
 public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
-  private static final int TIMEOUT = DEFAULT_TIMEOUT;
   private static final String id = "id";
 
   private static boolean useAlias;
