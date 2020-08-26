@@ -31,15 +31,15 @@ All circuit breaker configurations are listed in the circuitBreaker tags in solr
 
 [source,xml]
 ----
-<circuitBreaker class="solr.CircuitBreakerManager">
+<circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
   <!-- All specific configs in this section -->
 </circuitBreaker>
 ----
 
-The "enabled" flag controls the global activation/deactivation of circuit breakers. If this flag is disabled, all circuit breakers
+The "enabled" attribute controls the global activation/deactivation of circuit breakers. If this flag is disabled, all circuit breakers
 will be disabled globally. Per circuit breaker configurations are specified in their respective sections later.
 
-This flag acts as the highest authority and global controller of circuit breakers. For using specific circuit breakers, each one
+This attribute acts as the highest authority and global controller of circuit breakers. For using specific circuit breakers, each one
 needs to be individually enabled in addition to this flag being enabled.
 
 CircuitBreakerManager is the default manager for all circuit breakers that should be defined in the tag unless the user wishes to use
