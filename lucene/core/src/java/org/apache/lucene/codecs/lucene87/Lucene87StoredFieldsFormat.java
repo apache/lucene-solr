@@ -53,16 +53,15 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  * that is used ({@link Mode#BEST_SPEED BEST_SPEED}) focuses more on speed than on 
  * compression ratio, it should provide interesting compression ratios
  * for redundant inputs (such as log files, HTML or plain text). For higher
- * compression, you can choose ({@link Mode#BEST_COMPRESSION BEST_COMPRESSION}), which uses 
- * the <a href="http://en.wikipedia.org/wiki/DEFLATE">DEFLATE</a> algorithm with 48KB blocks
- * 
- * for a better ratio at the expense of slower performance. 
- * These two options can be configured like this:
+ * compression, you can choose ({@link Mode#BEST_COMPRESSION BEST_COMPRESSION}),
+ * which uses the <a href="http://en.wikipedia.org/wiki/DEFLATE">DEFLATE</a>
+ * algorithm with 48kB blocks and shared dictionaries for a better ratio at the
+ * expense of slower performance. These two options can be configured like this:
  * <pre class="prettyprint">
  *   // the default: for high performance
- *   indexWriterConfig.setCodec(new Lucene54Codec(Mode.BEST_SPEED));
+ *   indexWriterConfig.setCodec(new Lucene87Codec(Mode.BEST_SPEED));
  *   // instead for higher performance (but slower):
- *   // indexWriterConfig.setCodec(new Lucene54Codec(Mode.BEST_COMPRESSION));
+ *   // indexWriterConfig.setCodec(new Lucene87Codec(Mode.BEST_COMPRESSION));
  * </pre>
  * <p><b>File formats</b>
  * <p>Stored fields are represented by three files:
@@ -78,9 +77,6 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  * <a href="http://fastcompression.blogspot.fr/2011/05/lz4-explained.html">compression format</a>.</p>
  * <p>Notes
  * <ul>
- * <li>If documents are larger than 16KB then chunks will likely contain only
- * one document. However, documents can never spread across several chunks (all
- * fields of a single document are in the same chunk).</li>
  * <li>When at least one document in a chunk is large enough so that the chunk
  * is larger than 32KB, the chunk will actually be compressed in several LZ4
  * blocks of 16KB. This allows {@link StoredFieldVisitor}s which are only
@@ -178,7 +174,7 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
   private static final int BEST_COMPRESSION_SUB_BLOCK_LENGTH = 48 * 1024;
   // We shoot for 10 sub blocks per block, which should hopefully amortize the
   // space overhead of having the first 8kB compressed without any preset dict,
-  // and then remove 8kB in order to avoid creating a tiny 6th sub block if
+  // and then remove 8kB in order to avoid creating a tiny 11th sub block if
   // documents are small.
   private static final int BEST_COMPRESSION_BLOCK_LENGTH = BEST_COMPRESSION_DICT_LENGTH + 10 * BEST_COMPRESSION_SUB_BLOCK_LENGTH - 8 * 1024;
 
@@ -274,24 +270,24 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
           throw new CorruptIndexException("Unexpected dict length", in);
         }
 
-        int o = dictLength;
+        int offsetInBlock = dictLength;
         int offsetInBytesRef = offset;
 
         // Skip unneeded blocks
-        while (o + blockLength < offset) {
+        while (offsetInBlock + blockLength < offset) {
           final int compressedLength = in.readVInt();
           in.skipBytes(compressedLength);
-          o += blockLength;
+          offsetInBlock += blockLength;
           offsetInBytesRef -= blockLength;
         }
 
         // Read blocks that intersect with the interval we need
-        while (o < offset + length) {
+        while (offsetInBlock < offset + length) {
           bytes.bytes = ArrayUtil.grow(bytes.bytes, bytes.length + blockLength);
           decompressor.reset();
           decompressor.setDictionary(bytes.bytes, 0, dictLength);
           doDecompress(in, decompressor, bytes);
-          o += blockLength;
+          offsetInBlock += blockLength;
         }
 
         bytes.offset = offsetInBytesRef;

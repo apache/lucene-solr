@@ -25,7 +25,7 @@ public class DeflateWithPresetCompressingCodec extends CompressingCodec {
   public DeflateWithPresetCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
     super("DeflateWithPresetCompressingStoredFieldsData", 
           withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
-          new DeflateWithPresetDict(chunkSize/10, chunkSize/3), chunkSize, maxDocsPerChunk, blockSize);
+          new DeflateWithPresetDict(chunkSize/10, chunkSize/3+1), chunkSize, maxDocsPerChunk, blockSize);
   }
 
   /** No-arg constructor. */
