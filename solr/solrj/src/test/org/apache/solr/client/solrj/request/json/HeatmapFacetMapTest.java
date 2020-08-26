@@ -18,12 +18,10 @@
 package org.apache.solr.client.solrj.request.json;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-@Ignore // nocommit flakey
 public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
 
   @Test

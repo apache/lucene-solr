@@ -35,7 +35,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit - debug
+//@Ignore // nocommit - debug
 public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION_NAME = "techproducts";
