@@ -1074,4 +1074,62 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     }
   }
 
+  /**
+   * Tests that async and sync requests have the same behavior for indexing/querying.
+   */
+  @Test
+  public void asyncRequestTest() throws Exception {
+    final String asyncCollection = "async_collection";
+    final String syncCollection = "sync_collection";
+
+    CollectionAdminRequest.createCollection(asyncCollection, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(asyncCollection, 2, 2);
+    CollectionAdminRequest.createCollection(syncCollection, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(syncCollection, 2, 2);
+
+    UpdateRequest req = new UpdateRequest();
+    String[] keys = {"abc", "def", "ghi", "jkl", "mno"};
+    for (int i=0; i<5; i++)  {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", i);
+      doc.addField("key", keys[i]);
+      req.add(doc);
+    }
+
+    // will fail if any errors during request processing
+    req.processAsynchronously(getRandomClient(), asyncCollection).get();
+    req.process(getRandomClient(), syncCollection);
+
+    getRandomClient().commit(asyncCollection);
+    getRandomClient().commit(syncCollection);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "*:*");
+    params.set("fl", "id, key");
+    params.set("sort", "id asc");
+
+    // uses requestAsync method to perform query
+    final QueryResponse asyncResponse = new QueryRequest(params).processAsynchronously(getRandomClient(), asyncCollection).get();
+    final SolrDocumentList asyncDocuments = asyncResponse.getResults();
+
+    final QueryResponse syncResponse = getRandomClient().query(syncCollection, params);
+    final SolrDocumentList syncDocuments = syncResponse.getResults();
+
+    assertTrue("Number of documents should be the same in async and sync results",
+        asyncDocuments.getNumFound() == syncDocuments.getNumFound());
+
+    Iterator<SolrDocument> asyncIter = asyncDocuments.iterator();
+    Iterator<SolrDocument> syncIter = syncDocuments.iterator();
+
+    while (asyncIter.hasNext()) {
+      SolrDocument asyncDoc = asyncIter.next();
+      SolrDocument syncDoc = syncIter.next();
+      String[] fields = {"id", "name"};
+      for (String f : fields) {
+        assertTrue("Value of field " + f + " should match in async and sync results",
+            asyncDoc.getFirstValue("id").equals(syncDoc.getFirstValue("id")));
+      }
+    }
+  }
+
 }
