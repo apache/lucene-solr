@@ -82,6 +82,9 @@ Other policies available are the `LogByteSizeMergePolicy`, `LogDocMergePolicy`, 
 <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
   <int name="maxMergeAtOnce">10</int>
   <int name="segmentsPerTier">10</int>
+  <double name="forceMergeDeletesPctAllowed">10.0</double>
+  <double name="deletesPctAllowed">33.0</double>
+
 </mergePolicyFactory>
 ----
 
@@ -103,6 +106,13 @@ When using `TieredMergePolicy`, the process is the same, but instead of a single
 Choosing the best merge factors is generally a trade-off of indexing speed vs. searching speed. Having fewer segments in the index generally accelerates searches, because there are fewer places to look. It also can also result in fewer physical files on disk. But to keep the number of segments low, merges will occur more often, which can add load to the system and slow down updates to the index.
 
 Conversely, keeping more segments can accelerate indexing, because merges happen less often, making an update is less likely to trigger a merge. But searches become more computationally expensive and will likely be slower, because search terms must be looked up in more index segments. Faster index updates also means shorter commit turnaround times, which means more timely search results.
+
+=== Controlling Deleted Document Percentages
+
+When a document is deleted or updated, the document is marked as deleted but it not removed from the index until the segment is merged. There are two parameters that can can be adjusted when using the default TieredMergePolicy that influence the number of deleted documents in an index.
+
+* `forceMergeDeletesPctAllowed (default 10.0)`. When the external expungeDeletes command is issued, any segment that has more than this percent deleted documents will be merged into a new segment and the data associated with the deleted documents will be purged. A value of 0.0 will make expungeDeletes behave essentially identically to `optimize`.
+* `deletesPctAllowed (default 33.0)`. During normal segment merging, a "best effort" is made to insure that the total percentage of deleted documents in the index is below this threshold.  Valid settings are between 20% and 50%. 33% was chosen as the default because as this setting approaches 20%, considerable load is added to the system.
 
 === Customizing Merge Policies
 
