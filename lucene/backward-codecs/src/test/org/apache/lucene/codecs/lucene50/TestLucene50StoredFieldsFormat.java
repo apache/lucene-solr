@@ -14,21 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.codecs.lucene50;
 
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseNormsFormatTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.codecs.lucene86.Lucene86RWCodec;
+import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
 
-/**
- * Tests Lucene80NormsFormat
- */
-public class TestLucene80NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = TestUtil.getDefaultCodec();
-  
+public class TestLucene50StoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
   @Override
   protected Codec getCodec() {
-    return codec;
+    return new Lucene86RWCodec();
   }
 }
