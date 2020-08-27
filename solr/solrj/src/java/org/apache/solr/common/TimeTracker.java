@@ -40,7 +40,7 @@ public class TimeTracker {
 
   private volatile long doneTime;
 
-  private final List<TimeTracker> children = new ArrayList<>(16);
+  private final List<TimeTracker> children = Collections.synchronizedList(new ArrayList<>(16));
 
   private final StringBuilder label;
 
