@@ -147,7 +147,7 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
   @VisibleForTesting
   @SuppressWarnings({"rawtypes"})
   public static CircuitBreaker.CircuitBreakerConfig buildCBConfig(PluginInfo pluginInfo) {
-    boolean enabled = false;
+    boolean enabled = Boolean.parseBoolean(pluginInfo.attributes.get("enabled"));
     boolean cpuCBEnabled = false;
     boolean memCBEnabled = false;
     int memCBThreshold = 100;
@@ -156,7 +156,6 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
     NamedList args = pluginInfo.initArgs;
 
     if (args != null) {
-      enabled = args.getBooleanArg("enabled");
       cpuCBEnabled = args.getBooleanArg("cpuEnabled");
       memCBEnabled = args.getBooleanArg("memEnabled");
       memCBThreshold = Integer.parseInt((String) args.get("memThreshold"));
