@@ -51,10 +51,10 @@ function wait_for_server_started {
   local started
   started=$(date +%s)
   local log
-  log="tmp-${container_name}.log"
+  log="${BUILD_DIR}/${container_name}.log"
   while true; do
-    docker logs "$container_name" > "$log" 2>&1
-    if grep -E -q '(o\.e\.j\.s\.Server Started|Started SocketConnector)' "$log" ; then
+    docker logs "$container_name" > "${log}" 2>&1
+    if grep -E -q '(o\.e\.j\.s\.Server Started|Started SocketConnector)' "${log}" ; then
       break
     fi
 
@@ -73,7 +73,7 @@ function wait_for_server_started {
     sleep 2
   done
   echo "Server started"
-  rm "$log"
+  rm "${log}"
   sleep "$sleep_time"
 }
 
@@ -81,7 +81,7 @@ function prepare_dir_to_mount {
   local userid
   userid=8983
   local folder
-  folder=myvarsolr
+  folder="${BUILD_DIR}/myvarsolr"
   if [ -n "$1" ]; then
     userid=$1
   fi
@@ -90,18 +90,44 @@ function prepare_dir_to_mount {
   fi
   rm -fr "$folder" >/dev/null 2>&1
   mkdir "$folder"
-  #echo "***** Created varsolr folder $PWD / $folder"
+  #echo "***** Created varsolr folder $BUILD_DIR / $folder"
 
   # The /var/solr mountpoint is owned by solr, so when we bind mount there our directory,
   # owned by the current user in the host, will show as owned by solr, and our attempts
   # to write to it as the user will fail. To deal with that, set the ACL to allow that.
   # If you can't use setfacl (eg on macOS), you'll have to chown the directory to 8983, or apply world
   # write permissions.
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    # Workaround for macOS
-    sudo chmod -R 777 "$folder"
-    sudo chown -R "$userid" "$folder"
-  else
+  if command -v setfacl &> /dev/null; then
     setfacl -m "u:$userid:rwx" "$folder"
   fi
 }
+
+
+# Shared setup
+
+if (( $# == 0 )); then
+  echo "Usage: ${TEST_DIR}/test.sh <tag>"
+  exit
+fi
+tag=$1
+
+if [[ -n "${DEBUG:-}" ]]; then
+  set -x
+fi
+
+TEST_NAME="$(basename -- "${TEST_DIR}")"
+
+# Create build directory if it hasn't been provided already
+if [[ -z ${BUILD_DIR:-} ]]; then
+  BASE_DIR="$(dirname -- "${BASH_SOURCE-$0}")"
+  BASE_DIR="$(cd ${BASE_DIR}/.. && pwd)"
+  BUILD_DIR="${BASE_DIR}/build/tmp/tests/${TEST_NAME}"
+fi
+mkdir -p "${BUILD_DIR}"
+
+echo "Test $TEST_DIR $tag"
+echo "Test logs and build files can be found at: ${BUILD_DIR}"
+container_name="test-$(echo "${TEST_NAME}" | tr ':/-' '_')-$(echo "${tag}" | tr ':/-' '_')"
+
+echo "Cleaning up left-over containers from previous runs"
+container_cleanup "$container_name"

@@ -2,25 +2,9 @@
 #
 set -euo pipefail
 
-TEST_DIR="$(dirname -- "$(readlink -f "${BASH_SOURCE-$0}")")"
+TEST_DIR="${TEST_DIR:-$(dirname -- "${BASH_SOURCE[0]}")}"
+source "${TEST_DIR}/../../shared.sh"
 
-if (( $# == 0 )); then
-  echo "Usage: ${BASH_SOURCE[0]} tag"
-  exit
-fi
-
-tag=$1
-
-if [[ -n "${DEBUG:-}" ]]; then
-  set -x
-fi
-
-source "$TEST_DIR/../../shared.sh"
-
-echo "Test $TEST_DIR $tag"
-container_name='test_'$(echo "$tag" | tr ':/-' '_')
-echo "Cleaning up left-over containers from previous runs"
-container_cleanup "$container_name"
 echo "Running $container_name"
 docker run --name "$container_name" -d "$tag"
 
@@ -56,4 +40,4 @@ if [[ $changelog_version != "$solr_version_from_tag" ]]; then
   exit 1
 fi
 
-echo "Test $TEST_DIR $tag succeeded"
+echo "Test $TEST_NAME $tag succeeded"

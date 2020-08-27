@@ -1,3 +1,5 @@
+import org.gradle.tooling.model.SourceDirectory
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -39,16 +41,55 @@ assemble.dependsOn tasks.docker
 // In order to create the solr docker image, the solr package image must be created first.
 tasks.docker.dependsOn(project(':solr:docker:package').tasks.docker)
 
-def ignoredTests = ['empty-varsolr-dir-ramdomuser-rootgroup', 'empty-varsolr-dir-user', 'empty-varsolr-dir-solr', 'initdb', 'user_volume', 'test_log4j'].toSet()
-task test() {
-  def sourceDir = file("tests/cases")
-  sourceDir.eachFile  { file ->
-    if (!ignoredTests.contains(file.getName())) {
-      exec {
-        commandLine "bash","$file/test.sh", "apache/solr:$version"
+abstract class DockerTestSuite extends DefaultTask {
+  private List<String> tests = new ArrayList<>();
+  private List<String> ignore = new ArrayList<>();
+
+  @OutputDirectory
+  abstract DirectoryProperty getOutputDir()
+
+  @Option(option = "tests", description = "Only run these specified tests, comma separated.")
+  public void setTests(List<String> tests) {
+    this.tests = tests;
+  }
+
+  @Input
+  public List<String> getTests() {
+    return tests;
+  }
+
+  @Option(option = "ignore", description = "Ignore these tests, comma separated.")
+  public void setIgnore(List<String> ignore) {
+    this.ignore = ignore;
+  }
+
+  @Input
+  public List<String> getIgnore() {
+    return ignore;
+  }
+
+  @TaskAction
+  void execute() {
+    def sourceDir = project.file("tests/cases")
+    sourceDir.eachFile  { file ->
+      def testName = file.getName()
+      def testCaseBuildDir = outputDir.dir(testName).get().toString()
+
+      // If specific tests are specified, only run those. Otherwise run all that are not ignored.
+      def runTest = !this.tests.isEmpty() ? tests.contains(testName) : !ignore.contains(testName)
+      if (runTest) {
+        project.exec {
+          environment "TEST_DIR", "$file"
+          environment "BUILD_DIR", "$testCaseBuildDir"
+          commandLine "bash", "$file/test.sh", "apache/solr:${project.version}"
+        }
       }
     }
   }
+}
+
+task test(type: DockerTestSuite) {
+  outputDir = project.file("$buildDir/tmp/tests")
 }
 
 //testing.dependsOn dockerIntegrationTests
