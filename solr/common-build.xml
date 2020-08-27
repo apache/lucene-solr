@@ -79,7 +79,6 @@
     <fileset dir="${common-solr.dir}/core/lib" excludes="${common.classpath.excludes}"/>
     <fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}"/>
     <fileset dir="${common-solr.dir}/server/lib" excludes="${common.classpath.excludes}"/>
-    <fileset dir="${common-solr.dir}/example/example-DIH/solr/db/lib" excludes="${common.classpath.excludes}"/>
     <fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
   </path>
 
@@ -450,9 +449,6 @@
 
   <!-- resolve dependencies in the example (relied upon by compile/tests) -->
   <target name="resolve-example" unless="example.libs.uptodate">
-    <ant dir="${common-solr.dir}/example/example-DIH" target="resolve" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
     <property name="example.libs.uptodate" value="true"/>
   </target>
 

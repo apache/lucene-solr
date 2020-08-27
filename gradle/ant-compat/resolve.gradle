@@ -164,10 +164,6 @@ configure(project(":solr:example")) {
       into "exampledocs/"
     })
 
-    from(configurations.dih, {
-      into "example-DIH/solr/db/lib"
-    })
-
     into projectDir
   }
 }
