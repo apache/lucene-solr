@@ -1179,7 +1179,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   private CircuitBreakerManager initCircuitBreakerManager() {
-    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(solrConfig);
+    final PluginInfo info = solrConfig.getPluginInfo(CircuitBreakerManager.class.getName());
+    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(info);
 
     return circuitBreakerManager;
   }

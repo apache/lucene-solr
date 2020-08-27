@@ -31,10 +31,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -89,7 +90,11 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     removeAllExistingCircuitBreakers();
 
-    CircuitBreaker circuitBreaker = new MockCircuitBreaker(h.getCore().getSolrConfig());
+    PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
+
+    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
+
+    CircuitBreaker circuitBreaker = new MockCircuitBreaker(circuitBreakerConfig);
 
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
@@ -106,7 +111,10 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
     removeAllExistingCircuitBreakers();
 
-    CircuitBreaker circuitBreaker = new FakeMemoryPressureCircuitBreaker(h.getCore().getSolrConfig());
+    PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
+
+    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
+    CircuitBreaker circuitBreaker = new FakeMemoryPressureCircuitBreaker(circuitBreakerConfig);
 
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
@@ -128,7 +136,10 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     try {
       removeAllExistingCircuitBreakers();
 
-      CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker(h.getCore().getSolrConfig());
+      PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
+
+      CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
+      CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker(circuitBreakerConfig);
 
       h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
@@ -182,7 +193,10 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     try {
       removeAllExistingCircuitBreakers();
 
-      CircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(h.getCore().getSolrConfig());
+      PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
+
+      CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
+      CircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(circuitBreakerConfig);
 
       h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
@@ -257,8 +271,8 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
   private static class MockCircuitBreaker extends MemoryCircuitBreaker {
 
-    public MockCircuitBreaker(SolrConfig solrConfig) {
-      super(solrConfig);
+    public MockCircuitBreaker(CircuitBreakerConfig config) {
+      super(config);
     }
 
     @Override
@@ -275,8 +289,8 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
 
   private static class FakeMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
 
-    public FakeMemoryPressureCircuitBreaker(SolrConfig solrConfig) {
-      super(solrConfig);
+    public FakeMemoryPressureCircuitBreaker(CircuitBreakerConfig config) {
+      super(config);
     }
 
     @Override
@@ -287,10 +301,12 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   private class BuildingUpMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
-    private AtomicInteger count = new AtomicInteger();
+    private AtomicInteger count;
 
-    public BuildingUpMemoryPressureCircuitBreaker(SolrConfig solrConfig) {
-      super(solrConfig);
+    public BuildingUpMemoryPressureCircuitBreaker(CircuitBreakerConfig config) {
+      super(config);
+
+      this.count = new AtomicInteger(0);
     }
 
     @Override
@@ -304,8 +320,8 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   private static class FakeCPUCircuitBreaker extends CPUCircuitBreaker {
-    public FakeCPUCircuitBreaker(SolrConfig solrConfig) {
-      super(solrConfig);
+    public FakeCPUCircuitBreaker(CircuitBreakerConfig config) {
+      super(config);
     }
 
     @Override

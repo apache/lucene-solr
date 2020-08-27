@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 
-import org.apache.solr.core.SolrConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,10 +49,10 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private static final ThreadLocal<Long> seenMemory = ThreadLocal.withInitial(() -> 0L);
   private static final ThreadLocal<Long> allowedMemory = ThreadLocal.withInitial(() -> 0L);
 
-  public MemoryCircuitBreaker(SolrConfig solrConfig) {
-    super(solrConfig);
+  public MemoryCircuitBreaker(CircuitBreakerConfig config) {
+    super(config);
 
-    this.enabled = solrConfig.memCBEnabled;
+    this.enabled = config.getMemCBEnabled();
 
     long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
 
@@ -61,7 +60,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
       throw new IllegalArgumentException("Invalid JVM state for the max heap usage");
     }
 
-    int thresholdValueInPercentage = solrConfig.memCBThreshold;
+    int thresholdValueInPercentage = config.getMemCBThreshold();
     double thresholdInFraction = thresholdValueInPercentage / (double) 100;
     heapMemoryThreshold = (long) (currentMaxHeap * thresholdInFraction);
 
