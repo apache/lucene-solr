@@ -45,7 +45,6 @@ import org.junit.Test;
 
 @LuceneTestCase.Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-@Ignore // nocommit - debug
 public class GraphTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";

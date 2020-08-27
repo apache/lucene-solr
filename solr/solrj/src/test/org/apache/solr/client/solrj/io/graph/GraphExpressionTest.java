@@ -73,7 +73,7 @@ import org.junit.Test;
  **/
 
 @Slow
-@Ignore // nocommit flakey
+//@Ignore // nocommit flakey
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
 public class GraphExpressionTest extends SolrCloudTestCase {
 

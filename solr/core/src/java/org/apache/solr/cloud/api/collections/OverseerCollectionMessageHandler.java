@@ -920,8 +920,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         latch.countDown();
       }
 
+      // TJP TODO: Getting weird timeout issues when trying to delete a collection that was
+      // created using processAndWait b/c of this latch.await ... need to dig in further.
       latch.await(15, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
-
 
       shardHandler.submit(sreq, replica, sreq.params);
 

@@ -299,48 +299,56 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     List<Edge> targets = new ArrayList();
     ExecutorService threadPool = null;
 
-    try {
+    threadPool = ParWork.getExecutor();
 
-      threadPool = ParWork.getExecutor();
-
-      //Breadth first search
-      TRAVERSE:
-      while (targets.size() == 0 && depth < maxDepth) {
-        Set<String> nodes = visited.keySet();
-        Iterator<String> it = nodes.iterator();
-        nextVisited = new HashMap();
-        int batchCount = 0;
-        List<String> queryNodes = new ArrayList();
-        List<Future> futures = new ArrayList();
-        JOIN:
-        //Queue up all the batches
-        while (it.hasNext()) {
-          String node = it.next();
-          queryNodes.add(node);
-          ++batchCount;
-          if (batchCount == joinBatchSize || !it.hasNext()) {
-            try {
-              JoinRunner joinRunner = new JoinRunner(queryNodes);
-              Future<List<Edge>> future = threadPool.submit(joinRunner);
-              futures.add(future);
-            } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
-              throw new RuntimeException(e);
-            }
-            batchCount = 0;
-            queryNodes = new ArrayList();
+    //Breadth first search
+    TRAVERSE:
+    while (targets.size() == 0 && depth < maxDepth) {
+      Set<String> nodes = visited.keySet();
+      Iterator<String> it = nodes.iterator();
+      nextVisited = new HashMap();
+      int batchCount = 0;
+      List<String> queryNodes = new ArrayList();
+      List<Future> futures = new ArrayList();
+      JOIN:
+      //Queue up all the batches
+      while (it.hasNext()) {
+        String node = it.next();
+        queryNodes.add(node);
+        ++batchCount;
+        if (batchCount == joinBatchSize || !it.hasNext()) {
+          try {
+            JoinRunner joinRunner = new JoinRunner(queryNodes);
+            Future<List<Edge>> future = threadPool.submit(joinRunner);
+            futures.add(future);
+          } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
+            throw new RuntimeException(e);
           }
+          batchCount = 0;
+          queryNodes = new ArrayList();
         }
+      }
 
-        try {
-          //Process the batches as they become available
-          OUTER:
-          for (Future<List<Edge>> future : futures) {
-            List<Edge> edges = future.get();
-            INNER:
-            for (Edge edge : edges) {
-              if (toNode.equals(edge.to)) {
-                targets.add(edge);
+      try {
+        //Process the batches as they become available
+        OUTER:
+        for (Future<List<Edge>> future : futures) {
+          List<Edge> edges = future.get();
+          INNER:
+          for (Edge edge : edges) {
+            if (toNode.equals(edge.to)) {
+              targets.add(edge);
+              if(nextVisited.containsKey(edge.to)) {
+                List<String> parents = nextVisited.get(edge.to);
+                parents.add(edge.from);
+              } else {
+                List<String> parents = new ArrayList();
+                parents.add(edge.from);
+                nextVisited.put(edge.to, parents);
+              }
+            } else {
+              if (!cycle(edge.to, allVisited)) {
                 if(nextVisited.containsKey(edge.to)) {
                   List<String> parents = nextVisited.get(edge.to);
                   parents.add(edge.from);
@@ -349,31 +357,18 @@ public class ShortestPathStream extends TupleStream implements Expressible {
                   parents.add(edge.from);
                   nextVisited.put(edge.to, parents);
                 }
-              } else {
-                if (!cycle(edge.to, allVisited)) {
-                  if(nextVisited.containsKey(edge.to)) {
-                    List<String> parents = nextVisited.get(edge.to);
-                    parents.add(edge.from);
-                  } else {
-                    List<String> parents = new ArrayList();
-                    parents.add(edge.from);
-                    nextVisited.put(edge.to, parents);
-                  }
-                }
               }
             }
           }
-        } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
-          throw new RuntimeException(e);
         }
-
-        allVisited.add(nextVisited);
-        visited = nextVisited;
-        ++depth;
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
+        throw new RuntimeException(e);
       }
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(threadPool);
+
+      allVisited.add(nextVisited);
+      visited = nextVisited;
+      ++depth;
     }
 
     Set<String> finalPaths = new HashSet();
