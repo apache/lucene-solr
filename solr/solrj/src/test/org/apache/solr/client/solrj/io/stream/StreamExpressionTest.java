@@ -2943,7 +2943,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     return idToLabel;
   }
 
-
   @Test
   @Ignore // nocommit debug
   public void testBasicTextLogitStream() throws Exception {
