@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 
-import org.apache.solr.core.SolrConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,11 +51,11 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
   private static final ThreadLocal<Double> allowedCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
-  public CPUCircuitBreaker(SolrConfig solrConfig) {
-    super(solrConfig);
+  public CPUCircuitBreaker(CircuitBreakerConfig config) {
+    super(config);
 
-    this.enabled = solrConfig.cpuCBEnabled;
-    this.cpuUsageThreshold = solrConfig.cpuCBThreshold;
+    this.enabled = config.getCpuCBEnabled();
+    this.cpuUsageThreshold = config.getCpuCBThreshold();
   }
 
   @Override
