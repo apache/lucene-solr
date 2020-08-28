@@ -252,25 +252,7 @@ public class Http2SolrClient extends SolrClient {
     asyncTracker.waitForComplete();
     if (closeClient) {
       try {
-        try (ParWork closer = new ParWork(this, false, true)) {
-          closer.collect("httpClient", () -> {
-                try {
-                  httpClient.stop();
-                } catch (InterruptedException e) {
-                  ParWork.propegateInterrupt(e);
-                } catch (Exception e) {
-                  log.error("Exception closing httpClient", e);
-                }
-              });
-
-          closer.collect("httpClientScheduler", () -> {
-            try {
-              httpClient.getScheduler().stop();
-            } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
-            }
-          });
-        }
+        httpClient.stop();
       } catch (Exception e) {
         log.error("Exception closing httpClient", e);
       }
