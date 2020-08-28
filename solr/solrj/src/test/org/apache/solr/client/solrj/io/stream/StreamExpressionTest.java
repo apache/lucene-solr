@@ -300,6 +300,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  @Nightly // slow
   public void testSqlStream() throws Exception {
 
     new UpdateRequest()
@@ -550,10 +551,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       solrClientCache.close();
     }
   }
-
-
-
+  
   @Test
+  @Nightly // randomly slow
   public void testRandomStream() throws Exception {
 
     UpdateRequest update = new UpdateRequest();
@@ -1137,6 +1137,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  @Nightly // slowish
   public void testFacetStream() throws Exception {
 
     new UpdateRequest()
@@ -2177,6 +2178,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly // slow
   public void testTopicStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
