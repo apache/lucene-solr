@@ -35,8 +35,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit - somehow this test can hit zk session expiration issues that prevent the cores in the collection from being created
-// in cluster setup - which is strange ...
 public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION_NAME = "techproducts";
