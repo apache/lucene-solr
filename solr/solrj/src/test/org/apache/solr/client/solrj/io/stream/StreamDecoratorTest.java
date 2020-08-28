@@ -3416,6 +3416,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly // slow
   public void testParallelDaemonCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3632,6 +3633,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly // slow
   public void testClassifyStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -4291,6 +4293,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
   }
 
+  @Nightly // slower
   public void testDeleteStream() throws Exception {
     final String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
     final SolrClient client = cluster.getSolrClient();
