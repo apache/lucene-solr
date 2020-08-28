@@ -1592,7 +1592,6 @@ public class ZkController implements Closeable {
       }
 
       // the watcher is added to a set so multiple calls of this method will left only one watcher
-      zkStateReader.registerCore(cloudDesc.getCollectionName());
       zkStateReader.registerDocCollectionWatcher(cloudDesc.getCollectionName(),
           new UnloadCoreOnDeletedWatcher(coreZkNodeName, shardId, desc.getName()));
       return shardId;
@@ -2096,14 +2095,18 @@ public class ZkController implements Closeable {
 
   public void preRegister(CoreDescriptor cd, boolean publishState) {
     log.info("PreRegister SolrCore, collection={}, shard={} coreNodeName={}", cd.getCloudDescriptor().getCollectionName(), cd.getCloudDescriptor().getShardId());
+
+    CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+
+    // the watcher is added to a set so multiple calls of this method will left only one watcher
+    zkStateReader.registerCore(cloudDesc.getCollectionName());
+
     String coreNodeName = getCoreNodeName(cd);
 
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
       checkStateInZk(cd);
-
-      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
 
       // make sure the node name is set on the descriptor
       if (cloudDesc.getCoreNodeName() == null) {
