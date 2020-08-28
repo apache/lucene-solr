@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,17 +36,6 @@ public class TestClusterProperties extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     props = new ClusterProperties(zkClient());
-  }
-
-  @Test
-  public void testClusterProperties() throws Exception {
-    assertEquals("false", props.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "false"));
-
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "true").process(cluster.getSolrClient());
-    assertEquals("true", props.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "false"));
-
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "false").process(cluster.getSolrClient());
-    assertEquals("false", props.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, "true"));
   }
   
   @Test

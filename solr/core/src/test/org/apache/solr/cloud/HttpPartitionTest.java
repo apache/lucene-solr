@@ -582,7 +582,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected int getReplicaPort(Replica replica) {
-    String replicaNode = replica.getNodeName();    
+    String replicaNode = replica.getNodeName();
     String tmp = replicaNode.substring(replicaNode.indexOf(':')+1);
     if (tmp.indexOf('_') != -1)
       tmp = tmp.substring(0,tmp.indexOf('_'));

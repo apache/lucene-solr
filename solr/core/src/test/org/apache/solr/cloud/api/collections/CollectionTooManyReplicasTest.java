@@ -21,10 +21,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -32,6 +30,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
@@ -50,6 +49,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // Since maxShardsPerNode was removed in SOLR-12847 and autoscaling framework was removed in SOLR-14656, this test is broken
   public void testAddTooManyReplicas() throws Exception {
 
     final String collectionName = "TooManyReplicasInSeveralFlavors";
@@ -70,8 +70,8 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     // equivalent to maxShardsPerNode=1
-    String commands =  "{ set-cluster-policy: [ {replica: '<2', shard: '#ANY', node: '#ANY', strict: true} ] }";
-    cluster.getSolrClient().request(CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
+    // String commands =  "{ set-cluster-policy: [ {replica: '<2', shard: '#ANY', node: '#ANY', strict: true} ] }";
+    // cluster.getSolrClient().request(CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
 
     // this should fail because the policy prevents it
     Exception e = expectThrows(Exception.class, () -> {
@@ -116,10 +116,11 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // Since maxShardsPerNode was removed in SOLR-12847 and autoscaling framework was removed in SOLR-14656, this test is broken
   public void testAddShard() throws Exception {
     // equivalent to maxShardsPerNode=2
-    String commands =  "{ set-cluster-policy: [ {replica: '<3', shard: '#ANY', node: '#ANY', strict: true} ] }";
-    cluster.getSolrClient().request(CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
+    // String commands =  "{ set-cluster-policy: [ {replica: '<3', shard: '#ANY', node: '#ANY', strict: true} ] }";
+    // cluster.getSolrClient().request(CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
 
     String collectionName = "TooManyReplicasWhenAddingShards";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardstart", 2)

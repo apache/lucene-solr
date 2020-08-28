@@ -29,7 +29,6 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.fs.Path;
 import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponse;
@@ -153,7 +152,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
 
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
-    String configPathInZk = ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + configSetName;
+    String configPathInZk = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName;
 
     if (zkClient.exists(configPathInZk, true)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,

@@ -97,6 +97,7 @@ def expand_jinja(text, vars=None):
         'release_version_major': state.release_version_major,
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
+        'release_version_refguide': state.get_refguide_release() ,
         'state': state,
         'gpg_key' : state.get_gpg_key(),
         'epoch': unix_time_millis(datetime.utcnow()),
@@ -581,6 +582,9 @@ class ReleaseState:
             return "%s.%s" % (self.release_version_major, self.release_version_minor + 1)
         if self.release_type == 'bugfix':
             return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix + 1)
+
+    def get_refguide_release(self):
+        return "%s_%s" % (self.release_version_major, self.release_version_minor)
 
     def get_java_home(self):
         return self.get_java_home_for_version(self.release_version)

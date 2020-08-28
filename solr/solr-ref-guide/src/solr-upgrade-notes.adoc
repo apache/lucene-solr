@@ -66,10 +66,8 @@ More information about this new feature is available in the section <<common-que
 
 * Solr now includes a default autoscaling policy.
 This policy can be overridden with your custom rules or by specifying an empty policy to replace the default.
-+
-For details of the default policy, see the section <<solrcloud-autoscaling-overview.adoc#cluster-policy,Cluster Policy>>.
 
-* The <<solrcloud-autoscaling-trigger-actions.adoc#compute-plan-action,ComputePlan action>> now supports a collection selector to identify collections based on collection properties to determine which collections should be operated on.
+* The ComputePlan action now supports a collection selector to identify collections based on collection properties to determine which collections should be operated on.
 
 *Security*
 
@@ -249,8 +247,6 @@ The system is currently considered experimental, so use with caution. It must
 be enabled with a system parameter passed at start up before it can be used.
 For details, please see the section <<package-manager.adoc#package-manager,Package Management>>.
 
-With this feature Solr's <<adding-custom-plugins-in-solrcloud-mode.adoc#adding-custom-plugins-in-solrcloud-mode,Blob Store>>
-functionality is now deprecated and will likely be removed in 9.0.
 
 *Security*
 

@@ -1305,4 +1305,12 @@ public abstract class SolrClient implements Serializable, Closeable {
     return binder;
   }
 
+  /**
+   * This method defines the context in which this Solr client
+   * is being used (e.g. for internal communication between Solr
+   * nodes or as an external client). The default value is {@code SolrClientContext#Client}
+   */
+  public SolrRequest.SolrClientContext getContext() {
+    return SolrRequest.SolrClientContext.CLIENT;
+  }
 }

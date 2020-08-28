@@ -50,7 +50,7 @@ allprojects {
       }
     }
 
-    test {
+    tasks.withType(Test) {
       ext {
         testOutputsDir = file("${reports.junitXml.destination}/outputs")
       }
@@ -66,8 +66,10 @@ allprojects {
 
       minHeapSize = propertyOrDefault("tests.minheapsize", "256m")
       maxHeapSize = propertyOrDefault("tests.heapsize", "512m")
+      
+      ignoreFailures = (propertyOrDefault("tests.haltonfailure", true).toBoolean() == false)
 
-      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", "-XX:TieredStopAtLevel=1"))
+      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", System.getenv('TEST_JVM_ARGS') ?: "-XX:TieredStopAtLevel=1"))
 
       systemProperty 'java.util.logging.config.file', file("${commonDir}/tools/junit4/logging.properties")
       systemProperty 'java.awt.headless', 'true'

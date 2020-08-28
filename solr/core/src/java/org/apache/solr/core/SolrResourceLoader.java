@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.codecs.Codec;
@@ -59,15 +60,14 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, Closeable {
+public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
       "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
       "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
-      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin.",
-      "cloud.autoscaling."
+      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
@@ -75,6 +75,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
+
+
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());

@@ -125,11 +125,15 @@ templates:
      * Feature 1 pasted from WIKI release notes
      * Feature 2 ...
 
-    Please read CHANGES.txt for a full list of {% if is_feature_release %}new features and {% endif %}changes:
+    Please refer to the Upgrade Notes in the Solr Ref Guide for information on upgrading from previous Solr versions:
+
+      <https://lucene.apache.org/solr/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
+
+    Please read CHANGES.txt for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
 
       <https://lucene.apache.org/solr/{{ release_version_underscore }}/changes/Changes.html>
 
-    Solr {{ release_version }} also includes {% if is_feature_release %}features, optimizations {% endif %} and bugfixes in the corresponding Apache Lucene release:
+    Solr {{ release_version }} also includes {% if is_feature_release %}features, optimizations and {% endif %}bugfixes in the corresponding Apache Lucene release:
 
       <https://lucene.apache.org/core/{{ release_version_underscore }}/changes/Changes.html>
   announce_lucene_mail: |
@@ -327,6 +331,16 @@ groups:
     - http://www.apache.org/dev/openpgp.html#apache-wot
     - https://id.apache.org
     - https://dist.apache.org/repos/dist/release/lucene/KEYS
+  - !Todo
+    id: jira_permissions
+    title: Obtain the neccessary permissions for Apache Jira
+    description: |-
+      If you are not a PMC member and this is your first time as RM, please ask to be granted extra permissions in Jira in order to complete all steps of the release.
+
+      If you are a PMC member, you will already have the necessary permissions.
+    links:
+      - https://issues.apache.org/jira/projects/LUCENE
+      - https://issues.apache.org/jira/projects/SOLR
 - !TodoGroup
   id: preparation
   title: Prepare for the release
@@ -1278,6 +1292,43 @@ groups:
         cmd: git push origin
         logfile: push.log
         stdout: true
+        comment: Push the master branch
+      - !Command
+        cmd: "git checkout {{ stable_branch }} && git pull"
+        stdout: true
+        comment: Checkout the stable branch
+      - !Command
+        cmd: "git cherry-pick master"
+        logfile: commit.log
+        stdout: true
+        comment: Cherrypick the DOAP changes from master onto the stable branch.
+      - !Command
+        cmd: git show HEAD
+        stdout: true
+        comment: Ensure the only change is adding the new version.
+      - !Command
+        cmd: git push origin
+        logfile: push.log
+        stdout: true
+        comment: Push the stable branch
+      - !Command
+        cmd: "git checkout {{ release_branch }} && git pull"
+        stdout: true
+        comment: Checkout the release branch
+      - !Command
+        cmd: "git cherry-pick {{ stable_branch }}"
+        logfile: commit.log
+        stdout: true
+        comment: Cherrypick the DOAP changes from the stable branch onto the release branch.
+      - !Command
+        cmd: git show HEAD
+        stdout: true
+        comment: Ensure the only change is adding the new version.
+      - !Command
+        cmd: git push origin
+        logfile: push.log
+        stdout: true
+        comment: Push the release branch
 - !TodoGroup
   id: announce
   title: Announce the release
@@ -1339,8 +1390,8 @@ groups:
     - https://en.wikipedia.org/wiki/Apache_Solr
 - !TodoGroup
   id: post_release
-  title: Tasks to do after release
-  description: There are many more tasks to do now that the new version is out there, so hang in there for a few more hours :)
+  title: Tasks to do after release.
+  description: There are many more tasks to do now that the new version is out there, so hang in there for a few more hours.
   todos:
   - !Todo
     id: add_version_bugfix
@@ -1589,7 +1640,7 @@ groups:
     id: jira_close_resolved
     title: Close all issues resolved in the release
     description: |-
-      Go to JIRA search in both Solr and Lucene and find all issues that were fixed in the release 
+      Go to JIRA search in both Solr and Lucene and find all issues that were fixed in the release
       you just made, whose Status is Resolved.
 
       . Go to https://issues.apache.org/jira/issues/?jql=project+in+(LUCENE,SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version }}
@@ -1631,7 +1682,7 @@ groups:
     id: jira_clear_security
     title: Clear Security Level of Public Solr JIRA Issues
     description: |-
-      ASF JIRA has a deficiency in which issues that have a security level of "Public" are nonetheless not searchable. 
+      ASF JIRA has a deficiency in which issues that have a security level of "Public" are nonetheless not searchable.
       As a maintenance task, we'll clear the security flag for all public Solr JIRAs, even if it is not a task directly
       related to the release:
 

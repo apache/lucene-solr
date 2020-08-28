@@ -112,7 +112,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           .map(h -> h.resolveClientPortAddress() + ":" + h.clientPort)
           .sorted().collect(Collectors.toList());
       List<String> dynamicHosts = zkDynamicConfig.getServers().stream()
-          .map(h -> h.resolveClientPortAddress() + ":" + h.clientPort)
+          .map(h -> h.resolveClientPortAddress() + ":" +
+                  (h.clientPort != null ? h.clientPort : hostsFromConnectionString.getServers().get(0).clientPort))
           .sorted().collect(Collectors.toList());
       if (!connStringHosts.containsAll(dynamicHosts)) {
         errors.add("Your ZK connection string (" + connStringHosts.size() + " hosts) is different from the " +
@@ -120,7 +121,13 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
                 "dynamic reconfiguration and will only be able to connect to the zk hosts in your connection string.");
         status = STATUS_YELLOW;
       }
-      zookeepers = zkDynamicConfig; // Clone input
+      if (zkDynamicConfig.getServers().get(0).clientPort != null) {
+        // If we have dynamic config with client ports, use this list to iterate servers
+        zookeepers = zkDynamicConfig;
+      } else {
+        // Use list from connection string since client port is missing on dynamic config from ZK
+        zookeepers = hostsFromConnectionString;
+      }
     }
     final Map<String, Object> zkStatus = new HashMap<>();
     final List<Object> details = new ArrayList<>();
@@ -149,8 +156,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
         } else if ("leader".equals(state)) {
           leaders++;
           reportedFollowers = Math.max(
-              Integer.parseInt((String) stat.getOrDefault("zk_followers", "0")),
-              Integer.parseInt((String) stat.getOrDefault("zk_synced_followers", "0"))
+              (int) Float.parseFloat((String) stat.getOrDefault("zk_followers", "0")),
+              (int) Float.parseFloat((String) stat.getOrDefault("zk_synced_followers", "0"))
           );
         } else if ("standalone".equals(state)) {
           standalone++;

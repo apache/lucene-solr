@@ -44,4 +44,9 @@ public final class SuggestWord{
    */
   public String string;
 
+  @Override
+  public String toString() {
+    return "SuggestWord(string=" + string + ", score=" + score + ", freq=" + freq + ")";
+  }
+
 }

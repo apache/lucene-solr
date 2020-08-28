@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -38,7 +38,7 @@ public class SolrStandaloneScraper extends SolrScraper {
 
   private final HttpSolrClient solrClient;
 
-  public SolrStandaloneScraper(HttpSolrClient solrClient, Executor executor) {
+  public SolrStandaloneScraper(HttpSolrClient solrClient, ExecutorService executor) {
     super(executor);
     this.solrClient = solrClient;
   }

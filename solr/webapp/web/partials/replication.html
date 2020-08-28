@@ -84,7 +84,7 @@ limitations under the License.
         
     </div>
 
-    <div id="iterations" class="slaveOnly block clearfix" ng-show="isSlave">
+    <div id="iterations" class="followerOnly block clearfix" ng-show="isFollower">
 
       <div class="label"><span class="">Iterations:</span></div>
       <div class="iterations" ng-show="iterations && showIterations">
@@ -118,47 +118,47 @@ limitations under the License.
         </thead>
         <tbody>
 
-          <tr class="masterSearch">
+          <tr class="leaderSearch">
 
-            <th>Master (Searching)</th>
+            <th>Leader (Searching)</th>
             <td class="version" ng-class="{diff:versions.changedVersion}">
-                <div>{{versions.masterSearch.version}}</div>
+                <div>{{versions.leaderSearch.version}}</div>
             </td>
             <td class="generation" ng-class="{diff:versions.changedGeneration}">
-                <div>{{versions.masterSearch.generation}}</div>
+                <div>{{versions.leaderSearch.generation}}</div>
             </td>
             <td class="size">
-                <div>{{versions.masterSearch.size}}</div>
+                <div>{{versions.leaderSearch.size}}</div>
             </td>
 
           </tr>
 
-          <tr class="master">
+          <tr class="leader">
 
-            <th>Master (Replicable)</th>
+            <th>Leader (Replicable)</th>
             <td class="version" ng-class="{diff:versions.changedVersion}">
-                <div>{{versions.master.version}}</div>
+                <div>{{versions.leader.version}}</div>
             </td>
             <td class="generation" ng-class="{diff:versions.changedGeneration}">
-                <div>{{versions.master.generation}}</div>
+                <div>{{versions.leader.generation}}</div>
             </td>
             <td class="size">
-                <div>{{versions.master.size}}</div>
+                <div>{{versions.leader.size}}</div>
             </td>
 
           </tr>
 
-          <tr class="slave slaveOnly" ng-show="isSlave">
+          <tr class="follower followerOnly" ng-show="isFollower">
 
-            <th>Slave (Searching)</th>
+            <th>Follower (Searching)</th>
             <td class="version" ng-class="{diff:versions.changedVersion}">
-                <div>{{versions.slave.version}}</div>
+                <div>{{versions.follower.version}}</div>
             </td>
             <td class="generation" ng-class="{diff:versions.changedGeneration}">
-                <div>{{versions.slave.generation}}</div>
+                <div>{{versions.follower.generation}}</div>
             </td>
             <td class="size">
-                <div>{{versions.slave.size}}</div>
+                <div>{{versions.follower.size}}</div>
             </td>
 
           </tr>
@@ -169,14 +169,14 @@ limitations under the License.
 
     </div>
 
-    <div id="settings" class="settings block clearfix slaveOnly" ng-show="isSlave">
+    <div id="settings" class="settings block clearfix followerOnly" ng-show="isFollower">
 
       <div class="label"><span>Settings:</span></div>
       <ul>
-        <li class="masterUrl" ng-show="settings.masterUrl">
+        <li class="leaderUrl" ng-show="settings.leaderUrl">
             <dl class="clearfix">
-                <dt>master url:</dt>
-                <dd>{{settings.masterUrl}}</dd>
+                <dt>leader url:</dt>
+                <dd>{{settings.leaderUrl}}</dd>
             </dl>
         </li>
         <li class="isPollingDisabled"><dl class="clearfix">
@@ -189,21 +189,21 @@ limitations under the License.
         
     </div>
 
-    <div id="master-settings" class="settings block clearfix">
+    <div id="leader-settings" class="settings block clearfix">
 
-      <div class="label"><span>Settings (Master):</span></div>
+      <div class="label"><span>Settings (Leader):</span></div>
       <ul>
         <li class="replicationEnabled"><dl class="clearfix">
           <dt>replication enable:</dt>
-            <dd class="ico" ng-class="{'ico-0':!master.replicationEnabled, 'ico-1':master.replicationEnabled}">&nbsp;</dd>
+            <dd class="ico" ng-class="{'ico-0':!leader.replicationEnabled, 'ico-1':leader.replicationEnabled}">&nbsp;</dd>
         </dl></li>
         <li class="replicateAfter"><dl class="clearfix">
           <dt>replicateAfter:</dt>
-            <dd>{{master.replicateAfter}}</dd>
+            <dd>{{leader.replicateAfter}}</dd>
         </dl></li>
-        <li class="confFiles" ng-show="master.files"><dl class="clearfix">
+        <li class="confFiles" ng-show="leader.files"><dl class="clearfix">
           <dt>confFiles:</dt>
-            <dd><span ng-repeat="file in master.files"><attr title="{{file.title}}">{{file.name}}</attr>{{ $last ? '' :', '}}</span></dd>
+            <dd><span ng-repeat="file in leader.files"><attr title="{{file.title}}">{{file.name}}</attr>{{ $last ? '' :', '}}</span></dd>
         </dl></li>
       </ul>
         
@@ -213,7 +213,7 @@ limitations under the License.
 
   <div id="navigation">
 
-    <div class="timer" ng-show="isSlave && !settings.isPollingDisabled &&!settings.isReplicating">
+    <div class="timer" ng-show="isFollower && !settings.isPollingDisabled &&!settings.isReplicating">
 
       <p>Next Run: <span class="approx" ng-show="settings.isApprox">~</span><span class="tick">{{settings.tick | readableSeconds}}</span></p>
       <small ng-show="settings.nextExecutionAt">{{settings.nextExecutionAt}}</small>
@@ -221,7 +221,7 @@ limitations under the License.
 
     <button class="refresh-status" ng-click="refresh()"><span>Refresh Status</span></button>
 
-    <div class="slaveOnly" ng-show="isSlave">
+    <div class="followerOnly" ng-show="isFollower">
       <button class="optional replicate-now primary" ng-click="execute('fetchindex')" ng-show="!settings.isReplicating"><span>Replicate now</span></button>
       <button class="optional abort-replication warn" ng-click="execute('abortfetch')" ng-show="settings.isReplicating"><span>Abort Replication</span></button>
 
@@ -229,9 +229,9 @@ limitations under the License.
       <button class="optional enable-polling" ng-click="execute('enablepoll')" ng-show="settings.isPollingDisabled"><span>Enable Polling</span></button>
     </div>
 
-    <div class="masterOnly" ng-show="!isSlave">
-      <button class="optional disable-replication warn" ng-click="execute('disablereplication')" ng-show="master.replicationEnabled"><span>Disable Replication</span></button>
-      <button class="optional enable-replication warn" ng-click="execute('enablereplication')" ng-show="!master.replicationEnabled"><span>Enable Replication</span></button>
+    <div class="leaderOnly" ng-show="!isFollower">
+      <button class="optional disable-replication warn" ng-click="execute('disablereplication')" ng-show="leader.replicationEnabled"><span>Disable Replication</span></button>
+      <button class="optional enable-replication warn" ng-click="execute('enablereplication')" ng-show="!leader.replicationEnabled"><span>Enable Replication</span></button>
     </div>
     
   </div>
