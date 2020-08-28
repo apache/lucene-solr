@@ -1020,7 +1020,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private long getCurrentTLogSize() {
-    return ulog != null && ulog.hasUncommittedChanges() ? ulog.getCurrentLogSizeFromStream() : -1;
+    UpdateLog fulog = ulog;
+    return fulog != null && fulog.hasUncommittedChanges() ? fulog.getCurrentLogSizeFromStream() : -1;
   }
 
   // allow access for tests
