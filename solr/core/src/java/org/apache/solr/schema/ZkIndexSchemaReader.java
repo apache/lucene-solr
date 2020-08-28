@@ -40,10 +40,10 @@ import org.xml.sax.InputSource;
 public class ZkIndexSchemaReader implements OnReconnect {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ManagedIndexSchemaFactory managedIndexSchemaFactory;
-  private SolrZkClient zkClient;
-  private String managedSchemaPath;
+  private final SolrZkClient zkClient;
+  private final String managedSchemaPath;
   private final String uniqueCoreId; // used in equals impl to uniquely identify the core that we're dependent on
-  private SchemaWatcher schemaWatcher;
+  private volatile SchemaWatcher schemaWatcher;
 
   public ZkIndexSchemaReader(ManagedIndexSchemaFactory managedIndexSchemaFactory, SolrCore solrCore) {
     this.managedIndexSchemaFactory = managedIndexSchemaFactory;
@@ -110,7 +110,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
    */
   public static class SchemaWatcher implements Watcher {
 
-    private ZkIndexSchemaReader schemaReader;
+    private volatile ZkIndexSchemaReader schemaReader;
 
     public SchemaWatcher(ZkIndexSchemaReader reader) {
       this.schemaReader = reader;
@@ -139,7 +139,8 @@ public class ZkIndexSchemaReader implements OnReconnect {
         log.error("", e);
         throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        log.info("Interrupted", e);
+        // don't propegate interrupt in event thread
       }
     }
 
