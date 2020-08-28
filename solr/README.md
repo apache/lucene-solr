@@ -163,30 +163,22 @@ Instructions for Building Apache Solr from Source
    folder included on your command path. To test this, issue a "java -version" command
    from your shell (command prompt) and verify that the Java version is 11 or later.
 
-2. Download the Apache Ant binary distribution (1.8.2+) from
-   http://ant.apache.org/  You will need Ant installed and the $ANT_HOME/bin (Windows:
-   %ANT_HOME%\bin) folder included on your command path. To test this, issue a
-   "ant -version" command from your shell (command prompt) and verify that Ant is
-   available.
-
-   You will also need to install Apache Ivy binary distribution (2.2.0) from
-   http://ant.apache.org/ivy/ and place ivy-2.2.0.jar file in ~/.ant/lib -- if you skip
-   this step, the Solr build system will offer to do it for you.
-
-3. Download the Apache Solr distribution, linked from the above web site.
+2. Download the Apache Solr distribution, linked from the above web site.
    Unzip the distribution to a folder of your choice, e.g. C:\solr or ~/solr
    Alternately, you can obtain a copy of the latest Apache Solr source code
    directly from the GIT repository:
 
-     https://lucene.apache.org/solr/versioncontrol.html
+     https://lucene.apache.org/solr/community.html#version-control
 
-4. Navigate to the "solr" folder and issue an "ant" command to see the available options
-   for building, testing, and packaging Solr.
+3. Navigate to the root of your source tree folder and issue the `./gradlew tasks` 
+   command to see the available options for building, testing, and packaging Solr.
 
-   NOTE:
-   To see Solr in action, you may want to use the "ant server" command to build
-   and package Solr into the server directory. See also server/README.md.
-
+   `./gradlew assemble` will create a Solr executable. 
+   cd to "./solr/packaging/build/solr-9.0.0-SNAPSHOT" and run the bin/solr script
+   to start Solr.
+   
+   NOTE: `gradlew` is the "Gradle Wrapper" and will automaticaly download and
+   start using the correct version of Gradle.
 
 Export control
 -------------------------------------------------

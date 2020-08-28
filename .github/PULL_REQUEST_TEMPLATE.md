@@ -38,6 +38,6 @@ Please review the following and check all that apply:
 - [ ] I have created a Jira issue and added the issue ID to my pull request title.
 - [ ] I have given Solr maintainers [access](https://help.github.com/en/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork) to contribute to my PR branch. (optional but recommended)
 - [ ] I have developed this patch against the `master` branch.
-- [ ] I have run `ant precommit` and the appropriate test suite.
+- [ ] I have run `./gradlew check`.
 - [ ] I have added tests for my changes.
 - [ ] I have added documentation for the [Ref Guide](https://github.com/apache/lucene-solr/tree/master/solr/solr-ref-guide) (for Solr changes only).
