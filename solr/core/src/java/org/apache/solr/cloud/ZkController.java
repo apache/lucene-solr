@@ -1591,9 +1591,6 @@ public class ZkController implements Closeable {
         throw e;
       }
 
-      // the watcher is added to a set so multiple calls of this method will left only one watcher
-      zkStateReader.registerDocCollectionWatcher(cloudDesc.getCollectionName(),
-          new UnloadCoreOnDeletedWatcher(coreZkNodeName, shardId, desc.getName()));
       return shardId;
     } finally {
       MDCLoggingContext.clear();
@@ -2098,9 +2095,6 @@ public class ZkController implements Closeable {
 
     CloudDescriptor cloudDesc = cd.getCloudDescriptor();
 
-    // the watcher is added to a set so multiple calls of this method will left only one watcher
-    zkStateReader.registerCore(cloudDesc.getCollectionName());
-
     String coreNodeName = getCoreNodeName(cd);
 
     // before becoming available, make sure we are not live and active
@@ -2113,6 +2107,13 @@ public class ZkController implements Closeable {
         cloudDesc.setCoreNodeName(coreNodeName);
       }
       log.info("PreRegister found coreNodename of {}", coreNodeName);
+      
+      // the watcher is added to a set so multiple calls of this method will left only one watcher
+      zkStateReader.registerCore(cloudDesc.getCollectionName());
+      // the watcher is added to a set so multiple calls of this method will left only one watcher
+      zkStateReader.registerDocCollectionWatcher(cloudDesc.getCollectionName(),
+          new UnloadCoreOnDeletedWatcher(coreNodeName, cloudDesc.getShardId(), cd.getName()));
+
       // publishState == false on startup
       if (isPublishAsDownOnStartup(cloudDesc)) {
         publish(cd, Replica.State.DOWN, false, true);

@@ -376,7 +376,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         if (async != null) {
           zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(shardNames.size(), replicaPositions.size()));
         }
-
       }
 
       // modify the `withCollection` and store this new collection's name with it
@@ -404,10 +403,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ParWork.propegateInterrupt(ex);
       throw ex;
     } catch (SolrException ex) {
-      log.error("Exception creating collections zk node", ex);
+      log.error("Exception creating collections", ex);
       throw ex;
     } catch (Exception ex) {
-      log.error("Exception creating collections zk node", ex);
+      log.error("Exception creating collection", ex);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
     } finally {
       if (sessionWrapper.get() != null) sessionWrapper.get().release();
