@@ -294,11 +294,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected synchronized CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
-      int startUpZkTimeOut = Integer.getInteger("waitForZk", 30); // nocommit - zk settings
+      int zkClientTimeout = Integer.getInteger("zkConnectTimeout", 30000); // nocommit - must come from zk settings, we should parse more here and set this up vs waiting for zkController
       if (zkClient != null) {
         throw new IllegalStateException();
       }
-      zkClient = new SolrZkClient(zkHost, (int) TimeUnit.SECONDS.toMillis(startUpZkTimeOut));
+      zkClient = new SolrZkClient(zkHost, zkClientTimeout);
       zkClient.enableCloseLock();
       zkClient.start();
     }
