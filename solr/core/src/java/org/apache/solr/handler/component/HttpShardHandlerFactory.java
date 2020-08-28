@@ -16,13 +16,28 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.stream.Collectors;
+
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.AsyncLBHttpSolrClient;
-import org.apache.solr.client.solrj.impl.AsyncLBHttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
@@ -33,7 +48,6 @@ import org.apache.solr.client.solrj.routing.ReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -60,29 +74,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.stream.Collectors;
 
 
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
 
-  public static boolean ASYNC = false;
   // We want an executor that doesn't take up any resources if
   // it's not used, so it could be created statically for
   // the distributed search component if desired.
@@ -321,11 +318,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     ModifiableSolrParams clientParams = getClientParams();
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(this.metricNameStrategy);
 
-    if (ASYNC) {
-      this.loadbalancer = createAsyncLoadbalancer(solrClient);
-    } else {
-      this.loadbalancer = createLoadbalancer(solrClient);
-    }
+    this.loadbalancer = createLoadbalancer(solrClient);
   }
 
   protected ModifiableSolrParams getClientParams() {
@@ -340,16 +333,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
             .withHttp2SolrClientBuilder(new Http2SolrClient.Builder().withHttpClient(httpClient))
             .withConnectionTimeout(connectionTimeout)
             .withSocketTimeout(soTimeout)
-            .markInternalRequest()
-            .build();
-    return client;
-  }
-
-  protected AsyncLBHttpSolrClient createAsyncLoadbalancer(Http2SolrClient httpClient){
-    AsyncLBHttpSolrClient client = new Builder()
-            .withConnectionTimeout(connectionTimeout)
-            .withSocketTimeout(soTimeout)
-            .withHttp2SolrClient(httpClient)
             .markInternalRequest()
             .build();
     return client;
