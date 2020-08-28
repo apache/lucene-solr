@@ -40,4 +40,6 @@ if [[ $changelog_version != "$solr_version_from_tag" ]]; then
   exit 1
 fi
 
+container_cleanup "$container_name"
+
 echo "Test $TEST_NAME $tag succeeded"
