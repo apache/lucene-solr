@@ -112,7 +112,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   @Test
   @Monster("Only useful to verify the performance of serialization+ deserialization")
-  // ant -Dtestcase=SolrExampleBinaryTest -Dtests.method=testQueryPerf -Dtests.monster=true test
+  // gradlew test --tests *testQueryPerf* -Ptests.monster=true
   public void testQueryPerf() throws Exception {
     HttpSolrClient client = (HttpSolrClient) getSolrClient();
     client.deleteByQuery("*:*");

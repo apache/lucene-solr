@@ -161,8 +161,8 @@ public class TestQueryParser extends QueryParserTestBase {
   //
   // protected QueryParser(QueryParserTokenManager tm)
   //
-  // This test is here as a safety, in case that ant step
-  // doesn't work for some reason.
+  // This test is here as a safety, in case the fixups for running javacc
+  // don't work for some reason.
   @SuppressWarnings("rawtype")
   public void testProtectedCtors() throws Exception {
     expectThrows(NoSuchMethodException.class, () -> QueryParser.class.getConstructor(CharStream.class));

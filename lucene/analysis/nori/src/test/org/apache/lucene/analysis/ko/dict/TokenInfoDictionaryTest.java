@@ -34,6 +34,7 @@ import org.apache.lucene.util.fst.IntsRefFSTEnum;
 
 import static org.apache.lucene.analysis.ko.dict.BinaryDictionary.ResourceScheme;
 
+//nocommit
 /**
  * Tests of TokenInfoDictionary build tools; run using ant test-tools
  */

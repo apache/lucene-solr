@@ -33,8 +33,12 @@ import java.util.Arrays;
 
 /** Bypass the normal Solr pipeline and just text indexing performance
  * starting at the update handler.  The same document is indexed repeatedly.
- * 
- * $ ant test -Dtestcase=TestIndexingPerformance -Dargs="-server -Diter=100000"; grep throughput build/test-results/*TestIndexingPerformance.xml
+ *
+ * $ gradlew test --tests TestIndexingPerformance -Ptests.iters=100000
+ * nocommit
+ * the ant case has -Dargs="-server"
+ * $ ant test -Dtestcase=TestIndexingPerformance -Dargs="-server -Diter=100000";
+ *   grep throughput build/test-results/*TestIndexingPerformance.xml
  */
 public class TestIndexingPerformance extends SolrTestCaseJ4 {
   

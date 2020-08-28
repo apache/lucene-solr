@@ -659,7 +659,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   // parsing performance test
-  // Run from command line with ant test -Dtestcase=TestSolrQueryParser -Dtestmethod=testParsingPerformance -Dtests.asserts=false 2>/dev/null | grep QPS
+  // Run from command line with
+  // gradlew test --tests *testParsingPerformance* -Ptests.asserts=false 2>/dev/null | grep QPS
   @Test
   public void testParsingPerformance() throws Exception {
     String[] args = {"-queries","100" ,"-iter","1000", "-clauses","100", "-format","term%d", "-seed","0"};

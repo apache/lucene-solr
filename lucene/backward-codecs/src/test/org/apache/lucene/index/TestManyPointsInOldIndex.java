@@ -36,7 +36,7 @@ public class TestManyPointsInOldIndex extends LuceneTestCase {
 //
 // Compile:
 //   1) temporarily remove 'extends LuceneTestCase' above (else java doesn't see our static void main)
-//   2) ant compile-test
+//   2) gradlew testClasses
 //
 // Run:
 //   1) java -cp ../build/backward-codecs/classes/test:../build/core/classes/java org.apache.lucene.index.TestManyPointsInOldIndex

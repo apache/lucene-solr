@@ -29,6 +29,7 @@ import java.util.function.Predicate;
  */ 
 public final class TestSecurityManager extends SecurityManager {
   
+  //nocommit
   private static final String JUNIT4_TEST_RUNNER_PACKAGE = "com.carrotsearch.ant.tasks.junit4.";
   private static final String ECLIPSE_TEST_RUNNER_PACKAGE = "org.eclipse.jdt.internal.junit.runner.";
   private static final String IDEA_TEST_RUNNER_PACKAGE = "com.intellij.rt.execution.junit.";

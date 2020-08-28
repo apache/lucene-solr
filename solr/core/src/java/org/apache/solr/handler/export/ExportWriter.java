@@ -210,7 +210,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     // That causes the totalHits and export entries in the context to _not_ get set.
     // The only time that really matters is when we search against an _empty_ set. That's too obscure
     // a condition to handle as part of this patch, if someone wants to pursue it it can be reproduced with:
-    // ant test  -Dtestcase=StreamingTest -Dtests.method=testAllValidExportTypes -Dtests.seed=10F13879D0D1D6AD -Dtests.slow=true -Dtests.locale=es-PA -Dtests.timezone=America/Bahia_Banderas -Dtests.asserts=true -Dtests.file.encoding=ISO-8859-1
+    // gradlew test  --tests *testAllValidExportTypes* -Ptests.seed=10F13879D0D1D6AD -Ptests.slow=true -Ptests.locale=es-PA -Ptests.timezone=America/Bahia_Banderas -Ptests.asserts=true -Ptests.file.encoding=ISO-8859-1
     // You'll have to uncomment the if below to hit the null pointer exception.
     // This is such an unusual case (i.e. an empty index) that catching this concdition here is probably OK.
     // This came to light in the very artifical case of indexing a single doc to Cloud.

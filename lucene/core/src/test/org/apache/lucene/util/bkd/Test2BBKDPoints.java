@@ -28,8 +28,9 @@ import org.apache.lucene.util.NumericUtils;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
-// e.g. run like this: ant test -Dtestcase=Test2BBKDPoints -Dtests.nightly=true -Dtests.verbose=true -Dtests.monster=true
-// 
+// e.g. run like this: 
+// gradlew -p lucene/core -Ptests.filter=@Monster -Ptests.verbose=true test --tests Test2BBKDPoints
+//
 //   or: python -u /l/util/src/python/repeatLuceneTest.py -heap 4g -once -nolog -tmpDir /b/tmp -logDir /l/logs Test2BBKDPoints.test2D -verbose
 
 @TimeoutSuite(millis = Integer.MAX_VALUE) // hopefully ~24 days is long enough ;)

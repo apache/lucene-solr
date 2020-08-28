@@ -39,6 +39,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
     schemaString = "schema-spatial.xml";
     configString = "solrconfig-basic.xml";
 
+    //nocommit are we sure we do this in Gradle
     //Strictly not necessary (set already in Ant & Maven) but your IDE might not have this set
     System.setProperty("java.awt.headless", "true");
   }

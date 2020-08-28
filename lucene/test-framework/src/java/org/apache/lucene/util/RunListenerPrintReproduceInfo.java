@@ -148,12 +148,14 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     if (suppressReproduceLine) {
       return;
     }
+    //nocommit
     if (TEST_LINE_DOCS_FILE.endsWith(JENKINS_LARGE_LINE_DOCS_FILE)) {
       System.err.println("NOTE: download the large Jenkins line-docs file by running " +
         "'ant get-jenkins-line-docs' in the lucene directory.");
     }
 
     final StringBuilder b = new StringBuilder();
+    //nocommit
     b.append("NOTE: reproduce with: ant test ");
 
     // Test case, method, seed.
@@ -207,6 +209,7 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     String v = value.toString();
     // Add simplistic quoting. This varies a lot from system to system and between
     // shells... ANT should have some code for doing it properly.
+    //nocommit
     if (Pattern.compile("[\\s=']").matcher(v).find()) {
       v = '"' + v + '"';
     }

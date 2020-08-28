@@ -53,7 +53,8 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 // disk (but, should run successfully).  Best to run w/
 // -Dtests.codec=<current codec>, and w/ plenty of RAM, eg:
 //
-//   ant test -Dtests.monster=true -Dtests.heapsize=8g -Dtests.codec=Lucene62 -Dtestcase=Test2BTerms
+// gradlew -p lucene/core -Ptests.filter=@Monster -Ptests.verbose=true -Ptests.codec=Lucene62 test --tests Test2BTerms
+// nocommit, I don't see how to set the heap size, set in gradle.properties? Set to 8g 
 //
 @SuppressCodecs({ "SimpleText", "Direct" })
 @Monster("very slow, use 5g minimum heap")

@@ -117,6 +117,7 @@ public class SolrTestCase extends LuceneTestCase {
    */
   @BeforeClass
   public static void checkSyspropForceBeforeClassAssumptionFailure() {
+    // nocommit, don't see an equivalent Gradle parameter
     // ant test -Dargs="-Dtests.force.assumption.failure.beforeclass=true"
     final String PROP = "tests.force.assumption.failure.beforeclass";
     assumeFalse(PROP + " == true",
@@ -130,6 +131,7 @@ public class SolrTestCase extends LuceneTestCase {
    */
   @Before
   public void checkSyspropForceBeforeAssumptionFailure() {
+    // nocommit, don't see an equivalent Gradle parameter
     // ant test -Dargs="-Dtests.force.assumption.failure.before=true"
     final String PROP = "tests.force.assumption.failure.before";
     assumeFalse(PROP + " == true",

@@ -380,7 +380,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Suppress the default {@code reproduce with: ant test...}
+   * Suppress the default {@code reproduce with: gradle test...}
    * Your own listener can be added as needed for your build.
    */
   @Documented
@@ -459,6 +459,7 @@ public abstract class LuceneTestCase extends Assert {
   public static final boolean LEAVE_TEMPORARY;
   static {
     boolean defaultValue = false;
+    //nocommit
     for (String property : Arrays.asList(
         "tests.leaveTemporary" /* ANT tasks's (junit4) flag. */,
         "tests.leavetemporary" /* lowercase */,

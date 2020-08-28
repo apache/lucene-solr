@@ -58,7 +58,7 @@ public class LockVerifyServer {
       s.bind(new InetSocketAddress(hostname, 0));
       final InetSocketAddress localAddr = (InetSocketAddress) s.getLocalSocketAddress();
       System.out.println("Listening on " + localAddr + "...");
-      
+      //nocommit
       // we set the port as a sysprop, so the ANT task can read it. For that to work, this server must run in-process:
       System.setProperty("lockverifyserver.port", Integer.toString(localAddr.getPort()));
       

@@ -31,7 +31,7 @@ import org.apache.lucene.util.TestUtil;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 // e.g. run like this: ant test -Dtestcase=Test2BPoints -Dtests.nightly=true -Dtests.verbose=true -Dtests.monster=true
-// 
+// nocommit, I don't see how to set the heap size, set in gradle.properties? Set to 4G?
 //   or: python -u /l/util/src/python/repeatLuceneTest.py -heap 6g -once -nolog -tmpDir /b/tmp -logDir /l/logs Test2BPoints.test2D -verbose
 
 @SuppressCodecs({ "SimpleText", "Direct", "Compressing" })

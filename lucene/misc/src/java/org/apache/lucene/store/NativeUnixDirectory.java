@@ -44,7 +44,7 @@ import org.apache.lucene.util.SuppressForbidden;
  * <p>See <a
  * href="{@docRoot}/overview-summary.html#NativeUnixDirectory">Overview</a>
  * for more details.
- *
+ * // nocommit
  * <p>To use this you must compile
  * NativePosixUtil.cpp (exposes Linux-specific APIs through
  * JNI) for your platform, by running <code>ant
