@@ -134,17 +134,7 @@ public class SolrTestCase extends LuceneTestCase {
 
   @Rule
   public TestRule solrTestRules =
-          RuleChain.outerRule(new SystemPropertiesRestoreRule()).around(
-                  new TestWatcher() {
-                    @Override
-                    protected void failed(Throwable e, Description description) {
-                      failed = true;
-                    }
-
-                    @Override
-                    protected void succeeded(Description description) {
-                    }
-                  });
+          RuleChain.outerRule(new SystemPropertiesRestoreRule()).around(new SolrTestWatcher());
 
   /**
    * Annotation for test classes that want to disable SSL
@@ -609,8 +599,9 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static void interrupt(Thread thread, String nameContains) {
     if ((nameContains != null && thread.getName().contains(nameContains)) || (interuptThreadWithNameContains != null && thread.getName().contains(interuptThreadWithNameContains)) ) {
-      if (thread.getState() == Thread.State.TERMINATED || thread.getState() == Thread.State.WAITING) {
-        System.out.println("interrupt on " + thread.getName());
+      if (thread.getState() == Thread.State.TERMINATED || thread.getState() == Thread.State.WAITING || thread.getState() == Thread.State.RUNNABLE) { // adding RUNNABLE is not idle, but we can be in
+        // processWorkerExit in this state - ideally we would check also we are in that method if RUNNABLE
+        log.warn("interrupt on " + thread.getName());
         thread.interrupt();
         try {
           thread.join(250);
@@ -618,7 +609,7 @@ public class SolrTestCase extends LuceneTestCase {
           ParWork.propegateInterrupt(e);
         }
       } else {
-        System.out.println("state:" + thread.getState());
+        log.info("skipping interrupt due to state:" + thread.getState());
       }
     }
   }
@@ -770,6 +761,17 @@ public class SolrTestCase extends LuceneTestCase {
         }
       }
       return true;
+    }
+  }
+
+  private static class SolrTestWatcher extends TestWatcher {
+    @Override
+    protected void failed(Throwable e, Description description) {
+      failed = true;
+    }
+
+    @Override
+    protected void succeeded(Description description) {
     }
   }
 }
