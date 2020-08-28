@@ -495,7 +495,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           log.warn("Session expired, exiting...", e);
           return;
         }
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        log.error("Exception running task", e);
       }
 
       if (log.isDebugEnabled()) {
