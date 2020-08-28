@@ -201,6 +201,9 @@ Bug Fixes
 
 * SOLR-14752: Fix error in Zookeeper status when Prometheus plugin is enabled in ZK (Philipp Trulson via janhoy)
 
+* SOLR-14774: HealthCheckHandler is no longer an implicit SolrCore handler and can be configured from solr.xml
+  (Tomás Fernándex Löbbe)
+
 Other Changes
 ---------------------
 
