@@ -1031,7 +1031,13 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
                 // There is a chance that we shrunk just as a job was queued for us, so
                 // check again if we have sufficient threads to meet demand
-                ensureThreads();
+                if (!closed) {
+                    try {
+                        ensureThreads();
+                    } catch (RejectedExecutionException e) {
+                        log.info("RejectedExecutionException encountered");
+                    }
+                }
             }
         }
     }
