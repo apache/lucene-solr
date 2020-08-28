@@ -108,6 +108,9 @@ final class BooleanWeight extends Weight {
       // explanations have the same value as the score, we pull a scorer and
       // use it to compute the score.
       Scorer scorer = scorer(context);
+      if (scorer == null) {
+        return Explanation.noMatch("Failure to get scorer", subs);
+      }
       int advanced = scorer.iterator().advance(doc);
       assert advanced == doc;
       return Explanation.match(scorer.score(), "sum of:", subs);
