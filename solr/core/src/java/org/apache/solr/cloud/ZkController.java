@@ -2500,8 +2500,7 @@ public class ZkController implements Closeable {
   public void addOnReconnectListener(OnReconnect listener) {
     if (listener != null) {
        reconnectListeners.add(listener);
-       log.debug("Added new OnReconnect listener {}", listener);
-
+       if (log.isDebugEnabled()) log.debug("Added new OnReconnect listener {}", listener);
     }
   }
 
@@ -2510,12 +2509,10 @@ public class ZkController implements Closeable {
    */
   public void removeOnReconnectListener(OnReconnect listener) {
     if (listener != null) {
-      boolean wasRemoved;
-      synchronized (reconnectListeners) {
-        wasRemoved = reconnectListeners.remove(listener);
-      }
+      boolean wasRemoved = reconnectListeners.remove(listener);
+
       if (wasRemoved) {
-        log.debug("Removed OnReconnect listener {}", listener);
+        if (log.isDebugEnabled()) log.debug("Removed OnReconnect listener {}", listener);
       } else {
         log.warn("Was asked to remove OnReconnect listener {}, but remove operation " +
                 "did not find it in the list of registered listeners."
@@ -2525,8 +2522,7 @@ public class ZkController implements Closeable {
   }
 
   Set<OnReconnect> getCurrentOnReconnectListeners() {
-    Set<OnReconnect> clonedListeners = new HashSet<>(reconnectListeners);
-    return clonedListeners;
+    return Collections.unmodifiableSet(reconnectListeners);
   }
 
   /**
