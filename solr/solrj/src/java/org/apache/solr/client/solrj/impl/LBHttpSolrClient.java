@@ -360,7 +360,9 @@ public class LBHttpSolrClient extends LBSolrClient {
      * requires that the core is specified on all requests.
      */
     public Builder withBaseSolrUrl(String baseSolrUrl) {
-      this.baseSolrUrls.add(baseSolrUrl);
+      if (baseSolrUrl != null) {
+        this.baseSolrUrls.add(baseSolrUrl);
+      }
       return this;
     }
  

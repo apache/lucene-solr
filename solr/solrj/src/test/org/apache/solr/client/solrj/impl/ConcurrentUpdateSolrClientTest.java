@@ -16,23 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.http.HttpResponse;
-import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -47,7 +30,22 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Ignore // nocommit debug
+import org.apache.http.HttpResponse;
+import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
 
   private static JettySolrRunner jetty;

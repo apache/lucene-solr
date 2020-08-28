@@ -47,14 +47,12 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
 public class Http2SolrClientTest extends SolrJettyTestBase {
 
   private static final String EXPECTED_USER_AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
-  private JettySolrRunner jetty;
+  private static JettySolrRunner jetty;
 
   public static class DebugServlet extends HttpServlet {
     public static void clear() {
@@ -158,7 +156,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
   private Http2SolrClient getHttp2SolrClient(String url, int connectionTimeOut, int socketTimeout) {

@@ -70,10 +70,10 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     this.clientIsInternal = builder.httpClient == null;
     this.myClient = (builder.httpClient == null) ? new Http2SolrClient.Builder().withHeaders(builder.headers).build() : builder.httpClient;
     if (builder.stateProvider == null) {
-      if (builder.zkHosts != null && builder.solrUrls != null) {
+      if ((builder.zkHosts != null && !builder.zkHosts.isEmpty()) && builder.solrUrls != null) {
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
-      if (builder.zkHosts != null) {
+      if (builder.zkHosts != null && !builder.zkHosts.isEmpty()) {
         this.zkStateReader = new ZkStateReader(ZkClientClusterStateProvider.buildZkHostString(builder.zkHosts, builder.zkChroot), 40000, 15000);
         this.zkStateReader.createClusterStateWatchersAndUpdate();
         this.stateProvider = new ZkClientClusterStateProvider(zkStateReader, false);

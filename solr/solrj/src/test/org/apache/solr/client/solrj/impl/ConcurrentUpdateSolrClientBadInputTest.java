@@ -27,12 +27,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-@Ignore // nocommit debug
 public class ConcurrentUpdateSolrClientBadInputTest extends SolrJettyTestBase {
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
@@ -83,7 +81,7 @@ public class ConcurrentUpdateSolrClientBadInputTest extends SolrJettyTestBase {
     }
   }
 
-  private void assertExceptionThrownWithMessageContaining(Class expectedType, List<String> expectedStrings, LuceneTestCase.ThrowingRunnable runnable) {
+  private void assertExceptionThrownWithMessageContaining(Class<? extends Exception> expectedType, List<String> expectedStrings, LuceneTestCase.ThrowingRunnable runnable) {
     Throwable thrown = expectThrows(expectedType, runnable);
 
     if (expectedStrings != null) {

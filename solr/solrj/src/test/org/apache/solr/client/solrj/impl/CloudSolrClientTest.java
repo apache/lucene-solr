@@ -88,7 +88,7 @@ import org.slf4j.LoggerFactory;
  * This test would be faster if we simulated the zk state instead.
  */
 @Slow
-@Ignore // nocommit debug
+@Ignore // nocommit debug, TJP WIP ...
 public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -244,7 +244,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     if (getRandomClient().isDirectUpdatesToLeadersOnly()) {
       checkSingleServer(response);
     }
-    CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
+    BaseCloudSolrClient.RouteResponse rr = (BaseCloudSolrClient.RouteResponse) response;
     Map<String,LBHttpSolrClient.Req> routes = rr.getRoutes();
     Iterator<Map.Entry<String,LBHttpSolrClient.Req>> it = routes.entrySet()
         .iterator();

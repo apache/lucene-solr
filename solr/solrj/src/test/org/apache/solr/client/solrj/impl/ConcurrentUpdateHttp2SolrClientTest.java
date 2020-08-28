@@ -37,7 +37,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
+@Ignore // nocommit debug, TJP ~ still problematic
 public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
 
   private static JettySolrRunner jetty;

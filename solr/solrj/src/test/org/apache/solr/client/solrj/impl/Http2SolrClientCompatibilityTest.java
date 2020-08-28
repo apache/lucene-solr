@@ -28,14 +28,10 @@ import org.apache.solr.util.LogLevel;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.Ignore;
 
 @LogLevel("org.eclipse.jetty.client=DEBUG;org.eclipse.jetty.util=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
-@Ignore // nocommit flakey
 public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
-
-  private JettySolrRunner jetty;
 
   public void testSystemPropertyFlag() {
     System.setProperty("solr.http1", "true");
@@ -56,9 +52,9 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
         .useOnlyHttp1(true)
         .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    JettySolrRunner jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
-    try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
+    try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl() + "/debug/foo")
         .useHttp1_1(true)
         .build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
@@ -76,7 +72,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
         .useOnlyHttp1(false)
         .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    JettySolrRunner jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
     try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
         .useHttp1_1(true)
@@ -97,7 +93,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
         .useOnlyHttp1(true)
         .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    JettySolrRunner jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
     System.clearProperty("solr.http1");
     try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
