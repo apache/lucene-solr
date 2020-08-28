@@ -82,7 +82,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     // mockdir will say files are left open
     // System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     useFactory(null);
-    randomizeUpdateLogImpl();
+    //randomizeUpdateLogImpl();
     initCore("solrconfig-tlog.xml","schema15.xml");
     
     // validate that the schema was not changed to an unexpected state
