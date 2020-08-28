@@ -653,21 +653,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public static HttpServletRequest closeShield(HttpServletRequest request, boolean retry) {
     if (!retry) {
       return new HttpServletRequestWrapper(request) {
-
         @Override
         public ServletInputStream getInputStream() throws IOException {
-
-          return new ServletInputStreamWrapper(super.getInputStream()) {
-            @Override
-            public void close() {
-              // even though we skip closes, we let local tests know not to close so that a full understanding can take
-              // place
-              assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") ? false : true : CLOSE_STREAM_MSG;
-              this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
-            }
-          };
-
+          return new CloseShieldServletInputStreamWrapper(request.getInputStream());
         }
       };
     } else {
@@ -688,23 +676,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public static HttpServletResponse closeShield(HttpServletResponse response, boolean retry) {
     if (!retry) {
       return new HttpServletResponseWrapper(response) {
-
         @Override
         public ServletOutputStream getOutputStream() throws IOException {
-
-          return new ServletOutputStreamWrapper(super.getOutputStream()) {
-            @Override
-            public void close() {
-              // even though we skip closes, we let local tests know not to close so that a full understanding can take
-              // place
-              assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") ? false
-                      : true : CLOSE_STREAM_MSG;
-              stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
-            }
-          };
-
-
+          return new CloseShieldServletOutputStreamWrapper(response.getOutputStream());
         }
 
         @Override
@@ -713,7 +687,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           response.getWriter().write(msg);
         }
 
-
         @Override
         public void sendError(int sc) throws IOException {
           sendError(sc, "Solr ran into an unexpected problem and doesn't seem to know more about it. There may be more information in the Solr logs.");
@@ -721,6 +694,37 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       };
     } else {
       return response;
+    }
+  }
+
+  private static class CloseShieldServletInputStreamWrapper extends ServletInputStreamWrapper {
+    public CloseShieldServletInputStreamWrapper(ServletInputStream stream) throws IOException {
+      super(stream);
+    }
+
+    @Override
+    public void close() {
+      // even though we skip closes, we let local tests know not to close so that a full understanding can take
+      // place
+      assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
+          "org\\.apache\\.(?:solr|lucene).*") ? false : true : CLOSE_STREAM_MSG;
+      this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
+    }
+  }
+
+  private static class CloseShieldServletOutputStreamWrapper extends ServletOutputStreamWrapper {
+    public CloseShieldServletOutputStreamWrapper(ServletOutputStream stream) {
+      super(stream);
+    }
+
+    @Override
+    public void close() {
+      // even though we skip closes, we let local tests know not to close so that a full understanding can take
+      // place
+      assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
+          "org\\.apache\\.(?:solr|lucene).*") ? false
+              : true : CLOSE_STREAM_MSG;
+      stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
     }
   }
 }
