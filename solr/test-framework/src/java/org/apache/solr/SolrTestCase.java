@@ -613,7 +613,7 @@ public class SolrTestCase extends LuceneTestCase {
         System.out.println("interrupt on " + thread.getName());
         thread.interrupt();
         try {
-          thread.join(100);
+          thread.join(250);
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
         }
