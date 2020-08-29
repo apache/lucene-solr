@@ -24,11 +24,8 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.placement.Cluster;
 import org.apache.solr.cluster.placement.PlacementException;
-import org.apache.solr.cluster.placement.PlacementPlanFactory;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPlan;
-import org.apache.solr.cluster.placement.PropertyKeyFactory;
-import org.apache.solr.cluster.placement.PropertyValueFetcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ReplicaPosition;
 
@@ -37,8 +34,8 @@ import org.apache.solr.common.cloud.ReplicaPosition;
  */
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
-  private static final PlacementPlanFactory PLACEMENT_PLAN_FACTORY = new PlacementPlanFactoryImpl();
-  private static final PropertyKeyFactory PROPERTY_KEY_FACTORY = new PropertyKeyFactoryImpl();
+  private static final PlacementPlanFactoryImpl PLACEMENT_PLAN_FACTORY = new PlacementPlanFactoryImpl();
+  private static final PropertyKeyFactoryImpl PROPERTY_KEY_FACTORY = new PropertyKeyFactoryImpl();
 
   private final PlacementPlugin plugin;
   private final DocCollection collection;

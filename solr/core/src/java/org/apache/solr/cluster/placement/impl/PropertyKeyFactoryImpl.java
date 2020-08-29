@@ -20,15 +20,6 @@ package org.apache.solr.cluster.placement.impl;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PropertyKeyFactory;
 import org.apache.solr.cluster.placement.PropertyValueSource;
-import org.apache.solr.cluster.placement.impl.propertykey.CoreCountKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.FreeDiskKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.DiskTypeKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.HeapUsageKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.NodeMetricKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.NonNodeMetricKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.SyspropKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.SystemLoadKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.TotalDiskKeyImpl;
 
 public class PropertyKeyFactoryImpl implements PropertyKeyFactory {
   @Override

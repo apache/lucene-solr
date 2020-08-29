@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.lang.management.OperatingSystemMXBean;
-
 /**
  *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createHeapUsageKey(Node)} then calling
  *  {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map

@@ -18,7 +18,7 @@
 package org.apache.solr.cluster.placement;
 
 /**
- *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createDiskUsageKey(Node)} then getting the
+ *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createFreeDiskKey(Node)} then getting the
  *  {@link FreeDiskPropertyValue} using {@link PropertyValueFetcher#fetchProperties} and retrieving (then casting) the
  *  appropriate {@link PropertyValue} fetched from the returned map using the {@link PropertyKey} as key.
  */
