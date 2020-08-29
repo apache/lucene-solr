@@ -141,7 +141,7 @@ server/
 
 example/
   Contains example documents and an alternative Solr home
-  directory containing variours examples.
+  directory containing various examples.
 
 dist/solr-<component>-XX.jar
   The Apache Solr libraries.  To compile Apache Solr Plugins,

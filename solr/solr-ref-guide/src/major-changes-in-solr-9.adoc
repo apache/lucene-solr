@@ -123,7 +123,7 @@ _(raw; not yet edited)_
   upgrades into 9.0, you need to be on Solr version 8.7 or greater. Some metrics also changed, alerts and
   monitors on Solr KPIs that mention "master" or "slave" will also now be "leader" and "follower"
 
-* SOLR-14783: Data Imprort Handler (DIH) has been removed from Solr. The community package is available at: https://github.com/rohitbemax/dataimporthandler (Alexandre Rafalovitch)
+* SOLR-14783: Data Import Handler (DIH) has been removed from Solr. The community package is available at: https://github.com/rohitbemax/dataimporthandler (Alexandre Rafalovitch)
   
 === Upgrade Prerequisites in Solr 9
 
