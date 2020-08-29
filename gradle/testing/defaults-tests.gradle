@@ -71,7 +71,7 @@ allprojects {
 
       jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", System.getenv('TEST_JVM_ARGS') ?: "-XX:TieredStopAtLevel=1"))
 
-      systemProperty 'java.util.logging.config.file', file("${commonDir}/tools/junit4/logging.properties")
+      systemProperty 'java.util.logging.config.file', rootProject.file("gradle/testing/defaults-tests/logging.properties")
       systemProperty 'java.awt.headless', 'true'
       systemProperty 'jdk.map.althashing.threshold', '0'
 
