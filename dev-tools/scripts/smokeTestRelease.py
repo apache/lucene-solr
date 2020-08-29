@@ -795,7 +795,12 @@ def readSolrOutput(p, startupEvent, failureEvent, logFile):
     startupEvent.set()
   finally:
     f.close()
-    
+
+def is_port_in_use(port):
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
 def testSolrExample(unpackPath, javaPath, isSrc):
   # test solr using some examples it comes with
   logFile = '%s/solr-example.log' % unpackPath
@@ -1454,6 +1459,9 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     print("    Downloading online KEYS file %s" % keysFileURL)
     download('KEYS', keysFileURL, tmpDir, force_clean=FORCE_CLEAN)
     keysFile = '%s/KEYS' % (tmpDir)
+
+  if is_port_in_use(8983):
+    raise RuntimeError('Port 8983 is already in use. The smoketester needs it to test Solr')
 
   print()
   print('Test Lucene...')

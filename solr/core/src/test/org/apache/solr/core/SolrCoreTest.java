@@ -87,7 +87,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     int ihCount = 0;
     {
-      ++ihCount; assertEquals(pathToClassMap.get("/admin/health"), "solr.HealthCheckHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/file"), "solr.ShowFileRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/logging"), "solr.LoggingHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/luke"), "solr.LukeRequestHandler");

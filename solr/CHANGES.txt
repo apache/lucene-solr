@@ -48,6 +48,8 @@ Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
 
+* SOLR-14616: CDCR support removed (Ishan Chattopadhyaya)
+
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -114,7 +116,10 @@ Other Changes
 * SOLR-14702: All references to "master" and "slave" replaced with "leader" and "follower" (MarcusSorealheis, 
   Erick Erickson, Tomás Fernández Löbbe)
 
+* LUCENE-9433: Remove Ant support from trunk (Erick Erickson, Uwe Schindler et.al.)
+
 * SOLR-14783: Remove Data Import Handler (DIH), previously deprecated (Alexandre Rafalovitch)
+
 
 Bug Fixes
 ---------------------
@@ -198,6 +203,9 @@ Bug Fixes
   (Mads Bondo Dydensborg, Christine Poerschke, Mike Drob)
 
 * SOLR-14752: Fix error in Zookeeper status when Prometheus plugin is enabled in ZK (Philipp Trulson via janhoy)
+
+* SOLR-14774: HealthCheckHandler is no longer an implicit SolrCore handler and can be configured from solr.xml
+  (Tomás Fernándex Löbbe)
 
 Other Changes
 ---------------------
