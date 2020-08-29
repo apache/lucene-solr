@@ -40,7 +40,9 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * </pre>
  * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
  * @since 3.5
+ * @deprecated since 8.7
  */
+@Deprecated
 public class TikaLanguageIdentifierUpdateProcessorFactory extends
         UpdateRequestProcessorFactory implements SolrCoreAware, LangIdParams {
 

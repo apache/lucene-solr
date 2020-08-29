@@ -34,7 +34,9 @@ import org.slf4j.LoggerFactory;
  * <p>
  * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
  * @since 3.5
+ * @deprecated since 8.7
  */
+@Deprecated
 public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpdateProcessor {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

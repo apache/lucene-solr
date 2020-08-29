@@ -28,6 +28,8 @@ import org.apache.tika.parser.html.IdentityHtmlMapper;
 import org.apache.tika.sax.BodyContentHandler;
 import org.apache.tika.sax.ContentHandlerDecorator;
 import org.apache.tika.sax.XHTMLContentHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
@@ -43,6 +45,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -59,10 +62,12 @@ import static org.apache.solr.handler.dataimport.XPathEntityProcessor.URL;
  * be extracted from a file's metadata, identify
  * the geo field for this information with this attribute:
  * <code>spatialMetadataField</code>
- *
+ * @deprecated since 8.7
  * @since solr 3.1
  */
+@Deprecated
 public class TikaEntityProcessor extends EntityProcessorBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static Parser EMPTY_PARSER = new EmptyParser();
   private TikaConfig tikaConfig;
   private String format = "text";
@@ -75,6 +80,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
 
   @Override
   public void init(Context context) {
+    log.warn("Tika support in Solr has been deprecated as of 8.7. See SOLR-13973 for details.");
     super.init(context);
     done = false;
   }
