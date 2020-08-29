@@ -271,7 +271,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     waitFor(2, count::get);
     replicaTerms.setTermEqualsToLeader("replica");
     waitFor(3, count::get);
-    assertEquals(0, replicaTerms.getNumListeners());
+    
+    waitFor(0, replicaTerms::getNumListeners);
 
     leaderTerms.close();
     replicaTerms.close();

@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.cloud.ShardTerms;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -172,6 +173,9 @@ public class ZkShardTerms implements AutoCloseable{
    * Add a listener so the next time the shard's term get updated, listeners will be called
    */
   void addListener(CoreTermWatcher listener) {
+    if (isClosed.get()) {
+      throw new AlreadyClosedException();
+    }
     listeners.add(listener);
   }
 
