@@ -39,14 +39,13 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
   private static final PlacementPlanFactory PLACEMENT_PLAN_FACTORY = new PlacementPlanFactoryImpl();
   private static final PropertyKeyFactory PROPERTY_KEY_FACTORY = new PropertyKeyFactoryImpl();
-  private static final PropertyValueFetcher PROPERTY_VALUE_FETCHER = new PropertyValueFetcherImpl();
 
   private final PlacementPlugin plugin;
   private final DocCollection collection;
 
   /**
    * @param collection the collection for which this assign request is done. In theory would be better to pass it into the
-   *                   {@link #assign} call (which would allow reusing instances of {@link PlacementPluginAssignStrategy},
+   *                   {@link #assign} call below (which would allow reusing instances of {@link PlacementPluginAssignStrategy},
    *                   but for now doing it here in order not to change the other Assign.AssignStrategy implementations.
    */
   public PlacementPluginAssignStrategy(DocCollection collection, PlacementPlugin plugin) {
@@ -63,7 +62,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
     final PlacementPlan placementPlan;
     try {
-      placementPlan = plugin.computePlacement(cluster, placementRequest, PROPERTY_KEY_FACTORY, PROPERTY_VALUE_FETCHER, PLACEMENT_PLAN_FACTORY);
+      placementPlan = plugin.computePlacement(cluster, placementRequest, PROPERTY_KEY_FACTORY, new PropertyValueFetcherImpl(solrCloudManager), PLACEMENT_PLAN_FACTORY);
     } catch (PlacementException pe) {
       throw new Assign.AssignmentException(pe);
     }

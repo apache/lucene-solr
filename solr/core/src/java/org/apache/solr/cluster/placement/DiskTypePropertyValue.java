@@ -18,30 +18,18 @@
 package org.apache.solr.cluster.placement;
 
 /**
- *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createDiskInfoKey} then getting the
- *  {@link DiskInfoPropertyValue} using {@link PropertyValueFetcher#fetchProperties} and retrieving (then casting) the
+ *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createDiskTypeKey} then getting the
+ *  {@link DiskTypePropertyValue} using {@link PropertyValueFetcher#fetchProperties} and retrieving (then casting) the
  *  appropriate {@link PropertyValue} from the returned map using the {@link PropertyKey} as key.
  */
-public interface DiskInfoPropertyValue extends PropertyValue {
-  /**
-   * Total disk size of the partition on which cores are stored on the {@link Node}) from which this instance was obtained
-   * (i.e. instance passed to {@link PropertyKeyFactory#createDiskInfoKey(Node)}).
-   */
-  int getTotalSizeGB();
-
-  /**
-   * Free disk size of the partition on which cores are stored on the {@link Node}) from which this instance was obtained
-   *  (i.e. instance passed to {@link PropertyKeyFactory#createDiskInfoKey(Node)}).
-   */
-  int getFreeSizeGB();
-
+public interface DiskTypePropertyValue extends PropertyValue {
   /**
    * Type of storage hardware used for the partition on which cores are stored on the {@link Node}) from which this instance
-   * was obtained (i.e. instance passed to {@link PropertyKeyFactory#createDiskInfoKey(Node)}).
+   * was obtained (i.e. instance passed to {@link PropertyKeyFactory#createDiskTypeKey(Node)}).
    */
   DiskType getDiskType();
 
   enum DiskType {
-    SSD, ROTATIONAL
+    SSD, ROTATIONAL, UNKNOWN
   }
 }

@@ -15,20 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl.propertykey;
+package org.apache.solr.cluster.placement.impl.propertyvalue;
 
 import org.apache.solr.cluster.placement.PropertyKey;
-import org.apache.solr.cluster.placement.PropertyValueSource;
+import org.apache.solr.cluster.placement.SyspropPropertyValue;
+import org.apache.solr.cluster.placement.SystemLoadPropertyValue;
+import org.apache.solr.cluster.placement.TotalDiskPropertyValue;
 
-abstract class AbstractPropertyKey implements PropertyKey {
-  private final PropertyValueSource propertyValueSource;
+public class SyspropPropertyValueImpl extends AbstractPropertyValue implements SyspropPropertyValue {
+  private final String systemProperty;
 
-  AbstractPropertyKey(PropertyValueSource propertyValueSource) {
-    this.propertyValueSource = propertyValueSource;
+  public SyspropPropertyValueImpl(PropertyKey key, Object nodeValue) {
+    super(key);
+    this.systemProperty = (String) nodeValue;
   }
 
   @Override
-  public PropertyValueSource getPropertyValueSource() {
-    return propertyValueSource;
+  public String getSystemPropertyValue() {
+    return systemProperty;
   }
 }

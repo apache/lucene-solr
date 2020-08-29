@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster.placement.impl.propertykey;
 
-/**
- * A {@link PropertyValue} representing a string metric on the target {@link PropertyValueSource}.
- */
-public interface StringMetricPropertyValue extends MetricPropertyValue {
-  /**
-   * Returns the metric value from the {@link PropertyValueSource} from which it was retrieved.
-   */
-  String getStringValue();
+import org.apache.solr.cluster.placement.Node;
+import org.apache.solr.cluster.placement.impl.propertyvalue.HeapUsagePropertyValueImpl;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+
+public class HeapUsageKeyImpl extends AbstractNodePropertyKey {
+  public HeapUsageKeyImpl(Node node) {
+    super(node, ImplicitSnitch.HEAPUSAGE);
+  }
+
+  @Override
+  public HeapUsagePropertyValueImpl getPropertyValueFromNodeValue(Object nodeValue) {
+    return new HeapUsagePropertyValueImpl(this, nodeValue);
+  }
 }

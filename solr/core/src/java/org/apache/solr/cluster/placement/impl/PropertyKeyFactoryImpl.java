@@ -18,49 +18,61 @@
 package org.apache.solr.cluster.placement.impl;
 
 import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.PropertyKey;
 import org.apache.solr.cluster.placement.PropertyKeyFactory;
 import org.apache.solr.cluster.placement.PropertyValueSource;
 import org.apache.solr.cluster.placement.impl.propertykey.CoreCountKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.DiskInfoKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.EnvvarKeyImpl;
-import org.apache.solr.cluster.placement.impl.propertykey.MetricKeyImpl;
+import org.apache.solr.cluster.placement.impl.propertykey.FreeDiskKeyImpl;
+import org.apache.solr.cluster.placement.impl.propertykey.DiskTypeKeyImpl;
+import org.apache.solr.cluster.placement.impl.propertykey.HeapUsageKeyImpl;
+import org.apache.solr.cluster.placement.impl.propertykey.NodeMetricKeyImpl;
+import org.apache.solr.cluster.placement.impl.propertykey.NonNodeMetricKeyImpl;
 import org.apache.solr.cluster.placement.impl.propertykey.SyspropKeyImpl;
 import org.apache.solr.cluster.placement.impl.propertykey.SystemLoadKeyImpl;
+import org.apache.solr.cluster.placement.impl.propertykey.TotalDiskKeyImpl;
 
 public class PropertyKeyFactoryImpl implements PropertyKeyFactory {
   @Override
-  public PropertyKey createCoreCountKey(Node node) {
+  public CoreCountKeyImpl createCoreCountKey(Node node) {
     return new CoreCountKeyImpl(node);
   }
 
   @Override
-  public PropertyKey createDiskInfoKey(Node node) {
-    return new DiskInfoKeyImpl(node);
+  public FreeDiskKeyImpl createFreeDiskKey(Node node) {
+    return new FreeDiskKeyImpl(node);
   }
 
   @Override
-  public PropertyKey createSyspropKey(Node node, String syspropName) {
+  public TotalDiskKeyImpl createTotalDiskKey(Node node) {
+    return new TotalDiskKeyImpl(node);
+  }
+
+  @Override
+  public DiskTypeKeyImpl createDiskTypeKey(Node node) {
+    return new DiskTypeKeyImpl(node);
+  }
+
+  @Override
+  public SyspropKeyImpl createSyspropKey(Node node, String syspropName) {
     return new SyspropKeyImpl(node, syspropName);
   }
 
   @Override
-  public PropertyKey createEnvvarKey(Node node, String envVarName) {
-    return new EnvvarKeyImpl(node, envVarName);
+  public NonNodeMetricKeyImpl createMetricKey(PropertyValueSource metricSource, String metricName) {
+    return new NonNodeMetricKeyImpl(metricSource, metricName);
   }
 
   @Override
-  public PropertyKey createMetricKey(PropertyValueSource metricSource, String metricName) {
-    return new MetricKeyImpl(metricSource, metricName);
+  public NodeMetricKeyImpl createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry) {
+    return new NodeMetricKeyImpl(nodeMetricSource, metricName, registry);
   }
 
   @Override
-  public PropertyKey createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry) {
-    return new MetricKeyImpl(nodeMetricSource, metricName, registry);
-  }
-
-  @Override
-  public PropertyKey createSystemLoadKey(Node node) {
+  public SystemLoadKeyImpl createSystemLoadKey(Node node) {
     return new SystemLoadKeyImpl(node);
+  }
+
+  @Override
+  public HeapUsageKeyImpl createHeapUsageKey(Node node) {
+    return new HeapUsageKeyImpl(node);
   }
 }

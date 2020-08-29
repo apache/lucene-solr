@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl.propertykey;
+package org.apache.solr.cluster.placement.impl.propertyvalue;
 
-import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PropertyKey;
+import org.apache.solr.cluster.placement.SystemLoadPropertyValue;
 
-public class EnvvarKeyImpl extends AbstractPropertyKey implements PropertyKey {
-  private final String envVarName;
+public class SystemLoadPropertyValueImpl extends AbstractPropertyValue implements SystemLoadPropertyValue {
+  private final double systemLoadAverage;
 
-  public EnvvarKeyImpl(Node node, String envVarName) {
-    super(node);
-    this.envVarName = envVarName;
+  public SystemLoadPropertyValueImpl(PropertyKey key, Object nodeValue) {
+    super(key);
+    this.systemLoadAverage = ((Number) nodeValue).doubleValue();
+  }
+
+  @Override
+  public double getSystemLoadAverage() {
+    return systemLoadAverage;
   }
 }

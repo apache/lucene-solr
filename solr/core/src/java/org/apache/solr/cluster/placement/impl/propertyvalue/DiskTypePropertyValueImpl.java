@@ -15,20 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl.propertykey;
+package org.apache.solr.cluster.placement.impl.propertyvalue;
 
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.SyspropPropertyValue;
-import org.apache.solr.cluster.placement.impl.propertyvalue.SyspropPropertyValueImpl;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.cluster.placement.DiskTypePropertyValue;
+import org.apache.solr.cluster.placement.FreeDiskPropertyValue;
+import org.apache.solr.cluster.placement.PropertyKey;
 
-public class SyspropKeyImpl extends AbstractNodePropertyKey {
-  public SyspropKeyImpl(Node node, String syspropName) {
-    super(node, ImplicitSnitch.SYSPROP + syspropName);
+public class DiskTypePropertyValueImpl extends AbstractPropertyValue implements DiskTypePropertyValue {
+  private final DiskType diskType;
+
+  public DiskTypePropertyValueImpl(PropertyKey key, Object nodeValue) {
+    super(key);
+    if ("rotational".equals(nodeValue)) {
+      diskType = DiskType.ROTATIONAL;
+    } else if ("ssd".equals(nodeValue)) {
+      diskType = DiskType.SSD;
+    } else {
+      diskType = DiskType.UNKNOWN;
+    }
   }
 
   @Override
-  public SyspropPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new SyspropPropertyValueImpl(this, nodeValue);
+  public DiskType getDiskType() {
+    return null;
   }
 }

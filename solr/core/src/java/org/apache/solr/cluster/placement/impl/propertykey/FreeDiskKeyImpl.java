@@ -18,17 +18,16 @@
 package org.apache.solr.cluster.placement.impl.propertykey;
 
 import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.SyspropPropertyValue;
-import org.apache.solr.cluster.placement.impl.propertyvalue.SyspropPropertyValueImpl;
+import org.apache.solr.cluster.placement.impl.propertyvalue.FreeDiskPropertyValueImpl;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
-public class SyspropKeyImpl extends AbstractNodePropertyKey {
-  public SyspropKeyImpl(Node node, String syspropName) {
-    super(node, ImplicitSnitch.SYSPROP + syspropName);
+public class FreeDiskKeyImpl extends AbstractNodePropertyKey {
+  public FreeDiskKeyImpl(Node node) {
+    super(node, ImplicitSnitch.DISK);
   }
 
   @Override
-  public SyspropPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new SyspropPropertyValueImpl(this, nodeValue);
+  public FreeDiskPropertyValueImpl getPropertyValueFromNodeValue(Object nodeValue) {
+    return new FreeDiskPropertyValueImpl(this, nodeValue);
   }
 }

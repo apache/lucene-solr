@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl.propertykey;
+package org.apache.solr.cluster.placement.impl.propertyvalue;
 
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.SyspropPropertyValue;
-import org.apache.solr.cluster.placement.impl.propertyvalue.SyspropPropertyValueImpl;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.cluster.placement.PropertyKey;
+import org.apache.solr.cluster.placement.PropertyValue;
 
-public class SyspropKeyImpl extends AbstractNodePropertyKey {
-  public SyspropKeyImpl(Node node, String syspropName) {
-    super(node, ImplicitSnitch.SYSPROP + syspropName);
+public class AbstractPropertyValue implements PropertyValue {
+  private final PropertyKey propertyKey;
+
+  AbstractPropertyValue(PropertyKey propertyKey) {
+    this.propertyKey = propertyKey;
   }
 
   @Override
-  public SyspropPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new SyspropPropertyValueImpl(this, nodeValue);
+  public PropertyKey getKey() {
+    return propertyKey;
   }
+
 }

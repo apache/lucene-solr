@@ -18,16 +18,16 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * <p>A {@link PropertyValue} representing a metric on the target {@link PropertyValueSource}.
- * Note there might be overlap with {@link SystemLoadPropertyValue} (only applicable to {@link Node}'s), may need to clarify.
+ * A {@link PropertyValue} representing a metric on the target {@link PropertyValueSource}.
  *
- * <p>Returned {@link PropertyValue} instances will implement subinterfaces of this interface, not directly this one (it
- * would be an <i>abstract interface</i> if something like this existed in Java).
- *
- *  <p>Instances are obtained by first getting a key using {@link PropertyKeyFactory#createMetricKey(PropertyValueSource, String)}
- *  or {@link PropertyKeyFactory#createMetricKey(Node, String, PropertyKeyFactory.NodeMetricRegistry)} then calling
- *  {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
- *  using the {@link PropertyKey} as key and finally casting it to the appropriate subinterface of {@link MetricPropertyValue}.
+ * <p>Instances are obtained by first getting a key using {@link PropertyKeyFactory#createMetricKey(PropertyValueSource, String)}
+ * or {@link PropertyKeyFactory#createMetricKey(Node, String, PropertyKeyFactory.NodeMetricRegistry)} then calling
+ * {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
+ * using the {@link PropertyKey} as key and finally casting it to the appropriate subinterface of {@link MetricPropertyValue}.
  */
 public interface MetricPropertyValue extends PropertyValue {
+  /**
+   * Returns the metric value from the {@link PropertyValueSource} from which it was retrieved.
+   */
+  Double getNumberValue();
 }

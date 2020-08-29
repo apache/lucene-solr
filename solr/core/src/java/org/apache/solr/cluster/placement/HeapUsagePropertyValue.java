@@ -17,16 +17,17 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.lang.management.OperatingSystemMXBean;
+
 /**
- * A {@link PropertyValue} representing an environment variable (or System property) on the OS of the target {@link Node}.
- *
- *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createEnvvarKey} then calling
+ *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createHeapUsageKey(Node)} then calling
  *  {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
- *  using the {@link PropertyKey} as key and finally casting it to {@link EnvVarPropertyValue}.
+ *  using the {@link PropertyKey} as key and finally casting it to {@link HeapUsagePropertyValue}.
  */
-public interface EnvVarPropertyValue extends PropertyValue {
+public interface HeapUsagePropertyValue extends PropertyValue {
+
   /**
-   * Returns the environment variable value from the target {@link Node} from which it was retrieved.
+   * Percentage between 0 and 100 of used heap over max heap.
    */
-  String getEnvironmentVariableValue();
+  double getUsedHeapMemoryUsage();
 }

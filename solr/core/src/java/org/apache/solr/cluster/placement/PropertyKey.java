@@ -18,7 +18,7 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * <p>A property key used by plugins to request values from Solr.
+ * <p>A property key used by plugins to request values from Solr. Instances must be obtained using {@link PropertyKeyFactory}.
  *
  * <p>Instances of classes implementing this interface will be used as keys in a map (see {@link PropertyValueFetcher#fetchProperties}
  * but given the usage pattern (pass {@link PropertyKey} instances to the method then look up {@link PropertyValue}'s in

@@ -20,25 +20,20 @@ package org.apache.solr.cluster.placement.impl.propertykey;
 import com.google.common.base.Preconditions;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PropertyKey;
-import org.apache.solr.cluster.placement.PropertyKeyFactory;
 import org.apache.solr.cluster.placement.PropertyValueSource;
 
-public class MetricKeyImpl extends AbstractPropertyKey implements PropertyKey {
+public class NonNodeMetricKeyImpl implements PropertyKey {
   private final String metricName;
-  private final PropertyKeyFactory.NodeMetricRegistry registry; // non null when propertyValueSource is a Node
+  private final PropertyValueSource metricSource;
 
-  public MetricKeyImpl(PropertyValueSource metricSource, String metricName) {
-    super(metricSource);
+  public NonNodeMetricKeyImpl(PropertyValueSource metricSource, String metricName) {
     Preconditions.checkState(!(metricSource instanceof Node), "Illegal argument type " + Node.class);
+    this.metricSource = metricSource;
     this.metricName = metricName;
-    this.registry = null; // When propertyValueSource (see superclass) is not a Node, registry is not used.
   }
 
-  public MetricKeyImpl(Node nodeMetricSource, String metricName, PropertyKeyFactory.NodeMetricRegistry registry) {
-    super(nodeMetricSource);
-    // Node based metrics must specify a registry
-    Preconditions.checkState(registry != null, "Node registry can't be null");
-    this.metricName = metricName;
-    this.registry = registry;
+  @Override
+  public PropertyValueSource getPropertyValueSource() {
+    return metricSource;
   }
 }

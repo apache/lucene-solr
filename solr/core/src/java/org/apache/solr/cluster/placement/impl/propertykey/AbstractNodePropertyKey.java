@@ -17,18 +17,32 @@
 
 package org.apache.solr.cluster.placement.impl.propertykey;
 
+import java.util.Collection;
+
 import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.SyspropPropertyValue;
-import org.apache.solr.cluster.placement.impl.propertyvalue.SyspropPropertyValueImpl;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
-public class SyspropKeyImpl extends AbstractNodePropertyKey {
-  public SyspropKeyImpl(Node node, String syspropName) {
-    super(node, ImplicitSnitch.SYSPROP + syspropName);
+/**
+ * Superclass for all {@link org.apache.solr.cluster.placement.PropertyKey} that target a {@link Node} and whose implementation
+ * is based on using {@link org.apache.solr.client.solrj.cloud.NodeStateProvider#getNodeValues(String, Collection)}.
+ */
+abstract class AbstractNodePropertyKey implements NodeSnitchPropertyKey {
+  private final Node node;
+  private final String snitchTag;
+
+  AbstractNodePropertyKey(Node node, String snitchTag) {
+    this.node = node;
+    this.snitchTag = snitchTag;
   }
 
   @Override
-  public SyspropPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new SyspropPropertyValueImpl(this, nodeValue);
+  public Node getPropertyValueSource() {
+    return node;
   }
+
+  @Override
+  public String getNodeSnitchTag() {
+    return snitchTag;
+  }
+
 }

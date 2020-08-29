@@ -15,14 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster.placement.impl.propertyvalue;
 
-/**
- * A {@link PropertyValue} representing a numeric metric on the target {@link PropertyValueSource}.
- */
-public interface NumberMetricPropertyValue extends MetricPropertyValue {
-  /**
-   * Returns the metric value from the {@link PropertyValueSource} from which it was retrieved.
-   */
-  Double getNumberValue();
+import org.apache.solr.cluster.placement.CoresCountPropertyValue;
+import org.apache.solr.cluster.placement.FreeDiskPropertyValue;
+import org.apache.solr.cluster.placement.PropertyKey;
+
+public class FreeDiskPropertyValueImpl extends AbstractPropertyValue implements FreeDiskPropertyValue {
+  private final long freeDiskGB;
+
+  public FreeDiskPropertyValueImpl(PropertyKey key, Object nodeValue) {
+    super(key);
+    this.freeDiskGB = ((Number) nodeValue).longValue();
+  }
+
+  @Override
+  public long getFreeSizeGB() {
+    return freeDiskGB;
+  }
 }

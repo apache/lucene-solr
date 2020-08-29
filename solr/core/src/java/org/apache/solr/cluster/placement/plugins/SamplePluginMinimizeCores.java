@@ -102,10 +102,6 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
       Map<PropertyKey, PropertyValue> propMap = propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey));
       PropertyValue returnedValue = propMap.get(coresCountPropertyKey);
 
-      // TODO: property fetching not yet implemented. Placement computation fails if we don't cheat here. DO NOT MERGE.
-      nodesByCores.put(1, node);
-      if (true) continue;
-
       if (returnedValue == null) {
         throw new PlacementException("Can't get number of cores in " + node);
       }

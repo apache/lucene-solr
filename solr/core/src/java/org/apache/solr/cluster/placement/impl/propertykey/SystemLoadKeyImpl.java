@@ -18,10 +18,17 @@
 package org.apache.solr.cluster.placement.impl.propertykey;
 
 import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.PropertyKey;
+import org.apache.solr.cluster.placement.SystemLoadPropertyValue;
+import org.apache.solr.cluster.placement.impl.propertyvalue.SystemLoadPropertyValueImpl;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
-public class SystemLoadKeyImpl extends AbstractPropertyKey implements PropertyKey {
+public class SystemLoadKeyImpl extends AbstractNodePropertyKey {
   public SystemLoadKeyImpl(Node node) {
-    super(node);
+    super(node, ImplicitSnitch.SYSLOADAVG);
+  }
+
+  @Override
+  public SystemLoadPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
+    return new SystemLoadPropertyValueImpl(this, nodeValue);
   }
 }

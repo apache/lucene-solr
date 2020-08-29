@@ -15,13 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl.propertykey;
+package org.apache.solr.cluster.placement.impl.propertyvalue;
 
-import org.apache.solr.cluster.placement.Node;
+import org.apache.solr.cluster.placement.MetricPropertyValue;
 import org.apache.solr.cluster.placement.PropertyKey;
 
-public class DiskInfoKeyImpl extends AbstractPropertyKey implements PropertyKey {
-  public DiskInfoKeyImpl(Node node) {
-    super(node);
+public class MetricPropertyValueImpl extends AbstractPropertyValue implements MetricPropertyValue {
+  private final double metricValue;
+
+  public MetricPropertyValueImpl(PropertyKey key, Object nodeValue) {
+    super(key);
+    this.metricValue = ((Number) nodeValue).doubleValue();
+  }
+
+  @Override
+  public Double getNumberValue() {
+    return metricValue;
   }
 }

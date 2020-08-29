@@ -15,20 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl.propertykey;
+package org.apache.solr.cluster.placement;
 
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.SyspropPropertyValue;
-import org.apache.solr.cluster.placement.impl.propertyvalue.SyspropPropertyValueImpl;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
-
-public class SyspropKeyImpl extends AbstractNodePropertyKey {
-  public SyspropKeyImpl(Node node, String syspropName) {
-    super(node, ImplicitSnitch.SYSPROP + syspropName);
-  }
-
-  @Override
-  public SyspropPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new SyspropPropertyValueImpl(this, nodeValue);
-  }
+/**
+ *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createDiskUsageKey(Node)} then getting the
+ *  {@link FreeDiskPropertyValue} using {@link PropertyValueFetcher#fetchProperties} and retrieving (then casting) the
+ *  appropriate {@link PropertyValue} fetched from the returned map using the {@link PropertyKey} as key.
+ */
+public interface FreeDiskPropertyValue extends PropertyValue {
+  /**
+   * Free disk size of the partition on which cores are stored on the {@link Node}) from which this instance was obtained
+   *  (i.e. instance passed to {@link PropertyKeyFactory#createDiskTypeKey(Node)}).
+   */
+  long getFreeSizeGB();
 }

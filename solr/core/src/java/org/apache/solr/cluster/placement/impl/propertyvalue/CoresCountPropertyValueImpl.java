@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl.propertykey;
+package org.apache.solr.cluster.placement.impl.propertyvalue;
 
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.SyspropPropertyValue;
-import org.apache.solr.cluster.placement.impl.propertyvalue.SyspropPropertyValueImpl;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.cluster.placement.CoresCountPropertyValue;
+import org.apache.solr.cluster.placement.PropertyKey;
 
-public class SyspropKeyImpl extends AbstractNodePropertyKey {
-  public SyspropKeyImpl(Node node, String syspropName) {
-    super(node, ImplicitSnitch.SYSPROP + syspropName);
+public class CoresCountPropertyValueImpl extends AbstractPropertyValue implements CoresCountPropertyValue {
+  private final int coresCount;
+
+  public CoresCountPropertyValueImpl(PropertyKey key, Object nodeValue) {
+    super(key);
+    this.coresCount = ((Number) nodeValue).intValue();
   }
 
   @Override
-  public SyspropPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new SyspropPropertyValueImpl(this, nodeValue);
+  public int getCoresCount() {
+    return coresCount;
   }
 }

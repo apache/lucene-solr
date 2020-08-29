@@ -28,27 +28,35 @@ package org.apache.solr.cluster.placement;
 public interface PropertyKeyFactory {
   /**
    * Returns a property key to request the number of cores on a {@link Node}.
+   * Corresponding {@link PropertyValue} is of type {@link CoresCountPropertyValue}.
    */
   PropertyKey createCoreCountKey(Node node);
 
   /**
-   * Returns a property key to request disk related info on a {@link Node}.
+   * Returns a property key to query the disk type on a {@link Node}.
+   * Corresponding {@link PropertyValue} is of type {@link DiskTypePropertyValue}.
    */
-  PropertyKey createDiskInfoKey(Node node);
+  PropertyKey createDiskTypeKey(Node node);
+
+  /**
+   * Returns a property key to query the disk free size on a {@link Node}.
+   * Corresponding {@link PropertyValue} is of type {@link FreeDiskPropertyValue}.
+   */
+  PropertyKey createFreeDiskKey(Node node);
+
+  /**
+   * Returns a property key to query the total disk sizes on a {@link Node}.
+   * Corresponding {@link PropertyValue} is of type {@link TotalDiskPropertyValue}.
+   */
+  PropertyKey createTotalDiskKey(Node node);
 
   /**
    * Returns a property key to request the value of a sysprop (a.k.a. system property) on a {@link Node}.
    * A system property can be passed to {@code java} using the {@code -DpropertyName=value} parameter.
+   * Corresponding {@link PropertyValue} is of type {@link SyspropPropertyValue}.
    * @param syspropName the name of the system property to retrieve.
    */
   PropertyKey createSyspropKey(Node node, String syspropName);
-
-  /**
-   * Returns a property key to request the value of an environment variable of the OS where a {@link Node} runs.
-   * An environment variable is for example {@code "HOME"} and its value could be {@code "/Users/johndoe"}.
-   * @param envVarName the name of the environment variable to retrieve.
-   */
-  PropertyKey createEnvvarKey(Node node, String envVarName);
 
   /**
    * <p>Returns a property key to request the value of a metric.
@@ -56,13 +64,7 @@ public interface PropertyKeyFactory {
    * <p>Not all metrics make sense everywhere, but metrics can be applied to different objects. For example
    * <code>SEARCHER.searcher.indexCommitSize</code> would make sense for a given replica of a given shard of a given collection,
    * and possibly in other contexts.
-   *
-   * <p>The {@link PropertyValue} instances corresponding to this metric can be of types:
-   * <ul>
-   *   <li>{@link NumberMetricPropertyValue},</li>
-   *   <li>{@link StringMetricPropertyValue},</li>
-   *   <li>And possibly more complex types (maps?) in the future...</li>
-   * </ul>
+   * Corresponding {@link PropertyValue} is of type {@link MetricPropertyValue}.
    *
    * <p>TODO: implementation note (to remove) SolrInfoBean.Group can be inferred from metricSource representing replica, shard, collection.
    *
@@ -77,8 +79,9 @@ public interface PropertyKeyFactory {
   /**
    * Returns a property key to request the value of a {@link Node} metric. Corresponding {@link PropertyValue}'s are similar
    * to those of {@link #createMetricKey(PropertyValueSource, String)}.
+   * Corresponding {@link PropertyValue} is of type {@link MetricPropertyValue}.
    */
-   PropertyKey createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry);
+  PropertyKey createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry);
 
   /**
    * Registry options when requesting a {@link Node} metric using {@link #createMetricKey(Node, String, NodeMetricRegistry)}.
@@ -90,7 +93,14 @@ public interface PropertyKeyFactory {
 
   /**
    * Returns a property key to access system load data on a {@link Node}.
+   * Corresponding {@link PropertyValue} is of type {@link SystemLoadPropertyValue}.
    */
   PropertyKey createSystemLoadKey(Node node);
 
+
+  /**
+   * Returns a property key to access heap usage data on a {@link Node}.
+   * Corresponding {@link PropertyValue} is of type {@link HeapUsagePropertyValue}.
+   */
+  PropertyKey createHeapUsageKey(Node node);
 }

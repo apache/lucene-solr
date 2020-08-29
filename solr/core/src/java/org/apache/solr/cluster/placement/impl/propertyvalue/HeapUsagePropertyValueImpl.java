@@ -15,20 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl.propertykey;
+package org.apache.solr.cluster.placement.impl.propertyvalue;
 
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.SyspropPropertyValue;
-import org.apache.solr.cluster.placement.impl.propertyvalue.SyspropPropertyValueImpl;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.cluster.placement.HeapUsagePropertyValue;
+import org.apache.solr.cluster.placement.PropertyKey;
+import org.apache.solr.cluster.placement.TotalDiskPropertyValue;
 
-public class SyspropKeyImpl extends AbstractNodePropertyKey {
-  public SyspropKeyImpl(Node node, String syspropName) {
-    super(node, ImplicitSnitch.SYSPROP + syspropName);
+public class HeapUsagePropertyValueImpl extends AbstractPropertyValue implements HeapUsagePropertyValue {
+  private final double heapUsage;
+
+  public HeapUsagePropertyValueImpl(PropertyKey key, Object nodeValue) {
+    super(key);
+    this.heapUsage = ((Number) nodeValue).doubleValue();
   }
 
   @Override
-  public SyspropPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new SyspropPropertyValueImpl(this, nodeValue);
+  public double getUsedHeapMemoryUsage() {
+    return 0;
   }
 }

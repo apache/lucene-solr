@@ -17,18 +17,19 @@
 
 package org.apache.solr.cluster.placement.impl.propertykey;
 
+import org.apache.solr.cluster.placement.DiskTypePropertyValue;
 import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.SyspropPropertyValue;
-import org.apache.solr.cluster.placement.impl.propertyvalue.SyspropPropertyValueImpl;
+import org.apache.solr.cluster.placement.impl.propertyvalue.DiskTypePropertyValueImpl;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
-public class SyspropKeyImpl extends AbstractNodePropertyKey {
-  public SyspropKeyImpl(Node node, String syspropName) {
-    super(node, ImplicitSnitch.SYSPROP + syspropName);
+public class DiskTypeKeyImpl extends AbstractNodePropertyKey {
+  public DiskTypeKeyImpl(Node node) {
+    super(node, ImplicitSnitch.DISKTYPE);
   }
 
   @Override
-  public SyspropPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new SyspropPropertyValueImpl(this, nodeValue);
+  public DiskTypePropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
+    return new DiskTypePropertyValueImpl(this, nodeValue);
   }
+
 }

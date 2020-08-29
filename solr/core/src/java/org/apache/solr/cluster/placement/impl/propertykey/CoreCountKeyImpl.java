@@ -18,10 +18,16 @@
 package org.apache.solr.cluster.placement.impl.propertykey;
 
 import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.PropertyKey;
+import org.apache.solr.cluster.placement.impl.propertyvalue.CoresCountPropertyValueImpl;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
-public class CoreCountKeyImpl extends AbstractPropertyKey implements PropertyKey {
+public class CoreCountKeyImpl extends AbstractNodePropertyKey {
   public CoreCountKeyImpl(Node node) {
-    super(node);
+    super(node, ImplicitSnitch.CORES);
+  }
+
+  @Override
+  public CoresCountPropertyValueImpl getPropertyValueFromNodeValue(final Object nodeValue) {
+    return new CoresCountPropertyValueImpl(this, nodeValue);
   }
 }
