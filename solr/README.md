@@ -90,15 +90,14 @@ Solr includes a few examples to help you get started. To run a specific example,
   bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
 
     cloud        : SolrCloud example
-    dih          : Data Import Handler (rdbms, mail, atom, tika)
     schemaless   : Schema-less example (schema is inferred from data during indexing)
     techproducts : Kitchen sink example providing comprehensive examples of Solr features
 ```
 
-For instance, if you want to run the Solr Data Import Handler example, do:
+For instance, if you want to run the SolrCloud example, do:
 
 ```
-  bin/solr -e dih
+  bin/solr -e cloud
 ```
 
 Indexing Documents
@@ -142,8 +141,7 @@ server/
 
 example/
   Contains example documents and an alternative Solr home
-  directory containing examples of how to use the Data Import Handler,
-  see example/example-DIH/README.md for more information.
+  directory containing various examples.
 
 dist/solr-<component>-XX.jar
   The Apache Solr libraries.  To compile Apache Solr Plugins,

@@ -77,7 +77,6 @@ The available options are:
 
 * cloud
 * techproducts
-* dih
 * schemaless
 +
 See the section <<Running with Example Configurations>> below for more details on the example configurations.
@@ -206,11 +205,6 @@ When using this example, you can choose from any of the available configsets fou
 * *techproducts*: This example starts Solr in standalone mode with a schema designed for the sample documents included in the `$SOLR_HOME/example/exampledocs` directory.
 +
 The configset used can be found in `$SOLR_HOME/server/solr/configsets/sample_techproducts_configs`.
-* *dih*: This example starts Solr in standalone mode with the DataImportHandler (DIH) enabled and several example `dataconfig.xml` files pre-configured for different types of data supported with DIH (such as, database contents, email, RSS feeds, etc.).
-+
-The configset used is customized for DIH, and is found in `$SOLR_HOME/example/example-DIH/solr/conf`.
-+
-For more information about DIH, see the section <<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Uploading Structured Data Store Data with the Data Import Handler>>.
 * *schemaless*: This example starts Solr in standalone mode using a managed schema, as described in the section <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>>, and provides a very minimal pre-defined schema. Solr will run in <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>> with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
 +
 The configset used can be found in `$SOLR_HOME/server/solr/configsets/_default`.

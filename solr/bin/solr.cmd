@@ -360,7 +360,6 @@ goto done
 @echo   -e example    Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
-@echo       dih:            Data Import Handler
 @echo       schemaless:     Schema-less example
 @echo.
 @echo   -a opts       Additional parameters to pass to the JVM when starting Solr, such as to setup
