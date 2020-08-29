@@ -130,14 +130,6 @@ solrAdminApp.config([
         templateUrl: 'partials/analysis.html',
         controller: 'AnalysisController'
       }).
-      when('/:core/dataimport', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
-      when('/:core/dataimport/:handler*', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
       when('/:core/documents', {
         templateUrl: 'partials/documents.html',
         controller: 'DocumentsController'
@@ -167,14 +159,6 @@ solrAdminApp.config([
       when('/:core/replication', {
         templateUrl: 'partials/replication.html',
         controller: 'ReplicationController'
-      }).
-      when('/:core/dataimport', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
-      when('/:core/dataimport/:handler*', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
       }).
       when('/:core/schema', {
         templateUrl: 'partials/schema.html',
