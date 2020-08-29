@@ -288,7 +288,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.defaultCollectionActiveWait", "10");
 
       System.setProperty("solr.http2solrclient.maxpool.size", "6");
-      System.setProperty("solr.http2solrclient.pool.keepalive", "5000");
+      System.setProperty("solr.http2solrclient.pool.keepalive", "1500");
 
       System.setProperty("solr.disablePublicKeyHandler", "false");
       System.setProperty("solr.dependentupdate.timeout", "1"); // seconds
@@ -325,7 +325,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("prepRecoveryReadTimeoutExtraWait", "100");
       System.setProperty("validateAfterInactivity", "-1");
-      System.setProperty("leaderVoteWait", "5000"); // this is also apparently controlling how long we wait for a leader on register nocommit
+      System.setProperty("leaderVoteWait", "2500"); // this is also apparently controlling how long we wait for a leader on register nocommit
       System.setProperty("leaderConflictResolveWait", "10000");
 
       System.setProperty("solr.recovery.recoveryThrottle", "500");
