@@ -37,6 +37,18 @@ allprojects {
     task checkMissingDocsDefault(type: CheckMissingDocsTask, dependsOn: 'renderJavadoc') {
       dirs += [ project.javadoc.destinationDir ]
 
+      onlyIf {
+        def maxSupported = JavaVersion.VERSION_14
+        def runtimeVersion = runtimeJava.javaVersion
+        if (runtimeVersion > JavaVersion.VERSION_14) {
+          logger.warn("Skipping task because runtime Java version ${runtimeVersion} is " +
+              "higher than Java ${maxSupported}.")
+          return false
+        } else {
+          return true
+        }
+      }
+
       // TODO: add missing docs for all classes and bump this to level=class
       if (project.path.startsWith(":solr")) {
         level = 'package'
@@ -72,7 +84,6 @@ configure(project(':lucene:core')) {
         "org/apache/lucene/index",
         "org/apache/lucene/codecs"
     ].collect { path -> file("${project.javadoc.destinationDir}/${path}") }
-
     checkMissingDocs {
       dependsOn checkMissingDocsMethod
     }
