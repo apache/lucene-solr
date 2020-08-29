@@ -54,4 +54,9 @@ public class MockAuditLoggerPlugin extends AuditLoggerPlugin {
     events.clear();
     typeCounts.clear();
   }
+
+  @Override
+  public String getName() {
+    return "MockAuditLoggerPlugin";
+  }
 }
