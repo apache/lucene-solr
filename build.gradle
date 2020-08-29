@@ -163,7 +163,6 @@ apply from: file('gradle/help.gradle')
 // of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/force-versions.gradle')
 apply from: file('gradle/ant-compat/misc.gradle')
-apply from: file('gradle/ant-compat/resolve.gradle')
 apply from: file('gradle/ant-compat/post-jar.gradle')
 apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
