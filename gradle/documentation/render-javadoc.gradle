@@ -20,6 +20,8 @@ import javax.annotation.Nullable
 // generate javadocs by calling javadoc tool
 // see https://docs.oracle.com/en/java/javase/11/tools/javadoc.html
 
+def resources = "${rootProject.projectDir}/gradle/documentation/render-javadoc"
+
 allprojects {
   plugins.withType(JavaPlugin) {
     ext {
@@ -65,8 +67,8 @@ allprojects {
 
 // Set up titles and link up some offline docs for all documentation
 // (they may be unused but this doesn't do any harm).
-def javaJavadocPackages = project.project(':lucene').file('tools/javadoc/java11/')
-def junitJavadocPackages = project.project(':lucene').file('tools/javadoc/junit/')
+def javaJavadocPackages = rootProject.file("${resources}/java11/")
+def junitJavadocPackages = rootProject.file("${resources}/junit/")
 allprojects {
   project.tasks.withType(RenderJavadocTask) {
     title = "${project.path.startsWith(':lucene') ? 'Lucene' : 'Solr'} ${project.version} ${project.name} API"
@@ -312,13 +314,15 @@ class RenderJavadocTask extends DefaultTask {
 
     // append some special table css, prettify css
     ant.concat(destfile: "${outputDir}/stylesheet.css", append: "true", fixlastline: "true", encoding: "UTF-8") {
-      filelist(dir: project.project(":lucene").file("tools/javadoc"), files: "table_padding.css")
-      filelist(dir: project.project(":lucene").file("tools/prettify"), files: "prettify.css")
+      filelist(dir: resources, files: "table_padding.css")
+      filelist(dir: rootProject.file("$resources/prettify"), files: "prettify.css")
     }
+
     // append prettify to scripts
     ant.concat(destfile: "${outputDir}/script.js", append: "true", fixlastline: "true", encoding: "UTF-8") {
-      filelist(dir: project.project(':lucene').file("tools/prettify"), files: "prettify.js inject-javadocs.js")
+      filelist(dir: rootProject.file("$resources/prettify"), files: "prettify.js inject-javadocs.js")
     }
+
     ant.fixcrlf(srcdir: outputDir, includes: "stylesheet.css script.js", eol: "lf", fixlast: "true", encoding: "UTF-8")
   }
 }
