@@ -69,7 +69,7 @@ allprojects {
         args += [ "-proc:none" ]
         args += [ "-nowarn" ]
         args += [ "-enableJavadoc" ]
-        args += [ "-properties", project(":lucene").file("tools/javadoc/ecj.javadocs.prefs").absolutePath ]
+        args += [ "-properties", rootProject.file("gradle/validation/ecj-lint/ecj.javadocs.prefs").absolutePath ]
 
         doFirst {
           tmpDst.mkdirs()
