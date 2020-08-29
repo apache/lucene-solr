@@ -190,7 +190,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static final Logger slowLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".SlowRequest");
 
   private String name;
-  private String logid; // used to show what name is set
+
   /**
    * A unique id to differentiate multiple instances of the same core
    * If we reload a core, the name remains same , but the id will be new
@@ -487,23 +487,21 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   @Override
+  public String toString() {
+    return super.toString() + " " + getName();
+  }
+
+  @Override
   public String getName() {
     return name;
   }
 
+  /** Called to rename a core.  Not called to initialize the name. */
   public void setName(String v) {
-    Objects.requireNonNull(v);
-    boolean renamed = this.name != null && !this.name.equals(v);
-    assert !renamed || coreDescriptor.getCloudDescriptor() == null : "Cores are not renamed in SolrCloud";
-    this.name = v;
-    this.logid = "[" + v + "] "; // TODO remove; obsoleted by MDC
-    if (renamed && coreMetricManager != null) {
-      coreMetricManager.afterCoreRename();
-    }
-  }
-
-  public String getLogId() {
-    return this.logid;
+    assert this.name != null;
+    assert coreDescriptor.getCloudDescriptor() == null : "Cores are not renamed in SolrCloud";
+    this.name = Objects.requireNonNull(v);
+    coreMetricManager.afterCoreRename();
   }
 
   /**
@@ -642,11 +640,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       if ("firstSearcher".equals(event)) {
         SolrEventListener obj = createInitInstance(info, clazz, label, null);
         firstSearcherListeners.add(obj);
-        log.debug("[{}] Added SolrEventListener for firstSearcher: [{}]", logid, obj);
+        log.debug("Added SolrEventListener for firstSearcher: [{}]", obj);
       } else if ("newSearcher".equals(event)) {
         SolrEventListener obj = createInitInstance(info, clazz, label, null);
         newSearcherListeners.add(obj);
-        log.debug("[{}] Added SolrEventListener for newSearcher: [{}]", logid, obj);
+        log.debug("Added SolrEventListener for newSearcher: [{}]", obj);
       }
     }
   }
@@ -791,7 +789,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT, lockType);
       try {
         if (isWriterLocked(dir)) {
-          log.error("{}Solr index directory '{}' is locked (lockType={}).  Throwing exception.", logid,
+          log.error("Solr index directory '{}' is locked (lockType={}).  Throwing exception.",
               indexDir, lockType);
           throw new LockObtainFailedException(
               "Index dir '" + indexDir + "' of core '" + name + "' is already locked. " +
@@ -806,7 +804,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     // Create the index if it doesn't exist.
     if (!indexExists) {
-      log.debug("{}Solr index directory '{}' doesn't exist. Creating new index...", logid, indexDir);
+      log.debug("Solr index directory '{}' doesn't exist. Creating new index...", indexDir);
       SolrIndexWriter writer = null;
       try {
         writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true,
@@ -916,20 +914,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return createReloadedUpdateHandler(className, "Update Handler", updateHandler);
   }
 
-  public SolrCore(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet configSet) {
-    this(coreContainer, cd, configSet, null,
-        null, null, null, false);
-  }
-
   public CoreContainer getCoreContainer() {
     return coreContainer;
   }
 
+  SolrCore(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet configSet) {
+    this(coreContainer, cd, configSet, null,
+        null, null, null, false);
+  }
 
-  /**
-   * Creates a new core and register it in the list of cores. If a core with the
-   * same name already exists, it will be stopped and replaced by this one.
-   */
   private SolrCore(CoreContainer coreContainer, CoreDescriptor coreDescriptor, ConfigSet configSet,
                    String dataDir, UpdateHandler updateHandler,
                    IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
@@ -940,7 +933,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     try {
       this.coreContainer = coreContainer;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
-      setName(coreDescriptor.getName());
+      this.name = Objects.requireNonNull(coreDescriptor.getName());
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
@@ -972,7 +965,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.ulogDir = initUpdateLogDir(coreDescriptor);
 
       if (log.isInfoEnabled()) {
-        log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, getInstancePath(), this.dataDir);
+        log.info("Opening new SolrCore at [{}], dataDir=[{}]", getInstancePath(), this.dataDir);
       }
 
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
@@ -1556,7 +1549,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   @Override
   public void close() {
-    MDCLoggingContext.clear(); // balance out open with close
     int count = refCount.decrementAndGet();
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
@@ -1564,7 +1556,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       assert false : "Too many closes on SolrCore";
       return;
     }
-    log.info("{} CLOSING SolrCore {}", logid, this);
+    log.info("CLOSING SolrCore {}", this);
 
     ExecutorUtil.shutdownAndAwaitTermination(coreAsyncTaskExecutor);
 
@@ -1703,6 +1695,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
       }
     }
+
+    MDCLoggingContext.clear(); // balance out open with close
 
     assert ObjectReleaseTracker.release(this);
   }
@@ -2272,7 +2266,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         newSearcherCounter.inc();
         if (onDeckSearchers < 1) {
           // should never happen... just a sanity check
-          log.error("{}ERROR!!! onDeckSearchers is {}", logid, onDeckSearchers);
+          log.error("ERROR!!! onDeckSearchers is {}", onDeckSearchers);
           onDeckSearchers = 1;  // reset
         } else if (onDeckSearchers > maxWarmingSearchers) {
           onDeckSearchers--;
@@ -2286,7 +2280,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           }
           continue;  // go back to the top of the loop and retry
         } else if (onDeckSearchers > 1) {
-          log.warn("{}PERFORMANCE WARNING: Overlapping onDeckSearchers={}", logid, onDeckSearchers);
+          log.warn("PERFORMANCE WARNING: Overlapping onDeckSearchers={}", onDeckSearchers);
         }
 
         break; // I can now exit the loop and proceed to open a searcher
@@ -2444,7 +2438,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
           if (onDeckSearchers < 0) {
             // sanity check... should never happen
-            log.error("{}ERROR!!! onDeckSearchers after decrement={}", logid, onDeckSearchers);
+            log.error("ERROR!!! onDeckSearchers after decrement={}", onDeckSearchers);
             onDeckSearchers = 0; // try and recover
           }
           // if we failed, we need to wake up at least one waiter to continue the process
@@ -2542,7 +2536,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         newSearcher.register(); // register subitems (caches)
 
         if (log.isInfoEnabled()) {
-          log.info("{} Registered new searcher autowarm time: {} ms", logid, newSearcher.getWarmupTime());
+          log.info("Registered new searcher autowarm time: {} ms", newSearcher.getWarmupTime());
         }
 
       } catch (Exception e) {
@@ -2560,7 +2554,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
 
   public void closeSearcher() {
-    log.debug("{}Closing main searcher on request.", logid);
+    log.debug("Closing main searcher on request.");
     synchronized (searcherLock) {
       if (realtimeSearcher != null) {
         realtimeSearcher.decref();
@@ -2578,7 +2572,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       String msg = "Null Request Handler '" +
           req.getParams().get(CommonParams.QT) + "'";
 
-      log.warn("{}{}:{}", logid, msg, req);
+      log.warn("{}:{}", msg, req);
 
       throw new SolrException(ErrorCode.BAD_REQUEST, msg);
     }
@@ -2593,7 +2587,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
      */
     if (requestLog.isDebugEnabled() && rsp.getToLog().size() > 0) {
       // log request at debug in case something goes wrong and we aren't able to log later
-      requestLog.debug(rsp.getToLogAsString(logid));
+      requestLog.debug(rsp.getToLogAsString());
     }
 
     // TODO: this doesn't seem to be working correctly and causes problems with the example server and distrib (for example /spell)
@@ -2605,14 +2599,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     if (rsp.getToLog().size() > 0) {
       if (requestLog.isInfoEnabled()) {
-        requestLog.info(rsp.getToLogAsString(logid));
+        requestLog.info(rsp.getToLogAsString());
       }
 
       /* slowQueryThresholdMillis defaults to -1 in SolrConfig -- not enabled.*/
       if (log.isWarnEnabled() && slowQueryThresholdMillis >= 0) {
         final long qtime = (long) (req.getRequestTimer().getTime());
         if (qtime >= slowQueryThresholdMillis) {
-          slowLog.warn("slow: {}", rsp.getToLogAsString(logid));
+          slowLog.warn("slow: {}", rsp.getToLogAsString());
         }
       }
     }

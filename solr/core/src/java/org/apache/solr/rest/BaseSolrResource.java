@@ -175,7 +175,7 @@ public abstract class BaseSolrResource extends ServerResource {
     addDeprecatedWarning();
 
     if (log.isInfoEnabled() && solrResponse.getToLog().size() > 0) {
-      log.info(solrResponse.getToLogAsString(solrCore.getLogId()));
+      log.info(solrResponse.getToLogAsString());
     }
   }
 

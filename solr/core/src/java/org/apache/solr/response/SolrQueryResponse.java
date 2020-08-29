@@ -223,6 +223,11 @@ public class SolrQueryResponse {
     return toLog;
   }
 
+  //nocommit
+  public String getToLogAsString() {
+    return getToLogAsString("");
+  }
+
   /** Returns a string of the form "logid name1=value1 name2=value2 ..." */
   public String getToLogAsString(String logid) {
     StringBuilder sb = new StringBuilder(logid);
