@@ -428,3 +428,63 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-tagged-query]
 --
 
 Note that the tags created in the example above have no impact in how the search is executed.  Tags will not affect a query unless they are referenced by some other part of the request that uses them.
+
+== Faceting Nested Documents
+
+This paragraph binds many features together. Basically it's an example of filter exclusions for nested documents when facets are counted over children document (referred as SKUs in example below) fields, but facet counts rolls up in parent document counts. Let's go on item by item:
+ - _filter exclusion_ is usually necessary when multiple filter values are available for applying per field, it's also known as drill-sideway facets. See <<faceting.adoc#tagging-and-excluding-filters,the classic example>> of filter exclusion
+ - _nested documents_ or children documents are described in <<other-parsers.adoc#block-join-query-parsers>>
+ - _counting facets over children documents_ means that despite the result of the search are parent documents usually, the children documents and its' fields are used for faceting
+ - _facet counts roll up_ means that even children documents contribute facet hits, one counts parent documents they are linked to eg if a parent doc has two (2) red children, it's counted as one (1) due to rollup.     
+
+[source,json,subs="verbatim,callouts"]
+----
+{
+    "queries": {
+        "parents":"content_type:parentDocument",             <1>
+        "sku_fqs": [{"#sku_attr1_tag":"sku_attr1:foo"},      <2>
+                    {"#sku_attr2_tag":"sku_attr2:bar"}
+                   ]
+    },
+    "filter": {
+            "#sku_filters":{                                 <3>
+                "parent": {                                  <4>
+                    "which": {"param":"parents"}             <5>
+                    "filters": {"param":"sku_fqs"}           <6>
+                  }}
+    },
+    "facet": {
+        "sku_attr1": {                                       <7>
+            "type":"terms",
+            "field":"sku_attr1",                             <8>
+            "limit":-1,                                      <9>
+            "domain": {
+                 "excludeTags":"sku_filters",                <10>
+                 "blockChildren":"{!v=$parents}",            <11>
+                 "filter":                                   <12>
+                     "{!bool filter=$sku_fqs excludeTags=sku_attr1_tag}" <13>
+            },
+            "facet": {
+                "by_parent":"uniqueBlock({!v=$parents}})"    <14>
+            }
+        },
+        // sku_attr2 ...
+    }
+}
+----
+<1> define parents' filter via <<additiional queries>> for later usages
+<2> declares two SKU filters under different #tags <<Tagging in JSON Query DSL>>
+<3> tag block join query for later exclusion
+<4> block join query joins SKUs to top level docs. See <<other-parsers.adoc#block-join-parent-query-parser>>
+<5> referring to parent documents query. See <<additiional queries>>
+<6> referring to both SKU filter queries 
+<7> calculating drill-sideway facet over SKU documents
+<8> selecting SKU level field for faceting
+<9> getting all facet values for <14>'th efficiency 
+<10> removing top-level parent filter
+<11> switching faceting domain to children documents notice reference to all-parents query
+<12> restrict SKU docs for faceting 
+<13> refer to all SKU filter queries, but exclude certain tag retaining only `sku_attr2:bar`  
+<14> count subfacet in parent documents see <<json-facet-api.adoc#uniqueblock-and-block-join-counts>>
+
+
