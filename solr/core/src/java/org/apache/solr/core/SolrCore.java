@@ -225,8 +225,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final RecoveryStrategy.Builder recoveryStrategyBuilder;
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
+  private final ConfigSet configSet;
   //singleton listener for all packages used in schema
-  private final PackageListeningClassLoader schemaPluginsLoader;
 
   private final CircuitBreakerManager circuitBreakerManager;
 
@@ -272,9 +272,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   public PackageListeners getPackageListeners() {
     return packageListeners;
-  }
-  public PackageListeningClassLoader getSchemaPluginsLoader() {
-    return schemaPluginsLoader;
   }
 
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
@@ -939,16 +936,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final CountDownLatch latch = new CountDownLatch(1);
     try {
       this.coreContainer = coreContainer;
+      this.configSet = configSet;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       setName(coreDescriptor.getName());
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
-      schemaPluginsLoader = new PackageListeningClassLoader(coreContainer, resourceLoader,
-              solrConfig::maxPackageVersion,
-              () -> setLatestSchema(configSet.getIndexSchema()));
-      this.packageListeners.addListener(schemaPluginsLoader);
       IndexSchema schema = configSet.getIndexSchema();
+      schema.inform(this);
 
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
@@ -2769,6 +2764,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
 
+  public void fetchLatestSchema() {
+    IndexSchema schema =  configSet.getIndexSchema(true);
+    schema.inform(this);
+    setLatestSchema(schema);
+  }
   public interface RawWriter {
     default String getContentType() {
       return BinaryResponseParser.BINARY_CONTENT_TYPE;

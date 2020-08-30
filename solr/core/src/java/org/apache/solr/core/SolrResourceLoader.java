@@ -76,6 +76,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   protected URLClassLoader classLoader;
   private final Path instanceDir;
 
+  SolrConfig solrConfig;
+
 
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
@@ -744,6 +746,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, builder.toString());
   }
 
+  public CoreContainer getCoreContainer(){
+    return null;
+  }
+
+  public SolrConfig getSolrConfig() {
+    return solrConfig;
+
+  }
   @Override
   public void close() throws IOException {
     IOUtils.close(classLoader);

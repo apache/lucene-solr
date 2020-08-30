@@ -640,7 +640,6 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("rawtypes")
-  @Ignore("SOLR-14750")
   public void testSchemaPlugins() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");
