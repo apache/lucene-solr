@@ -25,3 +25,8 @@ dependencies {
   testImplementation project(':lucene:test-framework')
   testImplementation project(':lucene:expressions')
 }
+
+ext {
+  // TODO: fix missing javadocs
+  javadocMissingLevel = "class"
+}

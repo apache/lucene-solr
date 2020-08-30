@@ -28,3 +28,8 @@ dependencies {
   testImplementation project(':lucene:queryparser')
   testImplementation project(':lucene:test-framework')
 }
+
+ext {
+  // TODO: fix missing javadocs
+  javadocMissingLevel = "class"
+}

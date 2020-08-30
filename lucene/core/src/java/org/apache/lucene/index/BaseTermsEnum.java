@@ -66,6 +66,7 @@ public abstract class BaseTermsEnum extends TermsEnum {
     }
   }
 
+  @Override
   public AttributeSource attributes() {
     if (atts == null) {
       atts = new AttributeSource();

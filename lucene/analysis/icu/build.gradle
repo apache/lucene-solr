@@ -27,3 +27,12 @@ dependencies {
 
   testImplementation project(':lucene:test-framework')
 }
+
+ext {
+  // TODO: clean up split packages
+  javadocMissingIgnore = [
+    "org.apache.lucene.collation",
+    "org.apache.lucene.collation.tokenattributes"
+  ]
+}
+

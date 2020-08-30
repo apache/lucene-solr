@@ -74,3 +74,8 @@ dependencies {
   })
   testImplementation "org.hsqldb:hsqldb"
 }
+
+ext {
+  // TODO: clean up split packages
+  javadocMissingIgnore = [ "org.apache.solr.client.solrj.embedded" ]
+}

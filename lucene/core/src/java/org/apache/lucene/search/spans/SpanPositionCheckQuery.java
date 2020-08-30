@@ -74,7 +74,7 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     return new SpanPositionCheckWeight(matchWeight, searcher, scoreMode.needsScores() ? getTermStates(matchWeight) : null, boost);
   }
 
-  public class SpanPositionCheckWeight extends SpanWeight {
+  private class SpanPositionCheckWeight extends SpanWeight {
 
     final SpanWeight matchWeight;
 

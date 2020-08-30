@@ -1,4 +1,5 @@
 import javax.annotation.Nullable
+import org.apache.lucene.gradle.MissingDoclet
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -205,6 +206,16 @@ class RenderJavadocTask extends DefaultTask {
     opts << [ '-tag', 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.' ]
     opts << [ '-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.' ]
     opts << [ '-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)." ]
+    opts << [ '-doclet', MissingDoclet.class.getName() ]
+    opts << [ '-docletpath', project.rootProject.file("buildSrc/build/classes/java/main") ]
+    opts << [ '--missing-level', project.javadocMissingLevel ]
+    if (project.javadocMissingIgnore.size > 0) {
+      opts << [ '--missing-ignore', String.join(',', project.javadocMissingIgnore) ]
+    }
+    if (project.javadocMissingMethod.size > 0) {
+      opts << [ '--missing-method', String.join(',', project.javadocMissingMethod) ]
+    }
+    opts << [ '-quiet' ]
 
     def allOfflineLinks = [:]
     allOfflineLinks.putAll(offlineLinks)

@@ -58,6 +58,7 @@ public class MultiCollectorManager implements CollectorManager<MultiCollectorMan
     return results;
   }
 
+  /** Wraps multiple collectors for processing */
   public class Collectors implements Collector {
 
     private final Collector[] collectors;
@@ -86,7 +87,7 @@ public class MultiCollectorManager implements CollectorManager<MultiCollectorMan
       return scoreMode;
     }
 
-    public class LeafCollectors implements LeafCollector {
+    private class LeafCollectors implements LeafCollector {
 
       private final LeafCollector[] leafCollectors;
 

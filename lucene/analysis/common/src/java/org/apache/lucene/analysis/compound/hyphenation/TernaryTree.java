@@ -456,7 +456,7 @@ public class TernaryTree implements Cloneable {
     return new Iterator();
   }
 
-  public class Iterator implements Enumeration<String> {
+  private class Iterator implements Enumeration<String> {
 
     /**
      * current node index

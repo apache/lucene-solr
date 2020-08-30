@@ -91,7 +91,7 @@ public class SpanTermQuery extends SpanQuery {
     }
   }
 
-  public class SpanTermWeight extends SpanWeight {
+  private class SpanTermWeight extends SpanWeight {
 
     final TermStates termStates;
 

@@ -106,7 +106,7 @@ public final class SpanNotQuery extends SpanQuery {
                                   includeWeight, excludeWeight, boost);
   }
 
-  public class SpanNotWeight extends SpanWeight {
+  private class SpanNotWeight extends SpanWeight {
 
     final SpanWeight includeWeight;
     final SpanWeight excludeWeight;

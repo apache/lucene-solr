@@ -96,6 +96,13 @@ ext {
       "python2": propertyOrDefault('python2.exe', 'python2'),
       "perl": propertyOrDefault('perl.exe', 'perl'),
   ]
+
+  // default is to require full javadocs
+  javadocMissingLevel = "method"
+  // anything in these packages is checked with level=method. This allows iteratively fixing one package at a time.
+  javadocMissingMethod = []
+  // default is not to ignore any elements, should only be used to workaround split packages
+  javadocMissingIgnore = []
 }
 
 // Include smaller chunks configuring dedicated build areas.
@@ -138,7 +145,6 @@ apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
-apply from: file('gradle/validation/missing-docs-check.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
 apply from: file('gradle/validation/check-broken-links.gradle')
 

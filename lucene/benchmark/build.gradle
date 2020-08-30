@@ -44,6 +44,11 @@ dependencies {
   testImplementation project(':lucene:test-framework')
 }
 
+ext {
+  // TODO: fix missing javadocs
+  javadocMissingLevel = "class"
+}
+
 def tempDir = file("temp")
 def workDir = file("work")
 

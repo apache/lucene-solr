@@ -187,7 +187,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     return new SpanNearWeight(subWeights, searcher, scoreMode.needsScores() ? getTermStates(subWeights) : null, boost);
   }
 
-  public class SpanNearWeight extends SpanWeight {
+  private class SpanNearWeight extends SpanWeight {
 
     final List<SpanWeight> subWeights;
 

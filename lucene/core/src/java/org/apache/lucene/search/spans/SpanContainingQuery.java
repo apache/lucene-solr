@@ -51,7 +51,7 @@ public final class SpanContainingQuery extends SpanContainQuery {
                                       bigWeight, littleWeight, boost);
   }
 
-  public class SpanContainingWeight extends SpanContainWeight {
+  private class SpanContainingWeight extends SpanContainWeight {
 
     public SpanContainingWeight(IndexSearcher searcher, Map<Term, TermStates> terms,
                                 SpanWeight bigWeight, SpanWeight littleWeight, float boost) throws IOException {

@@ -32,3 +32,28 @@ dependencies {
 
   implementation project(':lucene:codecs')
 }
+
+ext {
+  // TODO: fix missing javadocs
+  javadocMissingLevel = "class"
+  // TODO: clean up split packages
+  javadocMissingIgnore = [
+    "org.apache.lucene.analysis",
+    "org.apache.lucene.analysis.standard",
+    "org.apache.lucene.codecs",
+    "org.apache.lucene.codecs.blockterms",
+    "org.apache.lucene.codecs.bloom",
+    "org.apache.lucene.codecs.compressing",
+    "org.apache.lucene.codecs.uniformsplit",
+    "org.apache.lucene.codecs.uniformsplit.sharedterms",
+    "org.apache.lucene.geo",
+    "org.apache.lucene.index",
+    "org.apache.lucene.search",
+    "org.apache.lucene.search.similarities",
+    "org.apache.lucene.search.spans",
+    "org.apache.lucene.store",
+    "org.apache.lucene.util",
+    "org.apache.lucene.util.automaton",
+    "org.apache.lucene.util.fst"
+  ]
+}

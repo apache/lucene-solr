@@ -136,7 +136,7 @@ public final class SpanOrQuery extends SpanQuery {
     return new SpanOrWeight(searcher, scoreMode.needsScores() ? getTermStates(subWeights) : null, subWeights, boost);
   }
 
-  public class SpanOrWeight extends SpanWeight {
+  private class SpanOrWeight extends SpanWeight {
 
     final List<SpanWeight> subWeights;
 

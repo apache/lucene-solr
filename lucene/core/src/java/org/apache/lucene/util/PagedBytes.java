@@ -282,7 +282,7 @@ public final class PagedBytes implements Accountable {
     return pointer;
   }
 
-  public final class PagedBytesDataInput extends DataInput {
+  private final class PagedBytesDataInput extends DataInput {
     private int currentBlockIndex;
     private int currentBlockUpto;
     private byte[] currentBlock;
@@ -350,7 +350,7 @@ public final class PagedBytes implements Accountable {
     }
   }
 
-  public final class PagedBytesDataOutput extends DataOutput {
+  private final class PagedBytesDataOutput extends DataOutput {
     @Override
     public void writeByte(byte b) {
       if (upto == blockSize) {

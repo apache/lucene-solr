@@ -15,26 +15,8 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
-
-description = 'Index tools and other miscellaneous code'
-
-dependencies {
-  api project(':lucene:core')
-  testImplementation project(':lucene:test-framework')
-}
-
-ext {
-  // TODO: fix missing javadocs
-  javadocMissingLevel = "class"
-  // TODO: clean up split packages
-  javadocMissingIgnore = [
-    "org.apache.lucene.search",
-    "org.apache.lucene.search.similarity",
-    "org.apache.lucene.util",
-    "org.apache.lucene.util.fst",
-    "org.apache.lucene.store",
-    "org.apache.lucene.document",
-    "org.apache.lucene.index"
-  ]
-}
+/**
+ * APIs and classes for the JSON Facet API.
+ * This is currently experimental!
+ */
+package org.apache.solr.search.facet;

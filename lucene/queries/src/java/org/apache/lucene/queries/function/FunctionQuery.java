@@ -53,7 +53,7 @@ public class FunctionQuery extends Query {
     return func;
   }
 
-  protected class FunctionWeight extends Weight {
+  private class FunctionWeight extends Weight {
     protected final IndexSearcher searcher;
     protected final float boost;
     protected final Map<Object, Object> context;
@@ -87,7 +87,7 @@ public class FunctionQuery extends Query {
     visitor.visitLeaf(this);
   }
 
-  protected class AllScorer extends Scorer {
+  private class AllScorer extends Scorer {
     final IndexReader reader;
     final FunctionWeight weight;
     final int maxDoc;
