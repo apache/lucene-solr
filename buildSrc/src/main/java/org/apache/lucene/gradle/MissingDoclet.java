@@ -110,6 +110,7 @@ public class MissingDoclet extends StandardDoclet {
             return true;
           case "parameter":
             level = PARAMETER;
+            return true;
           default:
             return false;
         }
