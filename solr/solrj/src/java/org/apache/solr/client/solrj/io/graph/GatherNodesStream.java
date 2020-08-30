@@ -519,7 +519,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
       ExecutorService threadPool = null;
       try {
-        threadPool = ParWork.getExecutor();
+        threadPool = ParWork.getEXEC();
 
         Map<String, Node> roots = new HashMap();
 
@@ -543,7 +543,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             if(!roots.containsKey(key)) {
               Node node = new Node(value, trackTraversal);
               if (metrics != null) {
-                List<Metric> _metrics = new ArrayList();
+                List<Metric> _metrics = new ArrayList(metrics.size());
                 for (Metric metric : metrics) {
                   _metrics.add(metric.newInstance());
                 }
@@ -606,6 +606,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         traversal.addLevel(level, collection, gather);
         out = traversal.iterator();
       } catch(Exception e) {
+        ParWork.propegateInterrupt(e);
         throw new RuntimeException(e);
       }
     }
