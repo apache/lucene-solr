@@ -90,12 +90,12 @@ ext {
       "flexmark": "0.61.24",
   ]
   
-  // read some external tool locations from system props
-  externalToolExecutables = [
-      "python3": propertyOrDefault('python3.exe', 'python3'),
-      "python2": propertyOrDefault('python2.exe', 'python2'),
-      "perl": propertyOrDefault('perl.exe', 'perl'),
-  ]
+  // Allow definiting external tool locations using system props.
+  externalTool = { name ->
+    def resolved = propertyOrDefault("${name}.exe", name as String)
+    logger.info("External tool '${name}' resolved to: ${resolved}")
+    return resolved
+  }
 }
 
 // Include smaller chunks configuring dedicated build areas.
