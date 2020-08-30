@@ -21,12 +21,20 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.ModuleElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 
@@ -251,7 +259,7 @@ public class MissingDoclet extends StandardDoclet {
       case CONSTRUCTOR:
       case FIELD:
       case ENUM_CONSTANT:
-        if (level(element) >= METHOD && !isOverridden(element) && !isSyntheticEnumMethod(element)) {
+        if (level(element) >= METHOD && !isSyntheticEnumMethod(element)) {
           checkComment(element);
         }
         break;
@@ -259,18 +267,8 @@ public class MissingDoclet extends StandardDoclet {
         error(element, "I don't know how to analyze " + element.getKind() + " yet.");
     }
   }
-  
-  /** Return true if the method is annotated with Override, if so, don't require javadocs (they'll be copied) */
-  private boolean isOverridden(Element element) {
-    for (var annotation : element.getAnnotationMirrors()) {
-      if (annotation.getAnnotationType().toString().equals(Override.class.getName())) {
-        return true;
-      }
-    }
-    return false;
-  }
-  
-  /** 
+
+  /**
    * Return true if the method is synthetic enum method (values/valueOf).
    * According to the doctree documentation, the "included" set never includes synthetic elements.
    * UweSays: It should not happen but it happens!
@@ -303,7 +301,12 @@ public class MissingDoclet extends StandardDoclet {
     }
     var tree = docTrees.getDocCommentTree(element);
     if (tree == null || tree.getFirstSentence().isEmpty()) {
-      error(element, "javadocs are missing");
+      // Check for methods that override other stuff and perhaps inherit their Javadocs.
+      if (hasInheritedJavadocs(element)) {
+        return;
+      } else {
+        error(element, "javadocs are missing");
+      }
     } else {
       var normalized = tree.getFirstSentence().get(0).toString()
                        .replace('\u00A0', ' ')
@@ -320,7 +323,63 @@ public class MissingDoclet extends StandardDoclet {
       checkParameters(element, tree);
     }
   }
-  
+
+  private boolean hasInheritedJavadocs(Element element) {
+    boolean hasOverrides = element.getAnnotationMirrors().stream()
+        .anyMatch(ann -> ann.getAnnotationType().toString().equals(Override.class.getName()));
+
+    if (hasOverrides) {
+      // If an element has explicit @Overrides annotation, assume it does
+      // have inherited javadocs somewhere.
+      reporter.print(Diagnostic.Kind.NOTE, element, "javadoc empty but @Override declared, skipping.");
+      return true;
+    }
+
+    // Check for methods up the types tree.
+    if (element instanceof ExecutableElement) {
+      ExecutableElement thisMethod = (ExecutableElement) element;
+      Iterable<Element> superTypes =
+          () -> superTypeForInheritDoc(thisMethod.getEnclosingElement()).iterator();
+
+      for (Element sup : superTypes) {
+        for (ExecutableElement supMethod : ElementFilter.methodsIn(sup.getEnclosedElements())) {
+          TypeElement clazz = (TypeElement) thisMethod.getEnclosingElement();
+          if (elementUtils.overrides(thisMethod, supMethod, clazz)) {
+            // We could check supMethod for non-empty javadoc here. Don't know if this makes
+            // sense though as all methods will be verified in the end so it'd fail on the
+            // top of the hierarchy (if empty) anyway.
+            reporter.print(Diagnostic.Kind.NOTE, element, "javadoc empty but method overrides another, skipping.");
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+
+  /* Find types from which methods in type may inherit javadoc, in the proper order.*/
+  private Stream<Element> superTypeForInheritDoc(Element type) {
+    TypeElement clazz = (TypeElement) type;
+    List<Element> interfaces = clazz.getInterfaces()
+        .stream()
+        .filter(tm -> tm.getKind() == TypeKind.DECLARED)
+        .map(tm -> ((DeclaredType) tm).asElement())
+        .collect(Collectors.toList());
+
+    Stream<Element> result = interfaces.stream();
+    result = Stream.concat(result, interfaces.stream().flatMap(this::superTypeForInheritDoc));
+
+    if (clazz.getSuperclass().getKind() == TypeKind.DECLARED) {
+      Element superClass = ((DeclaredType) clazz.getSuperclass()).asElement();
+      result = Stream.concat(result, Stream.of(superClass));
+      result = Stream.concat(result, superTypeForInheritDoc(superClass));
+    }
+
+    return result;
+  }
+
   /** Checks there is a corresponding "param" tag for each method parameter */
   private void checkParameters(Element element, DocCommentTree tree) {
     if (element instanceof ExecutableElement) {
