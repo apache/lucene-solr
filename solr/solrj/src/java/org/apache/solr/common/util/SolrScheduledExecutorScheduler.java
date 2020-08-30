@@ -85,6 +85,7 @@ public class SolrScheduledExecutorScheduler extends AbstractLifeCycle implements
   @Override
   protected void doStart() throws Exception {
     int size = threads > 0 ? threads : 1;
+    assert  scheduler == null;
     scheduler = new ScheduledThreadPoolExecutor(size, r -> {
       Thread thread = SolrScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name + "-" + count.incrementAndGet());
       thread.setDaemon(daemon);
@@ -97,9 +98,12 @@ public class SolrScheduledExecutorScheduler extends AbstractLifeCycle implements
 
   @Override
   protected void doStop() throws Exception {
-    scheduler.shutdownNow();
-    super.doStop();
-    ExecutorUtil.awaitTermination(scheduler);
+    ScheduledThreadPoolExecutor fscheduler = scheduler;
+    if (fscheduler != null) {
+      fscheduler.shutdownNow();
+      super.doStop();
+      ExecutorUtil.awaitTermination(fscheduler);
+    }
     scheduler = null;
   }
 
