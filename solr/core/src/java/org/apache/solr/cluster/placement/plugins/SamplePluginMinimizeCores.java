@@ -29,7 +29,6 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
 import org.apache.solr.cluster.placement.AddReplicasPlacementRequest;
 import org.apache.solr.cluster.placement.Cluster;
-import org.apache.solr.cluster.placement.CoresCountPropertyValue;
 import org.apache.solr.cluster.placement.Node;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
@@ -105,7 +104,7 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
       if (returnedValue == null) {
         throw new PlacementException("Can't get number of cores in " + node);
       }
-      CoresCountPropertyValue coresCountPropertyValue = (CoresCountPropertyValue) returnedValue;
+      PropertyValue.CoresCount coresCountPropertyValue = (PropertyValue.CoresCount) returnedValue;
       nodesByCores.put(coresCountPropertyValue.getCoresCount(), node);
     }
 

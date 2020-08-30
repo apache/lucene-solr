@@ -17,17 +17,12 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-import org.apache.solr.cluster.placement.CoresCountPropertyValue;
-import org.apache.solr.cluster.placement.DiskTypePropertyValue;
-import org.apache.solr.cluster.placement.FreeDiskPropertyValue;
-import org.apache.solr.cluster.placement.HeapUsagePropertyValue;
-import org.apache.solr.cluster.placement.MetricPropertyValue;
 import org.apache.solr.cluster.placement.PropertyKey;
 import org.apache.solr.cluster.placement.PropertyValue;
-import org.apache.solr.cluster.placement.SyspropPropertyValue;
-import org.apache.solr.cluster.placement.SystemLoadPropertyValue;
-import org.apache.solr.cluster.placement.TotalDiskPropertyValue;
 
+/**
+ * This class and static subclasses implement all subtypes of {@link PropertyValue}
+ */
 public abstract class AbstractPropertyValue implements PropertyValue {
   private final PropertyKey propertyKey;
 
@@ -39,122 +34,122 @@ public abstract class AbstractPropertyValue implements PropertyValue {
   public PropertyKey getKey() {
     return propertyKey;
   }
-}
 
-class CoresCountPropertyValueImpl extends AbstractPropertyValue implements CoresCountPropertyValue {
-  private final int coresCount;
+  static class CoresCountImpl extends AbstractPropertyValue implements CoresCount {
+    private final int coresCount;
 
-  public CoresCountPropertyValueImpl(PropertyKey key, Object nodeValue) {
-    super(key);
-    this.coresCount = ((Number) nodeValue).intValue();
-  }
+    public CoresCountImpl(PropertyKey key, Object nodeValue) {
+      super(key);
+      this.coresCount = ((Number) nodeValue).intValue();
+    }
 
-  @Override
-  public int getCoresCount() {
-    return coresCount;
-  }
-}
-
-class DiskTypePropertyValueImpl extends AbstractPropertyValue implements DiskTypePropertyValue {
-  private final DiskType diskType;
-
-  public DiskTypePropertyValueImpl(PropertyKey key, Object nodeValue) {
-    super(key);
-    if ("rotational".equals(nodeValue)) {
-      diskType = DiskType.ROTATIONAL;
-    } else if ("ssd".equals(nodeValue)) {
-      diskType = DiskType.SSD;
-    } else {
-      diskType = DiskType.UNKNOWN;
+    @Override
+    public int getCoresCount() {
+      return coresCount;
     }
   }
 
-  @Override
-  public DiskType getDiskType() {
-    return diskType;
-  }
-}
+  static class DiskTypeImpl extends AbstractPropertyValue implements PropertyValue.DiskType {
+    private final HardwareType diskType;
 
-class FreeDiskPropertyValueImpl extends AbstractPropertyValue implements FreeDiskPropertyValue {
-  private final long freeDiskGB;
+    public DiskTypeImpl(PropertyKey key, Object nodeValue) {
+      super(key);
+      if ("rotational".equals(nodeValue)) {
+        diskType = HardwareType.ROTATIONAL;
+      } else if ("ssd".equals(nodeValue)) {
+        diskType = HardwareType.SSD;
+      } else {
+        diskType = HardwareType.UNKNOWN;
+      }
+    }
 
-  public FreeDiskPropertyValueImpl(PropertyKey key, Object nodeValue) {
-    super(key);
-    this.freeDiskGB = ((Number) nodeValue).longValue();
-  }
-
-  @Override
-  public long getFreeSizeGB() {
-    return freeDiskGB;
-  }
-}
-
-class HeapUsagePropertyValueImpl extends AbstractPropertyValue implements HeapUsagePropertyValue {
-  private final double heapUsage;
-
-  public HeapUsagePropertyValueImpl(PropertyKey key, Object nodeValue) {
-    super(key);
-    this.heapUsage = ((Number) nodeValue).doubleValue();
+    @Override
+    public HardwareType getHardwareType() {
+      return diskType;
+    }
   }
 
-  @Override
-  public double getUsedHeapMemoryUsage() {
-    return heapUsage;
-  }
-}
+  static class FreeDiskImpl extends AbstractPropertyValue implements PropertyValue.FreeDisk {
+    private final long freeDiskGB;
 
-class MetricPropertyValueImpl extends AbstractPropertyValue implements MetricPropertyValue {
-  private final double metricValue;
+    public FreeDiskImpl(PropertyKey key, Object nodeValue) {
+      super(key);
+      this.freeDiskGB = ((Number) nodeValue).longValue();
+    }
 
-  public MetricPropertyValueImpl(PropertyKey key, Object nodeValue) {
-    super(key);
-    this.metricValue = ((Number) nodeValue).doubleValue();
-  }
-
-  @Override
-  public Double getNumberValue() {
-    return metricValue;
-  }
-}
-
-class SyspropPropertyValueImpl extends AbstractPropertyValue implements SyspropPropertyValue {
-  private final String systemProperty;
-
-  public SyspropPropertyValueImpl(PropertyKey key, Object nodeValue) {
-    super(key);
-    this.systemProperty = (String) nodeValue;
+    @Override
+    public long getFreeSizeGB() {
+      return freeDiskGB;
+    }
   }
 
-  @Override
-  public String getSystemPropertyValue() {
-    return systemProperty;
-  }
-}
+  static class HeapUsageImpl extends AbstractPropertyValue implements PropertyValue.HeapUsage {
+    private final double heapUsage;
 
-class SystemLoadPropertyValueImpl extends AbstractPropertyValue implements SystemLoadPropertyValue {
-  private final double systemLoadAverage;
+    public HeapUsageImpl(PropertyKey key, Object nodeValue) {
+      super(key);
+      this.heapUsage = ((Number) nodeValue).doubleValue();
+    }
 
-  public SystemLoadPropertyValueImpl(PropertyKey key, Object nodeValue) {
-    super(key);
-    this.systemLoadAverage = ((Number) nodeValue).doubleValue();
-  }
-
-  @Override
-  public double getSystemLoadAverage() {
-    return systemLoadAverage;
-  }
-}
-
-class TotalDiskPropertyValueImpl extends AbstractPropertyValue implements TotalDiskPropertyValue {
-  private final long totalDiskGB;
-
-  public TotalDiskPropertyValueImpl(PropertyKey key, Object nodeValue) {
-    super(key);
-    this.totalDiskGB = ((Number) nodeValue).longValue();
+    @Override
+    public double getUsedHeapMemoryUsage() {
+      return heapUsage;
+    }
   }
 
-  @Override
-  public long getTotalSizeGB() {
-    return totalDiskGB;
+  static class MetricImpl extends AbstractPropertyValue implements PropertyValue.Metric {
+    private final double metricValue;
+
+    public MetricImpl(PropertyKey key, Object nodeValue) {
+      super(key);
+      this.metricValue = ((Number) nodeValue).doubleValue();
+    }
+
+    @Override
+    public Double getNumberValue() {
+      return metricValue;
+    }
+  }
+
+  static class SyspropImpl extends AbstractPropertyValue implements PropertyValue.Sysprop {
+    private final String systemProperty;
+
+    public SyspropImpl(PropertyKey key, Object nodeValue) {
+      super(key);
+      this.systemProperty = (String) nodeValue;
+    }
+
+    @Override
+    public String getSystemPropertyValue() {
+      return systemProperty;
+    }
+  }
+
+  static class SystemLoadImpl extends AbstractPropertyValue implements PropertyValue.SystemLoad {
+    private final double systemLoadAverage;
+
+    public SystemLoadImpl(PropertyKey key, Object nodeValue) {
+      super(key);
+      this.systemLoadAverage = ((Number) nodeValue).doubleValue();
+    }
+
+    @Override
+    public double getSystemLoadAverage() {
+      return systemLoadAverage;
+    }
+  }
+
+  static class TotalDiskImpl extends AbstractPropertyValue implements PropertyValue.TotalDisk {
+    private final long totalDiskGB;
+
+    public TotalDiskImpl(PropertyKey key, Object nodeValue) {
+      super(key);
+      this.totalDiskGB = ((Number) nodeValue).longValue();
+    }
+
+    @Override
+    public long getTotalSizeGB() {
+      return totalDiskGB;
+    }
   }
 }

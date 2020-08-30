@@ -28,48 +28,48 @@ import java.util.Set;
 
 class PropertyKeyFactoryImpl implements PropertyKeyFactory {
     @Override
-    public CoreCountKeyImpl createCoreCountKey(Node node) {
-        return new CoreCountKeyImpl(node);
+    public PropertyKey createCoreCountKey(Node node) {
+        return new AbstractNodePropertyKey.CoreCountImpl(node);
     }
 
     @Override
-    public FreeDiskKeyImpl createFreeDiskKey(Node node) {
-        return new FreeDiskKeyImpl(node);
+    public PropertyKey createFreeDiskKey(Node node) {
+        return new AbstractNodePropertyKey.FreeDiskImpl(node);
     }
 
     @Override
-    public TotalDiskKeyImpl createTotalDiskKey(Node node) {
-        return new TotalDiskKeyImpl(node);
+    public PropertyKey createTotalDiskKey(Node node) {
+        return new AbstractNodePropertyKey.TotalDiskImpl(node);
     }
 
     @Override
-    public DiskTypeKeyImpl createDiskTypeKey(Node node) {
-        return new DiskTypeKeyImpl(node);
+    public PropertyKey createDiskTypeKey(Node node) {
+        return new AbstractNodePropertyKey.DiskTypeImpl(node);
     }
 
     @Override
-    public SyspropKeyImpl createSyspropKey(Node node, String syspropName) {
-        return new SyspropKeyImpl(node, syspropName);
+    public PropertyKey createSyspropKey(Node node, String syspropName) {
+        return new AbstractNodePropertyKey.SyspropImpl(node, syspropName);
     }
 
     @Override
-    public NonNodeMetricKeyImpl createMetricKey(PropertyValueSource metricSource, String metricName) {
+    public PropertyKey createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry) {
+        return new AbstractNodePropertyKey.NodeMetricImpl(nodeMetricSource, metricName, registry);
+    }
+
+    @Override
+    public PropertyKey createSystemLoadKey(Node node) {
+        return new AbstractNodePropertyKey.SystemLoadImpl(node);
+    }
+
+    @Override
+    public PropertyKey createHeapUsageKey(Node node) {
+        return new AbstractNodePropertyKey.HeapUsageImpl(node);
+    }
+
+    @Override
+    public PropertyKey createMetricKey(PropertyValueSource metricSource, String metricName) {
         return new NonNodeMetricKeyImpl(metricSource, metricName);
-    }
-
-    @Override
-    public NodeMetricKeyImpl createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry) {
-        return new NodeMetricKeyImpl(nodeMetricSource, metricName, registry);
-    }
-
-    @Override
-    public SystemLoadKeyImpl createSystemLoadKey(Node node) {
-        return new SystemLoadKeyImpl(node);
-    }
-
-    @Override
-    public HeapUsageKeyImpl createHeapUsageKey(Node node) {
-        return new HeapUsageKeyImpl(node);
     }
 }
 

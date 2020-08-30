@@ -59,111 +59,115 @@ abstract class AbstractNodePropertyKey implements PropertyKey {
   /**
    * Given the object returned by {@link org.apache.solr.client.solrj.cloud.NodeStateProvider#getNodeValues(String, Collection)}
    * for the tag {@link #getNodeSnitchTag()}, builds the appropriate {@link PropertyValue} representing that value.
+   *
    * @param nodeValue the value to convert. Is never {@code null}.
    */
-  public abstract PropertyValue getPropertyValueFromNodeValue(Object nodeValue);
-}
+  abstract PropertyValue getPropertyValueFromNodeValue(Object nodeValue);
 
 
-class CoreCountKeyImpl extends AbstractNodePropertyKey {
-  public CoreCountKeyImpl(Node node) {
-    super(node, ImplicitSnitch.CORES);
-  }
+  static class CoreCountImpl extends AbstractNodePropertyKey {
+    public CoreCountImpl(Node node) {
+      super(node, ImplicitSnitch.CORES);
+    }
 
-  @Override
-  public CoresCountPropertyValueImpl getPropertyValueFromNodeValue(final Object nodeValue) {
-    return new CoresCountPropertyValueImpl(this, nodeValue);
-  }
-}
-
-class DiskTypeKeyImpl extends AbstractNodePropertyKey {
-  public DiskTypeKeyImpl(Node node) {
-    super(node, ImplicitSnitch.DISKTYPE);
-  }
-
-  @Override
-  public DiskTypePropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new DiskTypePropertyValueImpl(this, nodeValue);
-  }
-}
-
-class FreeDiskKeyImpl extends AbstractNodePropertyKey {
-  public FreeDiskKeyImpl(Node node) {
-    super(node, ImplicitSnitch.DISK);
-  }
-
-  @Override
-  public FreeDiskPropertyValueImpl getPropertyValueFromNodeValue(Object nodeValue) {
-    return new FreeDiskPropertyValueImpl(this, nodeValue);
-  }
-}
-
-class HeapUsageKeyImpl extends AbstractNodePropertyKey {
-  public HeapUsageKeyImpl(Node node) {
-    super(node, ImplicitSnitch.HEAPUSAGE);
-  }
-
-  @Override
-  public HeapUsagePropertyValueImpl getPropertyValueFromNodeValue(Object nodeValue) {
-    return new HeapUsagePropertyValueImpl(this, nodeValue);
-  }
-}
-
-class NodeMetricKeyImpl extends AbstractNodePropertyKey {
-  public NodeMetricKeyImpl(Node nodeMetricSource, String metricName, PropertyKeyFactory.NodeMetricRegistry registry) {
-    super(nodeMetricSource, SolrClientNodeStateProvider.METRICS_PREFIX + SolrMetricManager.getRegistryName(getGroupFromRegistry(registry), metricName));
-  }
-
-  private static SolrInfoBean.Group getGroupFromRegistry(PropertyKeyFactory.NodeMetricRegistry registry) {
-    switch(registry) {
-      case SOLR_JVM:
-        return SolrInfoBean.Group.jvm;
-      case SOLR_NODE:
-        return SolrInfoBean.Group.node;
-      default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unsupported registry value " + registry);
+    @Override
+    PropertyValue.CoresCount getPropertyValueFromNodeValue(final Object nodeValue) {
+      return new AbstractPropertyValue.CoresCountImpl(this, nodeValue);
     }
   }
 
-  @Override
-  public PropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new MetricPropertyValueImpl(this, nodeValue);
+  static class DiskTypeImpl extends AbstractNodePropertyKey {
+    public DiskTypeImpl(Node node) {
+      super(node, ImplicitSnitch.DISKTYPE);
+    }
+
+    @Override
+    PropertyValue.DiskType getPropertyValueFromNodeValue(Object nodeValue) {
+      return new AbstractPropertyValue.DiskTypeImpl(this, nodeValue);
+    }
+  }
+
+  static class FreeDiskImpl extends AbstractNodePropertyKey {
+    public FreeDiskImpl(Node node) {
+      super(node, ImplicitSnitch.DISK);
+    }
+
+    @Override
+    PropertyValue.FreeDisk getPropertyValueFromNodeValue(Object nodeValue) {
+      return new AbstractPropertyValue.FreeDiskImpl(this, nodeValue);
+    }
+  }
+
+  static class HeapUsageImpl extends AbstractNodePropertyKey {
+    public HeapUsageImpl(Node node) {
+      super(node, ImplicitSnitch.HEAPUSAGE);
+    }
+
+    @Override
+    PropertyValue.HeapUsage getPropertyValueFromNodeValue(Object nodeValue) {
+      return new AbstractPropertyValue.HeapUsageImpl(this, nodeValue);
+    }
+  }
+
+  static class NodeMetricImpl extends AbstractNodePropertyKey {
+    public NodeMetricImpl(Node nodeMetricSource, String metricName, PropertyKeyFactory.NodeMetricRegistry registry) {
+      super(nodeMetricSource, SolrClientNodeStateProvider.METRICS_PREFIX + SolrMetricManager.getRegistryName(getGroupFromRegistry(registry), metricName));
+    }
+
+    private static SolrInfoBean.Group getGroupFromRegistry(PropertyKeyFactory.NodeMetricRegistry registry) {
+      switch (registry) {
+        case SOLR_JVM:
+          return SolrInfoBean.Group.jvm;
+        case SOLR_NODE:
+          return SolrInfoBean.Group.node;
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unsupported registry value " + registry);
+      }
+    }
+
+    @Override
+    PropertyValue.Metric getPropertyValueFromNodeValue(Object nodeValue) {
+      return new AbstractPropertyValue.MetricImpl(this, nodeValue);
+    }
+  }
+
+  static class SyspropImpl extends AbstractNodePropertyKey {
+    public SyspropImpl(Node node, String syspropName) {
+      super(node, ImplicitSnitch.SYSPROP + syspropName);
+    }
+
+    @Override
+    PropertyValue.Sysprop getPropertyValueFromNodeValue(Object nodeValue) {
+      return new AbstractPropertyValue.SyspropImpl(this, nodeValue);
+    }
+  }
+
+  static class SystemLoadImpl extends AbstractNodePropertyKey {
+    public SystemLoadImpl(Node node) {
+      super(node, ImplicitSnitch.SYSLOADAVG);
+    }
+
+    @Override
+    PropertyValue.SystemLoad getPropertyValueFromNodeValue(Object nodeValue) {
+      return new AbstractPropertyValue.SystemLoadImpl(this, nodeValue);
+    }
+  }
+
+  static class TotalDiskImpl extends AbstractNodePropertyKey {
+    public TotalDiskImpl(Node node) {
+      super(node, SolrClientNodeStateProvider.Variable.TOTALDISK.tagName);
+    }
+
+    @Override
+    public PropertyValue.TotalDisk getPropertyValueFromNodeValue(Object nodeValue) {
+      return new AbstractPropertyValue.TotalDiskImpl(this, nodeValue);
+    }
   }
 }
 
-class SyspropKeyImpl extends AbstractNodePropertyKey {
-  public SyspropKeyImpl(Node node, String syspropName) {
-    super(node, ImplicitSnitch.SYSPROP + syspropName);
-  }
-
-  @Override
-  public SyspropPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new SyspropPropertyValueImpl(this, nodeValue);
-  }
-}
-
-class SystemLoadKeyImpl extends AbstractNodePropertyKey {
-  public SystemLoadKeyImpl(Node node) {
-    super(node, ImplicitSnitch.SYSLOADAVG);
-  }
-
-  @Override
-  public SystemLoadPropertyValue getPropertyValueFromNodeValue(Object nodeValue) {
-    return new SystemLoadPropertyValueImpl(this, nodeValue);
-  }
-}
-
-class TotalDiskKeyImpl extends AbstractNodePropertyKey {
-  public TotalDiskKeyImpl(Node node) {
-    super(node, SolrClientNodeStateProvider.Variable.TOTALDISK.tagName);
-  }
-
-  @Override
-  public TotalDiskPropertyValueImpl getPropertyValueFromNodeValue(Object nodeValue) {
-    return new TotalDiskPropertyValueImpl(this, nodeValue);
-  }
-}
-
+/**
+ * This class (as its name implies) is not a {@link Node} metric. Therefore it doesn't extend {@link AbstractNodePropertyKey}.
+ */
 class NonNodeMetricKeyImpl implements PropertyKey {
   private final String metricName;
   private final PropertyValueSource metricSource;

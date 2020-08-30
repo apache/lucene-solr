@@ -29,4 +29,116 @@ public interface PropertyValue {
    * The property key used for retrieving this property value.
    */
   PropertyKey getKey();
+
+  /**
+   *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createCoreCountKey} then calling
+   *  {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
+   *  using the {@link PropertyKey} as key and finally casting it to {@link PropertyValue.CoresCount}.
+   */
+  interface CoresCount extends PropertyValue {
+    /**
+     * Returns the number of cores on the {@link Node}) this instance was obtained from (i.e. instance
+     * passed to {@link PropertyKeyFactory#createCoreCountKey(Node)}).
+     */
+    int getCoresCount();
+  }
+
+  /**
+   *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createDiskTypeKey} then getting the
+   *  {@link org.apache.solr.cluster.placement.PropertyValue.DiskType} using {@link PropertyValueFetcher#fetchProperties} and retrieving (then casting) the
+   *  appropriate {@link PropertyValue} from the returned map using the {@link PropertyKey} as key.
+   */
+  interface DiskType extends PropertyValue {
+    /**
+     * Type of storage hardware used for the partition on which cores are stored on the {@link Node}) from which this instance
+     * was obtained (i.e. instance passed to {@link PropertyKeyFactory#createDiskTypeKey(Node)}).
+     */
+    HardwareType getHardwareType();
+
+    enum HardwareType {
+      SSD, ROTATIONAL, UNKNOWN
+    }
+  }
+
+  /**
+   *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createTotalDiskKey(Node)} (Node)} then getting the
+   *  {@link org.apache.solr.cluster.placement.PropertyValue.TotalDisk} using {@link PropertyValueFetcher#fetchProperties} and retrieving (then casting) the
+   *  appropriate {@link PropertyValue} fetched from the returned map using the {@link PropertyKey} as key.
+   */
+  interface TotalDisk extends PropertyValue {
+    /**
+     * Total disk size of the partition on which cores are stored on the {@link Node}) from which this instance was obtained
+     * (i.e. instance passed to {@link PropertyKeyFactory#createTotalDiskKey(Node)}).
+     */
+    long getTotalSizeGB();
+  }
+
+  /**
+   *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createFreeDiskKey(Node)} then getting the
+   *  {@link org.apache.solr.cluster.placement.PropertyValue.FreeDisk} using {@link PropertyValueFetcher#fetchProperties} and retrieving (then casting) the
+   *  appropriate {@link PropertyValue} fetched from the returned map using the {@link PropertyKey} as key.
+   */
+  interface FreeDisk extends PropertyValue {
+    /**
+     * Free disk size of the partition on which cores are stored on the {@link Node}) from which this instance was obtained
+     *  (i.e. instance passed to {@link PropertyKeyFactory#createDiskTypeKey(Node)}).
+     */
+    long getFreeSizeGB();
+  }
+
+
+  /**
+   *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createHeapUsageKey(Node)} then calling
+   *  {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
+   *  using the {@link PropertyKey} as key and finally casting it to {@link org.apache.solr.cluster.placement.PropertyValue.HeapUsage}.
+   */
+  interface HeapUsage extends PropertyValue {
+
+    /**
+     * Percentage between 0 and 100 of used heap over max heap.
+     */
+    double getUsedHeapMemoryUsage();
+  }
+
+  /**
+   * A {@link PropertyValue} representing a metric on the target {@link PropertyValueSource}.
+   *
+   * <p>Instances are obtained by first getting a key using {@link PropertyKeyFactory#createMetricKey(PropertyValueSource, String)}
+   * or {@link PropertyKeyFactory#createMetricKey(Node, String, PropertyKeyFactory.NodeMetricRegistry)} then calling
+   * {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
+   * using the {@link PropertyKey} as key and finally casting it to {@link org.apache.solr.cluster.placement.PropertyValue.Metric}.
+   */
+  interface Metric extends PropertyValue {
+    /**
+     * Returns the metric value from the {@link PropertyValueSource} from which it was retrieved.
+     */
+    Double getNumberValue();
+  }
+
+  /**
+   * A {@link PropertyValue} representing a sysprop (or System property) on the target {@link Node}.
+   *
+   *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createSyspropKey} then calling
+   *  {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
+   *  using the {@link PropertyKey} as key and finally casting it to {@link org.apache.solr.cluster.placement.PropertyValue.Sysprop}.
+   */
+  interface Sysprop extends PropertyValue {
+    /**
+     * Returns the system property value from the target {@link Node} from which it was retrieved.
+     */
+    String getSystemPropertyValue();
+  }
+
+  /**
+   *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createSystemLoadKey} then calling
+   *  {@link PropertyValueFetcher#fetchProperties}, retrieving the appropriate {@link PropertyValue} from the returned map
+   *  using the {@link PropertyKey} as key and finally casting it to {@link org.apache.solr.cluster.placement.PropertyValue.SystemLoad}.
+   */
+  interface SystemLoad extends PropertyValue {
+    /**
+     * Matches {@link java.lang.management.OperatingSystemMXBean#getSystemLoadAverage()}
+     */
+    double getSystemLoadAverage();
+  }
+
 }
