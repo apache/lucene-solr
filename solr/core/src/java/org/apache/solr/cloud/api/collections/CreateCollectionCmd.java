@@ -194,7 +194,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ocmh.zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (n, c) -> c != null);
 
       // refresh cluster state
-      clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
+      clusterState = ocmh.zkStateReader.getClusterState();
 
       List<ReplicaPosition> replicaPositions = null;
 //      try {
