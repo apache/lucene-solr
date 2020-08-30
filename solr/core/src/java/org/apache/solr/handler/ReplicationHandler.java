@@ -1170,6 +1170,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   Properties loadReplicationProperties() {
     Directory dir = null;
     try {
+      InputStreamReader isr = null;
+      InputStream is = null;
       try {
         dir = core.getDirectoryFactory().get(core.getDataDir(),
             DirContext.META_DATA, core.getSolrConfig().indexConfig.lockType);
@@ -1182,17 +1184,26 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
 
         try {
-          final InputStream is = new PropertiesInputStream(input);
+          is = new PropertiesInputStream(input);
           Properties props = new Properties();
-          props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+          isr = new InputStreamReader(is, StandardCharsets.UTF_8);
+          props.load(isr);
           return props;
         } finally {
-          input.close();
+          org.apache.solr.common.util.IOUtils.closeQuietly(input);
         }
       } finally {
-        if (dir != null) {
-          core.getDirectoryFactory().doneWithDirectory(dir);
-          core.getDirectoryFactory().release(dir);
+        try {
+          if (dir != null) {
+            try {
+              core.getDirectoryFactory().doneWithDirectory(dir);
+            } finally {
+              core.getDirectoryFactory().release(dir);
+            }
+          }
+        } finally {
+          org.apache.solr.common.util.IOUtils.closeQuietly(isr);
+          org.apache.solr.common.util.IOUtils.closeQuietly(is);
         }
       }
     } catch (IOException e) {
