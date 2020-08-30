@@ -79,7 +79,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
       // wait and try again for slower/busier machines
       // and/or parallel test effects.
       
-      if (cnt++ == 10) {
+      if (cnt++ == 20) {
         break;
       }
       
