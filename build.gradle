@@ -96,13 +96,6 @@ ext {
       "python2": propertyOrDefault('python2.exe', 'python2'),
       "perl": propertyOrDefault('perl.exe', 'perl'),
   ]
-
-  // default is to require full javadocs
-  javadocMissingLevel = "method"
-  // anything in these packages is checked with level=method. This allows iteratively fixing one package at a time.
-  javadocMissingMethod = []
-  // default is not to ignore any elements, should only be used to workaround split packages
-  javadocMissingIgnore = []
 }
 
 // Include smaller chunks configuring dedicated build areas.

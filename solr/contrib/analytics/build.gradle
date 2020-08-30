@@ -23,12 +23,3 @@ dependencies {
   implementation project(':solr:core')
   testImplementation project(':solr:test-framework')
 }
-
-ext {
-  // TODO: clean up split packages
-  javadocMissingIgnore = [
-    "org.apache.solr.handler",
-    "org.apache.solr.handler.component",
-    "org.apache.solr.response"
-  ]
-}

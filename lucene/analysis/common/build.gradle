@@ -23,10 +23,3 @@ dependencies {
   api project(':lucene:core')
   testImplementation project(':lucene:test-framework')
 }
-
-ext {
-  // TODO: fix missing javadocs
-  javadocMissingLevel = "class"
-  // TODO: clean up split packages
-  javadocMissingIgnore = [ "org.apache.lucene.analysis.standard" ]
-}

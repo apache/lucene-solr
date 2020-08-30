@@ -30,9 +30,3 @@ dependencies {
   testImplementation project(':lucene:analysis:common')
   testImplementation project(':lucene:queryparser')
 }
-
-ext {
-  // TODO: fix missing javadocs
-  javadocMissingLevel = "class"
-}
-

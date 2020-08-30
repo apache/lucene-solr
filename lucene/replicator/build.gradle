@@ -37,7 +37,3 @@ dependencies {
   testImplementation project(':lucene:test-framework')
 }
 
-ext {
-  // TODO: fix missing javadocs
-  javadocMissingLevel = "class"
-}

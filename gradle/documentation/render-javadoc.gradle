@@ -68,6 +68,8 @@ allprojects {
 // (they may be unused but this doesn't do any harm).
 def javaJavadocPackages = project.project(':lucene').file('tools/javadoc/java11/')
 def junitJavadocPackages = project.project(':lucene').file('tools/javadoc/junit/')
+
+// Configure task defaults for all projects.
 allprojects {
   project.tasks.withType(RenderJavadocTask) {
     title = "${project.path.startsWith(':lucene') ? 'Lucene' : 'Solr'} ${project.version} ${project.name} API"
@@ -75,6 +77,208 @@ allprojects {
     offlineLinks += [
         "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
         "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
+    ]
+  }
+}
+
+// Configure project-specific tweaks and to-dos.
+
+configure(project(":lucene:analysis:common")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: fix missing javadocs
+    javadocMissingLevel = "class"
+    // TODO: clean up split packages
+    javadocMissingIgnore = [ "org.apache.lucene.analysis.standard" ]
+  }
+}
+
+configure([
+    project(":lucene:analysis:kuromoji"),
+    project(":lucene:analysis:nori"),
+    project(":lucene:analysis:opennlp"),
+    project(":lucene:analysis:smartcn"),
+    project(":lucene:benchmark"),
+    project(":lucene:codecs"),
+    project(":lucene:grouping"),
+    project(":lucene:highlighter"),
+    project(":lucene:luke"),
+    project(":lucene:monitor"),
+    project(":lucene:queries"),
+    project(":lucene:queryparser"),
+    project(":lucene:replicator"),
+    project(":lucene:spatial-extras"),
+  ]) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: fix missing javadocs
+    javadocMissingLevel = "class"
+  }
+}
+
+configure(project(":lucene:analysis:icu")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.lucene.collation",
+        "org.apache.lucene.collation.tokenattributes"
+    ]
+  }
+}
+
+configure(project(":lucene:backward-codecs")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.lucene.codecs",
+        "org.apache.lucene.codecs.lucene50",
+        "org.apache.lucene.codecs.lucene60",
+        "org.apache.lucene.codecs.lucene80",
+        "org.apache.lucene.codecs.lucene84",
+        "org.apache.lucene.codecs.lucene86"
+    ]
+  }
+}
+
+configure(project(":lucene:test-framework")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: fix missing javadocs
+    javadocMissingLevel = "class"
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.lucene.analysis",
+        "org.apache.lucene.analysis.standard",
+        "org.apache.lucene.codecs",
+        "org.apache.lucene.codecs.blockterms",
+        "org.apache.lucene.codecs.bloom",
+        "org.apache.lucene.codecs.compressing",
+        "org.apache.lucene.codecs.uniformsplit",
+        "org.apache.lucene.codecs.uniformsplit.sharedterms",
+        "org.apache.lucene.geo",
+        "org.apache.lucene.index",
+        "org.apache.lucene.search",
+        "org.apache.lucene.search.similarities",
+        "org.apache.lucene.search.spans",
+        "org.apache.lucene.store",
+        "org.apache.lucene.util",
+        "org.apache.lucene.util.automaton",
+        "org.apache.lucene.util.fst"
+    ]
+  }
+}
+
+configure(project(":lucene:sandbox")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: fix missing javadocs
+    javadocMissingLevel = "class"
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.lucene.search",
+        "org.apache.lucene.document"
+    ]
+  }
+}
+
+configure(project(":lucene:misc")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: fix missing javadocs
+    javadocMissingLevel = "class"
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.lucene.search",
+        "org.apache.lucene.search.similarity",
+        "org.apache.lucene.util",
+        "org.apache.lucene.util.fst",
+        "org.apache.lucene.store",
+        "org.apache.lucene.document",
+        "org.apache.lucene.index"
+    ]
+  }
+}
+
+configure(project(":lucene:core")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: fix missing javadocs
+    javadocMissingLevel = "class"
+    // some packages are fixed already
+    javadocMissingMethod = [
+        "org.apache.lucene.util.automaton",
+        "org.apache.lucene.analysis",
+        "org.apache.lucene.analysis.standard",
+        "org.apache.lucene.analysis.tokenattributes",
+        "org.apache.lucene.document",
+        "org.apache.lucene.search.similarities",
+        "org.apache.lucene.index",
+        "org.apache.lucene.codecs",
+        "org.apache.lucene.codecs.lucene50",
+        "org.apache.lucene.codecs.lucene60",
+        "org.apache.lucene.codecs.lucene80",
+        "org.apache.lucene.codecs.lucene84",
+        "org.apache.lucene.codecs.lucene86",
+        "org.apache.lucene.codecs.lucene87",
+        "org.apache.lucene.codecs.perfield"
+    ]
+  }
+}
+
+configure(project(":solr")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: fix missing javadocs
+    javadocMissingLevel = "package"
+  }
+}
+
+configure(project(":solr:contrib:velocity")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [ "org.apache.solr.response" ]
+  }
+}
+
+configure(project(":solr:contrib:analysis-extras")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.solr.schema",
+        "org.apache.solr.update.processor"
+    ]
+  }
+}
+
+configure(project(":solr:contrib:analytics")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.solr.handler",
+        "org.apache.solr.handler.component",
+        "org.apache.solr.response"
+    ]
+  }
+}
+
+configure(project(":solr:contrib:langid")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [ "org.apache.solr.update.processor" ]
+  }
+}
+
+configure(project(":solr:solrj")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [ "org.apache.solr.client.solrj.embedded" ]
+  }
+}
+
+configure(project(":solr:test-framework")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.solr",
+        "org.apache.solr.analysis",
+        "org.apache.solr.cloud",
+        "org.apache.solr.core",
+        "org.apache.solr.handler.component",
+        "org.apache.solr.update.processor",
+        "org.apache.solr.util"
     ]
   }
 }
@@ -154,6 +358,19 @@ class RenderJavadocTask extends DefaultTask {
   @Input
   def solrDocUrl = "${->project.solrDocUrl}"
 
+  // default is to require full javadocs
+  @Input
+  String javadocMissingLevel = "method"
+
+  // anything in these packages is checked with level=method. This allows iteratively fixing one package at a time.
+  @Input
+  List<String> javadocMissingMethod = []
+
+  // default is not to ignore any elements, should only be used to workaround split packages
+  @Input
+  List<String> javadocMissingIgnore = []
+
+
   @Nullable
   @Optional
   @Input
@@ -206,15 +423,17 @@ class RenderJavadocTask extends DefaultTask {
     opts << [ '-tag', 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.' ]
     opts << [ '-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.' ]
     opts << [ '-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)." ]
+
     opts << [ '-doclet', MissingDoclet.class.getName() ]
     opts << [ '-docletpath', project.rootProject.file("buildSrc/build/classes/java/main") ]
-    opts << [ '--missing-level', project.javadocMissingLevel ]
-    if (project.javadocMissingIgnore.size > 0) {
-      opts << [ '--missing-ignore', String.join(',', project.javadocMissingIgnore) ]
+    opts << [ '--missing-level', javadocMissingLevel ]
+    if (javadocMissingIgnore) {
+      opts << [ '--missing-ignore', String.join(',', javadocMissingIgnore) ]
     }
-    if (project.javadocMissingMethod.size > 0) {
-      opts << [ '--missing-method', String.join(',', project.javadocMissingMethod) ]
+    if (javadocMissingMethod) {
+      opts << [ '--missing-method', String.join(',', javadocMissingMethod) ]
     }
+
     opts << [ '-quiet' ]
 
     def allOfflineLinks = [:]

@@ -32,8 +32,4 @@ dependencies {
   testImplementation 'org.locationtech.spatial4j:spatial4j::tests'
 }
 
-ext {
-  // TODO: fix missing javadocs
-  javadocMissingLevel = "class"
-}
 

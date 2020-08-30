@@ -26,7 +26,3 @@ dependencies {
   testImplementation project(':lucene:expressions')
 }
 
-ext {
-  // TODO: fix missing javadocs
-  javadocMissingLevel = "class"
-}

@@ -21,8 +21,4 @@ subprojects {
   group "org.apache.solr"
 }
 
-ext {
-  // TODO: fix missing javadocs
-  javadocMissingLevel = "package"
-}
 

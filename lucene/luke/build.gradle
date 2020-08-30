@@ -24,8 +24,6 @@ description = 'Luke - Lucene Toolbox'
 
 ext {
   standaloneDistDir = file("$buildDir/${archivesBaseName}-${project.version}")
-  // TODO: fix missing javadocs
-  javadocMissingLevel = "class"
 }
 
 configurations {

@@ -23,26 +23,3 @@ dependencies {
   testImplementation project(':lucene:codecs')
   testImplementation project(':lucene:test-framework')
 }
-
-ext {
-  // TODO: fix missing javadocs
-  javadocMissingLevel = "class"
-  // some packages are fixed already
-  javadocMissingMethod = [
-    "org.apache.lucene.util.automaton",
-    "org.apache.lucene.analysis",
-    "org.apache.lucene.analysis.standard",
-    "org.apache.lucene.analysis.tokenattributes",
-    "org.apache.lucene.document",
-    "org.apache.lucene.search.similarities",
-    "org.apache.lucene.index",
-    "org.apache.lucene.codecs",
-    "org.apache.lucene.codecs.lucene50",
-    "org.apache.lucene.codecs.lucene60",
-    "org.apache.lucene.codecs.lucene80",
-    "org.apache.lucene.codecs.lucene84",
-    "org.apache.lucene.codecs.lucene86",
-    "org.apache.lucene.codecs.lucene87",
-    "org.apache.lucene.codecs.perfield"
-  ]
-}
