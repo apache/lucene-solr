@@ -271,8 +271,8 @@ public class Assign {
   // can't allocate valid positions.
   @SuppressWarnings({"unchecked"})
   public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, CloudConfig cloudConfig, String collectionName,
-                                                             String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
-                                                             Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
+                                                          String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
+                                                          Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
     log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
         , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
     DocCollection coll = clusterState.getCollection(collectionName);
