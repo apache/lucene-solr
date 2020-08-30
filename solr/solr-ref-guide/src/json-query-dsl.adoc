@@ -431,9 +431,10 @@ Note that the tags created in the example above have no impact in how the search
 
 == Faceting Nested Documents
 
-This paragraph binds many features together. Basically it's an example of filter exclusions for nested documents when facets are counted over children document (referred as SKUs in example below) fields, but facet counts rolls up in parent document counts. Let's go on item by item:
+This paragraph binds many features together. Basically it's an example of filter exclusions for nested documents when facets are counted over child document  fields, but facet counts roll up in parent document counts. Let's go on item by item:
+
  - _filter exclusion_ is usually necessary when multiple filter values are available for applying per field, it's also known as drill-sideway facets. See <<faceting.adoc#tagging-and-excluding-filters,the classic example>> of filter exclusion
- - _nested documents_ or children documents are described in <<other-parsers.adoc#block-join-query-parsers>>
+ - _nested documents_ or children documents are described in <<other-parsers.adoc#block-join-query-parsers>>. Note: they are referred as SKUs in example below appealing to the most frequent usecase for this feature.
  - _counting facets over children documents_ means that despite the result of the search are parent documents usually, the children documents and its' fields are used for faceting
  - _facet counts roll up_ means that even children documents contribute facet hits, one counts parent documents they are linked to eg if a parent doc has two (2) red children, it's counted as one (1) due to rollup.     
 
@@ -472,11 +473,11 @@ This paragraph binds many features together. Basically it's an example of filter
     }
 }
 ----
-<1> define parents' filter via <<Additional Queries,additional queries>> for later usages
+<1> define parents' filter via <<Additional Queries>> for later usages
 <2> declares two SKU filters under different #tags <<Tagging in JSON Query DSL>>
 <3> tag block join query for later exclusion
-<4> block join query joins SKUs to top level docs. See <<other-parsers.adoc#block-join-parent-query-parser>>
-<5> referring to parent documents query. See <<Additional Queries,additional queries>>
+<4> block join query joins SKUs to top level docs. See <<other-parsers.adoc#block-join-parent-query-parser,Block Join Query Parser>>
+<5> referring to parent documents query. See <<Additional Queries>>
 <6> referring to both SKU filter queries 
 <7> calculating drill-sideway facet over SKU documents
 <8> selecting SKU level field for faceting
