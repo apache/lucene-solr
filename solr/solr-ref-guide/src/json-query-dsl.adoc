@@ -472,11 +472,11 @@ This paragraph binds many features together. Basically it's an example of filter
     }
 }
 ----
-<1> define parents' filter via <<additiional queries>> for later usages
+<1> define parents' filter via <<additional queries>> for later usages
 <2> declares two SKU filters under different #tags <<Tagging in JSON Query DSL>>
 <3> tag block join query for later exclusion
 <4> block join query joins SKUs to top level docs. See <<other-parsers.adoc#block-join-parent-query-parser>>
-<5> referring to parent documents query. See <<additiional queries>>
+<5> referring to parent documents query. See <<additional queries>>
 <6> referring to both SKU filter queries 
 <7> calculating drill-sideway facet over SKU documents
 <8> selecting SKU level field for faceting
