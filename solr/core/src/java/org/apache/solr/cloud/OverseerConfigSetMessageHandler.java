@@ -26,6 +26,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -92,7 +93,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
+  public OverseerSolrResponse processMessage(ZkNodeProps message, CloudConfig cloudConfig, String operation) {
     @SuppressWarnings({"rawtypes"})
     NamedList results = new NamedList();
     try {

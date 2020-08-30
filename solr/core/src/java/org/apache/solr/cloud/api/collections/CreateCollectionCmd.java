@@ -63,6 +63,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
@@ -101,7 +102,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     if (ocmh.zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       ocmh.zkStateReader.aliasesManager.update();
     }
@@ -185,10 +186,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       List<ReplicaPosition> replicaPositions = null;
       try {
-        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName), message, shardNames);
+        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, cloudConfig, clusterState.getCollection(collectionName), message, shardNames);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
-        new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
+        new DeleteCollectionCmd(ocmh).call(clusterState, cloudConfig, deleteMessage, results);
         // unwrap the exception
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
       }
@@ -219,7 +220,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                 ZkStateReader.SHARD_ID_PROP, withCollectionShard,
                 "node", nodeName,
                 CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
-            new AddReplicaCmd(ocmh).call(clusterState, props, results);
+            new AddReplicaCmd(ocmh).call(clusterState, cloudConfig, props, results);
             clusterState = zkStateReader.getClusterState(); // refresh
           }
         }
@@ -292,7 +293,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
         // element, which may be interpreted by the user as a positive ack
-        ocmh.cleanupCollection(collectionName, new NamedList<Object>());
+        ocmh.cleanupCollection(cloudConfig, collectionName, new NamedList<Object>());
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName);
       } else {
@@ -336,7 +337,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
   }
 
-  public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
+  public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState, CloudConfig cloudConfig,
                                                             DocCollection docCollection,
                                                             ZkNodeProps message,
                                                             List<String> shardNames) throws IOException, InterruptedException, Assign.AssignmentException {
@@ -379,7 +380,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           .onNodes(nodeList)
           .build();
       Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(cloudManager);
-      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, docCollection);
+      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, cloudConfig, docCollection);
       replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
     }
     return replicaPositions;
