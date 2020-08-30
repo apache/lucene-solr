@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.ParWork;
@@ -84,30 +85,6 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
-  private XMLInputFactory inputFactory;
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    super.init(args);
-
-    inputFactory = XMLInputFactory.newInstance();
-    EmptyEntityResolver.configureXpathFactory(inputFactory);
-    inputFactory.setXMLReporter(xmllog);
-    try {
-      // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
-      // XMLInputFactory, as that implementation tries to cache and reuse the
-      // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false
-      // prevents this.
-      // All other known open-source stax parsers (and the bea ref impl)
-      // have thread-safe factories.
-      inputFactory.setProperty("reuse-instance", Boolean.FALSE);
-    } catch (IllegalArgumentException ex) {
-      // Other implementations will likely throw this exception since "reuse-instance"
-      // is implementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input factory: {}", inputFactory);
-    }
-  }
-
   @Override
   @SuppressWarnings({"rawtypes"})
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
@@ -152,8 +129,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     try {
       is = stream.getStream();
       final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
-      parser = (charset == null) ?
-        inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
+      parser = (charset == null) ? XMLResponseParser.inputFactory.createXMLStreamReader(is) : XMLResponseParser.inputFactory.createXMLStreamReader(is, charset);
 
       while (true) {
         int event = parser.next();

@@ -34,6 +34,8 @@ dependencies {
   api 'org.eclipse.jetty:jetty-alpn-java-client'
   api 'org.eclipse.jetty:jetty-alpn-client'
 
+  api 'com.fasterxml.woodstox:woodstox-core'
+
   api('org.apache.httpcomponents:httpmime', {
     exclude group: "commons-codec", module: "commons-codec"
     exclude group: "commons-logging", module: "commons-logging"

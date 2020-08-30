@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -29,6 +30,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import com.ctc.wstx.sax.WstxSAXParserFactory;
+import com.ctc.wstx.stax.WstxInputFactory;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrDocument;
@@ -37,6 +40,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.XMLErrorLogger;
+import org.codehaus.stax2.XMLStreamReader2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,28 +55,16 @@ public class XMLResponseParser extends ResponseParser
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
-  // reuse the factory among all parser instances so things like string caches
-  // won't be duplicated
-  static final XMLInputFactory factory;
+  public final static WstxInputFactory inputFactory = new WstxInputFactory();
+  public final static SAXParserFactory saxFactory;
   static {
-    factory = XMLInputFactory.newInstance();
-    EmptyEntityResolver.configureXpathFactory(factory);
+    inputFactory.setXMLReporter(xmllog);
+    inputFactory.configureForSpeed();
+    EmptyEntityResolver.configureInputFactory(inputFactory);
 
-    try {
-      // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
-      // XMLInputFactory, as that implementation tries to cache and reuse the
-      // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false
-      // prevents this.
-      // All other known open-source stax parsers (and the bea ref impl)
-      // have thread-safe factories.
-      factory.setProperty("reuse-instance", Boolean.FALSE);
-    }
-    catch( IllegalArgumentException ex ) {
-      // Other implementations will likely throw this exception since "reuse-instance"
-      // isimplementation specific.
-      log.debug( "Unable to set the 'reuse-instance' property for the input factory: {}", factory );
-    }
-    factory.setXMLReporter(xmllog);
+    saxFactory = new WstxSAXParserFactory(inputFactory);
+    saxFactory.setNamespaceAware(true);
+    EmptyEntityResolver.configureSAXParserFactory(saxFactory);
   }
 
   public XMLResponseParser() {}
@@ -90,9 +82,10 @@ public class XMLResponseParser extends ResponseParser
 
   @Override
   public NamedList<Object> processResponse(Reader in) {
-    XMLStreamReader parser = null;
+    XMLStreamReader2 parser = null;
     try {
-      parser = factory.createXMLStreamReader(in);
+      parser = (XMLStreamReader2) inputFactory.createXMLStreamReader(in);
+      parser.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
     } catch (XMLStreamException e) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
     }
@@ -105,7 +98,7 @@ public class XMLResponseParser extends ResponseParser
   {
      XMLStreamReader parser = null;
     try {
-      parser = factory.createXMLStreamReader(in, encoding);
+      parser = inputFactory.createXMLStreamReader(in, encoding);
     } catch (XMLStreamException e) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
     }
@@ -155,7 +148,9 @@ public class XMLResponseParser extends ResponseParser
       try {
         parser.close();
       }
-      catch( Exception ex ){}
+      catch( Exception ex ){
+        log.warn("Exception closing parser", ex);
+      }
     }
   }
 

@@ -29,6 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -110,7 +111,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   static {
     log.warn("expected pre init of xml factories {} {} {} {}", XmlConfigFile.xpathFactory,
-        FieldTypeXmlAdapter.dbf, XMLLoader.inputFactory, XMLLoader.saxFactory);
+        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory);
   }
 
   protected volatile CoreContainer cores;

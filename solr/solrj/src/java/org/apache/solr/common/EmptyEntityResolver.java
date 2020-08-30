@@ -98,7 +98,7 @@ public final class EmptyEntityResolver {
   /** Configures the given {@link XMLInputFactory} to not parse external entities.
    * No further configuration on is needed, all required entity resolvers are configured.
    */
-  public static void configureXpathFactory(XMLInputFactory inputFactory) {
+  public static void configureInputFactory(XMLInputFactory inputFactory) {
     // don't enable validation of DTDs:
     trySetStAXProperty(inputFactory, XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
     // enable this to *not* produce parsing failure on external entities:
@@ -107,7 +107,7 @@ public final class EmptyEntityResolver {
   }
 
 
-  public static void configureXpathFactory(XPathFactory xPathFactory) {
+  public static void configureXPathFactory(XPathFactory xPathFactory) {
     // don't enable validation of DTDs:
     trySetStAXProperty(xPathFactory, XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
     // enable this to *not* produce parsing failure on external entities:

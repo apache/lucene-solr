@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import com.ctc.wstx.stax.WstxInputFactory;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.common.EmptyEntityResolver;
 import javax.xml.stream.XMLInputFactory;
@@ -177,12 +178,21 @@ public class XPathRecordReader {
    * @param handler The callback instance
    */
   public void streamRecords(Reader r, Handler handler) {
+    XMLStreamReader parser = null;
     try {
-      XMLStreamReader parser = factory.createXMLStreamReader(r);
+      parser = XMLResponseParser.inputFactory.createXMLStreamReader(r);
       rootNode.parse(parser, handler, new HashMap<>(),
           new Stack<>(), false);
     } catch (Exception e) {
       throw new RuntimeException(e);
+    } finally {
+      if (parser != null) {
+        try {
+          parser.close();
+        } catch (XMLStreamException e) {
+          log.warn("Exception closing parser", e);
+        }
+      }
     }
   }
 
@@ -631,25 +641,6 @@ public class XPathRecordReader {
       result.add(sb.toString());
     }
     return result;
-  }
-
-  static XMLInputFactory factory = new WstxInputFactory();
-  static {
-    EmptyEntityResolver.configureXpathFactory(factory);
-    factory.setXMLReporter(XMLLOG);
-    try {
-      // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
-      // XMLInputFactory, as that implementation tries to cache and reuse the
-      // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false
-      // prevents this.
-      // All other known open-source stax parsers (and the bea ref impl)
-      // have thread-safe factories.
-      factory.setProperty("reuse-instance", Boolean.FALSE);
-    } catch (IllegalArgumentException ex) {
-      // Other implementations will likely throw this exception since "reuse-instance"
-      // isimplementation specific.
-      log.debug("Unable to set the 'reuse-instance' property for the input chain: {}", factory);
-    }
   }
 
   /**Implement this interface to stream records as and when one is found.
