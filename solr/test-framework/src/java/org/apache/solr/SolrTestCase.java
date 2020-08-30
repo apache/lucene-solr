@@ -243,7 +243,7 @@ public class SolrTestCase extends LuceneTestCase {
       Lucene86Codec codec = new Lucene86Codec(Lucene50StoredFieldsFormat.Mode.BEST_SPEED);
       //Codec.setDefault(codec);
       System.setProperty("solr.lbclient.live_check_interval", "3000");
-      System.setProperty("solr.httpShardHandler.completionTimeout", "3000");
+      System.setProperty("solr.httpShardHandler.completionTimeout", "10000");
       System.setProperty("zookeeper.request.timeout", "15000");
       System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
       System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.TrieIntField");
