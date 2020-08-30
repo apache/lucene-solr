@@ -27,7 +27,7 @@ allprojects {
     }
 
     dependencies {
-      missingdoclet project(":lucene:tools:missing-doclet")
+      missingdoclet "org.apache.lucene.tools:missing-doclet"
     }
 
     ext {
