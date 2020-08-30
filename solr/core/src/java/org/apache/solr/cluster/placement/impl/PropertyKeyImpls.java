@@ -179,5 +179,3 @@ class NonNodeMetricKeyImpl implements PropertyKey {
     return metricSource;
   }
 }
-
-

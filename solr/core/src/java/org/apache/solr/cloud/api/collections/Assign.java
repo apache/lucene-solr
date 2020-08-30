@@ -506,7 +506,7 @@ public class Assign {
     }
 
     @Override
-    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException {
+    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
       if (assignRequest.numTlogReplicas + assignRequest.numPullReplicas != 0) {
         throw new Assign.AssignmentException(
             Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules or cluster policies");

@@ -371,5 +371,3 @@ class ReplicaImpl implements Replica {
     return Objects.hash(replicaName, coreName, shard, replicaType, replicaState, node);
   }
 }
-
-
