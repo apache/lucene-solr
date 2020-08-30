@@ -48,6 +48,7 @@ include "lucene:spatial-extras"
 include "lucene:spatial3d"
 include "lucene:suggest"
 include "lucene:test-framework"
+include "lucene:tools:missing-doclet"
 
 include "solr:solrj"
 include "solr:core"

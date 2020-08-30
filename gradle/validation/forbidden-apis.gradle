@@ -103,6 +103,13 @@ allprojects { prj ->
       ]
     }
 
+    // Doclet does use exotic JDK APIs.
+    if (prj.path == ":lucene:tools:missing-doclet") {
+      forbiddenApisMain.bundledSignatures -= [
+          'jdk-non-portable'
+      ]
+    }
+
     // Configure lucene-specific rules.
     if (prj.path.startsWith(":lucene")) {
       forbiddenApisMain {

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.gradle;
+package org.apache.lucene.missingdoclet;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,7 +27,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.ModuleElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 
@@ -98,7 +97,7 @@ public class MissingDoclet extends StandardDoclet {
 
       @Override
       public boolean process(String option, List<String> arguments) {
-        switch(arguments.get(0)) {
+        switch (arguments.get(0)) {
           case "package":
             level = PACKAGE;
             return true;
@@ -110,6 +109,7 @@ public class MissingDoclet extends StandardDoclet {
             return true;
           case "parameter":
             level = PARAMETER;
+            return true;
           default:
             return false;
         }
@@ -276,7 +276,8 @@ public class MissingDoclet extends StandardDoclet {
    * UweSays: It should not happen but it happens!
    */
   private boolean isSyntheticEnumMethod(Element element) {
-    if (element.getSimpleName().toString().equals("values") || element.getSimpleName().toString().equals("valueOf")) {
+    String simpleName = element.getSimpleName().toString();
+    if (simpleName.equals("values") || simpleName.equals("valueOf")) {
       if (element.getEnclosingElement().getKind() == ElementKind.ENUM) {
         return true;
       }
@@ -333,7 +334,7 @@ public class MissingDoclet extends StandardDoclet {
       }
       // now compare the method's formal parameter list against it
       for (var param : ((ExecutableElement)element).getParameters()) {
-        var name = ((VariableElement)param).getSimpleName().toString();
+        var name = param.getSimpleName().toString();
         if (!seenParameters.contains(name)) {
           error(element, "missing javadoc @param for parameter '" + name + "'");
         }
