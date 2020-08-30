@@ -64,15 +64,16 @@ allprojects {
   }
 }
 
-// Set up titles and link up some offline docs for all documentation
-// (they may be unused but this doesn't do any harm).
-def javaJavadocPackages = project.project(':lucene').file('tools/javadoc/java11/')
-def junitJavadocPackages = project.project(':lucene').file('tools/javadoc/junit/')
-
 // Configure task defaults for all projects.
 allprojects {
   project.tasks.withType(RenderJavadocTask) {
     title = "${project.path.startsWith(':lucene') ? 'Lucene' : 'Solr'} ${project.version} ${project.name} API"
+
+    // Set up titles and link up some offline docs for all documentation
+    // (they may be unused but this doesn't do any harm).
+    def taskResources = "${rootProject.projectDir}/gradle/documentation/render-javadoc"
+    def javaJavadocPackages = rootProject.file("${taskResources}/java11/")
+    def junitJavadocPackages = rootProject.file("${taskResources}/junit/")
 
     offlineLinks += [
         "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
@@ -561,15 +562,19 @@ class RenderJavadocTask extends DefaultTask {
       throw new GradleException("Javadoc generation failed for ${project.path},\n  Options file at: ${optionsFile}\n  Command output at: ${outputFile}", cause)
     }
 
+    def taskResources = "${project.rootDir}/gradle/documentation/render-javadoc"
+
     // append some special table css, prettify css
     ant.concat(destfile: "${outputDir}/stylesheet.css", append: "true", fixlastline: "true", encoding: "UTF-8") {
-      filelist(dir: project.project(":lucene").file("tools/javadoc"), files: "table_padding.css")
-      filelist(dir: project.project(":lucene").file("tools/prettify"), files: "prettify.css")
+      filelist(dir: taskResources, files: "table_padding.css")
+      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.css")
     }
+
     // append prettify to scripts
     ant.concat(destfile: "${outputDir}/script.js", append: "true", fixlastline: "true", encoding: "UTF-8") {
-      filelist(dir: project.project(':lucene').file("tools/prettify"), files: "prettify.js inject-javadocs.js")
+      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.js inject-javadocs.js")
     }
+
     ant.fixcrlf(srcdir: outputDir, includes: "stylesheet.css script.js", eol: "lf", fixlast: "true", encoding: "UTF-8")
   }
 }

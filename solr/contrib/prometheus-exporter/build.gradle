@@ -37,11 +37,3 @@ dependencies {
 
   testImplementation project(':solr:test-framework')
 }
-
-// Add two folders to default packaging.
-assemblePackaging {
-  from(projectDir, {
-    include "bin/**"
-    include "conf/**"
-  })
-}

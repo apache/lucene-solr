@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.KeeperException;
@@ -133,7 +134,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private String thisNode;
 
-  public OverseerTaskProcessor(ZkStateReader zkStateReader, String myId,
+  private final CloudConfig cloudConfig;
+
+  public OverseerTaskProcessor(CloudConfig cloudConfig, ZkStateReader zkStateReader, String myId,
                                         Stats stats,
                                         OverseerMessageHandlerSelector selector,
                                         OverseerNodePrioritizer prioritizer,
@@ -141,6 +144,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
                                         DistributedMap runningMap,
                                         DistributedMap completedMap,
                                         DistributedMap failureMap) {
+    this.cloudConfig = cloudConfig;
     this.zkStateReader = zkStateReader;
     this.myId = myId;
     this.stats = stats;
@@ -341,8 +345,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             if (log.isDebugEnabled()) {
               log.debug("{}: Get the message id: {} message: {}", messageHandler.getName(), head.getId(), message);
             }
-            Runner runner = new Runner(messageHandler, message,
-                operation, head, lock);
+            Runner runner = new Runner(messageHandler, cloudConfig, message, operation, head, lock);
             tpe.execute(runner);
           }
 
@@ -498,14 +501,16 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     QueueEvent head;
     OverseerMessageHandler messageHandler;
     private final OverseerMessageHandler.Lock lock;
+    private final CloudConfig cloudConfig;
 
-    public Runner(OverseerMessageHandler messageHandler, ZkNodeProps message, String operation, QueueEvent head, OverseerMessageHandler.Lock lock) {
+    public Runner(OverseerMessageHandler messageHandler, CloudConfig cloudConfig, ZkNodeProps message, String operation, QueueEvent head, OverseerMessageHandler.Lock lock) {
       this.message = message;
       this.operation = operation;
       this.head = head;
       this.messageHandler = messageHandler;
       this.lock = lock;
       response = null;
+      this.cloudConfig = cloudConfig;
     }
 
 
@@ -522,7 +527,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           if (log.isDebugEnabled()) {
             log.debug("Runner processing {}", head.getId());
           }
-          response = messageHandler.processMessage(message, operation);
+          response = messageHandler.processMessage(message, cloudConfig, operation);
         } finally {
           timerContext.stop();
           updateStats(statsName);
