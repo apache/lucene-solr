@@ -49,30 +49,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
   public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize,
       int keepalive, BlockingQueue<Runnable> workQueue) {
     super(corePoolsSize, maxPoolsSize, keepalive, TimeUnit.MILLISECONDS, workQueue
-    , new ThreadFactory() {
-
-          @Override
-          public Thread newThread(Runnable r) {
-            ThreadGroup group;
-
-            SecurityManager s = System.getSecurityManager();
-            group = (s != null)? s.getThreadGroup() :
-                Thread.currentThread().getThreadGroup();
-
-            Thread t = new Thread(group,
-                name + threadNumber.getAndIncrement()) {
-              public void run() {
-                try {
-                  r.run();
-                } finally {
-                  ParWork.closeExecutor();
-                }
-              }
-            };
-            t.setDaemon(true);
-            return t;
-          }
-        });
+    , new ParWorkThreadFactory(name));
   }
 
   public void shutdown() {
@@ -94,5 +71,36 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
 
   public void closeLock(boolean lock) {
     this.closeLock = lock;
+  }
+
+  private static class ParWorkThreadFactory implements ThreadFactory {
+
+    private final String name;
+
+    public ParWorkThreadFactory(String name) {
+      this.name = name;
+    }
+
+    @Override
+    public Thread newThread(Runnable r) {
+      ThreadGroup group;
+
+      SecurityManager s = System.getSecurityManager();
+      group = (s != null)? s.getThreadGroup() :
+          Thread.currentThread().getThreadGroup();
+
+      Thread t = new Thread(group,
+          name + threadNumber.getAndIncrement()) {
+        public void run() {
+          try {
+            r.run();
+          } finally {
+            ParWork.closeExecutor();
+          }
+        }
+      };
+      t.setDaemon(true);
+      return t;
+    }
   }
 }

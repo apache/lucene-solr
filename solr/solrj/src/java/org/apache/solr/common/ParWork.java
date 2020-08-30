@@ -115,7 +115,7 @@ public class ParWork implements Closeable {
       if (unlockClose) {
         exec.closeLock(false);
       }
-      ParWork.close(exec);
+      ExecutorUtil.shutdownAndAwaitTermination(exec);
       THREAD_LOCAL_EXECUTOR.set(null);
     }
   }

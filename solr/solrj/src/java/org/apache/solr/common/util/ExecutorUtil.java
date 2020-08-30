@@ -84,9 +84,10 @@ public class ExecutorUtil {
     do {
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
+        shutdown = pool.awaitTermination(30, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
         interrupted = true;
+        break;
       }
     } while (shutdown == false);
 
