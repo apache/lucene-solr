@@ -201,6 +201,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   private final CoreDescriptor coreDescriptor;
   private final CoreContainer coreContainer;
+  private final ConfigSet configSet;
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
   private volatile IndexSchema schema;
@@ -226,8 +227,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
   private final MemClassLoader memClassLoader;
-  //singleton listener for all packages used in schema
-  private final PackageListeningClassLoader schemaPluginsLoader;
 
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
@@ -271,9 +270,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   public PackageListeners getPackageListeners() {
     return packageListeners;
-  }
-  public PackageListeningClassLoader getSchemaPluginsLoader() {
-    return schemaPluginsLoader;
   }
 
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
@@ -938,16 +934,14 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     final CountDownLatch latch = new CountDownLatch(1);
     try {
       this.coreContainer = coreContainer;
+      this.configSet = configSet;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       setName(coreDescriptor.getName());
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
-      schemaPluginsLoader = new PackageListeningClassLoader(coreContainer, resourceLoader,
-              solrConfig::maxPackageVersion,
-              () -> setLatestSchema(configSet.getIndexSchema()));
-      this.packageListeners.addListener(schemaPluginsLoader);
       IndexSchema schema = configSet.getIndexSchema();
+      schema.inform(this);
 
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
@@ -2787,6 +2781,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return memClassLoader;
   }
 
+  public void fetchLatestSchema() {
+    IndexSchema schema =  configSet.getIndexSchema(true);
+    schema.inform(this);
+    setLatestSchema(schema);
+  }
+
   public interface RawWriter {
     default String getContentType() {
       return BinaryResponseParser.BINARY_CONTENT_TYPE;
@@ -3099,7 +3099,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       SolrZkClient zkClient = cc.getZkController().getZkClient();
       int solrConfigversion, overlayVersion, managedSchemaVersion = 0;
       SolrConfig cfg = null;
-      try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+      try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true, coreId)) {
         if (solrCore == null || solrCore.isClosed() || solrCore.getCoreContainer().isShutDown()) return;
         cfg = solrCore.getSolrConfig();
         solrConfigversion = solrCore.getSolrConfig().getOverlay().getZnodeVersion();
@@ -3120,7 +3120,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         if (configHandler.getReloadLock().tryLock()) {
 
           try {
-            cc.reload(coreName, coreId);
+            cc.reload(coreName, coreId,true);
           } catch (SolrCoreState.CoreIsClosedException e) {
             /*no problem this core is already closed*/
           } finally {
@@ -3133,7 +3133,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         return;
       }
       //some files in conf directory may have  other than managedschema, overlay, params
-      try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+      try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true, coreId)) {
         if (solrCore == null || solrCore.isClosed() || cc.isShutDown()) return;
         for (Runnable listener : solrCore.confListeners) {
           try {

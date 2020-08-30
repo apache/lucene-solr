@@ -39,6 +39,8 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -62,10 +64,13 @@ import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -94,7 +99,7 @@ import static java.util.Collections.singletonMap;
  *
  *
  */
-public class IndexSchema {
+public class IndexSchema implements SolrCoreAware {
   public static final String COPY_FIELD = "copyField";
   public static final String COPY_FIELDS = COPY_FIELD + "s";
   public static final String DEFAULT_SCHEMA_FILE = "schema.xml";
@@ -138,6 +143,8 @@ public class IndexSchema {
   protected final SolrResourceLoader loader;
   protected final SolrClassLoader solrClassLoader;
   protected final Properties substitutableProperties;
+  private final Map<String, UUID> cores = new ConcurrentHashMap<>();
+  private CoreContainer coreContainer;
 
   protected Map<String,SchemaField> fields = new HashMap<>();
   protected Map<String,FieldType> fieldTypes = new HashMap<>();
@@ -190,8 +197,39 @@ public class IndexSchema {
   protected IndexSchema(Version luceneVersion, SolrResourceLoader loader, Properties substitutableProperties) {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
-    this.solrClassLoader = loader;//loader.getCore() == null? loader: loader.getCore().getSchemaPluginsLoader();
+    this.solrClassLoader = createClassLoader(loader);
     this.substitutableProperties = substitutableProperties;
+  }
+
+  private SolrClassLoader createClassLoader(SolrResourceLoader loader) {
+    if(loader.getCoreContainer() != null && loader.getSolrConfig() != null){
+      return new PackageListeningClassLoader(loader.getCoreContainer(), loader,
+          pkg -> loader.getSolrConfig().maxPackageVersion(pkg),
+          () -> reloadCoreSchema());
+    }
+    return loader;
+  }
+
+  private void reloadCoreSchema() {
+    if(coreContainer != null) {
+     cores.forEach((coreName, id) -> {
+       try(SolrCore core = coreContainer.getCore(coreName, id)){
+         if(core != null) {
+           core.fetchLatestSchema();
+         }
+       }
+     });
+    }
+  }
+
+
+  @Override
+  public void inform(SolrCore core) {
+    this.cores.put(core.getName(), core.uniqueId);
+    this.coreContainer = core.getCoreContainer();
+    if (this.loader instanceof PackageListeners.Listener) {
+      core.getPackageListeners().addListener((PackageListeners.Listener) this.loader);
+    }
   }
 
   /**
