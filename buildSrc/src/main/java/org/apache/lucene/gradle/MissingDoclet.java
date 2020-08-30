@@ -25,10 +25,14 @@ import java.util.Set;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.ModuleElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 
+import com.sun.source.doctree.DocCommentTree;
+import com.sun.source.doctree.ParamTree;
 import com.sun.source.util.DocTrees;
 
 import jdk.javadoc.doclet.Doclet;
@@ -38,7 +42,7 @@ import jdk.javadoc.doclet.StandardDoclet;
 
 /**
  * Checks for missing javadocs, where missing also means "only whitespace" or "license header".
- * Has option --missing-level (package, class, method) so that we can improve over time.
+ * Has option --missing-level (package, class, method, parameter) so that we can improve over time.
  * Has option --missing-ignore to ignore individual elements (such as split packages). 
  *   It isn't recursive, just ignores exactly the elements you tell it.
  *   This should be removed when packaging is fixed to no longer be split across JARs.
@@ -46,10 +50,15 @@ import jdk.javadoc.doclet.StandardDoclet;
  *   Matches package names exactly: so you'll need to list subpackages separately.
  */
 public class MissingDoclet extends StandardDoclet {
+  // checks that modules and packages have documentation
   private static final int PACKAGE = 0;
+  // + checks that classes, interfaces, enums, and annotation types have documentation
   private static final int CLASS = 1;
+  // + checks that methods, constructors, fields, and enumerated constants have documentation
   private static final int METHOD = 2;
-  int level = METHOD;
+  // + checks that @param tags are present for any method/constructor parameters
+  private static final int PARAMETER = 3;
+  int level = PARAMETER;
   Reporter reporter;
   DocletEnvironment docEnv;
   DocTrees docTrees;
@@ -69,7 +78,7 @@ public class MissingDoclet extends StandardDoclet {
 
       @Override
       public String getDescription() {
-        return "level to enforce for missing javadocs: [package, class, method]";
+        return "level to enforce for missing javadocs: [package, class, method, parameter]";
       }
 
       @Override
@@ -99,6 +108,8 @@ public class MissingDoclet extends StandardDoclet {
           case "method":
             level = METHOD;
             return true;
+          case "parameter":
+            level = PARAMETER;
           default:
             return false;
         }
@@ -285,7 +296,7 @@ public class MissingDoclet extends StandardDoclet {
     }
     // check that this element isn't on our ignore list. This is only used as a workaround for "split packages".
     // ignoring a package isn't recursive (on purpose), we still check all the classes, etc. inside it.
-    // we just need to cope with the fact module-info.java isn't there because it is split across multiple jars.
+    // we just need to cope with the fact package-info.java isn't there because it is split across multiple jars.
     if (ignored.contains(element.toString())) {
       return;
     }
@@ -302,6 +313,30 @@ public class MissingDoclet extends StandardDoclet {
       } else if (normalized.startsWith("licensed to the apache software foundation") ||
                  normalized.startsWith("copyright 2004 the apache software foundation")) {
         error(element, "comment is really a license");
+      }
+    }
+    if (level >= PARAMETER && tree != null) {
+      checkParameters(element, tree);
+    }
+  }
+  
+  /** Checks there is a corresponding "param" tag for each method parameter */
+  private void checkParameters(Element element, DocCommentTree tree) {
+    if (element instanceof ExecutableElement) {
+      // record each @param that we see
+      Set<String> seenParameters = new HashSet<>();
+      for (var tag : tree.getBlockTags()) {
+        if (tag instanceof ParamTree) {
+          var name = ((ParamTree)tag).getName().getName().toString();
+          seenParameters.add(name);
+        }
+      }
+      // now compare the method's formal parameter list against it
+      for (var param : ((ExecutableElement)element).getParameters()) {
+        var name = ((VariableElement)param).getSimpleName().toString();
+        if (!seenParameters.contains(name)) {
+          error(element, "missing javadoc @param for parameter '" + name + "'");
+        }
       }
     }
   }
