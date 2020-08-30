@@ -1051,7 +1051,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       initSearcher(prev);
 
       // Initialize the RestManager
-      restManager = initRestManager();
+      restManager = initRestManager(cd);
 
       // at this point we can load jars loaded from remote urls.
       memClassLoader.loadRemoteJars();
@@ -2975,9 +2975,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * Creates and initializes a RestManager based on configuration args in solrconfig.xml.
    * RestManager provides basic storage support for managed resource data, such as to
    * persist stopwords to ZooKeeper if running in SolrCloud mode.
+   * @param cd
    */
   @SuppressWarnings("unchecked")
-  protected RestManager initRestManager() throws SolrException {
+  protected RestManager initRestManager(CoreDescriptor cd) throws SolrException {
 
     PluginInfo restManagerPluginInfo =
         getSolrConfig().getPluginInfo(RestManager.class.getName());
@@ -3000,7 +3001,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     if (initArgs == null)
       initArgs = new NamedList<>();
 
-    String collection = getCoreDescriptor().getCollectionName();
+    String collection = cd.getCollectionName();
     StorageIO storageIO =
         ManagedResourceStorage.newStorageIO(collection, resourceLoader, initArgs);
     mgr.init(resourceLoader, initArgs, storageIO);
