@@ -543,7 +543,7 @@ public class SimpleFacets {
           } else {
             PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset, limit, mincount, missing, sort, prefix, termFilter);
             ps.setNumThreads(threads);
-            counts = ps.getFacetCounts(ParWork.getExecutor()); // ### expert usage
+            counts = ps.getFacetCounts(ParWork.getMyPerThreadExecutor()); // ### expert usage
           }
           break;
         case UIF:
@@ -851,7 +851,7 @@ public class SimpleFacets {
       List<Future> futures = new ArrayList<>(calls.size());
       // expert use of per thread exec
       for (Callable<NamedList> call : calls) {
-        futures.add(ParWork.getExecutor().submit(call));
+        futures.add(ParWork.getMyPerThreadExecutor().submit(call));
       }
 
       for (Future<NamedList> future : futures) {

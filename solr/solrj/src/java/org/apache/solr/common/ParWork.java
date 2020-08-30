@@ -72,7 +72,7 @@ public class ParWork implements Closeable {
   private static volatile ThreadPoolExecutor EXEC;
 
   // pretty much don't use it
-  public static ThreadPoolExecutor getEXEC() {
+  public static ThreadPoolExecutor getRootSharedExecutor() {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
@@ -375,7 +375,7 @@ public class ParWork implements Closeable {
 
     ParWorkExecService executor = null;
     if (needExec) {
-      executor = (ParWorkExecService) getExecutor();
+      executor = (ParWorkExecService) getMyPerThreadExecutor();
     }
     //initExecutor();
     AtomicReference<Throwable> exception = new AtomicReference<>();
@@ -499,7 +499,7 @@ public class ParWork implements Closeable {
     }
   }
 
-  public static ExecutorService getExecutor() {
+  public static ExecutorService getMyPerThreadExecutor() {
      // if (executor != null) return executor;
     ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();
     if (exec == null) {
@@ -528,11 +528,11 @@ public class ParWork implements Closeable {
   }
 
   public static ExecutorService getExecutorService(int maximumPoolSize) {
-    return new ParWorkExecService(getEXEC(), maximumPoolSize);
+    return new ParWorkExecService(getRootSharedExecutor(), maximumPoolSize);
   }
 
   public static ExecutorService getExecutorService(int maximumPoolSize, boolean noCallerRuns) {
-    return new ParWorkExecService(getEXEC(), maximumPoolSize, noCallerRuns);
+    return new ParWorkExecService(getRootSharedExecutor(), maximumPoolSize, noCallerRuns);
   }
 
   private void handleObject(AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, ParObject ob) {

@@ -133,7 +133,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service = ParWork.getExecutor();
+    ExecutorService service = ParWork.getMyPerThreadExecutor();
     List<Future<StreamIndex>> futures = new ArrayList();
     int i=0;
     for (TupleStream tupleStream : streams) {

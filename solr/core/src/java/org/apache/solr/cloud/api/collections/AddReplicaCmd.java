@@ -166,7 +166,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
 
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient());
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
     ZkStateReader zkStateReader = ocmh.zkStateReader;
 
     final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
@@ -209,7 +209,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         runnable.run();
       }
     } else {
-      ParWork.getEXEC().execute(runnable);
+      ParWork.getRootSharedExecutor().execute(runnable);
     }
 
     return createReplicas.stream()

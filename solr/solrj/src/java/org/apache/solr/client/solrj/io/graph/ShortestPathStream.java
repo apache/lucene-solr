@@ -49,8 +49,6 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
@@ -299,7 +297,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     List<Edge> targets = new ArrayList();
     ExecutorService threadPool = null;
 
-    threadPool = ParWork.getExecutor();
+    threadPool = ParWork.getMyPerThreadExecutor();
 
     //Breadth first search
     TRAVERSE:

@@ -50,8 +50,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
@@ -519,7 +517,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
       ExecutorService threadPool = null;
       try {
-        threadPool = ParWork.getEXEC();
+        threadPool = ParWork.getRootSharedExecutor();
 
         Map<String, Node> roots = new HashMap();
 

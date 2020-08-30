@@ -57,9 +57,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +87,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 /**
@@ -317,7 +314,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     final HttpRequestBase method = createMethod(request, null);
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
-      mrr.future = (Future<NamedList<Object>>) ((ParWorkExecService) ParWork.getExecutor()).submit(() -> {
+      mrr.future = (Future<NamedList<Object>>) ((ParWorkExecService) ParWork.getMyPerThreadExecutor()).submit(() -> {
         try {
           executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
         } catch (SolrServerException e) {

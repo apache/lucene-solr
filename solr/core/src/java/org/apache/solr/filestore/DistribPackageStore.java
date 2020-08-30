@@ -387,7 +387,7 @@ public class DistribPackageStore implements PackageStore {
         }
         try {
           //fire and forget
-          Http2SolrClient.GET(url, coreContainer.getUpdateShardHandler().getUpdateOnlyHttpClient());
+          Http2SolrClient.GET(url, coreContainer.getUpdateShardHandler().getTheSharedHttpClient());
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
           log.info("Node: {} failed to respond for file fetch notification",  node, e);

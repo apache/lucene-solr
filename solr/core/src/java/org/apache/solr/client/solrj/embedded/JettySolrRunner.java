@@ -831,14 +831,14 @@ public class JettySolrRunner implements Closeable {
 
   public SolrClient newClient() {
     return new Http2SolrClient.Builder(getBaseUrl().toString()).
-            withHttpClient(getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient()).build();
+            withHttpClient(getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient()).build();
   }
 
   public SolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
     return new Http2SolrClient.Builder(getBaseUrl().toString())
         .connectionTimeout(connectionTimeoutMillis)
         .idleTimeout(socketTimeoutMillis)
-        .withHttpClient(getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient())
+        .withHttpClient(getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient())
         .build();
   }
 

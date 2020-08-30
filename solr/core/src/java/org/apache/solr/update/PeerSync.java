@@ -114,7 +114,7 @@ public class PeerSync implements SolrMetricProducer {
     this.nUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.doFingerprint = doFingerprint && !("true".equals(System.getProperty("solr.disableFingerprint")));
-    this.client = core.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient();
+    this.client = core.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient();
     this.onlyIfActive = onlyIfActive;
     
     uhandler = core.getUpdateHandler();

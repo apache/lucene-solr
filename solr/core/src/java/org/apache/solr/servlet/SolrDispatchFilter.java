@@ -45,10 +45,8 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.core.XmlConfigFile;
-import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
@@ -92,10 +90,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -219,7 +214,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }finally{
       log.trace("SolrDispatchFilter.init() done");
       if (cores != null) {
-        this.httpClient = cores.getUpdateShardHandler().getUpdateOnlyHttpClient().getHttpClient();
+        this.httpClient = cores.getUpdateShardHandler().getTheSharedHttpClient().getHttpClient();
       }
       init.countDown();
     }

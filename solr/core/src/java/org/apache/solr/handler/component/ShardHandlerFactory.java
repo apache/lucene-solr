@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Locale;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
@@ -51,7 +50,7 @@ public abstract class ShardHandlerFactory implements Closeable {
     try {
       ShardHandlerFactory shf = loader.findClass(info.className, ShardHandlerFactory.class, "handler.component.").getConstructor().newInstance();
       if (shf instanceof HttpShardHandlerFactory) {
-        ((HttpShardHandlerFactory) shf).setHttp2Client(ush.getUpdateOnlyHttpClient());
+        ((HttpShardHandlerFactory) shf).setHttp2Client(ush.getTheSharedHttpClient());
       }
       if (PluginInfoInitialized.class.isAssignableFrom(shf.getClass()))
         PluginInfoInitialized.class.cast(shf).init(info);

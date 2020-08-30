@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
@@ -210,7 +209,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       log.info("Turning off node reporter, period={}", period);
       return;
     }
-    Http2SolrClient httpClient = cc.getUpdateShardHandler().getUpdateOnlyHttpClient();
+    Http2SolrClient httpClient = cc.getUpdateShardHandler().getTheSharedHttpClient();
     ZkController zk = cc.getZkController();
     String reporterId = zk.getNodeName();
     reporter = SolrReporter.Builder.forReports(metricManager, reports)

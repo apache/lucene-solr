@@ -193,7 +193,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
   
   // don't introduce a bug, this client is for sending updates only!
-  public Http2SolrClient getUpdateOnlyHttpClient() {
+  public Http2SolrClient getTheSharedHttpClient() {
     return updateOnlyClient;
   }
 

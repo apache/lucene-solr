@@ -132,7 +132,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    executorService = ParWork.getExecutor();
+    executorService = ParWork.getMyPerThreadExecutor();
     stream.open();
   }
 

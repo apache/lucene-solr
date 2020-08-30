@@ -3326,6 +3326,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @param r the task to run
    */
   public void runAsync(Runnable r) {
-    ParWork.getExecutor().submit(r);
+    ParWork.getMyPerThreadExecutor().submit(r);
   }
 }

@@ -32,14 +32,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -638,7 +635,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   @SuppressWarnings({"unchecked"})
   private void waitForDaemon(String daemonName, String daemonUrl, String sourceCollection, String targetCollection, Map<String, Object> reindexingState) throws Exception {
     Http2SolrClient client = ocmh.overseer.getCoreContainer()
-        .getUpdateShardHandler().getUpdateOnlyHttpClient();
+        .getUpdateShardHandler().getTheSharedHttpClient();
     try (Http2SolrClient solrClient = new Http2SolrClient.Builder()
         .withHttpClient(client).markInternalRequest().build()) {
       solrClient.setBaseUrl(daemonUrl);
@@ -693,7 +690,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   private void killDaemon(String daemonName, String daemonUrl) throws Exception {
     log.debug("-- killing daemon {} at {}", daemonName, daemonUrl);
     Http2SolrClient client = ocmh.overseer.getCoreContainer()
-        .getUpdateShardHandler().getUpdateOnlyHttpClient();
+        .getUpdateShardHandler().getTheSharedHttpClient();
     try (Http2SolrClient solrClient = new Http2SolrClient.Builder()
         .withHttpClient(client)
         .markInternalRequest().build()) {

@@ -672,7 +672,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         try
         {
             Thread thread = _threadFactory.newThread(_runnable);
-            ParWork.getEXEC().execute(thread);
+            ParWork.getRootSharedExecutor().execute(thread);
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);

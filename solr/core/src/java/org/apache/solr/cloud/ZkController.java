@@ -453,7 +453,7 @@ public class ZkController implements Closeable {
               ParWork.close(overseerElector.getContext());
             }
             LeaderElector overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), overseerContexts);
-            ZkController.this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getUpdateOnlyHttpClient()), cc.getUpdateShardHandler(),
+            ZkController.this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getTheSharedHttpClient()), cc.getUpdateShardHandler(),
                     CommonParams.CORES_HANDLER_PATH, zkStateReader, ZkController.this, cloudConfig);
             overseerElector.setup(context);
             overseerElector.joinElection(context, true);
@@ -711,7 +711,7 @@ public class ZkController implements Closeable {
         return cloudManager;
       }
       cloudSolrClient = new CloudHttp2SolrClient.Builder(zkStateReader)
-          .withHttpClient(cc.getUpdateShardHandler().getUpdateOnlyHttpClient())
+          .withHttpClient(cc.getUpdateShardHandler().getTheSharedHttpClient())
           .build();
       cloudManager = new SolrClientCloudManager(
           new ZkDistributedQueueFactory(zkClient),
@@ -1081,7 +1081,7 @@ public class ZkController implements Closeable {
 
         zkStateReader.createClusterStateWatchersAndUpdate();
 
-        this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getUpdateOnlyHttpClient()), cc.getUpdateShardHandler(),
+        this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getTheSharedHttpClient()), cc.getUpdateShardHandler(),
                 CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
         this.overseerRunningMap = Overseer.getRunningMap(zkClient);
         this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);

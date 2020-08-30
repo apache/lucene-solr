@@ -18,14 +18,12 @@ package org.apache.solr.handler;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -820,7 +818,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection)) {
       PerReplicaCallable e = new PerReplicaCallable(
-              zkController.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient()
+              zkController.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient()
               , coreUrl, prop, expectedVersion, maxWaitSecs);
       concurrentTasks.add(e);
     }
@@ -836,7 +834,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     try {
       List<Future<Boolean>> results =
-          ParWork.getExecutor().invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
+          ParWork.getMyPerThreadExecutor().invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
 
       // determine whether all replicas have the update
       List<String> failedList = null; // lazily init'd

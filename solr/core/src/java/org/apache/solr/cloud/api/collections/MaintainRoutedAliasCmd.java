@@ -125,7 +125,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
       switch (action.actionType) {
         case ENSURE_REMOVED:
           if (exists) {
-            ParWork.getEXEC().submit(
+            ParWork.getRootSharedExecutor().submit(
              () -> {
                 try {
                   deleteTargetCollection(clusterState, results, aliasName, aliasesManager, action);

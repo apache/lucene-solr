@@ -18,7 +18,6 @@ package org.apache.solr.cloud.api.collections;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -27,7 +26,6 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -373,7 +371,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     sreq.shards = new String[] {baseUrl};
     sreq.actualShards = sreq.shards;
     sreq.params = params;
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient());
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
     shardHandler.submit(sreq, baseUrl, sreq.params);
   }
 
@@ -544,7 +542,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     // and we force open a searcher so that we have documents to show upon switching states
     UpdateResponse updateResponse = null;
     try {
-      updateResponse = softCommit(coreUrl, overseer.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient());
+      updateResponse = softCommit(coreUrl, overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
       processResponse(results, null, coreUrl, updateResponse, slice, Collections.emptySet());
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
@@ -814,7 +812,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
     String collectionName = message.getStr(NAME);
     @SuppressWarnings("deprecation")
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient());
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
 
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection coll = clusterState.getCollection(collectionName);
@@ -873,7 +871,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   private NamedList<Object> waitForCoreAdminAsyncCallToComplete(String nodeName, String requestId) throws KeeperException, InterruptedException {
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient());
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REQUESTSTATUS.toString());
     params.set(CoreAdminParams.REQUESTID, requestId);

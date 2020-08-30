@@ -18,17 +18,13 @@ package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.autoscaling.SystemLogListener;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
@@ -130,7 +126,7 @@ public class AutoscalingHistoryHandler extends RequestHandlerBase implements Per
       }
     }
     try (CloudHttp2SolrClient cloudSolrClient = new CloudHttp2SolrClient.Builder(req.getCore().getCoreContainer().getZkController().getZkStateReader())
-        .withHttpClient(coreContainer.getUpdateShardHandler().getUpdateOnlyHttpClient())
+        .withHttpClient(coreContainer.getUpdateShardHandler().getTheSharedHttpClient())
         .build()) {
       QueryResponse qr = cloudSolrClient.query(collection, params);
       rsp.setAllValues(qr.getResponse());

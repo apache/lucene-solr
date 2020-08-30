@@ -232,7 +232,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       isCloseCache = false;
     }
 
-    this.executorService = ParWork.getExecutor();
+    this.executorService = ParWork.getMyPerThreadExecutor();
   }
 
   public List<TupleStream> children() {

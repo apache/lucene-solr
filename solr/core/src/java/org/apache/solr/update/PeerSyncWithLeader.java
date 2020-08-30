@@ -25,11 +25,9 @@ import java.util.function.Supplier;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkController;
@@ -81,7 +79,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     this.uhandler = core.getUpdateHandler();
     this.ulog = uhandler.getUpdateLog();
     Http2SolrClient httpClient = core
-        .getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient();
+        .getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient();
     this.clientToLeader = new Http2SolrClient.Builder(leaderUrl).withHttpClient(httpClient).markInternalRequest().build();
 
     this.updater = new PeerSync.Updater(msg(), core);

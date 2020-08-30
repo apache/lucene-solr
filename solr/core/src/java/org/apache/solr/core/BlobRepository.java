@@ -36,7 +36,6 @@ import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.ParWork;
@@ -49,7 +48,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -214,7 +212,7 @@ public class BlobRepository {
 
   ByteBuffer fetchFromUrl(String key, String url) {
     Http2SolrClient httpClient = coreContainer
-        .getUpdateShardHandler().getUpdateOnlyHttpClient();
+        .getUpdateShardHandler().getTheSharedHttpClient();
     HttpGet httpGet = new HttpGet(url);
     ByteBuffer b;
     HttpResponse response = null;

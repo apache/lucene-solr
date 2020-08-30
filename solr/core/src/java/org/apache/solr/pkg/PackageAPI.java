@@ -37,11 +37,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.ParWorkExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
@@ -242,7 +240,7 @@ public class PackageAPI {
       for (String s : coreContainer.getPackageStoreAPI().shuffledNodes()) {
         try {
           Http2SolrClient.GET(coreContainer.getZkController().
-              zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p, coreContainer.getUpdateShardHandler().getUpdateOnlyHttpClient());
+              zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p, coreContainer.getUpdateShardHandler().getTheSharedHttpClient());
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
         } catch (ExecutionException e) {
@@ -421,7 +419,7 @@ public class PackageAPI {
       try {
         Http2SolrClient.GET(coreContainer.getZkController().zkStateReader.
             getBaseUrlForNodeName(s).replace("/solr", "/api") +
-            "/cluster/package?wt=javabin&omitHeader=true&expectedVersion" + expected, coreContainer.getUpdateShardHandler().getUpdateOnlyHttpClient());
+            "/cluster/package?wt=javabin&omitHeader=true&expectedVersion" + expected, coreContainer.getUpdateShardHandler().getTheSharedHttpClient());
       } catch (InterruptedException e) {
         ParWork.propegateInterrupt(e);
       } catch (ExecutionException e) {

@@ -42,8 +42,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -73,7 +71,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.ScheduledThreadPoolExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -179,7 +176,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private final ReentrantLock indexFetchLock = new ReentrantLock();
 
-  private final ExecutorService restoreExecutor = ParWork.getExecutor();
+  private final ExecutorService restoreExecutor = ParWork.getMyPerThreadExecutor();
 
   private volatile Future<Boolean> restoreFuture;
 
@@ -505,7 +502,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       MDC.put("RestoreCore.backupLocation", location);
       MDC.put("RestoreCore.backupName", name);
       // nocommit - whats up with using the virt? we prob need to disable run in own thread at the least
-      restoreFuture = ParWork.getEXEC().submit(restoreCore);
+      restoreFuture = ParWork.getRootSharedExecutor().submit(restoreCore);
       currentRestoreName = name;
       rsp.add(STATUS, OK_STATUS);
     } finally {

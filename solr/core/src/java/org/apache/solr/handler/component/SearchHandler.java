@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -30,7 +29,6 @@ import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -250,7 +248,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
     
     if (rb.isDistrib) {
-      shardHandler = ((HttpShardHandlerFactory)shardHandlerFactory).getShardHandler(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient());
+      shardHandler = ((HttpShardHandlerFactory)shardHandlerFactory).getShardHandler(req.getCore().getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
       shardHandler.prepDistributed(rb);
       if (!rb.isDistrib) {
         shardHandler = null; // request is not distributed after all and so the shard handler is not needed
