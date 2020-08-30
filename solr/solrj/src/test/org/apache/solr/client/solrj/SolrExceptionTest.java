@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj;
 
 import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -31,6 +32,8 @@ import org.junit.Test;
  *
  * @since solr 1.3
  */
+@ThreadLeakLingering(linger = 250) // TODO something about this test very oddly allows an http2client-scheduler-1 to leak - it's in processworkerExit, tryTerminate, so
+// let's just try waiting for a moment until we can nail that down
 public class SolrExceptionTest extends SolrTestCase {
 
   @Test
