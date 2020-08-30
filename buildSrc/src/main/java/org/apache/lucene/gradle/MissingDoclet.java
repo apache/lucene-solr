@@ -259,7 +259,7 @@ public class MissingDoclet extends StandardDoclet {
   /** 
    * Return true if the method is synthetic enum method (values/valueOf).
    * According to the doctree documentation, the "included" set never includes synthetic elements.
-   * It should not happen but it happens!
+   * UweSays: It should not happen but it happens!
    */
   private boolean isSyntheticEnumMethod(Element element) {
     if (element.getSimpleName().toString().equals("values") || element.getSimpleName().toString().equals("valueOf")) {
