@@ -19,14 +19,9 @@ package org.apache.solr.cluster.placement.impl;
 
 import java.util.Collection;
 
+import com.google.common.base.Preconditions;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
-import org.apache.solr.cluster.placement.DiskTypePropertyValue;
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.PropertyKey;
-import org.apache.solr.cluster.placement.PropertyKeyFactory;
-import org.apache.solr.cluster.placement.PropertyValue;
-import org.apache.solr.cluster.placement.SyspropPropertyValue;
-import org.apache.solr.cluster.placement.SystemLoadPropertyValue;
+import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.core.SolrInfoBean;
@@ -36,7 +31,7 @@ import org.apache.solr.metrics.SolrMetricManager;
  * Superclass for all {@link org.apache.solr.cluster.placement.PropertyKey} that target a {@link Node} and whose implementation
  * is based on using {@link org.apache.solr.client.solrj.cloud.NodeStateProvider#getNodeValues(String, Collection)}.
  */
-public abstract class AbstractNodePropertyKey implements PropertyKey {
+abstract class AbstractNodePropertyKey implements PropertyKey {
   private final Node node;
   private final String snitchTag;
 
@@ -169,5 +164,20 @@ class TotalDiskKeyImpl extends AbstractNodePropertyKey {
   }
 }
 
+class NonNodeMetricKeyImpl implements PropertyKey {
+  private final String metricName;
+  private final PropertyValueSource metricSource;
+
+  public NonNodeMetricKeyImpl(PropertyValueSource metricSource, String metricName) {
+    Preconditions.checkState(!(metricSource instanceof Node), "Illegal argument type " + Node.class);
+    this.metricSource = metricSource;
+    this.metricName = metricName;
+  }
+
+  @Override
+  public PropertyValueSource getPropertyValueSource() {
+    return metricSource;
+  }
+}
 
 
