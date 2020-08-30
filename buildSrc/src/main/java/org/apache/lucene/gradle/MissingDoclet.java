@@ -39,8 +39,11 @@ import jdk.javadoc.doclet.StandardDoclet;
 /**
  * Checks for missing javadocs, where missing also means "only whitespace" or "license header".
  * Has option --missing-level (package, class, method) so that we can improve over time.
- * Has option --missing-ignore to ignore individual elements (such as split packages).
+ * Has option --missing-ignore to ignore individual elements (such as split packages). 
+ *   It isn't recursive, just ignores exactly the elements you tell it.
+ *   This should be removed when packaging is fixed to no longer be split across JARs.
  * Has option --missing-method to apply "method" level to selected packages (fix one at a time).
+ *   Matches package names exactly: so you'll need to list subpackages separately.
  */
 public class MissingDoclet extends StandardDoclet {
   private static final int PACKAGE = 0;
@@ -222,7 +225,7 @@ public class MissingDoclet extends StandardDoclet {
         if (level(element) >= CLASS) {
           checkComment(element);
           for (var subElement : element.getEnclosedElements()) {
-            // don't check enclosed types, otherwise we'll double-check since they are in the included docTree
+            // don't recurse into enclosed types, otherwise we'll double-check since they are already in the included docTree
             if (subElement.getKind() == ElementKind.METHOD || 
                 subElement.getKind() == ElementKind.CONSTRUCTOR || 
                 subElement.getKind() == ElementKind.FIELD || 
@@ -276,9 +279,13 @@ public class MissingDoclet extends StandardDoclet {
    * that they aren't a license header masquerading as a javadoc comment.
    */
   private void checkComment(Element element) {
+    // sanity check that the element is really "included", because we do some recursion into types
     if (!docEnv.isIncluded(element)) {
       return;
     }
+    // check that this element isn't on our ignore list. This is only used as a workaround for "split packages".
+    // ignoring a package isn't recursive (on purpose), we still check all the classes, etc. inside it.
+    // we just need to cope with the fact module-info.java isn't there because it is split across multiple jars.
     if (ignored.contains(element.toString())) {
       return;
     }
