@@ -320,7 +320,8 @@ public class XmlConfigFile { // formerly simply "Config"
       }
     }
 
-    public NodeList getNodeList (String path,boolean errIfMissing){
+    // TODO: more precompiled expressions
+    public NodeList getNodeList (String path, boolean errIfMissing){
       String xstr = normalize(path);
 
       try {
