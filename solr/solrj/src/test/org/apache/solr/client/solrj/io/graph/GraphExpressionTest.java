@@ -73,7 +73,6 @@ import org.junit.Test;
  **/
 
 @Slow
-//@Ignore // nocommit flakey
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
 public class GraphExpressionTest extends SolrCloudTestCase {
 
@@ -247,7 +246,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - look again after i go through streaming again
   public void testGatherNodesStream() throws Exception {
 
     new UpdateRequest()
@@ -306,6 +304,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "maxDocFreq=\"2\","+
         "gather=\"basket_s\")";
 
+    stream.close();
     stream = (GatherNodesStream)factory.constructStream(docFreqExpr);
     stream.setStreamContext(context);
 
@@ -321,6 +320,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "walk=\"node->basket_s\"," +
         "gather=\"product_s\", count(*), avg(price_f), sum(price_f), min(price_f), max(price_f))";
 
+    stream.close();
     stream = (GatherNodesStream)factory.constructStream(expr2);
 
     context = new StreamContext();
@@ -359,6 +359,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "walk=\"product4, product7->product_s\"," +
         "gather=\"basket_s\")";
 
+    stream.close();
     stream = (GatherNodesStream)factory.constructStream(expr);
 
     context = new StreamContext();
@@ -377,6 +378,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         "walk=\"product4, product7->product_s\"," +
         "gather=\"basket_s\", fq=\"-basket_s:basket4\")";
 
+    stream.close();
     stream = (GatherNodesStream)factory.constructStream(expr);
 
     context = new StreamContext();
@@ -389,8 +391,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.get(0).getString("node").equals("basket2"));
     assertTrue(tuples.get(1).getString("node").equals("basket3"));
 
+    stream.close();
     cache.close();
-
   }
 
 
@@ -489,6 +491,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
                                                                    "min(price_f), " +
                                                                    "max(price_f))))";
 
+    stream.close();
     stream = factory.constructStream(expr2);
 
     context = new StreamContext();
@@ -513,6 +516,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     assert(tuple2.getLong("docFreq") == 8);
     assert(tuple2.getDouble("avg(price_f)") == 1);
 
+    stream.close();
     cache.close();
   }
 
@@ -585,10 +589,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     cache.close();
   }
-
-
-
-
 
   @Test
   public void testGatherNodesFriendsStream() throws Exception {
@@ -914,11 +914,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     client.close();
   }
 
-
-
-
-
-
   private String readString(InputStreamReader reader) throws Exception{
     StringBuilder builder = new StringBuilder();
     int c = 0;
@@ -928,9 +923,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     return builder.toString();
   }
-
-
-
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
@@ -972,8 +964,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         (null != expected && !expected.equals(actual))){
       throw new Exception("Longs not equal:"+expected+" : "+actual);
     }
-
-
 
     return true;
   }

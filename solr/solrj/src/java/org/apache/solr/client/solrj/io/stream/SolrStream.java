@@ -126,6 +126,7 @@ public class SolrStream extends TupleStream {
       if (!distrib) {
         ((ModifiableSolrParams) requestParams).add("distrib","false");
       }
+      assert tupleStreamParser == null;
       tupleStreamParser = constructParser(client, requestParams);
     } catch (Exception e) {
       ParWork.propegateInterrupt(e);
