@@ -174,3 +174,4 @@ apply from: file('gradle/documentation/render-javadoc.gradle')
 
 apply from: file('gradle/hacks/findbugs.gradle')
 apply from: file('gradle/hacks/gradle.gradle')
+apply from: file('gradle/hacks/hashmapAssertions.gradle')
