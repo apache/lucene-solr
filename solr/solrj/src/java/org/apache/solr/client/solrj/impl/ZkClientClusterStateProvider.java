@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -163,15 +164,16 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
   
   public ZkStateReader getZkStateReader() {
+    if (isClosed) {
+      throw new AlreadyClosedException();
+    }
+
     if (zkStateReader == null) {
-      throw new IllegalStateException("Not connected to ZK! Did you call connect?");
-      /*
       synchronized (this) {
         if (zkStateReader == null) {
           connect();
         }
       }
-       */
     }
     return zkStateReader;
   }

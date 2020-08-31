@@ -67,7 +67,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
     this.clientIsInternal = builder.httpClient == null;
     if (builder.stateProvider == null) {
-      if ((builder.zkHosts != null && !builder.zkHosts.isEmpty()) && builder.solrUrls != null) {
+      if (builder.zkHosts != null && builder.zkHosts.size() > 0 && builder.solrUrls != null && builder.solrUrls.size() > 0) {
         cleanupAfterInitError();
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
