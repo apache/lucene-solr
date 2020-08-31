@@ -38,7 +38,7 @@ configure(rootProject) {
       def extensions = [
         'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
         'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
-        'properties', 'mdtext', 'groovy',
+        'properties', 'mdtext', 'groovy', 'gradle',
         'template', 'adoc', 'json',
       ];
       def invalidPatterns = [
@@ -146,29 +146,28 @@ configure(rootProject) {
         }
       }
 
-      ant.fileScanner{
-        fileset(dir: projectDir){
-          extensions.each{
-            include(name: 'lucene/**/*.' + it)
-            include(name: 'solr/**/*.' + it)
-            include(name: 'dev-tools/**/*.' + it)
-            include(name: '*.' + it)
-          }
-          // TODO: For now we don't scan txt / md files, so we
-          // check licenses in top-level folders separately:
-          include(name: '*.txt')
-          include(name: '*/*.txt')
-          include(name: '*.md')
-          include(name: '*/*.md')
-          // excludes:
-          exclude(name: '**/build/**')
-          exclude(name: '**/dist/**')
-          exclude(name: 'lucene/benchmark/work/**')
-          exclude(name: 'lucene/benchmark/temp/**')
-          exclude(name: '**/CheckLoggingConfiguration.java')
-          exclude(name: 'lucene/tools/src/groovy/check-source-patterns.groovy') // ourselves :-)
-          exclude(name: 'solr/core/src/test/org/apache/hadoop/**')
+      project.fileTree(project.rootDir) {
+        extensions.each{
+          include "lucene/**/*.${it}"
+          include "solr/**/*.${it}"
+          include "dev-tools/**/*.${it}"
+          include "gradle/**/*.${it}"
+          include "*.${it}"
         }
+        // TODO: For now we don't scan txt / md files, so we
+        // check licenses in top-level folders separately:
+        include '*.txt'
+        include '*/*.txt'
+        include '*.md'
+        include '*/*.md'
+        // excludes:
+        exclude '**/build/**'
+        exclude '**/dist/**'
+        exclude 'lucene/benchmark/work/**'
+        exclude 'lucene/benchmark/temp/**'
+        exclude '**/CheckLoggingConfiguration.java'
+        exclude 'solr/core/src/test/org/apache/hadoop/**'
+        exclude '**/validate-source-patterns.gradle' // ourselves :-)
       }.each{ f ->
         logger.debug('Scanning file: ' + f);
         def text = f.getText('UTF-8');
