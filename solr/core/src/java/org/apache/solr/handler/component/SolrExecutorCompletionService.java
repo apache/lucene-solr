@@ -5,8 +5,7 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.ParWorkExecService;
+import org.apache.solr.common.PerThreadExecService;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -18,7 +17,7 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class SolrExecutorCompletionService<V> implements CompletionService<V> {
-  private final ParWorkExecService executor;
+  private final PerThreadExecService executor;
   private final BlockingQueue<Future<V>> completionQueue;
 
   private RunnableFuture<V> newTaskFor(Callable<V> task) {
@@ -29,7 +28,7 @@ public class SolrExecutorCompletionService<V> implements CompletionService<V> {
     return (RunnableFuture) new FutureTask(task, result);
   }
 
-  public SolrExecutorCompletionService(ParWorkExecService executor) {
+  public SolrExecutorCompletionService(PerThreadExecService executor) {
     if (executor == null) {
       throw new NullPointerException();
     } else {
@@ -38,7 +37,7 @@ public class SolrExecutorCompletionService<V> implements CompletionService<V> {
     }
   }
 
-  public SolrExecutorCompletionService(ParWorkExecService executor, BlockingQueue<Future<V>> completionQueue) {
+  public SolrExecutorCompletionService(PerThreadExecService executor, BlockingQueue<Future<V>> completionQueue) {
     if (executor != null && completionQueue != null) {
       this.executor = executor;
       this.completionQueue = completionQueue;

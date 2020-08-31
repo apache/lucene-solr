@@ -23,7 +23,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ParWorkExecService extends AbstractExecutorService {
+public class PerThreadExecService extends AbstractExecutorService {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
 
@@ -78,8 +78,15 @@ public class ParWorkExecService extends AbstractExecutorService {
         } else {
 
           try {
-            available.acquire();
-          } catch (InterruptedException e) {
+            boolean success = available.tryAcquire();
+            // I think if we wait here for available instead of running in caller thread
+            // this is why we could not use the per thread executor in the stream classes
+            // this means order cannot matter, but it should generally not matter
+            if (!success) {
+              runIt(runnable, true, true, false);
+              return;
+            }
+          } catch (Exception e) {
             ParWork.propegateInterrupt(e);
             running.decrementAndGet();
             synchronized (awaitTerminate) {
@@ -101,15 +108,15 @@ public class ParWorkExecService extends AbstractExecutorService {
     }
   }
 
-  public ParWorkExecService(ExecutorService service) {
+  public PerThreadExecService(ExecutorService service) {
     this(service, -1);
   }
 
-  public ParWorkExecService(ExecutorService service, int maxSize) {
+  public PerThreadExecService(ExecutorService service, int maxSize) {
     this(service, maxSize, false);
   }
   
-  public ParWorkExecService(ExecutorService service, int maxSize, boolean noCallerRuns) {
+  public PerThreadExecService(ExecutorService service, int maxSize, boolean noCallerRuns) {
     assert service != null;
     this.noCallerRuns = noCallerRuns; 
     //assert ObjectReleaseTracker.track(this);

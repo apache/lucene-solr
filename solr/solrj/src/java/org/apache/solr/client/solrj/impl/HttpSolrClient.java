@@ -50,7 +50,7 @@ import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.ParWorkExecService;
+import org.apache.solr.common.PerThreadExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -314,7 +314,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     final HttpRequestBase method = createMethod(request, null);
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
-      mrr.future = (Future<NamedList<Object>>) ((ParWorkExecService) ParWork.getMyPerThreadExecutor()).submit(() -> {
+      mrr.future = (Future<NamedList<Object>>) ((PerThreadExecService) ParWork.getMyPerThreadExecutor()).submit(() -> {
         try {
           executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
         } catch (SolrServerException e) {

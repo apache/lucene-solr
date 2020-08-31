@@ -110,7 +110,7 @@ public class ParWork implements Closeable {
   }
 
   public static void closeExecutor(boolean unlockClose) {
-    ParWorkExecService exec = (ParWorkExecService) THREAD_LOCAL_EXECUTOR.get();
+    PerThreadExecService exec = (PerThreadExecService) THREAD_LOCAL_EXECUTOR.get();
     if (exec != null) {
       if (unlockClose) {
         exec.closeLock(false);
@@ -373,9 +373,9 @@ public class ParWork implements Closeable {
       }
     }
 
-    ParWorkExecService executor = null;
+    PerThreadExecService executor = null;
     if (needExec) {
-      executor = (ParWorkExecService) getMyPerThreadExecutor();
+      executor = (PerThreadExecService) getMyPerThreadExecutor();
     }
     //initExecutor();
     AtomicReference<Throwable> exception = new AtomicReference<>();
@@ -512,7 +512,7 @@ public class ParWork implements Closeable {
       minThreads = 3;
       maxThreads = PROC_COUNT;
       exec = getExecutorService(Math.max(minThreads, maxThreads)); // keep alive directly affects how long a worker might
-      ((ParWorkExecService)exec).closeLock(true);
+      ((PerThreadExecService)exec).closeLock(true);
       // be stuck in poll without an enqueue on shutdown
       THREAD_LOCAL_EXECUTOR.set(exec);
     }
@@ -528,11 +528,11 @@ public class ParWork implements Closeable {
   }
 
   public static ExecutorService getExecutorService(int maximumPoolSize) {
-    return new ParWorkExecService(getRootSharedExecutor(), maximumPoolSize);
+    return new PerThreadExecService(getRootSharedExecutor(), maximumPoolSize);
   }
 
   public static ExecutorService getExecutorService(int maximumPoolSize, boolean noCallerRuns) {
-    return new ParWorkExecService(getRootSharedExecutor(), maximumPoolSize, noCallerRuns);
+    return new PerThreadExecService(getRootSharedExecutor(), maximumPoolSize, noCallerRuns);
   }
 
   private void handleObject(AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, ParObject ob) {

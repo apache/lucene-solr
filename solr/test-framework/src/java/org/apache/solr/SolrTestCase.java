@@ -47,7 +47,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.ParWorkExecService;
+import org.apache.solr.common.PerThreadExecService;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.TimeTracker;
@@ -200,7 +200,7 @@ public class SolrTestCase extends LuceneTestCase {
 
 
     testExecutor = ParWork.getMyPerThreadExecutor();
-    ((ParWorkExecService) testExecutor).closeLock(true);
+    ((PerThreadExecService) testExecutor).closeLock(true);
     // stop zkserver threads that can linger
     //interruptThreadsOnTearDown("nioEventLoopGroup", false);
 
