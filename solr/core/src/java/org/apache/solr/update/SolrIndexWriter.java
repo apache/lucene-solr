@@ -127,9 +127,16 @@ public class SolrIndexWriter extends IndexWriter {
         try {
           iw.close();
         } catch (IOException e1) {
+          if (dir != null) {
+            try {
+              directoryFactory.release(dir);
+            } catch (IOException e2) {
+              exp.addSuppressed(e2);
+            }
+          }
           exp.addSuppressed(e1);
         }
-      }else {
+      } else {
         if (dir != null) {
           try {
             directoryFactory.release(dir);
