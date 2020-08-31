@@ -8,7 +8,7 @@
 # The SOLR_HEAP configuration technique here is usable for older versions of Solr.
 # From Solr 6.3 setting the SOLR_HEAP can be done more easily with:
 #
-#   docker run -d -P -e SOLR_HEAP=800m docker-solr/docker-solr:6.3.0
+#   docker run -d -P -e SOLR_HEAP=800m apache/solr
 #
 set -e
 cp /opt/solr/bin/solr.in.sh /opt/solr/bin/solr.in.sh.orig

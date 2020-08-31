@@ -55,10 +55,10 @@ $ mkdir /home/docker-volumes/mysolr1
 $ sudo chown 8983:8983 /home/docker-volumes/mysolr1
 
 # copy the solr directory from a temporary container to the volume
-$ docker run -it --rm -v /home/docker-volumes/mysolr1:/target solr cp -r server/solr /target/
+$ docker run -it --rm -v /home/docker-volumes/mysolr1:/target apache/solr cp -r server/solr /target/
 
 # pass the solr directory to a new container running solr
-$ SOLR_CONTAINER=$(docker run -d -P -v /home/docker-volumes/mysolr1/solr:/opt/solr/server/solr solr)
+$ SOLR_CONTAINER=$(docker run -d -P -v /home/docker-volumes/mysolr1/solr:/opt/solr/server/solr apache/solr)
 
 # create a new core
 $ docker exec -it --user=solr $SOLR_CONTAINER solr create_core -c gettingstarted
@@ -95,7 +95,7 @@ Here is an example:
 docker create -v /opt/solr/server/solr --name mysolr1data solr /bin/true
 
 # pass the volume to a new container running solr
-SOLR_CONTAINER=$(docker run -d -P --volumes-from=mysolr1data solr)
+SOLR_CONTAINER=$(docker run -d -P --volumes-from=mysolr1data apache/solr)
 
 # create a new core
 $ docker exec -it --user=solr $SOLR_CONTAINER solr create_core -c gettingstarted
@@ -112,7 +112,7 @@ docker exec -it --user=solr $SOLR_CONTAINER curl http://localhost:8983/solr/gett
 docker exec -it --user=solr $SOLR_CONTAINER bash -c 'cd server; java -DSTOP.PORT=7983 -DSTOP.KEY=solrrocks -jar start.jar --stop'
 
 # create a new container
-SOLR_CONTAINER=$(docker run -d -P --volumes-from=mysolr1data solr)
+SOLR_CONTAINER=$(docker run -d -P --volumes-from=mysolr1data apache/solr)
 
 # check our core is still there:
 docker exec -it --user=solr $SOLR_CONTAINER ls server/solr/gettingstarted
@@ -126,21 +126,21 @@ Can I use volumes with SOLR_HOME?
 ---------------------------------
 
 Solr supports a SOLR_HOME environment variable to point to a non-standard location of the Solr home directory.
-You can use this in docker-solr, in combination with volumes:
+You can use this in Solr docker, in combination with volumes:
 
 ```
-docker run -it -v $PWD/mysolrhome:/mysolrhome -e SOLR_HOME=/mysolrhome solr
+docker run -it -v $PWD/mysolrhome:/mysolrhome -e SOLR_HOME=/mysolrhome apache/solr
 ```
 
 This does need a pre-configured directory at that location.
 
-To make this easier, docker-solr supports a INIT_SOLR_HOME setting, which copies the contents
+To make this easier, Solr docker supports a INIT_SOLR_HOME setting, which copies the contents
 from the default directory in the image to the SOLR_HOME (if it is empty).
 
 ```
 mkdir mysolrhome
 sudo chown 8983:8983 mysolrhome
-docker run -it -v $PWD/mysolrhome:/mysolrhome -e SOLR_HOME=/mysolrhome -e INIT_SOLR_HOME=yes solr
+docker run -it -v $PWD/mysolrhome:/mysolrhome -e SOLR_HOME=/mysolrhome -e INIT_SOLR_HOME=yes apache/solr
 ```
 
 Note: If SOLR_HOME is set, the "solr-precreate" command will put the created core in the SOLR_HOME directory
@@ -196,11 +196,11 @@ Run two Solr nodes, linked to the zookeeper container:
 
 ```console
 $ docker run --name solr1 --link zookeeper:ZK -d -p 8983:8983 \
-      solr \
+      apache/solr \
       bash -c 'solr start -f -z $ZK_PORT_2181_TCP_ADDR:$ZK_PORT_2181_TCP_PORT'
 
 $ docker run --name solr2 --link zookeeper:ZK -d -p 8984:8983 \
-      solr \
+      apache/solr \
       bash -c 'solr start -f -z $ZK_PORT_2181_TCP_ADDR:$ZK_PORT_2181_TCP_PORT'
 ```
 
@@ -217,13 +217,13 @@ Then go to `http://localhost:8983/solr/#/~cloud` (adjust the hostname for your d
 How can I run ZooKeeper and Solr with Docker Compose?
 -----------------------------------------------------
 
-https://github.com/docker-solr/docker-solr-examples/blob/master/docker-compose/docker-compose.yml
+See the [docker compose example](docs/docker-compose.yml).
 
 
 I'm confused about the different invocations of solr -- help?
 -------------------------------------------------------------
 
-The different invocations of the docker-solr image can looks confusing, because the name of the
+The different invocations of the Solr docker image can look confusing, because the name of the
 image is "solr" and the Solr command is also "solr", and the image interprets various arguments in
 special ways. I'll illustrate the various invocations:
 
@@ -231,7 +231,7 @@ special ways. I'll illustrate the various invocations:
 To run an arbitrary command in the image:
 
 ```
-docker run -it solr date
+docker run -it apache/solr date
 ```
 
 here "solr" is the name of the image, and "date" is the command.
@@ -241,7 +241,7 @@ This does not invoke any solr functionality.
 To run the Solr server:
 
 ```
-docker run -it solr
+docker run -it apache/solr
 ```
 
 Here "solr" is the name of the image, and there is no specific command,
@@ -251,7 +251,7 @@ so the image defaults to run the "solr" command with "-f" to run it in the foreg
 To run the Solr server with extra arguments:
 
 ```
-docker run -it solr -h myhostname
+docker run -it apache/solr -h myhostname
 ```
 
 This is is the same as the previous one, but an additional argument is passed.
@@ -260,7 +260,7 @@ The image will run the "solr" command with "-f -h myhostname"
 To run solr as an arbitrary command:
 
 ```
-docker run -it solr solr zk --help
+docker run -it apache/solr solr zk --help
 ```
 
 here the first "solr" is the image name, and the second "solr"
@@ -271,17 +271,17 @@ If you find this visually confusing, it might be helpful to use more specific im
 and specific command paths. For example:
 
 ```
-docker run -it solr:6 bin/solr -f -h myhostname
+docker run -it apache/solr:6 bin/solr -f -h myhostname
 ```
 
-Finally, the docker-solr image offers several commands that do some work before
+Finally, the Solr docker image offers several commands that do some work before
 then invoking the Solr server, like "solr-precreate" and "solr-demo".
 See the README.md for usage.
 These are implemented by the `docker-entrypoint.sh` script, and must be passed
 as the first argument to the image. For example:
 
 ```
-docker run -it solr:6 solr-demo
+docker run -it apache/solr:6 solr-demo
 ```
 
 It's important to understand an implementation detail here. The Dockerfile uses
@@ -289,14 +289,14 @@ It's important to understand an implementation detail here. The Dockerfile uses
 that by by running "solr -f". So these two are equivalent:
 
 ```
-docker run -it solr:6
-docker run -it solr:6 solr-foreground
+docker run -it apache/solr:6
+docker run -it apache/solr:6 solr-foreground
 ```
 
 whereas:
 
 ```
-docker run -it solr:6 solr -f
+docker run -it apache/solr:6 solr -f
 ```
 
 is slightly different: the "solr" there is a generic command, not treated in any
@@ -309,12 +309,12 @@ command. For example, this does NOT run `docker-entrypoint-initdb.d` scripts:
 
 ```
 docker run -it -v $PWD/set-heap.sh:/docker-entrypoint-initdb.d/set-heap.sh \
-    solr:6 bash -c "echo hello; solr -f"
+    apache/solr:6 bash -c "echo hello; solr -f"
 ```
 
 but this does:
 
 ```
 docker run -it $PWD/set-heap.sh:/docker-entrypoint-initdb.d/set-heap.sh \
-    solr:6 bash -c "echo hello; /opt/docker-solr/scripts/docker-entrypoint.sh solr-foreground"
+    apache/solr:6 bash -c "echo hello; /opt/docker-solr/scripts/docker-entrypoint.sh solr-foreground"
 ```

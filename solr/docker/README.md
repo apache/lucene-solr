@@ -1,23 +1,10 @@
 # Supported tags and respective `Dockerfile` links
 
-See [Docker Hub](https://hub.docker.com/_/solr?tab=tags) for a list of image tags available to pull.
-The currently supported tags can be found in [./TAGS](https://github.com/docker-solr/docker-solr/blob/389e7844c8405605a930fc30cc8029eb6027798e/TAGS).
-
-For more information about this image and its history, please see [the relevant manifest file (`library/solr`)](https://github.com/docker-library/official-images/blob/master/library/solr). This image is updated via pull requests to [the `docker-solr/docker-solr` GitHub repo](https://github.com/docker-solr/docker-solr).
-
-For detailed information about the virtual/transfer sizes and individual layers of each of the above supported tags, please see [the `solr/tag-details.md` file](https://github.com/docker-library/docs/blob/master/solr/tag-details.md) in [the `docker-library/docs` GitHub repo](https://github.com/docker-library/docs).
-
-# What is Apache Solr™?
-
-Apache Solr is highly reliable, scalable and fault tolerant, providing distributed indexing, replication and load-balanced querying, automated failover and recovery, centralized configuration and more. Solr powers the search and navigation features of many of the world's largest internet sites.
-
-Learn more on [Solr's homepage](http://lucene.apache.org/solr/) and in the [Solr Reference Guide](https://lucene.apache.org/solr/guide/).
-
-![logo](https://raw.githubusercontent.com/docker-library/docs/master/solr/logo.png)
+See [Docker Hub](https://hub.docker.com/apache/solr?tab=tags) for a list of image tags available to pull.
 
 # Getting started with the Docker image
 
-Instructions below apply to `solr:8.0.0` and above.
+Instructions below apply to `apache/solr:8.0.0` and above.
 
 ## Running Solr with host-mounted directories
 
@@ -26,7 +13,7 @@ This is a convenient mechanism for developers, and could be used for single-serv
 
 ```console
 $ mkdir solrdata
-$ docker run -d -v "$PWD/solrdata:/var/solr" -p 8983:8983 --name my_solr solr:8 solr-precreate gettingstarted
+$ docker run -d -v "$PWD/solrdata:/var/solr" -p 8983:8983 --name my_solr apache/solr solr-precreate gettingstarted
 ```
 
 Then with a web browser go to `http://localhost:8983/` to see the Admin Console (adjust the hostname for your docker host).
@@ -51,7 +38,7 @@ For example, with a `docker-compose.yml` containing the following:
 version: '3'
 services:
   solr:
-    image: solr:8
+    image: apache/solr
     ports:
      - "8983:8983"
     volumes:
@@ -71,34 +58,34 @@ docker-compose up -d
 
 ## Single-command demo
 
-For quick demos of docker-solr, there is a single command that starts Solr, creates a collection called "demo", and loads sample data into it:
+For quick demos of Solr docker, there is a single command that starts Solr, creates a collection called "demo", and loads sample data into it:
 
 ```console
-$ docker run --name solr_demo -d -p 8983:8983 solr:8 solr-demo
+$ docker run --name solr_demo -d -p 8983:8983 apache/solr solr-demo
 ```
 ## Distributed Solr
 
-See [this example](https://github.com/docker-solr/docker-solr-examples/blob/master/docker-compose/docker-compose.yml)
+See [this example](docs/docker-compose.yml)
 for an example Docker Compose file that starts up Solr in a simple cluster configuration.
 
 # How the image works
 
-The container contains an install of Solr, as installed by the [service installation script](https://lucene.apache.org/solr/guide/7_7/taking-solr-to-production.html#service-installation-script).
+The container contains an installation of Solr, as installed by the [service installation script](https://lucene.apache.org/solr/guide/7_7/taking-solr-to-production.html#service-installation-script).
 This stores the Solr distribution in `/opt/solr`, and configures Solr to use `/var/solr` to store data and logs, using the `/etc/default/solr` file for configuration.
 If you want to persist the data, mount a volume or directory on `/var/solr`.
-Solr expects some files and directories in `/var/solr`; if you use your own directory or volume you can either pre-populate them, or let docker-solr copy them for you. See [init-var-solr](scripts/init-var-solr).
+Solr expects some files and directories in `/var/solr`; if you use your own directory or volume you can either pre-populate them, or let Solr docker copy them for you. See [init-var-solr](scripts/init-var-solr).
 If you want to use custom configuration, mount it in the appropriate place. See below for examples.
 
-The docker-solr distribution adds [scripts](https://github.com/docker-solr/docker-solr/tree/master/scripts) in `/opt/docker-solr/scripts` to make it easier to use under Docker, for example to create cores on container startup.
+The Solr docker distribution adds [scripts](include/scripts) in `/opt/docker-solr/scripts` to make it easier to use under Docker, for example to create cores on container startup.
 
 ## Creating cores
 
-When Solr runs in standalone mode, you create "cores" to store data. On a non-Docker Solr, you would run the server in the background, then use the [Solr control script](https://lucene.apache.org/solr/guide/7_7/solr-control-script-reference.html) to create cores and load data. With Docker-solr you have various options.
+When Solr runs in standalone mode, you create "cores" to store data. On a non-Docker Solr, you would run the server in the background, then use the [Solr control script](https://lucene.apache.org/solr/guide/7_7/solr-control-script-reference.html) to create cores and load data. With Solr docker you have various options.
 
 The first is exactly the same: start Solr running in a container, then execute the control script manually in the same container:
 
 ```console
-$ docker run -d -p 8983:8983 --name my_solr solr:8 
+$ docker run -d -p 8983:8983 --name my_solr apache/solr
 $ docker exec -it my_solr solr create_core -c gettingstarted
 ```
 
@@ -106,7 +93,7 @@ This is not very convenient for users, and makes it harder to turn it into confi
 So, typically you will use the `solr-precreate` command which prepares the specified core and then runs Solr:
 
 ```console
-$ docker run -d -p 8983:8983 --name my_solr solr:8 solr-precreate gettingstarted
+$ docker run -d -p 8983:8983 --name my_solr apache/solr solr-precreate gettingstarted
 ```
 
 The `solr-precreate` command takes an optional extra argument to specify a configset directory below `/opt/solr/server/solr/configsets/`.
@@ -115,20 +102,20 @@ This allows you to specify your own config. See [this example](https://github.co
 The third option is to use the `solr-create` command. This runs a Solr in the background in the container, then uses the Solr control script to create the core, then stops the Solr server and restarts it in the foreground. This method is less popular because the double Solr run can be confusing.
 
 ```console
-$ docker run -d -p 8983:8983 --name my_solr solr:8 solr-create -c gettingstarted
+$ docker run -d -p 8983:8983 --name my_solr apache/solr solr-create -c gettingstarted
 ```
 
 Finally, you can run your own command-line and specify what to do, and even invoke mounted scripts. For example:
 
 ```console
-$ docker run -p 8983:8983 -v $PWD/mysetup.sh:/mysetup.sh --name my_solr solr:8 bash -c "precreate-core gettingstarted && source /mysetup.sh && solr-foreground"
+$ docker run -p 8983:8983 -v $PWD/mysetup.sh:/mysetup.sh --name my_solr apache/solr bash -c "precreate-core gettingstarted && source /mysetup.sh && solr-foreground"
 ```
 
 ## Creating collections
 
 In a "SolrCloud" cluster you create "collections" to store data; and again you have several options for creating a core.
 
-These examples assume you're running [this example cluster](https://github.com/docker-solr/docker-solr-examples/blob/master/docker-compose/docker-compose.yml)
+These examples assume you're running [this example cluster](docs/docker-compose.yml)
 
 The first way to create a collection is to go to the [Solr Admin UI](http://localhost:8983/), select "Collections" from the left-hand side navigation menu, then press the "Add Collection" button, give it a name, select the `_default` config set, then press the "Add Collection" button.
 
@@ -141,7 +128,7 @@ $ docker exec solr1 solr create -c gettingstarted2
 The third way is to use a separate container:
 
 ```console
-$ docker run -e SOLR_HOST=solr1 --network docs_solr solr solr create_collection -c gettingstarted3 -p 8983
+$ docker run -e SOLR_HOST=solr1 --network docs_solr apache/solr solr create_collection -c gettingstarted3 -p 8983
 ```
 
 The fourth way is to use the remote API, from the host or from one of the containers, or some new container on the same network (adjust the hostname accordingly):
@@ -163,19 +150,19 @@ One way of doing that is using a separate container, with a mounted volume conta
 
 ```console
 # start Solr. Listens on localhost:8983
-$ docker run --name my_solr -p 8983:8983 solr:8 solr-precreate books
+$ docker run --name my_solr -p 8983:8983 apache/solr solr-precreate books
 
 # get data
 $ mkdir mydata
 $ wget -O mydata/books.csv https://raw.githubusercontent.com/apache/lucene-solr/master/solr/example/exampledocs/books.csv
-$ docker run --rm -v "$PWD/mydata:/mydata" --network=host solr:8 post -c books /mydata/books.csv
+$ docker run --rm -v "$PWD/mydata:/mydata" --network=host apache/solr post -c books /mydata/books.csv
 ```
 
-If you use the [this example cluster](https://github.com/docker-solr/docker-solr-examples/blob/master/docker-compose/docker-compose.yml) the same works, or you can just start your loading container in the same network:
+If you use the [this example cluster](docs/docker-compose.yml) the same works, or you can just start your loading container in the same network:
 
 ```console
-$ docker run -e SOLR_HOST=solr1 --network=mycluster_solr solr solr create_collection -c books -p 8983
-$ docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr solr:8 post  -c books /mydata/books.csv -host solr1
+$ docker run -e SOLR_HOST=solr1 --network=mycluster_solr apache/solr solr create_collection -c books -p 8983
+$ docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr apache/solr post  -c books /mydata/books.csv -host solr1
 ```
 
 Alternatively, you can make the data available on a volume at Solr start time, and then load it from `docker exec` or a custom start script.
@@ -189,20 +176,20 @@ as documented in the [Solr Reference Guide](https://cwiki.apache.org/confluence/
 The `solr.in.sh` file can be found in `/etc/default`:
 
 ```console
-$ docker run  solr:8 cat /etc/default/solr.in.sh
+$ docker run apache/solr cat /etc/default/solr.in.sh
 ```
 
 It has various commented-out values, which you can override when running the container, like:
 
 ```
-$ docker run -d -p 8983:8983 -e SOLR_HEAP=800m solr
+$ docker run -d -p 8983:8983 -e SOLR_HEAP=800m apache/solr
 ```
 
 You can also mount your own config file. Do no modify the values that are set at the end of the file.
 
 ## Extending the image
 
-The docker-solr image has an extension mechanism. At run time, before starting Solr, the container will execute scripts
+The Solr docker image has an extension mechanism. At run time, before starting Solr, the container will execute scripts
 in the `/docker-entrypoint-initdb.d/` directory. You can add your own scripts there either by using mounted volumes
 or by using a custom Dockerfile. These scripts can for example copy a core directory with pre-loaded data for continuous
 integration testing, or modify the Solr configuration.
@@ -218,7 +205,7 @@ echo "this is running inside the container before Solr starts"
 you can run:
 
 ```console
-$ docker run --name solr_custom1 -d -v $PWD/custom.sh:/docker-entrypoint-initdb.d/custom.sh solr
+$ docker run --name solr_custom1 -d -v $PWD/custom.sh:/docker-entrypoint-initdb.d/custom.sh apache/solr
 $ sleep 5
 $ docker logs solr_custom1 | head
 /opt/docker-solr/scripts/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/set-heap.sh
@@ -261,7 +248,7 @@ Example comands to do a thread dump and get heap info for PID 10:
 
 For Solr 8, the docker-solr distribution switched from just extracting the Solr tar, to using the [service installation script](https://lucene.apache.org/solr/guide/7_7/taking-solr-to-production.html#service-installation-script). This was done for various reasons: to bring it in line with the recommendations by the Solr Ref Guide, to make it easier to mount volumes, and because we were [asked to](https://github.com/docker-solr/docker-solr/issues/173).
 
-This is a backwards incompatible change, and means that if you're upgrading from an older version, you will most likely need to make some changes. If you don't want to upgrade at this time, specify `solr:7` as your container image. If you use `solr:8` you will use the new style. If you use just `solr` then you risk being tripped up by backwards incompatible changes; always specify at least a major version.
+This is a backwards incompatible change, and means that if you're upgrading from an older version, you will most likely need to make some changes. If you don't want to upgrade at this time, specify `apache/solr:7` as your container image. If you use `solr:8` you will use the new style. If you use just `solr` then you risk being tripped up by backwards incompatible changes; always specify at least a major version.
 
 Changes:
 
@@ -270,45 +257,19 @@ Changes:
 
 # Running under tini
 
-The docker-solr image runs Solr under [tini](https://github.com/krallin/tini), to make signal handling work better; in particular, this allows you to `kill -9` the JVM. If you run `docker run --init`, or use `init: true` in `docker-compose.yml`, or have added `--init` to `dockerd`, docker will start its `tini` and docker-solr will notice it is not PID 1, and just `exec` Solr. If you do not run with `--init`, then the docker entrypoint script detects that it is running as PID 1, and will start the `tini` present in the docker-solr image, and run Solr under that. If you really do not want to run `tini`, and just run Solr as PID 1 instead, then you can set the `TINI=no` environment variable.
+The Solr docker image runs Solr under [tini](https://github.com/krallin/tini), to make signal handling work better; in particular, this allows you to `kill -9` the JVM. If you run `docker run --init`, or use `init: true` in `docker-compose.yml`, or have added `--init` to `dockerd`, docker will start its `tini` and docker-solr will notice it is not PID 1, and just `exec` Solr. If you do not run with `--init`, then the docker entrypoint script detects that it is running as PID 1, and will start the `tini` present in the docker-solr image, and run Solr under that. If you really do not want to run `tini`, and just run Solr as PID 1 instead, then you can set the `TINI=no` environment variable.
 
 # Out of memory handling
 
 You can use the `OOM` environment variable to control the behaviour of the Solr JVM when an out-of-memory error occurs.
-If you specify `OOM=exit`, docker-solr will add `-XX:+ExitOnOutOfMemoryError` to the JVM arguments, so that the JVM will exit.
-If you specify `OOM=crash`, docker-solr will add `-XX:+CrashOnOutOfMemoryError` to the JVM arguments, so the JVM will crash and produces text and binary crash files (if core files are enabled).
-If you specify `OOM=script`, docker-solr will add `-XX:OnOutOfMemoryError=/opt/docker-solr/scripts/oom_solr.sh`, so the JVM will run that script (and if you want to you can mount your own in its place).
+If you specify `OOM=exit`, Solr docker will add `-XX:+ExitOnOutOfMemoryError` to the JVM arguments, so that the JVM will exit.
+If you specify `OOM=crash`, Solr docker will add `-XX:+CrashOnOutOfMemoryError` to the JVM arguments, so the JVM will crash and produces text and binary crash files (if core files are enabled).
+If you specify `OOM=script`, Solr docker will add `-XX:OnOutOfMemoryError=/opt/docker-solr/scripts/oom_solr.sh`, so the JVM will run that script (and if you want to you can mount your own in its place).
 
 # About this repository
 
-This repository is available on [github.com/docker-solr/docker-solr](https://github.com/docker-solr/docker-solr), and the official build is on the [Docker Hub](https://hub.docker.com/_/solr/).
-
-# License
-
-Solr is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-
-This repository is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-
-Copyright 2015-2020 The Apache Software Foundation
-
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
-# User Feedback
-
-## Issues
-
-Please report issues with this docker image on this [Github project](https://github.com/docker-solr/docker-solr).
-
-For general questions about Solr, see the [Community information](http://lucene.apache.org/solr/resources.html#community), in particular the solr-user mailing list.
-
-## Contributing
-
-If you want to contribute to Solr, see the [Solr Resources](http://lucene.apache.org/solr/resources.html#community).
+This repository is available on , and the official build is on the [Docker Hub](https://hub.docker.com/apache/solr/).
 
 # History
 
-This project was started in 2015 by [Martijn Koster](https://github.com/makuk66). In 2019 maintainership and copyright was transferred to the Apache Lucene/Solr project. Many thanks to Martijn for all your contributions over the years!
+This project was started in 2015 by [Martijn Koster](https://github.com/makuk66) in the [docker-solr](https://github.com/docker-solr/docker-solr) repository. In 2019 maintainership and copyright was transferred to the Apache Lucene/Solr project, and in 2020 the project was migrated to live within the Solr project. Many thanks to Martijn for all your contributions over the years!

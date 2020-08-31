@@ -27,9 +27,9 @@ docker network create --driver=overlay --subnet 192.168.22.0/24 --ip-range=192.1
 As a simple test, check the automatic assignment and specific assignment work:
 
 ```
-mak@trinity10:~$ docker run -i --rm --net=netzksolr busybox ip -4 addr show eth0 | grep inet
+$ docker run -i --rm --net=netzksolr busybox ip -4 addr show eth0 | grep inet
     inet 192.168.23.129/24 scope global eth0
-mak@trinity10:~$ docker run -i --rm --net=netzksolr --ip=192.168.22.5 busybox ip -4 addr show eth0 | grep inet
+$ docker run -i --rm --net=netzksolr --ip=192.168.22.5 busybox ip -4 addr show eth0 | grep inet
     inet 192.168.22.5/24 scope global eth0
 ```
 

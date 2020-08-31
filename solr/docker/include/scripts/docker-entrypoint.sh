@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# docker-entrypoint for docker-solr
+# docker-entrypoint for Solr docker
 
 set -e
 
