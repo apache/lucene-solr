@@ -1124,10 +1124,10 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     while (asyncIter.hasNext()) {
       SolrDocument asyncDoc = asyncIter.next();
       SolrDocument syncDoc = syncIter.next();
-      String[] fields = {"id", "name"};
+      String[] fields = {"id", "key"};
       for (String f : fields) {
         assertTrue("Value of field " + f + " should match in async and sync results",
-            asyncDoc.getFirstValue("id").equals(syncDoc.getFirstValue("id")));
+            asyncDoc.getFirstValue(f).equals(syncDoc.getFirstValue(f)));
       }
     }
   }
