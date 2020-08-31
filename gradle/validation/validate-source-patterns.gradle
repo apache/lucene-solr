@@ -101,7 +101,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
     def found = 0;
     def violations = new TreeSet();
     def reportViolation = { f, name ->
-      logger.error(name + ': ' + f.toString().substring(baseDirLen).replace(File.separatorChar, (char)'/'));
+      logger.error('{}: {}', name, f.toString().substring(baseDirLen).replace(File.separatorChar, (char)'/'));
       violations.add(name);
       found++;
     }
@@ -179,7 +179,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
     }
 
     sourceFiles.each{ f ->
-      logger.debug("Scanning file: ${->f}");
+      logger.debug('Scanning source file: {}', f);
       def text = f.getText('UTF-8');
       invalidPatterns.each{ pattern,name ->
         if (pattern.matcher(text).find()) {
