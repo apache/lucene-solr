@@ -193,6 +193,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
 
     synchronized (this) {
+      closed = true;
       if (log.isDebugEnabled()) log.debug("Closing {} - {} directories currently being tracked", this.getClass().getSimpleName(), byDirectoryCache.size());
       TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS,  TimeSource.NANO_TIME); // nocommit sensible timeout control
       Collection<CacheValue> values = byDirectoryCache.values();
@@ -222,8 +223,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Error closing directory");
         }
       }
-
-      closed = true;
 
       values = byDirectoryCache.values();
       Set<CacheValue> closedDirs = new HashSet<>();
