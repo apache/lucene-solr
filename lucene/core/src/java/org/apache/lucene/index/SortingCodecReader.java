@@ -42,7 +42,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
-import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
@@ -1188,27 +1187,7 @@ public final class SortingCodecReader extends FilterCodecReader {
       @Override
       public NumericDocValues getNorms(FieldInfo field) throws IOException {
         final NumericDocValues oldNorms = in.getNormValues(field.name);
-        if (oldNorms == null) return null;
-        CachedNumericDVs norms;
-        synchronized (cachedNorms) {
-          norms = cachedNorms.get(field);
-          if (norms == null) {
-            FixedBitSet docsWithField = new FixedBitSet(maxDoc());
-            long[] values = new long[maxDoc()];
-            while (true) {
-              int docID = oldNorms.nextDoc();
-              if (docID == NO_MORE_DOCS) {
-                break;
-              }
-              int newDocID = docMap.oldToNew(docID);
-              docsWithField.set(newDocID);
-              values[newDocID] = oldNorms.longValue();
-            }
-            norms = new CachedNumericDVs(values, docsWithField);
-            cachedNorms.put(field.name, norms);
-          }
-        }
-        return new SortingNumericDocValues(norms);
+        return produceNumericDocValues(field, oldNorms, cachedNorms);
       }
 
       @Override
@@ -1228,33 +1207,37 @@ public final class SortingCodecReader extends FilterCodecReader {
     };
   }
 
+  private NumericDocValues produceNumericDocValues(FieldInfo field, NumericDocValues oldNorms, Map<String, CachedNumericDVs> cachedNorms) throws IOException {
+    if (oldNorms == null) return null;
+    CachedNumericDVs norms;
+    synchronized (cachedNorms) {
+      norms = cachedNorms.get(field);
+      if (norms == null) {
+        FixedBitSet docsWithField = new FixedBitSet(maxDoc());
+        long[] values = new long[maxDoc()];
+        while (true) {
+          int docID = oldNorms.nextDoc();
+          if (docID == NO_MORE_DOCS) {
+            break;
+          }
+          int newDocID = docMap.oldToNew(docID);
+          docsWithField.set(newDocID);
+          values[newDocID] = oldNorms.longValue();
+        }
+        norms = new CachedNumericDVs(values, docsWithField);
+        cachedNorms.put(field.name, norms);
+      }
+    }
+    return new SortingNumericDocValues(norms);
+  }
+
   @Override
   public DocValuesProducer getDocValuesReader() {
     return new DocValuesProducer() {
       @Override
       public NumericDocValues getNumeric(FieldInfo field) throws IOException {
         final NumericDocValues oldDocValues = in.getNumericDocValues(field.name);
-        if (oldDocValues == null) return null;
-        CachedNumericDVs dvs;
-        synchronized (cachedNumericDVs) {
-          dvs = cachedNumericDVs.get(field);
-          if (dvs == null) {
-            FixedBitSet docsWithField = new FixedBitSet(maxDoc());
-            long[] values = new long[maxDoc()];
-            while (true) {
-              int docID = oldDocValues.nextDoc();
-              if (docID == NO_MORE_DOCS) {
-                break;
-              }
-              int newDocID = docMap.oldToNew(docID);
-              docsWithField.set(newDocID);
-              values[newDocID] = oldDocValues.longValue();
-            }
-            dvs = new CachedNumericDVs(values, docsWithField);
-            cachedNumericDVs.put(field.name, dvs);
-          }
-        }
-        return new SortingNumericDocValues(dvs);
+        return produceNumericDocValues(field, oldDocValues, cachedNumericDVs);
       }
 
       @Override
@@ -1265,18 +1248,7 @@ public final class SortingCodecReader extends FilterCodecReader {
         synchronized (cachedBinaryDVs) {
           dvs = cachedBinaryDVs.get(field);
           if (dvs == null) {
-            FixedBitSet docsWithField = new FixedBitSet(maxDoc());
-            BytesRef[] values = new BytesRef[maxDoc()];
-            while (true) {
-              int docID = oldDocValues.nextDoc();
-              if (docID == NO_MORE_DOCS) {
-                break;
-              }
-              int newDocID = docMap.oldToNew(docID);
-              docsWithField.set(newDocID);
-              values[newDocID] = BytesRef.deepCopyOf(oldDocValues.binaryValue());
-            }
-            dvs = new CachedBinaryDVs(values, docsWithField);
+            dvs = BinaryDocValuesWriter.sortDocValues(maxDoc(), docMap, oldDocValues);
             cachedBinaryDVs.put(field.name, dvs);
           }
         }
@@ -1319,16 +1291,7 @@ public final class SortingCodecReader extends FilterCodecReader {
         synchronized (cachedSortedNumericDVs) {
           values = cachedSortedNumericDVs.get(field);
           if (values == null) {
-            values = new long[maxDoc()][];
-            int docID;
-            while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
-              int newDocID = docMap.oldToNew(docID);
-              long[] docValues = new long[oldDocValues.docValueCount()];
-              for(int i=0;i<docValues.length;i++) {
-                docValues[i] = oldDocValues.nextValue();
-              }
-              values[newDocID] = docValues;
-            }
+            values = SortedNumericDocValuesWriter.sortDocValues(maxDoc(), docMap, oldDocValues);
             cachedSortedNumericDVs.put(field.name, values);
           }
         }
@@ -1347,24 +1310,7 @@ public final class SortingCodecReader extends FilterCodecReader {
         synchronized (cachedSortedSetDVs) {
           ords = cachedSortedSetDVs.get(field);
           if (ords == null) {
-            ords = new long[maxDoc()][];
-            int docID;
-            while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
-              int newDocID = docMap.oldToNew(docID);
-              long[] docOrds = new long[1];
-              int upto = 0;
-              while (true) {
-                long ord = oldDocValues.nextOrd();
-                if (ord == NO_MORE_ORDS) {
-                  break;
-                }
-                if (upto == docOrds.length) {
-                  docOrds = ArrayUtil.grow(docOrds);
-                }
-                docOrds[upto++] = ord;
-              }
-              ords[newDocID] = ArrayUtil.copyOfSubArray(docOrds, 0, upto);
-            }
+            ords = SortedSetDocValuesWriter.sortDocValues(maxDoc(), docMap, oldDocValues);
             cachedSortedSetDVs.put(field.name, ords);
           }
         }
