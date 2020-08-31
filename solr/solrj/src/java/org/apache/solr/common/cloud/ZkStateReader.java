@@ -342,7 +342,12 @@ public class ZkStateReader implements SolrCloseable {
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = true;
     this.securityNodeListener = null;
-    zkClient.start();
+    try {
+      zkClient.start();
+    } catch (RuntimeException re) {
+      zkClient.close(); // stuff has been opened inside the zkClient
+      throw re;
+    }
     assert ObjectReleaseTracker.track(this);
   }
 

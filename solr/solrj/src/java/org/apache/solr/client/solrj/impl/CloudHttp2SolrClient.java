@@ -54,7 +54,6 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
   private final LBHttp2SolrClient lbClient;
   private Http2SolrClient myClient;
   private final boolean clientIsInternal;
-  private ZkStateReader zkStateReader;
 
   /**
    * Create a new client object that connects to Zookeeper and is always aware
@@ -66,33 +65,49 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
-    assert ObjectReleaseTracker.track(this);
     this.clientIsInternal = builder.httpClient == null;
-    this.myClient = (builder.httpClient == null) ? new Http2SolrClient.Builder().withHeaders(builder.headers).build() : builder.httpClient;
     if (builder.stateProvider == null) {
       if ((builder.zkHosts != null && !builder.zkHosts.isEmpty()) && builder.solrUrls != null) {
+        cleanupAfterInitError();
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
       if (builder.zkHosts != null && !builder.zkHosts.isEmpty()) {
-        this.zkStateReader = new ZkStateReader(ZkClientClusterStateProvider.buildZkHostString(builder.zkHosts, builder.zkChroot), 40000, 15000);
-        this.zkStateReader.createClusterStateWatchersAndUpdate();
-        this.stateProvider = new ZkClientClusterStateProvider(zkStateReader, false);
+        final String zkHostString;
+        try {
+          zkHostString = ZkClientClusterStateProvider.buildZkHostString(builder.zkHosts, builder.zkChroot);
+        } catch (IllegalArgumentException iae) {
+          cleanupAfterInitError();
+          throw iae;
+        }
+        this.stateProvider = new ZkClientClusterStateProvider(zkHostString, 40000, 15000);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new Http2ClusterStateProvider(builder.solrUrls, builder.httpClient);
         } catch (Exception e) {
+          cleanupAfterInitError();
           ParWork.propegateInterrupt(e);
           throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
               + "Solr server(s), "  + builder.solrUrls + ", down?)", e);
         }
       } else {
+        cleanupAfterInitError();
         throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
       }
     } else {
       this.stateProvider = builder.stateProvider;
     }
+    this.myClient = (builder.httpClient == null) ? new Http2SolrClient.Builder().withHeaders(builder.headers).build() : builder.httpClient;
     this.lbClient = new LBHttp2SolrClient(myClient);
+    ObjectReleaseTracker.track(this);
+  }
 
+  // called to clean-up objects created by super if there are errors during initialization
+  private void cleanupAfterInitError() {
+    try {
+      super.close(); // super created a ThreadPool ^
+    } catch (IOException ignore) {
+      // no-op: not much we can do here
+    }
   }
 
   @Override
@@ -153,7 +168,6 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
       closer.collect(stateProvider);
       closer.collect(lbClient);
-      closer.collect(zkStateReader);
       if (clientIsInternal && myClient!=null) {
 
         closer.collect(myClient);
@@ -282,29 +296,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
      * Create a {@link CloudHttp2SolrClient} based on the provided configuration.
      */
     public CloudHttp2SolrClient build() {
-      CloudHttp2SolrClient cloudClient = new CloudHttp2SolrClient(this);
-      /*
-
-      TJP ~ this leaks the stateProvider created here and causes tests to hang
-
-      if (stateProvider == null) {
-        if (!zkHosts.isEmpty()) {
-          stateProvider = new ZkClientClusterStateProvider(cloudClient.getZkStateReader());
-        }
-        else if (!this.solrUrls.isEmpty()) {
-          try {
-            stateProvider = new Http2ClusterStateProvider(solrUrls, httpClient);
-          } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
-            throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
-                + "Solr server(s), "  + solrUrls + ", down?)", e);
-          }
-        } else {
-          throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
-        }
-      }
-       */
-      return cloudClient;
+      return new CloudHttp2SolrClient(this);
     }
 
   }

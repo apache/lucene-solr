@@ -756,7 +756,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ client not respecting the 100 ms timeout in this test
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(SolrTestCaseJ4.DEAD_HOST_1)) {
       client.setZkConnectTimeout(100);

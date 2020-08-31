@@ -55,7 +55,6 @@ public class CloudSolrClient extends BaseCloudSolrClient {
   private final boolean shutdownLBHttpSolrServer;
   private final HttpClient myClient;
   private final boolean clientIsInternal;
-  private volatile ZkStateReader zkStateReader;
 
   public static final String STATE_VERSION = BaseCloudSolrClient.STATE_VERSION;
 
@@ -77,23 +76,32 @@ public class CloudSolrClient extends BaseCloudSolrClient {
    */
   protected CloudSolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
+
     if (builder.stateProvider == null) {
       if (builder.zkHosts != null && builder.zkHosts.size() > 0 && builder.solrUrls != null && builder.solrUrls.size() > 0) {
+        cleanupAfterInitError();
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
       if (builder.zkHosts != null && builder.zkHosts.size() > 0) {
-        this.zkStateReader = new ZkStateReader(ZkClientClusterStateProvider.buildZkHostString(builder.zkHosts, builder.zkChroot), 40000, 15000);
-        this.zkStateReader.createClusterStateWatchersAndUpdate();
-        this.stateProvider = new ZkClientClusterStateProvider(zkStateReader);
+        final String zkHostString;
+        try {
+          zkHostString = ZkClientClusterStateProvider.buildZkHostString(builder.zkHosts, builder.zkChroot);
+        } catch (IllegalArgumentException iae) {
+          cleanupAfterInitError();
+          throw iae;
+        }
+        this.stateProvider = new ZkClientClusterStateProvider(zkHostString, 40000, 15000);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
         } catch (Exception e) {
+          cleanupAfterInitError();
           ParWork.propegateInterrupt(e);
           throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
               + "Solr server(s), "  + builder.solrUrls + ", down?)", e);
         }
       } else {
+        cleanupAfterInitError();
         throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
       }
     } else {
@@ -111,7 +119,16 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     this.lbClient = builder.loadBalancedSolrClient;
     ObjectReleaseTracker.track(this);
   }
-  
+
+  // called to clean-up objects created by super if there are errors during initialization
+  private void cleanupAfterInitError() {
+    try {
+      super.close(); // super created a ThreadPool ^
+    } catch (IOException ignore) {
+      // no-op: not much we can do here
+    }
+  }
+
   private void propagateLBClientConfigOptions(Builder builder) {
     final LBHttpSolrClient.Builder lbBuilder = builder.lbClientBuilder;
     
@@ -177,7 +194,6 @@ public class CloudSolrClient extends BaseCloudSolrClient {
       if (clientIsInternal) {
         closer.collect(myClient);
       }
-      closer.collect(zkStateReader);
     }
     super.close();
     ObjectReleaseTracker.release(this);

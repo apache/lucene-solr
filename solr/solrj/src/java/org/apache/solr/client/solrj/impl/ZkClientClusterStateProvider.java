@@ -37,15 +37,20 @@ import java.util.Set;
 public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
-  final ZkStateReader zkStateReader;
+  ZkStateReader zkStateReader;
   private boolean closeZkStateReader = false;
   final String zkHost;
   int zkConnectTimeout = 15000;
   int zkClientTimeout = 45000;
 
-
   private volatile boolean isClosed = false;
+
+  ZkClientClusterStateProvider(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
+    this.zkHost = zkServerAddress;
+    this.zkClientTimeout = zkClientTimeout;
+    this.zkConnectTimeout = zkClientConnectTimeout;
+    this.closeZkStateReader = true;
+  }
 
   public ZkClientClusterStateProvider(ZkStateReader zkStateReader) {
     this(zkStateReader, false);
@@ -150,26 +155,38 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public void connect() {
-    // Esentially a No-Op, but force a check that we're not closed and the ZkStateReader is available...
-    final ZkStateReader ignored = getZkStateReader();
+  public synchronized void connect() {
+    if (this.zkStateReader == null) {
+      this.zkStateReader = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
+      this.zkStateReader.createClusterStateWatchersAndUpdate();
+    }
   }
   
   public ZkStateReader getZkStateReader() {
+    if (zkStateReader == null) {
+      throw new IllegalStateException("Not connected to ZK! Did you call connect?");
+      /*
+      synchronized (this) {
+        if (zkStateReader == null) {
+          connect();
+        }
+      }
+       */
+    }
     return zkStateReader;
   }
   
   @Override
-  public void close() throws IOException {
-    synchronized (this) {
-      isClosed = true;
-      final ZkStateReader zkToClose = zkStateReader;
-      if (false == isClosed && zkToClose != null) {
-        if (closeZkStateReader && zkStateReader != null) {
-          ParWork.close(zkToClose);
-        }
-      }
+  public synchronized void close() throws IOException {
+    if (isClosed) {
+      return;
     }
+
+    final ZkStateReader zkToClose = zkStateReader;
+    if (zkToClose != null && closeZkStateReader) {
+      ParWork.close(zkToClose);
+    }
+    isClosed = true;
   }
 
 

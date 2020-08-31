@@ -37,13 +37,12 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
-
-import static org.mockito.Mockito.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-@Ignore // nocommit debug
 public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   
   @BeforeClass

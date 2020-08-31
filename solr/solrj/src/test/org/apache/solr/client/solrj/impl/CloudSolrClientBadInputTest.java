@@ -26,12 +26,10 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-@Ignore // nocommit debug
 public class CloudSolrClientBadInputTest extends SolrCloudTestCase {
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
@@ -42,8 +40,6 @@ public class CloudSolrClientBadInputTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     configureCluster(1)
         .configure();
-
-    final List<String> solrUrls = new ArrayList<>();
   }
 
   @Test
