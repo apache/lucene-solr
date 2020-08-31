@@ -16,6 +16,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
+[WARNING]
+.Autoscaling is deprecated
+====
+The autoscaling framework in its current form is deprecated and will be removed in Solr 9.0.
+
+A new design for this feature is currently under development in https://issues.apache.org/jira/browse/SOLR-14613[SOLR-14613] with a goal for release with Solr 9.0.
+====
+
 Solr provides a way to automatically add replicas for a collection when the number of active replicas drops below
 the replication factor specified at the time of the creation of the collection.
 

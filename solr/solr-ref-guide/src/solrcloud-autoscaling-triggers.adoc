@@ -16,6 +16,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
+[WARNING]
+.Autoscaling is deprecated
+====
+The autoscaling framework in its current form is deprecated and will be removed in Solr 9.0.
+
+A new design for this feature is currently under development in https://issues.apache.org/jira/browse/SOLR-14613[SOLR-14613] with a goal for release with Solr 9.0.
+====
+
 Triggers are used in autoscaling to watch for cluster events such as nodes joining or leaving, search rate, index rate, on a schedule, or any other metric breaching a threshold.
 
 Trigger implementations verify the state of resources that they monitor. When they detect a
