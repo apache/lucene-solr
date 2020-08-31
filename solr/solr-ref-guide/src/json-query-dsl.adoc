@@ -466,7 +466,7 @@ This paragraph binds many features together. Basically it's an example of filter
                      "{!bool filter=$sku_fqs excludeTags=sku_attr1_tag}" <13>
             },
             "facet": {
-                "by_parent":"uniqueBlock({!v=$parents}})"    <14>
+                "by_parent":"uniqueBlock({!v=$parents})"    <14>
             }
         },
         // sku_attr2 ...
@@ -487,5 +487,4 @@ This paragraph binds many features together. Basically it's an example of filter
 <12> restrict SKU docs for faceting 
 <13> refer to all SKU filter queries, but exclude certain tag retaining only `sku_attr2:bar`  
 <14> count subfacet in parent documents see <<json-facet-api.adoc#uniqueblock-and-block-join-counts>>
-
 
