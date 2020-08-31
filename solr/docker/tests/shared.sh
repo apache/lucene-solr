@@ -120,7 +120,7 @@ TEST_NAME="$(basename -- "${TEST_DIR}")"
 # Create build directory if it hasn't been provided already
 if [[ -z ${BUILD_DIR:-} ]]; then
   BASE_DIR="$(dirname -- "${BASH_SOURCE-$0}")"
-  BASE_DIR="$(cd ${BASE_DIR}/.. && pwd)"
+  BASE_DIR="$(cd "${BASE_DIR}/.." && pwd)"
   BUILD_DIR="${BASE_DIR}/build/tmp/tests/${TEST_NAME}"
 fi
 mkdir -p "${BUILD_DIR}"
@@ -130,4 +130,4 @@ echo "Test logs and build files can be found at: ${BUILD_DIR}"
 container_name="test-$(echo "${TEST_NAME}" | tr ':/-' '_')-$(echo "${tag}" | tr ':/-' '_')"
 
 echo "Cleaning up left-over containers from previous runs"
-container_cleanup "$container_name"
+container_cleanup "${container_name}"

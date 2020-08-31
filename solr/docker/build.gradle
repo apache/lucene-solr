@@ -1,5 +1,3 @@
-import org.gradle.tooling.model.SourceDirectory
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -35,8 +33,6 @@ docker {
   buildArgs(['BASE_IMAGE' : 'openjdk:11-jre-slim', 'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package', 'SOLR_VERSION': "${version}"])
 }
 
-// Create the docker image as a part of the assemble task
-assemble.dependsOn tasks.docker
 
 // In order to create the solr docker image, the solr package image must be created first.
 tasks.docker.dependsOn(project(':solr:docker:package').tasks.docker)
@@ -92,4 +88,6 @@ task test(type: DockerTestSuite) {
   outputDir = project.file("$buildDir/tmp/tests")
 }
 
-//testing.dependsOn dockerIntegrationTests
+// Create the docker image as a part of the assemble task
+// assemble.dependsOn tasks.docker
+// testing.dependsOn dockerIntegrationTests
