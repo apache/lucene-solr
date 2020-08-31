@@ -274,6 +274,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name) throws IOException {
+    if (prepForClose) {
+      throw new AlreadyClosedException();
+    }
     SolrIndexWriter iw;
     try {
       iw = SolrIndexWriter.buildIndexWriter(core, name, core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getLatestSchema(),
