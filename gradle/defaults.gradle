@@ -40,6 +40,8 @@ allprojects {
         result = project.getProperty(propName)
       } else if (System.properties.containsKey(propName)) {
         result = System.properties.get(propName)
+      } else if (defValue instanceof Closure) {
+        result = defValue.call()
       } else {
         result = defValue
       }
