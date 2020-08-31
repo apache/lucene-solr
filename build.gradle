@@ -90,12 +90,12 @@ ext {
       "flexmark": "0.61.24",
   ]
   
-  // read some external tool locations from system props
-  externalToolExecutables = [
-      "python3": propertyOrDefault('python3.exe', 'python3'),
-      "python2": propertyOrDefault('python2.exe', 'python2'),
-      "perl": propertyOrDefault('perl.exe', 'perl'),
-  ]
+  // Allow definiting external tool locations using system props.
+  externalTool = { name ->
+    def resolved = propertyOrDefault("${name}.exe", name as String)
+    logger.info("External tool '${name}' resolved to: ${resolved}")
+    return resolved
+  }
 }
 
 // Include smaller chunks configuring dedicated build areas.
@@ -163,12 +163,9 @@ apply from: file('gradle/help.gradle')
 // of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/force-versions.gradle')
 apply from: file('gradle/ant-compat/misc.gradle')
-apply from: file('gradle/ant-compat/resolve.gradle')
 apply from: file('gradle/ant-compat/post-jar.gradle')
 apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
-apply from: file('gradle/ant-compat/solr-forbidden-apis.gradle')
-apply from: file('gradle/ant-compat/forbidden-api-rules-in-sync.gradle')
 
 apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
@@ -177,3 +174,7 @@ apply from: file('gradle/documentation/render-javadoc.gradle')
 
 apply from: file('gradle/hacks/findbugs.gradle')
 apply from: file('gradle/hacks/gradle.gradle')
+apply from: file('gradle/hacks/hashmapAssertions.gradle')
+
+apply from: file('gradle/solr/packaging.gradle')
+apply from: file('gradle/solr/solr-forbidden-apis.gradle')

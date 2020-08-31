@@ -46,8 +46,6 @@ dependencies {
    ":solr:contrib:analytics",
    ":solr:contrib:extraction",
    ":solr:contrib:clustering",
-   ":solr:contrib:dataimporthandler",
-   ":solr:contrib:dataimporthandler-extras",
    ":solr:contrib:jaegertracer-configurator",
    ":solr:contrib:langid",
    ":solr:contrib:ltr",

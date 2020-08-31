@@ -27,6 +27,8 @@ configure(rootProject) {
   }
 }
 
+def resources = scriptResources(buildscript)
+
 allprojects {
   plugins.withType(JavaPlugin) {
     // Create a [sourceSetName]EcjLint task for each source set
@@ -69,7 +71,7 @@ allprojects {
         args += [ "-proc:none" ]
         args += [ "-nowarn" ]
         args += [ "-enableJavadoc" ]
-        args += [ "-properties", project(":lucene").file("tools/javadoc/ecj.javadocs.prefs").absolutePath ]
+        args += [ "-properties", file("${resources}/ecj.javadocs.prefs").absolutePath ]
 
         doFirst {
           tmpDst.mkdirs()

@@ -27,18 +27,23 @@ are enabled, requests may be rejected under the condition of high node duress wi
 It is up to the client to handle this error and potentially build a retrial logic as this should ideally be a transient situation.
 
 == Circuit Breaker Configurations
-The following flag controls the global activation/deactivation of circuit breakers. If this flag is disabled, all circuit breakers
-will be disabled globally. Per circuit breaker configurations are specified in their respective sections later.
+All circuit breaker configurations are listed in the circuitBreaker tags in solrconfig.xml as shown below:
 
 [source,xml]
 ----
-<circuitBreakers enabled="true">
+<circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
   <!-- All specific configs in this section -->
-</circuitBreakers>
+</circuitBreaker>
 ----
 
-This flag acts as the highest authority and global controller of circuit breakers. For using specific circuit breakers, each one
+The "enabled" attribute controls the global activation/deactivation of circuit breakers. If this flag is disabled, all circuit breakers
+will be disabled globally. Per circuit breaker configurations are specified in their respective sections later.
+
+This attribute acts as the highest authority and global controller of circuit breakers. For using specific circuit breakers, each one
 needs to be individually enabled in addition to this flag being enabled.
+
+CircuitBreakerManager is the default manager for all circuit breakers that should be defined in the tag unless the user wishes to use
+a custom implementation.
 
 == Currently Supported Circuit Breakers
 
@@ -51,11 +56,18 @@ Configuration for JVM heap usage based circuit breaker:
 
 [source,xml]
 ----
-<memBreaker enabled="true" threshold="75"/>
+<str name="memEnabled">true</str>
 ----
 
 Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
-will not help you. Also, the triggering threshold is defined as a percentage of the max heap allocated to the JVM.
+will not help you.
+
+The triggering threshold is defined as a percentage of the max heap allocated to the JVM. It is controlled by the below configuration:
+
+[source,xml]
+----
+<str name="memThreshold">75</str>
+----
 
 It does not logically make sense to have a threshold below 50% and above 95% of the max heap allocated to the JVM. Hence, the range
 of valid values for this parameter is [50, 95], both inclusive.
@@ -76,11 +88,18 @@ Configuration for CPU utilization based circuit breaker:
 
 [source,xml]
 ----
-<cpuBreaker enabled="true" threshold="20"/>
+<str name="cpuEnabled">true</str>
 ----
 
 Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag
-will not help you. The triggering threshold is defined in units of CPU utilization.
+will not help you.
+
+The triggering threshold is defined in units of CPU utilization. The configuration to control this is as below:
+
+[source,xml]
+----
+<str name="cpuThreshold">75</str>
+----
 
 == Performance Considerations
 It is worth noting that while JVM or CPU circuit breakers do not add any noticeable overhead per query, having too many
