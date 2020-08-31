@@ -47,5 +47,15 @@ allprojects {
       }
       return result
     }
+
+    // System environment variable or default.
+    envOrDefault = { envName, defValue ->
+      return Objects.requireNonNullElse(System.getenv(envName), defValue);
+    }
+
+    // Either a project, system property, environment variable or default value.
+    propertyOrEnvOrDefault = { propName, envName, defValue ->
+      return propertyOrDefault(propName, envOrDefault(envName, defValue));
+    }
   }
 }
