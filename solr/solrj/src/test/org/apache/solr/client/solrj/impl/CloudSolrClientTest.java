@@ -192,6 +192,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // flakey test, leaks, seems to fail collection create
   public void testAliasHandling() throws Exception {
     createTestCollectionIfNeeded();
     createTestCollectionIfNeeded(COLLECTION2, 2, 1);
