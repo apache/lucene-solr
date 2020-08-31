@@ -297,7 +297,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     List<Edge> targets = new ArrayList();
     ExecutorService threadPool = null;
 
-    threadPool = ParWork.getMyPerThreadExecutor();
+    threadPool = ParWork.getRootSharedExecutor();
 
     //Breadth first search
     TRAVERSE:
