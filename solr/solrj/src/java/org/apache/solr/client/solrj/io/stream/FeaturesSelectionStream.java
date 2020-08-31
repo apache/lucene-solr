@@ -247,7 +247,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     }
 
     this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
-    this.executorService = ParWork.getMyPerThreadExecutor();
+    this.executorService = ParWork.getRootSharedExecutor();
   }
 
   public List<TupleStream> children() {
