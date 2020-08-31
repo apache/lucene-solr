@@ -283,6 +283,10 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
      */
     public CloudHttp2SolrClient build() {
       CloudHttp2SolrClient cloudClient = new CloudHttp2SolrClient(this);
+      /*
+
+      TJP ~ this leaks the stateProvider created here and causes tests to hang
+
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
           stateProvider = new ZkClientClusterStateProvider(cloudClient.getZkStateReader());
@@ -299,6 +303,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
           throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
         }
       }
+       */
       return cloudClient;
     }
 
