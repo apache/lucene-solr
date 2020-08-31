@@ -204,7 +204,7 @@ public class V2HttpCall extends HttpSolrCall {
       String collectionName = collectionsList.get(0); // first
       //TODO an option to choose another collection in the list if can't find a local replica of the first?
 
-      return zkStateReader.getClusterState().getCollectionOrNull(collectionName, true);
+      return zkStateReader.getClusterState().getCollectionOrNull(collectionName);
     };
 
     DocCollection docCollection = logic.get();

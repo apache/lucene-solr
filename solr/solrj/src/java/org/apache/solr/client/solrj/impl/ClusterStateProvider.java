@@ -76,7 +76,7 @@ public interface ClusterStateProvider extends SolrCloseable {
   ClusterState getClusterState() throws IOException;
 
   default DocCollection getCollection(String name) throws IOException{
-   return getClusterState().getCollectionOrNull(name, true);
+   return getClusterState().getCollectionOrNull(name);
   }
 
   /**

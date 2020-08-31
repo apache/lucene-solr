@@ -522,7 +522,7 @@ public class Assign {
       for (String shard : assignRequest.shardNames) shardVsReplicaCount.put(shard, assignRequest.numNrtReplicas);
 
       Map<String, Map<String, Integer>> shardVsNodes = new LinkedHashMap<>();
-      DocCollection docCollection = solrCloudManager.getClusterStateProvider().getClusterState().getCollectionOrNull(assignRequest.collectionName, true);
+      DocCollection docCollection = solrCloudManager.getClusterStateProvider().getClusterState().getCollectionOrNull(assignRequest.collectionName);
       if (docCollection != null) {
         for (Slice slice : docCollection.getSlices()) {
           LinkedHashMap<String, Integer> n = new LinkedHashMap<>();

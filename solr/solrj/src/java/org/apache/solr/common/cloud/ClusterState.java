@@ -105,14 +105,14 @@ public class ClusterState implements JSONWriter.Writable {
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
    */
   public boolean hasCollection(String collectionName) {
-    return getCollectionOrNull(collectionName, true) != null;
+    return getCollectionOrNull(collectionName) != null;
   }
 
   /**
    * Get the named DocCollection object, or throw an exception if it doesn't exist.
    */
   public DocCollection getCollection(String collection) {
-    DocCollection coll = getCollectionOrNull(collection, true);
+    DocCollection coll = getCollectionOrNull(collection);
     if (coll == null) throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection : " + collection);
     return coll;
   }

@@ -637,7 +637,7 @@ public class ZkController implements Closeable {
   public void giveupLeadership(CoreDescriptor cd, Throwable tragicException) {
     assert tragicException != null;
     assert cd != null;
-    DocCollection dc = getClusterState().getCollectionOrNull(cd.getCollectionName(), true);
+    DocCollection dc = getClusterState().getCollectionOrNull(cd.getCollectionName());
     if (dc == null) return;
 
     Slice shard = dc.getSlice(cd.getCloudDescriptor().getShardId());

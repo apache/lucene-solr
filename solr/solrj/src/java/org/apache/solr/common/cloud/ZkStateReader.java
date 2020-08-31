@@ -488,8 +488,7 @@ public class ZkStateReader implements SolrCloseable {
         ParWork.propegateInterrupt(e);
       }
 
-      VersionedCollectionProps props = new VersionedCollectionProps(
-          stat.getVersion(), (Map<String,String>) fromJSON(data));
+      VersionedCollectionProps props = new VersionedCollectionProps(stat.getVersion(), (Map<String,String>) fromJSON(data));
       watchedCollectionProps.put(c, props);
     });
   }
@@ -969,7 +968,7 @@ public class ZkStateReader implements SolrCloseable {
     if (clusterState == null) {
       return null;
     }
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collection, true);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection == null || docCollection.getSlicesMap() == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + collection);
@@ -1136,8 +1135,7 @@ public class ZkStateReader implements SolrCloseable {
           try {
             byte[] data = zkClient.getData(getCollectionPropsPath(collection), propsWatcher, stat);
 
-            VersionedCollectionProps props = new VersionedCollectionProps(
-                stat.getVersion(), (Map<String,String>) fromJSON(data));
+            VersionedCollectionProps props = new VersionedCollectionProps(stat.getVersion(), (Map<String,String>) fromJSON(data));
             watchedCollectionProps.put(collection, props);
             properties = props;
           } catch (KeeperException e) {
@@ -1153,7 +1151,7 @@ public class ZkStateReader implements SolrCloseable {
     return properties.props;
   }
 
-  private class VersionedCollectionProps {
+  private static class VersionedCollectionProps {
     int zkVersion;
     Map<String, String> props;
     long cacheUntilNs = 0;
@@ -1326,8 +1324,7 @@ public class ZkStateReader implements SolrCloseable {
         try {
           byte[] data = zkClient.getData(getCollectionPropsPath(coll), this, stat);
 
-          VersionedCollectionProps props = new VersionedCollectionProps(
-              stat.getVersion(), (Map<String,String>) fromJSON(data));
+          VersionedCollectionProps props = new VersionedCollectionProps(stat.getVersion(), (Map<String,String>) fromJSON(data));
           watchedCollectionProps.put(coll, props);
 
           try (ParWork work = new ParWork(this, true)) {

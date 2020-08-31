@@ -70,7 +70,7 @@ public class CloudUtil {
     log.debug("checkSharedFSFailoverReplaced running for coreNodeName={} baseUrl={}", thisCnn, thisBaseUrl);
 
     // if we see our core node name on a different base url, unload
-    final DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(desc.getCloudDescriptor().getCollectionName(), true);
+    final DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(desc.getCloudDescriptor().getCollectionName());
     if (docCollection != null && docCollection.getSlicesMap() != null) {
       Map<String,Slice> slicesMap = docCollection.getSlicesMap();
       for (Slice slice : slicesMap.values()) {
@@ -105,7 +105,7 @@ public class CloudUtil {
   }
 
   public static boolean replicaExists(ClusterState clusterState, String collection, String shard, String coreNodeName) {
-    DocCollection docCollection = clusterState.getCollectionOrNull(collection, true);
+    DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection != null) {
       Slice slice = docCollection.getSlice(shard);
       if (slice != null) {
@@ -203,7 +203,7 @@ public class CloudUtil {
     DocCollection coll = null;
     while (!timeout.hasTimedOut()) {
       state = cloudManager.getClusterStateProvider().getClusterState();
-      coll = state.getCollectionOrNull(collection, true);
+      coll = state.getCollectionOrNull(collection);
       // due to the way we manage collections in SimClusterStateProvider a null here
       // can mean that a collection is still being created but has no replicas
       if (coll == null) { // does not yet exist?

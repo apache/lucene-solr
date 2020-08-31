@@ -101,7 +101,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       SolrZkClient zkClient = zkStateReader.getZkClient();
       SolrSnapshotManager.cleanupCollectionLevelSnapshots(zkClient, collection);
 
-      if (zkStateReader.getClusterState().getCollectionOrNull(collection, true) == null) {
+      if (zkStateReader.getClusterState().getCollectionOrNull(collection) == null) {
         if (zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
           // if the collection is not in the clusterstate, but is listed in zk, do nothing, it will just
           // be removed in the finally - we cannot continue, because the below code will error if the collection
