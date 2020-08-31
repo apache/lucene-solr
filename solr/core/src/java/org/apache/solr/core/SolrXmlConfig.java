@@ -77,32 +77,36 @@ public class SolrXmlConfig {
   private static XPathExpression transientCoreCacheFactoryExp;
   private static XPathExpression tracerConfigExp;
 
+  private static XPathExpression coreLoadThreadsExp;
+  private static XPathExpression persistentExp;
+  private static XPathExpression sharedLibExp;
+  private static XPathExpression zkHostExp;
+  private static XPathExpression coresExp;
+
 
   static String shardHandlerFactoryPath = "solr/shardHandlerFactory";
-
   static String counterExpPath = "solr/metrics/suppliers/counter";
   static String meterPath = "solr/metrics/suppliers/meter";
-
   static String timerPath = "solr/metrics/suppliers/timer";
-
   static String histoPath = "solr/metrics/suppliers/histogram";
-
   static String historyPath = "solr/metrics/history";
-
   static String  transientCoreCacheFactoryPath =  "solr/transientCoreCacheFactory";
-
   static String  tracerConfigPath = "solr/tracerConfig";
+
+  static String  coreLoadThreadsPath = "solr/@coreLoadThreads";
+  static String  persistentPath = "solr/@persistent";
+  static String  sharedLibPath = "solr/@sharedLib";
+  static String  zkHostPath = "solr/@zkHost";
+  static String  coresPath = "solr/cores";
 
   static {
 
     XPath xPath = XmlConfigFile.getXpath();
     try {
-
       shardHandlerFactoryExp = xPath.compile(shardHandlerFactoryPath);
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
-
     try {
       counterExp = xPath.compile(counterExpPath);
     } catch (XPathExpressionException e) {
@@ -139,6 +143,31 @@ public class SolrXmlConfig {
       log.error("", e);
     }
 
+    try {
+      coreLoadThreadsExp = xPath.compile(coreLoadThreadsPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      persistentExp = xPath.compile(persistentPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      sharedLibExp = xPath.compile(sharedLibPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      zkHostExp = xPath.compile(zkHostPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      coresExp = xPath.compile(coresPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
   }
 
   public static NodeConfig fromConfig(Path solrHome, XmlConfigFile config, boolean fromZookeeper) {
@@ -254,17 +283,17 @@ public class SolrXmlConfig {
   }
 
   private static void checkForIllegalConfig(XmlConfigFile config) {
-    // woah! it's best if we don't do this - resource killer - note: perhaps not as bad now that xml is more efficient?
-//    failIfFound(config, "solr/@coreLoadThreads");
-//    failIfFound(config, "solr/@persistent");
-//    failIfFound(config, "solr/@sharedLib");
-//    failIfFound(config, "solr/@zkHost");
-//    failIfFound(config, "solr/cores");
-//
-//    assertSingleInstance("solrcloud", config);
-//    assertSingleInstance("logging", config);
-//    assertSingleInstance("logging/watcher", config);
-//    assertSingleInstance("backup", config);
+    // was resource killer - note: perhaps not as bad now that xml is more efficient?
+    failIfFound(config, coreLoadThreadsExp, coreLoadThreadsPath);
+    failIfFound(config, persistentExp, persistentPath);
+    failIfFound(config, sharedLibExp, sharedLibPath);
+    failIfFound(config, zkHostExp, zkHostPath);
+    failIfFound(config, coresExp, coresPath);
+
+    assertSingleInstance("solrcloud", config);
+    assertSingleInstance("logging", config);
+    assertSingleInstance("logging/watcher", config);
+    assertSingleInstance("backup", config);
   }
 
   private static void assertSingleInstance(String section, XmlConfigFile config) {
@@ -272,13 +301,11 @@ public class SolrXmlConfig {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Multiple instances of " + section + " section found in solr.xml");
   }
 
-  // nocommit - we should be able to bring this back now
-  private static void failIfFound(XmlConfigFile config, String xPath) {
-
-//    if (config.getVal(xPath, false) != null) {
-//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
-//          "\n. Please upgrade your solr.xml: https://lucene.apache.org/solr/guide/format-of-solr-xml.html");
-//    }
+  private static void failIfFound(XmlConfigFile config, XPathExpression xPath, String path) {
+    if (config.getVal(xPath, path,false) != null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
+          "\n. Please upgrade your solr.xml: https://lucene.apache.org/solr/guide/format-of-solr-xml.html");
+    }
   }
 
   private static Properties loadProperties(XmlConfigFile config) {

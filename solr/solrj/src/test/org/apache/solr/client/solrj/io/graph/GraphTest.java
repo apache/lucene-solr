@@ -45,6 +45,7 @@ import org.junit.Test;
 
 @LuceneTestCase.Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@LuceneTestCase.Nightly // kind of odd given the 2 node cluster, but this test can be pretty slow
 public class GraphTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
