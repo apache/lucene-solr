@@ -51,6 +51,24 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   protected final List<BytesRef> payloadToMatch;
   protected final SpanQuery match;
 
+  protected String op = null;
+  protected float threshold = 0.75f;
+
+  public String getOp() {
+    return op;
+  }
+
+  public void setOp(String op) {
+    this.op = op;
+  }
+  public float getThreshold() {
+    return threshold;
+  }
+
+  public void setThreshold(float threshold) {
+    this.threshold = threshold;
+  }
+  
   /**
    * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
    * @param payloadToMatch The {@link java.util.List} of payloads to match
@@ -111,7 +129,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
     @Override
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
-      final PayloadChecker collector = new PayloadChecker();
+      // create the correct checker for the operation.
+      final PayloadChecker collector = checkerForOp(op, threshold);
       Spans matchSpans = matchWeight.getSpans(context, requiredPostings.atLeast(Postings.PAYLOADS));
       return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
         @Override
@@ -121,6 +140,24 @@ public class SpanPayloadCheckQuery extends SpanQuery {
           return collector.match();
         }
       };
+    }
+
+    private PayloadChecker checkerForOp(String operation, Float threshold) {
+      PayloadChecker implCollector = new PayloadChecker();
+      if (operation == null) {
+        return new PayloadChecker();
+      } else if ("gt".equalsIgnoreCase(operation)) {
+        implCollector = new GTPayloadChecker();
+      } else if ("gte".equalsIgnoreCase(operation)) {
+        implCollector = new GTEPayloadChecker();
+      } else if ("lt".equalsIgnoreCase(operation)) {
+        implCollector = new LTPayloadChecker();
+      } else if ("lte".equalsIgnoreCase(operation)) {
+        implCollector = new LTEPayloadChecker();
+      }
+      implCollector.op = op;
+      implCollector.threshold = threshold;
+      return implCollector;
     }
 
     @Override
@@ -148,10 +185,54 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   }
 
+  private abstract class FloatPayloadChecker extends PayloadChecker {
+    @Override
+    protected boolean comparePayload(BytesRef source, BytesRef payload) {
+      float val = decodeFloat(payload.bytes, payload.offset);
+      return floatCompare(val, threshold);
+    }
+    private float decodeFloat(byte[] bytes, int offset) {
+      return Float.intBitsToFloat(((bytes[offset] & 0xFF) << 24) | ((bytes[offset + 1] & 0xFF) << 16)
+          | ((bytes[offset + 2] & 0xFF) <<  8) | (bytes[offset + 3] & 0xFF));
+    }
+    protected abstract boolean floatCompare(float val, float threshold);
+  }
+  
+  private class LTPayloadChecker extends FloatPayloadChecker {
+    @Override
+    protected boolean floatCompare(float val, float thresh) {
+      return (val < thresh);      
+    }
+  }
+
+  private class LTEPayloadChecker extends FloatPayloadChecker {
+    @Override
+    protected boolean floatCompare(float val, float thresh) {
+      return (val <= thresh);      
+    }
+  }
+
+  private class GTPayloadChecker extends FloatPayloadChecker {
+    @Override
+    protected boolean floatCompare(float val, float thresh) {
+      return (val > thresh);      
+    }
+  }
+
+  private class GTEPayloadChecker extends FloatPayloadChecker {
+    @Override
+    protected boolean floatCompare(float val, float thresh) {
+      return (val >= thresh);      
+    }
+  }
+  
   private class PayloadChecker implements SpanCollector {
 
     int upto = 0;
     boolean matches = true;
+    // The checking operation lt,gt,lte,gte , null is eq
+    String op = null;
+    float threshold = 0.75f;
 
     @Override
     public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
@@ -172,8 +253,12 @@ public class SpanPayloadCheckQuery extends SpanQuery {
         upto++;
         return;
       }
-      matches = payloadToMatch.get(upto).bytesEquals(payload);
+      matches = comparePayload(payloadToMatch.get(upto), payload);
       upto++;
+    }
+
+    protected boolean comparePayload(BytesRef source, BytesRef payload) {
+      return source.bytesEquals(payload);
     }
 
     AcceptStatus match() {
@@ -213,6 +298,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     int result = classHash();
     result = 31 * result + Objects.hashCode(match);
     result = 31 * result + Objects.hashCode(payloadToMatch);
+    result = 31 * result + Objects.hashCode(op);
+    result = 31 * result + Objects.hashCode(threshold);
     return result;
   }
 }
