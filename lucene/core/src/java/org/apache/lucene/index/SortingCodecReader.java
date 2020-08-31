@@ -20,8 +20,15 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.StoredFieldsReader;
+import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.ByteBuffersDataInput;
@@ -45,10 +52,9 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  *
  * @lucene.experimental
  */
-class SortingLeafReader extends FilterLeafReader {
+class SortingCodecReader extends FilterCodecReader {
 
-  //TODO remove from here; move to FreqProxTermsWriter or FreqProxFields?
-  static class SortingFields extends FilterFields {
+  static class SortingFields extends FilterLeafReader.FilterFields {
 
     private final Sorter.DocMap docMap;
     private final FieldInfos infos;
@@ -71,7 +77,7 @@ class SortingLeafReader extends FilterLeafReader {
 
   }
 
-  private static class SortingTerms extends FilterTerms {
+  private static class SortingTerms extends FilterLeafReader.FilterTerms {
 
     private final Sorter.DocMap docMap;
     private final IndexOptions indexOptions;
@@ -95,7 +101,7 @@ class SortingLeafReader extends FilterLeafReader {
 
   }
 
-  private static class SortingTermsEnum extends FilterTermsEnum {
+  private static class SortingTermsEnum extends FilterLeafReader.FilterTermsEnum {
 
     final Sorter.DocMap docMap; // pkg-protected to avoid synthetic accessor methods
     private final IndexOptions indexOptions;
@@ -598,7 +604,7 @@ class SortingLeafReader extends FilterLeafReader {
     }
   }
 
-  static class SortingDocsEnum extends FilterPostingsEnum {
+  static class SortingDocsEnum extends FilterLeafReader.FilterPostingsEnum {
 
     private static final class DocFreqSorter extends TimSorter {
 
@@ -783,7 +789,7 @@ class SortingLeafReader extends FilterLeafReader {
     }
   }
 
-  static class SortingPostingsEnum extends FilterPostingsEnum {
+  static class SortingPostingsEnum extends FilterLeafReader.FilterPostingsEnum {
 
     /**
      * A {@link TimSorter} which sorts two parallel arrays of doc IDs and
@@ -1017,17 +1023,17 @@ class SortingLeafReader extends FilterLeafReader {
   /** Return a sorted view of <code>reader</code> according to the order
    *  defined by <code>sort</code>. If the reader is already sorted, this
    *  method might return the reader as-is. */
-  public static LeafReader wrap(LeafReader reader, Sort sort) throws IOException {
+  public static CodecReader wrap(CodecReader reader, Sort sort) throws IOException {
     return wrap(reader, new Sorter(sort).sort(reader), sort);
   }
 
-  /** Expert: same as {@link #wrap(org.apache.lucene.index.LeafReader, Sort)} but operates directly on a {@link Sorter.DocMap}. */
-  static LeafReader wrap(LeafReader reader, Sorter.DocMap docMap, Sort sort) {
+  /** Expert: same as {@link #wrap(org.apache.lucene.index.CodecReader, Sort)} but operates directly on a {@link Sorter.DocMap}. */
+  static CodecReader wrap(CodecReader reader, Sorter.DocMap docMap, Sort sort) {
     LeafMetaData metaData = reader.getMetaData();
     LeafMetaData newMetaData = new LeafMetaData(metaData.getCreatedVersionMajor(), metaData.getMinVersion(), sort);
     if (docMap == null) {
       // the reader is already sorted
-      return new FilterLeafReader(reader) {
+      return new FilterCodecReader(reader) {
         @Override
         public CacheHelper getCoreCacheHelper() {
           return null;
@@ -1048,55 +1054,90 @@ class SortingLeafReader extends FilterLeafReader {
       throw new IllegalArgumentException("reader.maxDoc() should be equal to docMap.size(), got" + reader.maxDoc() + " != " + docMap.size());
     }
     assert Sorter.isConsistent(docMap);
-    return new SortingLeafReader(reader, docMap, newMetaData);
+    return new SortingCodecReader(reader, docMap, newMetaData);
   }
 
   final Sorter.DocMap docMap; // pkg-protected to avoid synthetic accessor methods
   final LeafMetaData metaData;
 
-  private SortingLeafReader(final LeafReader in, final Sorter.DocMap docMap, LeafMetaData metaData) {
+  private SortingCodecReader(final CodecReader in, final Sorter.DocMap docMap, LeafMetaData metaData) {
     super(in);
     this.docMap = docMap;
     this.metaData = metaData;
   }
 
-  @Override
-  public void document(final int docID, final StoredFieldVisitor visitor) throws IOException {
-    in.document(docMap.newToOld(docID), visitor);
-  }
 
   @Override
-  public Terms terms(String field) throws IOException {
-    Terms terms = super.terms(field);
-    return terms==null ? null : new SortingTerms(terms, in.getFieldInfos().fieldInfo(field).getIndexOptions(), docMap);
-  }
-
-  @Override
-  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
-    final BinaryDocValues oldDocValues = in.getBinaryDocValues(field);
-    if (oldDocValues == null) return null;
-    CachedBinaryDVs dvs;
-    synchronized (cachedBinaryDVs) {
-      dvs = cachedBinaryDVs.get(field);
-      if (dvs == null) {
-        FixedBitSet docsWithField = new FixedBitSet(maxDoc());
-        BytesRef[] values = new BytesRef[maxDoc()];
-        while (true) {
-          int docID = oldDocValues.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            break;
-          }
-          int newDocID = docMap.oldToNew(docID);
-          docsWithField.set(newDocID);
-          values[newDocID] = BytesRef.deepCopyOf(oldDocValues.binaryValue());
-        }
-        dvs = new CachedBinaryDVs(values, docsWithField);
-        cachedBinaryDVs.put(field, dvs);
+  public FieldsProducer getPostingsReader() {
+    FieldsProducer postingsReader = in.getPostingsReader();
+    return new FieldsProducer() {
+      @Override
+      public void close() throws IOException {
+        postingsReader.close();
       }
-    }
-    return new SortingBinaryDocValues(dvs);
+
+      @Override
+      public void checkIntegrity() throws IOException {
+        postingsReader.checkIntegrity();
+      }
+
+      @Override
+      public Iterator<String> iterator() {
+        return postingsReader.iterator();
+      }
+
+      @Override
+      public Terms terms(String field) throws IOException {
+        Terms terms = in.terms(field);
+        return terms==null ? null : new SortingTerms(terms, in.getFieldInfos().fieldInfo(field).getIndexOptions(), docMap);
+      }
+
+      @Override
+      public int size() {
+        return postingsReader.size();
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return postingsReader.ramBytesUsed();
+      }
+    };
   }
-  
+
+  @Override
+  public StoredFieldsReader getFieldsReader() {
+    StoredFieldsReader delegate = in.getFieldsReader();
+    return newStoredFieldsReader(delegate);
+  }
+
+  private StoredFieldsReader newStoredFieldsReader(StoredFieldsReader delegate) {
+    return new StoredFieldsReader() {
+      @Override
+      public void visitDocument(int docID, StoredFieldVisitor visitor) throws IOException {
+        in.document(docMap.newToOld(docID), visitor);
+      }
+
+      @Override
+      public StoredFieldsReader clone() {
+        return newStoredFieldsReader(delegate.clone());
+      }
+
+      @Override
+      public void checkIntegrity() throws IOException {
+        delegate.checkIntegrity();
+      }
+
+      @Override
+      public void close() throws IOException {
+        delegate.close();
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return delegate.ramBytesUsed();
+      }
+    };
+  }
 
   @Override
   public Bits getLiveDocs() {
@@ -1109,162 +1150,277 @@ class SortingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public PointValues getPointValues(String fieldName) throws IOException {
-    final PointValues inPointValues = in.getPointValues(fieldName);
-    if (inPointValues == null) {
-      return null;
-    } else {
-      return new SortingPointValues(inPointValues, docMap);
-    }
+  public PointsReader getPointsReader() {
+    return new PointsReader() {
+      @Override
+      public void checkIntegrity() throws IOException {
+        in.getPointsReader().checkIntegrity();
+      }
+
+      @Override
+      public PointValues getValues(String field) throws IOException {
+        final PointValues inPointValues = in.getPointValues(field);
+        if (inPointValues == null) {
+          return null;
+        } else {
+          return new SortingPointValues(inPointValues, docMap);
+        }
+      }
+
+      @Override
+      public void close() throws IOException {
+        in.getPointsReader().close();
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return in.getPointsReader().ramBytesUsed();
+      }
+    };
   }
 
   private final Map<String,CachedNumericDVs> cachedNorms = new HashMap<>();
 
   @Override
-  public NumericDocValues getNormValues(String field) throws IOException {
-    final NumericDocValues oldNorms = in.getNormValues(field);
-    if (oldNorms == null) return null;
-    CachedNumericDVs norms;
-    synchronized (cachedNorms) {
-      norms = cachedNorms.get(field);
-      if (norms == null) {
-        FixedBitSet docsWithField = new FixedBitSet(maxDoc());
-        long[] values = new long[maxDoc()];
-        while (true) {
-          int docID = oldNorms.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            break;
-          }
-          int newDocID = docMap.oldToNew(docID);
-          docsWithField.set(newDocID);
-          values[newDocID] = oldNorms.longValue();
-        }
-        norms = new CachedNumericDVs(values, docsWithField);
-        cachedNorms.put(field, norms);
-      }
-    }
-    return new SortingNumericDocValues(norms);
-  }
-
-  @Override
-  public NumericDocValues getNumericDocValues(String field) throws IOException {
-    final NumericDocValues oldDocValues = in.getNumericDocValues(field);
-    if (oldDocValues == null) return null;
-    CachedNumericDVs dvs;
-    synchronized (cachedNumericDVs) {
-      dvs = cachedNumericDVs.get(field);
-      if (dvs == null) {
-        FixedBitSet docsWithField = new FixedBitSet(maxDoc());
-        long[] values = new long[maxDoc()];
-        while (true) {
-          int docID = oldDocValues.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            break;
-          }
-          int newDocID = docMap.oldToNew(docID);
-          docsWithField.set(newDocID);
-          values[newDocID] = oldDocValues.longValue();
-        }
-        dvs = new CachedNumericDVs(values, docsWithField);
-        cachedNumericDVs.put(field, dvs);
-      }
-    }
-    return new SortingNumericDocValues(dvs);
-  }
-
-  @Override
-  public SortedNumericDocValues getSortedNumericDocValues(String field)
-      throws IOException {
-    final SortedNumericDocValues oldDocValues = in.getSortedNumericDocValues(field);
-    if (oldDocValues == null) {
-      return null;
-    }
-
-    long[][] values;
-    synchronized (cachedSortedNumericDVs) {
-      values = cachedSortedNumericDVs.get(field);
-      if (values == null) {
-        values = new long[maxDoc()][];
-        int docID;
-        while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
-          int newDocID = docMap.oldToNew(docID);
-          long[] docValues = new long[oldDocValues.docValueCount()];
-          for(int i=0;i<docValues.length;i++) {
-            docValues[i] = oldDocValues.nextValue();
-          }
-          values[newDocID] = docValues;
-        }
-        cachedSortedNumericDVs.put(field, values);
-      }
-    }
-
-    return new SortingSortedNumericDocValues(oldDocValues, values);
-  }
-
-  @Override
-  public SortedDocValues getSortedDocValues(String field) throws IOException {
-    SortedDocValues oldDocValues = in.getSortedDocValues(field);
-    if (oldDocValues == null) {
-      return null;
-    }
-
-    int[] ords;
-    synchronized (cachedSortedDVs) {
-      ords = cachedSortedDVs.get(field);
-      if (ords == null) {
-        ords = new int[maxDoc()];
-        Arrays.fill(ords, -1);
-        int docID;
-        while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
-          int newDocID = docMap.oldToNew(docID);
-          ords[newDocID] = oldDocValues.ordValue();
-        }
-        cachedSortedDVs.put(field, ords);
-      }
-    }
-    
-    return new SortingSortedDocValues(oldDocValues, ords);
-  }
-
-  @Override
-  public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
-    SortedSetDocValues oldDocValues = in.getSortedSetDocValues(field);
-    if (oldDocValues == null) {
-      return null;
-    }
-
-    long[][] ords;
-    synchronized (cachedSortedSetDVs) {
-      ords = cachedSortedSetDVs.get(field);
-      if (ords == null) {
-        ords = new long[maxDoc()][];
-        int docID;
-        while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
-          int newDocID = docMap.oldToNew(docID);
-          long[] docOrds = new long[1];
-          int upto = 0;
-          while (true) {
-            long ord = oldDocValues.nextOrd();
-            if (ord == NO_MORE_ORDS) {
-              break;
+  public NormsProducer getNormsReader() {
+    return new NormsProducer() {
+      @Override
+      public NumericDocValues getNorms(FieldInfo field) throws IOException {
+        final NumericDocValues oldNorms = in.getNormValues(field.name);
+        if (oldNorms == null) return null;
+        CachedNumericDVs norms;
+        synchronized (cachedNorms) {
+          norms = cachedNorms.get(field);
+          if (norms == null) {
+            FixedBitSet docsWithField = new FixedBitSet(maxDoc());
+            long[] values = new long[maxDoc()];
+            while (true) {
+              int docID = oldNorms.nextDoc();
+              if (docID == NO_MORE_DOCS) {
+                break;
+              }
+              int newDocID = docMap.oldToNew(docID);
+              docsWithField.set(newDocID);
+              values[newDocID] = oldNorms.longValue();
             }
-            if (upto == docOrds.length) {
-              docOrds = ArrayUtil.grow(docOrds);
-            }
-            docOrds[upto++] = ord;
+            norms = new CachedNumericDVs(values, docsWithField);
+            cachedNorms.put(field.name, norms);
           }
-          ords[newDocID] = ArrayUtil.copyOfSubArray(docOrds, 0, upto);
         }
-        cachedSortedSetDVs.put(field, ords);
+        return new SortingNumericDocValues(norms);
       }
-    }
 
-    return new SortingSortedSetDocValues(oldDocValues, ords);
+      @Override
+      public void checkIntegrity() throws IOException {
+        in.getNormsReader().checkIntegrity();
+      }
+
+      @Override
+      public void close() throws IOException {
+        in.getNormsReader().close();
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return in.getNormsReader().ramBytesUsed();
+      }
+    };
   }
 
   @Override
-  public Fields getTermVectors(final int docID) throws IOException {
-    return in.getTermVectors(docMap.newToOld(docID));
+  public DocValuesProducer getDocValuesReader() {
+    return new DocValuesProducer() {
+      @Override
+      public NumericDocValues getNumeric(FieldInfo field) throws IOException {
+        final NumericDocValues oldDocValues = in.getNumericDocValues(field.name);
+        if (oldDocValues == null) return null;
+        CachedNumericDVs dvs;
+        synchronized (cachedNumericDVs) {
+          dvs = cachedNumericDVs.get(field);
+          if (dvs == null) {
+            FixedBitSet docsWithField = new FixedBitSet(maxDoc());
+            long[] values = new long[maxDoc()];
+            while (true) {
+              int docID = oldDocValues.nextDoc();
+              if (docID == NO_MORE_DOCS) {
+                break;
+              }
+              int newDocID = docMap.oldToNew(docID);
+              docsWithField.set(newDocID);
+              values[newDocID] = oldDocValues.longValue();
+            }
+            dvs = new CachedNumericDVs(values, docsWithField);
+            cachedNumericDVs.put(field.name, dvs);
+          }
+        }
+        return new SortingNumericDocValues(dvs);
+      }
+
+      @Override
+      public BinaryDocValues getBinary(FieldInfo field) throws IOException {
+        final BinaryDocValues oldDocValues = in.getBinaryDocValues(field.name);
+        if (oldDocValues == null) return null;
+        CachedBinaryDVs dvs;
+        synchronized (cachedBinaryDVs) {
+          dvs = cachedBinaryDVs.get(field);
+          if (dvs == null) {
+            FixedBitSet docsWithField = new FixedBitSet(maxDoc());
+            BytesRef[] values = new BytesRef[maxDoc()];
+            while (true) {
+              int docID = oldDocValues.nextDoc();
+              if (docID == NO_MORE_DOCS) {
+                break;
+              }
+              int newDocID = docMap.oldToNew(docID);
+              docsWithField.set(newDocID);
+              values[newDocID] = BytesRef.deepCopyOf(oldDocValues.binaryValue());
+            }
+            dvs = new CachedBinaryDVs(values, docsWithField);
+            cachedBinaryDVs.put(field.name, dvs);
+          }
+        }
+        return new SortingBinaryDocValues(dvs);
+      }
+
+      @Override
+      public SortedDocValues getSorted(FieldInfo field) throws IOException {
+        SortedDocValues oldDocValues = in.getSortedDocValues(field.name);
+        if (oldDocValues == null) {
+          return null;
+        }
+
+        int[] ords;
+        synchronized (cachedSortedDVs) {
+          ords = cachedSortedDVs.get(field);
+          if (ords == null) {
+            ords = new int[maxDoc()];
+            Arrays.fill(ords, -1);
+            int docID;
+            while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
+              int newDocID = docMap.oldToNew(docID);
+              ords[newDocID] = oldDocValues.ordValue();
+            }
+            cachedSortedDVs.put(field.name, ords);
+          }
+        }
+
+        return new SortingSortedDocValues(oldDocValues, ords);
+      }
+
+      @Override
+      public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
+        final SortedNumericDocValues oldDocValues = in.getSortedNumericDocValues(field.name);
+        if (oldDocValues == null) {
+          return null;
+        }
+
+        long[][] values;
+        synchronized (cachedSortedNumericDVs) {
+          values = cachedSortedNumericDVs.get(field);
+          if (values == null) {
+            values = new long[maxDoc()][];
+            int docID;
+            while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
+              int newDocID = docMap.oldToNew(docID);
+              long[] docValues = new long[oldDocValues.docValueCount()];
+              for(int i=0;i<docValues.length;i++) {
+                docValues[i] = oldDocValues.nextValue();
+              }
+              values[newDocID] = docValues;
+            }
+            cachedSortedNumericDVs.put(field.name, values);
+          }
+        }
+
+        return new SortingSortedNumericDocValues(oldDocValues, values);
+      }
+
+      @Override
+      public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
+        SortedSetDocValues oldDocValues = in.getSortedSetDocValues(field.name);
+        if (oldDocValues == null) {
+          return null;
+        }
+
+        long[][] ords;
+        synchronized (cachedSortedSetDVs) {
+          ords = cachedSortedSetDVs.get(field);
+          if (ords == null) {
+            ords = new long[maxDoc()][];
+            int docID;
+            while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
+              int newDocID = docMap.oldToNew(docID);
+              long[] docOrds = new long[1];
+              int upto = 0;
+              while (true) {
+                long ord = oldDocValues.nextOrd();
+                if (ord == NO_MORE_ORDS) {
+                  break;
+                }
+                if (upto == docOrds.length) {
+                  docOrds = ArrayUtil.grow(docOrds);
+                }
+                docOrds[upto++] = ord;
+              }
+              ords[newDocID] = ArrayUtil.copyOfSubArray(docOrds, 0, upto);
+            }
+            cachedSortedSetDVs.put(field.name, ords);
+          }
+        }
+
+        return new SortingSortedSetDocValues(oldDocValues, ords);
+      }
+
+      @Override
+      public void checkIntegrity() throws IOException {
+        in.getDocValuesReader().checkIntegrity();
+      }
+
+      @Override
+      public void close() throws IOException {
+        in.getDocValuesReader().close();
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return in.getDocValuesReader().ramBytesUsed();
+      }
+    };
+  }
+
+  @Override
+  public TermVectorsReader getTermVectorsReader() {
+    TermVectorsReader delegate = in.getTermVectorsReader();
+    return newTermVectorsReader(delegate);
+  }
+
+  private TermVectorsReader newTermVectorsReader(TermVectorsReader delegate) {
+    return new TermVectorsReader() {
+      @Override
+      public Fields get(int doc) throws IOException {
+        return in.getTermVectors(docMap.newToOld(doc));
+      }
+
+      @Override
+      public void checkIntegrity() throws IOException {
+        delegate.checkIntegrity();
+      }
+
+      @Override
+      public TermVectorsReader clone() {
+        return newTermVectorsReader(delegate.clone());
+      }
+
+      @Override
+      public void close() throws IOException {
+        delegate.close();
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return delegate.ramBytesUsed();
+      }
+    };
   }
 
   @Override
@@ -1288,4 +1444,5 @@ class SortingLeafReader extends FilterLeafReader {
   public LeafMetaData getMetaData() {
     return metaData;
   }
+
 }

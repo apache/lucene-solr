@@ -76,7 +76,7 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
     return new BufferedNumericDocValues(finalValues, docsWithField.iterator());
   }
 
-  static SortingLeafReader.CachedNumericDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, NumericDocValues oldDocValues) throws IOException {
+  static SortingCodecReader.CachedNumericDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, NumericDocValues oldDocValues) throws IOException {
     FixedBitSet docsWithField = new FixedBitSet(maxDoc);
     long[] values = new long[maxDoc];
     while (true) {
@@ -88,7 +88,7 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
       docsWithField.set(newDocID);
       values[newDocID] = oldDocValues.longValue();
     }
-    return new SortingLeafReader.CachedNumericDVs(values, docsWithField);
+    return new SortingCodecReader.CachedNumericDVs(values, docsWithField);
   }
 
   @Override
@@ -96,7 +96,7 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
     if (finalValues == null) {
       finalValues = pending.build();
     }
-    final SortingLeafReader.CachedNumericDVs sorted;
+    final SortingCodecReader.CachedNumericDVs sorted;
     if (sortMap != null) {
       NumericDocValues oldValues = new BufferedNumericDocValues(finalValues, docsWithField.iterator());
       sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap, oldValues);
@@ -114,7 +114,7 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
                                    if (sorted == null) {
                                      return new BufferedNumericDocValues(finalValues, docsWithField.iterator());
                                    } else {
-                                     return new SortingLeafReader.SortingNumericDocValues(sorted);
+                                     return new SortingCodecReader.SortingNumericDocValues(sorted);
                                    }
                                  }
                                });

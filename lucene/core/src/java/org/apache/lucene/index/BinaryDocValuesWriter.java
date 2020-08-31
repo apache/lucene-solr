@@ -99,7 +99,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     bytesUsed = newBytesUsed;
   }
 
-  private SortingLeafReader.CachedBinaryDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
+  private SortingCodecReader.CachedBinaryDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
     FixedBitSet docsWithField = new FixedBitSet(maxDoc);
     BytesRef[] values = new BytesRef[maxDoc];
     while (true) {
@@ -111,7 +111,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
       docsWithField.set(newDocID);
       values[newDocID] = BytesRef.deepCopyOf(oldValues.binaryValue());
     }
-    return new SortingLeafReader.CachedBinaryDVs(values, docsWithField);
+    return new SortingCodecReader.CachedBinaryDVs(values, docsWithField);
   }
 
   @Override
@@ -128,7 +128,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     if (finalLengths == null) {
       finalLengths = this.lengths.build();
     }
-    final SortingLeafReader.CachedBinaryDVs sorted;
+    final SortingCodecReader.CachedBinaryDVs sorted;
     if (sortMap != null) {
       sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap,
           new BufferedBinaryDocValues(finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator()));
@@ -145,7 +145,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
                                   if (sorted == null) {
                                     return new BufferedBinaryDocValues(finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
                                   } else {
-                                    return new SortingLeafReader.SortingBinaryDocValues(sorted);
+                                    return new SortingCodecReader.SortingBinaryDocValues(sorted);
                                   }
                                 }
                               });

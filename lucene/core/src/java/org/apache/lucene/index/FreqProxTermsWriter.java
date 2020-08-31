@@ -88,7 +88,7 @@ final class FreqProxTermsWriter extends TermsHash {
     Fields fields = new FreqProxFields(allFields);
     applyDeletes(state, fields);
     if (sortMap != null) {
-      fields = new SortingLeafReader.SortingFields(fields, state.fieldInfos, sortMap);
+      fields = new SortingCodecReader.SortingFields(fields, state.fieldInfos, sortMap);
     }
 
     FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);

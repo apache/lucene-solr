@@ -155,7 +155,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter<SortedNumericDocValue
                                          if (sorted == null) {
                                            return buf;
                                          } else {
-                                           return new SortingLeafReader.SortingSortedNumericDocValues(buf, sorted);
+                                           return new SortingCodecReader.SortingSortedNumericDocValues(buf, sorted);
                                          }
                                        }
                                      });

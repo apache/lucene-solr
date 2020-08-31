@@ -222,7 +222,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
                                      if (sorted == null) {
                                        return buf;
                                      } else {
-                                       return new SortingLeafReader.SortingSortedSetDocValues(buf, sorted);
+                                       return new SortingCodecReader.SortingSortedSetDocValues(buf, sorted);
                                      }
                                    }
                                  });

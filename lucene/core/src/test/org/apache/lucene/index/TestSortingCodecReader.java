@@ -24,17 +24,19 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-public class TestSortingLeafReader extends LuceneTestCase {
+public class TestSortingCodecReader extends LuceneTestCase {
 
   public void testSortOnAddIndicesInt() throws IOException {
     Directory tmpDir = newDirectory();
@@ -64,7 +66,7 @@ public class TestSortingLeafReader extends LuceneTestCase {
     try (DirectoryReader reader = DirectoryReader.open(tmpDir)) {
       List<CodecReader> readers = new ArrayList<>();
       for (LeafReaderContext ctx : reader.leaves()) {
-        readers.add(SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(ctx.reader(), indexSort)));
+        readers.add(SortingCodecReader.wrap(SlowCodecReaderWrapper.wrap(ctx.reader()), indexSort));
       }
       w.addIndexes(readers.toArray(new CodecReader[0]));
     }
@@ -91,6 +93,9 @@ public class TestSortingLeafReader extends LuceneTestCase {
           Document doc = new Document();
           doc.add(new NumericDocValuesField("foo", random().nextInt(20)));
           doc.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+          FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
+          ft.setStoreTermVectors(true);
+          doc.add(new Field("term_vectors", "test" + i, ft));
           if (rarely() == false) {
             doc.add(new NumericDocValuesField("id", i));
           } else {
@@ -111,7 +116,7 @@ public class TestSortingLeafReader extends LuceneTestCase {
           try (DirectoryReader reader = DirectoryReader.open(dir)) {
             List<CodecReader> readers = new ArrayList<>();
             for (LeafReaderContext ctx : reader.leaves()) {
-              readers.add(SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(ctx.reader(), indexSort)));
+              readers.add(SortingCodecReader.wrap(SlowCodecReaderWrapper.wrap(ctx.reader()), indexSort));
             }
             writer.addIndexes(readers.toArray(new CodecReader[0]));
           }
@@ -128,6 +133,10 @@ public class TestSortingLeafReader extends LuceneTestCase {
                 prevId = ids.nextDoc();
               } else {
                 prevId = idNext;
+              }
+              if (idNext != DocIdSetIterator.NO_MORE_DOCS) {
+                assertTrue(leaf.getTermVectors(idNext).terms("term_vectors").iterator().seekExact(new BytesRef("test" + ids.longValue())));
+                assertEquals(Long.toString(ids.longValue()), leaf.document(idNext).get("id"));
               }
             }
             assertEquals(DocIdSetIterator.NO_MORE_DOCS, ids.nextDoc());

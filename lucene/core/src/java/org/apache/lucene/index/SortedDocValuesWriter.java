@@ -160,7 +160,7 @@ class SortedDocValuesWriter extends DocValuesWriter<SortedDocValues> {
                                   if (sorted == null) {
                                    return buf;
                                   }
-                                  return new SortingLeafReader.SortingSortedDocValues(buf, sorted);
+                                  return new SortingCodecReader.SortingSortedDocValues(buf, sorted);
                                 }
                               });
   }
