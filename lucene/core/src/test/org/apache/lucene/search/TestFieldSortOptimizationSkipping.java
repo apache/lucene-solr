@@ -364,4 +364,41 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     dir.close();
   }
 
+
+  public void testDocSortOptimization() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(1500);
+    for (int i = 0; i < numDocs; ++i) {
+      final Document doc = new Document();
+      writer.addDocument(doc);
+      if ((i > 0) && (i % 500 == 0)) {
+        writer.commit();
+      }
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = new IndexSearcher(reader);
+    final int numHits = 3;
+    final int totalHitsThreshold = 3;
+
+    // sort by _doc should skip all non-competitive documents
+    {
+      final Sort sort = new Sort(FIELD_DOC);
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      for (int i = 0; i < numHits; i++) {
+        assertEquals(i, topDocs.scoreDocs[i].doc);
+      }
+      assertTrue(collector.isEarlyTerminated());
+      // check that very few hits were collected
+      assertTrue(topDocs.totalHits.value < 5);
+    }
+    writer.close();
+    reader.close();
+    dir.close();
+
+  }
+
 }

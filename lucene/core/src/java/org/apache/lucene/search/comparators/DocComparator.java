@@ -30,16 +30,18 @@ import java.io.IOException;
  */
 public class DocComparator extends FieldComparator<Integer> {
     private final int[] docIDs;
-    private final boolean reverse; // only used to check if skipping functionality should be enabled
+    private final boolean enableSkipping; // if skipping functionality should be enabled
     private int bottom;
     private int topValue;
-    private boolean enableSkipping;
+    private boolean topValueSet;
+    private boolean bottomValueSet;
     private boolean hitsThresholdReached;
 
     /** Creates a new comparator based on document ids for {@code numHits} */
     public DocComparator(int numHits, boolean reverse) {
         this.docIDs = new int[numHits];
-        this.reverse = reverse;
+        // skipping functionality is enabled if we are sorting by _doc in asc order
+        this.enableSkipping = (reverse == false);
     }
 
     @Override
@@ -60,8 +62,7 @@ public class DocComparator extends FieldComparator<Integer> {
     @Override
     public void setTopValue(Integer value) {
         topValue = value;
-        // skipping functionality is enabled if topValue is set and sort is asc
-        enableSkipping = (reverse == false);
+        topValueSet = true;
     }
 
     @Override
@@ -72,33 +73,35 @@ public class DocComparator extends FieldComparator<Integer> {
 
     /**
      * DocLeafComparator with skipping functionality.
-     * When sort by _doc asc and "after" document is set,
-     * the comparator provides an iterator that can quickly skip to the desired "after" document.
+     * When sort by _doc asc, after collecting top N matches and enough hits, the comparator
+     * can skip all the following documents.
+     * When sort by _doc asc and "top" document is set after which search should start,
+     * the comparator provides an iterator that can quickly skip to the desired "top" document.
      */
     private class DocLeafComparator implements LeafFieldComparator {
         private final int docBase;
         private final int minDoc;
         private final int maxDoc;
-        private DocIdSetIterator topValueIterator; // iterator that starts from topValue
-
-        private boolean iteratorUpdated = false;
+        private DocIdSetIterator competitiveIterator; // iterator that starts from topValue
 
         public DocLeafComparator(LeafReaderContext context) {
             this.docBase = context.docBase;
             if (enableSkipping) {
                 this.minDoc = topValue + 1;
                 this.maxDoc = context.reader().maxDoc();
-                this.topValueIterator = DocIdSetIterator.all(maxDoc);
+                this.competitiveIterator = DocIdSetIterator.all(maxDoc);
             } else {
                 this.minDoc = -1;
                 this.maxDoc = -1;
-                this.topValueIterator = null;
+                this.competitiveIterator = null;
             }
         }
 
         @Override
         public void setBottom(int slot) {
             bottom = docIDs[slot];
+            bottomValueSet = true;
+            updateIterator();
         }
 
         @Override
@@ -134,7 +137,7 @@ public class DocComparator extends FieldComparator<Integer> {
 
                     @Override
                     public int nextDoc() throws IOException {
-                        return doc = topValueIterator.nextDoc();
+                        return doc = competitiveIterator.nextDoc();
                     }
 
                     @Override
@@ -144,12 +147,12 @@ public class DocComparator extends FieldComparator<Integer> {
 
                     @Override
                     public long cost() {
-                        return topValueIterator.cost();
+                        return competitiveIterator.cost();
                     }
 
                     @Override
                     public int advance(int target) throws IOException {
-                        return doc = topValueIterator.advance(target);
+                        return doc = competitiveIterator.advance(target);
                     }
                 };
             }
@@ -163,14 +166,18 @@ public class DocComparator extends FieldComparator<Integer> {
 
         private void updateIterator() {
             if (enableSkipping == false || hitsThresholdReached == false) return;
-            if (iteratorUpdated) return; // iterator for a segment needs to be updated only once
-            if (docBase + maxDoc <= minDoc) {
-                topValueIterator = DocIdSetIterator.empty(); // skip this segment
-            } else {
-                int segmentMinDoc = Math.max(0, minDoc - docBase);
-                topValueIterator = new MinDocIterator(segmentMinDoc, maxDoc);
+            if (bottomValueSet) {
+                // since we've collected top N matches, we can early terminate
+                competitiveIterator = DocIdSetIterator.empty();
+            } else if (topValueSet) {
+                // skip to the desired top doc
+                if (docBase + maxDoc <= minDoc) {
+                    competitiveIterator = DocIdSetIterator.empty(); // skip this segment
+                } else {
+                    int segmentMinDoc = Math.max(0, minDoc - docBase);
+                    competitiveIterator = new MinDocIterator(segmentMinDoc, maxDoc);
+                }
             }
-            iteratorUpdated = true;
         }
     }
 }

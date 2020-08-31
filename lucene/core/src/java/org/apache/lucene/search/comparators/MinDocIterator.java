@@ -22,7 +22,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import java.io.IOException;
 
 /**
- * Docs iterator that stats iterating from configurable minimum document
+ * Docs iterator that starts iterating from a configurable minimum document
  */
 public class MinDocIterator extends DocIdSetIterator {
     final int segmentMinDoc;
