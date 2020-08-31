@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,7 +44,7 @@ public class SolrCloudScraper extends SolrScraper {
 
   private Cache<String, HttpSolrClient> hostClientCache = CacheBuilder.newBuilder().build();
 
-  public SolrCloudScraper(CloudSolrClient solrClient, Executor executor, SolrClientFactory solrClientFactory) {
+  public SolrCloudScraper(CloudSolrClient solrClient, ExecutorService executor, SolrClientFactory solrClientFactory) {
     super(executor);
     this.solrClient = solrClient;
     this.solrClientFactory = solrClientFactory;

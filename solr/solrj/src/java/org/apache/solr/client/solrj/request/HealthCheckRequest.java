@@ -48,5 +48,8 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
     return new HealthCheckResponse();
   }
 
-
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
+  }
 }

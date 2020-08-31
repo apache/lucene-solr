@@ -66,7 +66,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
       "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
-      "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
+      "update.processor.", "util.", "spelling.", "handler.component.",
       "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
@@ -76,11 +76,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   protected URLClassLoader classLoader;
   private final Path instanceDir;
 
-  /**
-   * this is set  by the {@link SolrCore}
-   * This could be null if the core is not yet initialized
-   */
-  SolrCore core;
+
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
@@ -203,11 +199,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     TokenFilterFactory.reloadTokenFilters(this.classLoader);
     TokenizerFactory.reloadTokenizers(this.classLoader);
   }
-
-  public SolrCore getCore(){
-    return core;
-  }
-
 
   private static URLClassLoader addURLsToClassLoader(final URLClassLoader oldLoader, List<URL> urls) {
     if (urls.size() == 0) {

@@ -547,7 +547,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             latestVersion, 30);
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
-        req.getCore().getCoreContainer().reload(req.getCore().getName());
+        req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
         log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
 
@@ -944,6 +944,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     @Override
     protected SolrResponse createResponse(SolrClient client) {
       return null;
+    }
+
+    @Override
+    public String getRequestType() {
+      return SolrRequest.SolrRequestType.ADMIN.toString();
     }
   }
 

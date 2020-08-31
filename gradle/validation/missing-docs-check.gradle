@@ -14,6 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
+def javaVersionCheck = {
+  def maxSupported = JavaVersion.VERSION_14
+  def runtimeVersion = runtimeJava.javaVersion
+  if (runtimeVersion > JavaVersion.VERSION_14) {
+    logger.warn("Skipping task because runtime Java version ${runtimeVersion} is " +
+        "higher than Java ${maxSupported}.")
+    return false
+  } else {
+    return true
+  }
+}
 
 allprojects {
   plugins.withType(JavaPlugin) {
@@ -36,6 +48,8 @@ allprojects {
 
     task checkMissingDocsDefault(type: CheckMissingDocsTask, dependsOn: 'renderJavadoc') {
       dirs += [ project.javadoc.destinationDir ]
+
+      onlyIf javaVersionCheck
 
       // TODO: add missing docs for all classes and bump this to level=class
       if (project.path.startsWith(":solr")) {
@@ -60,6 +74,7 @@ configure(project(':lucene:core')) {
   // Defer until java plugin has been applied, otherwise we can't resolve project.javadoc.
   plugins.withType(JavaPlugin) {
     task checkMissingDocsMethod(type: CheckMissingDocsTask, dependsOn: 'renderJavadoc') {
+      onlyIf javaVersionCheck
       level = 'method'
     }
 
@@ -72,7 +87,6 @@ configure(project(':lucene:core')) {
         "org/apache/lucene/index",
         "org/apache/lucene/codecs"
     ].collect { path -> file("${project.javadoc.destinationDir}/${path}") }
-
     checkMissingDocs {
       dependsOn checkMissingDocsMethod
     }
@@ -89,7 +103,7 @@ class CheckMissingDocsTask extends DefaultTask {
   def checkMissingJavadocs(File dir, String level) {
     def output = new ByteArrayOutputStream()
     def result = project.exec {
-      executable "python3"
+      executable project.externalTool("python3")
       ignoreExitValue = true
       standardOutput = output
       errorOutput = output

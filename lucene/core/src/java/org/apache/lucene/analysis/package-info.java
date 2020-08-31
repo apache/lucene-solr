@@ -158,10 +158,10 @@
  *   supplies a large family of <code>Analyzer</code> classes that deliver useful
  *   analysis chains. The most common of these is the <a href="{@docRoot}/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>.
  *   Many applications will have a long and industrious life with nothing more
- *   than the <code>StandardAnalyzer</code>. The <a href="{@docRoot}/../analyzers-common/overview-summary.html">analyzers-common</a>
+ *   than the <code>StandardAnalyzer</code>. The <a href="{@docRoot}/../analysis/common/overview-summary.html">analyzers-common</a>
  *   library provides many pre-existing analyzers for various languages.
  *   The analysis-common library also allows to configure a custom Analyzer without subclassing using the
- *   <a href="{@docRoot}/../analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.html">CustomAnalyzer</a>
+ *   <a href="{@docRoot}/../analysis/common/org/apache/lucene/analysis/custom/CustomAnalyzer.html">CustomAnalyzer</a>
  *   class.
  * </p>
  * <p>
@@ -170,7 +170,7 @@
  *   all under the 'analysis' directory of the distribution. Some of
  *   these support particular languages, others integrate external
  *   components. The 'common' subdirectory has some noteworthy
- *  general-purpose analyzers, including the <a href="{@docRoot}/../analyzers-common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">PerFieldAnalyzerWrapper</a>. Most <code>Analyzer</code>s perform the same operation on all
+ *  general-purpose analyzers, including the <a href="{@docRoot}/../analysis/common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">PerFieldAnalyzerWrapper</a>. Most <code>Analyzer</code>s perform the same operation on all
  *  {@link org.apache.lucene.document.Field}s.  The PerFieldAnalyzerWrapper can be used to associate a different <code>Analyzer</code> with different
  *  {@link org.apache.lucene.document.Field}s. There is a great deal of
  *  functionality in the analysis area, you should study it carefully to
@@ -253,7 +253,7 @@
  *   Tokenizer, and TokenFilter(s) <i>(optional)</i> &mdash; or components you
  *   create, or a combination of existing and newly created components.  Before
  *   pursuing this approach, you may find it worthwhile to explore the
- *   <a href="{@docRoot}/../analyzers-common/overview-summary.html">analyzers-common</a> library and/or ask on the 
+ *   <a href="{@docRoot}/../analysis/common/overview-summary.html">analyzers-common</a> library and/or ask on the
  *   <a href="http://lucene.apache.org/core/discussion.html">java-user@lucene.apache.org mailing list</a> first to see if what you
  *   need already exists. If you are still committed to creating your own
  *   Analyzer, have a look at the source code of any one of the many samples
