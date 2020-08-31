@@ -137,7 +137,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
 
     private PayloadChecker checkerForOp(String operation, Float threshold) {
-      PayloadChecker implCollector = new PayloadChecker();
+      PayloadChecker implCollector = null;
       if (operation == null) {
         return new PayloadChecker();
       } else if ("gt".equalsIgnoreCase(operation)) {
@@ -148,6 +148,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
         implCollector = new LTPayloadChecker();
       } else if ("lte".equalsIgnoreCase(operation)) {
         implCollector = new LTEPayloadChecker();
+      } else {
+        return new PayloadChecker();
       }
       implCollector.op = op;
       implCollector.threshold = threshold;
@@ -252,6 +254,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
 
     protected boolean comparePayload(BytesRef source, BytesRef payload) {
+      //BytesRef upper = new BytesRef(payload.utf8ToString().toUpperCase());
+      //System.out.println("Compare: " + source.utf8ToString() + " TO " + upper.utf8ToString());
       return source.bytesEquals(payload);
     }
 
