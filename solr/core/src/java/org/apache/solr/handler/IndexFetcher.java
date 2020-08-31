@@ -873,12 +873,14 @@ public class IndexFetcher {
       
       String tmpFileName = REPLICATION_PROPERTIES + "." + System.nanoTime();
       final IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      Writer outFile = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
+      Writer outFile = null;
       try {
+        outFile = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
         props.store(outFile, "Replication details");
         dir.sync(Collections.singleton(tmpFileName));
       } finally {
         ParWork.close(outFile);
+        ParWork.close(out);
       }
       
       solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);

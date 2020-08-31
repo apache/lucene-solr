@@ -16,12 +16,14 @@
  */
 package org.apache.solr.search.join;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly // these graph query tests can still look surprisingly slow ...
 public class GraphQueryTest extends SolrTestCaseJ4 {
   
   @BeforeClass

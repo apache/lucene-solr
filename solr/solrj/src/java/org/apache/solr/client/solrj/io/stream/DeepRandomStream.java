@@ -346,7 +346,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    final ExecutorService service = ParWork.getMyPerThreadExecutor();
+    final ExecutorService service = ParWork.getRootSharedExecutor();
     List<Future<TupleWrapper>> futures =
         solrStreams.stream().map(ss -> service.submit(new StreamOpener((SolrStream)ss, comp))).collect(Collectors.toList());
     try {
