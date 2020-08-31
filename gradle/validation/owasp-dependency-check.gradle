@@ -20,13 +20,15 @@
 
 // If -Pvalidation.owasp=true is set the validation will also run as part of the check task.
 
+def resources = scriptResources(buildscript)
+
 configure(rootProject) {
   dependencyCheck {
     failBuildOnCVSS = propertyOrDefault("validation.owasp.threshold", 7) as Integer
     formats = ['HTML', 'JSON']
     skipProjects = [':solr:solr-ref-guide']
     skipConfigurations = ['unifiedClasspath']
-    suppressionFile = rootProject.file('gradle/validation/owasp-dependency-check/exclusions.xml')
+    suppressionFile = file("${resources}/exclusions.xml")
   }
 
   task owasp() {
