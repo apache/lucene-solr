@@ -260,7 +260,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
   }
 
-  private void removeFromCache(CacheValue v) {
+  private synchronized void removeFromCache(CacheValue v) {
     if (log.isDebugEnabled()) {
       log.debug("removeFromCache(CacheValue v={}) - start", v);
     }
