@@ -39,6 +39,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
@@ -66,11 +67,11 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
-    moveReplica(ocmh.zkStateReader.getClusterState(), message, results);
+  public void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+    moveReplica(ocmh.zkStateReader.getClusterState(), cloudConfig, message, results);
   }
 
-  private void moveReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  private void moveReplica(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     if (log.isDebugEnabled()) {
       log.debug("moveReplica() : {}", Utils.toJSONString(message));
     }
@@ -159,15 +160,15 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     if (isSharedFS && inPlaceMove) {
       log.debug("-- moveHdfsReplica");
-      moveHdfsReplica(clusterState, results, dataDir.toString(), targetNode, async, coll, replica, slice, timeout, waitForFinalState);
+      moveHdfsReplica(clusterState, cloudConfig, results, dataDir.toString(), targetNode, async, coll, replica, slice, timeout, waitForFinalState);
     } else {
       log.debug("-- moveNormalReplica (inPlaceMove={}, isSharedFS={}", inPlaceMove, isSharedFS);
-      moveNormalReplica(clusterState, results, targetNode, async, coll, replica, slice, timeout, waitForFinalState);
+      moveNormalReplica(clusterState, cloudConfig, results, targetNode, async, coll, replica, slice, timeout, waitForFinalState);
     }
   }
 
   @SuppressWarnings({"unchecked"})
-  private void moveHdfsReplica(ClusterState clusterState, @SuppressWarnings({"rawtypes"})NamedList results, String dataDir, String targetNode, String async,
+  private void moveHdfsReplica(ClusterState clusterState, CloudConfig cloudConfig, @SuppressWarnings({"rawtypes"})NamedList results, String dataDir, String targetNode, String async,
                                  DocCollection coll, Replica replica, Slice slice, int timeout, boolean waitForFinalState) throws Exception {
     String skipCreateReplicaInClusterState = "true";
     if (clusterState.getLiveNodes().contains(replica.getNodeName())) {
@@ -229,7 +230,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     @SuppressWarnings({"rawtypes"})
     NamedList addResult = new NamedList();
     try {
-      ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, addResult, null);
+      ocmh.addReplica(ocmh.zkStateReader.getClusterState(), cloudConfig, addReplicasProps, addResult, null);
     } catch (Exception e) {
       // fatal error - try rolling back
       String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
@@ -239,7 +240,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       addReplicasProps = addReplicasProps.plus(CoreAdminParams.NODE, replica.getNodeName());
       @SuppressWarnings({"rawtypes"})
       NamedList rollback = new NamedList();
-      ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, rollback, null);
+      ocmh.addReplica(ocmh.zkStateReader.getClusterState(), cloudConfig, addReplicasProps, rollback, null);
       if (rollback.get("failure") != null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Fatal error during MOVEREPLICA of " + replica
             + ", collection may be inconsistent: " + rollback.get("failure"));
@@ -257,7 +258,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       @SuppressWarnings({"rawtypes"})
       NamedList rollback = new NamedList();
       try {
-        ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, rollback, null);
+        ocmh.addReplica(ocmh.zkStateReader.getClusterState(), cloudConfig, addReplicasProps, rollback, null);
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Fatal error during MOVEREPLICA of " + replica
             + ", collection may be inconsistent!", e);
@@ -275,7 +276,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @SuppressWarnings({"unchecked"})
-  private void moveNormalReplica(ClusterState clusterState, @SuppressWarnings({"rawtypes"})NamedList results, String targetNode, String async,
+  private void moveNormalReplica(ClusterState clusterState, CloudConfig cloudConfig, @SuppressWarnings({"rawtypes"})NamedList results, String targetNode, String async,
                                  DocCollection coll, Replica replica, Slice slice, int timeout, boolean waitForFinalState) throws Exception {
     String newCoreName = Assign.buildSolrCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(), coll, slice.getName(), replica.getType());
     ZkNodeProps addReplicasProps = new ZkNodeProps(
@@ -290,7 +291,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);
     ActiveReplicaWatcher watcher = null;
-    ZkNodeProps props = ocmh.addReplica(clusterState, addReplicasProps, addResult, null).get(0);
+    ZkNodeProps props = ocmh.addReplica(clusterState, cloudConfig, addReplicasProps, addResult, null).get(0);
     log.debug("props {}", props);
     if (replica.equals(slice.getLeader()) || waitForFinalState) {
       watcher = new ActiveReplicaWatcher(coll.getName(), null, Collections.singletonList(newCoreName), countDownLatch);

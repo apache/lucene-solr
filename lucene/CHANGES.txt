@@ -120,6 +120,8 @@ Improvements
   with doc values and points. In this case, there is an assumption that the same data is
   stored in these points and doc values (Mayya Sharipova, Jim Ferenczi, Adrien Grand)
 
+* LUCENE-9313: Add SerbianAnalyzer based on the snowball stemmer. (Dragan Ivanovic)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -157,6 +159,8 @@ Other
 
 * LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
   Deserves mention here as well as Lucene CHANGES.txt since it affects both.
+
+* LUCENE-9433: Remove Ant support from trunk (Erick Erickson, Uwe Schindler et.al.)
 
 ======================= Lucene 8.7.0 =======================
 

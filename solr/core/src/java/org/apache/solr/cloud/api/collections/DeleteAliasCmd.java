@@ -22,6 +22,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CloudConfig;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -33,7 +34,7 @@ public class DeleteAliasCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String aliasName = message.getStr(NAME);
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;

@@ -32,6 +32,9 @@ JavaInstallation altJvm = {
   }
 }()
 
+// Set up root project's property.
+rootProject.ext.runtimeJava = altJvm
+
 if (!currentJvm.javaExecutable.equals(altJvm.javaExecutable)) {
   // Set up java toolchain tasks to use the alternative Java.
   // This is a related Gradle issue for the future:
@@ -63,6 +66,7 @@ if (!currentJvm.javaExecutable.equals(altJvm.javaExecutable)) {
       options.forkOptions.javaHome = altJvm.installationDirectory.asFile
     }
 
+    // Javadoc compilation.
     def javadocExecutable = altJvm.jdk.get().javadocExecutable.asFile
     tasks.matching { it.name == "renderJavadoc" || it.name == "renderSiteJavadoc" }.all {
       dependsOn ":altJvmWarning"

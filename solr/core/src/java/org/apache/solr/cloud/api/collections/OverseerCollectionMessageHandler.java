@@ -78,6 +78,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
@@ -242,7 +243,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   @Override
   @SuppressWarnings("unchecked")
-  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
+  public OverseerSolrResponse processMessage(ZkNodeProps message, CloudConfig cloudConfig, String operation) {
     MDCLoggingContext.setCollection(message.getStr(COLLECTION));
     MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
     MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
@@ -254,7 +255,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       CollectionAction action = getCollectionAction(operation);
       Cmd command = commandMap.get(action);
       if (command != null) {
-        command.call(cloudManager.getClusterStateProvider().getClusterState(), message, results);
+        command.call(cloudManager.getClusterStateProvider().getClusterState(), cloudConfig, message, results);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);
@@ -281,7 +282,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
   @SuppressWarnings({"unchecked"})
-  private void mockOperation(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws InterruptedException {
+  private void mockOperation(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws InterruptedException {
     //only for test purposes
     Thread.sleep(message.getInt("sleep", 1));
     if (log.isInfoEnabled()) {
@@ -299,7 +300,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings({"unchecked"})
-  private void reloadCollection(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) {
+  private void reloadCollection(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
 
@@ -308,7 +309,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings("unchecked")
-  private void processRebalanceLeaders(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  private void processRebalanceLeaders(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP,
         CORE_NODE_NAME_PROP, BASE_URL_PROP, REJOIN_AT_HEAD_PROP);
@@ -337,7 +338,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings("unchecked")
-  private void processReplicaAddPropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  private void processReplicaAddPropertyCommand(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
     SolrZkClient zkClient = zkStateReader.getZkClient();
@@ -348,7 +349,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     overseer.offerStateUpdate(Utils.toJSON(m));
   }
 
-  private void processReplicaDeletePropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  private void processReplicaDeletePropertyCommand(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
     SolrZkClient zkClient = zkStateReader.getZkClient();
@@ -359,7 +360,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     overseer.offerStateUpdate(Utils.toJSON(m));
   }
 
-  private void balanceProperty(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  private void balanceProperty(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) || StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
@@ -583,7 +584,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
 
-  private void modifyCollection(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  private void modifyCollection(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
 
     final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
@@ -595,7 +596,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       validateConfigOrThrowSolrException(configName);
 
       createConfNode(cloudManager.getDistribStateManager(), configName, collectionName);
-      reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
+      reloadCollection(null, cloudConfig, new ZkNodeProps(NAME, collectionName), results);
     }
 
     overseer.offerStateUpdate(Utils.toJSON(message));
@@ -630,16 +631,16 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     // if switching to/from read-only mode reload the collection
     if (message.keySet().contains(ZkStateReader.READ_ONLY)) {
-      reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
+      reloadCollection(null, cloudConfig, new ZkNodeProps(NAME, collectionName), results);
     }
   }
 
-  void cleanupCollection(String collectionName, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  void cleanupCollection(CloudConfig cloudConfig, String collectionName, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     log.error("Cleaning up collection [{}].", collectionName);
     Map<String, Object> props = makeMap(
         Overseer.QUEUE_OPERATION, DELETE.toLower(),
         NAME, collectionName);
-    commandMap.get(DELETE).call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
+    commandMap.get(DELETE).call(zkStateReader.getClusterState(), cloudConfig, new ZkNodeProps(props), results);
   }
 
   Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) throws InterruptedException {
@@ -673,10 +674,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
 
-  List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
+  List<ZkNodeProps> addReplica(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
       throws Exception {
 
-    return ((AddReplicaCmd) commandMap.get(ADDREPLICA)).addReplica(clusterState, message, results, onComplete);
+    return ((AddReplicaCmd) commandMap.get(ADDREPLICA)).addReplica(clusterState, cloudConfig, message, results, onComplete);
   }
 
   void validateConfigOrThrowSolrException(String configName) throws IOException, KeeperException, InterruptedException {
@@ -906,7 +907,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   protected interface Cmd {
-    void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception;
+    void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception;
   }
 
   /*
