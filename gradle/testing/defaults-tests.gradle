@@ -20,6 +20,7 @@ import org.apache.tools.ant.types.Commandline
 import org.gradle.api.tasks.testing.logging.*
 import org.apache.lucene.gradle.ErrorReportingTestListener
 
+def resources = scriptResources(buildscript)
 def verboseModeHookInstalled = false
 
 allprojects {
@@ -108,7 +109,7 @@ allprojects {
 
       ignoreFailures = resolvedTestOption("tests.haltonfailure").toBoolean() == false
 
-      systemProperty 'java.util.logging.config.file', rootProject.file("gradle/testing/defaults-tests/logging.properties")
+      systemProperty 'java.util.logging.config.file', file("${resources}/logging.properties")
       systemProperty 'java.awt.headless', 'true'
       systemProperty 'jdk.map.althashing.threshold', '0'
 

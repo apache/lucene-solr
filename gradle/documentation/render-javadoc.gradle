@@ -20,6 +20,8 @@ import javax.annotation.Nullable
 // generate javadocs by calling javadoc tool
 // see https://docs.oracle.com/en/java/javase/11/tools/javadoc.html
 
+def resources = scriptResources(buildscript)
+
 allprojects {
   plugins.withType(JavaPlugin) {
     configurations {
@@ -47,17 +49,19 @@ allprojects {
       description "Generates Javadoc API documentation for the main source code. This directly invokes javadoc tool."
       group "documentation"
 
+      taskResources = resources
       dependsOn sourceSets.main.compileClasspath
-      classpath = sourceSets.main.compileClasspath;
+      classpath = sourceSets.main.compileClasspath
       srcDirSet = sourceSets.main.java;
 
-      outputDir = project.javadoc.destinationDir;
+      outputDir = project.javadoc.destinationDir
     }
 
     task renderSiteJavadoc(type: RenderJavadocTask) {
       description "Generates Javadoc API documentation for the site (relative links)."
       group "documentation"
 
+      taskResources = resources
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath;
       srcDirSet = sourceSets.main.java;
@@ -73,9 +77,9 @@ allprojects {
 
 // Set up titles and link up some offline docs for all documentation
 // (they may be unused but this doesn't do any harm).
-def taskResources = "${rootProject.projectDir}/gradle/documentation/render-javadoc"
-def javaJavadocPackages = rootProject.file("${taskResources}/java11/")
-def junitJavadocPackages = rootProject.file("${taskResources}/junit/")
+
+def javaJavadocPackages = rootProject.file("${resources}/java11/")
+def junitJavadocPackages = rootProject.file("${resources}/junit/")
 allprojects {
   project.tasks.withType(RenderJavadocTask) {
     title = "${project.path.startsWith(':lucene') ? 'Lucene' : 'Solr'} ${project.version} ${project.name} API"
@@ -409,7 +413,10 @@ class RenderJavadocTask extends DefaultTask {
   @Optional
   @Input
   def executable
-  
+
+  @Input
+  def taskResources
+
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
   private Set findRenderTasksInDependencies() {
     Set found = []
@@ -568,8 +575,6 @@ class RenderJavadocTask extends DefaultTask {
       }
       throw new GradleException("Javadoc generation failed for ${project.path},\n  Options file at: ${optionsFile}\n  Command output at: ${outputFile}", cause)
     }
-
-    def taskResources = "${project.rootDir}/gradle/documentation/render-javadoc"
 
     // append some special table css, prettify css
     ant.concat(destfile: "${outputDir}/stylesheet.css", append: "true", fixlastline: "true", encoding: "UTF-8") {

@@ -18,6 +18,8 @@
 // This configures application of forbidden API rules
 // via https://github.com/policeman-tools/forbidden-apis
 
+def resources = scriptResources(buildscript)
+
 // Only apply forbidden-apis to java projects.
 allprojects { prj ->
   plugins.withId("java", {
@@ -38,7 +40,7 @@ allprojects { prj ->
       deps += ["defaults.all.txt", "defaults.${suffix}.txt"]
 
       deps.each { sig ->
-        def signaturesFile = rootProject.file("gradle/validation/forbidden-apis/${sig}")
+        def signaturesFile = file("${resources}/${sig}")
         if (signaturesFile.exists()) {
           logger.info("Signature file applied: ${sig}")
           signaturesFiles += files(signaturesFile)
@@ -73,7 +75,7 @@ allprojects { prj ->
       ]
 
       signaturesFiles = files(
-          rootProject.file("gradle/validation/forbidden-apis/defaults.tests.txt")
+          file("${resources}/defaults.tests.txt")
       )
 
       suppressAnnotations += [
@@ -127,7 +129,7 @@ allprojects { prj ->
     // This is the simplest workaround possible: just point at all the rule files and indicate
     // them as inputs. This way if a rule is modified, checks will be reapplied.
     configure([forbiddenApisMain, forbiddenApisTest]) { task ->
-      task.inputs.dir(rootProject.file("gradle/validation/forbidden-apis"))
+      task.inputs.dir(file(resources))
     }
   })
 }
