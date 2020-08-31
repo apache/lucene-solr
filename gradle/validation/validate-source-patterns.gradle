@@ -34,42 +34,46 @@ configure(rootProject) {
     group = 'Verification'
     description = 'Validate Source Patterns'
     
-    // this task has no outputs, so it's always uptodate (if inputs don't change).
-    outputs.upToDateWhen { true }
+    sourceFiles = project.fileTree(project.rootDir) {
+      [
+        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
+        'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
+        'properties', 'mdtext', 'groovy', 'gradle',
+        'template', 'adoc', 'json',
+      ].each{
+        include "lucene/**/*.${it}"
+        include "solr/**/*.${it}"
+        include "dev-tools/**/*.${it}"
+        include "gradle/**/*.${it}"
+        include "*.${it}"
+      }
+      // TODO: For now we don't scan txt / md files, so we
+      // check licenses in top-level folders separately:
+      include '*.txt'
+      include '*/*.txt'
+      include '*.md'
+      include '*/*.md'
+      // excludes:
+      exclude '**/build/**'
+      exclude '**/dist/**'
+      exclude 'lucene/benchmark/work/**'
+      exclude 'lucene/benchmark/temp/**'
+      exclude '**/CheckLoggingConfiguration.java'
+      exclude 'solr/core/src/test/org/apache/hadoop/**'
+      exclude '**/validate-source-patterns.gradle' // ourselves :-)
+    }
   }
 }
 
 class ValidateSourcePatternsTask extends DefaultTask {
 
-  @InputFiles
-  final ConfigurableFileTree sourceFiles = project.fileTree(project.rootDir) {
-    [
-      'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
-      'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
-      'properties', 'mdtext', 'groovy', 'gradle',
-      'template', 'adoc', 'json',
-    ].each{
-      include "lucene/**/*.${it}"
-      include "solr/**/*.${it}"
-      include "dev-tools/**/*.${it}"
-      include "gradle/**/*.${it}"
-      include "*.${it}"
-    }
-    // TODO: For now we don't scan txt / md files, so we
-    // check licenses in top-level folders separately:
-    include '*.txt'
-    include '*/*.txt'
-    include '*.md'
-    include '*/*.md'
-    // excludes:
-    exclude '**/build/**'
-    exclude '**/dist/**'
-    exclude 'lucene/benchmark/work/**'
-    exclude 'lucene/benchmark/temp/**'
-    exclude '**/CheckLoggingConfiguration.java'
-    exclude 'solr/core/src/test/org/apache/hadoop/**'
-    exclude '**/validate-source-patterns.gradle' // ourselves :-)
+  ValidateSourcePatternsTask() {
+    // this task has no outputs, so it's always uptodate (if inputs don't change).
+    outputs.upToDateWhen { true }
   }
+
+  @InputFiles
+  ConfigurableFileTree sourceFiles
   
   @TaskAction
   public void check() {
