@@ -46,20 +46,21 @@ import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
- * An {@link org.apache.lucene.index.LeafReader} which supports sorting documents by a given
- * {@link Sort}. This is package private and is only used by Lucene for BWC when it needs to merge
- * an unsorted flushed segment built by an older version (newly flushed segments are sorted since version 7.0).
+ * An {@link org.apache.lucene.index.CodecReader} which supports sorting documents by a given
+ * {@link Sort}. This can be used to re-sort and index after it's been created by wrapping all
+ * readers of the index with this reader and adding it to a fresh IndexWriter via
+ * {@link IndexWriter#addIndexes(CodecReader...)}.
  *
  * @lucene.experimental
  */
-class SortingCodecReader extends FilterCodecReader {
+public final class SortingCodecReader extends FilterCodecReader {
 
   static class SortingFields extends FilterLeafReader.FilterFields {
 
     private final Sorter.DocMap docMap;
     private final FieldInfos infos;
 
-    public SortingFields(final Fields in, FieldInfos infos, Sorter.DocMap docMap) {
+    SortingFields(final Fields in, FieldInfos infos, Sorter.DocMap docMap) {
       super(in);
       this.docMap = docMap;
       this.infos = infos;
@@ -82,7 +83,7 @@ class SortingCodecReader extends FilterCodecReader {
     private final Sorter.DocMap docMap;
     private final IndexOptions indexOptions;
 
-    public SortingTerms(final Terms in, IndexOptions indexOptions, final Sorter.DocMap docMap) {
+    SortingTerms(final Terms in, IndexOptions indexOptions, final Sorter.DocMap docMap) {
       super(in);
       this.docMap = docMap;
       this.indexOptions = indexOptions;
@@ -107,7 +108,7 @@ class SortingCodecReader extends FilterCodecReader {
     private final IndexOptions indexOptions;
     private final boolean hasPositions;
 
-    public SortingTermsEnum(final TermsEnum in, Sorter.DocMap docMap, IndexOptions indexOptions, boolean hasPositions) {
+    SortingTermsEnum(final TermsEnum in, Sorter.DocMap docMap, IndexOptions indexOptions, boolean hasPositions) {
       super(in);
       this.docMap = docMap;
       this.indexOptions = indexOptions;
@@ -163,7 +164,7 @@ class SortingCodecReader extends FilterCodecReader {
     private final CachedBinaryDVs dvs;
     private int docID = -1;
 
-    public SortingBinaryDocValues(CachedBinaryDVs dvs) {
+    SortingBinaryDocValues(CachedBinaryDVs dvs) {
       this.dvs = dvs;
     }
 
@@ -212,7 +213,7 @@ class SortingCodecReader extends FilterCodecReader {
     private final long[] values;
     private final BitSet docsWithField;
 
-    public CachedNumericDVs(long[] values, BitSet docsWithField) {
+    CachedNumericDVs(long[] values, BitSet docsWithField) {
       this.values = values;
       this.docsWithField = docsWithField;
     }
@@ -225,7 +226,7 @@ class SortingCodecReader extends FilterCodecReader {
     private final BytesRef[] values;
     private final BitSet docsWithField;
 
-    public CachedBinaryDVs(BytesRef[] values, BitSet docsWithField) {
+    CachedBinaryDVs(BytesRef[] values, BitSet docsWithField) {
       this.values = values;
       this.docsWithField = docsWithField;
     }
@@ -238,7 +239,7 @@ class SortingCodecReader extends FilterCodecReader {
     private final CachedNumericDVs dvs;
     private int docID = -1;
 
-    public SortingNumericDocValues(CachedNumericDVs dvs) {
+    SortingNumericDocValues(CachedNumericDVs dvs) {
       this.dvs = dvs;
     }
 
@@ -286,7 +287,7 @@ class SortingCodecReader extends FilterCodecReader {
     private final Bits in;
     private final Sorter.DocMap docMap;
 
-    public SortingBits(final Bits in, Sorter.DocMap docMap) {
+    SortingBits(final Bits in, Sorter.DocMap docMap) {
       this.in = in;
       this.docMap = docMap;
     }
@@ -307,7 +308,7 @@ class SortingCodecReader extends FilterCodecReader {
     private final PointValues in;
     private final Sorter.DocMap docMap;
 
-    public SortingPointValues(final PointValues in, Sorter.DocMap docMap) {
+    SortingPointValues(final PointValues in, Sorter.DocMap docMap) {
       this.in = in;
       this.docMap = docMap;
     }

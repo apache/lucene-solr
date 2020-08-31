@@ -25,11 +25,16 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -93,6 +98,8 @@ public class TestSortingCodecReader extends LuceneTestCase {
           Document doc = new Document();
           doc.add(new NumericDocValuesField("foo", random().nextInt(20)));
           doc.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+          doc.add(new LongPoint("id", i));
+
           FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
           ft.setStoreTermVectors(true);
           doc.add(new Field("term_vectors", "test" + i, ft));
@@ -137,6 +144,14 @@ public class TestSortingCodecReader extends LuceneTestCase {
               if (idNext != DocIdSetIterator.NO_MORE_DOCS) {
                 assertTrue(leaf.getTermVectors(idNext).terms("term_vectors").iterator().seekExact(new BytesRef("test" + ids.longValue())));
                 assertEquals(Long.toString(ids.longValue()), leaf.document(idNext).get("id"));
+                IndexSearcher searcher = new IndexSearcher(r);
+                TopDocs result = searcher.search(LongPoint.newExactQuery("id", ids.longValue()), 1);
+                assertEquals(1, result.totalHits.value);
+                assertEquals(idNext, result.scoreDocs[0].doc);
+
+                result = searcher.search(new TermQuery(new Term("id", "" + ids.longValue())), 1);
+                assertEquals(1, result.totalHits.value);
+                assertEquals(idNext, result.scoreDocs[0].doc);
               }
             }
             assertEquals(DocIdSetIterator.NO_MORE_DOCS, ids.nextDoc());
