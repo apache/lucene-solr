@@ -63,7 +63,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
