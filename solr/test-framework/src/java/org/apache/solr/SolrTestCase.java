@@ -589,8 +589,8 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static void interrupt(Thread thread, String nameContains) {
     if ((nameContains != null && thread.getName().contains(nameContains)) || (interuptThreadWithNameContains != null && thread.getName().contains(interuptThreadWithNameContains)) ) {
-      if (thread.getState() == Thread.State.TERMINATED || thread.getState() == Thread.State.WAITING || thread.getState() == Thread.State.RUNNABLE) { // adding RUNNABLE is not idle, but we can be in
-        // processWorkerExit in this state - ideally we would check also we are in that method if RUNNABLE
+      if (thread.getState() == Thread.State.TERMINATED || thread.getState() == Thread.State.WAITING || thread.getState() == Thread.State.BLOCKED || thread.getState() == Thread.State.RUNNABLE) { // adding RUNNABLE, BLOCKED, WAITING is not ideal, but we can be in
+        // processWorkerExit in this state - ideally we would check also we are in an exit or terminate method if !TERMINATED
         log.warn("interrupt on " + thread.getName());
         thread.interrupt();
         try {
