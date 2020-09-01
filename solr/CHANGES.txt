@@ -207,6 +207,9 @@ Bug Fixes
 * SOLR-14774: HealthCheckHandler is no longer an implicit SolrCore handler and can be configured from solr.xml
   (Tomás Fernándex Löbbe)
 
+* SOLR-14714: Solr.cmd in windows loads the incorrect jetty module when using java>=9 (Endika Posadas via
+  Erick Erickson)
+
 Other Changes
 ---------------------
 
