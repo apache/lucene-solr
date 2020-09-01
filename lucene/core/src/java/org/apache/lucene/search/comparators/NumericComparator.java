@@ -42,7 +42,8 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
     private final int bytesCount; // how many bytes are used to encode this number
 
     protected boolean topValueSet;
-    protected boolean singleSort; // singleSort is true, if sort is based on a single sort field.
+    protected boolean primarySort; // true, if the comparator is used as a primary sort comparator for sorting
+    protected boolean singleSort; // true, if sort is based on a single sort field.
     protected boolean hitsThresholdReached;
     protected boolean queueFull;
 
@@ -59,6 +60,11 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
     }
 
     @Override
+    public void setPrimarySort() {
+        primarySort = true;
+    }
+
+    @Override
     public void setSingleSort() {
         singleSort = true;
     }
@@ -66,6 +72,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
     public abstract class NumericLeafComparator implements LeafFieldComparator {
         protected final NumericDocValues docValues;
         private final PointValues pointValues;
+        private final boolean enableSkipping; // if skipping functionality should be enabled
         private final int maxDoc;
         private final byte[] minValueAsBytes;
         private final byte[] maxValueAsBytes;
@@ -77,14 +84,21 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
         public NumericLeafComparator(LeafReaderContext context) throws IOException {
             this.docValues = getNumericDocValues(context, field);
-            this.pointValues = context.reader().getPointValues(field);
-            this.maxDoc = context.reader().maxDoc();
-            this.maxValueAsBytes = reverse == false ? new byte[bytesCount] : topValueSet ? new byte[bytesCount] : null;
-            this.minValueAsBytes = reverse ? new byte[bytesCount] : topValueSet ? new byte[bytesCount] : null;
-
-            // TODO: optimize a case when pointValues are missing only on this segment
-            this.competitiveIterator = pointValues == null ? null : DocIdSetIterator.all(maxDoc);
-            this.iteratorCost = maxDoc;
+            // retrieving points are only relevant for skipping functionality that is enabled only on primary sort
+            this.pointValues = primarySort ? context.reader().getPointValues(field) : null;
+            if (pointValues != null) {
+                this.enableSkipping = true;
+                this.maxDoc = context.reader().maxDoc();
+                this.maxValueAsBytes = reverse == false ? new byte[bytesCount] : topValueSet ? new byte[bytesCount] : null;
+                this.minValueAsBytes = reverse ? new byte[bytesCount] : topValueSet ? new byte[bytesCount] : null;
+                this.competitiveIterator = DocIdSetIterator.all(maxDoc);
+                this.iteratorCost = maxDoc;
+            } else {
+                this.enableSkipping = false;
+                this.maxDoc = 0;
+                this.maxValueAsBytes = null;
+                this.minValueAsBytes = null;
+            }
         }
 
         /** Retrieves the NumericDocValues for the field in this segment */
@@ -119,8 +133,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
         // update its iterator to include possibly only docs that are "stronger" than the current bottom entry
         private void updateCompetitiveIterator() throws IOException {
-            if (hitsThresholdReached == false || queueFull == false) return;
-            if (pointValues == null) return;
+            if (enableSkipping == false || hitsThresholdReached == false || queueFull == false) return;
             // if some documents have missing points, check that missing values prohibits optimization
             if ((pointValues.getDocCount() < maxDoc) && isMissingValueCompetitive()) {
                 return; // we can't filter out documents, as documents with missing values are competitive
@@ -207,7 +220,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
         @Override
         public DocIdSetIterator competitiveIterator() {
-            if (competitiveIterator == null) return null;
+            if (enableSkipping == false) return null;
             return new DocIdSetIterator() {
                 private int doc;
 
