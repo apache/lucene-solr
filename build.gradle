@@ -166,7 +166,6 @@ apply from: file('gradle/ant-compat/misc.gradle')
 apply from: file('gradle/ant-compat/post-jar.gradle')
 apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
-apply from: file('gradle/ant-compat/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
@@ -175,3 +174,7 @@ apply from: file('gradle/documentation/render-javadoc.gradle')
 
 apply from: file('gradle/hacks/findbugs.gradle')
 apply from: file('gradle/hacks/gradle.gradle')
+apply from: file('gradle/hacks/hashmapAssertions.gradle')
+
+apply from: file('gradle/solr/packaging.gradle')
+apply from: file('gradle/solr/solr-forbidden-apis.gradle')
