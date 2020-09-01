@@ -82,7 +82,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4)
+    System.setProperty("solr.http2solrclient.default.idletimeout", "30000");
+    configureCluster(TEST_NIGHTLY ? 4 : 2)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .addConfig("ml", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
