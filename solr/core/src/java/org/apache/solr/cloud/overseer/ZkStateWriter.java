@@ -328,7 +328,7 @@ public class ZkStateWriter {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
 
             //if (log.isDebugEnabled()) {
-            log.info("Write state.json prevVersion={} bytes={} cs={}", c.getZNodeVersion(), data.length, c);
+            if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} cs={}", c.getZNodeVersion(), data.length, c);
             //}
             // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
             try {
