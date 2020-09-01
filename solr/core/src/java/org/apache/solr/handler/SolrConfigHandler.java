@@ -547,7 +547,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             latestVersion, 30);
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
-        req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
+        req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId, false);
         log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
 
