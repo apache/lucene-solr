@@ -41,7 +41,6 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CloudConfig;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +60,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
     String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
@@ -122,12 +121,12 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
               .onNodes(new ArrayList<>(ocmh.cloudManager.getClusterStateProvider().getLiveNodes()))
               .build();
           Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
-          Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, cloudConfig, clusterState.getCollection(sourceCollection));
+          Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, clusterState.getCollection(sourceCollection));
           targetNode = assignStrategy.assign(ocmh.cloudManager, assignRequest).get(0).node;
         }
         ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
         if (async != null) msg.getProperties().put(ASYNC, async);
-        final ZkNodeProps addedReplica = ocmh.addReplica(clusterState, cloudConfig,
+        final ZkNodeProps addedReplica = ocmh.addReplica(clusterState,
             msg, nl, () -> {
               countDownLatch.countDown();
               if (nl.get("failure") != null) {

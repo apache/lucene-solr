@@ -207,6 +207,9 @@ Bug Fixes
 * SOLR-14774: HealthCheckHandler is no longer an implicit SolrCore handler and can be configured from solr.xml
   (Tomás Fernándex Löbbe)
 
+* SOLR-14714: Solr.cmd in windows loads the incorrect jetty module when using java>=9 (Endika Posadas via
+  Erick Erickson)
+
 Other Changes
 ---------------------
 
@@ -228,6 +231,14 @@ Other Changes
 
 * SOLR-14731: Rename @SolrSingleThreaded to @SolrThreadUnsafe, mark DistribPackageStore with the annotation
   (marcussorealheis)
+
+==================  8.6.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+* SOLR-14751: Zookeeper Admin screen not working for old ZK versions (janhoy)
 
 ==================  8.6.1 ==================
 

@@ -53,7 +53,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -270,7 +269,7 @@ public class Assign {
   // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if the AssignStrategy
   // can't allocate valid positions.
   @SuppressWarnings({"unchecked"})
-  public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, CloudConfig cloudConfig, String collectionName,
+  public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
                                                           String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
                                                           Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
     log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
@@ -299,7 +298,7 @@ public class Assign {
         .onNodes(createNodeList)
         .build();
     AssignStrategyFactory assignStrategyFactory = new AssignStrategyFactory(cloudManager);
-    AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, cloudConfig, coll);
+    AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, coll);
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
@@ -551,7 +550,7 @@ public class Assign {
       this.solrCloudManager = solrCloudManager;
     }
 
-    public AssignStrategy create(ClusterState clusterState, CloudConfig cloudConfig, DocCollection collection) throws IOException, InterruptedException {
+    public AssignStrategy create(ClusterState clusterState, DocCollection collection) throws IOException, InterruptedException {
       @SuppressWarnings({"unchecked", "rawtypes"})
       List<Map> ruleMaps = (List<Map>) collection.get("rule");
       @SuppressWarnings({"rawtypes"})

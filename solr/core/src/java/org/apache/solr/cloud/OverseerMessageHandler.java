@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.core.CloudConfig;
 
 /**
  * Interface for processing messages received by an {@link OverseerTaskProcessor}
@@ -30,7 +29,7 @@ public interface OverseerMessageHandler {
    *
    * @return response
    */
-  OverseerSolrResponse processMessage(ZkNodeProps message, CloudConfig cloudConfig, String operation);
+  OverseerSolrResponse processMessage(ZkNodeProps message, String operation);
 
   /**
    * @return the name of the OverseerMessageHandler

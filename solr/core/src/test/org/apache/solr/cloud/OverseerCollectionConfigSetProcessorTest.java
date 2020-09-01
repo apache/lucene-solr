@@ -59,7 +59,6 @@ import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
@@ -114,7 +113,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static HttpShardHandlerFactory shardHandlerFactoryMock;
   private static HttpShardHandler shardHandlerMock;
   private static ZkStateReader zkStateReaderMock;
-  private static CloudConfig cloudConfigMock;
   private static ClusterState clusterStateMock;
   private static SolrZkClient solrZkClientMock;
   private static DistribStateManager stateManagerMock;
@@ -140,14 +138,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       OverseerCollectionConfigSetProcessor {
     
 
-    public OverseerCollectionConfigSetProcessorToBeTested(CloudConfig cloudConfig, ZkStateReader zkStateReader,
+    public OverseerCollectionConfigSetProcessorToBeTested(ZkStateReader zkStateReader,
         String myId, HttpShardHandlerFactory shardHandlerFactory,
         String adminPath,
         OverseerTaskQueue workQueue, DistributedMap runningMap,
         Overseer overseer,
         DistributedMap completedMap,
         DistributedMap failureMap) {
-      super(cloudConfig, zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
@@ -169,7 +167,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     shardHandlerFactoryMock = mock(HttpShardHandlerFactory.class);
     shardHandlerMock = mock(HttpShardHandler.class);
     zkStateReaderMock = mock(ZkStateReader.class);
-    cloudConfigMock = mock(CloudConfig.class);
     clusterStateMock = mock(ClusterState.class);
     solrZkClientMock = mock(SolrZkClient.class);
     overseerMock = mock(Overseer.class);
@@ -729,7 +726,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     
     if (random().nextBoolean()) Collections.shuffle(createNodeList, random());
 
-    underTest = new OverseerCollectionConfigSetProcessorToBeTested(cloudConfigMock, zkStateReaderMock,
+    underTest = new OverseerCollectionConfigSetProcessorToBeTested(zkStateReaderMock,
         "1234", shardHandlerFactoryMock, ADMIN_PATH, workQueueMock, runningMapMock,
         overseerMock, completedMapMock, failureMapMock);
 
