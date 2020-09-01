@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 
@@ -54,8 +55,8 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
    * If the collection already exists then this is not an error.<p>
    */
   @SuppressWarnings({"rawtypes"})
-  static NamedList createCollectionAndWait(ClusterState clusterState, String aliasName, Map<String, String> aliasMetadata,
-                                    String createCollName, OverseerCollectionMessageHandler ocmh) throws Exception {
+  static NamedList createCollectionAndWait(ClusterState clusterState, CloudConfig cloudConfig, String aliasName, Map<String, String> aliasMetadata,
+                                           String createCollName, OverseerCollectionMessageHandler ocmh) throws Exception {
     // Map alias metadata starting with a prefix to a create-collection API request
     final ModifiableSolrParams createReqParams = new ModifiableSolrParams();
     for (Map.Entry<String, String> e : aliasMetadata.entrySet()) {
@@ -81,7 +82,7 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
       // Since we are running in the Overseer here, send the message directly to the Overseer CreateCollectionCmd.
       // note: there's doesn't seem to be any point in locking on the collection name, so we don't. We currently should
       //   already have a lock on the alias name which should be sufficient.
-      ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, new ZkNodeProps(createMsgMap), results);
+      ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, cloudConfig, new ZkNodeProps(createMsgMap), results);
     } catch (SolrException e) {
       // The collection might already exist, and that's okay -- we can adopt it.
       if (!e.getMessage().contains("collection already exists")) {

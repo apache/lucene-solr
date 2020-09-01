@@ -37,6 +37,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.util.RTimerTree;
@@ -75,12 +76,12 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @SuppressWarnings("unchecked")
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
-    split(state, message,(NamedList<Object>) results);
+  public void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+    split(state, cloudConfig, message,(NamedList<Object>) results);
   }
 
   @SuppressWarnings({"rawtypes"})
-  public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public boolean split(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, NamedList<Object> results) throws Exception {
     final String asyncId = message.getStr(ASYNC);
 
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
@@ -246,7 +247,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             propMap.put(SHARD_ID_PROP, subSlice);
             ZkNodeProps m = new ZkNodeProps(propMap);
             try {
-              ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList());
+              ocmh.commandMap.get(DELETESHARD).call(clusterState, cloudConfig, m, new NamedList());
             } catch (Exception e) {
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + subSlice,
                   e);
@@ -309,7 +310,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         if (asyncId != null) {
           propMap.put(ASYNC, asyncId);
         }
-        ocmh.addReplica(clusterState, new ZkNodeProps(propMap), results, null);
+        ocmh.addReplica(clusterState, cloudConfig, new ZkNodeProps(propMap), results, null);
       }
 
 
@@ -432,7 +433,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
           .build();
       Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
-      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, collection);
+      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, cloudConfig, collection);
       List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
       t.stop();
 
@@ -550,7 +551,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       t = timings.sub("createCoresForReplicas");
       // now actually create replica cores on sub shard nodes
       for (Map<String, Object> replica : replicas) {
-        ocmh.addReplica(clusterState, new ZkNodeProps(replica), results, null);
+        ocmh.addReplica(clusterState, cloudConfig, new ZkNodeProps(replica), results, null);
       }
 
       assert TestInjection.injectSplitFailureAfterReplicaCreation();
@@ -587,7 +588,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
     } finally {
       if (!success) {
-        cleanupAfterFailure(zkStateReader, collectionName, parentSlice.getName(), subSlices, offlineSlices);
+        cleanupAfterFailure(zkStateReader, cloudConfig, collectionName, parentSlice.getName(), subSlices, offlineSlices);
         unlockForSplit(ocmh.cloudManager, collectionName, parentSlice.getName());
       }
     }
@@ -644,7 +645,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
   }
 
-  private void cleanupAfterFailure(ZkStateReader zkStateReader, String collectionName, String parentShard,
+  private void cleanupAfterFailure(ZkStateReader zkStateReader, CloudConfig cloudConfig, String collectionName, String parentShard,
                                    List<String> subSlices, Set<String> offlineSlices) {
     log.info("Cleaning up after a failed split of {}/{}", collectionName, parentShard);
     // get the latest state
@@ -725,7 +726,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       props.put(SHARD_ID_PROP, subSlice);
       ZkNodeProps m = new ZkNodeProps(props);
       try {
-        ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList<Object>());
+        ocmh.commandMap.get(DELETESHARD).call(clusterState, cloudConfig, m, new NamedList<Object>());
       } catch (Exception e) {
         log.warn("Cleanup failed after failed split of {}/{} : (deleting existing sub shard{})", collectionName, parentShard, subSlice, e);
       }

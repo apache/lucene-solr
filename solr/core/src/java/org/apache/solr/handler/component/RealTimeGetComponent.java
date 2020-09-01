@@ -82,7 +82,6 @@ import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.PeerSync;
@@ -269,11 +268,7 @@ public class RealTimeGetComponent extends SearchComponent
                if (oper == UpdateLog.ADD) {
                  doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
                } else if (oper == UpdateLog.UPDATE_INPLACE) {
-                 if (ulog instanceof CdcrUpdateLog) {
-                   assert entry.size() == 6;
-                 } else {
-                   assert entry.size() == 5;
-                 }
+                 assert entry.size() == 5;
                  // For in-place update case, we have obtained the partial document till now. We need to
                  // resolve it to a full document to be returned to the user.
                  doc = resolveFullDocument(core, idBytes.get(), rsp.getReturnFields(), (SolrInputDocument)entry.get(entry.size()-1), entry, null);
@@ -571,12 +566,8 @@ public class RealTimeGetComponent extends SearchComponent
         }
         switch (oper) {
           case UpdateLog.UPDATE_INPLACE:
-            if (ulog instanceof CdcrUpdateLog) {
-              assert entry.size() == 6;
-            } else {
-              assert entry.size() == 5;
-            }
-
+            assert entry.size() == 5;
+            
             if (resolveFullDocument) {
               SolrInputDocument doc = (SolrInputDocument)entry.get(entry.size()-1);
               try {

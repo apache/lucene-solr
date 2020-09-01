@@ -60,8 +60,6 @@ configure(rootProject) {
         ":solr:core",
         ":solr:solrj",
         ":solr:contrib:analysis-extras",
-        ":solr:contrib:dataimporthandler",
-        ":solr:contrib:dataimporthandler-extras",
         ":solr:contrib:analytics",
         ":solr:contrib:clustering",
         ":solr:contrib:extraction",

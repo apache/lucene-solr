@@ -944,10 +944,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
-      this.resourceLoader.core = this;
       schemaPluginsLoader = new PackageListeningClassLoader(coreContainer, resourceLoader,
               solrConfig::maxPackageVersion,
-              () -> setLatestSchema(configSet.getIndexSchema(true)));
+              () -> setLatestSchema(configSet.getIndexSchema()));
       this.packageListeners.addListener(schemaPluginsLoader);
       IndexSchema schema = configSet.getIndexSchema();
 
@@ -1175,7 +1174,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   private CircuitBreakerManager initCircuitBreakerManager() {
-    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(solrConfig);
+    final PluginInfo info = solrConfig.getPluginInfo(CircuitBreakerManager.class.getName());
+    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(info);
 
     return circuitBreakerManager;
   }
@@ -3061,6 +3061,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   public static Runnable getConfListener(SolrCore core, ZkSolrResourceLoader zkSolrResourceLoader) {
     final String coreName = core.getName();
+    final UUID coreId = core.uniqueId;
     final CoreContainer cc = core.getCoreContainer();
     final String overlayPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + ConfigOverlay.RESOURCE_NAME;
     final String solrConfigPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
@@ -3096,7 +3097,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (configHandler.getReloadLock().tryLock()) {
 
           try {
-            cc.reload(coreName);
+            cc.reload(coreName, coreId);
           } catch (SolrCoreState.CoreIsClosedException e) {
             /*no problem this core is already closed*/
           } finally {
