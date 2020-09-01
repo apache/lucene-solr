@@ -112,7 +112,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   private final boolean directUpdatesToLeadersOnly;
   private final RequestReplicaListTransformerGenerator requestRLTGenerator;
   boolean parallelUpdates; //TODO final
-  private ExecutorService threadPool;
+  private final ExecutorService threadPool;
   private String idField = ID;
   public static final String STATE_VERSION = "_stateVer_";
   private long retryExpiryTime = TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);//3 seconds or 3 million nanos
@@ -145,7 +145,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     @Override
     public ExpiringCachedDocCollection get(Object key) {
       ExpiringCachedDocCollection val = super.get(key);
-      if(val == null) {
+      if (val == null) {
         // a new collection is likely to be added now.
         //check if there are stale items and remove them
         evictStale();
@@ -192,17 +192,19 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   protected final StateCache collectionStateCache = new StateCache();
 
-  class ExpiringCachedDocCollection {
+  static class ExpiringCachedDocCollection {
     final DocCollection cached;
     final long cachedAt;
+    private final long retryExpiryTime;
     //This is the time at which the collection is retried and got the same old version
     volatile long retriedAt = -1;
     //flag that suggests that this is potentially to be rechecked
     volatile boolean maybeStale = false;
 
-    ExpiringCachedDocCollection(DocCollection cached) {
+    ExpiringCachedDocCollection(DocCollection cached, long retryExpiryTime) {
       this.cached = cached;
       this.cachedAt = System.nanoTime();
+      this.retryExpiryTime = retryExpiryTime;
     }
 
     boolean isExpired(long timeToLiveMs) {
@@ -231,6 +233,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       threadPool = ExecutorUtil
           .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(
               "CloudSolrClient ThreadPool"));
+    } else {
+      threadPool = null;
     }
     this.updatesToLeaders = updatesToLeaders;
     this.parallelUpdates = parallelUpdates;
@@ -1029,7 +1033,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
             // looks like we couldn't reach the server because the state was stale == retry
             stateWasStale = true;
             // we just pulled state from ZK, so update the cache so that the retry uses it
-            collectionStateCache.put(ext.getName(), new ExpiringCachedDocCollection(latestStateFromZk));
+            collectionStateCache.put(ext.getName(), new ExpiringCachedDocCollection(latestStateFromZk, retryExpiryTime));
           }
         }
       }
@@ -1319,7 +1323,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         cacheEntry.maybeStale = false;
       } else {
         if (fetchedCol.getStateFormat() > 1)
-          collectionStateCache.put(collection, new ExpiringCachedDocCollection(fetchedCol));
+          collectionStateCache.put(collection, new ExpiringCachedDocCollection(fetchedCol, retryExpiryTime));
       }
       return fetchedCol;
     }
