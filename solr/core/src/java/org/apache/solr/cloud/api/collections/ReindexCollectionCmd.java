@@ -56,7 +56,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
@@ -167,7 +166,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
 
     log.debug("*** called: {}", message);
 
@@ -286,7 +285,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
             CommonParams.NAME, chkCollection,
             CoreAdminParams.DELETE_METRICS_HISTORY, "true"
         );
-        ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cloudConfig, cmd, cmdResults);
+        ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
         ocmh.checkResults("deleting old checkpoint collection " + chkCollection, cmdResults, true);
       }
 
@@ -332,7 +331,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       // create the target collection
       cmd = new ZkNodeProps(propMap);
       cmdResults = new NamedList<>();
-      ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, cloudConfig, cmd, cmdResults);
+      ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, cmd, cmdResults);
       createdTarget = true;
       ocmh.checkResults("creating target collection " + targetCollection, cmdResults, true);
 
@@ -346,7 +345,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           CommonAdminParams.WAIT_FOR_FINAL_STATE, "true"
       );
       cmdResults = new NamedList<>();
-      ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, cloudConfig, cmd, cmdResults);
+      ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, cmd, cmdResults);
       ocmh.checkResults("creating checkpoint collection " + chkCollection, cmdResults, true);
       // wait for a while until we see both collections
       TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS, ocmh.timeSource);
@@ -434,7 +433,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
             CommonParams.NAME, extCollection,
             "collections", targetCollection);
         cmdResults = new NamedList<>();
-        ocmh.commandMap.get(CollectionParams.CollectionAction.CREATEALIAS).call(clusterState, cloudConfig, cmd, cmdResults);
+        ocmh.commandMap.get(CollectionParams.CollectionAction.CREATEALIAS).call(clusterState, cmd, cmdResults);
         ocmh.checkResults("setting up alias " + extCollection + " -> " + targetCollection, cmdResults, true);
         reindexingState.put("alias", extCollection + " -> " + targetCollection);
       }
@@ -457,7 +456,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           CoreAdminParams.DELETE_METRICS_HISTORY, "true"
       );
       cmdResults = new NamedList<>();
-      ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cloudConfig, cmd, cmdResults);
+      ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
       ocmh.checkResults("deleting checkpoint collection " + chkCollection, cmdResults, true);
 
       // 7. optionally delete the source collection
@@ -470,7 +469,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
             CoreAdminParams.DELETE_METRICS_HISTORY, "true"
         );
         cmdResults = new NamedList<>();
-        ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cloudConfig, cmd, cmdResults);
+        ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
         ocmh.checkResults("deleting source collection " + collection, cmdResults, true);
       } else {
         // 8. clear readOnly on source
@@ -496,7 +495,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       aborted = true;
     } finally {
       if (aborted) {
-        cleanup(cloudConfig, collection, targetCollection, chkCollection, daemonUrl, targetCollection, createdTarget);
+        cleanup(collection, targetCollection, chkCollection, daemonUrl, targetCollection, createdTarget);
         if (exc != null) {
           results.add("error", exc.toString());
         }
@@ -763,7 +762,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     }
   }
 
-  private void cleanup(CloudConfig cloudConfig, String collection, String targetCollection, String chkCollection,
+  private void cleanup(String collection, String targetCollection, String chkCollection,
                        String daemonUrl, String daemonName, boolean createdTarget) throws Exception {
     log.info("## Cleaning up after abort or error");
     // 1. kill the daemon
@@ -783,7 +782,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           FOLLOW_ALIASES, "false",
           CoreAdminParams.DELETE_METRICS_HISTORY, "true"
       );
-      ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cloudConfig, cmd, cmdResults);
+      ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
       ocmh.checkResults("CLEANUP: deleting target collection " + targetCollection, cmdResults, false);
 
     }
@@ -797,7 +796,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           CoreAdminParams.DELETE_METRICS_HISTORY, "true"
       );
       cmdResults = new NamedList<>();
-      ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cloudConfig, cmd, cmdResults);
+      ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
       ocmh.checkResults("CLEANUP: deleting checkpoint collection " + chkCollection, cmdResults, false);
     }
     log.debug(" -- turning readOnly mode off for {}", collection);
