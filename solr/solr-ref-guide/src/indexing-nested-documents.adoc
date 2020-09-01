@@ -63,6 +63,7 @@ Even though the child documents in these examples are provided syntactically as 
                "price_i": 42,
                "manuals": [ { "id": "P11!D41",
                               "name_s": "Red Swingline Brochure",
+                              "pages_i":1,
                               "content_t": "..."
                             } ]
              },
@@ -72,10 +73,12 @@ Even though the child documents in these examples are provided syntactically as 
              } ],
    "manuals": [ { "id": "P11!D51",
                   "name_s": "Quick Reference Guide",
+                  "pages_i":1,
                   "content_t": "How to use your stapler ..."
                 },
                 { "id": "P11!D61",
                   "name_s": "Warranty Details",
+                  "pages_i":42,
                   "content_t": "... lifetime guarantee ..."
                 } ]
  },
@@ -87,6 +90,7 @@ Even though the child documents in these examples are provided syntactically as 
                "price_i": 89,
                "manuals": [ { "id": "P22!D42",
                               "name_s": "Red Mont Blanc Brochure",
+                              "pages_i":1,
                               "content_t": "..."
                             } ]
              },
@@ -96,6 +100,7 @@ Even though the child documents in these examples are provided syntactically as 
              } ],
    "manuals": [ { "id": "P22!D52",
                   "name_s": "How To Use A Pen",
+                  "pages_i":42,
                   "content_t": "Start by removing the cap ..."
                 } ]
  } ]
@@ -211,6 +216,7 @@ Although not recommended, it is also possible to index child documents "anonymou
              { "id": "P11!D41",
                "type_s": "DOC",
                "name_s": "Red Swingline Brochure",
+               "pages_i":1,
                "content_t": "..."
              } ]
        },
@@ -222,11 +228,13 @@ Although not recommended, it is also possible to index child documents "anonymou
        { "id": "P11!D51",
          "type_s": "DOC",
          "name_s": "Quick Reference Guide",
+         "pages_i":1,
          "content_t": "How to use your stapler ..."
        },
        { "id": "P11!D61",
          "type_s": "DOC",
          "name_s": "Warranty Details",
+         "pages_i":42,
          "content_t": "... lifetime guarantee ..."
        }
     ]
@@ -284,6 +292,7 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
           "id":"P11!D41",
           "type_s":"DOC",
           "name_s":"Red Swingline Brochure",
+          "pages_i":1,
           "content_t":"...",
           "_version_":1673055562829398016},
         {
@@ -302,12 +311,14 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
           "id":"P11!D51",
           "type_s":"DOC",
           "name_s":"Quick Reference Guide",
+          "pages_i":1,
           "content_t":"How to use your stapler ...",
           "_version_":1673055562829398016},
         {
           "id":"P11!D61",
           "type_s":"DOC",
           "name_s":"Warranty Details",
+          "pages_i":42,
           "content_t":"... lifetime guarantee ...",
           "_version_":1673055562829398016}]}]
   }}
@@ -334,6 +345,7 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
       <str name="id">P11!D41</str>
       <str name="type_s">DOC</str>
       <str name="name_s">Red Swingline Brochure</str>
+      <int name="pages_i">1</int>
       <str name="content_t">...</str>
       <long name="_version_">1673055562829398016</long></doc>
     <doc>
@@ -352,12 +364,14 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
       <str name="id">P11!D51</str>
       <str name="type_s">DOC</str>
       <str name="name_s">Quick Reference Guide</str>
+      <int name="pages_i">1</int>
       <str name="content_t">How to use your stapler ...</str>
       <long name="_version_">1673055562829398016</long></doc>
     <doc>
       <str name="id">P11!D61</str>
       <str name="type_s">DOC</str>
       <str name="name_s">Warranty Details</str>
+      <int name="pages_i">42</int>
       <str name="content_t">... lifetime guarantee ...</str>
       <long name="_version_">1673055562829398016</long></doc></doc>
 </result>

@@ -76,6 +76,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
               {
                 "id":"P11!D41",
                 "name_s":"Red Swingline Brochure",
+                "pages_i":1,
                 "content_t":"...",
                 "_version_":1672933224035123200}]},
           
@@ -88,12 +89,14 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
           {
             "id":"P11!D51",
             "name_s":"Quick Reference Guide",
+            "pages_i":1,
             "content_t":"How to use your stapler ...",
             "_version_":1672933224035123200},
           
           {
             "id":"P11!D61",
             "name_s":"Warranty Details",
+            "pages_i":42,
             "content_t":"... lifetime guarantee ...",
             "_version_":1672933224035123200}]}]
   }}
@@ -108,12 +111,13 @@ Let's consider again the `description_t:staplers` query used above -- if we wrap
 
 [source,bash]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d omitHeader=true -d 'q={!child+of="*:* -_nest_path_:*"}description_t:staplers'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'q={!child of="*:* -_nest_path_:*"}description_t:staplers'
 {
   "response":{"numFound":5,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
       {
         "id":"P11!D41",
         "name_s":"Red Swingline Brochure",
+        "pages_i":1,
         "content_t":"...",
         "_version_":1672933224035123200},
       {
@@ -129,11 +133,13 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d omitHeader=true -d 
       {
         "id":"P11!D51",
         "name_s":"Quick Reference Guide",
+        "pages_i":1,
         "content_t":"How to use your stapler ...",
         "_version_":1672933224035123200},
       {
         "id":"P11!D61",
         "name_s":"Warranty Details",
+        "pages_i":42,
         "content_t":"... lifetime guarantee ...",
         "_version_":1672933224035123200}]
   }}
@@ -141,64 +147,121 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d omitHeader=true -d 
 
 In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers#block-mask,`of` parameter>> to indicate we want to consider all documents which don't have a nest path -- ie: all "root" level document -- as the set of possible parents.
 
-nocommit: example with more interesting `of` param - ie: only manuals that are attached to SKUs
+By changing the `of` param to match ancestors at specific `\_nest_path_` levels, we can narrow down the list of children we return.  In the query below, we search for all descendents of `skus` (using an `of` param that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) with a `price_i` less then `50`:
 
-nocommit: show both the "inline" nest path (explain escaping) and the param deref using "prefix" parser
+[source,bash]
+----
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child of="*:* -_nest_path_:\\/skus\\/*"}(+price_i:[* TO 50] +_nest_path_:\/skus)'
+{
+  "response":{"numFound":1,"start":0,"maxScore":1.0,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!D41",
+        "name_s":"Red Swingline Brochure",
+        "pages_i":1,
+        "content_t":"...",
+        "_version_":1675662666752851968}]
+  }}
+----
+
+[#double-escaping-nest-path-slashes]
+[CAUTION]
+.Double Escaping `\_nest_path_` slashes in `of`
+====
+Note that in the above example, the `/` characters in the `\_nest_path_` were "double escaped" in the `of` parameter:
+
+* One level of `\` escaping is neccessary to prevent the `/` from being interpreted as a {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#Regexp_Searches[Regex Query]
+* An additional level of "escaping the escape character" is neccessary because the `of` local parameter is a quoted string; so we need a second `\` to ensure the first `\` is preserved and passed as is to the query parser.
+
+(You can see that only a single level of of `\` escaping is needed in the body of the query string -- to prevent the Regex syntax --  because it's not a quoted string local param)
+
+You may find it more convinient to use <<local-parameters-in-queries#parameter-dereferencing,parameter references>> in conjunction with <<other-parsers#other-parsers,other parsers>> that do not treat `/` as a special character to express the same query in a more verbose form:
+
+[source,bash]
+----
+curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child of=$block_mask}(+price_i:[* TO 50] +{!field f="_nest_path_" v="/skus"})' --data-urlencode 'block_mask=(*:* -{!prefix f="_nest_path_" v="/skus/"})'
+----
+
+====
+
 
 === Parent Query Parser
 
 The inverse of the `{!child}` query parser is the `{!parent}` query parser, which let's you search for the _ancestor_ documents of some child documents matching a wrapped query.  For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-parent-query-parser,Block Join Parent Query Parser>>.
 
-nocommit: change this example to a query that matches "manuals"...
-
-Let's first consider this example of searching for all "sku" type documents that have a color of "RED"...
+Let's first consider this example of searching for all "manual" type documents that have exactly `1` page:
 
 [source,bash]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=color_s:RED'
+$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=pages_i:1'
 {
-  "response":{"numFound":2,"start":0,"maxScore":0.2449984,"numFoundExact":true,"docs":[
+  "response":{"numFound":3,"start":0,"maxScore":1.0,"numFoundExact":true,"docs":[
       {
-        "id":"P11!S21",
-        "color_s":"RED",
-        "price_i":42,
-        "_version_":1672933224035123200},
+        "id":"P11!D41",
+        "name_s":"Red Swingline Brochure",
+        "pages_i":1,
+        "content_t":"...",
+        "_version_":1676585794196733952},
       {
-        "id":"P22!S22",
-        "color_s":"RED",
-        "price_i":89,
-        "_version_":1672933224436727808}]
+        "id":"P11!D51",
+        "name_s":"Quick Reference Guide",
+        "pages_i":1,
+        "content_t":"How to use your stapler ...",
+        "_version_":1676585794196733952},
+      {
+        "id":"P22!D42",
+        "name_s":"Red Mont Blanc Brochure",
+        "pages_i":1,
+        "content_t":"...",
+        "_version_":1676585794347728896}]
   }}
 ----
 
-nocommit: change this query to match all "ancestors" of the above query (products & skus)
-
-We can wrap that query in a `{!parent}` query to return the details of all products that have "RED" skus...
-
-nocommit: switch curl command to use `-d` for readability...
+We can wrap that query in a `{!parent}` query to return the details of all products that are ancestors of these manuals:
 
 [source,bash]
 ----
-$ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q={!parent+which="*:*+-_nest_path_:*"}color_s:RED'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent which="*:* -_nest_path_:*"}(+_nest_path_:\/skus\/manuals +pages_i:1)'
 {
   "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {
         "id":"P11!prod",
         "name_s":"Swingline Stapler",
         "description_t":"The Cadillac of office staplers ...",
-        "_version_":1672933224035123200},
+        "_version_":1676585794196733952},
       {
         "id":"P22!prod",
         "name_s":"Mont Blanc Fountain Pen",
         "description_t":"A Premium Writing Instrument ...",
-        "_version_":1672933224436727808}]
+        "_version_":1676585794347728896}]
   }}
 ----
 
 In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers#block-mask,`which` parameter>> to indicate we want to consider all documents which don't have a nest path -- ie: all "root" level document -- as the set of possible parents.
 
-nocommit: now give a more interesting example, using which to only match the "sku" parents
+By changing the `which` param to match ancestors at specific `\_nest_path_` levels, we can change the type of ancestors we return.  In the query below, we search for `skus` (using an `which` param that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) that are the ancestors of `manuals` with exactly `1` page:
 
+[source,bash]
+----
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent which="*:* -_nest_path_:\\/skus\\/*"}(+_nest_path_:\/skus\/manuals +pages_i:1)'
+{
+  "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!S21",
+        "color_s":"RED",
+        "price_i":42,
+        "_version_":1676585794196733952},
+      {
+        "id":"P22!S22",
+        "color_s":"RED",
+        "price_i":89,
+        "_version_":1676585794347728896}]
+  }}
+----
+
+[CAUTION]
+====
+Note that in the above example, the `/` characters in the `\_nest_path_` were "double escaped" in the `which` parameter, for the <<#double-escaping-nest-path-slashes,same reasons discussed above>> regarding the `{!child} pasers `of` parameter.
+====
 
 
 === Combining Block Join Query Parsers with Child Doc Transformer
@@ -215,19 +278,20 @@ Here for example is a query where:
 
 [source,bash]
 ----
-$ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&fq=color_s:RED&q={!child+of="*:*+-_nest_path_:*"+filters=$parent_fq}&parent_fq={!parent+which="*:*+-_nest_path_:*"}_nest_path_:"/manuals"+AND+content_t:"lifetime+guarantee"&fl=*,[child]'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'fq=color_s:RED' --data-urlencode 'q={!child of="*:* -_nest_path_:*" filters=$parent_fq}' --data-urlencode 'parent_fq={!parent which="*:* -_nest_path_:*"}(+_nest_path_:"/manuals" +content_t:"lifetime guarantee")' -d 'fl=*,[child]'
 {
   "response":{"numFound":1,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {
         "id":"P11!S21",
         "color_s":"RED",
         "price_i":42,
-        "_version_":1672933224035123200,
+        "_version_":1676585794196733952,
         "manuals":[
           {
             "id":"P11!D41",
             "name_s":"Red Swingline Brochure",
+            "pages_i":1,
             "content_t":"...",
-            "_version_":1672933224035123200}]}]
+            "_version_":1676585794196733952}]}]
   }}
 ----
