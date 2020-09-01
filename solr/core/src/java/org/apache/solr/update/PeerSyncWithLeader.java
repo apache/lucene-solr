@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -111,6 +112,10 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     }
 
     return "PeerSync: core="+uhandler.core.getName()+ " url="+myURL +" ";
+  }
+
+  public void close() {
+    IOUtils.closeQuietly(clientToLeader);
   }
 
   /**

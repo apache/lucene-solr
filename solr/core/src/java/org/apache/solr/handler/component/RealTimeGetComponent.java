@@ -1126,7 +1126,7 @@ public class RealTimeGetComponent extends SearchComponent
     try (PeerSyncWithLeader peerSync = new PeerSyncWithLeader(rb.req.getCore(), syncWithLeader, nVersions)) {
       boolean success = peerSync.sync(versions).isSuccess();
       rb.rsp.add("syncWithLeader", success);
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.error("Error while closing", e);
     }
   }
