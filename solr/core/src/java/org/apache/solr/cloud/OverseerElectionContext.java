@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Pair;
@@ -109,7 +108,11 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   }
 
   @Override
-  public void cancelElection() throws InterruptedException, KeeperException {
+  public void cancelElection() throws KeeperException, InterruptedException {
+    cancelElection(false);
+  }
+
+  public void cancelElection(boolean fromCSUpdateThread) throws InterruptedException, KeeperException {
     try (ParWork closer = new ParWork(this, true)) {
       if (zkClient.isConnected()) {
         closer.collect("cancelElection", () -> {
@@ -123,7 +126,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
       }
       closer.collect("overseer", () -> {
         try {
-          overseer.doClose();
+          overseer.doClose(fromCSUpdateThread);
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
           log.error("Exception closing Overseer", e);
@@ -134,6 +137,11 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public void close() {
+    close(false);
+  }
+
+
+  public void close(boolean fromCSUpdateThread) {
     this.isClosed  = true;
     try (ParWork closer = new ParWork(this, true)) {
       closer.collect("superClose", () -> {
@@ -146,7 +154,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
       });
       closer.collect("Overseer", () -> {
         try {
-          cancelElection();
+          cancelElection(fromCSUpdateThread);
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
           log.error("Exception closing Overseer", e);

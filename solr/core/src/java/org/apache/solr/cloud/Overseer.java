@@ -159,7 +159,7 @@ public class Overseer implements SolrCloseable {
   public static final String OVERSEER_ELECT = "/overseer/overseer_elect";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private volatile ElectionContext context;
+  private volatile OverseerElectionContext context;
   private volatile boolean closeAndDone;
 
   public boolean isDone() {
@@ -374,8 +374,8 @@ public class Overseer implements SolrCloseable {
       } finally {
         log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
 
-        if (!isClosed() && !zkController.getCoreContainer().isShutDown()) {
-          Overseer.this.close();
+        if (!isClosed && !closeAndDone) { // if we have not been closed, close so that we stop the other threads
+          Overseer.this.close(true);
         }
       }
 
@@ -627,7 +627,7 @@ public class Overseer implements SolrCloseable {
         zkController.getNodeName());
 
     this.id = id;
-    this.context = context;
+    this.context = (OverseerElectionContext) context;
 
 //    try {
 //      if (context != null) context.close();
@@ -844,13 +844,19 @@ public class Overseer implements SolrCloseable {
     this.closed = true;
     close();
   }
-  
+
   public void close() {
+    close(false);
+  }
+
+  public void close(boolean fromCSUpdateThread) {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);
     }
-    IOUtils.closeQuietly(context);
-    doClose();
+    if (context != null) {
+      context.close(fromCSUpdateThread);
+    }
+    //doClose(fromCSUpdateThread);
   }
 
   @Override
@@ -859,6 +865,10 @@ public class Overseer implements SolrCloseable {
   }
 
   void doClose() {
+    doClose(false);
+  }
+
+  void doClose(boolean fromCSUpdateThread) {
     closed = true;
     if (log.isDebugEnabled()) {
       log.debug("doClose() - start");
@@ -890,7 +900,7 @@ public class Overseer implements SolrCloseable {
         }
       }
     }
-    if (updaterThread != null) {
+    if (updaterThread != null && !fromCSUpdateThread) {
       while (true) {
         try {
           updaterThread.join();
