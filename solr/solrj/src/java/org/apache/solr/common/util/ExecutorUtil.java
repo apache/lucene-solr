@@ -91,7 +91,7 @@ public class ExecutorUtil {
 
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(30, TimeUnit.SECONDS);
+        shutdown = pool.awaitTermination(10, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
         interrupted = true;
         if (interruptTimeout.hasTimedOut()) {

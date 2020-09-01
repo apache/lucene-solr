@@ -258,6 +258,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   @Override
   public void close() throws IOException {
+    if (threadPool != null) threadPool.shutdownNow();
     ExecutorUtil.shutdownAndAwaitTermination(threadPool);
   }
 
