@@ -24,6 +24,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.Counter;
@@ -99,7 +100,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     bytesUsed = newBytesUsed;
   }
 
-  static SortingCodecReader.CachedBinaryDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
+  static CachedBinaryDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
     FixedBitSet docsWithField = new FixedBitSet(maxDoc);
     BytesRef[] values = new BytesRef[maxDoc];
     while (true) {
@@ -111,7 +112,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
       docsWithField.set(newDocID);
       values[newDocID] = BytesRef.deepCopyOf(oldValues.binaryValue());
     }
-    return new SortingCodecReader.CachedBinaryDVs(values, docsWithField);
+    return new CachedBinaryDVs(values, docsWithField);
   }
 
   @Override
@@ -128,7 +129,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     if (finalLengths == null) {
       finalLengths = this.lengths.build();
     }
-    final SortingCodecReader.CachedBinaryDVs sorted;
+    final CachedBinaryDVs sorted;
     if (sortMap != null) {
       sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap,
           new BufferedBinaryDocValues(finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator()));
@@ -145,7 +146,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
                                   if (sorted == null) {
                                     return new BufferedBinaryDocValues(finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
                                   } else {
-                                    return new SortingCodecReader.SortingBinaryDocValues(sorted);
+                                    return new SortingBinaryDocValues(sorted);
                                   }
                                 }
                               });
@@ -200,6 +201,65 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     @Override
     public BytesRef binaryValue() {
       return value.get();
+    }
+  }
+
+  static class SortingBinaryDocValues extends BinaryDocValues {
+
+    private final CachedBinaryDVs dvs;
+    private int docID = -1;
+
+    SortingBinaryDocValues(CachedBinaryDVs dvs) {
+      this.dvs = dvs;
+    }
+
+    @Override
+    public int nextDoc() {
+      if (docID+1 == dvs.docsWithField.length()) {
+        docID = NO_MORE_DOCS;
+      } else {
+        docID = dvs.docsWithField.nextSetBit(docID+1);
+      }
+
+      return docID;
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int advance(int target) {
+      docID = dvs.docsWithField.nextSetBit(target);
+      return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return dvs.docsWithField.get(target);
+    }
+
+    @Override
+    public BytesRef binaryValue() {
+      return dvs.values[docID];
+    }
+
+    @Override
+    public long cost() {
+      return dvs.docsWithField.cardinality();
+    }
+  }
+
+  static class CachedBinaryDVs {
+    // TODO: at least cutover to BytesRefArray here:
+    private final BytesRef[] values;
+    private final BitSet docsWithField;
+
+    CachedBinaryDVs(BytesRef[] values, BitSet docsWithField) {
+      this.values = values;
+      this.docsWithField = docsWithField;
     }
   }
 }

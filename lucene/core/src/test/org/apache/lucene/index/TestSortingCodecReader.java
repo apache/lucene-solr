@@ -19,16 +19,24 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
@@ -39,7 +47,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestSortingCodecReader extends LuceneTestCase {
 
@@ -51,8 +58,7 @@ public class TestSortingCodecReader extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new NumericDocValuesField("foo", 18));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
-    w.commit();
+
 
     doc = new Document();
     doc.add(new NumericDocValuesField("foo", -1));
@@ -71,7 +77,10 @@ public class TestSortingCodecReader extends LuceneTestCase {
     try (DirectoryReader reader = DirectoryReader.open(tmpDir)) {
       List<CodecReader> readers = new ArrayList<>();
       for (LeafReaderContext ctx : reader.leaves()) {
-        readers.add(SortingCodecReader.wrap(SlowCodecReaderWrapper.wrap(ctx.reader()), indexSort));
+        CodecReader wrap = SortingCodecReader.wrap(SlowCodecReaderWrapper.wrap(ctx.reader()), indexSort);
+        assertTrue(wrap.toString(), wrap.toString().startsWith("SortingCodecReader("));
+        readers.add(wrap);
+
       }
       w.addIndexes(readers.toArray(new CodecReader[0]));
     }
@@ -92,25 +101,36 @@ public class TestSortingCodecReader extends LuceneTestCase {
   public void testSortOnAddIndicesRandom() throws IOException {
     try (Directory dir = newDirectory()) {
       int numDocs = atLeast(200);
-      int actualNumDocs = -1;
+      int actualNumDocs;
+      List<Integer> docIds = new ArrayList<>(numDocs);
+      for (int i = 0; i < numDocs; i++) {
+        docIds.add(i);
+      }
+      Collections.shuffle(docIds, random());
       try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir)) {
         for (int i = 0; i < numDocs; i++) {
+          int docId = docIds.get(i);
           Document doc = new Document();
           doc.add(new NumericDocValuesField("foo", random().nextInt(20)));
-          doc.add(new StringField("id", Integer.toString(i), Field.Store.YES));
-          doc.add(new LongPoint("id", i));
+          doc.add(new StringField("id", Integer.toString(docId), Field.Store.YES));
+          doc.add(new LongPoint("id", docId));
+          doc.add(new TextField("text_field", RandomStrings.randomRealisticUnicodeOfLength(random(), 25), Field.Store.YES));
+          doc.add(new SortedNumericDocValuesField("sorted_numeric_dv", docId));
+          doc.add(new SortedDocValuesField("binary_sorted_dv", new BytesRef(Integer.toString(docId))));
+          doc.add(new BinaryDocValuesField("binary_dv", new BytesRef(Integer.toString(docId))));
+          doc.add(new SortedSetDocValuesField("sorted_set_dv", new BytesRef(Integer.toString(docId))));
 
           FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
           ft.setStoreTermVectors(true);
-          doc.add(new Field("term_vectors", "test" + i, ft));
+          doc.add(new Field("term_vectors", "test" + docId, ft));
           if (rarely() == false) {
-            doc.add(new NumericDocValuesField("id", i));
+            doc.add(new NumericDocValuesField("id", docId));
           } else {
-            doc.add(new NumericDocValuesField("alt_id", i));
+            doc.add(new NumericDocValuesField("alt_id", docId));
           }
           iw.addDocument(doc);
-          if (random().nextInt(5) == 0) {
-            final int id = TestUtil.nextInt(random(), 0, i);
+          if (i > 0 && random().nextInt(5) == 0) {
+            final int id = RandomPicks.randomFrom(random(), docIds.subList(0, i));
             iw.deleteDocuments(new Term("id", Integer.toString(id)));
           }
         }
@@ -123,36 +143,61 @@ public class TestSortingCodecReader extends LuceneTestCase {
           try (DirectoryReader reader = DirectoryReader.open(dir)) {
             List<CodecReader> readers = new ArrayList<>();
             for (LeafReaderContext ctx : reader.leaves()) {
-              readers.add(SortingCodecReader.wrap(SlowCodecReaderWrapper.wrap(ctx.reader()), indexSort));
+              CodecReader wrap = SortingCodecReader.wrap(SlowCodecReaderWrapper.wrap(ctx.reader()), indexSort);
+              readers.add(wrap);
+              TermVectorsReader termVectorsReader = wrap.getTermVectorsReader();
+              TermVectorsReader clone = termVectorsReader.clone();
+              assertNotSame(termVectorsReader, clone);
+              clone.close();
             }
             writer.addIndexes(readers.toArray(new CodecReader[0]));
           }
+          assumeTrue("must have at least one doc", actualNumDocs > 0);
           try (DirectoryReader r = DirectoryReader.open(writer)) {
             LeafReader leaf = getOnlyLeafReader(r);
             assertEquals(actualNumDocs, leaf.maxDoc());
+            BinaryDocValues binary_dv = leaf.getBinaryDocValues("binary_dv");
+            SortedNumericDocValues sorted_numeric_dv = leaf.getSortedNumericDocValues("sorted_numeric_dv");
+            SortedSetDocValues sorted_set_dv = leaf.getSortedSetDocValues("sorted_set_dv");
+            SortedDocValues binary_sorted_dv = leaf.getSortedDocValues("binary_sorted_dv");
             NumericDocValues ids = leaf.getNumericDocValues("id");
-            int prevId = -1;
+            long prevValue = -1;
+            boolean usingAltIds = false;
             for (int i = 0; i < actualNumDocs; i++) {
               int idNext = ids.nextDoc();
-              assertTrue(prevId < idNext);
               if (idNext == DocIdSetIterator.NO_MORE_DOCS) {
+                assertFalse(usingAltIds);
+                usingAltIds = true;
                 ids = leaf.getNumericDocValues("alt_id");
-                prevId = ids.nextDoc();
-              } else {
-                prevId = idNext;
+                idNext = ids.nextDoc();
+                binary_dv = leaf.getBinaryDocValues("binary_dv");
+                sorted_numeric_dv = leaf.getSortedNumericDocValues("sorted_numeric_dv");
+                sorted_set_dv = leaf.getSortedSetDocValues("sorted_set_dv");
+                binary_sorted_dv = leaf.getSortedDocValues("binary_sorted_dv");
+                prevValue = -1;
               }
-              if (idNext != DocIdSetIterator.NO_MORE_DOCS) {
-                assertTrue(leaf.getTermVectors(idNext).terms("term_vectors").iterator().seekExact(new BytesRef("test" + ids.longValue())));
-                assertEquals(Long.toString(ids.longValue()), leaf.document(idNext).get("id"));
-                IndexSearcher searcher = new IndexSearcher(r);
-                TopDocs result = searcher.search(LongPoint.newExactQuery("id", ids.longValue()), 1);
-                assertEquals(1, result.totalHits.value);
-                assertEquals(idNext, result.scoreDocs[0].doc);
+              assertTrue(prevValue + " < " + ids.longValue(), prevValue < ids.longValue());
+              prevValue = ids.longValue();
+              assertTrue(binary_dv.advanceExact(idNext));
+              assertTrue(sorted_numeric_dv.advanceExact(idNext));
+              assertTrue(sorted_set_dv.advanceExact(idNext));
+              assertTrue(binary_sorted_dv.advanceExact(idNext));
+              assertEquals(new BytesRef(ids.longValue() + ""), binary_dv.binaryValue());
+              assertEquals(new BytesRef(ids.longValue() + ""), binary_sorted_dv.binaryValue());
+              assertEquals(new BytesRef(ids.longValue() + ""), sorted_set_dv.lookupOrd(sorted_set_dv.nextOrd()));
+              assertEquals(1, sorted_numeric_dv.docValueCount());
+              assertEquals(ids.longValue(), sorted_numeric_dv.nextValue());
+              Fields termVectors = leaf.getTermVectors(idNext);
+              assertTrue(termVectors.terms("term_vectors").iterator().seekExact(new BytesRef("test" + ids.longValue())));
+              assertEquals(Long.toString(ids.longValue()), leaf.document(idNext).get("id"));
+              IndexSearcher searcher = new IndexSearcher(r);
+              TopDocs result = searcher.search(LongPoint.newExactQuery("id", ids.longValue()), 1);
+              assertEquals(1, result.totalHits.value);
+              assertEquals(idNext, result.scoreDocs[0].doc);
 
-                result = searcher.search(new TermQuery(new Term("id", "" + ids.longValue())), 1);
-                assertEquals(1, result.totalHits.value);
-                assertEquals(idNext, result.scoreDocs[0].doc);
-              }
+              result = searcher.search(new TermQuery(new Term("id", "" + ids.longValue())), 1);
+              assertEquals(1, result.totalHits.value);
+              assertEquals(idNext, result.scoreDocs[0].doc);
             }
             assertEquals(DocIdSetIterator.NO_MORE_DOCS, ids.nextDoc());
           }

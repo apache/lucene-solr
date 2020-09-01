@@ -155,7 +155,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter<SortedNumericDocValue
                                          if (sorted == null) {
                                            return buf;
                                          } else {
-                                           return new SortingCodecReader.SortingSortedNumericDocValues(buf, sorted);
+                                           return new SortingSortedNumericDocValues(buf, sorted);
                                          }
                                        }
                                      });
@@ -223,4 +223,74 @@ class SortedNumericDocValuesWriter extends DocValuesWriter<SortedNumericDocValue
     }
   }
 
+  static class SortingSortedNumericDocValues extends SortedNumericDocValues {
+    private final SortedNumericDocValues in;
+    private final long[][] values;
+    private int docID = -1;
+    private int upto;
+
+    SortingSortedNumericDocValues(SortedNumericDocValues in, long[][] values) {
+      this.in = in;
+      this.values = values;
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int nextDoc() {
+      while (true) {
+        docID++;
+        if (docID == values.length) {
+          docID = NO_MORE_DOCS;
+          break;
+        }
+        if (values[docID] != null) {
+          break;
+        }
+        // skip missing docs
+      }
+      upto = 0;
+      return docID;
+    }
+
+    @Override
+    public int advance(int target) {
+      if (target >= values.length) {
+        docID = NO_MORE_DOCS;
+        return docID;
+      } else {
+        docID = target-1;
+        return nextDoc();
+      }
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      upto = 0;
+      return values[docID] != null;
+    }
+
+    @Override
+    public long nextValue() {
+      if (upto == values[docID].length) {
+        throw new AssertionError();
+      } else {
+        return values[docID][upto++];
+      }
+    }
+
+    @Override
+    public long cost() {
+      return in.cost();
+    }
+
+    @Override
+    public int docValueCount() {
+      return values[docID].length;
+    }
+  }
 }
