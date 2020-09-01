@@ -319,7 +319,7 @@ public class MissingDoclet extends StandardDoclet {
         error(element, "comment is really a license");
       }
     }
-    if (level >= PARAMETER && tree != null) {
+    if (level >= PARAMETER) {
       checkParameters(element, tree);
     }
   }
@@ -385,10 +385,12 @@ public class MissingDoclet extends StandardDoclet {
     if (element instanceof ExecutableElement) {
       // record each @param that we see
       Set<String> seenParameters = new HashSet<>();
-      for (var tag : tree.getBlockTags()) {
-        if (tag instanceof ParamTree) {
-          var name = ((ParamTree)tag).getName().getName().toString();
-          seenParameters.add(name);
+      if (tree != null) {
+        for (var tag : tree.getBlockTags()) {
+          if (tag instanceof ParamTree) {
+            var name = ((ParamTree)tag).getName().getName().toString();
+            seenParameters.add(name);
+          }
         }
       }
       // now compare the method's formal parameter list against it
