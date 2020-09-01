@@ -64,19 +64,19 @@ import org.apache.lucene.util.Version;
  * <p>
  * For some concrete implementations bundled with Lucene, look in the analysis modules:
  * <ul>
- *   <li><a href="{@docRoot}/../analyzers-common/overview-summary.html">Common</a>:
+ *   <li><a href="{@docRoot}/../analysis/common/overview-summary.html">Common</a>:
  *       Analyzers for indexing content in different languages and domains.
- *   <li><a href="{@docRoot}/../analyzers-icu/overview-summary.html">ICU</a>:
+ *   <li><a href="{@docRoot}/../analysis/icu/overview-summary.html">ICU</a>:
  *       Exposes functionality from ICU to Apache Lucene. 
- *   <li><a href="{@docRoot}/../analyzers-kuromoji/overview-summary.html">Kuromoji</a>:
+ *   <li><a href="{@docRoot}/../analysis/kuromoji/overview-summary.html">Kuromoji</a>:
  *       Morphological analyzer for Japanese text.
- *   <li><a href="{@docRoot}/../analyzers-morfologik/overview-summary.html">Morfologik</a>:
+ *   <li><a href="{@docRoot}/../analysis/morfologik/overview-summary.html">Morfologik</a>:
  *       Dictionary-driven lemmatization for the Polish language.
- *   <li><a href="{@docRoot}/../analyzers-phonetic/overview-summary.html">Phonetic</a>:
+ *   <li><a href="{@docRoot}/../analysis/phonetic/overview-summary.html">Phonetic</a>:
  *       Analysis for indexing phonetic signatures (for sounds-alike search).
- *   <li><a href="{@docRoot}/../analyzers-smartcn/overview-summary.html">Smart Chinese</a>:
+ *   <li><a href="{@docRoot}/../analysis/smartcn/overview-summary.html">Smart Chinese</a>:
  *       Analyzer for Simplified Chinese, which indexes words.
- *   <li><a href="{@docRoot}/../analyzers-stempel/overview-summary.html">Stempel</a>:
+ *   <li><a href="{@docRoot}/../analysis/stempel/overview-summary.html">Stempel</a>:
  *       Algorithmic Stemmer for the Polish Language.
  * </ul>
  *
@@ -103,7 +103,7 @@ public abstract class Analyzer implements Closeable {
    * <p>
    * NOTE: if you just want to reuse on a per-field basis, it's easier to
    * use a subclass of {@link AnalyzerWrapper} such as 
-   * <a href="{@docRoot}/../analyzers-common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">
+   * <a href="{@docRoot}/../analysis/common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">
    * PerFieldAnalyerWrapper</a> instead.
    */
   public Analyzer(ReuseStrategy reuseStrategy) {

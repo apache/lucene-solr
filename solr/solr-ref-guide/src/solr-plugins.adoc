@@ -1,8 +1,6 @@
 = Solr Plugins
 :page-children: libs, \
-    package-manager, \
-    adding-custom-plugins-in-solrcloud-mode
-
+    package-manager
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -57,8 +55,3 @@ Contrib modules ship with Solr so there's no effort for them but not so for othe
 Describes a new and experimental system to manage packages of plugins in SolrCloud.
 It includes CLI commands, cluster-wide installation, use of plugin registries that host plugins, cryptographically signed plugins for security, and more.
 Only some plugins support this as of now (support for more types of plugins coming soon).
-
-* <<adding-custom-plugins-in-solrcloud-mode.adoc#adding-custom-plugins-in-solrcloud-mode,Blob and Runtimelib>>:
-Describes a deprecated system that predates the above package management system.
-It's functionality is a subset of the package management system.
-It will no longer be supported in Solr 9.

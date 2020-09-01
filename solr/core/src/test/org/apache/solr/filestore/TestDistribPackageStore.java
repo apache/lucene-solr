@@ -19,6 +19,7 @@ package org.apache.solr.filestore;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -39,20 +40,20 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.junit.After;
 import org.junit.Before;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
 import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
-import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
@@ -124,11 +125,8 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       Map expected = Utils.makeMap(
           ":files:/package/mypkg/v1.0/runtimelibs.jar:name", "runtimelibs.jar",
           ":files:/package/mypkg/v1.0[0]:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"
-
       );
-      waitForAllNodesHaveFile(cluster,"/package/mypkg/v1.0/runtimelibs.jar", expected, true);
-
-
+      checkAllNodesForFile(cluster,"/package/mypkg/v1.0/runtimelibs.jar", expected, true);
       postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs_v2.jar.bin"),
           "/package/mypkg/v1.0/runtimelibs_v2.jar",
           null
@@ -137,11 +135,8 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           ":files:/package/mypkg/v1.0/runtimelibs_v2.jar:name", "runtimelibs_v2.jar",
           ":files:/package/mypkg/v1.0[0]:sha512",
           "bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a6c35574f3504963f5f7e4d92247d0eb4db3fc9abdda5d417"
-
       );
-      waitForAllNodesHaveFile(cluster,"/package/mypkg/v1.0/runtimelibs_v2.jar", expected, false);
-
-
+      checkAllNodesForFile(cluster,"/package/mypkg/v1.0/runtimelibs_v2.jar", expected, false);
       expected = Utils.makeMap(
           ":files:/package/mypkg/v1.0", (Predicate<Object>) o -> {
             @SuppressWarnings({"rawtypes"})
@@ -152,27 +147,31 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
             for (Object file : l) {
               if(! expectedKeys.contains(Utils.getObjectByPath(file, true, "name"))) return false;
             }
-
             return true;
           }
       );
       for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
         String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
         String url = baseUrl + "/node/files/package/mypkg/v1.0?wt=javabin";
-
         assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
-
       }
-
-
-
+      // Delete Jars
+      DistribPackageStore.deleteZKFileEntry(cluster.getZkClient(), "/package/mypkg/v1.0/runtimelibs.jar");
+      JettySolrRunner j = cluster.getRandomJetty(random());
+      String path = j.getBaseURLV2() + "/cluster/files" + "/package/mypkg/v1.0/runtimelibs.jar";
+      HttpDelete del = new HttpDelete(path);
+      try(HttpSolrClient cl = (HttpSolrClient) j.newClient()) {
+        Utils.executeHttpMethod(cl.getHttpClient(), path, Utils.JSONCONSUMER, del);
+      }
+      expected = Collections.singletonMap(":files:/package/mypkg/v1.0/runtimelibs.jar", null);
+      checkAllNodesForFile(cluster,"/package/mypkg/v1.0/runtimelibs.jar", expected, false);
     } finally {
       cluster.shutdown();
     }
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public static void waitForAllNodesHaveFile(MiniSolrCloudCluster cluster, String path, Map expected , boolean verifyContent) throws Exception {
+  public static void checkAllNodesForFile(MiniSolrCloudCluster cluster, String path, Map expected , boolean verifyContent) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + "/node/files" + path + "?wt=javabin&meta=true";
@@ -268,10 +267,9 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
       PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()), client);
       Object resp = Utils.executeGET(client.getHttpClient(), jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true", null);
-      System.out.println("sync resp: "+jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true"+" ,is: "+resp);
+      System.out.println("sync resp: "+jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true" + " ,is: " + resp);
     }
-    waitForAllNodesHaveFile(cluster,path, Utils.makeMap(":files:" + path + ":name", (Predicate<Object>) Objects::nonNull),
-        false);
+    checkAllNodesForFile(cluster,path, Utils.makeMap(":files:" + path + ":name", (Predicate<Object>) Objects::nonNull), false);
   }
 
   public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)

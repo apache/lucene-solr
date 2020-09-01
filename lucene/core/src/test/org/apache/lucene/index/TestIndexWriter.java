@@ -1414,7 +1414,7 @@ public class TestIndexWriter extends LuceneTestCase {
           IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
         if (file.lastIndexOf('.') < 0
             // don't count stored fields and term vectors in, or any temporary files they might
-            || !Arrays.asList("fdt", "tvd", "tmp").contains(file.substring(file.lastIndexOf('.') + 1))) {
+            || !Arrays.asList("fdm", "fdt", "tvm", "tvd", "tmp").contains(file.substring(file.lastIndexOf('.') + 1))) {
           ++computedExtraFileCount;
         }
       }
@@ -4206,7 +4206,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testMergeOnCommitKeepFullyDeletedSegments() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setMaxCommitMergeWaitMillis(30 * 1000);
+    iwc.setMaxFullFlushMergeWaitMillis(30 * 1000);
     iwc.mergePolicy = new FilterMergePolicy(newMergePolicy()) {
       @Override
       public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {

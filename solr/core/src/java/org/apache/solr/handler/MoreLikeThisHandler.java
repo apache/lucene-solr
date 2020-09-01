@@ -100,10 +100,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
   {
     SolrParams params = req.getParams();
 
-    long timeAllowed = (long)params.getInt( CommonParams.TIME_ALLOWED, -1 );
-    if(timeAllowed > 0) {
-      SolrQueryTimeoutImpl.set(timeAllowed);
-    }
+    SolrQueryTimeoutImpl.set(req);
       try {
 
         // Set field flags

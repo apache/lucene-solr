@@ -284,7 +284,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
-    System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
 
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
@@ -342,7 +341,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("enable.update.log");
       System.clearProperty("useCompoundFile");
       System.clearProperty("urlScheme");
-      System.clearProperty("solr.peerSync.useRangeVersions");
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
       System.clearProperty(ZK_WHITELIST_PROPERTY);
@@ -2984,20 +2982,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static final String NUMERIC_DOCVALUES_SYSPROP = "solr.tests.numeric.dv";
 
   public static final String UPDATELOG_SYSPROP = "solr.tests.ulog";
-
-  /**
-   * randomizes the updateLog between different update log implementations for better test coverage
-   */
-  public static void randomizeUpdateLogImpl() {
-    if (random().nextBoolean()) {
-      System.setProperty(UPDATELOG_SYSPROP, "solr.CdcrUpdateLog");
-    } else {
-      System.setProperty(UPDATELOG_SYSPROP,"solr.UpdateLog");
-    }
-    if (log.isInfoEnabled()) {
-      log.info("updateLog impl={}", System.getProperty(UPDATELOG_SYSPROP));
-    }
-  }
 
   /**
    * Sets various sys props related to user specified or randomized choices regarding the types 

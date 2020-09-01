@@ -360,7 +360,6 @@ goto done
 @echo   -e example    Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
-@echo       dih:            Data Import Handler
 @echo       schemaless:     Schema-less example
 @echo.
 @echo   -a opts       Additional parameters to pass to the JVM when starting Solr, such as to setup
@@ -551,7 +550,7 @@ echo                             'upconfig' or downloaded to for 'downconfig'. I
 echo                             ...solr/server/solr/configsets' then the configs will be copied from/to
 echo                             that directory. Otherwise it is interpreted as a simple local path.
 echo.
-echo         cp copies files or folders to/from Zookeeper or Zokeeper -^> Zookeeper
+echo         cp copies files or folders to/from Zookeeper or Zookeeper -^> Zookeeper
 echo             -r              Recursively copy ^<src^> to ^<dst^>. Command will fail if ^<src^> has children and
 echo                             -r is not specified. Optional
 echo.

@@ -39,7 +39,6 @@ If you are running a single node instance of Solr, additional UI screens normall
 
 // TODO: SOLR-10655 BEGIN: refactor this into a 'collection-screens-list.include.adoc' file for reuse
 * <<analysis-screen.adoc#analysis-screen,Analysis>> - lets you analyze the data found in specific fields.
-* <<dataimport-screen.adoc#dataimport-screen,Dataimport>> - shows you information about the current status of the Data Import Handler.
 * <<documents-screen.adoc#documents-screen,Documents>> - provides a simple form allowing you to execute various Solr indexing commands directly from the browser.
 * <<files-screen.adoc#files-screen,Files>> - shows the current core configuration files such as `solrconfig.xml`.
 * <<query-screen.adoc#query-screen,Query>> - lets you submit a structured query about various elements of a core.

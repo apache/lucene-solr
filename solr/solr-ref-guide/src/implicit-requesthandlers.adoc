@@ -44,10 +44,8 @@ Health:: Reporting the health of the node (_available only in SolrCloud mode_)
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/health`
 
-v2: `api/node/health` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |`_ADMIN_HEALTH`
+v2: `api/node/health` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |
 |===
-+
-This endpoint can also take the collection or core name in the path (`solr/<collection>/admin/health` or `solr/<core>/admin/health`).
 +
 This endpoint also accepts additional request parameters. Please see {solr-javadocs}/solr-core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
 
@@ -184,7 +182,7 @@ Dump:: Echo the request contents back to the client.
 |`solr/debug/dump` |{solr-javadocs}/solr-core/org/apache/solr/handler/DumpRequestHandler.html[DumpRequestHandler] |`_DEBUG_DUMP`
 |===
 
-Replication:: Replicate indexes for SolrCloud recovery and Master/Slave index distribution. This handler must have a core name in the path to the endpoint.
+Replication:: Replicate indexes for SolrCloud recovery and Leader/Follower index distribution. This handler must have a core name in the path to the endpoint.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===

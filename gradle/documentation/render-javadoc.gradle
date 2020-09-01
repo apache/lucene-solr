@@ -20,6 +20,8 @@ import javax.annotation.Nullable
 // generate javadocs by calling javadoc tool
 // see https://docs.oracle.com/en/java/javase/11/tools/javadoc.html
 
+def resources = scriptResources(buildscript)
+
 allprojects {
   plugins.withType(JavaPlugin) {
     ext {
@@ -39,17 +41,19 @@ allprojects {
       description "Generates Javadoc API documentation for the main source code. This directly invokes javadoc tool."
       group "documentation"
 
+      taskResources = resources
       dependsOn sourceSets.main.compileClasspath
-      classpath = sourceSets.main.compileClasspath;
+      classpath = sourceSets.main.compileClasspath
       srcDirSet = sourceSets.main.java;
 
-      outputDir = project.javadoc.destinationDir;
+      outputDir = project.javadoc.destinationDir
     }
 
     task renderSiteJavadoc(type: RenderJavadocTask) {
       description "Generates Javadoc API documentation for the site (relative links)."
       group "documentation"
 
+      taskResources = resources
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath;
       srcDirSet = sourceSets.main.java;
@@ -65,8 +69,9 @@ allprojects {
 
 // Set up titles and link up some offline docs for all documentation
 // (they may be unused but this doesn't do any harm).
-def javaJavadocPackages = project.project(':lucene').file('tools/javadoc/java11/')
-def junitJavadocPackages = project.project(':lucene').file('tools/javadoc/junit/')
+
+def javaJavadocPackages = rootProject.file("${resources}/java11/")
+def junitJavadocPackages = rootProject.file("${resources}/junit/")
 allprojects {
   project.tasks.withType(RenderJavadocTask) {
     title = "${project.path.startsWith(':lucene') ? 'Lucene' : 'Solr'} ${project.version} ${project.name} API"
@@ -157,7 +162,10 @@ class RenderJavadocTask extends DefaultTask {
   @Optional
   @Input
   def executable
-  
+
+  @Input
+  def taskResources
+
   /** Utility method to recursively collect all tasks with same name like this one that we depend on */
   private Set findRenderTasksInDependencies() {
     Set found = []
@@ -213,23 +221,28 @@ class RenderJavadocTask extends DefaultTask {
     // - find all (enabled) tasks this tasks depends on (with same name), calling findRenderTasksInDependencies()
     // - sort the tasks preferring those whose project name equals 'core', then lexigraphical by path
     // - for each task get output dir to create relative or absolute link
-    findRenderTasksInDependencies()
-      .sort(false, Comparator.comparing{ (it.project.name != 'core') as Boolean }.thenComparing(Comparator.comparing{ it.path }))
-      .each{ otherTask ->
-        def otherProject = otherTask.project
-        // For relative links we compute the actual relative link between projects.
-        def crossLuceneSolr = (otherProject.docroot != project.docroot)
-        if (relativeProjectLinks && !crossLuceneSolr) {
-          def pathTo = otherTask.outputDir.toPath().toAbsolutePath()
-          def pathFrom = outputDir.toPath().toAbsolutePath()
-          def relative = pathFrom.relativize(pathTo).toString().replace(File.separator, '/')
-          opts << [ '-link', relative ]
-        } else {
-          // For absolute links, we determine the target URL by assembling the full URL.
-          def base = otherProject.path.startsWith(":lucene") ? luceneDocUrl : solrDocUrl
-          allOfflineLinks.put("${base}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+    // NOTE: explicitly exclude solr/test-framework, or attempting to link to lucene-test-framework because if we did javadoc would
+    // attempt to link class refs in in org.apache.lucene, causing broken links. (either broken links to things like "Directory" if
+    // lucene-test-framework was first, or broken links to things like LuceneTestCase if lucene-core was first)
+    if (project.path != ':solr:test-framework') {  //
+      findRenderTasksInDependencies()
+        .sort(false, Comparator.comparing { (it.project.name != 'core') as Boolean }.thenComparing(Comparator.comparing { it.path }))
+        .each { otherTask ->
+          def otherProject = otherTask.project
+          // For relative links we compute the actual relative link between projects.
+          def crossLuceneSolr = (otherProject.docroot != project.docroot)
+          if (relativeProjectLinks && !crossLuceneSolr) {
+            def pathTo = otherTask.outputDir.toPath().toAbsolutePath()
+            def pathFrom = outputDir.toPath().toAbsolutePath()
+            def relative = pathFrom.relativize(pathTo).toString().replace(File.separator, '/')
+            opts << ['-link', relative]
+          } else {
+            // For absolute links, we determine the target URL by assembling the full URL.
+            def base = otherProject.path.startsWith(":lucene") ? luceneDocUrl : solrDocUrl
+            allOfflineLinks.put("${base}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+          }
         }
-      }
+    }
     
     // Add offline links.
     allOfflineLinks.each { url, dir ->
@@ -307,13 +320,15 @@ class RenderJavadocTask extends DefaultTask {
 
     // append some special table css, prettify css
     ant.concat(destfile: "${outputDir}/stylesheet.css", append: "true", fixlastline: "true", encoding: "UTF-8") {
-      filelist(dir: project.project(":lucene").file("tools/javadoc"), files: "table_padding.css")
-      filelist(dir: project.project(":lucene").file("tools/prettify"), files: "prettify.css")
+      filelist(dir: taskResources, files: "table_padding.css")
+      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.css")
     }
+
     // append prettify to scripts
     ant.concat(destfile: "${outputDir}/script.js", append: "true", fixlastline: "true", encoding: "UTF-8") {
-      filelist(dir: project.project(':lucene').file("tools/prettify"), files: "prettify.js inject-javadocs.js")
+      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.js inject-javadocs.js")
     }
+
     ant.fixcrlf(srcdir: outputDir, includes: "stylesheet.css script.js", eol: "lf", fixlast: "true", encoding: "UTF-8")
   }
 }

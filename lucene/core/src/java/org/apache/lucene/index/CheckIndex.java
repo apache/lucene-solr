@@ -1671,7 +1671,7 @@ public final class CheckIndex implements Closeable {
             }
             final long norm = norms.longValue();
             if (norm != 0 && visitedDocs.get(doc) == false) {
-              throw new RuntimeException("Document " + doc + " doesn't have terms according to postings but has a norm value that is not zero: " + norm);
+              throw new RuntimeException("Document " + doc + " doesn't have terms according to postings but has a norm value that is not zero: " + Long.toUnsignedString(norm));
             } else if (norm == 0 && visitedDocs.get(doc)) {
               throw new RuntimeException("Document " + doc + " has terms according to postings but its norm value is 0, which may only be used on documents that have no terms");
             }

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import org.apache.tools.ant.taskdefs.condition.Os
+
 apply plugin: "de.undercouch.download"
 
 configure(rootProject) {
@@ -99,6 +101,10 @@ configure(project(":lucene:analysis:common")) {
     dependsOn downloadSnowballData
 
     doLast {
+      if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        throw GradleException("Snowball generation does not work on Windows, use a platform where bash is available.")
+      }
+
       project.exec {
         executable "bash"
         args = [snowballScript, snowballStemmerDir, snowballWebsiteDir, snowballDataDir, projectDir]

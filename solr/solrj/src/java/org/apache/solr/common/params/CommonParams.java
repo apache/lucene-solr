@@ -159,7 +159,7 @@ public interface CommonParams {
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 
   /**
-   * Timeout value in milliseconds.  If not set, or the value is &gt;= 0, there is no timeout.
+   * Timeout value in milliseconds.  If not set, or the value is &gt; 0, there is no timeout.
    */
   String TIME_ALLOWED = "timeAllowed";
 
@@ -293,6 +293,10 @@ public interface CommonParams {
 
   String NAME = "name";
   String VALUE_LONG = "val";
+
+  String SOLR_REQUEST_CONTEXT_PARAM = "Solr-Request-Context";
+
+  String SOLR_REQUEST_TYPE_PARAM = "Solr-Request-Type";
 
   String VERSION_FIELD="_version_";
 
