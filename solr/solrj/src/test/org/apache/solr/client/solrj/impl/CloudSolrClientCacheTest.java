@@ -102,7 +102,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       cloudClient.request(update, collName);
       assertEquals(2, refs.get(collName).getCount());
     }
-
+    mockLbclient.close();
   }
 
 
@@ -125,28 +125,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
   private ClusterStateProvider getStateProvider(Set<String> livenodes,
                                                                 Map<String, ClusterState.CollectionRef> colls) {
-    return new DelegatingClusterStateProvider(null) {
-      @Override
-      public ClusterState.CollectionRef getState(String collection) {
-        return colls.get(collection);
-      }
-
-      @Override
-      public Set<String> getLiveNodes() {
-        return livenodes;
-      }
-
-      @Override
-      public List<String> resolveAlias(String collection) {
-        return Collections.singletonList(collection);
-      }
-
-      @Override
-      public <T> T getClusterProperty(String propertyName, T def) {
-        return def;
-      }
-    };
-
+    return new MyDelegatingClusterStateProvider(colls, livenodes);
   }
 
 
@@ -187,5 +166,34 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       "            'node_name':'192.168.1.108:7574_solr',\n" +
       "            'state':'active'}}}}}}";
 
+  private static class MyDelegatingClusterStateProvider extends DelegatingClusterStateProvider {
+    private final Map<String,ClusterState.CollectionRef> colls;
+    private final Set<String> livenodes;
 
+    public MyDelegatingClusterStateProvider(Map<String,ClusterState.CollectionRef> colls, Set<String> livenodes) {
+      super(null);
+      this.colls = colls;
+      this.livenodes = livenodes;
+    }
+
+    @Override
+    public ClusterState.CollectionRef getState(String collection) {
+      return colls.get(collection);
+    }
+
+    @Override
+    public Set<String> getLiveNodes() {
+      return livenodes;
+    }
+
+    @Override
+    public List<String> resolveAlias(String collection) {
+      return Collections.singletonList(collection);
+    }
+
+    @Override
+    public <T> T getClusterProperty(String propertyName, T def) {
+      return def;
+    }
+  }
 }
