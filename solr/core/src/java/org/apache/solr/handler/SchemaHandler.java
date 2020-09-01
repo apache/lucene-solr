@@ -33,7 +33,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrClassLoader;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
