@@ -1947,10 +1947,12 @@ public class ZkController implements Closeable {
   public void unregister(String coreName, CoreDescriptor cd, boolean removeCoreFromZk) throws Exception {
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
     final String collection = cd.getCloudDescriptor().getCollectionName();
-    ZkCollectionTerms ct = collectionToTerms.get(collection);
-    if (ct != null) {
-      ct.close();
-      ct.remove(cd.getCloudDescriptor().getShardId(), cd);
+    synchronized (collectionToTerms) {
+      ZkCollectionTerms ct = collectionToTerms.get(collection);
+      if (ct != null) {
+        ct.close();
+        ct.remove(cd.getCloudDescriptor().getShardId(), cd);
+      }
     }
     replicasMetTragicEvent.remove(collection+":"+coreNodeName);
 

@@ -59,7 +59,6 @@ class ZkCollectionTerms implements AutoCloseable {
 
   public void remove(String shardId, CoreDescriptor coreDescriptor) {
     synchronized (terms) {
-      if (closed) throw new AlreadyClosedException();
       if (getShard(shardId).removeTerm(coreDescriptor)) {
         terms.remove(shardId).close();
       }
