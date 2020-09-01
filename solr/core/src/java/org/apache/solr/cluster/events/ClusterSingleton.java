@@ -24,7 +24,7 @@ package org.apache.solr.cluster.events;
  *   <li>STOPPED - the default state. The component is idle and does not perform
  *   any functions. It should also avoid holding any resources.</li>
  *   <li>RUNNING - the component is active.</li>
- * </ul></p>
+ * </ul>
  * <p>Components must be prepared to change these states multiple times in their
  * life-cycle.</p>
  * <p>Implementation detail: currently these plugins are instantiated on all nodes

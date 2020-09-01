@@ -785,6 +785,9 @@ public class Overseer implements SolrCloseable {
    */
   private void startClusterSingletons() {
     PluginBag<SolrRequestHandler> handlers = getCoreContainer().getRequestHandlers();
+    if (handlers == null) {
+      return;
+    }
     handlers.keySet().forEach(handlerName -> {
       SolrRequestHandler handler = handlers.get(handlerName);
       if (handler instanceof ClusterSingleton) {
@@ -802,6 +805,9 @@ public class Overseer implements SolrCloseable {
    */
   private void stopClusterSingletons() {
     PluginBag<SolrRequestHandler> handlers = getCoreContainer().getRequestHandlers();
+    if (handlers == null) {
+      return;
+    }
     handlers.keySet().forEach(handlerName -> {
       SolrRequestHandler handler = handlers.get(handlerName);
       if (handler instanceof ClusterSingleton) {
