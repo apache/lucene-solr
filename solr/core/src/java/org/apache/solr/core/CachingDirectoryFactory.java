@@ -459,6 +459,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         } finally {
           if (!success) {
             IOUtils.closeWhileHandlingException(directory);
+            remove(fullPath);
+            remove(directory);
           }
         }
       } else {

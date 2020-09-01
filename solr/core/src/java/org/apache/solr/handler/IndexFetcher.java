@@ -887,6 +887,9 @@ public class IndexFetcher {
     } catch (Throwable e) {
       ParWork.propegateInterrupt(e);
       log.warn("Exception while updating statistics", e);
+      if (e instanceof  Error) {
+        throw e;
+      }
     } finally {
       if (dir != null) {
         solrCore.getDirectoryFactory().release(dir);

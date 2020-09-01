@@ -145,16 +145,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     super.tearDown();
   }
 
-  private void createTestCollectionIfNeeded() throws IOException, SolrServerException {
-    createTestCollectionIfNeeded(COLLECTION, 2, 1);
+  private void createTestCollection(String collection) throws IOException, SolrServerException {
+    createTestCollection(collection, 2, 1);
   }
 
-  private void createTestCollectionIfNeeded(String collection, int numShards, int numReplicas) throws IOException, SolrServerException {
+  private void createTestCollection(String collection, int numShards, int numReplicas) throws IOException, SolrServerException {
     final CloudHttp2SolrClient solrClient = cluster.getSolrClient();
-    if (!CollectionAdminRequest.listCollections(solrClient).contains(collection)) {
-      CollectionAdminRequest.createCollection(collection, TEST_CONFIGSET_NAME, numShards, numReplicas).process(solrClient);
-    }
-    cluster.waitForActiveCollection(collection, numShards, numShards * numReplicas);
+    CollectionAdminRequest.createCollection(collection, TEST_CONFIGSET_NAME, numShards, numReplicas).process(solrClient);
   }
 
   /**
@@ -167,7 +164,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testParallelUpdateQTime() throws Exception {
-    createTestCollectionIfNeeded();
+    String collection = "testParallelUpdateQTime";
+    createTestCollection(collection);
 
     UpdateRequest req = new UpdateRequest();
     for (int i=0; i<10; i++)  {
@@ -175,14 +173,15 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       doc.addField("id", String.valueOf(TestUtil.nextInt(random(), 1000, 1100)));
       req.add(doc);
     }
-    UpdateResponse response = req.process(getRandomClient(), COLLECTION);
+    UpdateResponse response = req.process(getRandomClient(), collection);
     // See SOLR-6547, we just need to ensure that no exception is thrown here
     assertTrue(response.getQTime() >= 0);
   }
 
   @Test
+  @Nightly // slow test
   public void testOverwriteOption() throws Exception {
-    createTestCollectionIfNeeded("overwrite", 1,1);
+    createTestCollection("overwrite", 1,1);
 
     new UpdateRequest()
         .add("id", "0", "a_t", "hello1")
@@ -204,29 +203,30 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testAliasHandling() throws Exception {
-    createTestCollectionIfNeeded();
-    createTestCollectionIfNeeded(COLLECTION2, 2, 1);
+    String collection = "testAliasHandling";
+    createTestCollection(collection);
+    createTestCollection(COLLECTION2, 2, 1);
 
     CloudHttp2SolrClient client = getRandomClient();
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
-    client.add(COLLECTION, doc);
-    client.commit(COLLECTION);
-    CollectionAdminRequest.createAlias("testalias", COLLECTION).process(cluster.getSolrClient());
+    client.add(collection, doc);
+    client.commit(collection);
+    CollectionAdminRequest.createAlias("testalias", collection).process(cluster.getSolrClient());
 
     SolrInputDocument doc2 = new SolrInputDocument("id", "2", "title_s", "my doc too");
     client.add(COLLECTION2, doc2);
     client.commit(COLLECTION2);
     CollectionAdminRequest.createAlias("testalias2", COLLECTION2).process(cluster.getSolrClient());
 
-    CollectionAdminRequest.createAlias("testaliascombined", COLLECTION + "," + COLLECTION2).process(cluster.getSolrClient());
+    CollectionAdminRequest.createAlias("testaliascombined", collection + "," + COLLECTION2).process(cluster.getSolrClient());
 
     // ensure that the aliases have been registered
     Map<String, String> aliases = new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient()).getAliases();
-    assertEquals(COLLECTION, aliases.get("testalias"));
+    assertEquals(collection, aliases.get("testalias"));
     assertEquals(COLLECTION2, aliases.get("testalias2"));
-    assertEquals(COLLECTION + "," + COLLECTION2, aliases.get("testaliascombined"));
+    assertEquals(collection + "," + COLLECTION2, aliases.get("testaliascombined"));
 
-    assertEquals(1, client.query(COLLECTION, params("q", "*:*")).getResults().getNumFound());
+    assertEquals(1, client.query(collection, params("q", "*:*")).getResults().getNumFound());
     assertEquals(1, client.query("testalias", params("q", "*:*")).getResults().getNumFound());
 
     assertEquals(1, client.query(COLLECTION2, params("q", "*:*")).getResults().getNumFound());
@@ -234,23 +234,23 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     assertEquals(2, client.query("testaliascombined", params("q", "*:*")).getResults().getNumFound());
 
-    ModifiableSolrParams paramsWithBothCollections = params("q", "*:*", "collection", COLLECTION + "," + COLLECTION2);
-    assertEquals(2, client.query(null, paramsWithBothCollections).getResults().getNumFound());
+    ModifiableSolrParams paramsWithBothCollections = params("q", "*:*", "collection", collection + "," + COLLECTION2);
+    assertEquals(2, client.query(collection, paramsWithBothCollections).getResults().getNumFound());
 
     ModifiableSolrParams paramsWithBothAliases = params("q", "*:*", "collection", "testalias,testalias2");
-    assertEquals(2, client.query(null, paramsWithBothAliases).getResults().getNumFound());
+    assertEquals(2, client.query(collection, paramsWithBothAliases).getResults().getNumFound());
 
     ModifiableSolrParams paramsWithCombinedAlias = params("q", "*:*", "collection", "testaliascombined");
-    assertEquals(2, client.query(null, paramsWithCombinedAlias).getResults().getNumFound());
+    assertEquals(2, client.query(collection, paramsWithCombinedAlias).getResults().getNumFound());
 
     ModifiableSolrParams paramsWithMixedCollectionAndAlias = params("q", "*:*", "collection", "testalias," + COLLECTION2);
-    assertEquals(2, client.query(null, paramsWithMixedCollectionAndAlias).getResults().getNumFound());
+    assertEquals(2, client.query(collection, paramsWithMixedCollectionAndAlias).getResults().getNumFound());
   }
 
   @Test
   @Ignore // nocommit ~ still failing
   public void testRouting() throws Exception {
-    createTestCollectionIfNeeded("routing_collection", 2, 1);
+    createTestCollection("routing_collection", 2, 1);
 
     AbstractUpdateRequest request = new UpdateRequest()
         .add(id, "0", "a_t", "hello1")
@@ -701,33 +701,34 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void stateVersionParamTest() throws Exception {
-    createTestCollectionIfNeeded();
+    String collection = "stateVersionParamTest";
+    createTestCollection(collection);
 
-    DocCollection coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION);
+    DocCollection coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collection);
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
     SolrQuery q = new SolrQuery().setQuery("*:*");
     BaseHttpSolrClient.RemoteSolrException sse = null;
 
-    final String url = r.getStr(ZkStateReader.BASE_URL_PROP) + "/" + COLLECTION;
+    final String url = r.getStr(ZkStateReader.BASE_URL_PROP) + "/" + collection;
     try (Http2SolrClient solrClient = SolrTestCaseJ4.getHttpSolrClient(url)) {
 
       if (log.isInfoEnabled()) {
         log.info("should work query, result {}", solrClient.query(q));
       }
       //no problem
-      q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + coll.getZNodeVersion());
+      q.setParam(CloudSolrClient.STATE_VERSION, collection + ":" + coll.getZNodeVersion());
       if (log.isInfoEnabled()) {
         log.info("2nd query , result {}", solrClient.query(q));
       }
       //no error yet good
 
-      q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion() - 1)); //an older version expect error
+      q.setParam(CloudSolrClient.STATE_VERSION, collection + ":" + (coll.getZNodeVersion() - 1)); //an older version expect error
 
       QueryResponse rsp = solrClient.query(q);
       Map m = (Map) rsp.getResponse().get(CloudSolrClient.STATE_VERSION, rsp.getResponse().size()-1);
       assertNotNull("Expected an extra information from server with the list of invalid collection states", m);
-      assertNotNull(m.get(COLLECTION));
+      assertNotNull(m.get(collection));
     }
 
     //now send the request to another node that does not serve the collection
@@ -751,10 +752,10 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertNotNull(theNode);
 
 
-    final String solrClientUrl = theNode + "/" + COLLECTION;
+    final String solrClientUrl = theNode + "/" + collection;
     try (SolrClient solrClient = SolrTestCaseJ4.getHttpSolrClient(solrClientUrl)) {
 
-      q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion()-1));
+      q.setParam(CloudSolrClient.STATE_VERSION, collection + ":" + (coll.getZNodeVersion()-1));
       try {
         QueryResponse rsp = solrClient.query(q);
         log.info("error was expected");
@@ -858,12 +859,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   
   @Test
   public void testInitializationWithSolrUrls() throws Exception {
-    createTestCollectionIfNeeded();
+    String collection = "testInitializationWithSolrUrls";
+    createTestCollection(collection);
     CloudHttp2SolrClient client = httpBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
-    client.add(COLLECTION, doc);
-    client.commit(COLLECTION);
-    assertEquals(1, client.query(COLLECTION, params("q", "*:*")).getResults().getNumFound());
+    client.add(collection, doc);
+    client.commit(collection);
+    assertEquals(1, client.query(collection, params("q", "*:*")).getResults().getNumFound());
   }
 
   @Test
