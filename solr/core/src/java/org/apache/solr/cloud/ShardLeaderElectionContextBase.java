@@ -83,7 +83,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           log.debug("Removing leader registration node on cancel: {} {}", leaderPath, version);
           List<Op> ops = new ArrayList<>(2);
           ops.add(Op.check(Paths.get(leaderPath).getParent().toString(), version));
-          ops.add(Op.check(leaderSeqPath, -1));
+          ops.add(Op.delete(leaderSeqPath, -1));
           ops.add(Op.delete(leaderPath, -1));
           zkClient.multi(ops);
         } catch (KeeperException e) {
