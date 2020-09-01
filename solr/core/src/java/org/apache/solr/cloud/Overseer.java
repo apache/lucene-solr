@@ -287,9 +287,10 @@ public class Overseer implements SolrCloseable {
               return;
             } catch (Exception e) {
               log.error("Unexpected error in Overseer state update loop", e);
-              if (!isClosed()) {
-                continue;
-              }
+              return;
+//              if (!isClosed()) {
+//                continue;
+//              }
             }
           }
 
