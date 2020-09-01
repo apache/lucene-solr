@@ -119,14 +119,14 @@ public class SolrIndexWriter extends IndexWriter {
     try {
       dir = getDir(directoryFactory, path, config);
       iw = new SolrIndexWriter(core, name, directoryFactory, dir, create, schema, config, delPolicy, codec);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       ParWork.propegateInterrupt(e);
       SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
 
       if (iw != null) {
         try {
           iw.close();
-        } catch (IOException e1) {
+        } catch (Exception e1) {
           if (dir != null) {
             try {
               directoryFactory.release(dir);
@@ -144,6 +144,10 @@ public class SolrIndexWriter extends IndexWriter {
             exp.addSuppressed(e1);
           }
         }
+      }
+      if (e instanceof  Error) {
+        log.error("Exception constructing SolrIndexWriter", exp);
+        throw (Error) e;
       }
       throw exp;
     }
