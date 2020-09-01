@@ -254,8 +254,8 @@ public class ZkStateWriter {
             log.info(
                 "Tried to update the cluster state using version={} but we where rejected, currently at {}",
                 prevVersion, c == null ? "null" : c.getZNodeVersion(), e);
-            prevState = reader.getClusterState();
-            continue;
+
+            throw e;
           }
           ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -339,9 +339,10 @@ public class ZkStateWriter {
               log.warn(
                   "Tried to update the cluster state using version={} but we where rejected, found {}",
                   c.getZNodeVersion(), stat.getVersion(), bve);
-              lastUpdatedTime = -1;
-              failedUpdates.put(name, c);
-              continue;
+              throw bve;
+           //   lastUpdatedTime = -1;
+//              failedUpdates.put(name, c);
+//              continue;
             }
           } else {
 
