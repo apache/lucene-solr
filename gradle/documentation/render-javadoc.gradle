@@ -84,12 +84,6 @@ allprojects {
   project.tasks.withType(RenderJavadocTask) {
     title = "${project.path.startsWith(':lucene') ? 'Lucene' : 'Solr'} ${project.version} ${project.name} API"
 
-    // Set up titles and link up some offline docs for all documentation
-    // (they may be unused but this doesn't do any harm).
-    def taskResources = "${rootProject.projectDir}/gradle/documentation/render-javadoc"
-    def javaJavadocPackages = rootProject.file("${taskResources}/java11/")
-    def junitJavadocPackages = rootProject.file("${taskResources}/junit/")
-
     offlineLinks += [
         "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
         "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
