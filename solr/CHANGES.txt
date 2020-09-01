@@ -113,6 +113,14 @@ Other Changes
 
 * SOLR-14641: PeerSync, remove canHandleVersionRanges check (Cao Manh Dat)
 
+==================  8.6.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+* SOLR-14751: Zookeeper Admin screen not working for old ZK versions (janhoy)
+
 ==================  8.6.1 ==================
 
 Bug Fixes
