@@ -16,6 +16,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
+[WARNING]
+.Autoscaling is deprecated
+====
+The autoscaling framework in its current form is deprecated and will be removed in Solr 9.0.
+
+A new design for this feature is currently under development in https://issues.apache.org/jira/browse/SOLR-14613[SOLR-14613] with a goal for release with Solr 9.0.
+====
+
 Trigger Listeners allow users to configure additional behavior related to trigger events as they are being processed.
 
 For example, users may want to record autoscaling events to an external system, or notify an administrator when a
