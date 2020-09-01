@@ -43,7 +43,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.update.SolrIndexSplitter;
@@ -74,7 +73,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
   @Override
-  public void call(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extSourceCollectionName = message.getStr("collection");
     String splitKey = message.getStr("split.key");
     String extTargetCollectionName = message.getStr("target.collection");
@@ -130,14 +129,14 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     for (Slice sourceSlice : sourceSlices) {
       for (Slice targetSlice : targetSlices) {
         log.info("Migrating source shard: {} to target shard: {} for split.key = {}", sourceSlice, targetSlice, splitKey);
-        migrateKey(clusterState, cloudConfig, sourceCollection, sourceSlice, targetCollection, targetSlice, splitKey,
+        migrateKey(clusterState, sourceCollection, sourceSlice, targetCollection, targetSlice, splitKey,
             timeout, results, asyncId, message);
       }
     }
   }
 
   @SuppressWarnings({"unchecked"})
-  private void migrateKey(ClusterState clusterState, CloudConfig cloudConfig, DocCollection sourceCollection, Slice sourceSlice,
+  private void migrateKey(ClusterState clusterState, DocCollection sourceCollection, Slice sourceSlice,
                           DocCollection targetCollection, Slice targetSlice,
                           String splitKey, int timeout,
                           @SuppressWarnings({"rawtypes"})NamedList results, String asyncId, ZkNodeProps message) throws Exception {
@@ -150,7 +149,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
           NAME, tempSourceCollectionName);
 
       try {
-        ocmh.commandMap.get(DELETE).call(zkStateReader.getClusterState(), cloudConfig, new ZkNodeProps(props), results);
+        ocmh.commandMap.get(DELETE).call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
         clusterState = zkStateReader.getClusterState();
       } catch (Exception e) {
         log.warn("Unable to clean up existing temporary collection: {}", tempSourceCollectionName, e);
@@ -245,7 +244,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     log.info("Creating temporary collection: {}", props);
-    ocmh.commandMap.get(CREATE).call(clusterState, cloudConfig, new ZkNodeProps(props), results);
+    ocmh.commandMap.get(CREATE).call(clusterState, new ZkNodeProps(props), results);
     // refresh cluster state
     clusterState = zkStateReader.getClusterState();
     Slice tempSourceSlice = clusterState.getCollection(tempSourceCollectionName).getSlices().iterator().next();
@@ -313,7 +312,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     if (asyncId != null) {
       props.put(ASYNC, asyncId);
     }
-    ((AddReplicaCmd)ocmh.commandMap.get(ADDREPLICA)).addReplica(clusterState, cloudConfig, new ZkNodeProps(props), results, null);
+    ((AddReplicaCmd)ocmh.commandMap.get(ADDREPLICA)).addReplica(clusterState, new ZkNodeProps(props), results, null);
 
     {
       final ShardRequestTracker syncRequestTracker = ocmh.syncRequestTracker();
@@ -373,7 +372,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
       props = makeMap(
           Overseer.QUEUE_OPERATION, DELETE.toLower(),
           NAME, tempSourceCollectionName);
-      ocmh.commandMap.get(DELETE). call(zkStateReader.getClusterState(), cloudConfig, new ZkNodeProps(props), results);
+      ocmh.commandMap.get(DELETE). call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
     } catch (Exception e) {
       log.error("Unable to delete temporary collection: {}. Please remove it manually", tempSourceCollectionName, e);
     }

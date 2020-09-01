@@ -24,7 +24,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 
@@ -35,12 +34,11 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
  */
 public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor {
 
-   public OverseerCollectionConfigSetProcessor(CloudConfig cloudConfig, ZkStateReader zkStateReader, String myId,
+   public OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
                                                final HttpShardHandler shardHandler,
                                                String adminPath, Stats stats, Overseer overseer,
                                                OverseerNodePrioritizer overseerNodePrioritizer) {
     this(
-        cloudConfig,
         zkStateReader,
         myId,
         (HttpShardHandlerFactory) shardHandler.getShardHandlerFactory(),
@@ -55,7 +53,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
     );
   }
 
-  protected OverseerCollectionConfigSetProcessor(CloudConfig cloudConfig, ZkStateReader zkStateReader, String myId,
+  protected OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
                                         final HttpShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
                                         Stats stats,
@@ -66,7 +64,6 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
                                         DistributedMap completedMap,
                                         DistributedMap failureMap) {
     super(
-        cloudConfig,
         zkStateReader,
         myId,
         stats,

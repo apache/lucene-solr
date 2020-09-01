@@ -34,7 +34,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +99,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     //---- PARSE PRIMARY MESSAGE PARAMS
     // important that we use NAME for the alias as that is what the Overseer will get a lock on before calling us
     final String aliasName = message.getStr(NAME);
@@ -127,7 +126,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
           if (exists) {
             ocmh.tpe.submit(() -> {
               try {
-                deleteTargetCollection(clusterState, cloudConfig, results, aliasName, aliasesManager, action);
+                deleteTargetCollection(clusterState, results, aliasName, aliasesManager, action);
               } catch (Exception e) {
                 log.warn("Deletion of {} by {} {} failed (this might be ok if two clients were"
                     , action.targetCollection, ra.getAliasName()
@@ -139,7 +138,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
           break;
         case ENSURE_EXISTS:
           if (!exists) {
-            addTargetCollection(clusterState, cloudConfig, results, aliasName, aliasesManager, aliasMetadata, action);
+            addTargetCollection(clusterState, results, aliasName, aliasesManager, aliasMetadata, action);
           } else {
             // check that the collection is properly integrated into the alias (see
             // TimeRoutedAliasUpdateProcessorTest.java:141). Presently we need to ensure inclusion in the alias
@@ -164,9 +163,9 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   }
 
   @SuppressWarnings({"unchecked"})
-  public void addTargetCollection(ClusterState clusterState, CloudConfig cloudConfig, @SuppressWarnings({"rawtypes"})NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, Map<String, String> aliasMetadata, RoutedAlias.Action action) throws Exception {
+  public void addTargetCollection(ClusterState clusterState, @SuppressWarnings({"rawtypes"})NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, Map<String, String> aliasMetadata, RoutedAlias.Action action) throws Exception {
     @SuppressWarnings({"rawtypes"})
-    NamedList createResults = createCollectionAndWait(clusterState, cloudConfig, aliasName, aliasMetadata,
+    NamedList createResults = createCollectionAndWait(clusterState, aliasName, aliasMetadata,
         action.targetCollection, ocmh);
     if (createResults != null) {
       results.add("create", createResults);
@@ -174,12 +173,12 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
     addCollectionToAlias(aliasName, aliasesManager, action.targetCollection);
   }
 
-  public void deleteTargetCollection(ClusterState clusterState, CloudConfig cloudConfig, @SuppressWarnings({"rawtypes"})NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, RoutedAlias.Action action) throws Exception {
+  public void deleteTargetCollection(ClusterState clusterState, @SuppressWarnings({"rawtypes"})NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, RoutedAlias.Action action) throws Exception {
     Map<String, Object> delProps = new HashMap<>();
     delProps.put(INVOKED_BY_ROUTED_ALIAS,
         (Runnable) () -> removeCollectionFromAlias(aliasName, aliasesManager, action.targetCollection));
     delProps.put(NAME, action.targetCollection);
     ZkNodeProps messageDelete = new ZkNodeProps(delProps);
-    new DeleteCollectionCmd(ocmh).call(clusterState, cloudConfig, messageDelete, results);
+    new DeleteCollectionCmd(ocmh).call(clusterState, messageDelete, results);
   }
 }
