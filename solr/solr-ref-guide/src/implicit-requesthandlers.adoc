@@ -61,7 +61,7 @@ v2: `api/node/logging` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/
 
 Luke:: Expose the internal Lucene index. This handler must have a collection name in the path to the endpoint.
 +
-*Documentation*: https://cwiki.apache.org/confluence/display/solr/LukeRequestHandler
+*Documentation*: <<luke-request-handler.adoc#luke-request-handler,Luke Request Handler>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===

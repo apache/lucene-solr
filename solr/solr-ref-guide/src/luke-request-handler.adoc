@@ -1,0 +1,77 @@
+= Luke Request Handler
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Luke Request Handler offers programmatic access to the information provided on the <<schema-browser-screen#schema-browser-screen,Schema Browser>> page of the Admin UI.
+It is modeled after the Luke, the Lucene Index Browser by Andrzej Bialecki.  It is an implicit handler, so you don't need to define it.
+
+The Luke Request Handler accepts the following parameters:
+
+`show`::
+The data about the index to include in the response.  Options are `schema`, `index`, `doc`, `all`.  `index` describes the high level details about the index.  `schema` returns details about the `schema` plus the `index` data.  `doc` works in conjunction with `docId` or `id` parameters and returns details about a specific document plus the `index` data.
+
+`id`::
+Get a document using the uniqueKeyField specified in schema.xml.
+
+`docId`::
+Get a document using a Lucene documentID.
+
+`fl`::
+Limit the returned values to a set of fields. This is useful if you want to increase the `numTerms` and don't want a massive response.
+
+`numTerms`::
+How many top terms for each field. The default is 10.
+
+`includeIndexFieldFlags`::
+Choose whether /luke should return the index-flags for each field. Fetching and returning the index-flags for each field in the index has non-zero cost, and can slow down requests to /luke.
+
+
+== LukeRequestHandler Examples
+
+The following examples assume you are running Solr's `techproducts` example configuration:
+
+[source,bash]
+----
+bin/solr start -e techproducts
+----
+
+To return summary information about the index:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?numTerms=0
+
+To return schema details about the index:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?show=schema
+
+To drill into a specific field `manu`, then you drop the `show` parameter and add the `fl` parameter:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?fl=manu
+
+To see the specifics of a document using the Solr uniqueKeyField field:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?fl=manu&id=TWINX2048-3200PRO
+
+Alternatively, to work through the Lucene native id:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?fl=manu&docId=0
+
+From SolrJ, you can access /luke using the {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/request/LukeRequest.html[`LukeRequest`] object.
