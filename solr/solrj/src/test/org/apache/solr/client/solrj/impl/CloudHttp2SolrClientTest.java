@@ -436,7 +436,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
         .setMaxShardsPerNode(liveNodes * liveNodes)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * liveNodes);
     // Add some new documents
     new UpdateRequest()
         .add(id, "0", "a_t", "hello1")
@@ -517,7 +516,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, liveNodes/3, liveNodes/3, liveNodes/3)
         .setMaxShardsPerNode(liveNodes)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, 1, liveNodes);
 
     // Add some new documents
     new UpdateRequest()
@@ -611,7 +609,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
       // important to have one replica on each node
       CollectionAdminRequest.createCollection("foo", "conf", 1, NODE_COUNT).process(client);
-      cluster.waitForActiveCollection("foo", 1, NODE_COUNT);
       client.setDefaultCollection("foo");
 
       Map<String, String> adminPathToMbean = new HashMap<>(CommonParams.ADMIN_PATHS.size());
@@ -666,8 +663,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
       CollectionAdminRequest.waitForAsyncRequest(async1, client, TIMEOUT);
       CollectionAdminRequest.waitForAsyncRequest(async2, client, TIMEOUT);
-      cluster.waitForActiveCollection("multicollection1", 2, 2);
-      cluster.waitForActiveCollection("multicollection2", 2, 2);
       client.setDefaultCollection("multicollection1");
 
       List<SolrInputDocument> docs = new ArrayList<>(3);
@@ -812,7 +807,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @Ignore // nocommit ~ possible regression? response doesn't contain "adds"?
   public void testVersionsAreReturned() throws Exception {
     CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection("versions_collection", 2, 2);
     
     // assert that "adds" are returned
     UpdateRequest updateRequest = new UpdateRequest()
@@ -898,7 +892,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                  CollectionAdminRequest.createCollection(COL, "conf", 1, 1)
                  .setCreateNodeSet(old_leader_node.getNodeName())
                  .process(cluster.getSolrClient()).getStatus());
-    cluster.waitForActiveCollection(COL, 1, 1);
 
     // determine the coreNodeName of only current replica
     Collection<Slice> slices = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COL).getSlices();
@@ -926,6 +919,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                    .setNode(new_leader_node.getNodeName())
                    // NOTE: don't use our stale_client for this -- don't tip it off of a collection change
                    .process(cluster.getSolrClient()).getStatus());
+
+      cluster.waitForActiveCollection(COL, 1, 2);
       
       // ...and delete our original leader.
       assertEquals("Couldn't create collection", 0,
@@ -933,7 +928,10 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                    // NOTE: don't use our stale_client for this -- don't tip it off of a collection change
                    .process(cluster.getSolrClient()).getStatus());
 
-      // stale_client's collection state cache should now only point at a leader that no longer exists.
+//      Thread.currentThread().sleep(3000);
+//
+//      cluster.getZkClient().printLayout();
+      cluster.waitForActiveCollection(COL, 1, 1);
       
       // attempt a (direct) update that should succeed in spite of cached cluster state
       // pointing solely to a node that's no longer part of our collection...
@@ -974,7 +972,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, 1, 1, pullReplicas)
         .setMaxShardsPerNode(liveNodes)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * (2 + pullReplicas));
     
     // Add some new documents
     new UpdateRequest()

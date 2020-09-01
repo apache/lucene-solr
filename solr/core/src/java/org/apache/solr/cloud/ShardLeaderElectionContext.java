@@ -270,12 +270,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
         }
         if (!success) {
+          if (isClosed()) {
+            return;
+          }
           rejoinLeaderElection(core);
           return;
         }
 
       }
-      if (!isClosed) {
+      if (!isClosed()) {
         try {
           if (replicaType == Replica.Type.TLOG) {
             // stop replicate from old leader
@@ -298,6 +301,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                     "without being up-to-date with the previous leader", coreNodeName);
             zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreNodeName);
           }
+          if (isClosed()) {
+            return;
+          }
+
           super.runLeaderProcess(context, weAreReplacement, 0);
 
           assert shardId != null;
@@ -316,6 +323,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
           try (SolrCore core = cc.getCore(coreName)) {
             if (core != null) {
+              if (isClosed()) {
+                return;
+              }
               core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
               publishActiveIfRegisteredAndNotActive(core);
             } else {
@@ -347,6 +357,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
               // we could not publish ourselves as leader - try and rejoin election
               try {
+                if (isClosed()) {
+                  return;
+                }
                 rejoinLeaderElection(core);
               } catch (Exception exc) {
                 ParWork.propegateInterrupt(e);

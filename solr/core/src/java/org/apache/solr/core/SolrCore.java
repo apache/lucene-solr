@@ -3069,24 +3069,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
     }
     if (deleteInstanceDir) {
-      addCloseHook(new CloseHook() {
-        @Override
-        public void preClose(SolrCore core) {
-          // empty block
-        }
-
-        @Override
-        public void postClose(SolrCore core) {
-          if (desc != null) {
-            try {
-              FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
-            } catch (IOException e) {
-              SolrException.log(log, "Failed to delete instance dir for core:"
-                  + core.getName() + " dir:" + desc.getInstanceDir());
-            }
-          }
-        }
-      });
+      addCloseHook(new SolrCoreDeleteCloseHook(desc));
     }
   }
 
@@ -3331,5 +3314,30 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public void runAsync(Runnable r) {
     ParWork.getMyPerThreadExecutor().submit(r);
+  }
+
+  private static class SolrCoreDeleteCloseHook extends CloseHook {
+    private final CoreDescriptor desc;
+
+    public SolrCoreDeleteCloseHook(CoreDescriptor desc) {
+      this.desc = desc;
+    }
+
+    @Override
+    public void preClose(SolrCore core) {
+      // empty block
+    }
+
+    @Override
+    public void postClose(SolrCore core) {
+      if (desc != null) {
+        try {
+          FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
+        } catch (IOException e) {
+          SolrException.log(log, "Failed to delete instance dir for core:"
+              + core.getName() + " dir:" + desc.getInstanceDir());
+        }
+      }
+    }
   }
 }

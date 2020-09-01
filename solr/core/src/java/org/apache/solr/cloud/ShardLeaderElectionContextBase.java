@@ -83,7 +83,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           log.debug("Removing leader registration node on cancel: {} {}", leaderPath, version);
           List<Op> ops = new ArrayList<>(2);
           ops.add(Op.check(Paths.get(leaderPath).getParent().toString(), version));
-          ops.add(Op.check(electionPath, -1));
+          ops.add(Op.check(leaderSeqPath, -1));
           ops.add(Op.delete(leaderPath, -1));
           zkClient.multi(ops);
         } catch (KeeperException e) {
@@ -110,8 +110,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           return;
         } catch (Exception e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
-        } finally {
-          version = null;
         }
       } else {
         log.info("No version found for ephemeral leader parent node, won't remove previous leader registration.");

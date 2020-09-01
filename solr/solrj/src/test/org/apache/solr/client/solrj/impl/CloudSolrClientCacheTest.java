@@ -64,6 +64,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
         this.c = c;
       }
 
+
       @Override
       public boolean isLazilyLoaded() {
         return true;

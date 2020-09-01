@@ -149,6 +149,7 @@ public class ZkController implements Closeable {
   public static final String CLUSTER_SHUTDOWN = "/cluster/shutdown";
 
   static final int WAIT_DOWN_STATES_TIMEOUT_SECONDS = 60;
+  public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
   public final int WAIT_FOR_STATE = Integer.getInteger("solr.waitForState", 10);
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
@@ -384,7 +385,16 @@ public class ZkController implements Closeable {
     ContextKey contextKey = new ContextKey(collection, coreNodeName);
     ElectionContext context = electionContexts.get(contextKey);
     if (context != null) {
-      context.close();
+      try {
+        context.cancelElection();
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      } catch (KeeperException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      } finally {
+        context.close();
+      }
     }
   }
 
@@ -403,12 +413,12 @@ public class ZkController implements Closeable {
       public synchronized void command() {
 
         try (ParWork worker = new ParWork("disconnected", true)) {
-          worker.collect(overseerContexts);
-          worker.collect( ZkController.this.overseer);
+          worker.collect("OverseerElectionContexts", overseerContexts.values());
+          worker.collect("Overseer", ZkController.this.overseer);
           worker.collect("", () -> {
             clearZkCollectionTerms();
           });
-          worker.collect(electionContexts.values());
+          worker.collect("electionContexts", electionContexts.values());
           worker.collect("",() -> {
             markAllAsNotLeader(descriptorsSupplier);
           });
@@ -2317,7 +2327,7 @@ public class ZkController implements Closeable {
    */
   public boolean claimAsyncId(String asyncId) throws KeeperException {
     try {
-      return asyncIdsMap.putIfAbsent(asyncId, new byte[0]);
+      return asyncIdsMap.putIfAbsent(asyncId, EMPTY_BYTE_ARRAY);
     } catch (InterruptedException e) {
       ParWork.propegateInterrupt(e);
       throw new RuntimeException(e);
