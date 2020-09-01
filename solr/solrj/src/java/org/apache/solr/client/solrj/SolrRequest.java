@@ -263,14 +263,14 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     final CompletableFuture<T> apiFuture = new CompletableFuture<>();
 
     internalFuture.whenComplete((result, error) -> {
-      if (internalFuture.isCompletedExceptionally()) {
-        apiFuture.completeExceptionally(error);
-      } else {
+      if (!internalFuture.isCompletedExceptionally()) {
         T res = createResponse(client);
         res.setResponse(result);
         long endNanos = System.nanoTime();
         res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
         apiFuture.complete(res);
+      } else {
+        apiFuture.completeExceptionally(error);
       }
     });
 

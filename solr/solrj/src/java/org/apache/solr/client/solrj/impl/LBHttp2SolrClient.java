@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -77,7 +76,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     this.httpClient = httpClient;
   }
   @Override
-  protected SolrClient getClient(String baseUrl) {
+  protected Http2SolrClient getClient(String baseUrl) {
     return httpClient;
   }
 
@@ -128,6 +127,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       currentFuture.set(future);
     } catch (SolrServerException e) {
       apiFuture.completeExceptionally(e);
+      return apiFuture;
     }
     apiFuture.exceptionally((error) -> {
       if (apiFuture.isCancelled()) {
@@ -152,7 +152,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
                          boolean isZombie, RetryListener listener) {
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
-    CompletableFuture<NamedList<Object>> future = ((Http2SolrClient)getClient(baseUrl)).requestAsync(req.getRequest(), null);
+    CompletableFuture<NamedList<Object>> future = getClient(baseUrl).requestAsync(req.getRequest(), null);
     future.whenComplete((result, throwable) -> {
       if (!future.isCompletedExceptionally()) {
         onSuccessfulRequest(result, baseUrl, rsp, isZombie, listener);
