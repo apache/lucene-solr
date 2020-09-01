@@ -35,7 +35,6 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.CloudConfig;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
@@ -53,7 +52,7 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -65,7 +64,7 @@ public class CreateAliasCmd extends AliasCmd {
     if (!anyRoutingParams(message)) {
       callCreatePlainAlias(message, aliasName, zkStateReader);
     } else {
-      callCreateRoutedAlias(message, aliasName, zkStateReader, state, cloudConfig);
+      callCreateRoutedAlias(message, aliasName, zkStateReader, state);
     }
 
     // Sleep a bit to allow ZooKeeper state propagation.
@@ -109,7 +108,7 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   @SuppressWarnings("unchecked")
-  private void callCreateRoutedAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state, CloudConfig cloudConfig) throws Exception {
+  private void callCreateRoutedAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader, ClusterState state) throws Exception {
     // Validate we got a basic minimum
     if (!message.getProperties().keySet().containsAll(RoutedAlias.MINIMAL_REQUIRED_PARAMS)) {
       throw new SolrException(BAD_REQUEST, "A routed alias requires these params: " + RoutedAlias.MINIMAL_REQUIRED_PARAMS
@@ -134,16 +133,16 @@ public class CreateAliasCmd extends AliasCmd {
 
     // Create the first collection.
     String initialColl = routedAlias.computeInitialCollectionName();
-      ensureAliasCollection(aliasName, zkStateReader, state, cloudConfig, routedAlias.getAliasMetadata(), initialColl);
+      ensureAliasCollection(aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), initialColl);
       // Create/update the alias
       zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
           .cloneWithCollectionAlias(aliasName, initialColl)
           .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
   }
 
-  private void ensureAliasCollection(String aliasName, ZkStateReader zkStateReader, ClusterState state, CloudConfig cloudConfig, Map<String, String> aliasProperties, String initialCollectionName) throws Exception {
+  private void ensureAliasCollection(String aliasName, ZkStateReader zkStateReader, ClusterState state, Map<String, String> aliasProperties, String initialCollectionName) throws Exception {
     // Create the collection
-    createCollectionAndWait(state, cloudConfig, aliasName, aliasProperties, initialCollectionName, ocmh);
+    createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ocmh);
     validateAllCollectionsExistAndNoDuplicates(Collections.singletonList(initialCollectionName), zkStateReader);
   }
 

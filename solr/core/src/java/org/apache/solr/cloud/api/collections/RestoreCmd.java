@@ -55,7 +55,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -86,7 +85,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     // TODO maybe we can inherit createCollection's options/code
 
     String restoreCollectionName = message.getStr(COLLECTION_PROP);
@@ -195,7 +194,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(OverseerCollectionMessageHandler.SHARDS_PROP, newSlices);
       }
 
-      ocmh.commandMap.get(CREATE).call(zkStateReader.getClusterState(), cloudConfig, new ZkNodeProps(propMap), new NamedList());
+      ocmh.commandMap.get(CREATE).call(zkStateReader.getClusterState(), new ZkNodeProps(propMap), new NamedList());
       // note: when createCollection() returns, the collection exists (no race)
     }
 
@@ -232,7 +231,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
             .onNodes(nodeList)
             .build();
     Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
-    Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, cloudConfig, restoreCollection);
+    Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, restoreCollection);
     List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
 
     CountDownLatch countDownLatch = new CountDownLatch(restoreCollection.getSlices().size());
@@ -273,7 +272,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       ocmh.addPropertyParams(message, propMap);
       final NamedList addReplicaResult = new NamedList();
-      ocmh.addReplica(clusterState, cloudConfig, new ZkNodeProps(propMap), addReplicaResult, () -> {
+      ocmh.addReplica(clusterState, new ZkNodeProps(propMap), addReplicaResult, () -> {
         Object addResultFailure = addReplicaResult.get("failure");
         if (addResultFailure != null) {
           SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
@@ -301,7 +300,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     Object failures = results.get("failure");
     if (failures != null && ((SimpleOrderedMap) failures).size() > 0) {
       log.error("Restore failed to create initial replicas.");
-      ocmh.cleanupCollection(cloudConfig, restoreCollectionName, new NamedList<Object>());
+      ocmh.cleanupCollection(restoreCollectionName, new NamedList<Object>());
       return;
     }
 
@@ -414,7 +413,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
           }
           ocmh.addPropertyParams(message, propMap);
 
-          ocmh.addReplica(zkStateReader.getClusterState(), cloudConfig, new ZkNodeProps(propMap), results, null);
+          ocmh.addReplica(zkStateReader.getClusterState(), new ZkNodeProps(propMap), results, null);
         }
       }
     }
