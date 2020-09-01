@@ -1,4 +1,6 @@
 = Indexing Nested Child Documents
+:solr-root-path: ../../
+:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -118,18 +120,89 @@ The <<uploading-data-with-index-handlers#json-update-convenience-paths,`/update/
 [.tab-label]*XML*
 [source,xml]
 ----
-nocommit: TODO: XML equivilent of JSON above
+<add>
+  <doc>
+    <field name="id">P11!prod</field>
+    <field name="name_s">Swingline Stapler</field>
+    <field name="description_t">The Cadillac of office staplers ...</field>
+    <field name="skus">
+      <doc>
+        <field name="id">P11!S21</field>
+        <field name="color_s">RED</field>
+        <field name="price_i">42</field>
+        <field name="manuals">
+          <doc>
+            <field name="id">P11!D41</field>
+            <field name="name_s">Red Swingline Brochure</field>
+            <field name="pages_i">1</field>
+            <field name="content_t">...</field>
+          </doc>
+        </field>
+      </doc>
+      <doc>
+        <field name="id">P11!S31</field>
+        <field name="color_s">BLACK</field>
+        <field name="price_i">3</field>
+      </doc>
+    </field>
+    <field name="manuals">
+      <doc>
+        <field name="id">P11!D51</field>
+        <field name="name_s">Quick Reference Guide</field>
+        <field name="pages_i">1</field>
+        <field name="content_t">How to use your stapler ...</field>
+      </doc>
+      <doc>
+        <field name="id">P11!D61</field>
+        <field name="name_s">Warranty Details</field>
+        <field name="pages_i">42</field>
+        <field name="content_t">... lifetime guarantee ...</field>
+      </doc>
+    </field>
+  </doc>
+  <doc>
+    <field name="id">P22!prod</field>
+    <field name="name_s">Mont Blanc Fountain Pen</field>
+    <field name="description_t">A Premium Writing Instrument ...</field>
+    <field name="skus">
+      <doc>
+        <field name="id">P22!S22</field>
+        <field name="color_s">RED</field>
+        <field name="price_i">89</field>
+        <field name="manuals">
+          <doc>
+            <field name="id">P22!D42</field>
+            <field name="name_s">Red Mont Blanc Brochure</field>
+            <field name="pages_i">1</field>
+            <field name="content_t">...</field>
+          </doc>
+        </field>
+      </doc>
+      <doc>
+        <field name="id">P22!S32</field>
+        <field name="color_s">BLACK</field>
+        <field name="price_i">67</field>
+      </doc>
+    </field>
+    <field name="manuals">
+      <doc>
+        <field name="id">P22!D52</field>
+        <field name="name_s">How To Use A Pen</field>
+        <field name="pages_i">42</field>
+        <field name="content_t">Start by removing the cap ...</field>
+      </doc>
+    </field>
+  </doc>
+</add>
 ----
 ====
 
 [example.tab-pane#solrj]
 ====
 [.tab-label]*SolrJ*
-[source,java]
+[source,java,indent=0]
 ----
-nocommit: TODO: SolrJ equivilent of JSON above
-nocommit: ... do we even have a test proving this works correctly
-nocommit: the SolrInputDocument methods for addChildDocument methods still don't take "field name"
+include::{example-source-dir}IndexingNestedDocuments.java[tag=nest-path]
 ----
 ====
 --
@@ -168,7 +241,7 @@ There are several additional schema considerations that should be considered for
 ** If you do not use `\_nest_path_` it is strongly recomended that every document have some field that differentiates root documents from their nested children -- and differentiates different "types" of child documents.  This is not strictly neccessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer
 * `\_nest_parent_` is an optional field that (if defined) will be populated by Solr automatically to store the `id` of each document's _immediate_ parent document (if there is one).
 +
-[sourece,xml]
+[source,xml]
 ----
 <field name="_nest_parent_" type="string" indexed="true" stored="true" />
 ----
@@ -214,7 +287,7 @@ Although not recommended, it is also possible to index child documents "anonymou
          "price_i": 42,
          "_childDocuments_": [
              { "id": "P11!D41",
-               "type_s": "DOC",
+               "type_s": "MANUAL",
                "name_s": "Red Swingline Brochure",
                "pages_i":1,
                "content_t": "..."
@@ -226,13 +299,13 @@ Although not recommended, it is also possible to index child documents "anonymou
          "price_i": 3
        },
        { "id": "P11!D51",
-         "type_s": "DOC",
+         "type_s": "MANUAL",
          "name_s": "Quick Reference Guide",
          "pages_i":1,
          "content_t": "How to use your stapler ..."
        },
        { "id": "P11!D61",
-         "type_s": "DOC",
+         "type_s": "MANUAL",
          "name_s": "Warranty Details",
          "pages_i":42,
          "content_t": "... lifetime guarantee ..."
@@ -247,16 +320,56 @@ Although not recommended, it is also possible to index child documents "anonymou
 [.tab-label]*XML*
 [source,xml]
 ----
-nocommit: TODO: XML equivilent of JSON above
+<add>
+  <doc>
+    <field name="id">P11!prod</field>
+    <field name="type_s">PRODUCT</field>
+    <field name="name_s">Swingline Stapler</field>
+    <field name="description_t">The Cadillac of office staplers ...</field>
+    <doc>
+      <field name="id">P11!S21</field>
+      <field name="type_s">SKU</field>
+      <field name="color_s">RED</field>
+      <field name="price_i">42</field>
+      <doc>
+        <field name="id">P11!D41</field>
+        <field name="type_s">MANUAL</field>
+        <field name="name_s">Red Swingline Brochure</field>
+        <field name="pages_i">1</field>
+        <field name="content_t">...</field>
+      </doc>
+    </doc>
+    <doc>
+      <field name="id">P11!S31</field>
+      <field name="type_s">SKU</field>
+      <field name="color_s">BLACK</field>
+      <field name="price_i">3</field>
+    </doc>
+    <doc>
+      <field name="id">P11!D51</field>
+      <field name="type_s">MANUAL</field>
+      <field name="name_s">Quick Reference Guide</field>
+      <field name="pages_i">1</field>
+      <field name="content_t">How to use your stapler ...</field>
+    </doc>
+    <doc>
+      <field name="id">P11!D61</field>
+      <field name="type_s">MANUAL</field>
+      <field name="name_s">Warranty Details</field>
+      <field name="pages_i">42</field>
+      <field name="content_t">... lifetime guarantee ...</field>
+    </doc>
+  </doc>
+</add>
 ----
 ====
 
 [example.tab-pane#anon_solrj]
 ====
 [.tab-label]*SolrJ*
-[source,java]
+[source,java,indent=0]
 ----
-nocommit: TODO: SolrJ equivilent of JSON above
+include::{example-source-dir}IndexingNestedDocuments.java[tag=anon-kids]
 ----
 ====
 
@@ -290,7 +403,7 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
         "_childDocuments_":[
         {
           "id":"P11!D41",
-          "type_s":"DOC",
+          "type_s":"MANUAL",
           "name_s":"Red Swingline Brochure",
           "pages_i":1,
           "content_t":"...",
@@ -309,14 +422,14 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
           "_version_":1673055562829398016},
         {
           "id":"P11!D51",
-          "type_s":"DOC",
+          "type_s":"MANUAL",
           "name_s":"Quick Reference Guide",
           "pages_i":1,
           "content_t":"How to use your stapler ...",
           "_version_":1673055562829398016},
         {
           "id":"P11!D61",
-          "type_s":"DOC",
+          "type_s":"MANUAL",
           "name_s":"Warranty Details",
           "pages_i":42,
           "content_t":"... lifetime guarantee ...",
@@ -343,7 +456,7 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
     <long name="_version_">1673055562829398016</long>
     <doc>
       <str name="id">P11!D41</str>
-      <str name="type_s">DOC</str>
+      <str name="type_s">MANUAL</str>
       <str name="name_s">Red Swingline Brochure</str>
       <int name="pages_i">1</int>
       <str name="content_t">...</str>
@@ -362,14 +475,14 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
       <long name="_version_">1673055562829398016</long></doc>
     <doc>
       <str name="id">P11!D51</str>
-      <str name="type_s">DOC</str>
+      <str name="type_s">MANUAL</str>
       <str name="name_s">Quick Reference Guide</str>
       <int name="pages_i">1</int>
       <str name="content_t">How to use your stapler ...</str>
       <long name="_version_">1673055562829398016</long></doc>
     <doc>
       <str name="id">P11!D61</str>
-      <str name="type_s">DOC</str>
+      <str name="type_s">MANUAL</str>
       <str name="name_s">Warranty Details</str>
       <int name="pages_i">42</int>
       <str name="content_t">... lifetime guarantee ...</str>
