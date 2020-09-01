@@ -54,6 +54,11 @@ public class SolrPing extends SolrRequest<SolrPingResponse> {
   public ModifiableSolrParams getParams() {
     return params;
   }
+
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
+  }
   
   /**
    * Remove the action parameter from this request. This will result in the same

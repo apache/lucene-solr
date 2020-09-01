@@ -341,8 +341,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             if (log.isDebugEnabled()) {
               log.debug("{}: Get the message id: {} message: {}", messageHandler.getName(), head.getId(), message);
             }
-            Runner runner = new Runner(messageHandler, message,
-                operation, head, lock);
+            Runner runner = new Runner(messageHandler, message, operation, head, lock);
             tpe.execute(runner);
           }
 

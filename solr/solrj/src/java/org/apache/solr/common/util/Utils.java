@@ -94,7 +94,44 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+
 public class Utils {
+  // Why static lambdas? Even though they require SuppressWarnings? This is
+  // purely an optimization. Comparing:
+  //
+  //    mapObject.computeIfAbsent(key, o -> new HashMap<>());
+  //
+  //    vs.
+  //
+  //    mapObject.computeIfAbsent(key, Utils.NEW_HASHMAP_FUN)
+  //
+  //
+  //    The first code fragment is executed as following
+  //
+  //    s.computeIfAbsent(key, new Function() {
+  //      @Override
+  //      public Object apply(String key) {
+  //        return new HashMap<>();
+  //      }
+  //    }
+  //
+  //    So, there are two problems with this
+  //
+  //    A new anonymous inner class is created for that lambda. This one extra
+  //    class becomes a part of your binary a new instance of that class is
+  //    created everytime the computeIfAbsent() method is invoked, irrespective
+  //    of whether the value is absent for that key or not. Now imagine that
+  //    method getting called millions of times and creating millions of such
+  //    objects for no reason
+  //
+  //    OTOH
+  //
+  //    Utils.NEW_HASHMAP_FUN
+  //    Only a single anonymous class is created for the entire codebase
+  //    Only single instance of that object is created in the VM
+  //
+  // See SOLR-14579.
+
   @SuppressWarnings({"rawtypes"})
   public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
   @SuppressWarnings({"rawtypes"})
@@ -236,7 +273,7 @@ public class Utils {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     public void handleUnknownClass(Object o) {
       if (o instanceof MapWriter) {
         Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
@@ -404,7 +441,6 @@ public class Utils {
     return getObjectByPath(root, onlyPrimitive, parts);
   }
 
-  @SuppressWarnings({"unchecked"})
   public static boolean setObjectByPath(Object root, String hierarchy, Object value) {
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return setObjectByPath(root, parts, value);
@@ -693,7 +729,7 @@ public class Utils {
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public static boolean mergeJson(Map<String, Object> sink, Map<String, Object> input) {
     boolean isModified = false;
     for (Map.Entry<String, Object> e : input.entrySet()) {
@@ -728,13 +764,16 @@ public class Utils {
   }
 
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
+    return getBaseUrlForNodeName(nodeName, urlScheme, false);
+  }
+  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme,  boolean isV2) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
     final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
+    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2? "api": path)));
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {

@@ -48,30 +48,6 @@
   </suppress>
   <suppress>
     <notes><![CDATA[
-   file name: derby-10.9.1.0.jar
-   Only used in tests and dih-example
-   ]]></notes>
-    <packageUrl regex="true">^pkg:maven/org\.apache\.derby/derby@.*$</packageUrl>
-    <cpe>cpe:/a:apache:derby</cpe>
-  </suppress>
-  <suppress>
-    <notes><![CDATA[
-   file name: derby-10.9.1.0.jar
-   Only used in tests and dih-example
-   ]]></notes>
-    <packageUrl regex="true">^pkg:maven/org\.apache\.derby/derby@.*$</packageUrl>
-    <vulnerabilityName>CVE-2015-1832</vulnerabilityName>
-  </suppress>
-  <suppress>
-    <notes><![CDATA[
-   file name: derby-10.9.1.0.jar
-   Only used in tests and dih-example
-   ]]></notes>
-    <packageUrl regex="true">^pkg:maven/org\.apache\.derby/derby@.*$</packageUrl>
-    <vulnerabilityName>CVE-2018-1313</vulnerabilityName>
-  </suppress>
-  <suppress>
-    <notes><![CDATA[
    file name: carrot2-guava-18.0.jar
    Only used with clustering engine, and the risk is DOS attack
    ]]></notes>

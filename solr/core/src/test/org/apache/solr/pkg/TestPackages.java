@@ -63,12 +63,13 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
-import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 import static org.apache.solr.filestore.TestDistribPackageStore.checkAllNodesForFile;
@@ -639,6 +640,7 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("rawtypes")
+  @Ignore("SOLR-14750")
   public void testSchemaPlugins() throws Exception {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");
@@ -720,6 +722,11 @@ public class TestPackages extends SolrCloudTestCase {
         @Override
         public SolrResponse createResponse(SolrClient client) {
           return new SolrResponseBase();
+        }
+
+        @Override
+        public String getRequestType() {
+          return SolrRequestType.UNSPECIFIED.toString();
         }
       });
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",

@@ -33,10 +33,13 @@ buildscript {
   }
 }
 
+def resources = scriptResources(buildscript)
+
 // Pick the "root" seed from which everything else is derived.
 configure(rootProject) {
   ext {
     rootSeed = propertyOrDefault('tests.seed', String.format("%08X", new Random().nextLong()))
+    rootSeedUserProvided = (propertyOrDefault('tests.seed', null) != null)
     rootSeedLong = SeedUtils.parseSeedChain(rootSeed)[0]
     projectSeedLong = rootSeedLong ^ project.path.hashCode()
   }
@@ -59,19 +62,18 @@ allprojects {
 allprojects {
   plugins.withType(JavaPlugin) {
     ext {
-      testOptions = [
+      testOptions += [
           // seed, repetition and amplification.
-          [propName: 'tests.seed', value: "random", description: "Sets the master randomization seed."],
-          [propName: 'tests.iters', value: null, description: "Duplicate (re-run) each test N times."],
+          [propName: 'tests.seed', value: { -> rootSeed }, description: "Sets the master randomization seed."],
+          [propName: 'tests.iters', value: null, description: "Duplicate (re-run) each test case N times."],
           [propName: 'tests.multiplier', value: 1, description: "Value multiplier for randomized tests."],
           [propName: 'tests.maxfailures', value: null, description: "Skip tests after a given number of failures."],
           [propName: 'tests.timeoutSuite', value: null, description: "Timeout (in millis) for an entire suite."],
           [propName: 'tests.failfast', value: "false", description: "Stop the build early on failure.", buildOnly: true],
           // asserts, debug output.
           [propName: 'tests.asserts', value: "true", description: "Enables or disables assertions mode."],
-          [propName: 'tests.verbose', value: false, description: "Emit verbose debug information from tests."],
           [propName: 'tests.infostream', value: false, description: "Enables or disables infostream logs."],
-          [propName: 'tests.leaveTemporary', value: null, description: "Leave temporary directories after tests complete."],
+          [propName: 'tests.leaveTemporary', value: false, description: "Leave temporary directories after tests complete."],
           [propName: 'tests.useSecurityManager', value: true, description: "Control security manager in tests.", buildOnly: true],
           // component randomization
           [propName: 'tests.codec', value: "random", description: "Sets the codec tests should run with."],
@@ -87,7 +89,12 @@ allprojects {
           [propName: 'tests.weekly', value: false, description: "Enables or disables @Weekly tests."],
           [propName: 'tests.monster', value: false, description: "Enables or disables @Monster tests."],
           [propName: 'tests.awaitsfix', value: null, description: "Enables or disables @AwaitsFix tests."],
-          [propName: 'tests.file.encoding', value: "random", description: "Sets the default file.encoding on test JVM.", buildOnly: true],
+          [propName: 'tests.badapples', value: null, description: "Enables or disables @BadApple tests."],
+          [propName: 'tests.file.encoding',
+           value: { ->
+             RandomPicks.randomFrom(new Random(projectSeedLong), ["US-ASCII", "ISO-8859-1", "UTF-8"])
+           },
+           description: "Sets the default file.encoding on test JVM.", buildOnly: true],
           // test data
           [propName: 'tests.linedocsfile', value: 'europarl.lines.txt.gz', description: "Test data file path."],
           // miscellaneous; some of them very weird.
@@ -104,7 +111,11 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
     ext {
       testOptions += [
           [propName: 'tests.luceneMatchVersion', value: baseVersion, description: "Base Lucene version."],
-          [propName: 'common-solr.dir', value: file("${commonDir}/../solr").path, description: "Solr base dir."],
+          [propName: 'common-solr.dir',
+           value: { -> file("${commonDir}/../solr").path },
+           description: "Solr base dir.",
+           includeInReproLine: false
+          ],
           [propName: 'solr.directoryFactory', value: "org.apache.solr.core.MockDirectoryFactory", description: "Solr directory factory."],
           [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
           [propName: 'solr.tests.use.numeric.points', value: null, description: "Point implementation to use (true=numerics, false=trie)."],
@@ -120,23 +131,15 @@ allprojects {
       ext.testOptionsResolved = testOptions.findAll { opt ->
         propertyOrDefault(opt.propName, opt.value) != null
       }.collectEntries { opt ->
-        [(opt.propName): Objects.toString(propertyOrDefault(opt.propName, opt.value))]
-      }
-
-      // These are not official options or dynamically seed-derived options.
-      if (testOptionsResolved['tests.file.encoding'] == 'random') {
-        testOptionsResolved['tests.file.encoding'] = RandomPicks.randomFrom(
-            new Random(projectSeedLong), [
-                "US-ASCII", "ISO-8859-1", "UTF-8"
-            ])
-      }
-
-      if (testOptionsResolved['tests.seed'] == 'random') {
-        testOptionsResolved['tests.seed'] = rootSeed
+        [(opt.propName): Objects.toString(resolvedTestOption(opt.propName))]
       }
 
       // Compute the "reproduce with" string.
       ext.testOptionsForReproduceLine = testOptions.findAll { opt ->
+        if (opt["includeInReproLine"] == false) {
+          return false
+        }
+
         def defValue = Objects.toString(opt.value, null)
         def value = testOptionsResolved[opt.propName]
         return defValue != value
@@ -151,14 +154,19 @@ allprojects {
          "tests.leavetmpdir",
          "solr.test.leavetmpdir",
       ].find { prop ->
-        Boolean.parseBoolean(propertyOrDefault(prop, "false"))
+        def v = Boolean.parseBoolean(propertyOrDefault(prop, "false"))
+        if (v) {
+          logger.lifecycle("Update your code to use the official 'tests.leaveTemporary' option (you used '${prop}').")
+        }
+        return v
       }) {
         testOptionsResolved['tests.leaveTemporary'] = "true"
       }
 
       // Append resolved test properties to the test task.
-      test {
-        // TODO: we could remove opts with "buildOnly: true" (?)
+      tasks.withType(Test) { task ->
+        // TODO: we could remove some options that are only relevant to the build environment
+        // and not the test JVM itself.
         systemProperties testOptionsResolved
 
         if (Boolean.parseBoolean(testOptionsResolved['tests.asserts'])) {
@@ -176,14 +184,14 @@ allprojects {
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
           if (project.path == ":lucene:replicator") {
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            systemProperty 'java.security.policy', rootProject.file("lucene/tools/junit4/replicator-tests.policy")
+            systemProperty 'java.security.policy', file("${resources}/policies/replicator-tests.policy")
           } else if (project.path.startsWith(":lucene")) {
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            systemProperty 'java.security.policy', rootProject.file("lucene/tools/junit4/tests.policy")
+            systemProperty 'java.security.policy', file("${resources}/policies/tests.policy")
           } else {
             systemProperty 'common-solr.dir', commonSolrDir
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/solr-tests.policy")
+            systemProperty 'java.security.policy', file("${resources}/policies/solr-tests.policy")
           }
 
           systemProperty 'common.dir', commonDir
@@ -214,31 +222,23 @@ allprojects {
         println "Test options for project ${project.path} and seed \"${rootSeed}\":"
 
         testOptions.sort { a, b -> a.propName.compareTo(b.propName) }.each { opt ->
-          def defValue = Objects.toString(opt.value, null)
+          def defValue
+          def computedValue = false
+          if (opt.value instanceof Closure) {
+            defValue = Objects.toString(opt.value(), null)
+            computedValue = true
+          } else {
+            defValue = Objects.toString(opt.value, null)
+          }
+
           def value = testOptionsResolved[opt.propName]
           println String.format(Locale.ROOT,
-              "%s%-23s = %-8s # %s",
-              (defValue != value ? "! " : "  "),
+              "%s%-24s = %-8s # %s",
+              (defValue != value ? "! " : computedValue ? "C " : "  "),
               opt.propName,
               value,
-              (defValue != value ? "(!= default: ${defValue}) " : "") + opt.description)
+              (computedValue ? "(!= default: computed) " : (defValue != value ? "(!= default: ${defValue}) " : "")) + opt.description)
         }
-      }
-    }
-  }
-}
-
-// Disable assertions for HashMap due to: LUCENE-8991 / JDK-8205399
-def vmName = System.getProperty("java.vm.name")
-def spec = System.getProperty("java.specification.version")
-if (vmName =~ /(?i)(hotspot|openjdk|jrockit)/ &&
-    spec =~ /^(1\.8|9|10|11)$/ &&
-    !Boolean.parseBoolean(propertyOrDefault('tests.asserts.hashmap', 'false'))) {
-  logger.debug("Enabling HashMap assertions.")
-  allprojects {
-    plugins.withType(JavaPlugin) {
-      test {
-        jvmArgs("-da:java.util.HashMap")
       }
     }
   }
