@@ -85,7 +85,7 @@ public class ParWork implements Closeable {
   }
 
 
-  public static void shutdownExec() {
+  public static void shutdownRootSharedExec() {
     synchronized (ParWork.class) {
       if (EXEC != null) {
         ((ParWorkExecutor)EXEC).closeLock(false);
@@ -105,11 +105,11 @@ public class ParWork implements Closeable {
     return sysStats;
   }
 
-  public static void closeExecutor() {
-    closeExecutor(true);
+  public static void closeMyPerThreadExecutor() {
+    closeMyPerThreadExecutor(true);
   }
 
-  public static void closeExecutor(boolean unlockClose) {
+  public static void closeMyPerThreadExecutor(boolean unlockClose) {
     PerThreadExecService exec = (PerThreadExecService) THREAD_LOCAL_EXECUTOR.get();
     if (exec != null) {
       if (unlockClose) {

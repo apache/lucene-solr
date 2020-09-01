@@ -555,7 +555,7 @@ public class Overseer implements SolrCloseable {
       try {
         super.run();
       } finally {
-        ParWork.closeExecutor();
+        ParWork.closeMyPerThreadExecutor();
       }
     }
 

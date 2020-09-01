@@ -95,7 +95,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
           try {
             r.run();
           } finally {
-            ParWork.closeExecutor();
+            ParWork.closeMyPerThreadExecutor();
           }
         }
       };

@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.AuthFailed;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.Disconnected;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.Expired;
-import static org.apache.zookeeper.Watcher.Event.KeeperState.fromInt;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -331,7 +330,7 @@ public class ConnectionManager implements Watcher, Closeable {
       } while (!isClosed() || Thread.currentThread().isInterrupted());
     } finally {
       ParWork
-          .closeExecutor(); // we are using the root exec directly, let's just make sure it's closed here to avoid a slight delay leak
+          .closeMyPerThreadExecutor(); // we are using the root exec directly, let's just make sure it's closed here to avoid a slight delay leak
     }
     log.info("zkClient Connected: {}", connected);
   }

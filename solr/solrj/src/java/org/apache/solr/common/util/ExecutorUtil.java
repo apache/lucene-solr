@@ -33,6 +33,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 
@@ -81,8 +82,13 @@ public class ExecutorUtil {
     boolean shutdown = false;
     // if interrupted, we still wait a short time for thread stoppage, but then quickly bail
     TimeOut interruptTimeout = new TimeOut(3000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    TimeOut shutdownTimeout = new TimeOut(30000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     boolean interrupted = false;
     do {
+      if (shutdownTimeout.hasTimedOut()) {
+        throw new RuntimeException("Timeout waiting for executor to shutdown");
+      }
+
       try {
         // Wait a while for existing tasks to terminate
         shutdown = pool.awaitTermination(30, TimeUnit.SECONDS);

@@ -713,16 +713,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
                 s.getThreadGroup() :
                 Thread.currentThread().getThreadGroup();
         }
-        Thread thread = new Thread(group, "") {
-            @Override
-            public void run() {
-                try {
-                    runnable.run();
-                } finally {
-                    ParWork.closeExecutor();
-                }
-            }
-        };
+        Thread thread = new MyThread(group, runnable);
         thread.setDaemon(isDaemon());
         thread.setPriority(getThreadsPriority());
         thread.setName(_name + "-" + thread.getId());
@@ -772,23 +763,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
             if (isDetailedDump())
             {
-                threads.add(new Dumpable()
-                {
-                    @Override
-                    public void dump(Appendable out, String indent) throws IOException
-                    {
-                        if (StringUtil.isBlank(known))
-                            Dumpable.dumpObjects(out, indent, String.format(Locale.ROOT,"%s %s %s %d", thread.getId(), thread.getName(), thread.getState(), thread.getPriority()), (Object[])trace);
-                        else
-                            Dumpable.dumpObjects(out, indent, String.format(Locale.ROOT,"%s %s %s %s %d", thread.getId(), thread.getName(), known, thread.getState(), thread.getPriority()));
-                    }
-
-                    @Override
-                    public String dump()
-                    {
-                        return null;
-                    }
-                });
+                threads.add(new MyDumpable(known, thread, trace));
             }
             else
             {
@@ -845,7 +820,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
             log.error("Error in Jetty thread pool thread", error);
             this.error = error;
         } finally {
-            ParWork.closeExecutor();
+            ParWork.closeMyPerThreadExecutor();
         }
 
         synchronized (notify) {
@@ -910,6 +885,51 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
             }
         }
         return null;
+    }
+
+    private static class MyThread extends Thread {
+        private final Runnable runnable;
+
+        public MyThread(ThreadGroup group, Runnable runnable) {
+            super(group, "");
+            this.runnable = runnable;
+        }
+
+        @Override
+        public void run() {
+            try {
+                runnable.run();
+            } finally {
+                ParWork.closeMyPerThreadExecutor();
+            }
+        }
+    }
+
+    private static class MyDumpable implements Dumpable {
+        private final String known;
+        private final Thread thread;
+        private final StackTraceElement[] trace;
+
+        public MyDumpable(String known, Thread thread, StackTraceElement[] trace) {
+            this.known = known;
+            this.thread = thread;
+            this.trace = trace;
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            if (StringUtil.isBlank(known))
+                Dumpable.dumpObjects(out, indent, String.format(Locale.ROOT,"%s %s %s %d", thread.getId(), thread.getName(), thread.getState(), thread.getPriority()), (Object[]) trace);
+            else
+                Dumpable.dumpObjects(out, indent, String.format(Locale.ROOT,"%s %s %s %s %d", thread.getId(), thread.getName(), known, thread.getState(), thread.getPriority()));
+        }
+
+        @Override
+        public String dump()
+        {
+            return null;
+        }
     }
 
     private class Runner implements Runnable

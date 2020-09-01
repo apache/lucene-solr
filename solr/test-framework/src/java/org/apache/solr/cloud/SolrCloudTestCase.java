@@ -90,7 +90,6 @@ public class SolrCloudTestCase extends SolrTestCase {
 
   public static final int DEFAULT_TIMEOUT = 15; // this is SECONDS, not MILLIS
   public static final TimeUnit DEFAULT_TIMEOUT_UNIT = TimeUnit.SECONDS;
-  private static volatile SolrQueuedThreadPool qtp;
 
   private static class Config {
     final String name;
@@ -302,10 +301,6 @@ public class SolrCloudTestCase extends SolrTestCase {
       } finally {
         cluster = null;
       }
-    }
-    if (qtp != null) {
-      qtp.stop();
-      qtp = null;
     }
   }
 

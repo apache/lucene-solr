@@ -122,6 +122,8 @@ public class SolrTestCase extends LuceneTestCase {
 
   protected volatile static ExecutorService testExecutor;
 
+  protected static volatile SolrQueuedThreadPool qtp;
+
   @Rule
   public TestRule solrTestRules =
           RuleChain.outerRule(new SystemPropertiesRestoreRule()).around(new SolrTestWatcher());
@@ -434,12 +436,16 @@ public class SolrTestCase extends LuceneTestCase {
     log.info("@After Class ------------------------------------------------------");
     try {
 
-      ParWork.closeExecutor(true);
-
-      ParWork.shutdownExec();
-
+      SolrQueuedThreadPool fqtp = qtp;
+      if (fqtp != null) {
+        fqtp.close();
+        qtp = null;
+      }
 
       SysStats.getSysStats().stopMonitor();
+
+      ParWork.closeMyPerThreadExecutor(true);
+      ParWork.shutdownRootSharedExec();
 
       if (!failed && suiteFailureMarker.wasSuccessful() ) {
         String object = null;

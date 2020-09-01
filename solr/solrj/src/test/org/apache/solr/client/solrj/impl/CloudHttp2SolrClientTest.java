@@ -137,13 +137,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         zkBasedCloudSolrClient = null;
       }
     }
-    super.tearDown();
-
     // clear the shared collection before next test run
     final CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     if (CollectionAdminRequest.listCollections(solrClient).contains(COLLECTION)) {
       solrClient.deleteByQuery(COLLECTION, "*:*");
     }
+    super.tearDown();
   }
 
   private void createTestCollectionIfNeeded() throws IOException, SolrServerException {

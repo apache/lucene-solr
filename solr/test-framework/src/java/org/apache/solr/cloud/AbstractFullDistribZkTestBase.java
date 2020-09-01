@@ -119,8 +119,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static Path confDir;
 
-  private static SolrQueuedThreadPool qtp;
-
   @BeforeClass
   public static void beforeFullSolrCloudTest() throws IOException {
     qtp = getQtp();
@@ -135,11 +133,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   @Before
   public void setup() throws IOException {
 
-
-
   }
-
-
 
   private static void copyConfigFileToTmpConf(Path confDir, String file) throws IOException {
     Files.copy(Paths.get(SolrTestCaseJ4.TEST_HOME(), "collection1", "conf", file),
@@ -329,14 +323,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (qtp != null) {
-
-      qtp.close();
-      qtp = null;
-    }
-
-    System.clearProperty("solrcloud.update.delay");
-    System.clearProperty("genericCoreNodeNames");
 
   }
 
