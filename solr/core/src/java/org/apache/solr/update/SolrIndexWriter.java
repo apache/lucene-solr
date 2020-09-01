@@ -401,20 +401,21 @@ public class SolrIndexWriter extends IndexWriter {
     numCloses.incrementAndGet();
 
     log.info("SolrIndexWriter close {} numCloses={}", label, numCloses.get());
+    try {
+      if (infoStream != null) {
+        ParWork.close(infoStream, true);
+      }
 
-    if (infoStream != null) {
-      ParWork.close(infoStream, true);
+      if (releaseDirectory) {
+        log.info("SolrIndexWriter release {}", directory);
+        directoryFactory.release(directory);
+      }
+      if (solrMetricsContext != null) {
+        solrMetricsContext.unregister();
+      }
+    } finally {
+      assert ObjectReleaseTracker.release(this);
     }
-
-    if (releaseDirectory) {
-      log.info("SolrIndexWriter release {}", directory);
-      directoryFactory.release(directory);
-    }
-    if (solrMetricsContext != null) {
-      solrMetricsContext.unregister();
-    }
-
-    assert ObjectReleaseTracker.release(this);
 
     if (log.isDebugEnabled()) {
       log.debug("cleanup() - end");
