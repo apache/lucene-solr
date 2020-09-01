@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -38,6 +40,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.common.ParWork;
 import org.junit.Test;
 
 import static org.apache.solr.core.SolrCore.verbose;
@@ -49,7 +52,7 @@ public class TestStressLucene extends TestRTGBase {
   @Test
   public void testStressLuceneNRT() throws Exception {
     final int commitPercent = 5 + random().nextInt(20);
-    final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
+    final int softCommitPercent = 30+random().nextInt(30); // what percent of the commits are soft
     final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = 1+random().nextInt(5);
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
@@ -79,7 +82,7 @@ public class TestStressLucene extends TestRTGBase {
     final AtomicInteger numCommitting = new AtomicInteger();
 
     List<Thread> threads = new ArrayList<>();
-
+    List<Future> futures = new ArrayList<>();
 
     final FieldType idFt = new FieldType();
     idFt.setStored(true);
@@ -118,7 +121,7 @@ public class TestStressLucene extends TestRTGBase {
         @Override
         public void run() {
           try {
-            while (operations.get() > 0) {
+            while (operations.decrementAndGet() > 0) {
               int oper = rand.nextInt(100);
 
               if (oper < commitPercent) {
@@ -358,11 +361,11 @@ public class TestStressLucene extends TestRTGBase {
 
 
     for (Thread thread : threads) {
-      thread.start();
+      futures.add(ParWork.getRootSharedExecutor().submit(thread));
     }
 
-    for (Thread thread : threads) {
-      thread.join();
+    for (Future future : futures) {
+      future.get(10, TimeUnit.SECONDS);
     }
 
     writer.close();
