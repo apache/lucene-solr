@@ -87,7 +87,11 @@ public class MultiCollectorManager implements CollectorManager<MultiCollectorMan
       return scoreMode;
     }
 
-    private class LeafCollectors implements LeafCollector {
+    /**
+     * Wraps multiple leaf collectors and delegates collection across each one
+     * @lucene.internal
+     */
+    public class LeafCollectors implements LeafCollector {
 
       private final LeafCollector[] leafCollectors;
 

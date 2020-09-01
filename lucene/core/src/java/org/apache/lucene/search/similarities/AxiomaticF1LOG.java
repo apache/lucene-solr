@@ -106,13 +106,11 @@ public class AxiomaticF1LOG extends Axiomatic {
             "dl, length of field"));
   };
 
-  @Override
   protected Explanation tflnExplain(BasicStats stats, double freq, double docLen){
     return Explanation.match((float) tfln(stats, freq, docLen),
         "tfln, mixed term frequency and document length, equals to 1");
   };
 
-  @Override
   protected Explanation idfExplain(BasicStats stats, double freq, double docLen){
     return Explanation.match((float) idf(stats, freq, docLen),
         "idf, inverted document frequency computed as log((N + 1) / n) from:",

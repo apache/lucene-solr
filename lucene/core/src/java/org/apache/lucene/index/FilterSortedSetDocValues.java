@@ -36,57 +36,46 @@ public class FilterSortedSetDocValues extends SortedSetDocValues {
     this.in = in;
   }
 
-  @Override
   public boolean advanceExact(int target) throws IOException {
     return in.advanceExact(target);
   }
 
-  @Override
   public long nextOrd() throws IOException {
     return in.nextOrd();
   }
 
-  @Override
   public BytesRef lookupOrd(long ord) throws IOException {
     return in.lookupOrd(ord);
   }
 
-  @Override
   public long getValueCount() {
     return in.getValueCount();
   }
 
-  @Override
   public long lookupTerm(BytesRef key) throws IOException {
     return in.lookupTerm(key);
   }
 
-  @Override
   public TermsEnum termsEnum() throws IOException {
     return in.termsEnum();
   }
 
-  @Override
   public TermsEnum intersect(CompiledAutomaton automaton) throws IOException {
     return in.intersect(automaton);
   }
 
-  @Override
   public int docID() {
     return in.docID();
   }
 
-  @Override
   public int nextDoc() throws IOException {
     return in.nextDoc();
   }
 
-  @Override
   public int advance(int target) throws IOException {
     return in.advance(target);
   }
 
-  @Override
   public long cost() {
     return in.cost();
   }
