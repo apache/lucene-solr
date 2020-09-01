@@ -1151,15 +1151,16 @@ public final class SortingCodecReader extends FilterCodecReader {
 
   @Override
   public PointsReader getPointsReader() {
+    final PointsReader delegate = in.getPointsReader();
     return new PointsReader() {
       @Override
       public void checkIntegrity() throws IOException {
-        in.getPointsReader().checkIntegrity();
+        delegate.checkIntegrity();
       }
 
       @Override
       public PointValues getValues(String field) throws IOException {
-        final PointValues inPointValues = in.getPointValues(field);
+        final PointValues inPointValues = delegate.getValues(field);
         if (inPointValues == null) {
           return null;
         } else {
@@ -1169,45 +1170,47 @@ public final class SortingCodecReader extends FilterCodecReader {
 
       @Override
       public void close() throws IOException {
-        in.getPointsReader().close();
+        delegate.close();
       }
 
       @Override
       public long ramBytesUsed() {
-        return in.getPointsReader().ramBytesUsed();
+        return delegate.ramBytesUsed();
       }
     };
   }
 
-  private final Map<String,CachedNumericDVs> cachedNorms = new HashMap<>();
+  private final Map<String, CachedNumericDVs> cachedNorms = new HashMap<>();
 
   @Override
   public NormsProducer getNormsReader() {
+    final NormsProducer delegate = in.getNormsReader();
     return new NormsProducer() {
       @Override
       public NumericDocValues getNorms(FieldInfo field) throws IOException {
-        final NumericDocValues oldNorms = in.getNormValues(field.name);
+        final NumericDocValues oldNorms = delegate.getNorms(field);
         return produceNumericDocValues(field, oldNorms, cachedNorms);
       }
 
       @Override
       public void checkIntegrity() throws IOException {
-        in.getNormsReader().checkIntegrity();
+        delegate.checkIntegrity();
       }
 
       @Override
       public void close() throws IOException {
-        in.getNormsReader().close();
+        delegate.close();
       }
 
       @Override
       public long ramBytesUsed() {
-        return in.getNormsReader().ramBytesUsed();
+        return delegate.ramBytesUsed();
       }
     };
   }
 
-  private NumericDocValues produceNumericDocValues(FieldInfo field, NumericDocValues oldNorms, Map<String, CachedNumericDVs> cachedNorms) throws IOException {
+  private NumericDocValues produceNumericDocValues(FieldInfo field, NumericDocValues oldNorms,
+                                                   Map<String, CachedNumericDVs> cachedNorms) throws IOException {
     if (oldNorms == null) return null;
     CachedNumericDVs norms;
     synchronized (cachedNorms) {
@@ -1233,16 +1236,17 @@ public final class SortingCodecReader extends FilterCodecReader {
 
   @Override
   public DocValuesProducer getDocValuesReader() {
+    final DocValuesProducer delegate = in.getDocValuesReader();
     return new DocValuesProducer() {
       @Override
       public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-        final NumericDocValues oldDocValues = in.getNumericDocValues(field.name);
+        final NumericDocValues oldDocValues = delegate.getNumeric(field);
         return produceNumericDocValues(field, oldDocValues, cachedNumericDVs);
       }
 
       @Override
       public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-        final BinaryDocValues oldDocValues = in.getBinaryDocValues(field.name);
+        final BinaryDocValues oldDocValues = delegate.getBinary(field);
         if (oldDocValues == null) return null;
         CachedBinaryDVs dvs;
         synchronized (cachedBinaryDVs) {
@@ -1257,7 +1261,7 @@ public final class SortingCodecReader extends FilterCodecReader {
 
       @Override
       public SortedDocValues getSorted(FieldInfo field) throws IOException {
-        SortedDocValues oldDocValues = in.getSortedDocValues(field.name);
+        SortedDocValues oldDocValues = delegate.getSorted(field);
         if (oldDocValues == null) {
           return null;
         }
@@ -1282,7 +1286,7 @@ public final class SortingCodecReader extends FilterCodecReader {
 
       @Override
       public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
-        final SortedNumericDocValues oldDocValues = in.getSortedNumericDocValues(field.name);
+        final SortedNumericDocValues oldDocValues = delegate.getSortedNumeric(field);
         if (oldDocValues == null) {
           return null;
         }
@@ -1301,7 +1305,7 @@ public final class SortingCodecReader extends FilterCodecReader {
 
       @Override
       public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
-        SortedSetDocValues oldDocValues = in.getSortedSetDocValues(field.name);
+        SortedSetDocValues oldDocValues = delegate.getSortedSet(field);
         if (oldDocValues == null) {
           return null;
         }
@@ -1320,17 +1324,17 @@ public final class SortingCodecReader extends FilterCodecReader {
 
       @Override
       public void checkIntegrity() throws IOException {
-        in.getDocValuesReader().checkIntegrity();
+        delegate.checkIntegrity();
       }
 
       @Override
       public void close() throws IOException {
-        in.getDocValuesReader().close();
+        delegate.close();
       }
 
       @Override
       public long ramBytesUsed() {
-        return in.getDocValuesReader().ramBytesUsed();
+        return delegate.ramBytesUsed();
       }
     };
   }
@@ -1345,7 +1349,7 @@ public final class SortingCodecReader extends FilterCodecReader {
     return new TermVectorsReader() {
       @Override
       public Fields get(int doc) throws IOException {
-        return in.getTermVectors(docMap.newToOld(doc));
+        return delegate.get(docMap.newToOld(doc));
       }
 
       @Override
