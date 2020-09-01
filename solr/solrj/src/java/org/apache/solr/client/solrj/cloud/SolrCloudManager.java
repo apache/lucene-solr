@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
 
@@ -51,4 +52,8 @@ public interface SolrCloudManager extends SolrCloseable {
   SolrResponse request(@SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException;
 
   byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException;
+
+  default SolrClassLoader getClassLoader() {
+    return null;
+  }
 }

@@ -76,6 +76,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -245,6 +246,8 @@ public class CoreContainer {
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
+
+  private SolrClassLoader solrClassLoader;
 
   private Set<Path> allowPaths;
 
@@ -708,6 +711,10 @@ public class CoreContainer {
       ZookeeperReadAPI zookeeperReadAPI = new ZookeeperReadAPI(this);
       containerHandlers.getApiBag().registerObject(zookeeperReadAPI);
     }
+    solrClassLoader = packageLoader ==null ?
+        loader :
+        packageLoader.getPackageAwareClassLoader();
+
 
     MDCLoggingContext.setNode(this);
 
@@ -2051,6 +2058,10 @@ public class CoreContainer {
 
   public long getStatus() {
     return status;
+  }
+
+  public SolrClassLoader getSolrClassLoader() {
+    return solrClassLoader;
   }
 
   // Occasionally we need to access the transient cache handler in places other than coreContainer.

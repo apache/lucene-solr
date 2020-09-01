@@ -36,8 +36,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
@@ -55,6 +57,7 @@ public class PackageLoader implements Closeable {
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
+  private final SolrClassLoader packageAwareClassLoader;
 
   private PackageAPI.Packages myCopy =  new PackageAPI.Packages();
 
@@ -65,7 +68,47 @@ public class PackageLoader implements Closeable {
     this.coreContainer = coreContainer;
     packageAPI = new PackageAPI(coreContainer, this);
     refreshPackageConf();
+    packageAwareClassLoader = initLoader();
+  }
 
+  public SolrClassLoader getPackageAwareClassLoader(){
+    return packageAwareClassLoader;
+  }
+
+  private SolrClassLoader initLoader() {
+    return new SolrClassLoader() {
+      @Override
+      public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
+        PluginInfo.ClassName cName = PluginInfo.parseClassName(cname);
+        return cName.pkg == null ?
+            coreContainer.getResourceLoader().newInstance(cname, expectedType, subpackages) :
+            getPackage(cName.pkg).getLatest().loader.newInstance(cName.className, expectedType, subpackages);
+      }
+
+      @Override
+      public <T> T newInstance(String cname, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
+        PluginInfo.ClassName cName = PluginInfo.parseClassName(cname);
+        return cName.pkg == null ?
+            coreContainer.getResourceLoader().newInstance(cname, expectedType, subPackages, params, args) :
+            getPackage(cName.pkg).getLatest().loader.newInstance(cName.className, expectedType, subPackages, params, args);
+      }
+
+      @Override
+      public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
+        PluginInfo.ClassName cName = PluginInfo.parseClassName(cname);
+        return cName.pkg == null ?
+            coreContainer.getResourceLoader().findClass(cname, expectedType) :
+            getPackage(cName.pkg).getLatest().loader.findClass(cName.className, expectedType);
+      }
+
+      @Override
+      public <T> Class<? extends T> findClass(String cname, String pkgVersion, Class<T> expectedType) {
+        PluginInfo.ClassName cName = PluginInfo.parseClassName(cname);
+        return cName.pkg == null ?
+            coreContainer.getResourceLoader().findClass(cname, expectedType) :
+            getPackage(cName.pkg).getLatest(pkgVersion).loader.findClass(cName.className, expectedType);
+      }
+    };
   }
 
   public PackageAPI getPackageAPI() {

@@ -22,6 +22,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -53,8 +54,11 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.util.NumberUtils;
+import org.apache.solr.util.plugin.MapInitializedPlugin;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -551,11 +555,29 @@ public class Assign {
       this.solrCloudManager = solrCloudManager;
     }
 
+    @SuppressWarnings("unchecked")
     public AssignStrategy create(ClusterState clusterState, CloudConfig cloudConfig, DocCollection collection) throws IOException, InterruptedException {
       @SuppressWarnings({"unchecked", "rawtypes"})
       List<Map> ruleMaps = (List<Map>) collection.get("rule");
       @SuppressWarnings({"rawtypes"})
       List snitches = (List) collection.get(SNITCH);
+      Map<String, Object> props = solrCloudManager.getClusterStateProvider().getClusterProperties();
+      Map<String,Object> assignInfo = (Map<String, Object>) props.get("assign-strategy");
+      if(assignInfo != null) {
+        String className = (String) assignInfo.get("class");
+
+        Class<? extends AssignStrategy> assignClass = solrCloudManager.getClassLoader().findClass(className, (String) assignInfo.get("version"), AssignStrategy.class);
+        try {
+          AssignStrategy assignPlugin = assignClass.getConstructor(new Class[0]).newInstance();
+          if (assignPlugin instanceof MapInitializedPlugin) {
+            MapInitializedPlugin plugin = (MapInitializedPlugin) assignPlugin;
+            plugin.init((Map)props);
+          }
+          return assignPlugin;
+        } catch (Exception e) {
+          throw  new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unable to instantiate assign-startegy :"+ Utils.toJSONString(assignInfo));
+        }
+      }
 
       Strategy strategy = null;
       if (ruleMaps != null && !ruleMaps.isEmpty()) {
