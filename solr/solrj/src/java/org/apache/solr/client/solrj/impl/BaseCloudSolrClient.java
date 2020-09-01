@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.ToleratedUpdateError;
@@ -230,9 +231,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   protected BaseCloudSolrClient(boolean updatesToLeaders, boolean parallelUpdates, boolean directUpdatesToLeadersOnly) {
     if (parallelUpdates) {
-      threadPool = ExecutorUtil
-          .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(
-              "CloudSolrClient ThreadPool"));
+      threadPool = new ParWorkExecutor("ParWork-CloudSolrClient", Integer.MAX_VALUE);
     } else {
       threadPool = null;
     }
