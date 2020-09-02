@@ -216,7 +216,6 @@ public class UpdateShardHandler implements SolrInfoBean {
     }
     if (updateOnlyClient != null) updateOnlyClient.disableCloseLock();
     try (ParWork closer = new ParWork(this, true)) {
-      closer.collect(recoveryExecutor);
       closer.collect("", () -> {
         HttpClientUtil.close(defaultClient);
         return defaultClient;
@@ -229,7 +228,7 @@ public class UpdateShardHandler implements SolrInfoBean {
         SolrInfoBean.super.close();
         return this;
       });
-
+      closer.collect(recoveryExecutor);
     }
     assert ObjectReleaseTracker.release(this);
   }
