@@ -77,4 +77,17 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamFactoryT
     });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
+
+  /** Test with backslash unescape */
+  public void testUnescape() throws Exception {
+    Reader reader = new StringReader("aaa\\ bbb\\-ccc");
+    reader = charFilterFactory("PatternReplace",
+            "pattern", "\\\\(.)",
+            "replacement", "$1").create(reader);
+    TokenStream ts = whitespaceMockTokenizer(reader);
+    assertTokenStreamContents(ts,
+            new String[] { "aaa", "bbb-ccc" },
+            new int[] { 0, 5 },
+            new int[] { 3, 13 });
+  }
 }
