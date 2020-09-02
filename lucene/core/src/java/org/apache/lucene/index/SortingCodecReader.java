@@ -252,7 +252,7 @@ public final class SortingCodecReader extends FilterCodecReader {
     return new StoredFieldsReader() {
       @Override
       public void visitDocument(int docID, StoredFieldVisitor visitor) throws IOException {
-        in.document(docMap.newToOld(docID), visitor);
+        delegate.visitDocument(docMap.newToOld(docID), visitor);
       }
 
       @Override

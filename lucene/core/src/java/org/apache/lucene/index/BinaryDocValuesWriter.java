@@ -205,9 +205,9 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
   }
 
   static class SortingBinaryDocValues extends BinaryDocValues {
-
     private final CachedBinaryDVs dvs;
     private int docID = -1;
+    private long cost = -1;
 
     SortingBinaryDocValues(CachedBinaryDVs dvs) {
       this.dvs = dvs;
@@ -220,7 +220,6 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
       } else {
         docID = dvs.docsWithField.nextSetBit(docID+1);
       }
-
       return docID;
     }
 
@@ -231,14 +230,12 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
 
     @Override
     public int advance(int target) {
-      docID = dvs.docsWithField.nextSetBit(target);
-      return docID;
+      throw new UnsupportedOperationException("use nextDoc instead");
     }
 
     @Override
     public boolean advanceExact(int target) throws IOException {
-      docID = target;
-      return dvs.docsWithField.get(target);
+      throw new UnsupportedOperationException("use nextDoc instead");
     }
 
     @Override
@@ -248,7 +245,10 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
 
     @Override
     public long cost() {
-      return dvs.docsWithField.cardinality();
+      if (cost == -1) {
+        cost = dvs.docsWithField.cardinality();
+      }
+      return cost;
     }
   }
 
