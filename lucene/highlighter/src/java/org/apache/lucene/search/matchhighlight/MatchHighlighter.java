@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,12 +63,12 @@ public class MatchHighlighter {
      * @param field Field name
      * @param hasMatches {@code true} if the field has a non-empty set of match regions.
      */
-    boolean test(String field, boolean hasMatches);
+    boolean isApplicable(String field, boolean hasMatches);
 
     /**
      * Do format field values appropriately.
      */
-    List<String> format(String[] values, String contiguousValue,
+    List<String> format(String field, String[] values, String contiguousValue,
                         List<OffsetRange> valueRanges, List<QueryOffsetRange> matchOffsets);
 
     /**
@@ -75,14 +76,49 @@ public class MatchHighlighter {
      * of whether they had matches or not. This is useful to load and return certain fields
      * that should always be included (identifiers, document titles, etc.).
      */
-    Collection<String> alwaysFetchedFields();
+    default Collection<String> alwaysFetchedFields() {
+      return Collections.emptyList();
+    }
+
+    /**
+     * Returns a new field value highlighter that is a combination of this one and another one.
+     */
+    default FieldValueHighlighter or(FieldValueHighlighter other) {
+      FieldValueHighlighter first = this;
+      FieldValueHighlighter second = other;
+
+      HashSet<String> fieldUnion = new HashSet<>();
+      fieldUnion.addAll(first.alwaysFetchedFields());
+      fieldUnion.addAll(second.alwaysFetchedFields());
+
+      return new FieldValueHighlighter() {
+        @Override
+        public boolean isApplicable(String field, boolean hasMatches) {
+          return first.isApplicable(field, hasMatches)
+              || second.isApplicable(field, hasMatches);
+        }
+
+        @Override
+        public List<String> format(String field, String[] values, String contiguousValue,
+                                   List<OffsetRange> valueRanges, List<QueryOffsetRange> matchOffsets) {
+          FieldValueHighlighter delegate =
+              first.isApplicable(field, matchOffsets != null && !matchOffsets.isEmpty()) ? first : second;
+          return delegate.format(field, values, contiguousValue, valueRanges, matchOffsets);
+        }
+
+        @Override
+        public Collection<String> alwaysFetchedFields() {
+          return fieldUnion;
+        }
+      };
+    }
   }
 
   /**
    * Append a new highlighter to field highlighters chain. The order of field highlighters
    * is important (first-matching wins).
    */
-  public MatchHighlighter addFieldHighlighter(FieldValueHighlighter highlighter) {
+  public MatchHighlighter appendFieldHighlighter(FieldValueHighlighter highlighter) {
     fieldHighlighters.add(highlighter);
     fieldsAlwaysReturned.addAll(highlighter.alwaysFetchedFields());
     return this;
@@ -192,7 +228,7 @@ public class MatchHighlighter {
 
     return docHits.values().stream()
         .filter(Objects::nonNull) // This should always the case?
-        .map(docHit -> computeDocFieldValues(docHit));
+        .map(this::computeDocFieldValues);
   }
 
   private DocHighlights computeDocFieldValues(DocHit docHit) {
@@ -218,7 +254,7 @@ public class MatchHighlighter {
       List<QueryOffsetRange> offsets = docHit.matchRanges.get(field);
 
       List<String> formattedValues = fieldValueHighlighter(field, offsets != null)
-          .format(values, contiguousValue, valueRanges, offsets);
+          .format(field, values, contiguousValue, valueRanges, offsets);
 
       if (formattedValues != null) {
         docHighlights.fields.put(field, formattedValues);
@@ -255,7 +291,7 @@ public class MatchHighlighter {
 
   private FieldValueHighlighter fieldValueHighlighter(String field, boolean hasMatches) {
     for (FieldValueHighlighter highlighter : fieldHighlighters) {
-      if (highlighter.test(field, hasMatches)) {
+      if (highlighter.isApplicable(field, hasMatches)) {
         return highlighter;
       }
     }

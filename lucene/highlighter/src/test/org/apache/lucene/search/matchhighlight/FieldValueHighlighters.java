@@ -21,19 +21,21 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 /**
- * A factory of predefined field highlighters.
+ * A factory of {@link org.apache.lucene.search.matchhighlight.MatchHighlighter.FieldValueHighlighter} classes
+ * that cover typical use cases (verbatim values, highlights, abbreviations).
  *
- * @see MatchHighlighter#addFieldHighlighter
+ * @see MatchHighlighter#appendFieldHighlighter
  */
 public final class FieldValueHighlighters {
   private FieldValueHighlighters() {
   }
 
-  private static abstract class AbstractFieldValueHighlighter implements MatchHighlighter.FieldValueHighlighter {
+  public static abstract class AbstractFieldValueHighlighter implements MatchHighlighter.FieldValueHighlighter {
     private final BiPredicate<String, Boolean> testPredicate;
 
     protected AbstractFieldValueHighlighter(BiPredicate<String, Boolean> testPredicate) {
@@ -41,7 +43,7 @@ public final class FieldValueHighlighters {
     }
 
     @Override
-    public final boolean test(String field, boolean hasMatches) {
+    public final boolean isApplicable(String field, boolean hasMatches) {
       return testPredicate.test(field, hasMatches);
     }
 
@@ -51,18 +53,32 @@ public final class FieldValueHighlighters {
     }
   }
 
-  public static MatchHighlighter.FieldValueHighlighter highlighted(
-      int maxPassageWindow,
-      int maxPassages,
-      String ellipsis,
-      String markerStart,
-      String markerEnd,
-      Predicate<String> matchFields) {
-    return highlighted(maxPassageWindow, maxPassages, new PassageFormatter(ellipsis, markerStart, markerEnd), matchFields);
+  /**
+   * Displays up to {@code maxLeadingCharacters} of the field's value, regardless of whether it contained
+   * highlights or not.
+   */
+  public static MatchHighlighter.FieldValueHighlighter maxLeadingCharacters(int maxLeadingCharacters, String ellipsis, Set<String> fields) {
+    PassageSelector passageSelector = new PassageSelector();
+    PassageFormatter passageFormatter = new PassageFormatter(ellipsis, "", "");
+    return new AbstractFieldValueHighlighter((field, hasMatches) -> fields.contains(field)) {
+      @Override
+      public List<String> format(String field, String[] values, String contiguousValue,
+                                 List<OffsetRange> valueRanges, List<MatchHighlighter.QueryOffsetRange> matchOffsets) {
+        List<Passage> bestPassages =
+            passageSelector.pickBest(contiguousValue, Collections.emptyList(), maxLeadingCharacters, 1, valueRanges);
+
+        return passageFormatter.format(contiguousValue, bestPassages, valueRanges);
+      }
+
+      @Override
+      public Collection<String> alwaysFetchedFields() {
+        return fields;
+      }
+    };
   }
 
   /**
-   * Highlight the given fields only if they contained matches.
+   * Highlights fields matching predicate {@code matchFields} only if they contained query matches.
    */
   public static MatchHighlighter.FieldValueHighlighter highlighted(
       int maxPassageWindow,
@@ -72,7 +88,7 @@ public final class FieldValueHighlighters {
     PassageSelector passageSelector = new PassageSelector();
     return new AbstractFieldValueHighlighter((field, hasMatches) -> matchFields.test(field) && hasMatches) {
       @Override
-      public List<String> format(String[] values, String contiguousValue,
+      public List<String> format(String field, String[] values, String contiguousValue,
                                  List<OffsetRange> valueRanges, List<MatchHighlighter.QueryOffsetRange> matchOffsets) {
         assert matchOffsets != null;
 
@@ -87,16 +103,17 @@ public final class FieldValueHighlighters {
   /**
    * Always returns raw field values, no highlighting or value truncation is applied.
    */
-  public static MatchHighlighter.FieldValueHighlighter verbatimValue(String... fields) {
-    HashSet<String> matchFields = new HashSet<>(Arrays.asList(fields));
-    return new AbstractFieldValueHighlighter((field, hasMatches) -> matchFields.contains(field)) {
+  public static MatchHighlighter.FieldValueHighlighter verbatimValue(String field, String... moreFields) {
+    HashSet<String> matchFields = new HashSet<>(Arrays.asList(moreFields));
+    matchFields.add(field);
+    return new AbstractFieldValueHighlighter((fld, hasMatches) -> matchFields.contains(fld)) {
       @Override
       public Collection<String> alwaysFetchedFields() {
         return matchFields;
       }
 
       @Override
-      public List<String> format(String[] values, String contiguousValue, List<OffsetRange> valueRanges,
+      public List<String> format(String field, String[] values, String contiguousValue, List<OffsetRange> valueRanges,
                                  List<MatchHighlighter.QueryOffsetRange> matchOffsets) {
         return Arrays.asList(values);
       }
@@ -109,7 +126,7 @@ public final class FieldValueHighlighters {
   public static MatchHighlighter.FieldValueHighlighter skipRemaining() {
     return new AbstractFieldValueHighlighter((field, hasMatches) -> true) {
       @Override
-      public List<String> format(String[] values, String contiguousValue, List<OffsetRange> valueRanges,
+      public List<String> format(String field, String[] values, String contiguousValue, List<OffsetRange> valueRanges,
                                  List<MatchHighlighter.QueryOffsetRange> matchOffsets) {
         return null;
       }

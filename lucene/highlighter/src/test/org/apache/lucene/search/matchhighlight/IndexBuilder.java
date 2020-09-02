@@ -20,11 +20,14 @@ import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -40,6 +43,7 @@ import java.util.function.Consumer;
  */
 class IndexBuilder {
   public static final String FLD_ID = "id";
+  public static final String FLD_SORT_ORDER = "id_order";
 
   private final BiFunction<String, String, IndexableField> toField;
   private final ArrayList<Document> documents = new ArrayList<>();
@@ -72,6 +76,7 @@ class IndexBuilder {
 
   public IndexBuilder doc(Consumer<DocFields> fields) {
     Document doc = new Document();
+    doc.add(new NumericDocValuesField(FLD_SORT_ORDER, seq));
     doc.add(new StringField(FLD_ID, Integer.toString(seq++), Field.Store.YES));
     fields.accept(new DocFields(doc));
     documents.add(doc);
@@ -80,6 +85,7 @@ class IndexBuilder {
 
   public IndexBuilder build(Analyzer analyzer, IOUtils.IOConsumer<DirectoryReader> block) throws IOException {
     IndexWriterConfig config = new IndexWriterConfig(analyzer);
+    config.setIndexSort(new Sort(new SortField(FLD_SORT_ORDER, SortField.Type.LONG)));
     try (Directory directory = new ByteBuffersDirectory()) {
       IndexWriter iw = new IndexWriter(directory, config);
       for (Document doc : documents) {
