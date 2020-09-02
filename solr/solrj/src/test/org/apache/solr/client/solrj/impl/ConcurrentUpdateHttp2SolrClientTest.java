@@ -34,10 +34,8 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug, TJP ~ still problematic
 public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
 
   private static JettySolrRunner jetty;
@@ -52,6 +50,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
+  @Nightly
   public void testConcurrentUpdate() throws Exception {
     ConcurrentUpdateSolrClientTest.TestServlet.clear();
 
@@ -143,6 +142,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
+  @Nightly
   public void testConcurrentCollectionUpdate() throws Exception {
 
     int cussThreadCount = 2;

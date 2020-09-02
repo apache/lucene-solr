@@ -36,7 +36,7 @@ import org.junit.Test;
  * {@link ConcurrentUpdateSolrClient} reuses the same HTTP connection to send multiple requests.  These tests ensure
  * that this connection-reuse never results in documents being sent to the wrong collection.  See SOLR-12803
  */
-@Ignore // nocommit debug
+//@Ignore // nocommit debug
 public class ConcurrentUpdateHttp2SolrClientMultiCollectionTest extends SolrCloudTestCase {
 
   private static final String COLLECTION_ONE_NAME = "collection1";

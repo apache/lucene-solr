@@ -49,17 +49,17 @@ import java.util.stream.IntStream;
  * 
  */
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@Ignore // nocommit debug
 public class SolrExampleJettyTest extends SolrExampleTests {
 
   private static JettySolrRunner jetty;
 
   @BeforeClass
-  public static void beforeTest() throws Exception {
+  public static void beforeSolrExampleJettyTest() throws Exception {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Test
+  @Ignore // nocommit ~ debug
   public void testBadSetup() {
     // setup the server...
     String url = "http" + (isSSLMode() ? "s" : "") +  "://127.0.0.1/?core=xxx";

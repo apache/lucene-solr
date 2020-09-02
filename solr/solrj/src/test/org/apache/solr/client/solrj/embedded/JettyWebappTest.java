@@ -39,7 +39,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -48,7 +47,6 @@ import org.junit.rules.TestRule;
  *
  * @since solr 1.3
  */
-@Ignore // nocommit debug
 public class JettyWebappTest extends SolrTestCaseJ4
 {
   int port = 0;
