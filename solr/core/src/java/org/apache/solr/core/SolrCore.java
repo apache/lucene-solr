@@ -1647,6 +1647,21 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       closer.collect(updateHandler);
 
+      closer.addCollect();
+
+      AtomicBoolean coreStateClosed = new AtomicBoolean(false);
+
+      closer.collect("SolrCoreState", () -> {
+        boolean closed = false;
+        if (updateHandler != null && updateHandler instanceof IndexWriterCloser && solrCoreState != null) {
+          closed = solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
+        } else {
+          closed = solrCoreState.decrefSolrCoreState(null);
+        }
+        coreStateClosed.set(closed);
+        return solrCoreState;
+      });
+
       closer.collect(searcherExecutor);
 
       closer.addCollect();
@@ -1676,21 +1691,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           }
           _realtimeSearchers.clear();
         }
-      });
-
-      closer.addCollect();
-
-      AtomicBoolean coreStateClosed = new AtomicBoolean(false);
-
-      closer.collect("SolrCoreState", () -> {
-        boolean closed = false;
-        if (updateHandler != null && updateHandler instanceof IndexWriterCloser && solrCoreState != null) {
-          closed = solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
-        } else {
-          closed = solrCoreState.decrefSolrCoreState(null);
-        }
-        coreStateClosed.set(closed);
-        return solrCoreState;
       });
 
       closer.addCollect();

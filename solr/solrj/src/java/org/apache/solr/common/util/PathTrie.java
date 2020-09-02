@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 
 import static java.util.Collections.emptyList;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,8 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * like /collections/{collection}/shards/{shard}/{replica}
  */
 public class PathTrie<T> {
-  private final Set<String> reserved = ConcurrentHashMap.newKeySet(64);
-  private volatile Node root = new Node(emptyList(), null);
+  private final Set<String> reserved = new HashSet<>();
+  private volatile Node root = new Node(reserved, emptyList(), null);
 
   public PathTrie() {
   }
@@ -82,15 +83,15 @@ public class PathTrie<T> {
 
 
   public T lookup(String path, Map<String, String> templateValues) {
-    return root.lookup(getPathSegments(path), 0, templateValues);
+    return (T) root.lookup(getPathSegments(path), 0, templateValues);
   }
 
   public T lookup(List<String> path, Map<String, String> templateValues) {
-    return root.lookup(path, 0, templateValues);
+    return (T) root.lookup(path, 0, templateValues);
   }
 
   public T lookup(String path, Map<String, String> templateValues, Set<String> paths) {
-    return root.lookup(getPathSegments(path), 0, templateValues, paths);
+    return (T) root.lookup(getPathSegments(path), 0, templateValues, paths);
   }
 
   public static String templateName(String templateStr) {
@@ -100,13 +101,15 @@ public class PathTrie<T> {
 
   }
 
-  class Node {
+  static class Node {
+    private final Set<String> reserved;
     String name;
     Map<String, Node> children;
-    T obj;
+    Object obj;
     String templateName;
 
-    Node(List<String> path, T o) {
+    Node(Set<String> reserved, List<String> path, Object o) {
+      this.reserved = reserved;
       if (path.isEmpty()) {
         obj = o;
         return;
@@ -118,7 +121,7 @@ public class PathTrie<T> {
     }
 
 
-    private void insert(List<String> path, T o) {
+    private void insert(List<String> path, Object o) {
       String part = path.get(0);
       Node matchedChild = null;
       if ("*".equals(name)) {
@@ -131,7 +134,7 @@ public class PathTrie<T> {
 
       matchedChild = children.get(key);
       if (matchedChild == null) {
-        children.put(key, matchedChild = new Node(path, o));
+        children.put(key, matchedChild = new Node(reserved, path, o));
       }
       if (varName != null) {
         if (!matchedChild.templateName.equals(varName)) {
@@ -165,7 +168,7 @@ public class PathTrie<T> {
     }
 
 
-    public T lookup(List<String> pieces, int i, Map<String, String> templateValues) {
+    public Object lookup(List<String> pieces, int i, Map<String, String> templateValues) {
       return lookup(pieces, i, templateValues, null);
 
     }
@@ -176,7 +179,7 @@ public class PathTrie<T> {
      * @param templateVariables The mapping of template variable to its value
      * @param availableSubPaths If not null , available sub paths will be returned in this set
      */
-    public T lookup(List<String> pathSegments, int index, Map<String, String> templateVariables, Set<String> availableSubPaths) {
+    public Object lookup(List<String> pathSegments, int index, Map<String, String> templateVariables, Set<String> availableSubPaths) {
       if (templateName != null) templateVariables.put(templateName, pathSegments.get(index - 1));
       if (pathSegments.size() < index + 1) {
         findAvailableChildren("", availableSubPaths);
