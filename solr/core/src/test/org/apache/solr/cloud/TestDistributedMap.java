@@ -66,7 +66,6 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
   public void testGet() throws KeeperException, InterruptedException {
     SolrZkClient zkClient = zkServer.getZkClient();
 
-
     String path = getAndMakeInitialPath(zkClient);
     byte[] data = "data".getBytes(Charset.defaultCharset());
     zkClient.makePath(path + "/" + DistributedMap.PREFIX + "foo", data, CreateMode.PERSISTENT, null, false, true);
@@ -182,6 +181,5 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
     zkClient.makePath(path, false, true);
     return path;
   }
-
 
 }

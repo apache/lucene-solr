@@ -69,6 +69,10 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
+    if (threadName.startsWith("ConnnectionExpirer")) { // org.apache.solr.cloud.TestDistributedMap.classMethod can leak this in TERMINATED state, should go away with apache httpclient
+      return true;
+    }
+
     // HDFS nocommit fix
 //    if (threadName.startsWith("IPC Parameter Sending Thread ")) { // SOLR-5007
 //      return true;
