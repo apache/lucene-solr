@@ -196,6 +196,8 @@ Improvements
 * LUCENE-9446: In BooleanQuery rewrite, always remove MatchAllDocsQuery filter clauses
   when possible. (Julie Tibshirani)
 
+* LUCENE-9501: Improve how Asserting* test classes handle singleton doc values.
+
 Optimizations
 ---------------------
 
