@@ -1947,6 +1947,9 @@ public class ZkController implements Closeable {
   public void unregister(String coreName, CoreDescriptor cd, boolean removeCoreFromZk) throws Exception {
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
     final String collection = cd.getCloudDescriptor().getCollectionName();
+
+    zkStateReader.unregisterCore(collection);
+
     synchronized (collectionToTerms) {
       ZkCollectionTerms ct = collectionToTerms.get(collection);
       if (ct != null) {
@@ -2109,6 +2112,12 @@ public class ZkController implements Closeable {
 
     String coreNodeName = getCoreNodeName(cd);
 
+    // the watcher is added to a set so multiple calls of this method will left only one watcher
+    zkStateReader.registerCore(cloudDesc.getCollectionName());
+    // the watcher is added to a set so multiple calls of this method will left only one watcher
+    zkStateReader.registerDocCollectionWatcher(cloudDesc.getCollectionName(),
+        new UnloadCoreOnDeletedWatcher(coreNodeName, cloudDesc.getShardId(), cd.getName()));
+
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
@@ -2119,12 +2128,6 @@ public class ZkController implements Closeable {
         cloudDesc.setCoreNodeName(coreNodeName);
       }
       log.info("PreRegister found coreNodename of {}", coreNodeName);
-      
-      // the watcher is added to a set so multiple calls of this method will left only one watcher
-      zkStateReader.registerCore(cloudDesc.getCollectionName());
-      // the watcher is added to a set so multiple calls of this method will left only one watcher
-      zkStateReader.registerDocCollectionWatcher(cloudDesc.getCollectionName(),
-          new UnloadCoreOnDeletedWatcher(coreNodeName, cloudDesc.getShardId(), cd.getName()));
 
       // publishState == false on startup
       if (isPublishAsDownOnStartup(cloudDesc)) {
@@ -2796,7 +2799,6 @@ public class ZkController implements Closeable {
     @Override
     // synchronized due to SOLR-11535
     public synchronized boolean onStateChanged(DocCollection collectionState) {
-      if (true) return true;
       if (isClosed()) { // don't accidentally delete cores on shutdown due to unreliable state
         return true;
       }
