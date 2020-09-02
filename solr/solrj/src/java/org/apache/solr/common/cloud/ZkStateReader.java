@@ -1546,8 +1546,7 @@ public class ZkStateReader implements SolrCloseable {
     collectionWatches.compute(collection, (k, v) -> {
       if (v == null)
         return null;
-      if (v.coreRefCount.get() > 0)
-        v.coreRefCount.decrementAndGet();
+      v.coreRefCount.decrementAndGet();
       if (v.canBeRemoved()) {
         watchedCollectionStates.remove(collection);
         lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
@@ -1868,10 +1867,10 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     // Resolve race with unregisterCore.
-    if (!collectionWatches.containsKey(coll)) {
-      watchedCollectionStates.remove(coll);
-      log.debug("Removing uninteresting collection [{}]", coll);
-    }
+//    if (!collectionWatches.containsKey(coll)) {
+//      watchedCollectionStates.remove(coll);
+//      log.debug("Removing uninteresting collection [{}]", coll);
+//    }
 
     return updated;
   }
