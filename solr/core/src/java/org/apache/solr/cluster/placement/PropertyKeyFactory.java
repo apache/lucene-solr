@@ -17,6 +17,9 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Factory used by the plugin to create property keys to request property values from Solr.<p>
  *
@@ -57,6 +60,11 @@ public interface PropertyKeyFactory {
    * @param syspropName the name of the system property to retrieve.
    */
   PropertyKey createSyspropKey(Node node, String syspropName);
+
+  /**
+   * Calls {@link #createSyspropKey} for all nodes and returns a map from each node to corresponding {@link PropertyKey}.
+   */
+  Map<Node, PropertyKey> createSyspropKeys(Set<Node> nodes, String syspropName);
 
   /**
    * Returns a property key to request the value of a {@link Node} metric. Corresponding {@link PropertyValue}'s are similar

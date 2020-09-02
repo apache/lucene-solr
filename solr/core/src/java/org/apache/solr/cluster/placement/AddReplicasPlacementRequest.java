@@ -55,6 +55,12 @@ public interface AddReplicasPlacementRequest extends PlacementRequest {
    */
   Set<Node> getTargetNodes();
 
+  /**
+   * Returns the number of replica to create that is returned by the corresponding method {@link #getCountNrtReplicas()},
+   * {@link #getCountTlogReplicas()} or  {@link #getCountPullReplicas()}. Might delete the other three.
+   */
+  int getCountReplicasToCreate(Replica.ReplicaType replicaType);
+
   /** Number of NRT replicas to create. */
   int getCountNrtReplicas();
   /** Number of TLOG replicas to create. */

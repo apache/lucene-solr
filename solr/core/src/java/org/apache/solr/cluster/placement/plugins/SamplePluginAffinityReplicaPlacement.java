@@ -17,45 +17,85 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.Map;
-
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
-import org.apache.solr.cluster.placement.AddReplicasPlacementRequest;
-import org.apache.solr.cluster.placement.Cluster;
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.PlacementException;
-import org.apache.solr.cluster.placement.PlacementPlugin;
-import org.apache.solr.cluster.placement.PlacementPluginConfig;
-import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.cluster.placement.PropertyKey;
-import org.apache.solr.cluster.placement.PropertyKeyFactory;
-import org.apache.solr.cluster.placement.PropertyValue;
-import org.apache.solr.cluster.placement.PropertyValueFetcher;
-import org.apache.solr.cluster.placement.Replica;
-import org.apache.solr.cluster.placement.ReplicaPlacement;
-import org.apache.solr.cluster.placement.PlacementRequest;
-import org.apache.solr.cluster.placement.PlacementPlan;
-import org.apache.solr.cluster.placement.PlacementPlanFactory;
+import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.util.SuppressForbidden;
 
+import java.util.*;
+
 /**
- * Implements placing replicas to minimize number of cores per {@link Node}, while not placing two replicas of the same
- * shard on the same node.
+ * <p>Implements placing replicas in a way that replicate past Autoscaling config defined
+ * <a href="https://github.com/lucidworks/fusion-cloud-native/blob/master/policy.json#L16">here</a>.</p>
  *
- * TODO: code not tested and never run, there are no implementation yet for used interfaces
+ * <p>This specification is doing the following:
+ * <p><i>Spread replicas per shard as evenly as possible across multiple availability zones (given by a sys prop),
+ * assign replicas based on replica type to specific kinds of nodes (another sys prop), and avoid having more than
+ * one replica per shard on the same node.<br>
+ * Only after these constraints are satisfied do minimize cores per node or disk usage.</i></p>
+ *
+ * <p>Overall strategy of this plugin:</p>
+ * <ul><li>
+ *     The set of nodes in the cluster is obtained and transformed into 3 independent sets (that can overlap) of nodes
+ *     accepting each of the three replica types.
+ * </li><li>
+ *     For each shard on which placing replicas is required and then for each replica type to place (starting with NRT, then TLOG then PULL): <ul>
+ *         <li>The set of candidates nodes corresponding to the replica type is used and from that set are removed nodes
+ *         that already have a replica (of any type) for that shard</li>
+ *         <li>If there are not enough nodes, either an error is thrown or the replica(s) in excess are not added. Likely something
+ *         to be governed by per replica type configuration (i.e. throw error if NRT can't be created but
+ *         skip "silently" if PULL can't be created? TODO Do we need a soft error reporting mechanism?)<br>
+ *         This check likely happens in the following steps but called out separately here.</li>
+ *         <li>The number of (already existing) replicas of the current type on each Availability Zone is collected.</li>
+ *         <li>Separate the set of available nodes to as many subsets (possibly some are empty) as there are Availability Zones
+ *         defined for the candidate nodes</li>
+ *         <li>In each AZ nodes subset, sort the nodes by increasing total number of cores count, with possibly a condition
+ *         that pushes nodes with low disk space to the end of the list? Or a weighted combination of the relative
+ *         importance of these two factors? Some randomization? Marking as non available nodes with not enough disk space?
+ *         These and other are likely aspects to be played with once the plugin is tested or observed to be running in prod,
+ *         don't expect the initial code drop(s) to do all of that.</li>
+ *         <li>Iterate over the number of replicas to place (for the current replica type for the current shard):
+ *         <ul>
+ *             <li>Based on the number of replicas per AZ collected previously, pick the non empty set of nodes having the
+ *             lowest number of replicas. Then pick the first node in that set. That's the node the replica is placed one.
+ *             Remove the node from the set of available nodes for the given AZ and increase the number of replicas placed
+ *             on that AZ.</li>
+ *         </ul></li>
+ *         <li>During this process, the number of cores on the nodes in general is tracked to take into account placement
+ *         decisions so that not all shards decide to put their replicas on the same nodes (they might though if these are
+ *         the less loaded nodes).</li>
+ *     </ul>
+ * </li>
+ * </ul>
+ *
+ * TODO: disclaimer: code not tested and never really run
  */
-public class SamplePluginMinimizeCores implements PlacementPlugin {
+public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
+
+  /**
+   * <p>Name of the system property on a node indicating which (public cloud) Availability Zone that node is in. The value
+   * is any string, different strings denote different availability zones.
+   *
+   * <p>Nodes on which this system property is not defined are considered being in the same Availability Zone.
+   */
+  public static final String AVAILABILITY_ZONE_SYSPROP = "availability_zone";
+
+  /**
+   * <p>Name of the system property on a node indicating the type of replicas allowed on that node.
+   * That system property value is a comma separated list or a single string from {@link #TYPE_TLOG},
+   * {@link #TYPE_TLOG} and {@link #TYPE_TLOG}. If that property is not defined, that node is considered accepting
+   * all replica types (i.e. undefined is equivalent to {@code "tlog,pull,tlog"}).
+   */
+  public static final String REPLICA_TYPE_SYSPROP = "replica_type";
+  public static final String TYPE_TLOG = "tlog";
+  public static final String TYPE_NRT = "nrt";
+  public static final String TYPE_PULL = "pull";
+
 
   private final PlacementPluginConfig config;
 
-  private SamplePluginMinimizeCores(PlacementPluginConfig config) {
+  private SamplePluginAffinityReplicaPlacement(PlacementPluginConfig config) {
     this.config = config;
   }
 
@@ -70,19 +110,27 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
 
     @Override
     public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
-      return new SamplePluginMinimizeCores(config);
+      return new SamplePluginAffinityReplicaPlacement(config);
     }
   }
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
   public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
                                         PropertyValueFetcher propertyFetcher, PlacementPlanFactory placementPlanFactory) throws PlacementException {
-    // This plugin only supports Creating a collection.
     if (!(placementRequest instanceof AddReplicasPlacementRequest)) {
-      throw new PlacementException("This toy plugin only supports adding replicas");
+      throw new PlacementException("This plugin only supports adding replicas, no support for " + placementRequest.getClass().getName());
     }
 
     final AddReplicasPlacementRequest reqAddReplicas = (AddReplicasPlacementRequest) placementRequest;
+
+    Set<Node> nodes = cluster.getLiveNodes();
+
+    Map<Node, PropertyKey> azKeys = propertyFactory.createSyspropKeys(nodes, AVAILABILITY_ZONE_SYSPROP);
+    Map<Node, PropertyKey> replicaTypesKeys = propertyFactory.createSyspropKeys(nodes, REPLICA_TYPE_SYSPROP);
+
+
+    // WIP - continue here.
+
 
     final int totalReplicasPerShard = reqAddReplicas.getCountNrtReplicas() +
         reqAddReplicas.getCountTlogReplicas() + reqAddReplicas.getCountPullReplicas();

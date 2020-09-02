@@ -36,6 +36,10 @@ public interface Replica extends PropertyValueSource {
    */
   Node getNode();
 
+  /**
+   * The order of this enum is important: it allows plugin writers to treat replica types from the most to the least
+   * important...
+   */
   enum ReplicaType {
     NRT, TLOG, PULL
   }

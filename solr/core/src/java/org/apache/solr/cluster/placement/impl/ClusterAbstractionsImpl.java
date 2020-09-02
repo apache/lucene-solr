@@ -81,8 +81,13 @@ class NodeImpl implements Node {
   }
 
   @Override
-  public String getNodeName() {
+  public String getName() {
     return nodeName;
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(" + getName() + ")";
   }
 
   /**

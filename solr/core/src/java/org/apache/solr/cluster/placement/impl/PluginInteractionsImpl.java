@@ -17,6 +17,7 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.SolrException;
@@ -51,6 +52,16 @@ class PropertyKeyFactoryImpl implements PropertyKeyFactory {
     public PropertyKey createSyspropKey(Node node, String syspropName) {
         return new AbstractNodePropertyKey.SyspropImpl(node, syspropName);
     }
+
+    @Override
+    public Map<Node, PropertyKey> createSyspropKeys(Set<Node> nodes, String syspropName) {
+        Map<Node, PropertyKey> keys = Maps.newHashMap();
+        for (Node n : nodes) {
+            keys.put(n, createSyspropKey(n, syspropName));
+        }
+        return keys;
+    }
+
 
     @Override
     public PropertyKey createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry) {
@@ -150,7 +161,7 @@ class PropertyValueFetcherImpl implements PropertyValueFetcher {
         // parallel fetching from all nodes concurrently.
         for (Map.Entry<Node, Map<String, AbstractNodePropertyKey>> e : nodeToTagsAndKeys.entrySet()) {
             Node node = e.getKey();
-            Map<String, Object> tagValues = cloudManager.getNodeStateProvider().getNodeValues(node.getNodeName(), e.getValue().keySet());
+            Map<String, Object> tagValues = cloudManager.getNodeStateProvider().getNodeValues(node.getName(), e.getValue().keySet());
             if (tagValues != null) {
                 nodeToTagValues.put(node, tagValues);
             }

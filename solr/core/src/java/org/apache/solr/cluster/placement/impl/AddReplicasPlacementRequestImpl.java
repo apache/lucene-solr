@@ -17,24 +17,19 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.solr.cloud.api.collections.Assign;
-import org.apache.solr.cluster.placement.AddReplicasPlacementRequest;
-import org.apache.solr.cluster.placement.Cluster;
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.PlacementRequest;
-import org.apache.solr.cluster.placement.SolrCollection;
+import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.cloud.DocCollection;
 
 public class AddReplicasPlacementRequestImpl implements AddReplicasPlacementRequest {
   private final SolrCollection solrCollection;
   private final Set<String> shardNames;
   private final Set<Node> targetNodes;
-  private final int countNrtReplicas;
-  private final int countTlogReplicas;
-  private final int countPullReplicas;
+  private final EnumMap<Replica.ReplicaType, Integer> countReplicas = new EnumMap<>(Replica.ReplicaType.class);
 
   private AddReplicasPlacementRequestImpl(SolrCollection solrCollection,
                                           Set<String> shardNames, Set<Node> targetNodes,
@@ -42,9 +37,10 @@ public class AddReplicasPlacementRequestImpl implements AddReplicasPlacementRequ
     this.solrCollection = solrCollection;
     this.shardNames = shardNames;
     this.targetNodes = targetNodes;
-    this.countNrtReplicas = countNrtReplicas;
-    this.countTlogReplicas = countTlogReplicas;
-    this.countPullReplicas = countPullReplicas;
+    // Initializing map for all values of enum, so unboxing always possible later without checking for null
+    countReplicas.put(Replica.ReplicaType.NRT, countNrtReplicas);
+    countReplicas.put(Replica.ReplicaType.TLOG, countTlogReplicas);
+    countReplicas.put(Replica.ReplicaType.PULL, countPullReplicas);
   }
 
   @Override
@@ -63,18 +59,24 @@ public class AddReplicasPlacementRequestImpl implements AddReplicasPlacementRequ
   }
 
   @Override
+  public int getCountReplicasToCreate(Replica.ReplicaType replicaType) {
+    return countReplicas.get(replicaType);
+
+  }
+
+  @Override
   public int getCountNrtReplicas() {
-    return countNrtReplicas;
+    return getCountReplicasToCreate(Replica.ReplicaType.NRT);
   }
 
   @Override
   public int getCountTlogReplicas() {
-    return countTlogReplicas;
+    return getCountReplicasToCreate(Replica.ReplicaType.TLOG);
   }
 
   @Override
   public int getCountPullReplicas() {
-    return countPullReplicas;
+    return getCountReplicasToCreate(Replica.ReplicaType.PULL);
   }
 
   /**
