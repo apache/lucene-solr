@@ -136,13 +136,6 @@ public abstract class FieldComparator<T> {
   }
 
   /**
-   * Informs the comparator that it is used as a primary sort comparator for sorting.
-   * This is useful to enable optimizations for skipping non-competitive documents.
-   */
-  public void setPrimarySort() {
-  }
-
-  /**
    * Informs the comparator that sort is done on this single field.
    * This is useful to enable some optimizations for skipping non-competitive documents.
    */

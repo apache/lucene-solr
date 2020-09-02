@@ -30,8 +30,7 @@ import java.io.IOException;
  */
 public class DocComparator extends FieldComparator<Integer> {
     private final int[] docIDs;
-    private final boolean reverse;
-    private boolean enableSkipping; // if skipping functionality should be enabled
+    private final boolean enableSkipping; // if skipping functionality should be enabled
     private int bottom;
     private int topValue;
     private boolean topValueSet;
@@ -41,13 +40,8 @@ public class DocComparator extends FieldComparator<Integer> {
     /** Creates a new comparator based on document ids for {@code numHits} */
     public DocComparator(int numHits, boolean reverse) {
         this.docIDs = new int[numHits];
-        this.reverse = reverse;
-    }
-
-    @Override
-    public void setPrimarySort() {
-        // skipping functionality is enabled if we are sorting by _doc in asc order as a primary sort
-        enableSkipping = (reverse == false);
+        // skipping functionality is enabled if we are sorting by _doc in asc order
+        this.enableSkipping = (reverse == false);
     }
 
     @Override
@@ -174,8 +168,6 @@ public class DocComparator extends FieldComparator<Integer> {
             if (enableSkipping == false || hitsThresholdReached == false) return;
             if (bottomValueSet) {
                 // since we've collected top N matches, we can early terminate
-                // Currently early termination on _doc is also implemented in TopFieldCollector, but this will be removed
-                // once all bulk scores uses collectors' iterators
                 competitiveIterator = DocIdSetIterator.empty();
             } else if (topValueSet) {
                 // skip to the desired top doc
