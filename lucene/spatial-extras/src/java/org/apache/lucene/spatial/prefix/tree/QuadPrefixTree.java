@@ -265,6 +265,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     // if we actually use the range property in the query, this could be useful
   }
 
+  /** individual QuadPrefixTree grid cell */
   protected class QuadCell extends LegacyCell {
 
     QuadCell(byte[] bytes, int off, int len) {

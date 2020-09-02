@@ -121,6 +121,7 @@ public abstract class MultiFunction extends ValueSource {
     return valsArr;
   }
 
+  /** Base implementation that wraps multiple sources */
   public class Values extends FunctionValues {
     final FunctionValues[] valsArr;
 

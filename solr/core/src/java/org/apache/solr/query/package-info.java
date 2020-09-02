@@ -15,11 +15,7 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
-
-description = 'Index tools and other miscellaneous code'
-
-dependencies {
-  api project(':lucene:core')
-  testImplementation project(':lucene:test-framework')
-}
+/**
+ * Solr Queries
+ */
+package org.apache.solr.query;

@@ -19,8 +19,39 @@
 // the ant/groovy script we already have.
 
 configure(rootProject) {
-  configurations {
-    checkSourceDeps
+  task("validateSourcePatterns", type: ValidateSourcePatternsTask) {
+    group = 'Verification'
+    description = 'Validate Source Patterns'
+    
+    sourceFiles = project.fileTree(project.rootDir) {
+      [
+        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
+        'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
+        'properties', 'mdtext', 'groovy', 'gradle',
+        'template', 'adoc', 'json',
+      ].each{
+        include "lucene/**/*.${it}"
+        include "solr/**/*.${it}"
+        include "dev-tools/**/*.${it}"
+        include "gradle/**/*.${it}"
+        include "*.${it}"
+      }
+      // TODO: For now we don't scan txt / md files, so we
+      // check licenses in top-level folders separately:
+      include '*.txt'
+      include '*/*.txt'
+      include '*.md'
+      include '*/*.md'
+      // excludes:
+      exclude '**/build/**'
+      exclude '**/dist/**'
+      exclude 'dev-tools/missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
+      exclude 'lucene/benchmark/work/**'
+      exclude 'lucene/benchmark/temp/**'
+      exclude '**/CheckLoggingConfiguration.java'
+      exclude 'solr/core/src/test/org/apache/hadoop/**'
+      exclude '**/validate-source-patterns.gradle' // ourselves :-)
+    }
   }
 
   dependencies {

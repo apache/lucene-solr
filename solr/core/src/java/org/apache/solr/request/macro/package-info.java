@@ -15,11 +15,7 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
-
-description = 'Index tools and other miscellaneous code'
-
-dependencies {
-  api project(':lucene:core')
-  testImplementation project(':lucene:test-framework')
-}
+/**
+ * Parameter substitution / macro expansion.
+ */
+package org.apache.solr.request.macro;
