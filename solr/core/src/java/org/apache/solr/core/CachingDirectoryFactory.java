@@ -220,7 +220,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           return;
         } catch (Exception e) {
           ParWork.propegateInterrupt("Error closing directory", e);
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Error closing directory");
         }
       }
 
