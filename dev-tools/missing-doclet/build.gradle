@@ -17,9 +17,6 @@
 
 apply plugin: 'java-library'
 
-description = 'Index tools and other miscellaneous code'
-
-dependencies {
-  api project(':lucene:core')
-  testImplementation project(':lucene:test-framework')
-}
+version = "1.0.0-SNAPSHOT"
+group = "org.apache.lucene.tools"
+description = 'Doclet-based javadoc validation.'
