@@ -16,9 +16,11 @@
  */
 package org.apache.solr.update;
 
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.PluginInfo;
@@ -129,13 +131,17 @@ UpdateHandler implements SolrInfoBean, Closeable {
     ObjectReleaseTracker.track(this);
     try {
       this.core = core;
+      CoreDescriptor cd = core.getCoreDescriptor();
+      if (cd == null) {
+        throw new AlreadyClosedException();
+      }
       idField = core.getLatestSchema().getUniqueKeyField();
       idFieldType = idField != null ? idField.getType() : null;
       parseEventListeners();
       PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
 
       // If this is a replica of type PULL, don't create the update log
-      boolean skipUpdateLog = core.getCoreDescriptor().getCloudDescriptor() != null && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
+      boolean skipUpdateLog = cd.getCloudDescriptor() != null && !cd.getCloudDescriptor().requiresTransactionLog();
       if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
         DirectoryFactory dirFactory = core.getDirectoryFactory();
         if (dirFactory instanceof HdfsDirectoryFactory) {
