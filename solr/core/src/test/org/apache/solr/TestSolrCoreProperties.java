@@ -42,7 +42,6 @@ import java.util.Properties;
  *
  * @since solr 1.4
  */
-@Ignore // nocommit what the heck is this leak
 public class TestSolrCoreProperties extends SolrJettyTestBase {
   private static JettySolrRunner jetty;
   private static int port;
@@ -104,9 +103,10 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     SolrParams params = params("q", "*:*",
                                "echoParams", "all");
     QueryResponse res;
-    SolrClient client = getSolrClient(jetty);
+    try (SolrClient client = getSolrClient(jetty)) {
       res = client.query(params);
       assertEquals(0, res.getResults().getNumFound());
+    }
 
     NamedList echoedParams = (NamedList) res.getHeader().get("params");
     assertEquals("f1", echoedParams.get("p1"));
@@ -125,10 +125,10 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
    * Subclasses should override for other options.
    */
   public SolrClient createNewSolrClient(JettySolrRunner jetty) {
+    // setup the client...
+    final String url = jetty.getBaseUrl().toString() + "/" + "collection1";
     try {
-      // setup the client...
-      final String url = jetty.getBaseUrl().toString() + "/" + "collection1";
-      final Http2SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
+      Http2SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
       return client;
     } catch (final Exception ex) {
       throw new RuntimeException(ex);

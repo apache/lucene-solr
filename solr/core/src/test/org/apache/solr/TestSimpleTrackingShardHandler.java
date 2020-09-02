@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
@@ -29,6 +30,7 @@ import java.util.Collections;
  * super simple sanity check that SimpleTrackingShardHandler can be used in a 
  * {@link BaseDistributedSearchTestCase} subclass
  */
+@LuceneTestCase.Nightly // a bit slow for what it does...
 public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCase {
 
   @Override
@@ -36,7 +38,6 @@ public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCas
     return "solr-trackingshardhandler.xml";
   }
 
-  @Ignore // nocommit
   public void testSolrXmlOverrideAndCorrectShardHandler() throws Exception {
     RequestTrackingQueue trackingQueue = new RequestTrackingQueue();
     

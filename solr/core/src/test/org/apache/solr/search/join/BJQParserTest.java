@@ -289,7 +289,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug flakey
+  @Ignore // nocommit we probably have to add a wait for this to be populated
   public void testCacheHit() throws IOException {
 
     MetricsMap parentFilterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)h.getCore().getCoreMetricManager().getRegistry()

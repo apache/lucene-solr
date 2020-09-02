@@ -25,6 +25,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -34,7 +35,7 @@ import org.apache.solr.common.util.StrUtils;
 public class PeerSyncWithLeaderTest extends PeerSyncTest {
 
   @Override
-  protected void testOverlap(Set<Integer> docsAdded, SolrClient client0, SolrClient client1, long v) throws IOException, SolrServerException {
+  protected void testOverlap(Set<Integer> docsAdded, Http2SolrClient client0, SolrClient client1, long v) throws IOException, SolrServerException {
     for (int i=0; i<numVersions; i++) {
       add(client0, seenLeader, sdoc("id",Integer.toString(i+11),"_version_",v+i+1));
       docsAdded.add(i+11);

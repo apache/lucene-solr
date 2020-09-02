@@ -728,7 +728,6 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit flakey
   public void testExpr() throws Exception {
     assertU(delQ("*:*"));
     assertU(commit());

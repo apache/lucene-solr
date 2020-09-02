@@ -54,8 +54,6 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore
-  // nocommit - sure it rebuilds on commit, but async with a race on new searcher
   public void testSuggestions() throws Exception {
     addDocs();
     assertU(commit()); // configured to do a rebuild on commit
@@ -68,7 +66,6 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit - sure it rebuilds on commit, but async with a race on new searcher
   public void testReload() throws Exception {
     addDocs();
     assertU(commit());
@@ -85,7 +82,6 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit - sure it rebuilds on commit, but async with a race on new searcher
   public void testRebuild() throws Exception {
     addDocs();
     assertU(commit());

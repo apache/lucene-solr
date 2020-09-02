@@ -101,7 +101,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testOutOfSyncReplicasCannotBecomeLeader() throws Exception {
     testOutOfSyncReplicasCannotBecomeLeader(false);
   }
