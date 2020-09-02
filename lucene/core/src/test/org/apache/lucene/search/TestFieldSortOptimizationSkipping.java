@@ -98,6 +98,14 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
       assertTrue(topDocs.totalHits.value < numDocs);
     }
 
+    { // test that if numeric field is a secondary sort, no optimization is run
+      final TopFieldCollector collector = TopFieldCollector.create(new Sort(FIELD_SCORE, sortField), numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      assertEquals(topDocs.totalHits.value, numDocs); // assert that all documents were collected => optimization was not run
+    }
+
     writer.close();
     reader.close();
     dir.close();

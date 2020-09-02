@@ -32,8 +32,8 @@ public class IntComparator extends NumericComparator<Integer> {
     protected int topValue;
     protected int bottom;
 
-    public IntComparator(int numHits, String field, Integer missingValue, boolean reverse) {
-        super(field, missingValue != null ? missingValue : 0, reverse, Integer.BYTES);
+    public IntComparator(int numHits, String field, Integer missingValue, boolean reverse, int sortPos) {
+        super(field, missingValue != null ? missingValue : 0, reverse, sortPos, Integer.BYTES);
         values = new int[numHits];
     }
 

@@ -154,6 +154,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   }
 
+  // TODO: remove this code when all bulk scores similar to {@code DefaultBulkScorer} use collectors' iterator,
+  // as early termination should be implemented in their respective comparators and removed from a collector
   static boolean canEarlyTerminate(Sort searchSort, Sort indexSort) {
     return canEarlyTerminateOnDocId(searchSort) ||
            canEarlyTerminateOnPrefix(searchSort, indexSort);

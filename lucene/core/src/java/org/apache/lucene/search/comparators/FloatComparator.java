@@ -32,8 +32,8 @@ public class FloatComparator extends NumericComparator<Float> {
     protected float topValue;
     protected float bottom;
 
-    public FloatComparator(int numHits, String field, Float missingValue, boolean reverse) {
-        super(field, missingValue != null ? missingValue : 0.0f, reverse, Float.BYTES);
+    public FloatComparator(int numHits, String field, Float missingValue, boolean reverse, int sortPos) {
+        super(field, missingValue != null ? missingValue : 0.0f, reverse, sortPos, Float.BYTES);
         values = new float[numHits];
     }
 

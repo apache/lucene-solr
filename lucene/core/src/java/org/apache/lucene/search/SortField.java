@@ -457,19 +457,19 @@ public class SortField {
       return new FieldComparator.RelevanceComparator(numHits);
 
     case DOC:
-      return new DocComparator(numHits, reverse);
+      return new DocComparator(numHits, reverse, sortPos);
 
     case INT:
-      return new IntComparator(numHits, field, (Integer) missingValue, reverse);
+      return new IntComparator(numHits, field, (Integer) missingValue, reverse, sortPos);
 
     case FLOAT:
-      return new FloatComparator(numHits, field, (Float) missingValue, reverse);
+      return new FloatComparator(numHits, field, (Float) missingValue, reverse, sortPos);
 
     case LONG:
-      return new LongComparator(numHits, field, (Long) missingValue, reverse);
+      return new LongComparator(numHits, field, (Long) missingValue, reverse, sortPos);
 
     case DOUBLE:
-      return new DoubleComparator(numHits, field, (Double) missingValue, reverse);
+      return new DoubleComparator(numHits, field, (Double) missingValue, reverse, sortPos);
 
     case CUSTOM:
       assert comparatorSource != null;

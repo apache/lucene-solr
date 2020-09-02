@@ -229,7 +229,7 @@ public class SortedNumericSortField extends SortField {
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
     switch(type) {
       case INT:
-        return new IntComparator(numHits, getField(), (Integer) missingValue, reverse) {
+        return new IntComparator(numHits, getField(), (Integer) missingValue, reverse, sortPos) {
           @Override
           public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
             return new IntLeafComparator(context) {
@@ -241,7 +241,7 @@ public class SortedNumericSortField extends SortField {
           }
         };
       case FLOAT:
-        return new FloatComparator(numHits, getField(), (Float) missingValue, reverse) {
+        return new FloatComparator(numHits, getField(), (Float) missingValue, reverse, sortPos) {
           @Override
           public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
             return new FloatLeafComparator(context) {
@@ -253,7 +253,7 @@ public class SortedNumericSortField extends SortField {
           }
         };
       case LONG:
-        return new LongComparator(numHits, getField(), (Long) missingValue, reverse) {
+        return new LongComparator(numHits, getField(), (Long) missingValue, reverse, sortPos) {
           @Override
           public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
             return new LongLeafComparator(context) {
@@ -265,7 +265,7 @@ public class SortedNumericSortField extends SortField {
           }
         };
       case DOUBLE:
-        return new DoubleComparator(numHits, getField(), (Double) missingValue, reverse) {
+        return new DoubleComparator(numHits, getField(), (Double) missingValue, reverse, sortPos) {
           @Override
           public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
             return new DoubleLeafComparator(context) {
