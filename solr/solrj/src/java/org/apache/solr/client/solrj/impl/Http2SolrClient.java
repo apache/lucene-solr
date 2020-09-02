@@ -427,7 +427,6 @@ public class Http2SolrClient extends SolrClient {
               onComplete.onSuccess(rsp);
             } catch (Exception e) {
               ParWork.propegateInterrupt(e);
-              onComplete.onFailure(e);
             }
           } finally {
             asyncTracker.completeListener.onComplete(result);
