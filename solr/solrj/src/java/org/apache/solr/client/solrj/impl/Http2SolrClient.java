@@ -874,12 +874,7 @@ public class Http2SolrClient extends SolrClient {
     private final Semaphore available;
 
     // wait for async requests
-    private final Phaser phaser = new Phaser(1) {
-      @Override
-      protected boolean onAdvance(int phase, int parties) {
-        return false;
-      }
-    };
+    private final Phaser phaser = new ThePhaser(1);
     // maximum outstanding requests left
     private final Request.QueuedListener queuedListener;
     private final Response.CompleteListener completeListener;
@@ -937,6 +932,18 @@ public class Http2SolrClient extends SolrClient {
 //      } catch (InterruptedException ignored) {
 //        ParWork.propegateInterrupt(ignored);
 //      }
+    }
+
+    private static class ThePhaser extends Phaser {
+
+      ThePhaser(int start) {
+        super(start);
+      }
+
+      @Override
+      protected boolean onAdvance(int phase, int parties) {
+        return false;
+      }
     }
   }
 

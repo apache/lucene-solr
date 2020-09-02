@@ -819,7 +819,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     NamedList<Object> response = updateRequest.commit(getRandomClient(), "versions_collection").getResponse();
     Object addsObject = response.get("adds");
     
-    assertNotNull("There must be a adds parameter", addsObject);
+    assertNotNull("There must be a adds parameter: " + response.toString(), addsObject);
     assertTrue(addsObject instanceof NamedList<?>);
     NamedList<?> adds = (NamedList<?>) addsObject;
     assertEquals("There must be 2 versions (one per doc)", 2, adds.size());

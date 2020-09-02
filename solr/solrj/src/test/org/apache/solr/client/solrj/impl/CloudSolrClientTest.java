@@ -789,7 +789,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ possible regression? response doesn't contain "adds"?
   public void testVersionsAreReturned() throws Exception {
     createTestCollection("versions_collection", 2, 1);
 

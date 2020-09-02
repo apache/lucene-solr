@@ -122,17 +122,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
       try {
         MDC.put("CloudSolrClient.url", url);
         try {
-          myClient.request(lbRequest.request, null, new Http2SolrClient.OnComplete() {
-
-            @Override
-            public void onSuccess(NamedList result) {
-              tsResponses.put(url, result);
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-              tsExceptions.put(url, t);
-            }});
+          myClient.request(lbRequest.request, null, new UpdateOnComplete(tsResponses, url, tsExceptions));
         } catch (IOException e) {
           tsExceptions.put(url, e);
         } catch (SolrServerException e) {
@@ -299,5 +289,28 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
       return new CloudHttp2SolrClient(this);
     }
 
+  }
+
+  private static class UpdateOnComplete implements Http2SolrClient.OnComplete {
+
+    private final Map<String,NamedList> tsResponses;
+    private final String url;
+    private final Map<String,Throwable> tsExceptions;
+
+    public UpdateOnComplete(Map<String,NamedList> tsResponses, String url, Map<String,Throwable> tsExceptions) {
+      this.tsResponses = tsResponses;
+      this.url = url;
+      this.tsExceptions = tsExceptions;
+    }
+
+    @Override
+    public void onSuccess(NamedList result) {
+      tsResponses.put(url, result);
+    }
+
+    @Override
+    public void onFailure(Throwable t) {
+      tsExceptions.put(url, t);
+    }
   }
 }

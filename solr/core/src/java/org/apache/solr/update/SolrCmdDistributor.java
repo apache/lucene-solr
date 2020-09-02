@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.Diagnostics;
@@ -81,7 +82,7 @@ public class SolrCmdDistributor implements Closeable {
   }
   
   public void close() {
-    ParWork.close(solrClient);
+    IOUtils.closeQuietly(solrClient);
     assert ObjectReleaseTracker.release(this);
   }
 
