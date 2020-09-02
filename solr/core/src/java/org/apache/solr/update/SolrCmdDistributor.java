@@ -66,12 +66,7 @@ public class SolrCmdDistributor implements Closeable {
   
   private final Http2SolrClient solrClient;
 
-  private final Phaser phaser = new Phaser(1) {
-    @Override
-    protected boolean onAdvance(int phase, int parties) {
-      return false;
-    }
-  };
+  private final Phaser phaser = new RequestPhaser();
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
@@ -578,6 +573,17 @@ public class SolrCmdDistributor implements Closeable {
 
   public Set<Error> getErrors() {
     return allErrors;
+  }
+
+  private static class RequestPhaser extends Phaser {
+    public RequestPhaser() {
+      super(1);
+    }
+
+    @Override
+    protected boolean onAdvance(int phase, int parties) {
+      return false;
+    }
   }
 }
 

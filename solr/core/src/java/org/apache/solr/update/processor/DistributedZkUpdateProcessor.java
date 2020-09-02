@@ -114,15 +114,20 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
     zkController = cc.getZkController();
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
-    cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
-    collection = cloudDesc.getCollectionName();
-    clusterState = zkController.getClusterState();
-    DocCollection coll = clusterState.getCollectionOrNull(collection, true);
-    if (coll != null) {
-      // check readOnly property in coll state
-      readOnlyCollection = coll.isReadOnly();
-    } else {
-      readOnlyCollection = false;
+    try {
+      cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
+      collection = cloudDesc.getCollectionName();
+      clusterState = zkController.getClusterState();
+      DocCollection coll = clusterState.getCollectionOrNull(collection, true);
+      if (coll != null) {
+        // check readOnly property in coll state
+        readOnlyCollection = coll.isReadOnly();
+      } else {
+        readOnlyCollection = false;
+      }
+    } catch (Exception e) {
+      cmdDistrib.close();
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -749,7 +754,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         forwardToLeader = false;
         return null;
       } else if (isLeader || isSubShardLeader) {
-        log.info("We are the leader, forward update to replicas..");
+        if (log.isDebugEnabled()) log.debug("We are the leader, forward update to replicas..");
         // that means I want to forward onto my replicas...
         // so get the replicas...
         forwardToLeader = false;
