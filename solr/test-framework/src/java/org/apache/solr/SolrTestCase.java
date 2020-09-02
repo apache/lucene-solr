@@ -579,7 +579,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       while (threadGroup != null && threadGroup.getParent() != null && !thread.getName().startsWith("SUITE")) {
         threadGroup = threadGroup.getParent();
-        if (nameContains != null && threadGroup.getName().equals(tg.getName())) {
+        if (thread.getState().equals(Thread.State.TERMINATED) || nameContains != null && threadGroup.getName().equals(tg.getName())) {
         //  System.out.println("thread is " + thread.getName());
           interrupt(thread, nameContains);
           continue;
