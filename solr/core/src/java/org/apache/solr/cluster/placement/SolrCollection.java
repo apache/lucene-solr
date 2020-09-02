@@ -44,10 +44,10 @@ public interface SolrCollection {
    * decisions per collection.
    *
    * <p>For example if a collection is to be placed only on nodes using SSD storage and not rotating disks, it can be
-   * identified as such using some custom property (collection property could for example be called "diskType" and have
+   * identified as such using some custom property (collection property could for example be called "driveType" and have
    * value "ssd" in that case), and the placement plugin (implementing {@link PlacementPlugin}) would then request a
-   * {@link PropertyValue.DiskType} for all nodes and only place replicas of this collection on {@link Node}'s for which
-   * {@link PropertyValue.DiskType#getHardwareType()} is {@link PropertyValue.DiskType.HardwareType#SSD}.
+   * {@link PropertyKey.Sysprop} for all nodes and only place replicas of this collection on {@link Node}'s for which
+   * {@link PropertyKey.DiskType#getHardwareType()} is {@link PropertyKey.DiskType.HardwareType#SSD}.
    */
   String getCustomProperty(String customPropertyName);
 

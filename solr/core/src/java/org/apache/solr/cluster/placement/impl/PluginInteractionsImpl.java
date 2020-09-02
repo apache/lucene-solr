@@ -29,27 +29,27 @@ import java.util.Set;
 
 class PropertyKeyFactoryImpl implements PropertyKeyFactory {
     @Override
-    public PropertyKey createCoreCountKey(Node node) {
+    public PropertyKey.CoresCount createCoreCountKey(Node node) {
         return new AbstractNodePropertyKey.CoreCountImpl(node);
     }
 
     @Override
-    public PropertyKey createFreeDiskKey(Node node) {
+    public PropertyKey.FreeDisk createFreeDiskKey(Node node) {
         return new AbstractNodePropertyKey.FreeDiskImpl(node);
     }
 
     @Override
-    public PropertyKey createTotalDiskKey(Node node) {
+    public PropertyKey.TotalDisk createTotalDiskKey(Node node) {
         return new AbstractNodePropertyKey.TotalDiskImpl(node);
     }
 
     @Override
-    public PropertyKey createDiskTypeKey(Node node) {
+    public PropertyKey.DiskType createDiskTypeKey(Node node) {
         return new AbstractNodePropertyKey.DiskTypeImpl(node);
     }
 
     @Override
-    public PropertyKey createSyspropKey(Node node, String syspropName) {
+    public PropertyKey.Sysprop createSyspropKey(Node node, String syspropName) {
         return new AbstractNodePropertyKey.SyspropImpl(node, syspropName);
     }
 
@@ -62,24 +62,23 @@ class PropertyKeyFactoryImpl implements PropertyKeyFactory {
         return keys;
     }
 
-
     @Override
-    public PropertyKey createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry) {
+    public PropertyKey.Metric createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry) {
         return new AbstractNodePropertyKey.NodeMetricImpl(nodeMetricSource, metricName, registry);
     }
 
     @Override
-    public PropertyKey createSystemLoadKey(Node node) {
+    public PropertyKey.SystemLoad createSystemLoadKey(Node node) {
         return new AbstractNodePropertyKey.SystemLoadImpl(node);
     }
 
     @Override
-    public PropertyKey createHeapUsageKey(Node node) {
+    public PropertyKey.HeapUsage createHeapUsageKey(Node node) {
         return new AbstractNodePropertyKey.HeapUsageImpl(node);
     }
 
     @Override
-    public PropertyKey createMetricKey(PropertyValueSource metricSource, String metricName) {
+    public PropertyKey.Metric createMetricKey(PropertyValueSource metricSource, String metricName) {
         return new NonNodeMetricKeyImpl(metricSource, metricName);
     }
 }
@@ -105,15 +104,13 @@ class PropertyValueFetcherImpl implements PropertyValueFetcher {
     }
 
     @Override
-    public Map<PropertyKey, PropertyValue> fetchProperties(Set<PropertyKey> props) {
+    public void fetchProperties(Set<PropertyKey> props) {
         // Convert the plugin view of what's to fetch into the underlying Solr representation
         Map<Node, Map<String, AbstractNodePropertyKey>> nodeToTagsAndKeys = getTagsAndKeysByNode(props);
         // Fetch the data from the remote nodes
         Map<Node, Map<String, Object>> tagValues = getTagValuesForAllNodes(nodeToTagsAndKeys);
-        // Convert fetched values to the plugin representation
-        Map<PropertyKey, PropertyValue> keysToValues = convertToProperyValues(nodeToTagsAndKeys, tagValues);
-
-        return keysToValues;
+        // Set the fetched values on the keys (reset to empty keys for which no values)
+        setFetchedValues(nodeToTagsAndKeys, tagValues);
     }
 
     /**
@@ -141,11 +138,11 @@ class PropertyValueFetcherImpl implements PropertyValueFetcher {
                 String tag = AbstractNodePropertyKey.getNodeSnitchTag();
                 tagsAndKeys.put(tag, AbstractNodePropertyKey);
             } else {
-                // TODO support all keys...
+                // TODO support all types of property keys...
+                // Note that supporting non node property keys has a much larger impact than this method
                 throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unsupported property key " + propertyKey.getClass().getName());
             }
         }
-
         return nodeToTagsAndKeys;
     }
 
@@ -171,12 +168,9 @@ class PropertyValueFetcherImpl implements PropertyValueFetcher {
     }
 
     /**
-     * Do the conversion of returned tag values (that are {@link Object}'s) into the strongly typed corresponding {@link PropertyValue}'s.
-     * Returns a map with they keys being the original {@link PropertyKey}, for those properties that do have returned node values.
+     * Set the returned tag values (that are {@link Object}'s) on the corresponding {@link AbstractNodePropertyKey}'s.
      */
-    private Map<PropertyKey, PropertyValue> convertToProperyValues(Map<Node, Map<String, AbstractNodePropertyKey>> nodeToTagsAndKeys, Map<Node, Map<String, Object>> nodeToTagValues) {
-        Map<PropertyKey, PropertyValue> keysToValues = new HashMap<>();
-
+    private void setFetchedValues(Map<Node, Map<String, AbstractNodePropertyKey>> nodeToTagsAndKeys, Map<Node, Map<String, Object>> nodeToTagValues) {
         for (Map.Entry<Node, Map<String, Object>> e : nodeToTagValues.entrySet()) {
             // For each node in the results we have the map of returned tag node values (tagToNodeValue) as well as the map of requested
             // PropertyKey's (tagToPropertyKey).
@@ -184,18 +178,18 @@ class PropertyValueFetcherImpl implements PropertyValueFetcher {
             Map<String, Object> tagToNodeValue = e.getValue();
             Map<String, AbstractNodePropertyKey> tagToPropertyKey = nodeToTagsAndKeys.get(node);
 
-            // Iterating over the requested property keys we find the corresponding tag node value (if it exists) and use the
-            // property key to cast that value into the correct type and return the corresponding PropertyValue.
+            // Iterating over the requested property keys we find the corresponding tag node value (if it exists) and set
+            // the value on the property key. If no value found, we reset the property key so it appears empty (even though
+            // it's initially empty, set to empty just in case it was fetched successfully a first time and now not).
             for (Map.Entry<String, AbstractNodePropertyKey> tp : tagToPropertyKey.entrySet()) {
-                AbstractNodePropertyKey AbstractNodePropertyKey = tp.getValue();
-                Object nodeValue = tagToNodeValue.get(AbstractNodePropertyKey.getNodeSnitchTag());
+                AbstractNodePropertyKey abstractNodePropertyKey = tp.getValue();
+                Object nodeValue = tagToNodeValue.get(abstractNodePropertyKey.getNodeSnitchTag());
                 if (nodeValue != null) {
-                    PropertyValue pv = AbstractNodePropertyKey.getPropertyValueFromNodeValue(nodeValue);
-                    keysToValues.put(AbstractNodePropertyKey, pv);
+                    abstractNodePropertyKey.setValue(nodeValue);
+                } else {
+                    abstractNodePropertyKey.setEmpty();
                 }
             }
         }
-
-        return keysToValues;
     }
 }

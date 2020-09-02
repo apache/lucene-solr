@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Factory used by the plugin to create property keys to request property values from Solr.<p>
+ * Factory used by the plugin to create property keys to request fetching data from Solr.<p>
  *
  * Building of a {@link PropertyKey} requires specifying the target (context) from which the value of that key should be
  * obtained. This is done by specifying the appropriate {@link PropertyValueSource}.<br>
@@ -31,35 +31,36 @@ import java.util.Set;
 public interface PropertyKeyFactory {
   /**
    * Returns a property key to request the number of cores on a {@link Node}.
-   * Corresponding value is {@link PropertyValue.CoresCount}.
    */
-  PropertyKey createCoreCountKey(Node node);
+  PropertyKey.CoresCount createCoreCountKey(Node node);
 
   /**
    * Returns a property key to query the disk type on a {@link Node}.
-   * Corresponding {@link PropertyValue} is of type {@link PropertyValue.DiskType}.
    */
-  PropertyKey createDiskTypeKey(Node node);
+  PropertyKey.DiskType createDiskTypeKey(Node node);
 
   /**
    * Returns a property key to query the disk free size on a {@link Node}.
-   * Corresponding {@link PropertyValue} is of type {@link PropertyValue.FreeDisk}.
    */
-  PropertyKey createFreeDiskKey(Node node);
+  PropertyKey.FreeDisk createFreeDiskKey(Node node);
 
   /**
    * Returns a property key to query the total disk sizes on a {@link Node}.
-   * Corresponding {@link PropertyValue} is of type {@link PropertyValue.TotalDisk}.
    */
-  PropertyKey createTotalDiskKey(Node node);
+  PropertyKey.TotalDisk createTotalDiskKey(Node node);
+
+  /**
+   * Returns a property key to access heap usage data on a {@link Node}.
+   */
+  PropertyKey.HeapUsage createHeapUsageKey(Node node);
+
 
   /**
    * Returns a property key to request the value of a sysprop (a.k.a. system property) on a {@link Node}.
    * A system property can be passed to {@code java} using the {@code -DpropertyName=value} parameter.
-   * Corresponding {@link PropertyValue} is of type {@link PropertyValue.Sysprop}.
    * @param syspropName the name of the system property to retrieve.
    */
-  PropertyKey createSyspropKey(Node node, String syspropName);
+  PropertyKey.Sysprop createSyspropKey(Node node, String syspropName);
 
   /**
    * Calls {@link #createSyspropKey} for all nodes and returns a map from each node to corresponding {@link PropertyKey}.
@@ -67,11 +68,9 @@ public interface PropertyKeyFactory {
   Map<Node, PropertyKey> createSyspropKeys(Set<Node> nodes, String syspropName);
 
   /**
-   * Returns a property key to request the value of a {@link Node} metric. Corresponding {@link PropertyValue}'s are similar
-   * to those of {@link #createMetricKey(PropertyValueSource, String)}.
-   * Corresponding {@link PropertyValue} is of type {@link PropertyValue.Metric}.
+   * Returns a property key to get a {@link Node} metric.
    */
-  PropertyKey createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry);
+  PropertyKey.Metric createMetricKey(Node nodeMetricSource, String metricName, NodeMetricRegistry registry);
 
   /**
    * Registry options when requesting a {@link Node} metric using {@link #createMetricKey(Node, String, NodeMetricRegistry)}.
@@ -83,24 +82,17 @@ public interface PropertyKeyFactory {
 
   /**
    * Returns a property key to access system load data on a {@link Node}.
-   * Corresponding {@link PropertyValue} is of type {@link PropertyValue.SystemLoad}.
    */
-  PropertyKey createSystemLoadKey(Node node);
+  PropertyKey.SystemLoad createSystemLoadKey(Node node);
 
 
   /**
-   * Returns a property key to access heap usage data on a {@link Node}.
-   * Corresponding {@link PropertyValue} is of type {@link PropertyValue.HeapUsage}.
-   */
-  PropertyKey createHeapUsageKey(Node node);
-
-  /**
-   * <p>Returns a property key to request the value of a metric.
+   * <p>Returns a property key to request the value of a metric that is not {@link Node} related (for {@link Node} metrics
+   * use {@link #createMetricKey(Node, String, NodeMetricRegistry)}.
    *
    * <p>Not all metrics make sense everywhere, but metrics can be applied to different objects. For example
    * <code>SEARCHER.searcher.indexCommitSize</code> would make sense for a given replica of a given shard of a given collection,
    * and possibly in other contexts.
-   * Corresponding {@link PropertyValue} is of type {@link PropertyValue.Metric}.
    *
    * <p>TODO: implementation note (to remove) SolrInfoBean.Group can be inferred from metricSource representing replica, shard, collection.
    *
@@ -110,5 +102,5 @@ public interface PropertyKeyFactory {
    *                     for {@link Node} metrics.
    * @param metricName for example <code>SEARCHER.searcher.indexCommitSize</code>.
    */
-  PropertyKey createMetricKey(PropertyValueSource metricSource, String metricName);
+  PropertyKey.Metric createMetricKey(PropertyValueSource metricSource, String metricName);
 }

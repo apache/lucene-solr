@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import com.google.common.base.Preconditions;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
@@ -40,7 +41,6 @@ abstract class AbstractNodePropertyKey implements PropertyKey {
     this.snitchTag = snitchTag;
   }
 
-  @Override
   public Node getPropertyValueSource() {
     return node;
   }
@@ -48,9 +48,10 @@ abstract class AbstractNodePropertyKey implements PropertyKey {
   /**
    * @return the tag corresponding to this instance of {@link PropertyKey} that can be used to fetch the value from a
    * {@link org.apache.solr.cluster.placement.Node} using {@link org.apache.solr.client.solrj.cloud.NodeStateProvider#getNodeValues(String, Collection)}.
-   * It is a design decision to do a 1:1 correspondence between {@link PropertyKey} and snitches so that each returned
-   * {@link org.apache.solr.cluster.placement.PropertyValue} is complete (if it were to be assembled from multiple snitches
-   * we'd have to deal with some snitches being returned and some not).
+   *
+   * If ever the design is changed so {@link PropertyKey}'s can serve different values (for example free disk and total
+   * disk in single {@link PropertyKey} as opposed to two), we could be returning multiple tags here and later when doing
+   * the resolution set those of the values that were received (given all values are returned in {@link Optional}, this is possible).
    */
   public String getNodeSnitchTag() {
     return snitchTag;
@@ -58,58 +59,143 @@ abstract class AbstractNodePropertyKey implements PropertyKey {
 
   /**
    * Given the object returned by {@link org.apache.solr.client.solrj.cloud.NodeStateProvider#getNodeValues(String, Collection)}
-   * for the tag {@link #getNodeSnitchTag()}, builds the appropriate {@link PropertyValue} representing that value.
+   * for the tag {@link #getNodeSnitchTag()}, casts appropriately and sets the optional value on the key returned by the
+   * key specific value getter methods.
    *
    * @param nodeValue the value to convert. Is never {@code null}.
    */
-  abstract PropertyValue getPropertyValueFromNodeValue(Object nodeValue);
+  abstract void setValue(final Object nodeValue);
+  abstract void setEmpty();
 
 
-  static class CoreCountImpl extends AbstractNodePropertyKey {
+  static class CoreCountImpl extends AbstractNodePropertyKey implements PropertyKey.CoresCount {
+    Optional<Integer> coresCount = Optional.empty();
+
     public CoreCountImpl(Node node) {
       super(node, ImplicitSnitch.CORES);
     }
 
     @Override
-    PropertyValue.CoresCount getPropertyValueFromNodeValue(final Object nodeValue) {
-      return new AbstractPropertyValue.CoresCountImpl(this, nodeValue);
+    void setEmpty() {
+      coresCount = Optional.empty();
+    }
+
+    @Override
+    void setValue(Object nodeValue) {
+      coresCount = Optional.of(((Number) nodeValue).intValue());
+    }
+
+    @Override
+    public Optional<Integer> getCoresCount() {
+      return coresCount;
     }
   }
 
-  static class DiskTypeImpl extends AbstractNodePropertyKey {
+
+  static class DiskTypeImpl extends AbstractNodePropertyKey implements PropertyKey.DiskType {
+    Optional<DiskType.HardwareType> hardwareType = Optional.empty();
+
     public DiskTypeImpl(Node node) {
       super(node, ImplicitSnitch.DISKTYPE);
     }
 
     @Override
-    PropertyValue.DiskType getPropertyValueFromNodeValue(Object nodeValue) {
-      return new AbstractPropertyValue.DiskTypeImpl(this, nodeValue);
-    }
-  }
-
-  static class FreeDiskImpl extends AbstractNodePropertyKey {
-    public FreeDiskImpl(Node node) {
-      super(node, ImplicitSnitch.DISK);
+    void setEmpty() {
+      hardwareType = Optional.empty();
     }
 
     @Override
-    PropertyValue.FreeDisk getPropertyValueFromNodeValue(Object nodeValue) {
-      return new AbstractPropertyValue.FreeDiskImpl(this, nodeValue);
+    void setValue(Object nodeValue) {
+      if ("rotational".equals(nodeValue)) {
+        hardwareType = Optional.of(HardwareType.ROTATIONAL);
+      } else if ("ssd".equals(nodeValue)) {
+        hardwareType = Optional.of(HardwareType.SSD);
+      } else {
+        setEmpty();
+      }
+    }
+
+    @Override
+    public Optional<HardwareType> getHardwareType() {
+      return hardwareType;
     }
   }
 
-  static class HeapUsageImpl extends AbstractNodePropertyKey {
+
+  static class TotalDiskImpl extends AbstractNodePropertyKey implements PropertyKey.TotalDisk {
+    Optional<Long> totalDiskSize = Optional.empty();
+
+    public TotalDiskImpl(Node node) {
+      super(node, SolrClientNodeStateProvider.Variable.TOTALDISK.tagName);
+    }
+
+    @Override
+    void setEmpty() {
+      totalDiskSize = Optional.empty();
+    }
+
+    @Override
+    void setValue(final Object nodeValue) {
+      totalDiskSize = Optional.of(((Number) nodeValue).longValue());
+    }
+
+    @Override
+    public Optional<Long> getTotalSizeGB() {
+      return totalDiskSize;
+    }
+  }
+
+
+  static class FreeDiskImpl extends AbstractNodePropertyKey implements PropertyKey.FreeDisk {
+    Optional<Long> freeDiskSize = Optional.empty();
+
+    public FreeDiskImpl(Node node) {
+      super(node, SolrClientNodeStateProvider.Variable.FREEDISK.tagName);
+    }
+
+    @Override
+    void setEmpty() {
+      freeDiskSize = Optional.empty();
+    }
+
+    @Override
+    void setValue(final Object nodeValue) {
+      freeDiskSize = Optional.of(((Number) nodeValue).longValue());
+    }
+
+    @Override
+    public Optional<Long> getFreeSizeGB() {
+      return freeDiskSize;
+    }
+  }
+
+
+  static class HeapUsageImpl extends AbstractNodePropertyKey implements HeapUsage {
+    Optional<Double> heapUsage = Optional.empty();
+
     public HeapUsageImpl(Node node) {
       super(node, ImplicitSnitch.HEAPUSAGE);
     }
 
     @Override
-    PropertyValue.HeapUsage getPropertyValueFromNodeValue(Object nodeValue) {
-      return new AbstractPropertyValue.HeapUsageImpl(this, nodeValue);
+    void setEmpty() {
+      heapUsage = Optional.empty();
+    }
+
+    @Override
+    void setValue(Object nodeValue) {
+      heapUsage = Optional.of(((Number) nodeValue).doubleValue());
+    }
+
+    @Override
+    public Optional<Double> getUsedHeapMemoryUsage() {
+      return heapUsage;
     }
   }
 
-  static class NodeMetricImpl extends AbstractNodePropertyKey {
+  static class NodeMetricImpl extends AbstractNodePropertyKey implements Metric {
+    Optional<Double> metricValue = Optional.empty();
+
     public NodeMetricImpl(Node nodeMetricSource, String metricName, PropertyKeyFactory.NodeMetricRegistry registry) {
       super(nodeMetricSource, SolrClientNodeStateProvider.METRICS_PREFIX + SolrMetricManager.getRegistryName(getGroupFromRegistry(registry), metricName));
     }
@@ -126,41 +212,63 @@ abstract class AbstractNodePropertyKey implements PropertyKey {
     }
 
     @Override
-    PropertyValue.Metric getPropertyValueFromNodeValue(Object nodeValue) {
-      return new AbstractPropertyValue.MetricImpl(this, nodeValue);
+    void setEmpty() {
+      metricValue = Optional.empty();
+    }
+
+    @Override
+    void setValue(final Object nodeValue) {
+      metricValue = Optional.of(((Number) nodeValue).doubleValue());
+    }
+
+    @Override
+    public Optional<Double> getNumberValue() {
+      return metricValue;
     }
   }
 
-  static class SyspropImpl extends AbstractNodePropertyKey {
+  static class SyspropImpl extends AbstractNodePropertyKey implements Sysprop {
+    Optional<String> systemProperty = Optional.empty();
     public SyspropImpl(Node node, String syspropName) {
       super(node, ImplicitSnitch.SYSPROP + syspropName);
     }
 
     @Override
-    PropertyValue.Sysprop getPropertyValueFromNodeValue(Object nodeValue) {
-      return new AbstractPropertyValue.SyspropImpl(this, nodeValue);
+    void setEmpty() {
+      systemProperty = Optional.empty();
+    }
+
+    @Override
+    void setValue(final Object nodeValue) {
+      systemProperty = Optional.of((String) nodeValue);
+    }
+
+    @Override
+    public Optional<String> getSystemPropertyValue() {
+      return systemProperty;
     }
   }
 
-  static class SystemLoadImpl extends AbstractNodePropertyKey {
+  static class SystemLoadImpl extends AbstractNodePropertyKey implements SystemLoad {
+    Optional<Double> systemLoadAverage = Optional.empty();
+
     public SystemLoadImpl(Node node) {
       super(node, ImplicitSnitch.SYSLOADAVG);
     }
 
     @Override
-    PropertyValue.SystemLoad getPropertyValueFromNodeValue(Object nodeValue) {
-      return new AbstractPropertyValue.SystemLoadImpl(this, nodeValue);
-    }
-  }
-
-  static class TotalDiskImpl extends AbstractNodePropertyKey {
-    public TotalDiskImpl(Node node) {
-      super(node, SolrClientNodeStateProvider.Variable.TOTALDISK.tagName);
+    void setEmpty() {
+      systemLoadAverage = Optional.empty();
     }
 
     @Override
-    public PropertyValue.TotalDisk getPropertyValueFromNodeValue(Object nodeValue) {
-      return new AbstractPropertyValue.TotalDiskImpl(this, nodeValue);
+    void setValue(final Object nodeValue) {
+      systemLoadAverage = Optional.of(((Number) nodeValue).doubleValue());
+    }
+
+    @Override
+    public Optional<Double> getSystemLoadAverage() {
+      return systemLoadAverage;
     }
   }
 }
@@ -168,7 +276,7 @@ abstract class AbstractNodePropertyKey implements PropertyKey {
 /**
  * This class (as its name implies) is not a {@link Node} metric. Therefore it doesn't extend {@link AbstractNodePropertyKey}.
  */
-class NonNodeMetricKeyImpl implements PropertyKey {
+class NonNodeMetricKeyImpl implements PropertyKey.Metric {
   private final String metricName;
   private final PropertyValueSource metricSource;
 
@@ -179,7 +287,7 @@ class NonNodeMetricKeyImpl implements PropertyKey {
   }
 
   @Override
-  public PropertyValueSource getPropertyValueSource() {
-    return metricSource;
+  public Optional<Double> getNumberValue() {
+    throw new UnsupportedOperationException("Non node metrics not yet implemented");
   }
 }

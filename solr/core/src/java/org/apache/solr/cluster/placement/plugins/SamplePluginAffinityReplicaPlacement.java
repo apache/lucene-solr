@@ -17,7 +17,6 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
 import org.apache.solr.cluster.placement.*;
@@ -83,7 +82,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
 
   /**
    * <p>Name of the system property on a node indicating the type of replicas allowed on that node.
-   * That system property value is a comma separated list or a single string from {@link #TYPE_TLOG},
+   * The value of that system property is a comma separated list or a single string from {@link #TYPE_TLOG},
    * {@link #TYPE_TLOG} and {@link #TYPE_TLOG}. If that property is not defined, that node is considered accepting
    * all replica types (i.e. undefined is equivalent to {@code "tlog,pull,tlog"}).
    */
@@ -145,15 +144,13 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
     // Get the number of cores on each node and sort the nodes by increasing number of cores
     for (Node node : cluster.getLiveNodes()) {
       // TODO: redo this. It is potentially less efficient to call propertyFetcher.getProperties() multiple times rather than once
-      final PropertyKey coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
-      Map<PropertyKey, PropertyValue> propMap = propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey)); // ISSUE HERE property not returned - DEBUG once/if this PR is deemed ok for merging
-      PropertyValue returnedValue = propMap.get(coresCountPropertyKey);
+      final PropertyKey.CoresCount coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
+      propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey)); // ISSUE HERE property not fetched - DEBUG once/if this PR is deemed ok for merging
 
-      if (returnedValue == null) {
+      if (coresCountPropertyKey.getCoresCount().isEmpty()) {
         throw new PlacementException("Can't get number of cores in " + node);
       }
-      PropertyValue.CoresCount coresCountPropertyValue = (PropertyValue.CoresCount) returnedValue;
-      nodesByCores.put(coresCountPropertyValue.getCoresCount(), node);
+      nodesByCores.put(coresCountPropertyKey.getCoresCount().get(), node);
     }
 
     Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * reqAddReplicas.getShardNames().size());

@@ -36,7 +36,6 @@ import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.PropertyKey;
 import org.apache.solr.cluster.placement.PropertyKeyFactory;
-import org.apache.solr.cluster.placement.PropertyValue;
 import org.apache.solr.cluster.placement.PropertyValueFetcher;
 import org.apache.solr.cluster.placement.Replica;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
@@ -97,15 +96,13 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
     // Get the number of cores on each node and sort the nodes by increasing number of cores
     for (Node node : cluster.getLiveNodes()) {
       // TODO: redo this. It is potentially less efficient to call propertyFetcher.getProperties() multiple times rather than once
-      final PropertyKey coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
-      Map<PropertyKey, PropertyValue> propMap = propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey)); // ISSUE HERE property not returned - DEBUG once/if this PR is deemed ok for merging
-      PropertyValue returnedValue = propMap.get(coresCountPropertyKey);
+      final PropertyKey.CoresCount coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
+      propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey)); // ISSUE HERE property not set - DEBUG once/if this PR is deemed ok for merging
 
-      if (returnedValue == null) {
+      if (coresCountPropertyKey.getCoresCount().isEmpty()) {
         throw new PlacementException("Can't get number of cores in " + node);
       }
-      PropertyValue.CoresCount coresCountPropertyValue = (PropertyValue.CoresCount) returnedValue;
-      nodesByCores.put(coresCountPropertyValue.getCoresCount(), node);
+      nodesByCores.put(coresCountPropertyKey.getCoresCount().get(), node);
     }
 
     Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * reqAddReplicas.getShardNames().size());

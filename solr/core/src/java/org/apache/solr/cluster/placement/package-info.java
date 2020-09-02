@@ -34,7 +34,7 @@
  *   <li>Can obtain more info using {@link org.apache.solr.cluster.placement.PropertyKey}'s built using
  *   {@link org.apache.solr.cluster.placement.PropertyKeyFactory} then passed to
  *   {@link org.apache.solr.cluster.placement.PropertyValueFetcher},</li>
- *   <li>Uses the returned {@link org.apache.solr.cluster.placement.PropertyValue}'s as well as cluster state and
+ *   <li>Uses the values from the {@link org.apache.solr.cluster.placement.PropertyKey}'s as well as cluster state and
  *   {@link org.apache.solr.cluster.placement.SolrCollection#getCustomProperty} and other data to compute placement,</li>
  *   <li>Placement decisions are returned to Solr using an instance of {@link org.apache.solr.cluster.placement.PlacementPlan}
  *   built using the {@link org.apache.solr.cluster.placement.PlacementPlanFactory}</li>

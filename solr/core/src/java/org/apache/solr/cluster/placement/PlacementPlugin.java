@@ -41,7 +41,7 @@ public interface PlacementPlugin {
    * @param placementRequest request for placing new replicas or moving existing replicas on the cluster.
    * @param propertyFactory Factory used by the plugin to build instances of {@link PropertyKey} to resolve properties
    *                        to their values.
-   * @param propertyFetcher Allows resolving {@link PropertyKey}'s to {@link PropertyValue}'s by contacting the
+   * @param propertyFetcher Allows fetching values for {@link PropertyKey}'s by contacting the
    *                        relevant {@link PropertyValueSource} defined in each {@link PropertyKey}.
    * @param placementPlanFactory Factory used to create instances of {@link PlacementPlan} to return computed decision.
    * @return plan satisfying the placement request.

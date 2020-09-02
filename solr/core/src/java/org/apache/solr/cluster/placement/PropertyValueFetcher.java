@@ -17,17 +17,13 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.Map;
 import java.util.Set;
 
 public interface PropertyValueFetcher {
   /**
-   * Retrieves {@link PropertyValue}s from the configured {@link PropertyValueSource}s of passed in {@link PropertyKey}s
-   * and returns those that are defined.
+   * Fetched values from the various sources {@link PropertyValueSource}s in the {@link PropertyKey}s
+   * and sets those values on the keys.
    * @param props the properties to retrieve. Can't be {@code null} but can be empty.
-   * @return a map whose keys are the requested property keys and the values are the requested property values, when such
-   *    values are defined on the corresponding {@link PropertyValueSource}. If there's no value for a given key, it will
-   *    not appear in the returned map. The returned value will never be {@code null} but may be an empty map.
    */
-  Map<PropertyKey, PropertyValue> fetchProperties(Set<PropertyKey> props);
+  void fetchProperties(Set<PropertyKey> props);
 }

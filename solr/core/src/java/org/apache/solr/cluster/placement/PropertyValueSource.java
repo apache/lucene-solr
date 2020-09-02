@@ -18,7 +18,7 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * <p>Getting the {@link PropertyValue} for a {@link PropertyKey} involves a "resolution" of that key in a certain context.
+ * <p>Getting the value for a {@link PropertyKey} involves a "resolution" of that key in a certain context.
  * Depending on the type of the key, the context can be the whole {@link Cluster}, a {@link Node}, a {@link SolrCollection},
  * a {@link Shard} or a {@link Replica}. Not all {@link PropertyKey}'s make sense for all {@link PropertyValueSource}'s of course.
  *

@@ -17,17 +17,83 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Optional;
+import java.util.Set;
+
 /**
  * <p>A property key used by plugins to request values from Solr. Instances must be obtained using {@link PropertyKeyFactory}.
  *
- * <p>Instances of classes implementing this interface will be used as keys in a map (see {@link PropertyValueFetcher#fetchProperties}
- * but given the usage pattern (pass {@link PropertyKey} instances to the method then look up {@link PropertyValue}'s in
- * the returned map), the default implementation of {@link Object#equals} is sufficient.
+ * <p>Once the properties are fetched using {@link PropertyValueFetcher#fetchProperties(Set)}, the specific getter of
+ * each key allows retrieving the corresponding value if available.
  */
 public interface PropertyKey {
-  /**
-   * @return the target of this {@link PropertyKey}, i.e. from where the corresponding {@link PropertyValue}'s should be
-   * (or were) obtained. The target of a {@link PropertyKey} is the source of its {@link PropertyValue}...
-   */
-  PropertyValueSource getPropertyValueSource();
+    /**
+     *  Instances are obtained by first getting a key using {@link PropertyKeyFactory#createCoreCountKey} then calling
+     *  {@link PropertyValueFetcher#fetchProperties} and only then accessing {@link #getCoresCount()}.
+     */
+    interface CoresCount extends PropertyKey {
+        /**
+         * Returns the number of cores on the {@link Node}) passed to {@link PropertyKeyFactory#createCoreCountKey(Node)}
+         * once properties got fetched using {@link PropertyValueFetcher#fetchProperties(Set)}.
+         * @return an optional containing the number of cores on the node or {@link Optional#empty()} if either key not
+         * yet fetched or if value was not available.
+         */
+        Optional<Integer> getCoresCount();
+    }
+
+    interface DiskType extends PropertyKey {
+        /**
+         * Type of storage hardware used for the partition on which cores are stored on the {@link Node}) from which this instance
+         * was obtained (i.e. instance passed to {@link PropertyKeyFactory#createDiskTypeKey(Node)}).
+         */
+        Optional<DiskType.HardwareType> getHardwareType();
+
+        enum HardwareType {
+            SSD, ROTATIONAL
+        }
+    }
+
+    interface TotalDisk extends PropertyKey {
+        /**
+         * Total disk size of the partition on which cores are stored on the {@link Node}) from which this instance was obtained
+         * (i.e. instance passed to {@link PropertyKeyFactory#createTotalDiskKey(Node)}).
+         */
+        Optional<Long> getTotalSizeGB();
+    }
+
+    interface FreeDisk extends PropertyKey {
+        /**
+         * Free disk size of the partition on which cores are stored on the {@link Node}) from which this instance was obtained
+         *  (i.e. instance passed to {@link PropertyKeyFactory#createDiskTypeKey(Node)}).
+         */
+        Optional<Long> getFreeSizeGB();
+    }
+
+    interface HeapUsage extends PropertyKey {
+        /**
+         * Percentage between 0 and 100 of used heap over max heap.
+         */
+        Optional<Double> getUsedHeapMemoryUsage();
+    }
+
+    interface Metric extends PropertyKey {
+        /**
+         * Returns the metric value from the {@link PropertyValueSource} from which it was retrieved.
+         */
+        Optional<Double> getNumberValue();
+    }
+
+    interface Sysprop extends PropertyKey {
+        /**
+         * Returns the system property from the target {@link Node} from which it was retrieved.
+         */
+        Optional<String> getSystemPropertyValue();
+    }
+
+    interface SystemLoad extends PropertyKey {
+        /**
+         * Matches {@link java.lang.management.OperatingSystemMXBean#getSystemLoadAverage()}
+         */
+        Optional<Double> getSystemLoadAverage();
+    }
 }
