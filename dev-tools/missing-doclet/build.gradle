@@ -15,8 +15,18 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
+plugins {
+  id 'java-library'
+}
 
 version = "1.0.0-SNAPSHOT"
 group = "org.apache.lucene.tools"
-description = 'Doclet-based javadoc validation.'
+description = 'Doclet-based javadoc validation'
+
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+
+tasks.withType(JavaCompile) {
+  options.compilerArgs += ["--release", targetCompatibility.toString()]
+  options.encoding = "UTF-8"
+}
