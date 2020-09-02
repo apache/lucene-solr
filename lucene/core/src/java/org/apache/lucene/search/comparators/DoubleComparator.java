@@ -58,7 +58,9 @@ public class DoubleComparator extends NumericComparator<Double> {
         return new DoubleLeafComparator(context);
     }
 
-
+    /**
+     * Leaf comparator for {@link DoubleComparator} that provides skipping functionality
+     */
     public class DoubleLeafComparator extends NumericLeafComparator {
 
         public DoubleLeafComparator(LeafReaderContext context) throws IOException {

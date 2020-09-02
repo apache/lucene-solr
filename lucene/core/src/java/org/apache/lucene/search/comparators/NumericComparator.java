@@ -65,6 +65,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         singleSort = true;
     }
 
+    /**
+     * Leaf comparator for {@link NumericComparator} that provides skipping functionality
+     */
     public abstract class NumericLeafComparator implements LeafFieldComparator {
         protected final NumericDocValues docValues;
         private final PointValues pointValues;

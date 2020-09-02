@@ -58,7 +58,9 @@ public class LongComparator extends NumericComparator<Long> {
         return new LongLeafComparator(context);
     }
 
-
+    /**
+     * Leaf comparator for {@link LongComparator} that provides skipping functionality
+     */
     public class LongLeafComparator extends NumericLeafComparator {
 
         public LongLeafComparator(LeafReaderContext context) throws IOException {

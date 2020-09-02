@@ -58,7 +58,9 @@ public class IntComparator extends NumericComparator<Integer> {
         return new IntLeafComparator(context);
     }
 
-
+    /**
+     * Leaf comparator for {@link IntComparator} that provides skipping functionality
+     */
     public class IntLeafComparator extends NumericLeafComparator {
 
         public IntLeafComparator(LeafReaderContext context) throws IOException {

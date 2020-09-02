@@ -58,7 +58,9 @@ public class FloatComparator extends NumericComparator<Float> {
         return new FloatLeafComparator(context);
     }
 
-
+    /**
+     * Leaf comparator for {@link FloatComparator} that provides skipping functionality
+     */
     public class FloatLeafComparator extends NumericLeafComparator {
 
         public FloatLeafComparator(LeafReaderContext context) throws IOException {
