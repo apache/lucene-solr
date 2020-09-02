@@ -1448,6 +1448,10 @@ public class ZkController implements Closeable {
     return zkClient.exists(path);
   }
 
+  public void registerUnloadWatcher(String collection, String shardId, String coreNodeName, String name) {
+    zkStateReader.registerDocCollectionWatcher(collection,
+        new UnloadCoreOnDeletedWatcher(coreNodeName, shardId, name));
+  }
 
   /**
    * Register shard with ZooKeeper.
@@ -2111,12 +2115,6 @@ public class ZkController implements Closeable {
     CloudDescriptor cloudDesc = cd.getCloudDescriptor();
 
     String coreNodeName = getCoreNodeName(cd);
-
-    // the watcher is added to a set so multiple calls of this method will left only one watcher
-    zkStateReader.registerCore(cloudDesc.getCollectionName());
-    // the watcher is added to a set so multiple calls of this method will left only one watcher
-    zkStateReader.registerDocCollectionWatcher(cloudDesc.getCollectionName(),
-        new UnloadCoreOnDeletedWatcher(coreNodeName, cloudDesc.getShardId(), cd.getName()));
 
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
@@ -2785,7 +2783,7 @@ public class ZkController implements Closeable {
   }
 
   /** @lucene.internal */
-  class UnloadCoreOnDeletedWatcher implements DocCollectionWatcher {
+  public class UnloadCoreOnDeletedWatcher implements DocCollectionWatcher {
     String coreNodeName;
     String shard;
     String coreName;

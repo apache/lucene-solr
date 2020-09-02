@@ -79,6 +79,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -1082,6 +1083,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       if (coreContainer.isZooKeeperAware()) {
         // make sure we see our shard first - these tries to cover a surprising race where we don't find our shard in the clusterstate
         // in the below bufferUpdatesIfConstructing call
+        // make sure we don't stop watching our own collection after a collection delete -> create
+        CloudDescriptor cloudDesc = coreDescriptor.getCloudDescriptor();
+        // the watcher is added to a set so multiple calls of this method will left only one watcher
+        coreContainer.getZkController().getZkStateReader().registerCore(cloudDesc.getCollectionName());
+        // the watcher is added to a set so multiple calls of this method will left only one watcher
+        coreContainer.getZkController().registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), cloudDesc.getCoreNodeName(), cd.getName());
+
         coreContainer.getZkController().getZkStateReader().waitForState(coreDescriptor.getCollectionName(),
             5, TimeUnit.SECONDS, (l,c) -> c != null && c.getSlice(coreDescriptor.getCloudDescriptor().getShardId()) != null);
       }
@@ -1433,12 +1441,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       factory = resourceLoader.newInstance(info.className, CodecFactory.class, Utils.getSolrSubPackage(CodecFactory.class.getPackageName()));
       factory.init(info.initArgs);
     } else {
-      factory = new CodecFactory() {
-        @Override
-        public Codec getCodec() {
-          return Codec.getDefault();
-        }
-      };
+      factory = new MyCodecFactory();
     }
     if (factory instanceof SolrCoreAware) {
       // CodecFactory needs SolrCore before inform() is called on all registered
@@ -3349,6 +3352,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               + core.getName() + " dir:" + desc.getInstanceDir());
         }
       }
+    }
+  }
+
+  private static class MyCodecFactory extends CodecFactory {
+    @Override
+    public Codec getCodec() {
+      return Codec.getDefault();
     }
   }
 }
