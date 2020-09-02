@@ -282,7 +282,11 @@ public final class PagedBytes implements Accountable {
     return pointer;
   }
 
-  private final class PagedBytesDataInput extends DataInput {
+  /**
+   * Input that transparently iterates over pages
+   * @lucene.internal
+   */
+  public final class PagedBytesDataInput extends DataInput {
     private int currentBlockIndex;
     private int currentBlockUpto;
     private byte[] currentBlock;
@@ -350,7 +354,11 @@ public final class PagedBytes implements Accountable {
     }
   }
 
-  private final class PagedBytesDataOutput extends DataOutput {
+  /**
+   * Output that transparently spills to new pages as necessary
+   * @lucene.internal
+   */
+  public final class PagedBytesDataOutput extends DataOutput {
     @Override
     public void writeByte(byte b) {
       if (upto == blockSize) {

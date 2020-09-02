@@ -53,7 +53,11 @@ public class FunctionQuery extends Query {
     return func;
   }
 
-  private class FunctionWeight extends Weight {
+  /**
+   * Creates FunctionQuery scorer instances
+   * @lucene.internal
+   */
+  protected class FunctionWeight extends Weight {
     protected final IndexSearcher searcher;
     protected final float boost;
     protected final Map<Object, Object> context;
@@ -87,7 +91,11 @@ public class FunctionQuery extends Query {
     visitor.visitLeaf(this);
   }
 
-  private class AllScorer extends Scorer {
+  /**
+   * Scores all documents, applying the function to each document
+   * @lucene.internal
+   */
+  protected class AllScorer extends Scorer {
     final IndexReader reader;
     final FunctionWeight weight;
     final int maxDoc;
