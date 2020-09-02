@@ -60,6 +60,9 @@ Optimizations
 
 * SOLR-13438: On deleting a collection, its config set will also be deleted iff it has been auto-created, and not used by any other collection (Anderson Dorow)
 
+* SOLR-14422: Admin UI shows Angular placeholders on first load / refresh.  (Colvin Cowie via Eric Pugh)
+
+
 Bug Fixes
 ---------------------
 
