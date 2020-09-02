@@ -911,7 +911,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   protected List<SolrCmdDistributor.Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica) {
-    log.info("leader is {}", leaderReplica.getName());
+    if (log.isDebugEnabled()) log.debug("leader is {}", leaderReplica.getName());
     String leaderCoreNodeName = leaderReplica.getName();
     List<Replica> replicas = clusterState.getCollection(collection)
         .getSlice(shardId)
