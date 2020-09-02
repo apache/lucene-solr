@@ -74,7 +74,7 @@ Specifies which fieldType should be used to analyze the incoming text. For examp
 </fieldType>
 ----
 
-For example, to unescape only non-alphanumeric, the pattern could be `"\\([^\p{IsAlphabetic}\p{Digit}])"`.
+For example, to unescape only non-alphanumeric, the pattern could be `\\([^\p{IsAlphabetic}\p{Digit}])`.
 
 `config-file`::
 Path to the file that defines query elevation. This file must exist in `<instanceDir>/conf/<config-file>` or `<dataDir>/<config-file>`. If the file exists in the `conf/` directory it will be loaded once at startup. If it exists in the `data/` directory, it will be reloaded for each IndexReader.
