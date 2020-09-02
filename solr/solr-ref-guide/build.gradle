@@ -125,9 +125,7 @@ ext {
     solrDocsVersion = "${version}".replaceAll(/^(\d+\.\d+)(|\..*)$/, "\$1")
     solrDocsVersionPath = "${solrDocsVersion}".replaceAll(/^(\d+)\.(\d+)$/, "\$1_\$2_0")
 
-    if (!project.hasProperty("solrGuideVersion")) {
-        solrGuideVersion = "${solrDocsVersion}-DRAFT"
-    }
+    solrGuideVersion = propertyOrDefault("solrGuideVersion", "${solrDocsVersion}-DRAFT")
 
     solrRootPath = '../../../../solr/'
     solrGuideDraftStatus = solrGuideVersion.matches(/^\d+\.\d+(|\.\d+)$/) ? "" : "DRAFT"
