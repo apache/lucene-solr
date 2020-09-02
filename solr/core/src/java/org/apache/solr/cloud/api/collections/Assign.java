@@ -128,7 +128,7 @@ public class Assign {
     if (collection.getSlice(shard) != null && collection.getSlice(shard).getReplicas().isEmpty()) {
       return REPLICA_CNT.incrementAndGet();
     } else {
-      defaultValue = collection.getReplicas().size() + REPLICA_CNT.incrementAndGet();
+      defaultValue = collection.getReplicas().size() + REPLICA_CNT.incrementAndGet() * 2;
     }
 
     return defaultValue;
