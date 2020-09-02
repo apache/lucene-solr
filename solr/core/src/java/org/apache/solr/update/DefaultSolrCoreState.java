@@ -347,7 +347,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           recoveryWaiting.incrementAndGet();
           cancelRecovery();
 
-          recoveryLock.lock();
+          recoveryLock.lockInterruptibly();
           // don't use recoveryLock.getQueueLength() for this
           if (recoveryWaiting.decrementAndGet() > 0) {
             // another recovery waiting behind us, let it run now instead of after we finish
@@ -375,6 +375,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
           recoveryStrat.run();
 
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
         } finally {
           if (locked) recoveryLock.unlock();
         }
