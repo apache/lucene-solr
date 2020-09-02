@@ -16,6 +16,17 @@
  */
 package org.apache.solr.client.solrj;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
@@ -29,7 +40,6 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -39,20 +49,9 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test for LBHttpSolrClient
@@ -64,7 +63,6 @@ import java.util.concurrent.TimeUnit;
     SolrIgnoredThreadsFilter.class,
     QuickPatchThreadsFilter.class
 })
-@Ignore // nocommit debug - can hang
 public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -182,6 +180,8 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  @Nightly // very slow ~ not sure if this is by design ...
   public void testTwoServers() throws Exception {
     try (LBHttp2SolrClient client = getLBHttpSolrClient(solr[0].getUrl(), solr[1].getUrl())) {
       client.setAliveCheckInterval(50);

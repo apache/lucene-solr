@@ -856,7 +856,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  //@Ignore // nocommit ~ possible regression
   public void testRetryUpdatesWhenClusterStateIsStale() throws Exception {
     final String COL = "stale_state_test_col";
     assert cluster.getJettySolrRunners().size() >= 2;

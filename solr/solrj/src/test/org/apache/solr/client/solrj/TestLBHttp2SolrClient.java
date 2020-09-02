@@ -31,6 +31,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -61,7 +62,7 @@ import org.slf4j.LoggerFactory;
     SolrIgnoredThreadsFilter.class,
     QuickPatchThreadsFilter.class
 })
-@Ignore // nocommit this leaks a client
+@LuceneTestCase.Nightly
 public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

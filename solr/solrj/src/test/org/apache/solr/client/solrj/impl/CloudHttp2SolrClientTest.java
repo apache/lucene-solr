@@ -249,7 +249,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ still failing
   public void testRouting() throws Exception {
     createTestCollection("routing_collection", 2, 1);
 

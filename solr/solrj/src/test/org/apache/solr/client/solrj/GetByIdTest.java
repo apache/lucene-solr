@@ -28,7 +28,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit flakey leaks
+//@Ignore // nocommit flakey leaks
 public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
