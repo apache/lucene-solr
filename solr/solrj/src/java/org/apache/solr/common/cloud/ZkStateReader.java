@@ -252,7 +252,7 @@ public class ZkStateReader implements SolrCloseable {
     final Set<T> stateWatchers = ConcurrentHashMap.newKeySet();
 
     public boolean canBeRemoved() {
-      return coreRefCount.get() + stateWatchers.size() == 0;
+      return coreRefCount.get() <=0 && stateWatchers.size() <= 0;
     }
 
   }
