@@ -857,7 +857,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ possible regression
+  //@Ignore // nocommit ~ possible regression
   public void testRetryUpdatesWhenClusterStateIsStale() throws Exception {
     final String COL = "stale_state_test_col";
     assert cluster.getJettySolrRunners().size() >= 2;
@@ -897,7 +897,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
                    .setNode(new_leader_node.getNodeName())
                    // NOTE: don't use our stale_client for this -- don't tip it off of a collection change
                    .process(cluster.getSolrClient()).getStatus());
-      
+
+      cluster.waitForActiveCollection(COL, 1, 2);
+
       // ...and delete our original leader.
       assertEquals("Couldn't create collection", 0,
                    CollectionAdminRequest.deleteReplica(COL, "shard1", old_leader_core_node_name)
@@ -905,7 +907,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
                    .process(cluster.getSolrClient()).getStatus());
 
       // stale_client's collection state cache should now only point at a leader that no longer exists.
-      
+      cluster.waitForActiveCollection(COL, 1, 1);
+
       // attempt a (direct) update that should succeed in spite of cached cluster state
       // pointing solely to a node that's no longer part of our collection...
       assertEquals(0, (new UpdateRequest().add("id", "1").commit(stale_client, COL)).getStatus());

@@ -807,7 +807,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ possible regression? response doesn't contain "adds"?
   public void testVersionsAreReturned() throws Exception {
     CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1).process(cluster.getSolrClient());
     
@@ -882,7 +881,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ possible regression
   public void testRetryUpdatesWhenClusterStateIsStale() throws Exception {
     final String COL = "stale_state_test_col";
     assert cluster.getJettySolrRunners().size() >= 2;
@@ -904,10 +902,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     final String old_leader_core_node_name = slice.getLeader().getName();
 
     // NOTE: creating our own CloudSolrClient whose settings we can muck with...
-    try (CloudSolrClient stale_client = new SolrTestCaseJ4.CloudSolrClientBuilder
+    try (CloudHttp2SolrClient stale_client = new SolrTestCaseJ4.CloudHttp2SolrClientBuilder
         (Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
         .sendDirectUpdatesToAnyShardReplica()
-        .withParallelUpdates(true)
         .build()) {
       // don't let collection cache entries get expired, even on a slow machine...
       stale_client.setCollectionCacheTTl(Integer.MAX_VALUE);
@@ -931,16 +928,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                    // NOTE: don't use our stale_client for this -- don't tip it off of a collection change
                    .process(cluster.getSolrClient()).getStatus());
 
-//      Thread.currentThread().sleep(3000);
-//
-//      cluster.getZkClient().printLayout();
       cluster.waitForActiveCollection(COL, 1, 1);
       
       // attempt a (direct) update that should succeed in spite of cached cluster state
       // pointing solely to a node that's no longer part of our collection...
       assertEquals(0, (new UpdateRequest().add("id", "1").commit(stale_client, COL)).getStatus());
       assertEquals(1, stale_client.query(new SolrQuery("*:*")).getResults().getNumFound());
-      
     }
   }
   
