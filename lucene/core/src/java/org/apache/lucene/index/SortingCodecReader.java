@@ -435,7 +435,6 @@ public final class SortingCodecReader extends FilterCodecReader {
             cachedSortedSetDVs.put(field.name, ords);
           }
         }
-
         return new SortedSetDocValuesWriter.SortingSortedSetDocValues(oldDocValues, ords);
       }
 

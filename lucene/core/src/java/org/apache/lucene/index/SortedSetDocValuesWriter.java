@@ -241,7 +241,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     private int ordCount;
     private int ordUpto;
 
-    public BufferedSortedSetDocValues(int[] sortedValues, int[] ordMap, BytesRefHash hash, PackedLongValues ords, PackedLongValues ordCounts, int maxCount, DocIdSetIterator docsWithField) {
+    BufferedSortedSetDocValues(int[] sortedValues, int[] ordMap, BytesRefHash hash, PackedLongValues ords, PackedLongValues ordCounts, int maxCount, DocIdSetIterator docsWithField) {
       this.currentDoc = new int[maxCount];
       this.sortedValues = sortedValues;
       this.ordMap = ordMap;
@@ -344,21 +344,12 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
 
     @Override
     public int advance(int target) {
-      if (target >= ords.length) {
-        docID = NO_MORE_DOCS;
-      } else {
-        docID = target;
-        if (ords[docID] == null) {
-          nextDoc();
-        } else {
-          ordUpto = 0;
-        }
-      }
-      return docID;
+      throw new UnsupportedOperationException("use nextDoc instead");
     }
 
     @Override
     public boolean advanceExact(int target) throws IOException {
+      // this is used by IndexSorter#StringSorter
       docID = target;
       ordUpto = 0;
       return ords[docID] != null;

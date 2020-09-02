@@ -269,15 +269,8 @@ class SortedDocValuesWriter extends DocValuesWriter<SortedDocValues> {
 
     @Override
     public int advance(int target) {
-      if (target >= ords.length) {
-        docID = NO_MORE_DOCS;
-      } else {
-        docID = target;
-        if (ords[docID] == -1) {
-          nextDoc();
-        }
-      }
-      return docID;
+      throw new UnsupportedOperationException("use nextDoc instead");
+
     }
 
     @Override

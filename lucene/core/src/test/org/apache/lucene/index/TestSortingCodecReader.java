@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -41,6 +42,8 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -125,6 +128,9 @@ public class TestSortingCodecReader extends LuceneTestCase {
           doc.add(new Field("term_vectors", "test" + docId, ft));
           if (rarely() == false) {
             doc.add(new NumericDocValuesField("id", docId));
+            doc.add(new SortedSetDocValuesField("sorted_set_sort_field", new BytesRef(String.format("%06d", docId))));
+            doc.add(new SortedDocValuesField("sorted_binary_sort_field", new BytesRef(String.format("%06d", docId))));
+            doc.add(new SortedNumericDocValuesField("sorted_numeric_sort_field", docId));
           } else {
             doc.add(new NumericDocValuesField("alt_id", docId));
           }
@@ -137,7 +143,16 @@ public class TestSortingCodecReader extends LuceneTestCase {
         iw.commit();
         actualNumDocs = iw.getDocStats().numDocs;
       }
-      Sort indexSort = new Sort(new SortField("id", SortField.Type.INT), new SortField("alt_id", SortField.Type.INT));
+      Sort indexSort = RandomPicks.randomFrom(random(), Arrays.asList(
+          new Sort(new SortField("id", SortField.Type.INT),
+              new SortField("alt_id", SortField.Type.INT)),
+          new Sort(new SortedSetSortField("sorted_set_sort_field", false),
+              new SortField("alt_id", SortField.Type.INT)),
+          new Sort(new SortedNumericSortField("sorted_numeric_sort_field", SortField.Type.INT),
+              new SortField("alt_id", SortField.Type.INT)),
+          new Sort(new SortField("sorted_binary_sort_field", SortField.Type.STRING, false),
+              new SortField("alt_id", SortField.Type.INT))
+          ));
       try (Directory sortDir = newDirectory()) {
         try (IndexWriter writer = new IndexWriter(sortDir, newIndexWriterConfig().setIndexSort(indexSort))) {
           try (DirectoryReader reader = DirectoryReader.open(dir)) {

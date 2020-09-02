@@ -168,7 +168,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter<SortedNumericDocValue
     private int valueCount;
     private int valueUpto;
 
-    public BufferedSortedNumericDocValues(PackedLongValues values, PackedLongValues valueCounts, DocIdSetIterator docsWithField) {
+    BufferedSortedNumericDocValues(PackedLongValues values, PackedLongValues valueCounts, DocIdSetIterator docsWithField) {
       valuesIter = values.iterator();
       valueCountsIter = valueCounts.iterator();
       this.docsWithField = docsWithField;
@@ -258,13 +258,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter<SortedNumericDocValue
 
     @Override
     public int advance(int target) {
-      if (target >= values.length) {
-        docID = NO_MORE_DOCS;
-        return docID;
-      } else {
-        docID = target-1;
-        return nextDoc();
-      }
+      throw new UnsupportedOperationException("use nextDoc instead");
     }
 
     @Override
