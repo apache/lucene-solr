@@ -74,6 +74,7 @@ import org.junit.Test;
 
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@LuceneTestCase.Nightly // something rare can happen to this test where it even breaks a long socket timeout waiting for stream responses
 public class GraphExpressionTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
