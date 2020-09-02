@@ -89,5 +89,15 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamFactoryT
             new String[] { "aaa", "bbb-ccc" },
             new int[] { 0, 5 },
             new int[] { 3, 13 });
+
+    reader = new StringReader("a\\b\\0\\-c\\é\\ d");
+    reader = charFilterFactory("PatternReplace",
+            "pattern", "\\\\([^\\p{IsAlphabetic}\\p{Digit}])",
+            "replacement", "$1").create(reader);
+    ts = whitespaceMockTokenizer(reader);
+    assertTokenStreamContents(ts,
+            new String[] { "a\\b\\0-c\\é", "d" },
+            new int[] { 0, 12 },
+            new int[] { 10, 13 });
   }
 }
