@@ -899,6 +899,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         DocCollection coll = getDocCollection(requestedCollection, null);
         if (coll == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
+          // TODO if we are creating it, we wouldn't find it?
         }
         int collVer = coll.getZNodeVersion();
         if (coll.getStateFormat()>1) {

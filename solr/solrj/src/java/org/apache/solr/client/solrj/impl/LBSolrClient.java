@@ -313,6 +313,9 @@ public abstract class LBSolrClient extends SolrClient {
     // try the servers we previously skipped
     if (skipped != null) {
       for (ServerWrapper wrapper : skipped) {
+        if (wrapper == null) {
+          continue;
+        }
         if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
           break;
         }

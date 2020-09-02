@@ -32,7 +32,6 @@ import org.junit.Ignore;
 import java.io.File;
 import java.io.IOException;
 
-@Ignore
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   private static String tmpSolrHome;

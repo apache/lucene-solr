@@ -1146,7 +1146,7 @@ public class HttpSolrCall {
         if (!activeReplicas || (liveNodes.contains(replica.getNodeName())
             && replica.getState() == Replica.State.ACTIVE)) {
 
-          if (byCoreName && !origCorename.equals(replica.getStr(CORE_NAME_PROP))) {
+          if (byCoreName && (origCorename == null || !origCorename.equals(replica.getStr(CORE_NAME_PROP)))) {
             // if it's by core name, make sure they match
             continue;
           }

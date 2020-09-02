@@ -50,7 +50,7 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
 
   @SuppressWarnings("deprecation")
   @Test
-  @Ignore // nocommit - still working on async
+  @Ignore // nocommit - this is flakey in it's wait for the async call to complete, or the system is flakey in reporting
   public void testAsyncCallStatusResponse() throws Exception {
     int numShards = 4;
     int numReplicas = 1;
