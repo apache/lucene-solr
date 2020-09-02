@@ -41,7 +41,7 @@ nos            |  our (pl)
 notre          |  our
 nous           |  we
 on             |  one
-ou             |  where
+ou             |  or
 par            |  by
 pas            |  not
 pour           |  for
@@ -184,3 +184,6 @@ quelles        |  which
 sans           |  without
 soi            |  oneself
 
+ça             | that (shortened form)
+où             | where
+elles          | they (feminine form)
