@@ -52,6 +52,11 @@ plugins {
     id 'com.github.jruby-gradle.base' version '2.0.0-alpha.7'
 }
 
+// This project does not contribute anything to main dependencies.
+versionsLock {
+    testProject()
+}
+
 description = 'Solr reference guide'
 
 // Use an internal proxy to ruby gems.
