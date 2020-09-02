@@ -205,6 +205,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   // closes and opens index writers without any locking
   private void changeWriter(SolrCore core, boolean rollback, boolean openNewWriter) throws IOException {
+    if (prepForClose) {
+      throw new AlreadyClosedException();
+    }
+
     String coreName = core.getName();
 
     // We need to null this so it picks up the new writer next get call.
