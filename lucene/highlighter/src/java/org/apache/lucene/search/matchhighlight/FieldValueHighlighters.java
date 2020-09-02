@@ -53,7 +53,7 @@ public final class FieldValueHighlighters {
    * highlights or not.
    */
   public static MatchHighlighter.FieldValueHighlighter maxLeadingCharacters(int maxLeadingCharacters, String ellipsis, Set<String> fields) {
-    PassageSelector passageSelector = new PassageSelector();
+    PassageSelector passageSelector = defaultPassageSelector();
     PassageFormatter passageFormatter = new PassageFormatter(ellipsis, "", "");
     return new AbstractFieldValueHighlighter((field, hasMatches) -> fields.contains(field)) {
       @Override
@@ -73,6 +73,15 @@ public final class FieldValueHighlighters {
   }
 
   /**
+   * Default preconfigured {@link PassageSelector}.
+   */
+  public static PassageSelector defaultPassageSelector() {
+    return new PassageSelector(
+        PassageSelector.DEFAULT_SCORER,
+        new BreakIteratorShrinkingAdjuster());
+  }
+
+  /**
    * Highlights fields matching predicate {@code matchFields} only if they contained query matches.
    */
   public static MatchHighlighter.FieldValueHighlighter highlighted(
@@ -80,7 +89,7 @@ public final class FieldValueHighlighters {
       int maxPassages,
       PassageFormatter passageFormatter,
       Predicate<String> matchFields) {
-    PassageSelector passageSelector = new PassageSelector();
+    PassageSelector passageSelector = defaultPassageSelector();
     return new AbstractFieldValueHighlighter((field, hasMatches) -> matchFields.test(field) && hasMatches) {
       @Override
       public List<String> format(String field, String[] values, String contiguousValue,

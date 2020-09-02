@@ -36,6 +36,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
@@ -84,9 +85,12 @@ public class TestMatchHighlighter extends LuceneTestCase {
     // Create an analyzer with some synonyms, just to showcase them.
     SynonymMap synonymMap = buildSynonymMap(new String[][]{
         {"moon\u0000shine", "firewater"},
+        {"firewater", "moon\u0000shine"},
     });
 
-    final int offsetGap = RandomizedTest.randomIntBetween(0, 2);
+    // Make a non-empty offset gap so that break iterator doesn't go haywire on multivalues
+    // glued together.
+    final int offsetGap = RandomizedTest.randomIntBetween(1, 2);
     final int positionGap = RandomizedTest.randomFrom(new int[]{0, 1, 100});
     Analyzer synonymsAnalyzer =
         new AnalyzerWithGaps(offsetGap, positionGap, new Analyzer() {
@@ -110,8 +114,7 @@ public class TestMatchHighlighter extends LuceneTestCase {
       assertThat(pair.length, Matchers.equalTo(2));
       builder.add(new CharsRef(pair[0]), new CharsRef(pair[1]), true);
     }
-    SynonymMap synonymMap = builder.build();
-    return synonymMap;
+    return builder.build();
   }
 
   @Test
@@ -180,7 +183,7 @@ public class TestMatchHighlighter extends LuceneTestCase {
               " 1. id: 1",
               "    text1: bar >foo< baz",
               " 2. id: 2",
-              "    text1: Very long ...");
+              "    text1: Very long...");
 
           // Field highlighters can apply to multiple fields and be chained for convenience.
           // For example, this defines a combined highlighter over both FLD_TEXT1 and FLD_TEXT2.
@@ -201,8 +204,34 @@ public class TestMatchHighlighter extends LuceneTestCase {
               " 1. id: 1",
               "    text1: bar >foo< baz",
               " 2. id: 2",
-              "    text1: Very long ...",
+              "    text1: Very long...",
               "    text2: no foo but >bar<");
+        });
+  }
+
+  @Test
+  public void testSynonymHighlight() throws IOException {
+    // There is nothing special needed to highlight or process complex queries, synonyms, etc.
+    // Synonyms defined in the constructor of this class.
+    new IndexBuilder(this::toField)
+        .doc(FLD_TEXT1, "Where the moon shine falls, firewater flows.")
+        .build(analyzer, reader -> {
+          IndexSearcher searcher = new IndexSearcher(reader);
+          Sort sortOrder = Sort.INDEXORDER; // So that results are consistently ordered.
+
+          MatchHighlighter highlighter =
+              new MatchHighlighter(searcher, analyzer)
+                  .appendFieldHighlighter(FieldValueHighlighters.highlighted(
+                      80 * 3, 1, new PassageFormatter("...", ">", "<"), FLD_TEXT1::equals))
+                  .appendFieldHighlighter(FieldValueHighlighters.skipRemaining());
+
+          Query query = new TermQuery(new Term(FLD_TEXT1, "firewater"));
+          assertHighlights(toDocList(highlighter.highlight(searcher.search(query, 10, sortOrder), query)),
+              "0. text1: Where the >moon shine< falls, >firewater< flows.");
+
+          query = new PhraseQuery(FLD_TEXT1, "moon", "shine");
+          assertHighlights(toDocList(highlighter.highlight(searcher.search(query, 10, sortOrder), query)),
+              "0. text1: Where the >moon shine< falls, >firewater< flows.");
         });
   }
 
