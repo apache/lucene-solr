@@ -56,6 +56,14 @@ public class MatchHighlighter {
   private final HashSet<String> fieldsAlwaysReturned = new HashSet<>();
   private final List<FieldValueHighlighter> fieldHighlighters = new ArrayList<>();
 
+  /**
+   * Actual per-field highlighter. Field highlighters are probed whether they
+   * are applicable to a particular combination of (field, hasMatches) pair. If a highlighter
+   * declares it is applicable, its {@link #format} method is invoked and the result
+   * is returned as the field's value.
+   *
+   * @see FieldValueHighlighters
+   */
   public interface FieldValueHighlighter {
     /**
      * Check if this highlighter can be applied to a given field.

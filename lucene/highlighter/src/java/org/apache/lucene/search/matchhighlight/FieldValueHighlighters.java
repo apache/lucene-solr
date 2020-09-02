@@ -35,7 +35,7 @@ public final class FieldValueHighlighters {
   private FieldValueHighlighters() {
   }
 
-  public static abstract class AbstractFieldValueHighlighter implements MatchHighlighter.FieldValueHighlighter {
+  private static abstract class AbstractFieldValueHighlighter implements MatchHighlighter.FieldValueHighlighter {
     private final BiPredicate<String, Boolean> testPredicate;
 
     protected AbstractFieldValueHighlighter(BiPredicate<String, Boolean> testPredicate) {
@@ -45,11 +45,6 @@ public final class FieldValueHighlighters {
     @Override
     public final boolean isApplicable(String field, boolean hasMatches) {
       return testPredicate.test(field, hasMatches);
-    }
-
-    @Override
-    public Collection<String> alwaysFetchedFields() {
-      return Collections.emptyList();
     }
   }
 
