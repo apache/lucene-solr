@@ -729,7 +729,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // Replica leader = slice.getLeader();
       Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
       isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
-      log.info("Are we leader for sending to replicas? {} phase={}", isLeader, phase);
+      if (log.isDebugEnabled()) log.debug("Are we leader for sending to replicas? {} phase={}", isLeader, phase);
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
         if (isSubShardLeader) {
