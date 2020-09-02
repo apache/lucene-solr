@@ -90,7 +90,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // nocommit: investigate
   // commented out on: 01-Apr-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void deleteLiveReplicaTest() throws Exception {
 
@@ -147,7 +147,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // nocommit: investigate
   public void deleteReplicaAndVerifyDirectoryCleanup() throws Exception {
 
     final String collectionName = "deletereplica_test";
@@ -173,7 +173,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void deleteReplicaByCount() throws Exception {
 
     final String collectionName = "deleteByCount";
@@ -205,14 +204,14 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // nocommit: investigate
   public void deleteReplicaFromClusterState() throws Exception {
     deleteReplicaFromClusterState("false");
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
   }
   
   @Test
-  @Ignore // nocommit debug
+  @Ignore // nocommit: investigate
   public void deleteReplicaFromClusterStateLegacy() throws Exception {
     deleteReplicaFromClusterState("true"); 
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
@@ -274,7 +273,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   @Test
   @Slow
-  @Ignore // nocommit debug
+  @Ignore // nocommit: investigate
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     raceConditionOnDeleteAndRegisterReplica("false");
@@ -283,8 +282,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   
   @Test
   @Slow
+  @Ignore // nocommit: investigate
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
-  @Ignore // nocommit debug
   public void raceConditionOnDeleteAndRegisterReplicaLegacy() throws Exception {
     raceConditionOnDeleteAndRegisterReplica("true");
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
@@ -414,7 +413,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void deleteReplicaOnIndexing() throws Exception {
     final String collectionName = "deleteReplicaOnIndexing";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)

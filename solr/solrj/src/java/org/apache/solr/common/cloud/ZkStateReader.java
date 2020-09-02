@@ -152,6 +152,7 @@ public class ZkStateReader implements SolrCloseable {
   private static final String SOLR_ENVIRONMENT = "environment";
 
   public static final String REPLICA_TYPE = "type";
+  public static final byte[] EMPTY_ARRAY = new byte[0];
   private final CloseTracker closeTracker;
 
   /**
@@ -419,8 +420,10 @@ public class ZkStateReader implements SolrCloseable {
             }
           } catch (KeeperException e) {
             SolrException.log(log, e);
+            return;
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            log.warn("", e);
+            return;
           }
         }
 
@@ -437,14 +440,16 @@ public class ZkStateReader implements SolrCloseable {
           }
           log.info("Done waiting on latch");
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          log.warn("", e);
+          return;
         }
       }
 
     } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+      log.warn("", e);
+      return;
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      log.warn("", e);
       return;
     }
 
@@ -473,19 +478,21 @@ public class ZkStateReader implements SolrCloseable {
         securityData = getSecurityProps(true);
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      log.warn("", e);
+      return;
     }
 
     collectionPropsObservers.forEach((c, v) -> {
       Stat stat = new Stat();
-      byte[] data = new byte[0];
+      byte[] data = EMPTY_ARRAY;
       try {
         data = zkClient.getData(getCollectionPropsPath(c), new PropsWatcher(c), stat);
       } catch (KeeperException e) {
         log.error("KeeperException", e);
+        return;
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        log.warn("", e);
+        return;
       }
 
       VersionedCollectionProps props = new VersionedCollectionProps(stat.getVersion(), (Map<String,String>) fromJSON(data));
@@ -520,17 +527,18 @@ public class ZkStateReader implements SolrCloseable {
                 try {
                   callback.call(new Pair<>(data, stat));
                 } catch (Exception e) {
-                  ParWork.propegateInterrupt(e);
                   log.error("Error running collections node listener", e);
+                  return;
                 }
               }
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
+              return;
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              log.warn("", e);
+              return;
             }
           }
-
         });
   }
 
