@@ -1079,7 +1079,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       // seed version buckets with max from index during core initialization ... requires a searcher!
       seedVersionBuckets();
-
+      if (coreContainer.isZooKeeperAware()) {
+        // make sure we see our shard first - these tries to cover a surprising race where we don't find our shard in the clusterstate
+        // in the below bufferUpdatesIfConstructing call
+        coreContainer.getZkController().getZkStateReader().waitForState(coreDescriptor.getCollectionName(),
+            5, TimeUnit.SECONDS, (l,c) -> c != null && c.getSlice(coreDescriptor.getCloudDescriptor().getShardId()) != null);
+      }
       bufferUpdatesIfConstructing(coreDescriptor);
 
       this.ruleExpiryLock = new ReentrantLock();
@@ -1149,6 +1154,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       // ZK pre-register would have already happened so we read slice properties now
       final ClusterState clusterState = coreContainer.getZkController().getClusterState();
+
+
       final DocCollection collection = clusterState.getCollectionOrNull(coreDescriptor.getCloudDescriptor().getCollectionName());
       final Slice slice = collection.getSlice(coreDescriptor.getCloudDescriptor().getShardId());
       if (slice.getState() == Slice.State.CONSTRUCTION) {
