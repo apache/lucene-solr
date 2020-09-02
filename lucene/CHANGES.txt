@@ -162,6 +162,8 @@ Other
 
 * LUCENE-9433: Remove Ant support from trunk (Erick Erickson, Uwe Schindler et.al.)
 
+* LUCENE-9215: Replace checkJavaDocs.py with doclet (Robert Muir, Dawid Weiss, Uwe Schindler)
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes
