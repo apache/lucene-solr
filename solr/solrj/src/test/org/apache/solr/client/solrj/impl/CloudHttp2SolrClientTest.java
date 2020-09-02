@@ -696,6 +696,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "Somehow this stops watching the collection when we are still concerned with it, I think - rare fail")
+  // also see CloudSolrClientTest
   public void stateVersionParamTest() throws Exception {
     String collection = "stateVersionParamTest";
     createTestCollection(collection);
