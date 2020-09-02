@@ -127,7 +127,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 //      recoveryExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(cfg.getMaxRecoveryThreads(), recoveryThreadFactory);
 //    } else {
       log.debug("Creating recoveryExecutor with unbounded pool");
-      recoveryExecutor = new ParWorkExecutor("recoveryExecutor", 100);
+      recoveryExecutor = ParWork.getRootSharedExecutor();
  //   }
   }
 
@@ -211,9 +211,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   public void close() {
   //  closeTracker.close();
-    if (recoveryExecutor != null) {
-      recoveryExecutor.shutdownNow();
-    }
     if (updateOnlyClient != null) updateOnlyClient.disableCloseLock();
     try (ParWork closer = new ParWork(this, true)) {
       closer.collect("", () -> {
@@ -228,7 +225,6 @@ public class UpdateShardHandler implements SolrInfoBean {
         SolrInfoBean.super.close();
         return this;
       });
-      closer.collect(recoveryExecutor);
     }
     assert ObjectReleaseTracker.release(this);
   }
