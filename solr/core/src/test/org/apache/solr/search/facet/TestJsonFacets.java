@@ -2360,6 +2360,32 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
+    // nested query facets excludeTags for filters set in facet context, not main request (see SOLR-9724)
+    // this test is identical to "nested query facets on subset (with excludeTags)" (above), but defines
+    // a zero-result main query and applies all domain manipulation in facet contexts.
+    client.testJQ(params(p, "q", "${cat_s}:nonexistent_value"
+            , "json.facet", "{ processEmpty:true," +
+                " top_level:{type:query, q:'*:*', domain:{query:'*:*', filter:'{!tag=abc}id:(2 3)'},facet:{" +
+                " f1:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz,qaz]}}" +
+                ",f2:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:abc }}" +
+                ",f3:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:'xyz,abc,qaz' }}" +
+                ",f4:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz , abc , qaz] }}" +
+                ",f5:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz,qaz]}}" +    // this is repeated, but it did fail when a single context was shared among sub-facets
+                ",f6:{query:{q:'${cat_s}:B', facet:{processEmpty:true, nj:{query:'${where_s}:NJ'}, ny:{ type:query, q:'${where_s}:NY', excludeTags:abc}}  }}" +  // exclude in a sub-facet
+                ",f7:{query:{q:'${cat_s}:B', facet:{processEmpty:true, nj:{query:'${where_s}:NJ'}, ny:{ type:query, q:'${where_s}:NY', excludeTags:xyz}}  }}" +  // exclude in a sub-facet that doesn't match
+                "}}}"
+        )
+        , "facets=={ 'count':0, top_level:{'count':2, " +
+            " 'f1':{'count':1, 'nj':{'count':1}, 'ny':{'count':0}}" +
+            ",'f2':{'count':3, 'nj':{'count':2}, 'ny':{'count':1}}" +
+            ",'f3':{'count':3, 'nj':{'count':2}, 'ny':{'count':1}}" +
+            ",'f4':{'count':3, 'nj':{'count':2}, 'ny':{'count':1}}" +
+            ",'f5':{'count':1, 'nj':{'count':1}, 'ny':{'count':0}}" +
+            ",'f6':{'count':1, 'nj':{'count':1}, 'ny':{'count':1}}" +
+            ",'f7':{'count':1, 'nj':{'count':1}, 'ny':{'count':0}}" +
+            "}}"
+    );
+
     // terms facet with nested query facet (with excludeTags, using new format inside domain:{})
     client.testJQ(params(p, "q", "{!cache=false}*:*", "fq", "{!tag=doc6,allfilt}-id:6", "fq","{!tag=doc3,allfilt}-id:3"
 

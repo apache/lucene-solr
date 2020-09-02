@@ -233,6 +233,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       return;
     } else if (true) {
       //nocommit I think this block obviates the responsebuilder dependency? (see below)
+      //nocommit: this also fixes SOLR-9724 (excludeTags support in conjunction with facet domain changes)
       throw new AssertionError();
     }
 
