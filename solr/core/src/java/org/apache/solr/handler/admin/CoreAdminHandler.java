@@ -49,6 +49,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -191,6 +192,16 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
                 addTask("failed", taskObject, true);
               } else {
                 addTask("completed", taskObject, true);
+              }
+
+              // Claim the task so the caller that's waiting for async status knows we're done
+              // TODO: TJP ~ not sure if this the correct place for this ...
+              if (coreContainer.getZkController() != null) {
+                try {
+                  coreContainer.getZkController().claimAsyncId(taskId);
+                } catch (KeeperException e) {
+                  log.error("Failed to claim async task {}", taskId, e);
+                }
               }
             }
           });

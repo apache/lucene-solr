@@ -888,6 +888,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       sreq.params = params;
       CountDownLatch latch = new CountDownLatch(1);
 
+      // mn- from DistributedMap
+      final String asyncPathToWaitOn = Overseer.OVERSEER_ASYNC_IDS + "/mn-" + requestId;
+
       Watcher waitForAsyncId = new Watcher() {
         @Override
         public void process(WatchedEvent event) {
@@ -899,7 +902,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           } else {
             Stat rstats2 = null;
             try {
-              rstats2 = zkStateReader.getZkClient().exists(Overseer.OVERSEER_ASYNC_IDS + "/" + requestId, this);
+              rstats2 = zkStateReader.getZkClient().exists(asyncPathToWaitOn, this);
             } catch (KeeperException e) {
               log.error("ZooKeeper exception", e);
             } catch (InterruptedException e) {
@@ -913,14 +916,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         }
       };
 
-      Stat rstats = zkStateReader.getZkClient().exists(Overseer.OVERSEER_ASYNC_IDS + "/" + requestId, waitForAsyncId);
+      Stat rstats = zkStateReader.getZkClient().exists(asyncPathToWaitOn, waitForAsyncId);
 
       if (rstats != null) {
         latch.countDown();
       }
 
-      // TJP TODO: Getting weird timeout issues when trying to delete a collection that was
-      // created using processAndWait b/c of this latch.await ... need to dig in further.
       latch.await(15, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
 
       shardHandler.submit(sreq, replica, sreq.params);
