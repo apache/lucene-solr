@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
@@ -128,8 +129,8 @@ public class TestSortingCodecReader extends LuceneTestCase {
           doc.add(new Field("term_vectors", "test" + docId, ft));
           if (rarely() == false) {
             doc.add(new NumericDocValuesField("id", docId));
-            doc.add(new SortedSetDocValuesField("sorted_set_sort_field", new BytesRef(String.format("%06d", docId))));
-            doc.add(new SortedDocValuesField("sorted_binary_sort_field", new BytesRef(String.format("%06d", docId))));
+            doc.add(new SortedSetDocValuesField("sorted_set_sort_field", new BytesRef(String.format("%06d", docId, Locale.ROOT))));
+            doc.add(new SortedDocValuesField("sorted_binary_sort_field", new BytesRef(String.format("%06d", docId, Locale.ROOT))));
             doc.add(new SortedNumericDocValuesField("sorted_numeric_sort_field", docId));
           } else {
             doc.add(new NumericDocValuesField("alt_id", docId));
