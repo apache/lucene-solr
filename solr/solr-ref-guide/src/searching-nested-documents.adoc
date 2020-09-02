@@ -29,174 +29,269 @@ This section does not show case faceting on nested documents. For nested documen
 
 == Query Examples
 
-For the upcoming examples, assume the following documents have been indexed:
+For the upcoming examples, we'll assume an index containing the same documents covered in <<indexing-nested-documents#example-indexing-syntax,Indexing Nested Documents>>:
 
-[source,json]
-----
-[
-  {
-    "ID": "1",
-    "title": "Cooking Recommendations",
-    "tags": ["cooking", "meetup"],
-    "posts": [{
-        "ID": "2",
-        "title": "Cookies",
-        "comments": [{
-            "ID": "3",
-            "content": "Lovely recipe"
-          },
-          {
-            "ID": "4",
-            "content": "A-"
-          }
-        ]
-      },
-      {
-        "ID": "5",
-        "title": "Cakes"
-      }
-    ]
-  },
-  {
-    "ID": "6",
-    "title": "For Hire",
-    "tags": ["professional", "jobs"],
-    "posts": [{
-        "ID": "7",
-        "title": "Search Engineer",
-        "comments": [{
-           "ID": "8",
-           "content": "I am interested"
-         },
-         {
-           "ID": "9",
-           "content": "How large is the team?"
-         }
-        ]
-      },
-      {
-        "ID": "10",
-        "title": "Low level Engineer"
-      }
-    ]
-  }
-]
-----
+include::indexing-nested-documents.adoc[tag=sample-indexing-deeply-nested-documents]
 
 === Child Doc Transformer
 
-Can be used enrich query results with the documents' descendants. +
-For a detailed explanation of this transformer, see the section <<transforming-result-documents.adoc#child-childdoctransformerfactory, [child] - ChildDocTransformerFactory>>.
+By default, documents that match a query do not include any of their nested children in the response.  The `[child]` Doc Transformer Can be used enrich query results with the documents' descendants.
 
-For example, let us examine this query:
-`q=ID:1,
-fl=ID,[child childFilter=/comments/content:recipe]`. +
-The Child Doc Transformer can be used to enrich matching docs with comments that match a particular filter. +
-In this particular query, the child Filter will only match the first comment of doc(ID:1),
-therefore only that particular comment will be appended to the result.  This is a special syntax feature.
+For a detailed explanation of this transformer, and specifics on it's syntax & limitations, please refer to the section <<transforming-result-documents.adoc#child-childdoctransformerfactory, [child] - ChildDocTransformerFactory>>.
 
-[source,json]
+A simple query matching all documents with a description that includes "staplers":
+
+[source,bash]
 ----
- { "response":{"numFound":1,"start":0,"docs":[
-       {
-           "ID": "1",
-           "title": "Cooking Recommendations",
-           "tags": ["cooking", "meetup"],
-           "posts": [{
-               "ID": "2",
-               "title": "Cookies",
-               "comments": [{
-                   "ID": "3",
-                   "content": "Lovely recipe"
-               }]
-             }]
-        }]
-    }
- }
+$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers'
+{
+  "response":{"numFound":1,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!prod",
+        "name_s":"Swingline Stapler",
+        "description_t":"The Cadillac of office staplers ...",
+        "_version_":1672933224035123200}]
+  }}
 ----
 
-=== Children Query Parser
+The same query with the addition of the `[child]` transformer is shown below.  Note that the `numFound` has not changed, we are still matching the same set of documents, but when returning those documents the nested children are also returned as psuedo-fields.
 
-Can be used to retrieve children of a matching document. +
-For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-children-query-parser, Block Join Children Query Parser>>.
-
-For example, let us examine this query:
-`q={!child of='_nest_path_:/posts}content:"Search Engineer"`. +
-The `'of'` filter returns all posts. This is used to filter out all documents in a particular path of the hierarchy(all parents).
-The second part of the query is a filter for some parents, which we wish to return their children. +
-In this example, all comments of posts which had "Search Engineer in their `content` field will be returned.
-
-[source,json]
+[source,bash]
 ----
-     { "response":{"numFound":2,"start":0,"docs":[
-           {
-              "ID": "8",
-              "content": "I am interested"
-           },
-           {
-              "ID": "9",
-              "content": "How large is the team?"
-           }
-        ]}
-     }
+$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers&fl=*,[child]'
+{
+  "response":{"numFound":1,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!prod",
+        "name_s":"Swingline Stapler",
+        "description_t":"The Cadillac of office staplers ...",
+        "_version_":1672933224035123200,
+        "skus":[
+          {
+            "id":"P11!S21",
+            "color_s":"RED",
+            "price_i":42,
+            "_version_":1672933224035123200,
+            "manuals":[
+              {
+                "id":"P11!D41",
+                "name_s":"Red Swingline Brochure",
+                "pages_i":1,
+                "content_t":"...",
+                "_version_":1672933224035123200}]},
+          
+          {
+            "id":"P11!S31",
+            "color_s":"BLACK",
+            "price_i":3,
+            "_version_":1672933224035123200}],
+        "manuals":[
+          {
+            "id":"P11!D51",
+            "name_s":"Quick Reference Guide",
+            "pages_i":1,
+            "content_t":"How to use your stapler ...",
+            "_version_":1672933224035123200},
+          
+          {
+            "id":"P11!D61",
+            "name_s":"Warranty Details",
+            "pages_i":42,
+            "content_t":"... lifetime guarantee ...",
+            "_version_":1672933224035123200}]}]
+  }}
 ----
 
-=== Parents Query Parser
 
-Can be used to retrieve parents of a child document. +
-For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-parent-query-parser,Block Join Parent Query Parser>>.
+=== Child Query Parser
 
-For example, let us examine this query:
-`q={!parent which='-_nest_path_:* \*:*'}title:"Search Engineer"`. +
-The `'which'` filter returns all root documents.
-The second part of this query is a filter to match some child documents.
-This query returns the parent at the root(since all parents filter returns root documents) of each
-matching child document. In this case, all child documents which had `Search Engineer` in their `title` field.
+The `{!child}` query parser can be used to search for the _descendent_ documents of parent documents matching a wrapped query. For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-children-query-parser, Block Join Children Query Parser>>.
 
-[source,json]
+Let's consider again the `description_t:staplers` query used above -- if we wrap that query in a `{!child}` query parser then instead of "matching" & returning the product level documents, we instead match all of the _descendent_ child documents of the original query:
+
+[source,bash]
 ----
-  { "response":{"numFound":1,"start":0,"docs":[{
-         "ID": "6",
-         "title": "For Hire",
-         "tags": ["professional", "jobs"]
-         }
-    ]}
-  }
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'q={!child of="*:* -_nest_path_:*"}description_t:staplers'
+{
+  "response":{"numFound":5,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!D41",
+        "name_s":"Red Swingline Brochure",
+        "pages_i":1,
+        "content_t":"...",
+        "_version_":1672933224035123200},
+      {
+        "id":"P11!S21",
+        "color_s":"RED",
+        "price_i":42,
+        "_version_":1672933224035123200},
+      {
+        "id":"P11!S31",
+        "color_s":"BLACK",
+        "price_i":3,
+        "_version_":1672933224035123200},
+      {
+        "id":"P11!D51",
+        "name_s":"Quick Reference Guide",
+        "pages_i":1,
+        "content_t":"How to use your stapler ...",
+        "_version_":1672933224035123200},
+      {
+        "id":"P11!D61",
+        "name_s":"Warranty Details",
+        "pages_i":42,
+        "content_t":"... lifetime guarantee ...",
+        "_version_":1672933224035123200}]
+  }}
 ----
+
+In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers#block-mask,`of` parameter>> to indicate we want to consider all documents which don't have a nest path -- ie: all "root" level document -- as the set of possible parents.
+
+By changing the `of` param to match ancestors at specific `\_nest_path_` levels, we can narrow down the list of children we return.  In the query below, we search for all descendents of `skus` (using an `of` param that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) with a `price_i` less then `50`:
+
+[source,bash]
+----
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child of="*:* -_nest_path_:\\/skus\\/*"}(+price_i:[* TO 50] +_nest_path_:\/skus)'
+{
+  "response":{"numFound":1,"start":0,"maxScore":1.0,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!D41",
+        "name_s":"Red Swingline Brochure",
+        "pages_i":1,
+        "content_t":"...",
+        "_version_":1675662666752851968}]
+  }}
+----
+
+[#double-escaping-nest-path-slashes]
+[CAUTION]
+.Double Escaping `\_nest_path_` slashes in `of`
+====
+Note that in the above example, the `/` characters in the `\_nest_path_` were "double escaped" in the `of` parameter:
+
+* One level of `\` escaping is neccessary to prevent the `/` from being interpreted as a {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#Regexp_Searches[Regex Query]
+* An additional level of "escaping the escape character" is neccessary because the `of` local parameter is a quoted string; so we need a second `\` to ensure the first `\` is preserved and passed as is to the query parser.
+
+(You can see that only a single level of of `\` escaping is needed in the body of the query string -- to prevent the Regex syntax --  because it's not a quoted string local param)
+
+You may find it more convinient to use <<local-parameters-in-queries#parameter-dereferencing,parameter references>> in conjunction with <<other-parsers#other-parsers,other parsers>> that do not treat `/` as a special character to express the same query in a more verbose form:
+
+[source,bash]
+----
+curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child of=$block_mask}(+price_i:[* TO 50] +{!field f="_nest_path_" v="/skus"})' --data-urlencode 'block_mask=(*:* -{!prefix f="_nest_path_" v="/skus/"})'
+----
+
+====
+
+
+=== Parent Query Parser
+
+The inverse of the `{!child}` query parser is the `{!parent}` query parser, which let's you search for the _ancestor_ documents of some child documents matching a wrapped query.  For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-parent-query-parser,Block Join Parent Query Parser>>.
+
+Let's first consider this example of searching for all "manual" type documents that have exactly `1` page:
+
+[source,bash]
+----
+$ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=pages_i:1'
+{
+  "response":{"numFound":3,"start":0,"maxScore":1.0,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!D41",
+        "name_s":"Red Swingline Brochure",
+        "pages_i":1,
+        "content_t":"...",
+        "_version_":1676585794196733952},
+      {
+        "id":"P11!D51",
+        "name_s":"Quick Reference Guide",
+        "pages_i":1,
+        "content_t":"How to use your stapler ...",
+        "_version_":1676585794196733952},
+      {
+        "id":"P22!D42",
+        "name_s":"Red Mont Blanc Brochure",
+        "pages_i":1,
+        "content_t":"...",
+        "_version_":1676585794347728896}]
+  }}
+----
+
+We can wrap that query in a `{!parent}` query to return the details of all products that are ancestors of these manuals:
+
+[source,bash]
+----
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent which="*:* -_nest_path_:*"}(+_nest_path_:\/skus\/manuals +pages_i:1)'
+{
+  "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!prod",
+        "name_s":"Swingline Stapler",
+        "description_t":"The Cadillac of office staplers ...",
+        "_version_":1676585794196733952},
+      {
+        "id":"P22!prod",
+        "name_s":"Mont Blanc Fountain Pen",
+        "description_t":"A Premium Writing Instrument ...",
+        "_version_":1676585794347728896}]
+  }}
+----
+
+In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers#block-mask,`which` parameter>> to indicate we want to consider all documents which don't have a nest path -- ie: all "root" level document -- as the set of possible parents.
+
+By changing the `which` param to match ancestors at specific `\_nest_path_` levels, we can change the type of ancestors we return.  In the query below, we search for `skus` (using an `which` param that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) that are the ancestors of `manuals` with exactly `1` page:
+
+[source,bash]
+----
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent which="*:* -_nest_path_:\\/skus\\/*"}(+_nest_path_:\/skus\/manuals +pages_i:1)'
+{
+  "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!S21",
+        "color_s":"RED",
+        "price_i":42,
+        "_version_":1676585794196733952},
+      {
+        "id":"P22!S22",
+        "color_s":"RED",
+        "price_i":89,
+        "_version_":1676585794347728896}]
+  }}
+----
+
+[CAUTION]
+====
+Note that in the above example, the `/` characters in the `\_nest_path_` were "double escaped" in the `which` parameter, for the <<#double-escaping-nest-path-slashes,same reasons discussed above>> regarding the `{!child} pasers `of` parameter.
+====
+
 
 === Combining Block Join Query Parsers with Child Doc Transformer
 
-The combination of these two features enable seamless creation of powerful queries. +
-For example, querying posts which are under a page tagged as a job, contain the words "Search Engineer".
-The comments for matching posts can also be fetched, all done in a single Solr Query.
+The combination of these two parsers with the `[child] transformer enables seamless creation of very powerful queries.
 
-For example, let us examine this query:
-`q=+{!child of='-\_nest_path_:* \*:*'}+tags:"jobs" &fl=*,[child]
-&fq=\_nest_path_:/posts`. +
-This query returns all posts and their comments, which had "Search Engineer" in their title,
-and are indexed under a page tagged with "jobs".
-The comments are appended to the matching posts, since the ChildDocTransformer is specified under the `fl` parameter.
+Here for example is a query where:
 
-[source,json]
+* the (sku) documents returned must have a color of "RED"
+* the (sku) docments returned must be the descendents of root level (product) documents which have:
+** immediate child "manuals" documents which have:
+*** "lifetime guarantee" in their content
+* each return (sku) document also includes any descendent (manuals) documents it has
+
+[source,bash]
 ----
-  { "response":{"numFound":1,"start":0,"docs":[
-        {
-          "ID": "7",
-          "title": "Search Engineer",
-          "comments": [{
-             "ID": "8",
-             "content": "I am interested"
-           },
-           {
-             "ID": "9",
-             "content": "How large is the team?"
-           }
-          ]
-        },
-        {
-          "ID": "10",
-          "title": "Low level Engineer"
-        }]
-     }
-  }
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'fq=color_s:RED' --data-urlencode 'q={!child of="*:* -_nest_path_:*" filters=$parent_fq}' --data-urlencode 'parent_fq={!parent which="*:* -_nest_path_:*"}(+_nest_path_:"/manuals" +content_t:"lifetime guarantee")' -d 'fl=*,[child]'
+{
+  "response":{"numFound":1,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!S21",
+        "color_s":"RED",
+        "price_i":42,
+        "_version_":1676585794196733952,
+        "manuals":[
+          {
+            "id":"P11!D41",
+            "name_s":"Red Swingline Brochure",
+            "pages_i":1,
+            "content_t":"...",
+            "_version_":1676585794196733952}]}]
+  }}
 ----
