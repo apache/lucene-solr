@@ -101,9 +101,5 @@ final class BugfixDeflater_JDK8252739 extends Deflater {
   }
   
   public static final boolean IS_BUGGY_JDK = detectBuggyJDK();
-  
-  static {
-    System.err.println("JDK is buggy: " + IS_BUGGY_JDK);
-  }
 
 }
