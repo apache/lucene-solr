@@ -21,6 +21,10 @@ New Features
   small segments on getReader, subject to a configurable timeout, to improve
   search performance by reducing the number of small segments for searching. (Simon Willnauer)
 
+* LUCENE-9484: Allow sorting an index after it was created. With SortingCodecReader, existing
+  unsorted segments can be wrapped and merged into a fresh index using IndexWriter#addIndices
+  API. (Simon Willnauer, Adrien Grand)
+
 Improvements
 ---------------------
 
