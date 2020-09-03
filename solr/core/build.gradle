@@ -17,16 +17,10 @@
 
 
 apply plugin: 'java-library'
-apply plugin: 'net.ltgt.errorprone'
 
 description = 'Apache Solr Core'
 
-tasks.withType(JavaCompile) {
-  options.errorprone.errorproneArgs = ['-Xep:InvalidBlockTag:OFF', '-Xep:MissingSummary:OFF', '-Xep:UnusedVariable:OFF']
-}
-
 dependencies {
-  errorprone("com.google.errorprone:error_prone_core:2.4.0")
 
   api project(':lucene:core')
   api project(':lucene:analysis:common')

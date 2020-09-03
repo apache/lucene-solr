@@ -15,11 +15,16 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
+configure([project(":lucene:core")]) {
+    apply plugin: 'net.ltgt.errorprone'
 
-description = 'Lucene core library'
+    plugins.withType(JavaPlugin) {
+        dependencies {
+            errorprone("com.google.errorprone:error_prone_core:2.4.0")
+        }
 
-dependencies {
-  testImplementation project(':lucene:codecs')
-  testImplementation project(':lucene:test-framework')
+        tasks.withType(JavaCompile) {
+            options.errorprone.errorproneArgs = ['-Xep:InvalidBlockTag:OFF', '-Xep:MissingSummary:OFF', '-Xep:UnusedVariable:OFF']
+        }
+    }
 }
