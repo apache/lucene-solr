@@ -252,7 +252,6 @@ public class Http2SolrClient extends SolrClient {
 
   public void close() {
    // closeTracker.close();
-    asyncTracker.waitForComplete();
     if (closeClient) {
       try {
         httpClient.stop();
