@@ -155,16 +155,15 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
 
   private static class DeflateWithPresetDictCompressor extends Compressor {
 
-    final byte[] dictBytes;
-    final int blockLength;
+    private final int dictLength, blockLength;
     final Deflater compressor;
     byte[] compressed;
     boolean closed;
 
     DeflateWithPresetDictCompressor(int level, int dictLength, int blockLength) {
-      compressor = new Deflater(level, true);
+      compressor = BugfixDeflater_JDK8252739.createDeflaterInstance(level, true, dictLength);
       compressed = new byte[64];
-      this.dictBytes = new byte[dictLength];
+      this.dictLength = dictLength;
       this.blockLength = blockLength;
     }
 
@@ -197,8 +196,7 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
 
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
-      final int dictLength = Math.min(dictBytes.length, len);
-      System.arraycopy(bytes, off, dictBytes, 0, dictLength);
+      final int dictLength = Math.min(this.dictLength, len);
       out.writeVInt(dictLength);
       out.writeVInt(blockLength);
       final int end = off + len;
@@ -210,8 +208,7 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
       // And then sub blocks
       for (int start = off + dictLength; start < end; start += blockLength) {
         compressor.reset();
-        // NOTE: offset MUST be 0 when setting the dictionary in order to work around JDK-8252739
-        compressor.setDictionary(dictBytes, 0, dictLength);
+        compressor.setDictionary(bytes, off, dictLength);
         doCompress(bytes, start, Math.min(blockLength, off + len - start), out);
       }
     }

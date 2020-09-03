@@ -77,4 +77,8 @@ public class TestLucene87StoredFieldsFormatHighCompression extends BaseStoredFie
       new Lucene87StoredFieldsFormat(null);
     });
   }
+  
+  public void testShowJDKBugStatus() {
+    System.err.println("JDK is buggy (JDK-8252739): " + BugfixDeflater_JDK8252739.IS_BUGGY_JDK);
+  }
 }
