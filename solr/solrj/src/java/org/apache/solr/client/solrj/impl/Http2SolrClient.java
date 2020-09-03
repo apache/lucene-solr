@@ -351,13 +351,8 @@ public class Http2SolrClient extends SolrClient {
     }
 
     decorateRequest(postRequest, updateRequest);
-    InputStreamResponseListener responseListener = new InputStreamResponseListener() {
-      @Override
-      public void onComplete(Result result) {
-        super.onComplete(result);
-      }
-    };
-    asyncTracker.register();
+    InputStreamResponseListener responseListener = new OurInputStreamResponseListener();
+
     postRequest.send(responseListener);
 
     boolean isXml = ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType());
@@ -401,9 +396,9 @@ public class Http2SolrClient extends SolrClient {
     final ResponseParser parser = solrRequest.getResponseParser() == null
         ? this.parser: solrRequest.getResponseParser();
     if (onComplete != null) {
+      asyncTracker.register();
       // This async call only suitable for indexing since the response size is limited by 5MB
-      req.onRequestQueued(asyncTracker.queuedListener)
-          .send(new BufferingResponseListener(5 * 1024 * 1024) {
+      req.send(new BufferingResponseListener(5 * 1024 * 1024) {
 
         @Override
         public void onComplete(Result result) {
@@ -431,12 +426,7 @@ public class Http2SolrClient extends SolrClient {
       return null;
     } else {
       try {
-        InputStreamResponseListener listener = new InputStreamResponseListener() {
-          @Override
-          public void onComplete(Result result) {
-            super.onComplete(result);
-          }
-        };
+        InputStreamResponseListener listener = new MyInputStreamResponseListener(asyncTracker);
         req.send(listener);
         Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
         InputStream is = listener.getInputStream();
@@ -895,9 +885,9 @@ public class Http2SolrClient extends SolrClient {
 
     public void waitForComplete() {
       if (log.isDebugEnabled()) log.debug("Before wait for outstanding requests registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
-      if (phaser.getUnarrivedParties() <= 1) {
-        return;
-      }
+//      if (phaser.getUnarrivedParties() <= 1) {
+//        return;
+//      }
       int arrival = phaser.arriveAndAwaitAdvance();
 
      // phaser.awaitAdvance(phaser.arriveAndDeregister());
@@ -916,12 +906,12 @@ public class Http2SolrClient extends SolrClient {
       if (log.isDebugEnabled()) {
         log.debug("Registered new party");
       }
-   //   phaser.register();
-//      try {
-//        available.acquire();
-//      } catch (InterruptedException ignored) {
-//        ParWork.propegateInterrupt(ignored);
-//      }
+      phaser.register();
+      try {
+        available.acquire();
+      } catch (InterruptedException ignored) {
+        ParWork.propegateInterrupt(ignored);
+      }
     }
 
     private static class ThePhaser extends Phaser {
@@ -1237,5 +1227,26 @@ public class Http2SolrClient extends SolrClient {
           throws InterruptedException, ExecutionException, TimeoutException, SolrServerException {
     ContentResponse response = httpClient.newRequest(url).method(PUT).content(new BytesContentProvider(bytes), contentType).send();
     return response.getContentAsString();
+  }
+
+  private static class MyInputStreamResponseListener extends InputStreamResponseListener {
+
+    AsyncTracker tracker;
+
+    MyInputStreamResponseListener(AsyncTracker tracker) {
+      this.tracker = tracker;
+    }
+
+    @Override
+    public void onComplete(Result result) {
+      super.onComplete(result);
+    }
+  }
+
+  private static class OurInputStreamResponseListener extends InputStreamResponseListener {
+    @Override
+    public void onComplete(Result result) {
+      super.onComplete(result);
+    }
   }
 }
