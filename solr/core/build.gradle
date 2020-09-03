@@ -21,7 +21,6 @@ apply plugin: 'java-library'
 description = 'Apache Solr Core'
 
 dependencies {
-
   api project(':lucene:core')
   api project(':lucene:analysis:common')
   api project(':lucene:analysis:kuromoji')
