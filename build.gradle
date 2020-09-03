@@ -128,6 +128,8 @@ apply from: file('gradle/ide/intellij-idea.gradle')
 apply from: file('gradle/ide/eclipse.gradle')
 
 // Validation tasks
+apply from: file('gradle/hacks/findbugs.gradle')
+// run findbugs.gradle before error-prone.gradle to ensure we inherit compile time deps
 apply from: file('gradle/validation/error-prone.gradle')
 apply from: file('gradle/validation/precommit.gradle')
 apply from: file('gradle/validation/forbidden-apis.gradle')
@@ -174,7 +176,6 @@ apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 
-apply from: file('gradle/hacks/findbugs.gradle')
 apply from: file('gradle/hacks/gradle.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
 
