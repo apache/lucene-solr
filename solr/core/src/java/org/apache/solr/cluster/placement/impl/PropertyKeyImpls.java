@@ -41,7 +41,7 @@ abstract class AbstractNodePropertyKey implements PropertyKey {
     this.snitchTag = snitchTag;
   }
 
-  public Node getPropertyValueSource() {
+  public Node getNode() {
     return node;
   }
 

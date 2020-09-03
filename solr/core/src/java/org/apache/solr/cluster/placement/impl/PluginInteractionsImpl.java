@@ -125,7 +125,7 @@ class PropertyValueFetcherImpl implements PropertyValueFetcher {
         for (PropertyKey propertyKey : props) {
             if (propertyKey instanceof AbstractNodePropertyKey) {
                 AbstractNodePropertyKey AbstractNodePropertyKey = (AbstractNodePropertyKey) propertyKey;
-                Node node = AbstractNodePropertyKey.getPropertyValueSource();
+                Node node = AbstractNodePropertyKey.getNode();
 
                 // We might want to limit acceptable nodes here. We could verify if they're in the set of live nodes or similar
 
