@@ -719,6 +719,11 @@ public class CoreContainer {
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
+    /*
+     * HealthCheckHandler needs to be initialized before InfoHandler, since the later one will call CoreContainer.getHealthCheckHandler().
+     * We don't register the handler here because it'll be registered inside InfoHandler
+     */
+    healthCheckHandler = loader.newInstance(cfg.getHealthCheckHandlerClass(), HealthCheckHandler.class, null, new Class<?>[]{CoreContainer.class}, new Object[]{this});
     infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
     coreAdminHandler = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
     configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
@@ -893,7 +898,7 @@ public class CoreContainer {
     Map<String, Object> initArgs;
     if (plugin != null && plugin.initArgs != null) {
       initArgs = plugin.initArgs.asMap(5);
-      initArgs.put(MetricsHistoryHandler.ENABLE_PROP, plugin.isEnabled());
+      initArgs.putIfAbsent(MetricsHistoryHandler.ENABLE_PROP, plugin.isEnabled());
     } else {
       initArgs = new HashMap<>();
     }
@@ -919,12 +924,8 @@ public class CoreContainer {
         }
       };
       // enable local metrics unless specifically set otherwise
-      if (!initArgs.containsKey(MetricsHistoryHandler.ENABLE_NODES_PROP)) {
-        initArgs.put(MetricsHistoryHandler.ENABLE_NODES_PROP, true);
-      }
-      if (!initArgs.containsKey(MetricsHistoryHandler.ENABLE_REPLICAS_PROP)) {
-        initArgs.put(MetricsHistoryHandler.ENABLE_REPLICAS_PROP, true);
-      }
+      initArgs.putIfAbsent(MetricsHistoryHandler.ENABLE_NODES_PROP, true);
+      initArgs.putIfAbsent(MetricsHistoryHandler.ENABLE_REPLICAS_PROP, true);
     }
     metricsHistoryHandler = new MetricsHistoryHandler(name, metricsHandler,
         client, cloudManager, initArgs);
@@ -957,7 +958,7 @@ public class CoreContainer {
             (authorizationPlugin != null) ? "enabled" : "disabled");
     }
 
-    if (authenticationPlugin !=null && StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
+    if (authenticationPlugin != null && StringUtils.isEmpty(System.getProperty("solr.jetty.https.port"))) {
       log.warn("Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and data with encryption.");
     }
   }
@@ -1166,13 +1167,10 @@ public class CoreContainer {
       core.close();
       throw new IllegalStateException("This CoreContainer has been closed");
     }
-    SolrCore old = solrCores.putCore(cd, core);
-    /*
-     * set both the name of the descriptor and the name of the
-     * core, since the descriptors name is used for persisting.
-     */
 
-    core.setName(cd.getName());
+    assert core.getName().equals(cd.getName()) : "core name " + core.getName() + " != cd " + cd.getName();
+
+    SolrCore old = solrCores.putCore(cd, core);
 
     coreInitFailures.remove(cd.getName());
 
@@ -1693,6 +1691,7 @@ public class CoreContainer {
    * Swaps two SolrCore descriptors.
    */
   public void swap(String n0, String n1) {
+    apiAssumeStandalone();
     if (n0 == null || n1 == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not swap unnamed cores.");
     }
@@ -1788,6 +1787,7 @@ public class CoreContainer {
   }
 
   public void rename(String name, String toName) {
+    apiAssumeStandalone();
     SolrIdentifierValidator.validateCoreName(toName);
     try (SolrCore core = getCore(name)) {
       if (core != null) {
@@ -1805,6 +1805,12 @@ public class CoreContainer {
 
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());
       }
+    }
+  }
+
+  private void apiAssumeStandalone() {
+    if (getZkController() != null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Not supported in SolrCloud");
     }
   }
 

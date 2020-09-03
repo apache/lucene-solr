@@ -145,7 +145,7 @@
  *   </li>
  * </ol> 
  * <p>
- *   <code>ICUCollationKeyAnalyzer</code>, available in the <a href="{@docRoot}/../analyzers-icu/overview-summary.html">icu analysis module</a>,
+ *   <code>ICUCollationKeyAnalyzer</code>, available in the <a href="{@docRoot}/../icu/overview-summary.html">icu analysis module</a>,
  *   uses ICU4J's <code>Collator</code>, which 
  *   makes its version available, thus allowing collation to be versioned
  *   independently from the JVM.  <code>ICUCollationKeyAnalyzer</code> is also 

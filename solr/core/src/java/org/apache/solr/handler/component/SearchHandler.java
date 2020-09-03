@@ -303,7 +303,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    if (req.getCore().getSolrConfig().useCircuitBreakers) {
+    if (req.getCore().getCircuitBreakerManager().isEnabled()) {
       List<CircuitBreaker> trippedCircuitBreakers;
 
       if (timer != null) {
@@ -350,10 +350,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     if (!rb.isDistrib) {
       // a normal non-distributed request
 
-      long timeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1L);
-      if (timeAllowed >= 0L) {
-        SolrQueryTimeoutImpl.set(timeAllowed);
-      }
+      SolrQueryTimeoutImpl.set(req);
       try {
         // The semantics of debugging vs not debugging are different enough that
         // it makes sense to have two control loops

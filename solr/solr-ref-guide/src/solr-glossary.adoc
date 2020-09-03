@@ -144,7 +144,7 @@ A <<core,Core>> that acts as a physical copy of a <<shard,Shard>> in a <<solrclo
 
 [[replication]]<<index-replication.adoc#index-replication,Replication>>::
 
-A method of copying a master index from one server to one or more "slave" or "child" servers.
+A method of copying a leader index from one server to one or more "follower" or "child" servers.
 
 [[requesthandler]]<<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,RequestHandler>>::
 Logic and configuration parameters that tell Solr how to handle incoming "requests", whether the requests are to return search results, to index documents, or to handle other custom situations.

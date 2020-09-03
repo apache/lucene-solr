@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.collections.map.HashedMap;
+import org.apache.commons.collections4.map.HashedMap;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ConversionEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
@@ -42,14 +42,13 @@ public class ConversionEvaluatorsTest {
   StreamFactory factory;
   Map<String, Object> values;
 
-  @SuppressWarnings({"unchecked"})
   public ConversionEvaluatorsTest() {
     super();
 
     factory = new StreamFactory();
     factory.withFunctionName("convert", ConversionEvaluator.class).withFunctionName("raw", RawValueEvaluator.class);
 
-    values = new HashedMap();
+    values = new HashedMap<>();
   }
 
   @Test

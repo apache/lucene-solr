@@ -39,7 +39,6 @@ from collections import defaultdict
 from collections import namedtuple
 from scriptutil import download
 
-import checkJavaDocs
 import checkJavadocLinks
 
 # This tool expects to find /lucene and /solr off the base URL.  You
@@ -225,8 +224,7 @@ def checkAllJARs(topDir, project, gitRevision, version, tmpDir, baseURL):
     for file in files:
       if file.lower().endswith('.jar'):
         if project == 'solr':
-          if ((normRoot.endswith('/contrib/dataimporthandler-extras/lib') and (file.startswith('javax.mail-') or file.startswith('activation-')))
-              or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
+          if ((normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
               or (normRoot.endswith('/contrib/extraction/lib') and file.startswith('xml-apis-'))):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
             continue
@@ -668,7 +666,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
       print('    generate javadocs w/ Java 11...')
       java.run_java11('ant javadocs', '%s/javadocs.log' % unpackPath)
-      checkJavadocpathFull('%s/build/docs' % unpackPath)
+      checkBrokenLinks('%s/build/docs' % unpackPath)
 
       if java.run_java12:
         print("    run tests w/ Java 12 and testArgs='%s'..." % testArgs)
@@ -678,7 +676,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
         #print('    generate javadocs w/ Java 12...')
         #java.run_java12('ant javadocs', '%s/javadocs.log' % unpackPath)
-        #checkJavadocpathFull('%s/build/docs' % unpackPath)
+        #checkBrokenLinks('%s/build/docs' % unpackPath)
 
     else:
       os.chdir('solr')
@@ -689,7 +687,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       # test javadocs
       print('    generate javadocs w/ Java 11...')
       java.run_java11('ant clean javadocs', '%s/javadocs.log' % unpackPath)
-      checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+      checkBrokenLinks('%s/solr/build/docs')
 
       print('    test solr example w/ Java 11...')
       java.run_java11('ant clean server', '%s/antexample.log' % unpackPath)
@@ -701,7 +699,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
         #print('    generate javadocs w/ Java 12...')
         #java.run_java12('ant clean javadocs', '%s/javadocs.log' % unpackPath)
-        #checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+        #checkBrokenLinks('%s/solr/build/docs' % unpackPath)
 
         print('    test solr example w/ Java 12...')
         java.run_java12('ant clean server', '%s/antexample.log' % unpackPath)
@@ -719,9 +717,6 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       testDemo(java.run_java11, isSrc, version, '11')
       if java.run_java12:
         testDemo(java.run_java12, isSrc, version, '12')
-
-      print('    check Lucene\'s javadoc JAR')
-      checkJavadocpath('%s/docs' % unpackPath)
 
     else:
       print('    copying unpacked distribution for Java 11 ...')
@@ -796,7 +791,12 @@ def readSolrOutput(p, startupEvent, failureEvent, logFile):
     startupEvent.set()
   finally:
     f.close()
-    
+
+def is_port_in_use(port):
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
 def testSolrExample(unpackPath, javaPath, isSrc):
   # test solr using some examples it comes with
   logFile = '%s/solr-example.log' % unpackPath
@@ -861,26 +861,8 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   else:
     os.chdir(unpackPath)
     
-# the weaker check: we can use this on java6 for some checks,
-# but its generated HTML is hopelessly broken so we cannot run
-# the link checking that checkJavadocpathFull does.
-def checkJavadocpath(path, failOnMissing=True):
-  # check for level='package'
-  # we fail here if its screwed up
-  if failOnMissing and checkJavaDocs.checkPackageSummaries(path, 'package'):
-    raise RuntimeError('missing javadocs package summaries!')
-    
-  # now check for level='class'
-  if checkJavaDocs.checkPackageSummaries(path):
-    # disabled: RM cannot fix all this, see LUCENE-3887
-    # raise RuntimeError('javadoc problems')
-    print('\n***WARNING***: javadocs want to fail!\n')
-
-# full checks
-def checkJavadocpathFull(path, failOnMissing=True):
-  # check for missing, etc
-  checkJavadocpath(path, failOnMissing)
-
+# check for broken links
+def checkBrokenLinks(path):
   # also validate html/check for broken links
   if checkJavadocLinks.checkAll(path):
     raise RuntimeError('broken javadocs links found!')
@@ -1317,7 +1299,7 @@ def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
   command = 'ant test -Dtestcase=TestBackwardsCompatibility -Dtests.verbose=true'
   p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   stdout, stderr = p.communicate()
-  if p.returncode is not 0:
+  if p.returncode != 0:
     # Not good: the test failed!
     raise RuntimeError('%s failed:\n%s' % (command, stdout))
   stdout = stdout.decode('utf-8',errors='replace').replace('\r\n','\n')
@@ -1455,6 +1437,9 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     print("    Downloading online KEYS file %s" % keysFileURL)
     download('KEYS', keysFileURL, tmpDir, force_clean=FORCE_CLEAN)
     keysFile = '%s/KEYS' % (tmpDir)
+
+  if is_port_in_use(8983):
+    raise RuntimeError('Port 8983 is already in use. The smoketester needs it to test Solr')
 
   print()
   print('Test Lucene...')

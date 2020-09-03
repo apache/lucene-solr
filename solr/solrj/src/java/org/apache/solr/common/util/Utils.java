@@ -62,6 +62,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
@@ -93,7 +94,9 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+
 public class Utils {
+
   @SuppressWarnings({"rawtypes"})
   public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
   @SuppressWarnings({"rawtypes"})
@@ -235,7 +238,7 @@ public class Utils {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     public void handleUnknownClass(Object o) {
       if (o instanceof MapWriter) {
         Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
@@ -403,7 +406,6 @@ public class Utils {
     return getObjectByPath(root, onlyPrimitive, parts);
   }
 
-  @SuppressWarnings({"unchecked"})
   public static boolean setObjectByPath(Object root, String hierarchy, Object value) {
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return setObjectByPath(root, parts, value);
@@ -692,7 +694,7 @@ public class Utils {
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public static boolean mergeJson(Map<String, Object> sink, Map<String, Object> input) {
     boolean isModified = false;
     for (Map.Entry<String, Object> e : input.entrySet()) {
@@ -727,13 +729,16 @@ public class Utils {
   }
 
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
+    return getBaseUrlForNodeName(nodeName, urlScheme, false);
+  }
+  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme,  boolean isV2) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
     final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
+    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2? "api": path)));
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -793,14 +798,17 @@ public class Utils {
 
 
   public static <T> T executeGET(HttpClient client, String url, InputStreamConsumer<T> consumer) throws SolrException {
+    return executeHttpMethod(client, url, consumer, new HttpGet(url));
+  }
+
+  public static <T> T executeHttpMethod(HttpClient client, String url, InputStreamConsumer<T> consumer, HttpRequestBase httpMethod) {
     T result = null;
-    HttpGet httpGet = new HttpGet(url);
     HttpResponse rsp = null;
     try {
-      rsp = client.execute(httpGet);
+      rsp = client.execute(httpMethod);
     } catch (IOException e) {
       log.error("Error in request to url : {}", url, e);
-      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "error sending request");
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Error sending request");
     }
     int statusCode = rsp.getStatusLine().getStatusCode();
     if (statusCode != 200) {

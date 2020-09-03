@@ -109,9 +109,6 @@ Here are the examples included with Solr:
 exampledocs::
 This is a small set of simple CSV, XML, and JSON files that can be used with `bin/post` when first getting started with Solr. For more information about using `bin/post` with these files, see <<post-tool.adoc#post-tool,Post Tool>>.
 
-example-DIH::
-This directory includes a few example DataImport Handler (DIH) configurations to help you get started with importing structured content in a database, an email server, or even an Atom feed. Each example will index a different set of data; see the README there for more details about these examples.
-
 files::
 The `files` directory provides a basic search UI for documents such as Word or PDF that you may have stored locally. See the README there for details on how to use this example.
 
@@ -151,7 +148,7 @@ Solr also provides a number of useful examples to help you learn about key featu
 bin/solr -e techproducts
 ----
 
-Currently, the available examples you can run are: techproducts, dih, schemaless, and cloud. See the section <<solr-control-script-reference.adoc#running-with-example-configurations,Running with Example Configurations>> for details on each example.
+Currently, the available examples you can run are: techproducts, schemaless, and cloud. See the section <<solr-control-script-reference.adoc#running-with-example-configurations,Running with Example Configurations>> for details on each example.
 
 .Getting Started with SolrCloud
 NOTE: Running the `cloud` example starts Solr in <<solrcloud.adoc#solrcloud,SolrCloud>> mode. For more information on starting Solr in SolrCloud mode, see the section <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
