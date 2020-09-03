@@ -683,10 +683,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertNull(rsp.getResponse().get(collectionNames[0]));
     
     // assert passing null collection fails
-    try {
-      req = CollectionAdminRequest.collectionStatus(null);
-      fail();
-    } catch (NullPointerException ex) {}
+    expectThrows(NullPointerException.class, 
+        "Passing null to collectionStatus should result in an NPE",
+        () -> req = CollectionAdminRequest.collectionStatus(null));
     
     // assert passing non-existent collection returns no collections
     req = CollectionAdminRequest.collectionStatus("doesNotExist");
