@@ -895,7 +895,9 @@ public class Http2SolrClient extends SolrClient {
 
     public void waitForComplete() {
       if (log.isDebugEnabled()) log.debug("Before wait for outstanding requests registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
-
+      if (phaser.getUnarrivedParties() <= 1) {
+        return;
+      }
       int arrival = phaser.arriveAndAwaitAdvance();
 
      // phaser.awaitAdvance(phaser.arriveAndDeregister());
