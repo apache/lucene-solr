@@ -206,8 +206,8 @@ Optimizations
 * LUCENE-9395: ConstantValuesSource now shares a single DoubleValues
   instance across all segments (Tony Xu)
 
-* LUCENE-9447: BEST_COMPRESSION now provides higher compression ratios on highly
-  compressible data. (Adrien Grand)
+* LUCENE-9447, LUCENE-9486: Stored fields now get higer compression ratios on
+  highly compressible data. (Adrien Grand)
 
 * LUCENE-9373: FunctionMatchQuery now accepts a "matchCost" optimization hint.
   (Maxim Glazkov, David Smiley)
