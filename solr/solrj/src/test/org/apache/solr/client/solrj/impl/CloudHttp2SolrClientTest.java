@@ -104,6 +104,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    useFactory(null);
     configureCluster(NODE_COUNT)
         .addConfig(TEST_CONFIGSET_NAME, getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
