@@ -59,27 +59,34 @@ final class BugfixDeflater_JDK8252739 extends Deflater {
     final byte[] testData = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
     final byte[] compressed = new byte[32]; // way enough space
     final Deflater deflater = new Deflater(6, true);
+    int compressedSize;
     try {
       deflater.reset();
       deflater.setDictionary(testData, 4, 4);
       deflater.setInput(testData);
       deflater.finish();
-      deflater.deflate(compressed, 0, compressed.length, Deflater.FULL_FLUSH);
+      compressedSize = deflater.deflate(compressed, 0, compressed.length, Deflater.FULL_FLUSH);
     } finally {
       deflater.end();
     }
+    
+    // in nowrap mode we need extra 0-byte as padding, add explicit:
+    compressed[compressedSize] = 0;
+    compressedSize++;
     
     final Inflater inflater = new Inflater(true);
     final byte[] restored = new byte[testData.length];
     try {
       inflater.reset();
       inflater.setDictionary(testData, 4, 4);
-      inflater.setInput(compressed);
+      inflater.setInput(compressed, 0, compressedSize);
       final int restoredLength = inflater.inflate(restored);
       if (restoredLength != testData.length) {
         return true;
       }
     } catch (DataFormatException e) {
+      return true;
+    } catch(RuntimeException e) {
       return true;
     } finally {
       inflater.end();
