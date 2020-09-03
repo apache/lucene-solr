@@ -160,9 +160,6 @@ UpdateHandler implements SolrInfoBean, Closeable {
         }
         ourUpdateLog.init(ulogPluginInfo);
         ourUpdateLog.init(this, core);
-        if (updateLog != null) {
-          updateLog.close();
-        }
       } else {
         ourUpdateLog = updateLog;
       }
@@ -170,9 +167,9 @@ UpdateHandler implements SolrInfoBean, Closeable {
       IOUtils.closeQuietly(ourUpdateLog);
       ObjectReleaseTracker.release(this);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      ulog = ourUpdateLog;
     }
-
-    ulog = ourUpdateLog;
   }
 
   /**
