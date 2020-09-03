@@ -354,15 +354,11 @@ public class Http2SolrClient extends SolrClient {
     InputStreamResponseListener responseListener = new InputStreamResponseListener() {
       @Override
       public void onComplete(Result result) {
-        try {
-          super.onComplete(result);
-        } finally {
-          asyncTracker.completeListener.onComplete(result);
-        }
+        super.onComplete(result);
       }
     };
     asyncTracker.register();
-    postRequest.onRequestQueued(asyncTracker.queuedListener).send(responseListener);
+    postRequest.send(responseListener);
 
     boolean isXml = ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType());
     OutStream outStream = new OutStream(collection, origParams, provider, responseListener,
@@ -438,14 +434,10 @@ public class Http2SolrClient extends SolrClient {
         InputStreamResponseListener listener = new InputStreamResponseListener() {
           @Override
           public void onComplete(Result result) {
-            try {
-              super.onComplete(result);
-            } finally {
-              asyncTracker.completeListener.onComplete(result);
-            }
+            super.onComplete(result);
           }
         };
-        req.onRequestQueued(asyncTracker.queuedListener).send(listener);
+        req.send(listener);
         Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
         InputStream is = listener.getInputStream();
         // nocommit - track this again when streaming use is fixed
