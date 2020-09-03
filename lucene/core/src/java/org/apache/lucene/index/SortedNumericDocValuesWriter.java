@@ -108,7 +108,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter<SortedNumericDocValue
     return new BufferedSortedNumericDocValues(finalValues, finalValuesCount, docsWithField.iterator());
   }
 
-  private long[][] sortDocValues(int maxDoc, Sorter.DocMap sortMap, SortedNumericDocValues oldValues) throws IOException {
+  static long[][] sortDocValues(int maxDoc, Sorter.DocMap sortMap, SortedNumericDocValues oldValues) throws IOException {
     long[][] values = new long[maxDoc][];
     int docID;
     while ((docID = oldValues.nextDoc()) != NO_MORE_DOCS) {
@@ -155,7 +155,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter<SortedNumericDocValue
                                          if (sorted == null) {
                                            return buf;
                                          } else {
-                                           return new SortingLeafReader.SortingSortedNumericDocValues(buf, sorted);
+                                           return new SortingSortedNumericDocValues(buf, sorted);
                                          }
                                        }
                                      });
@@ -168,7 +168,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter<SortedNumericDocValue
     private int valueCount;
     private int valueUpto;
 
-    public BufferedSortedNumericDocValues(PackedLongValues values, PackedLongValues valueCounts, DocIdSetIterator docsWithField) {
+    BufferedSortedNumericDocValues(PackedLongValues values, PackedLongValues valueCounts, DocIdSetIterator docsWithField) {
       valuesIter = values.iterator();
       valueCountsIter = valueCounts.iterator();
       this.docsWithField = docsWithField;
@@ -223,4 +223,68 @@ class SortedNumericDocValuesWriter extends DocValuesWriter<SortedNumericDocValue
     }
   }
 
+  static class SortingSortedNumericDocValues extends SortedNumericDocValues {
+    private final SortedNumericDocValues in;
+    private final long[][] values;
+    private int docID = -1;
+    private int upto;
+
+    SortingSortedNumericDocValues(SortedNumericDocValues in, long[][] values) {
+      this.in = in;
+      this.values = values;
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int nextDoc() {
+      while (true) {
+        docID++;
+        if (docID == values.length) {
+          docID = NO_MORE_DOCS;
+          break;
+        }
+        if (values[docID] != null) {
+          break;
+        }
+        // skip missing docs
+      }
+      upto = 0;
+      return docID;
+    }
+
+    @Override
+    public int advance(int target) {
+      throw new UnsupportedOperationException("use nextDoc instead");
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      upto = 0;
+      return values[docID] != null;
+    }
+
+    @Override
+    public long nextValue() {
+      if (upto == values[docID].length) {
+        throw new AssertionError();
+      } else {
+        return values[docID][upto++];
+      }
+    }
+
+    @Override
+    public long cost() {
+      return in.cost();
+    }
+
+    @Override
+    public int docValueCount() {
+      return values[docID].length;
+    }
+  }
 }

@@ -181,6 +181,8 @@ Optimizations
 
 * SOLR-14422: Admin UI shows Angular placeholders on first load / refresh.  (Colvin Cowie via Eric Pugh)
 
+* SOLR-14819: Fix inefficient iterator pattern in JsonSchemaValidator. (Thomas DuBuisson via Bruno Roustant)
+
 * SOLR-14658: SolrJ's CollectionAdminRequest.collectionStatus(collection) would internally get 
   all collection statuses instead of just the specified collection. (Andy Vuong)
 
