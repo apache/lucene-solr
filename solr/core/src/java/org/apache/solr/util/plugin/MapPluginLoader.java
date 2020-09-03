@@ -19,7 +19,7 @@ package org.apache.solr.util.plugin;
 import java.util.Map;
 
 import org.apache.solr.common.util.DOMUtil;
-import org.w3c.dom.Node;
+import org.apache.solr.common.ConfigNode;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -38,8 +38,8 @@ public class MapPluginLoader<T extends MapInitializedPlugin> extends AbstractPlu
   }
 
   @Override
-  protected void init(T plugin, Node node) throws Exception {
-    Map<String, String> params = DOMUtil.toMapExcept(node.getAttributes(), NAME, "class");
+  protected void init(T plugin, ConfigNode node) throws Exception {
+    Map<String, String> params = DOMUtil.toMapExcept(node, NAME, "class");
     plugin.init( params );
   }
 

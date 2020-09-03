@@ -70,6 +70,8 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.CreateMode;
@@ -1308,7 +1310,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     Map<String,FieldType> newFieldTypes = new HashMap<>();
     List<SchemaAware> schemaAwareList = new ArrayList<>();
     FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, newFieldTypes, schemaAwareList);
-    typeLoader.loadSingle(solrClassLoader, FieldTypeXmlAdapter.toNode(options));
+    typeLoader.loadSingle(solrClassLoader, new DOMConfigNode(FieldTypeXmlAdapter.toNode(options)));
     FieldType ft = newFieldTypes.get(typeName);
     if (!schemaAwareList.isEmpty())
       schemaAware.addAll(schemaAwareList);
