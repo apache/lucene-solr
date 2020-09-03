@@ -970,9 +970,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
               rootCause instanceof SocketException ||
               wasCommError(rootCause));
 
-      log.error("Request to collection {} failed due to ({}) {}, retry={} commError={} errorCode={} ",
-          inputCollections, errorCode, rootCause, retryCount, wasCommError, errorCode);
-
       if (wasCommError
           || (exc instanceof RouteException && (errorCode == 503)) // 404 because the core does not exist 503 service unavailable
         //TODO there are other reasons for 404. We need to change the solr response format from HTML to structured data to know that
@@ -994,12 +991,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           // and we could not get any information from the server
           //it is probably not worth trying again and again because
           // the state would not have been updated
-          log.info("trying request again");
+          log.info("Request to collection {} failed due to ({}) {}, retry={} commError={} errorCode={} - retrying",
+              inputCollections, errorCode, rootCause, retryCount, wasCommError, errorCode);
           return requestWithRetryOnStaleState(request, retryCount + 1, inputCollections);
         }
       } else {
         log.info("request was not communication error it seems");
       }
+      log.error("Request to collection {} failed due to ({}) {}, retry={} commError={} errorCode={} ",
+          inputCollections, errorCode, rootCause, retryCount, wasCommError, errorCode);
 
       boolean stateWasStale = false;
       if (retryCount < MAX_STALE_RETRIES  &&
