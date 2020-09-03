@@ -363,7 +363,7 @@ public class Http2SolrClient extends SolrClient {
       }
     };
     asyncTracker.register();
-    postRequest.send(responseListener);
+    postRequest.onRequestQueued(asyncTracker.queuedListener).send(responseListener);
 
     boolean isXml = ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType());
     OutStream outStream = new OutStream(collection, origParams, provider, responseListener,
