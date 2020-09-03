@@ -349,7 +349,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
 
     @Override
     public boolean advanceExact(int target) throws IOException {
-      // this is used by IndexSorter#StringSorter
+      // needed in IndexSorter#StringSorter
       docID = target;
       ordUpto = 0;
       return ords[docID] != null;

@@ -189,18 +189,17 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
       } else {
         docID = dvs.docsWithField.nextSetBit(docID+1);
       }
-
       return docID;
     }
 
     @Override
     public int advance(int target) {
-      docID = dvs.docsWithField.nextSetBit(target);
-      return docID;
+      throw new UnsupportedOperationException("use nextDoc() instead");
     }
 
     @Override
     public boolean advanceExact(int target) throws IOException {
+      // needed in IndexSorter#{Long|Int|Double|Float}Sorter
       docID = target;
       return dvs.docsWithField.get(target);
     }

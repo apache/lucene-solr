@@ -275,6 +275,7 @@ class SortedDocValuesWriter extends DocValuesWriter<SortedDocValues> {
 
     @Override
     public boolean advanceExact(int target) throws IOException {
+      // needed in IndexSorter#StringSorter
       docID = target;
       return ords[target] != -1;
     }
