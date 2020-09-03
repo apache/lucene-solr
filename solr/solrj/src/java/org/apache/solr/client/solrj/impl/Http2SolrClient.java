@@ -398,32 +398,36 @@ public class Http2SolrClient extends SolrClient {
     if (onComplete != null) {
       asyncTracker.register();
       // This async call only suitable for indexing since the response size is limited by 5MB
-      req.send(new BufferingResponseListener(5 * 1024 * 1024) {
+      try {
+        req.send(new BufferingResponseListener(5 * 1024 * 1024) {
 
-        @Override
-        public void onComplete(Result result) {
-          try {
-            if (result.isFailed()) {
-              onComplete.onFailure(result.getFailure());
-              return;
-            }
-
-            NamedList<Object> rsp;
+          @Override
+          public void onComplete(Result result) {
             try {
-              InputStream is = getContentAsInputStream();
-              assert ObjectReleaseTracker.track(is);
-              rsp = processErrorsAndResponse(req, result.getResponse(),
-                      parser, is, getMediaType(), getEncoding(), isV2ApiRequest(solrRequest));
-              onComplete.onSuccess(rsp);
-            } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              if (result.isFailed()) {
+                onComplete.onFailure(result.getFailure());
+                return;
+              }
+
+              NamedList<Object> rsp;
+              try {
+                InputStream is = getContentAsInputStream();
+                assert ObjectReleaseTracker.track(is);
+                rsp = processErrorsAndResponse(req, result.getResponse(), parser, is, getMediaType(), getEncoding(), isV2ApiRequest(solrRequest));
+                onComplete.onSuccess(rsp);
+              } catch (Exception e) {
+                ParWork.propegateInterrupt(e);
+              }
+            } finally {
+              asyncTracker.completeListener.onComplete(result);
             }
-          } finally {
-            asyncTracker.completeListener.onComplete(result);
           }
-        }
-      });
-      return null;
+        });
+        return null;
+      } catch (Exception e) {
+        onComplete.onFailure(e);
+        throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
+      }
     } else {
       try {
         InputStreamResponseListener listener = new MyInputStreamResponseListener(asyncTracker);
