@@ -22,7 +22,7 @@ import org.apache.lucene.util.Constants;
 
 /**
  * This class is a workaround for JDK bug
- * <a href="https://bugs.openjdk.java.net/browse/JDK-8252739">JDK8252739</a>.
+ * <a href="https://bugs.openjdk.java.net/browse/JDK-8252739">JDK-8252739</a>.
  */
 final class BugfixDeflater_JDK8252739 extends Deflater {
   
