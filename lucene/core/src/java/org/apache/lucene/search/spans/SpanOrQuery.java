@@ -136,6 +136,10 @@ public final class SpanOrQuery extends SpanQuery {
     return new SpanOrWeight(searcher, scoreMode.needsScores() ? getTermStates(subWeights) : null, subWeights, boost);
   }
 
+  /**
+   * Creates SpanOrQuery scorer instances
+   * @lucene.internal
+   */
   public class SpanOrWeight extends SpanWeight {
 
     final List<SpanWeight> subWeights;

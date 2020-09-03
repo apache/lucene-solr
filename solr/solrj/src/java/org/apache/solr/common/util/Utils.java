@@ -96,41 +96,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 
 public class Utils {
-  // Why static lambdas? Even though they require SuppressWarnings? This is
-  // purely an optimization. Comparing:
-  //
-  //    mapObject.computeIfAbsent(key, o -> new HashMap<>());
-  //
-  //    vs.
-  //
-  //    mapObject.computeIfAbsent(key, Utils.NEW_HASHMAP_FUN)
-  //
-  //
-  //    The first code fragment is executed as following
-  //
-  //    s.computeIfAbsent(key, new Function() {
-  //      @Override
-  //      public Object apply(String key) {
-  //        return new HashMap<>();
-  //      }
-  //    }
-  //
-  //    So, there are two problems with this
-  //
-  //    A new anonymous inner class is created for that lambda. This one extra
-  //    class becomes a part of your binary a new instance of that class is
-  //    created everytime the computeIfAbsent() method is invoked, irrespective
-  //    of whether the value is absent for that key or not. Now imagine that
-  //    method getting called millions of times and creating millions of such
-  //    objects for no reason
-  //
-  //    OTOH
-  //
-  //    Utils.NEW_HASHMAP_FUN
-  //    Only a single anonymous class is created for the entire codebase
-  //    Only single instance of that object is created in the VM
-  //
-  // See SOLR-14579.
 
   @SuppressWarnings({"rawtypes"})
   public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
