@@ -15,16 +15,108 @@
  * limitations under the License.
  */
 
-configure([project(":lucene:core")]) {
-    apply plugin: 'net.ltgt.errorprone'
-
-    plugins.withType(JavaPlugin) {
-        dependencies {
-            errorprone("com.google.errorprone:error_prone_core:2.4.0")
+allprojects { prj ->
+    plugins.withId("java", {
+        prj.apply plugin: 'net.ltgt.errorprone'
+        plugins.withType(JavaPlugin) {
+            dependencies {
+                errorprone("com.google.errorprone:error_prone_core:2.4.0")
+            }
+            tasks.withType(JavaCompile) {
+                options.errorprone.errorproneArgs = [
+                        '-Xep:ThrowNull:OFF',
+                        '-Xep:StaticGuardedByInstance:OFF',
+                        '-Xep:ArrayHashCode:OFF',
+                        '-Xep:ArrayEquals:OFF',
+                        '-Xep:IdentityBinaryExpression:OFF',
+                        '-Xep:ComplexBooleanConstant:OFF',
+                        '-Xep:ComplexBooleanConstant:OFF',
+                        '-Xep:StreamResourceLeak:OFF',
+                        '-Xep:UnnecessaryLambda:OFF',
+                        '-Xep:ObjectToString:OFF',
+                        '-Xep:URLEqualsHashCode:OFF',
+                        '-Xep:DoubleBraceInitialization:OFF',
+                        '-Xep:ShortCircuitBoolean:OFF',
+                        '-Xep:InputStreamSlowMultibyteRead:OFF',
+                        '-Xep:NonCanonicalType:OFF',
+                        '-Xep:CollectionIncompatibleType:OFF',
+                        '-Xep:TypeParameterShadowing:OFF',
+                        '-Xep:ThreadJoinLoop:OFF',
+                        '-Xep:MutableConstantField:OFF',
+                        '-Xep:ReturnValueIgnored:OFF',
+                        '-Xep:CollectionIncompatibleType:OFF',
+                        '-Xep:SameNameButDifferent:OFF',
+                        '-Xep:InvalidParam:OFF',
+                        '-Xep:CompareToZero:OFF',
+                        '-Xep:DoubleCheckedLocking:OFF',
+                        '-Xep:BadShiftAmount:OFF',
+                        '-Xep:CollectionUndefinedEquality:OFF',
+                        '-Xep:UnescapedEntity:OFF',
+                        '-Xep:BoxedPrimitiveEquality:OFF',
+                        '-Xep:LogicalAssignment:OFF',
+                        '-Xep:DoubleCheckedLocking:OFF',
+                        '-Xep:AmbiguousMethodReference:OFF',
+                        '-Xep:FormatString:OFF',
+                        '-Xep:InstanceOfAndCastMatchWrongType:OFF',
+                        '-Xep:ModifyCollectionInEnhancedForLoop:OFF',
+                        '-Xep:JavaLangClash:OFF',
+                        '-Xep:TypeParameterUnusedInFormals:OFF',
+                        '-Xep:UnusedNestedClass:OFF',
+                        '-Xep:OverrideThrowableToString:OFF',
+                        '-Xep:FutureReturnValueIgnored:OFF',
+                        '-Xep:BadInstanceof:OFF',
+                        '-Xep:UnusedNestedClass:OFF',
+                        '-Xep:OverrideThrowableToString:OFF',
+                        '-Xep:EqualsIncompatibleType:OFF',
+                        '-Xep:ByteBufferBackingArray:OFF',
+                        '-Xep:ByteBufferBackingArray:OFF',
+                        '-Xep:UnusedMethod:OFF',
+                        '-Xep:ObjectsHashCodePrimitive:OFF',
+                        '-Xep:ObjectsHashCodePrimitive:OFF',
+                        '-Xep:UnnecessaryAnonymousClass:OFF',
+                        '-Xep:BoxedPrimitiveConstructor:OFF',
+                        '-Xep:ArgumentSelectionDefectChecker:OFF',
+                        '-Xep:StringSplitter:OFF','-Xep:MixedMutabilityReturnType:OFF',
+                        '-Xep:EqualsUnsafeCast:OFF',
+                        '-Xep:OperatorPrecedence:OFF',
+                        '-Xep:HidingField:OFF',
+                        '-Xep:ThreadPriorityCheck:OFF',
+                        '-Xep:InlineFormatString:OFF',
+                        '-Xep:EqualsUnsafeCast:OFF',
+                        '-Xep:UnsynchronizedOverridesSynchronized:OFF',
+                        '-Xep:OperatorPrecedence:OFF',
+                        '-Xep:ArrayToString:OFF',
+                        '-Xep:ClassCanBeStatic:OFF',
+                        '-Xep:InvalidInlineTag:OFF',
+                        '-Xep:EmptyCatch:OFF',
+                        '-Xep:UnnecessaryParentheses:OFF',
+                        '-Xep:AlmostJavadoc:OFF',
+                        '-Xep:Finally:OFF',
+                        '-Xep:ImmutableEnumChecker:OFF',
+                        '-Xep:NonAtomicVolatileUpdate:OFF',
+                        '-Xep:MutablePublicArray:OFF',
+                        '-Xep:LockNotBeforeTry:OFF',
+                        '-Xep:WaitNotInLoop:OFF',
+                        '-Xep:UndefinedEquals:OFF',
+                        '-Xep:JdkObsolete:OFF',
+                        '-Xep:NarrowingCompoundAssignment:OFF',
+                        '-Xep:InconsistentCapitalization:OFF',
+                        '-Xep:IntLongMath:OFF',
+                        '-Xep:SynchronizeOnNonFinalField:OFF',
+                        '-Xep:ThreadLocalUsage:OFF',
+                        '-Xep:ProtectedMembersInFinalClass:OFF',
+                        '-Xep:BadImport:OFF',
+                        '-Xep:InconsistentHashCode:OFF',
+                        '-Xep:MissingOverride:OFF',
+                        '-Xep:EqualsGetClass:OFF',
+                        '-Xep:PublicConstructorForAbstractClass:OFF',
+                        '-Xep:EscapedEntity:OFF',
+                        '-Xep:ModifiedButNotUsed:OFF',
+                        '-Xep:ReferenceEquality:OFF',
+                        '-Xep:InvalidBlockTag:OFF',
+                        '-Xep:MissingSummary:OFF',
+                        '-Xep:UnusedVariable:OFF']
+            }
         }
-
-        tasks.withType(JavaCompile) {
-            options.errorprone.errorproneArgs = ['-Xep:InvalidBlockTag:OFF', '-Xep:MissingSummary:OFF', '-Xep:UnusedVariable:OFF']
-        }
-    }
+    })
 }
