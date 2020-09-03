@@ -27,6 +27,26 @@ import java.util.zip.Inflater;
  */
 final class BugfixDeflater_JDK8252739 extends Deflater {
   
+  public static final boolean IS_BUGGY_JDK = detectBuggyJDK();
+
+  /**
+   * Creates a {@link Deflater} instance, which works around JDK-8252739.
+   * <p>
+   * Use this whenever you intend to call {@link #setDictionary(byte[], int, int)} or
+   * {@link #setDictionary(java.nio.ByteBuffer)} on a {@code Deflater}.
+   * */
+  public static Deflater createDeflaterInstance(int level, boolean nowrap, int dictLength) {
+    if (dictLength < 0) {
+      throw new IllegalArgumentException("dictLength must be >= 0");
+    }
+    if (IS_BUGGY_JDK) {
+      return new BugfixDeflater_JDK8252739(level, nowrap, dictLength);
+    } else {
+      return new Deflater(level, nowrap);
+    }
+  }
+  
+  
   private final byte[] dictBytesScratch;
 
   private BugfixDeflater_JDK8252739(int level, boolean nowrap, int dictLength) {
@@ -44,17 +64,6 @@ final class BugfixDeflater_JDK8252739 extends Deflater {
     }
   }
 
-  public static Deflater createDeflaterInstance(int level, boolean nowrap, int dictLength) {
-    if (dictLength < 0) {
-      throw new IllegalArgumentException("dictLength must be >= 0");
-    }
-    if (IS_BUGGY_JDK) {
-      return new BugfixDeflater_JDK8252739(level, nowrap, dictLength);
-    } else {
-      return new Deflater(level, nowrap);
-    }
-  }
-  
   private static boolean detectBuggyJDK() {
     final byte[] testData = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
     final byte[] compressed = new byte[32]; // way enough space
@@ -100,6 +109,4 @@ final class BugfixDeflater_JDK8252739 extends Deflater {
     return false;
   }
   
-  public static final boolean IS_BUGGY_JDK = detectBuggyJDK();
-
 }
