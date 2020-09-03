@@ -86,7 +86,6 @@ dependencies {
     depVer('org.apache.logging.log4j:log4j-core')
     depVer('org.apache.opennlp:opennlp-tools')
     depVer('org.apache.tika:tika-core')
-    depVer('org.apache.velocity.tools:velocity-tools-generic')
     depVer('org.apache.zookeeper:zookeeper')
 
     // jekyll dependencies
@@ -195,7 +194,6 @@ task setupLazyProps {
                 ["ivyversions.org.apache.logging.log4j.version", "org.apache.logging.log4j", "log4j-core"],
                 ["ivyversions./org.apache.opennlp/opennlp-tools", "org.apache.opennlp", "opennlp-tools"],
                 ["ivyversions.org.apache.tika.version", "org.apache.tika", "tika-core"],
-                ["ivyversions.org.apache.velocity.tools.version", "org.apache.velocity.tools", "velocity-tools-generic"],
                 ["ivyversions.org.apache.zookeeper.version", "org.apache.zookeeper", "zookeeper"],
 
                 ["ivy-zookeeper-version", "org.apache.zookeeper", "zookeeper"],
@@ -203,7 +201,6 @@ task setupLazyProps {
                 ["ivy-tika-version", "org.apache.tika", "tika-core"],
                 ["ivy-opennlp-version", "org.apache.opennlp", "opennlp-tools"],
                 ["ivy-commons-codec-version", "commons-codec", "commons-codec"],
-                ["ivy-velocity-tools-version", "org.apache.velocity.tools", "velocity-tools-generic"],
                 ["ivy-dropwizard-version", "io.dropwizard.metrics", "metrics-core"]
         ].each { antProp, depGroup, depId ->
             props[antProp] = getVersion(depGroup, depId, configurations.depVer)
