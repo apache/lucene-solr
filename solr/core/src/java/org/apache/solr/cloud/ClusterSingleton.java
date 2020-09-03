@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cluster.events;
+package org.apache.solr.cloud;
 
 /**
  * Intended for {@link org.apache.solr.core.CoreContainer} plugins that should be
