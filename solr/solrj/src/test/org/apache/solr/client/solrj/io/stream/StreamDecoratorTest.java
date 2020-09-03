@@ -28,6 +28,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -64,6 +65,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -79,6 +81,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   private static final String id = "id";
 
   private static boolean useAlias;
+
+  // open / close this in Before/After to avoid hangs or having to try / finally in every test
+  private SolrClientCache solrClientCache = null;
+  // almost every test needs a StreamContext with a SolrClientCache
+  private StreamContext streamContext = null;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -103,11 +110,22 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
   }
 
+  @After
+  public void closeClientCache() {
+    if (solrClientCache != null) {
+      solrClientCache.close();
+    }
+  }
+
   @Before
   public void cleanIndex() throws Exception {
     new UpdateRequest()
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    solrClientCache = new SolrClientCache();
+    streamContext = new StreamContext();
+    streamContext.setSolrClientCache(solrClientCache);
   }
 
   @Test
@@ -124,53 +142,46 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("unique", UniqueStream.class);
 
-    try {
-      // Basic test
-      expression = StreamExpressionParser.parse("unique(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")");
-      stream = new UniqueStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // Basic test
+    expression = StreamExpressionParser.parse("unique(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")");
+    stream = new UniqueStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
-      assertOrder(tuples, 0, 1, 3, 4);
+    assert (tuples.size() == 4);
+    assertOrder(tuples, 0, 1, 3, 4);
 
-      // Basic test desc
-      expression = StreamExpressionParser.parse("unique(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"), over=\"a_f\")");
-      stream = new UniqueStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // Basic test desc
+    expression = StreamExpressionParser.parse("unique(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"), over=\"a_f\")");
+    stream = new UniqueStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
-      assertOrder(tuples, 4, 3, 1, 2);
+    assert (tuples.size() == 4);
+    assertOrder(tuples, 4, 3, 1, 2);
 
-      // Basic w/multi comp
-      expression = StreamExpressionParser.parse("unique(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
-      stream = new UniqueStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // Basic w/multi comp
+    expression = StreamExpressionParser.parse("unique(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
+    stream = new UniqueStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
-      assertOrder(tuples, 0, 2, 1, 3, 4);
+    assert (tuples.size() == 5);
+    assertOrder(tuples, 0, 2, 1, 3, 4);
 
-      // full factory w/multi comp
-      stream = factory.constructStream("unique(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // full factory w/multi comp
+    stream = factory.constructStream("unique(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
-      assertOrder(tuples, 0, 2, 1, 3, 4);
-    } finally {
-      solrClientCache.close();
-    }
+    assert (tuples.size() == 5);
+    assertOrder(tuples, 0, 2, 1, 3, 4);
   }
 
   @Test
@@ -185,41 +196,33 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .add(id, "5", "a_s", "hello1", "a_i", "1", "a_f", "2")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    try {
-      StreamFactory factory = new StreamFactory()
-          .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
-          .withFunctionName("search", CloudSolrStream.class)
-          .withFunctionName("sort", SortStream.class);
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("sort", SortStream.class);
 
-      // Basic test
-      stream = factory.constructStream("sort(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc\")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 6);
-      assertOrder(tuples, 0, 1, 5, 2, 3, 4);
+    // Basic test
+    stream = factory.constructStream("sort(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc\")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 6);
+    assertOrder(tuples, 0, 1, 5, 2, 3, 4);
 
-      // Basic test desc
-      stream = factory.constructStream("sort(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i desc\")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 6);
-      assertOrder(tuples, 4, 3, 2, 1, 5, 0);
+    // Basic test desc
+    stream = factory.constructStream("sort(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i desc\")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 6);
+    assertOrder(tuples, 4, 3, 2, 1, 5, 0);
 
-      // Basic w/multi comp
-      stream = factory.constructStream("sort(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc, a_f desc\")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 6);
-      assertOrder(tuples, 0, 5, 1, 2, 3, 4);
-    } finally {
-      solrClientCache.close();
-    }
+    // Basic w/multi comp
+    stream = factory.constructStream("sort(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc, a_f desc\")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 6);
+    assertOrder(tuples, 0, 5, 1, 2, 3, 4);
   }
 
   @Test
@@ -234,27 +237,19 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .add(id, "5", "a_s", "hello1", "a_i", "1", "a_f", "2")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("null", NullStream.class);
 
-    try {
-      // Basic test
-      stream = factory.constructStream("null(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc\")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assertTrue(tuples.size() == 1);
-      assertTrue(tuples.get(0).getLong("nullCount") == 6);
-    } finally {
-      solrClientCache.close();
-    }
+    // Basic test
+    stream = factory.constructStream("null(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc\")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assertTrue(tuples.size() == 1);
+    assertTrue(tuples.get(0).getLong("nullCount") == 6);
   }
 
   @Test
@@ -269,12 +264,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .add(id, "5", "a_s", "hello1", "a_i", "1", "a_f", "2")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
@@ -282,22 +273,17 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .withFunctionName("null", NullStream.class)
         .withFunctionName("parallel", ParallelStream.class);
 
-    try {
-
-      // Basic test
-      stream = factory.constructStream("parallel(" + COLLECTIONORALIAS + ", workers=2, sort=\"nullCount desc\", null(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=id, qt=\"/export\"), by=\"a_i asc\"))");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assertTrue(tuples.size() == 2);
-      long nullCount = 0;
-      for (Tuple t : tuples) {
-        nullCount += t.getLong("nullCount");
-      }
-
-      assertEquals(nullCount, 6L);
-    } finally {
-      solrClientCache.close();
+    // Basic test
+    stream = factory.constructStream("parallel(" + COLLECTIONORALIAS + ", workers=2, sort=\"nullCount desc\", null(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=id, qt=\"/export\"), by=\"a_i asc\"))");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assertTrue(tuples.size() == 2);
+    long nullCount = 0;
+    for (Tuple t : tuples) {
+      nullCount += t.getLong("nullCount");
     }
+
+    assertEquals(nullCount, 6L);
   }
 
   @Test
@@ -328,65 +314,58 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         + "on=\"a_f asc\")");
 
     stream = new MergeStream(expression, factory);
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    try {
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
-      assertOrder(tuples, 0, 1, 3, 4);
+    assert (tuples.size() == 4);
+    assertOrder(tuples, 0, 1, 3, 4);
 
-      // Basic test desc
-      expression = StreamExpressionParser.parse("merge("
-          + "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
-          + "on=\"a_f desc\")");
-      stream = new MergeStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // Basic test desc
+    expression = StreamExpressionParser.parse("merge("
+        + "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
+        + "on=\"a_f desc\")");
+    stream = new MergeStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
-      assertOrder(tuples, 4, 3, 1, 0);
+    assert (tuples.size() == 4);
+    assertOrder(tuples, 4, 3, 1, 0);
 
-      // Basic w/multi comp
-      expression = StreamExpressionParser.parse("merge("
-          + "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-          + "on=\"a_f asc, a_s asc\")");
-      stream = new MergeStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // Basic w/multi comp
+    expression = StreamExpressionParser.parse("merge("
+        + "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "on=\"a_f asc, a_s asc\")");
+    stream = new MergeStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
-      assertOrder(tuples, 0, 2, 1, 3, 4);
+    assert (tuples.size() == 5);
+    assertOrder(tuples, 0, 2, 1, 3, 4);
 
-      // full factory w/multi comp
-      stream = factory.constructStream("merge("
-          + "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-          + "on=\"a_f asc, a_s asc\")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // full factory w/multi comp
+    stream = factory.constructStream("merge("
+        + "search(" + COLLECTIONORALIAS + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "on=\"a_f asc, a_s asc\")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
-      assertOrder(tuples, 0, 2, 1, 3, 4);
+    assert (tuples.size() == 5);
+    assertOrder(tuples, 0, 2, 1, 3, 4);
 
-      // full factory w/multi streams
-      stream = factory.constructStream("merge("
-          + "search(" + COLLECTIONORALIAS + ", q=\"id:(0 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"id:(2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-          + "on=\"a_f asc\")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // full factory w/multi streams
+    stream = factory.constructStream("merge("
+        + "search(" + COLLECTIONORALIAS + ", q=\"id:(0 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"id:(2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "on=\"a_f asc\")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
-      assertOrder(tuples, 0, 2, 1, 4);
-    } finally {
-      solrClientCache.close();
-    }
+    assert (tuples.size() == 4);
+    assertOrder(tuples, 0, 2, 1, 4);
   }
 
   @Test
@@ -403,70 +382,63 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("unique", UniqueStream.class)
       .withFunctionName("top", RankStream.class);
-    try {
-      // Basic test
-      expression = StreamExpressionParser.parse("top("
-          + "n=3,"
-          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
-          + "sort=\"a_f asc, a_i asc\")");
-      stream = new RankStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // Basic test
+    expression = StreamExpressionParser.parse("top("
+        + "n=3,"
+        + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
+        + "sort=\"a_f asc, a_i asc\")");
+    stream = new RankStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
-      assertOrder(tuples, 0, 2, 1);
+    assert (tuples.size() == 3);
+    assertOrder(tuples, 0, 2, 1);
 
-      // Basic test desc
-      expression = StreamExpressionParser.parse("top("
-          + "n=2,"
-          + "unique("
-          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
-          + "over=\"a_f\"),"
-          + "sort=\"a_f desc\")");
-      stream = new RankStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // Basic test desc
+    expression = StreamExpressionParser.parse("top("
+        + "n=2,"
+        + "unique("
+        + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
+        + "over=\"a_f\"),"
+        + "sort=\"a_f desc\")");
+    stream = new RankStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 2);
-      assertOrder(tuples, 4, 3);
+    assert (tuples.size() == 2);
+    assertOrder(tuples, 4, 3);
 
-      // full factory
-      stream = factory.constructStream("top("
-          + "n=4,"
-          + "unique("
-          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
-          + "over=\"a_f\"),"
-          + "sort=\"a_f asc\")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // full factory
+    stream = factory.constructStream("top("
+        + "n=4,"
+        + "unique("
+        + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
+        + "over=\"a_f\"),"
+        + "sort=\"a_f asc\")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
-      assertOrder(tuples, 0, 1, 3, 4);
+    assert (tuples.size() == 4);
+    assertOrder(tuples, 0, 1, 3, 4);
 
-      // full factory, switch order
-      stream = factory.constructStream("top("
-          + "n=4,"
-          + "unique("
-          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"),"
-          + "over=\"a_f\"),"
-          + "sort=\"a_f asc\")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // full factory, switch order
+    stream = factory.constructStream("top("
+        + "n=4,"
+        + "unique("
+        + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"),"
+        + "over=\"a_f\"),"
+        + "sort=\"a_f asc\")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 4);
-      assertOrder(tuples, 2, 1, 3, 4);
-    } finally {
-      solrClientCache.close();
-    }
+    assert (tuples.size() == 4);
+    assertOrder(tuples, 2, 1, 3, 4);
   }
 
   @Test
@@ -490,9 +462,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     List<Tuple> tuples;
     Tuple t0, t1, t2;
     List<Map> maps0, maps1, maps2;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
@@ -500,65 +469,59 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .withFunctionName("reduce", ReducerStream.class)
         .withFunctionName("group", GroupOperation.class);
 
-    try {
-      // basic
-      expression = StreamExpressionParser.parse("reduce("
-          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f asc\"),"
-          + "by=\"a_s\","
-          + "group(sort=\"a_f desc\", n=\"4\"))");
+    // basic
+    expression = StreamExpressionParser.parse("reduce("
+        + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f asc\"),"
+        + "by=\"a_s\","
+        + "group(sort=\"a_f desc\", n=\"4\"))");
 
-      stream = factory.constructStream(expression);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    stream = factory.constructStream(expression);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+    assert (tuples.size() == 3);
 
-      t0 = tuples.get(0);
-      maps0 = t0.getMaps("group");
-      assertMaps(maps0, 9, 1, 2, 0);
+    t0 = tuples.get(0);
+    maps0 = t0.getMaps("group");
+    assertMaps(maps0, 9, 1, 2, 0);
 
-      t1 = tuples.get(1);
-      maps1 = t1.getMaps("group");
-      assertMaps(maps1, 8, 7, 5, 3);
+    t1 = tuples.get(1);
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 8, 7, 5, 3);
 
 
-      t2 = tuples.get(2);
-      maps2 = t2.getMaps("group");
-      assertMaps(maps2, 6, 4);
+    t2 = tuples.get(2);
+    maps2 = t2.getMaps("group");
+    assertMaps(maps2, 6, 4);
 
-      // basic w/spaces
-      expression = StreamExpressionParser.parse("reduce("
-          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
-          + "by=\"a_s\"," +
-          "group(sort=\"a_i asc\", n=\"2\"))");
-      stream = factory.constructStream(expression);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // basic w/spaces
+    expression = StreamExpressionParser.parse("reduce("
+        + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
+        + "by=\"a_s\"," +
+        "group(sort=\"a_i asc\", n=\"2\"))");
+    stream = factory.constructStream(expression);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+    assert (tuples.size() == 3);
 
-      t0 = tuples.get(0);
-      maps0 = t0.getMaps("group");
-      assert (maps0.size() == 2);
+    t0 = tuples.get(0);
+    maps0 = t0.getMaps("group");
+    assert (maps0.size() == 2);
 
-      assertMaps(maps0, 0, 1);
+    assertMaps(maps0, 0, 1);
 
-      t1 = tuples.get(1);
-      maps1 = t1.getMaps("group");
-      assertMaps(maps1, 3, 5);
+    t1 = tuples.get(1);
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 3, 5);
 
-      t2 = tuples.get(2);
-      maps2 = t2.getMaps("group");
-      assertMaps(maps2, 4, 6);
-    } finally {
-      solrClientCache.close();
-    }
+    t2 = tuples.get(2);
+    maps2 = t2.getMaps("group");
+    assertMaps(maps2, 4, 6);
   }
 
   @Test
   public void testHavingStream() throws Exception {
-
-    SolrClientCache solrClientCache = new SolrClientCache();
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "subject", "blah blah blah 0")
@@ -657,13 +620,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     t = tuples.get(0);
     assertTrue(t.getDouble("a_f") == 10.0D);
 
-    solrClientCache.close();
   }
 
   @Test
   public void testParallelHavingStream() throws Exception {
-
-    SolrClientCache solrClientCache = new SolrClientCache();
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "subject", "blah blah blah 0")
@@ -766,13 +726,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     t = tuples.get(0);
     assertTrue(t.getDouble("a_f") == 10.0D);
 
-    solrClientCache.close();
   }
 
   @Test
   public void testFetchStream() throws Exception {
-
-    SolrClientCache solrClientCache = new SolrClientCache();//TODO share in @Before ; close in @After ?
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "subject", "blah blah blah 0")
@@ -867,7 +824,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     t = tuples.get(0);
     assertTrue("blah blah blah 99".equals(t.getString("subject")));
 
-    solrClientCache.close();
   }
 
   @Test
@@ -886,10 +842,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .add(id, "9", "a_s", "hello0", "a_i", "9", "a_f", "10", "subject", "blah blah blah 9")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-
     TupleStream stream;
     List<Tuple> tuples;
 
@@ -899,63 +851,58 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .withFunctionName("parallel", ParallelStream.class)
         .withFunctionName("fetch", FetchStream.class);
 
-    try {
+    stream = factory.constructStream("parallel(" + COLLECTIONORALIAS + ", workers=2, sort=\"a_f asc\", fetch(" + COLLECTIONORALIAS + ",  search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=\"id\", qt=\"/export\"), on=\"id=a_i\", batchSize=\"2\", fl=\"subject\"))");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      stream = factory.constructStream("parallel(" + COLLECTIONORALIAS + ", workers=2, sort=\"a_f asc\", fetch(" + COLLECTIONORALIAS + ",  search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=\"id\", qt=\"/export\"), on=\"id=a_i\", batchSize=\"2\", fl=\"subject\"))");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-
-      assert (tuples.size() == 10);
-      Tuple t = tuples.get(0);
-      assertTrue("blah blah blah 0".equals(t.getString("subject")));
-      t = tuples.get(1);
-      assertTrue("blah blah blah 2".equals(t.getString("subject")));
-      t = tuples.get(2);
-      assertTrue("blah blah blah 3".equals(t.getString("subject")));
-      t = tuples.get(3);
-      assertTrue("blah blah blah 4".equals(t.getString("subject")));
-      t = tuples.get(4);
-      assertTrue("blah blah blah 1".equals(t.getString("subject")));
-      t = tuples.get(5);
-      assertTrue("blah blah blah 5".equals(t.getString("subject")));
-      t = tuples.get(6);
-      assertTrue("blah blah blah 6".equals(t.getString("subject")));
-      t = tuples.get(7);
-      assertTrue("blah blah blah 7".equals(t.getString("subject")));
-      t = tuples.get(8);
-      assertTrue("blah blah blah 8".equals(t.getString("subject")));
-      t = tuples.get(9);
-      assertTrue("blah blah blah 9".equals(t.getString("subject")));
+    assert (tuples.size() == 10);
+    Tuple t = tuples.get(0);
+    assertTrue("blah blah blah 0".equals(t.getString("subject")));
+    t = tuples.get(1);
+    assertTrue("blah blah blah 2".equals(t.getString("subject")));
+    t = tuples.get(2);
+    assertTrue("blah blah blah 3".equals(t.getString("subject")));
+    t = tuples.get(3);
+    assertTrue("blah blah blah 4".equals(t.getString("subject")));
+    t = tuples.get(4);
+    assertTrue("blah blah blah 1".equals(t.getString("subject")));
+    t = tuples.get(5);
+    assertTrue("blah blah blah 5".equals(t.getString("subject")));
+    t = tuples.get(6);
+    assertTrue("blah blah blah 6".equals(t.getString("subject")));
+    t = tuples.get(7);
+    assertTrue("blah blah blah 7".equals(t.getString("subject")));
+    t = tuples.get(8);
+    assertTrue("blah blah blah 8".equals(t.getString("subject")));
+    t = tuples.get(9);
+    assertTrue("blah blah blah 9".equals(t.getString("subject")));
 
 
-      stream = factory.constructStream("parallel(" + COLLECTIONORALIAS + ", workers=2, sort=\"a_f asc\", fetch(" + COLLECTIONORALIAS + ",  search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=\"id\", qt=\"/export\"), on=\"id=a_i\", batchSize=\"3\", fl=\"subject\"))");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    stream = factory.constructStream("parallel(" + COLLECTIONORALIAS + ", workers=2, sort=\"a_f asc\", fetch(" + COLLECTIONORALIAS + ",  search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=\"id\", qt=\"/export\"), on=\"id=a_i\", batchSize=\"3\", fl=\"subject\"))");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 10);
-      t = tuples.get(0);
-      assertTrue("blah blah blah 0".equals(t.getString("subject")));
-      t = tuples.get(1);
-      assertTrue("blah blah blah 2".equals(t.getString("subject")));
-      t = tuples.get(2);
-      assertTrue("blah blah blah 3".equals(t.getString("subject")));
-      t = tuples.get(3);
-      assertTrue("blah blah blah 4".equals(t.getString("subject")));
-      t = tuples.get(4);
-      assertTrue("blah blah blah 1".equals(t.getString("subject")));
-      t = tuples.get(5);
-      assertTrue("blah blah blah 5".equals(t.getString("subject")));
-      t = tuples.get(6);
-      assertTrue("blah blah blah 6".equals(t.getString("subject")));
-      t = tuples.get(7);
-      assertTrue("blah blah blah 7".equals(t.getString("subject")));
-      t = tuples.get(8);
-      assertTrue("blah blah blah 8".equals(t.getString("subject")));
-      t = tuples.get(9);
-      assertTrue("blah blah blah 9".equals(t.getString("subject")));
-    } finally {
-      solrClientCache.close();
-    }
+    assert (tuples.size() == 10);
+    t = tuples.get(0);
+    assertTrue("blah blah blah 0".equals(t.getString("subject")));
+    t = tuples.get(1);
+    assertTrue("blah blah blah 2".equals(t.getString("subject")));
+    t = tuples.get(2);
+    assertTrue("blah blah blah 3".equals(t.getString("subject")));
+    t = tuples.get(3);
+    assertTrue("blah blah blah 4".equals(t.getString("subject")));
+    t = tuples.get(4);
+    assertTrue("blah blah blah 1".equals(t.getString("subject")));
+    t = tuples.get(5);
+    assertTrue("blah blah blah 5".equals(t.getString("subject")));
+    t = tuples.get(6);
+    assertTrue("blah blah blah 6".equals(t.getString("subject")));
+    t = tuples.get(7);
+    assertTrue("blah blah blah 7".equals(t.getString("subject")));
+    t = tuples.get(8);
+    assertTrue("blah blah blah 8".equals(t.getString("subject")));
+    t = tuples.get(9);
+    assertTrue("blah blah blah 9".equals(t.getString("subject")));
   }
 
   @Test
@@ -995,9 +942,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         + "sum(a_i)"
         + "), id=\"test\", runInterval=\"1000\", queueSize=\"9\")");
     daemonStream = (DaemonStream)factory.constructStream(expression);
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
     daemonStream.setStreamContext(streamContext);
     try {
       //Test Long and Double Sums
@@ -1075,7 +1019,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       }
     } finally {
       daemonStream.close(); //This should stop the daemon thread
-      solrClientCache.close();
     }
   }
 
@@ -1104,17 +1047,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     DaemonStream daemonStream;
 
-    SolrClientCache cache = new SolrClientCache();
-    StreamContext context = new StreamContext();
-    context.setSolrClientCache(cache);
     expression = StreamExpressionParser.parse("daemon(topic("+ COLLECTIONORALIAS +","+ COLLECTIONORALIAS +", q=\"a_s:hello\", initialCheckpoint=0, id=\"topic1\", rows=2, fl=\"id\""
         + "), id=test, runInterval=1000, terminate=true, queueSize=50)");
     daemonStream = (DaemonStream)factory.constructStream(expression);
-    daemonStream.setStreamContext(context);
+    daemonStream.setStreamContext(streamContext);
 
     List<Tuple> tuples = getTuples(daemonStream);
     assertTrue(tuples.size() == 10);
-    cache.close();
   }
 
   @Test
@@ -1146,103 +1085,96 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    try {
-      expression = StreamExpressionParser.parse("rollup("
-          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\"),"
-          + "over=\"a_s\","
-          + "sum(a_i),"
-          + "sum(a_f),"
-          + "min(a_i),"
-          + "min(a_f),"
-          + "max(a_i),"
-          + "max(a_f),"
-          + "avg(a_i),"
-          + "avg(a_f),"
-          + "count(*),"
-          + ")");
-      stream = factory.constructStream(expression);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    expression = StreamExpressionParser.parse("rollup("
+        + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\"),"
+        + "over=\"a_s\","
+        + "sum(a_i),"
+        + "sum(a_f),"
+        + "min(a_i),"
+        + "min(a_f),"
+        + "max(a_i),"
+        + "max(a_f),"
+        + "avg(a_i),"
+        + "avg(a_f),"
+        + "count(*),"
+        + ")");
+    stream = factory.constructStream(expression);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+    assert (tuples.size() == 3);
 
-      //Test Long and Double Sums
+    //Test Long and Double Sums
 
-      Tuple tuple = tuples.get(0);
-      String bucket = tuple.getString("a_s");
-      Double sumi = tuple.getDouble("sum(a_i)");
-      Double sumf = tuple.getDouble("sum(a_f)");
-      Double mini = tuple.getDouble("min(a_i)");
-      Double minf = tuple.getDouble("min(a_f)");
-      Double maxi = tuple.getDouble("max(a_i)");
-      Double maxf = tuple.getDouble("max(a_f)");
-      Double avgi = tuple.getDouble("avg(a_i)");
-      Double avgf = tuple.getDouble("avg(a_f)");
-      Double count = tuple.getDouble("count(*)");
+    Tuple tuple = tuples.get(0);
+    String bucket = tuple.getString("a_s");
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double sumf = tuple.getDouble("sum(a_f)");
+    Double mini = tuple.getDouble("min(a_i)");
+    Double minf = tuple.getDouble("min(a_f)");
+    Double maxi = tuple.getDouble("max(a_i)");
+    Double maxf = tuple.getDouble("max(a_f)");
+    Double avgi = tuple.getDouble("avg(a_i)");
+    Double avgf = tuple.getDouble("avg(a_f)");
+    Double count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello0"));
-      assertTrue(sumi.doubleValue() == 17.0D);
-      assertTrue(sumf.doubleValue() == 18.0D);
-      assertTrue(mini.doubleValue() == 0.0D);
-      assertTrue(minf.doubleValue() == 1.0D);
-      assertTrue(maxi.doubleValue() == 14.0D);
-      assertTrue(maxf.doubleValue() == 10.0D);
-      assertTrue(avgi.doubleValue() == 4.25D);
-      assertTrue(avgf.doubleValue() == 4.5D);
-      assertTrue(count.doubleValue() == 4);
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
 
-      tuple = tuples.get(1);
-      bucket = tuple.getString("a_s");
-      sumi = tuple.getDouble("sum(a_i)");
-      sumf = tuple.getDouble("sum(a_f)");
-      mini = tuple.getDouble("min(a_i)");
-      minf = tuple.getDouble("min(a_f)");
-      maxi = tuple.getDouble("max(a_i)");
-      maxf = tuple.getDouble("max(a_f)");
-      avgi = tuple.getDouble("avg(a_i)");
-      avgf = tuple.getDouble("avg(a_f)");
-      count = tuple.getDouble("count(*)");
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello3"));
-      assertTrue(sumi.doubleValue() == 38.0D);
-      assertTrue(sumf.doubleValue() == 26.0D);
-      assertTrue(mini.doubleValue() == 3.0D);
-      assertTrue(minf.doubleValue() == 3.0D);
-      assertTrue(maxi.doubleValue() == 13.0D);
-      assertTrue(maxf.doubleValue() == 9.0D);
-      assertTrue(avgi.doubleValue() == 9.5D);
-      assertTrue(avgf.doubleValue() == 6.5D);
-      assertTrue(count.doubleValue() == 4);
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
 
-      tuple = tuples.get(2);
-      bucket = tuple.getString("a_s");
-      sumi = tuple.getDouble("sum(a_i)");
-      sumf = tuple.getDouble("sum(a_f)");
-      mini = tuple.getDouble("min(a_i)");
-      minf = tuple.getDouble("min(a_f)");
-      maxi = tuple.getDouble("max(a_i)");
-      maxf = tuple.getDouble("max(a_f)");
-      avgi = tuple.getDouble("avg(a_i)");
-      avgf = tuple.getDouble("avg(a_f)");
-      count = tuple.getDouble("count(*)");
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello4"));
-      assertTrue(sumi.longValue() == 15);
-      assertTrue(sumf.doubleValue() == 11.0D);
-      assertTrue(mini.doubleValue() == 4.0D);
-      assertTrue(minf.doubleValue() == 4.0D);
-      assertTrue(maxi.doubleValue() == 11.0D);
-      assertTrue(maxf.doubleValue() == 7.0D);
-      assertTrue(avgi.doubleValue() == 7.5D);
-      assertTrue(avgf.doubleValue() == 5.5D);
-      assertTrue(count.doubleValue() == 2);
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
 
-    } finally {
-      solrClientCache.close();
-    }
   }
 
   @Test
@@ -1275,109 +1207,100 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    try {
-      expression = StreamExpressionParser.parse("sort(hashRollup("
-          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\"),"
-          + "over=\"a_s\","
-          + "sum(a_i),"
-          + "sum(a_f),"
-          + "min(a_i),"
-          + "min(a_f),"
-          + "max(a_i),"
-          + "max(a_f),"
-          + "avg(a_i),"
-          + "avg(a_f),"
-          + "count(*),"
-          + "), by=\"avg(a_f) asc\")");
-      stream = factory.constructStream(expression);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    expression = StreamExpressionParser.parse("sort(hashRollup("
+        + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\"),"
+        + "over=\"a_s\","
+        + "sum(a_i),"
+        + "sum(a_f),"
+        + "min(a_i),"
+        + "min(a_f),"
+        + "max(a_i),"
+        + "max(a_f),"
+        + "avg(a_i),"
+        + "avg(a_f),"
+        + "count(*),"
+        + "), by=\"avg(a_f) asc\")");
+    stream = factory.constructStream(expression);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+    assert (tuples.size() == 3);
 
-      //Test Long and Double Sums
+    //Test Long and Double Sums
 
-      Tuple tuple = tuples.get(0);
-      String bucket = tuple.getString("a_s");
-      Double sumi = tuple.getDouble("sum(a_i)");
-      Double sumf = tuple.getDouble("sum(a_f)");
-      Double mini = tuple.getDouble("min(a_i)");
-      Double minf = tuple.getDouble("min(a_f)");
-      Double maxi = tuple.getDouble("max(a_i)");
-      Double maxf = tuple.getDouble("max(a_f)");
-      Double avgi = tuple.getDouble("avg(a_i)");
-      Double avgf = tuple.getDouble("avg(a_f)");
-      Double count = tuple.getDouble("count(*)");
+    Tuple tuple = tuples.get(0);
+    String bucket = tuple.getString("a_s");
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double sumf = tuple.getDouble("sum(a_f)");
+    Double mini = tuple.getDouble("min(a_i)");
+    Double minf = tuple.getDouble("min(a_f)");
+    Double maxi = tuple.getDouble("max(a_i)");
+    Double maxf = tuple.getDouble("max(a_f)");
+    Double avgi = tuple.getDouble("avg(a_i)");
+    Double avgf = tuple.getDouble("avg(a_f)");
+    Double count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello0"));
-      assertTrue(sumi.doubleValue() == 17.0D);
-      assertTrue(sumf.doubleValue() == 18.0D);
-      assertTrue(mini.doubleValue() == 0.0D);
-      assertTrue(minf.doubleValue() == 1.0D);
-      assertTrue(maxi.doubleValue() == 14.0D);
-      assertTrue(maxf.doubleValue() == 10.0D);
-      assertTrue(avgi.doubleValue() == 4.25D);
-      assertTrue(avgf.doubleValue() == 4.5D);
-      assertTrue(count.doubleValue() == 4);
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
 
-      tuple = tuples.get(1);
-      bucket = tuple.getString("a_s");
-      sumi = tuple.getDouble("sum(a_i)");
-      sumf = tuple.getDouble("sum(a_f)");
-      mini = tuple.getDouble("min(a_i)");
-      minf = tuple.getDouble("min(a_f)");
-      maxi = tuple.getDouble("max(a_i)");
-      maxf = tuple.getDouble("max(a_f)");
-      avgi = tuple.getDouble("avg(a_i)");
-      avgf = tuple.getDouble("avg(a_f)");
-      count = tuple.getDouble("count(*)");
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
 
 
-      System.out.println("################:bucket"+bucket);
+    System.out.println("################:bucket"+bucket);
 
 
-      assertTrue(bucket.equals("hello4"));
-      assertTrue(sumi.longValue() == 15);
-      assertTrue(sumf.doubleValue() == 11.0D);
-      assertTrue(mini.doubleValue() == 4.0D);
-      assertTrue(minf.doubleValue() == 4.0D);
-      assertTrue(maxi.doubleValue() == 11.0D);
-      assertTrue(maxf.doubleValue() == 7.0D);
-      assertTrue(avgi.doubleValue() == 7.5D);
-      assertTrue(avgf.doubleValue() == 5.5D);
-      assertTrue(count.doubleValue() == 2);
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
 
-      tuple = tuples.get(2);
-      bucket = tuple.getString("a_s");
-      sumi = tuple.getDouble("sum(a_i)");
-      sumf = tuple.getDouble("sum(a_f)");
-      mini = tuple.getDouble("min(a_i)");
-      minf = tuple.getDouble("min(a_f)");
-      maxi = tuple.getDouble("max(a_i)");
-      maxf = tuple.getDouble("max(a_f)");
-      avgi = tuple.getDouble("avg(a_i)");
-      avgf = tuple.getDouble("avg(a_f)");
-      count = tuple.getDouble("count(*)");
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello3"));
-      assertTrue(sumi.doubleValue() == 38.0D);
-      assertTrue(sumf.doubleValue() == 26.0D);
-      assertTrue(mini.doubleValue() == 3.0D);
-      assertTrue(minf.doubleValue() == 3.0D);
-      assertTrue(maxi.doubleValue() == 13.0D);
-      assertTrue(maxf.doubleValue() == 9.0D);
-      assertTrue(avgi.doubleValue() == 9.5D);
-      assertTrue(avgf.doubleValue() == 6.5D);
-      assertTrue(count.doubleValue() == 4);
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
 
-
-
-    } finally {
-      solrClientCache.close();
-    }
   }
 
   @Test
@@ -1402,27 +1325,17 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .withFunctionName("top", RankStream.class)
         .withFunctionName("group", ReducerStream.class)
         .withFunctionName("parallel", ParallelStream.class);
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
+    ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\", qt=\"/export\"), over=\"a_f\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_f asc\")");
+    pstream.setStreamContext(streamContext);
+    List<Tuple> tuples = getTuples(pstream);
+    assert (tuples.size() == 5);
+    assertOrder(tuples, 0, 1, 3, 4, 6);
 
+    //Test the eofTuples
 
-    try {
-
-      ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\", qt=\"/export\"), over=\"a_f\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_f asc\")");
-      pstream.setStreamContext(streamContext);
-      List<Tuple> tuples = getTuples(pstream);
-      assert (tuples.size() == 5);
-      assertOrder(tuples, 0, 1, 3, 4, 6);
-
-      //Test the eofTuples
-
-      Map<String, Tuple> eofTuples = pstream.getEofTuples();
-      assert (eofTuples.size() == 2); //There should be an EOF tuple for each worker.
-    } finally {
-      solrClientCache.close();
-    }
+    Map<String, Tuple> eofTuples = pstream.getEofTuples();
+    assert (eofTuples.size() == 2); //There should be an EOF tuple for each worker.
   }
 
   @Test
@@ -1489,32 +1402,24 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-
     String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory streamFactory = new StreamFactory().withCollectionZkHost(COLLECTIONORALIAS, zkHost)
         .withFunctionName("shuffle", ShuffleStream.class)
         .withFunctionName("unique", UniqueStream.class)
         .withFunctionName("parallel", ParallelStream.class);
 
-    try {
-      ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", unique(shuffle(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"), over=\"a_f\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_f asc\")");
-      pstream.setStreamFactory(streamFactory);
-      pstream.setStreamContext(streamContext);
-      List<Tuple> tuples = getTuples(pstream);
-      assert (tuples.size() == 6);
-      assertOrder(tuples, 0, 1, 3, 4, 6, 56);
+    ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", unique(shuffle(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"), over=\"a_f\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_f asc\")");
+    pstream.setStreamFactory(streamFactory);
+    pstream.setStreamContext(streamContext);
+    List<Tuple> tuples = getTuples(pstream);
+    assert (tuples.size() == 6);
+    assertOrder(tuples, 0, 1, 3, 4, 6, 56);
 
-      //Test the eofTuples
+    //Test the eofTuples
 
-      Map<String, Tuple> eofTuples = pstream.getEofTuples();
-      assert (eofTuples.size() == 2); //There should be an EOF tuple for each worker.
-      assert (pstream.toExpression(streamFactory).toString().contains("shuffle"));
-    } finally {
-      solrClientCache.close();
-    }
+    Map<String, Tuple> eofTuples = pstream.getEofTuples();
+    assert (eofTuples.size() == 2); //There should be an EOF tuple for each worker.
+    assert (pstream.toExpression(streamFactory).toString().contains("shuffle"));
   }
 
   @Test
@@ -1533,11 +1438,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-
-
     String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory streamFactory = new StreamFactory().withCollectionZkHost(COLLECTIONORALIAS, zkHost)
         .withFunctionName("search", CloudSolrStream.class)
@@ -1546,61 +1446,57 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .withFunctionName("parallel", ParallelStream.class);
 
 
-    try {
-      ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", " +
-          "reduce(" +
-          "search(" + COLLECTIONORALIAS + ", q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\", qt=\"/export\"), " +
-          "by=\"a_s\"," +
-          "group(sort=\"a_i asc\", n=\"5\")), " +
-          "workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_s asc\")");
+    ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", " +
+        "reduce(" +
+        "search(" + COLLECTIONORALIAS + ", q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\", qt=\"/export\"), " +
+        "by=\"a_s\"," +
+        "group(sort=\"a_i asc\", n=\"5\")), " +
+        "workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_s asc\")");
 
-      pstream.setStreamContext(streamContext);
+    pstream.setStreamContext(streamContext);
 
-      List<Tuple> tuples = getTuples(pstream);
+    List<Tuple> tuples = getTuples(pstream);
 
-      assert (tuples.size() == 3);
+    assert (tuples.size() == 3);
 
-      Tuple t0 = tuples.get(0);
-      List<Map> maps0 = t0.getMaps("group");
-      assertMaps(maps0, 0, 1, 2, 9);
+    Tuple t0 = tuples.get(0);
+    List<Map> maps0 = t0.getMaps("group");
+    assertMaps(maps0, 0, 1, 2, 9);
 
-      Tuple t1 = tuples.get(1);
-      List<Map> maps1 = t1.getMaps("group");
-      assertMaps(maps1, 3, 5, 7, 8);
+    Tuple t1 = tuples.get(1);
+    List<Map> maps1 = t1.getMaps("group");
+    assertMaps(maps1, 3, 5, 7, 8);
 
-      Tuple t2 = tuples.get(2);
-      List<Map> maps2 = t2.getMaps("group");
-      assertMaps(maps2, 4, 6);
-
-
-      pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", " +
-          "reduce(" +
-          "search(" + COLLECTIONORALIAS + ", q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\", qt=\"/export\"), " +
-          "by=\"a_s\", " +
-          "group(sort=\"a_i desc\", n=\"5\"))," +
-          "workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_s desc\")");
-
-      pstream.setStreamContext(streamContext);
-      tuples = getTuples(pstream);
-
-      assert (tuples.size() == 3);
-
-      t0 = tuples.get(0);
-      maps0 = t0.getMaps("group");
-      assertMaps(maps0, 6, 4);
+    Tuple t2 = tuples.get(2);
+    List<Map> maps2 = t2.getMaps("group");
+    assertMaps(maps2, 4, 6);
 
 
-      t1 = tuples.get(1);
-      maps1 = t1.getMaps("group");
-      assertMaps(maps1, 8, 7, 5, 3);
+    pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", " +
+        "reduce(" +
+        "search(" + COLLECTIONORALIAS + ", q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\", qt=\"/export\"), " +
+        "by=\"a_s\", " +
+        "group(sort=\"a_i desc\", n=\"5\"))," +
+        "workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_s desc\")");
+
+    pstream.setStreamContext(streamContext);
+    tuples = getTuples(pstream);
+
+    assert (tuples.size() == 3);
+
+    t0 = tuples.get(0);
+    maps0 = t0.getMaps("group");
+    assertMaps(maps0, 6, 4);
 
 
-      t2 = tuples.get(2);
-      maps2 = t2.getMaps("group");
-      assertMaps(maps2, 9, 2, 1, 0);
-    } finally {
-      solrClientCache.close();
-    }
+    t1 = tuples.get(1);
+    maps1 = t1.getMaps("group");
+    assertMaps(maps1, 8, 7, 5, 3);
+
+
+    t2 = tuples.get(2);
+    maps2 = t2.getMaps("group");
+    assertMaps(maps2, 9, 2, 1, 0);
 
   }
 
@@ -1628,24 +1524,17 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .withFunctionName("group", ReducerStream.class)
         .withFunctionName("parallel", ParallelStream.class);
 
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    try {
-      ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel("
-          + COLLECTIONORALIAS + ", "
-          + "top("
-          + "search(" + COLLECTIONORALIAS + ", q=\"*:*\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), "
-          + "n=\"11\", "
-          + "sort=\"a_i desc\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i desc\")");
-      pstream.setStreamContext(streamContext);
-      List<Tuple> tuples = getTuples(pstream);
+    ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel("
+        + COLLECTIONORALIAS + ", "
+        + "top("
+        + "search(" + COLLECTIONORALIAS + ", q=\"*:*\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), "
+        + "n=\"11\", "
+        + "sort=\"a_i desc\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i desc\")");
+    pstream.setStreamContext(streamContext);
+    List<Tuple> tuples = getTuples(pstream);
 
-      assert (tuples.size() == 10);
-      assertOrder(tuples, 10, 9, 8, 7, 6, 5, 4, 3, 2, 0);
-    } finally {
-      solrClientCache.close();
-    }
+    assert (tuples.size() == 10);
+    assertOrder(tuples, 10, 9, 8, 7, 6, 5, 4, 3, 2, 0);
 
   }
 
@@ -1674,29 +1563,22 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .withFunctionName("merge", MergeStream.class)
         .withFunctionName("parallel", ParallelStream.class);
 
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    try {
-      //Test ascending
-      ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", merge(search(" + COLLECTIONORALIAS + ", q=\"id:(4 1 8 7 9)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), search(" + COLLECTIONORALIAS + ", q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), on=\"a_i asc\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i asc\")");
-      pstream.setStreamContext(streamContext);
-      List<Tuple> tuples = getTuples(pstream);
+    //Test ascending
+    ParallelStream pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", merge(search(" + COLLECTIONORALIAS + ", q=\"id:(4 1 8 7 9)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), search(" + COLLECTIONORALIAS + ", q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"), on=\"a_i asc\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i asc\")");
+    pstream.setStreamContext(streamContext);
+    List<Tuple> tuples = getTuples(pstream);
 
-      assert (tuples.size() == 9);
-      assertOrder(tuples, 0, 1, 2, 3, 4, 7, 6, 8, 9);
+    assert (tuples.size() == 9);
+    assertOrder(tuples, 0, 1, 2, 3, 4, 7, 6, 8, 9);
 
-      //Test descending
+    //Test descending
 
-      pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", merge(search(" + COLLECTIONORALIAS + ", q=\"id:(4 1 8 9)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\", qt=\"/export\"), search(" + COLLECTIONORALIAS + ", q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\", qt=\"/export\"), on=\"a_i desc\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i desc\")");
-      pstream.setStreamContext(streamContext);
-      tuples = getTuples(pstream);
+    pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", merge(search(" + COLLECTIONORALIAS + ", q=\"id:(4 1 8 9)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\", qt=\"/export\"), search(" + COLLECTIONORALIAS + ", q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\", qt=\"/export\"), on=\"a_i desc\"), workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i desc\")");
+    pstream.setStreamContext(streamContext);
+    tuples = getTuples(pstream);
 
-      assert (tuples.size() == 8);
-      assertOrder(tuples, 9, 8, 6, 4, 3, 2, 1, 0);
-    } finally {
-      solrClientCache.close();
-    }
+    assert (tuples.size() == 8);
+    assertOrder(tuples, 9, 8, 6, 4, 3, 2, 1, 0);
 
   }
 
@@ -1728,112 +1610,104 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       .withFunctionName("count", CountMetric.class);
 
 
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
 
-    try {
-      expression = StreamExpressionParser.parse("parallel(" + COLLECTIONORALIAS + ","
-              + "rollup("
-              + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", partitionKeys=\"a_s\", qt=\"/export\"),"
-              + "over=\"a_s\","
-              + "sum(a_i),"
-              + "sum(a_f),"
-              + "min(a_i),"
-              + "min(a_f),"
-              + "max(a_i),"
-              + "max(a_f),"
-              + "avg(a_i),"
-              + "avg(a_f),"
-              + "count(*)"
-              + "),"
-              + "workers=\"2\", zkHost=\"" + cluster.getZkServer().getZkAddress() + "\", sort=\"a_s asc\")"
-      );
+    expression = StreamExpressionParser.parse("parallel(" + COLLECTIONORALIAS + ","
+            + "rollup("
+            + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", partitionKeys=\"a_s\", qt=\"/export\"),"
+            + "over=\"a_s\","
+            + "sum(a_i),"
+            + "sum(a_f),"
+            + "min(a_i),"
+            + "min(a_f),"
+            + "max(a_i),"
+            + "max(a_f),"
+            + "avg(a_i),"
+            + "avg(a_f),"
+            + "count(*)"
+            + "),"
+            + "workers=\"2\", zkHost=\"" + cluster.getZkServer().getZkAddress() + "\", sort=\"a_s asc\")"
+    );
 
 
-      stream = factory.constructStream(expression);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    stream = factory.constructStream(expression);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+    assert (tuples.size() == 3);
 
-      //Test Long and Double Sums
+    //Test Long and Double Sums
 
-      Tuple tuple = tuples.get(0);
-      String bucket = tuple.getString("a_s");
-      Double sumi = tuple.getDouble("sum(a_i)");
-      Double sumf = tuple.getDouble("sum(a_f)");
-      Double mini = tuple.getDouble("min(a_i)");
-      Double minf = tuple.getDouble("min(a_f)");
-      Double maxi = tuple.getDouble("max(a_i)");
-      Double maxf = tuple.getDouble("max(a_f)");
-      Double avgi = tuple.getDouble("avg(a_i)");
-      Double avgf = tuple.getDouble("avg(a_f)");
-      Double count = tuple.getDouble("count(*)");
+    Tuple tuple = tuples.get(0);
+    String bucket = tuple.getString("a_s");
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double sumf = tuple.getDouble("sum(a_f)");
+    Double mini = tuple.getDouble("min(a_i)");
+    Double minf = tuple.getDouble("min(a_f)");
+    Double maxi = tuple.getDouble("max(a_i)");
+    Double maxf = tuple.getDouble("max(a_f)");
+    Double avgi = tuple.getDouble("avg(a_i)");
+    Double avgf = tuple.getDouble("avg(a_f)");
+    Double count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello0"));
-      assertTrue(sumi.doubleValue() == 17.0D);
-      assertTrue(sumf.doubleValue() == 18.0D);
-      assertTrue(mini.doubleValue() == 0.0D);
-      assertTrue(minf.doubleValue() == 1.0D);
-      assertTrue(maxi.doubleValue() == 14.0D);
-      assertTrue(maxf.doubleValue() == 10.0D);
-      assertTrue(avgi.doubleValue() == 4.25D);
-      assertTrue(avgf.doubleValue() == 4.5D);
-      assertTrue(count.doubleValue() == 4);
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
 
-      tuple = tuples.get(1);
-      bucket = tuple.getString("a_s");
-      sumi = tuple.getDouble("sum(a_i)");
-      sumf = tuple.getDouble("sum(a_f)");
-      mini = tuple.getDouble("min(a_i)");
-      minf = tuple.getDouble("min(a_f)");
-      maxi = tuple.getDouble("max(a_i)");
-      maxf = tuple.getDouble("max(a_f)");
-      avgi = tuple.getDouble("avg(a_i)");
-      avgf = tuple.getDouble("avg(a_f)");
-      count = tuple.getDouble("count(*)");
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello3"));
-      assertTrue(sumi.doubleValue() == 38.0D);
-      assertTrue(sumf.doubleValue() == 26.0D);
-      assertTrue(mini.doubleValue() == 3.0D);
-      assertTrue(minf.doubleValue() == 3.0D);
-      assertTrue(maxi.doubleValue() == 13.0D);
-      assertTrue(maxf.doubleValue() == 9.0D);
-      assertTrue(avgi.doubleValue() == 9.5D);
-      assertTrue(avgf.doubleValue() == 6.5D);
-      assertTrue(count.doubleValue() == 4);
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
 
-      tuple = tuples.get(2);
-      bucket = tuple.getString("a_s");
-      sumi = tuple.getDouble("sum(a_i)");
-      sumf = tuple.getDouble("sum(a_f)");
-      mini = tuple.getDouble("min(a_i)");
-      minf = tuple.getDouble("min(a_f)");
-      maxi = tuple.getDouble("max(a_i)");
-      maxf = tuple.getDouble("max(a_f)");
-      avgi = tuple.getDouble("avg(a_i)");
-      avgf = tuple.getDouble("avg(a_f)");
-      count = tuple.getDouble("count(*)");
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello4"));
-      assertTrue(sumi.longValue() == 15);
-      assertTrue(sumf.doubleValue() == 11.0D);
-      assertTrue(mini.doubleValue() == 4.0D);
-      assertTrue(minf.doubleValue() == 4.0D);
-      assertTrue(maxi.doubleValue() == 11.0D);
-      assertTrue(maxf.doubleValue() == 7.0D);
-      assertTrue(avgi.doubleValue() == 7.5D);
-      assertTrue(avgf.doubleValue() == 5.5D);
-      assertTrue(count.doubleValue() == 2);
-    } finally {
-      solrClientCache.close();
-    }
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
   }
 
   @Test
@@ -1865,114 +1739,106 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .withFunctionName("sort", SortStream.class);
 
 
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
 
-    try {
-      expression = StreamExpressionParser.parse("sort(parallel(" + COLLECTIONORALIAS + ","
-          + "hashRollup("
-          + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", partitionKeys=\"a_s\", qt=\"/export\"),"
-          + "over=\"a_s\","
-          + "sum(a_i),"
-          + "sum(a_f),"
-          + "min(a_i),"
-          + "min(a_f),"
-          + "max(a_i),"
-          + "max(a_f),"
-          + "avg(a_i),"
-          + "avg(a_f),"
-          + "count(*)"
-          + "),"
-          + "workers=\"2\", zkHost=\"" + cluster.getZkServer().getZkAddress() + "\", sort=\"a_s asc\"), by=\"avg(a_f) asc\")"
-      );
+    expression = StreamExpressionParser.parse("sort(parallel(" + COLLECTIONORALIAS + ","
+        + "hashRollup("
+        + "search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", partitionKeys=\"a_s\", qt=\"/export\"),"
+        + "over=\"a_s\","
+        + "sum(a_i),"
+        + "sum(a_f),"
+        + "min(a_i),"
+        + "min(a_f),"
+        + "max(a_i),"
+        + "max(a_f),"
+        + "avg(a_i),"
+        + "avg(a_f),"
+        + "count(*)"
+        + "),"
+        + "workers=\"2\", zkHost=\"" + cluster.getZkServer().getZkAddress() + "\", sort=\"a_s asc\"), by=\"avg(a_f) asc\")"
+    );
 
 
-      stream = factory.constructStream(expression);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    stream = factory.constructStream(expression);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 3);
+    assert (tuples.size() == 3);
 
-      //Test Long and Double Sums
+    //Test Long and Double Sums
 
-      Tuple tuple = tuples.get(0);
-      String bucket = tuple.getString("a_s");
-      Double sumi = tuple.getDouble("sum(a_i)");
-      Double sumf = tuple.getDouble("sum(a_f)");
-      Double mini = tuple.getDouble("min(a_i)");
-      Double minf = tuple.getDouble("min(a_f)");
-      Double maxi = tuple.getDouble("max(a_i)");
-      Double maxf = tuple.getDouble("max(a_f)");
-      Double avgi = tuple.getDouble("avg(a_i)");
-      Double avgf = tuple.getDouble("avg(a_f)");
-      Double count = tuple.getDouble("count(*)");
+    Tuple tuple = tuples.get(0);
+    String bucket = tuple.getString("a_s");
+    Double sumi = tuple.getDouble("sum(a_i)");
+    Double sumf = tuple.getDouble("sum(a_f)");
+    Double mini = tuple.getDouble("min(a_i)");
+    Double minf = tuple.getDouble("min(a_f)");
+    Double maxi = tuple.getDouble("max(a_i)");
+    Double maxf = tuple.getDouble("max(a_f)");
+    Double avgi = tuple.getDouble("avg(a_i)");
+    Double avgf = tuple.getDouble("avg(a_f)");
+    Double count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello0"));
-      assertTrue(sumi.doubleValue() == 17.0D);
-      assertTrue(sumf.doubleValue() == 18.0D);
-      assertTrue(mini.doubleValue() == 0.0D);
-      assertTrue(minf.doubleValue() == 1.0D);
-      assertTrue(maxi.doubleValue() == 14.0D);
-      assertTrue(maxf.doubleValue() == 10.0D);
-      assertTrue(avgi.doubleValue() == 4.25D);
-      assertTrue(avgf.doubleValue() == 4.5D);
-      assertTrue(count.doubleValue() == 4);
+    assertTrue(bucket.equals("hello0"));
+    assertTrue(sumi.doubleValue() == 17.0D);
+    assertTrue(sumf.doubleValue() == 18.0D);
+    assertTrue(mini.doubleValue() == 0.0D);
+    assertTrue(minf.doubleValue() == 1.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 4.25D);
+    assertTrue(avgf.doubleValue() == 4.5D);
+    assertTrue(count.doubleValue() == 4);
 
-      tuple = tuples.get(1);
-      bucket = tuple.getString("a_s");
-      sumi = tuple.getDouble("sum(a_i)");
-      sumf = tuple.getDouble("sum(a_f)");
-      mini = tuple.getDouble("min(a_i)");
-      minf = tuple.getDouble("min(a_f)");
-      maxi = tuple.getDouble("max(a_i)");
-      maxf = tuple.getDouble("max(a_f)");
-      avgi = tuple.getDouble("avg(a_i)");
-      avgf = tuple.getDouble("avg(a_f)");
-      count = tuple.getDouble("count(*)");
+    tuple = tuples.get(1);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
 
-      assertTrue(bucket.equals("hello4"));
-      assertTrue(sumi.longValue() == 15);
-      assertTrue(sumf.doubleValue() == 11.0D);
-      assertTrue(mini.doubleValue() == 4.0D);
-      assertTrue(minf.doubleValue() == 4.0D);
-      assertTrue(maxi.doubleValue() == 11.0D);
-      assertTrue(maxf.doubleValue() == 7.0D);
-      assertTrue(avgi.doubleValue() == 7.5D);
-      assertTrue(avgf.doubleValue() == 5.5D);
-      assertTrue(count.doubleValue() == 2);
-
-
-      tuple = tuples.get(2);
-      bucket = tuple.getString("a_s");
-      sumi = tuple.getDouble("sum(a_i)");
-      sumf = tuple.getDouble("sum(a_f)");
-      mini = tuple.getDouble("min(a_i)");
-      minf = tuple.getDouble("min(a_f)");
-      maxi = tuple.getDouble("max(a_i)");
-      maxf = tuple.getDouble("max(a_f)");
-      avgi = tuple.getDouble("avg(a_i)");
-      avgf = tuple.getDouble("avg(a_f)");
-      count = tuple.getDouble("count(*)");
+    assertTrue(bucket.equals("hello4"));
+    assertTrue(sumi.longValue() == 15);
+    assertTrue(sumf.doubleValue() == 11.0D);
+    assertTrue(mini.doubleValue() == 4.0D);
+    assertTrue(minf.doubleValue() == 4.0D);
+    assertTrue(maxi.doubleValue() == 11.0D);
+    assertTrue(maxf.doubleValue() == 7.0D);
+    assertTrue(avgi.doubleValue() == 7.5D);
+    assertTrue(avgf.doubleValue() == 5.5D);
+    assertTrue(count.doubleValue() == 2);
 
 
-      assertTrue(bucket.equals("hello3"));
-      assertTrue(sumi.doubleValue() == 38.0D);
-      assertTrue(sumf.doubleValue() == 26.0D);
-      assertTrue(mini.doubleValue() == 3.0D);
-      assertTrue(minf.doubleValue() == 3.0D);
-      assertTrue(maxi.doubleValue() == 13.0D);
-      assertTrue(maxf.doubleValue() == 9.0D);
-      assertTrue(avgi.doubleValue() == 9.5D);
-      assertTrue(avgf.doubleValue() == 6.5D);
-      assertTrue(count.doubleValue() == 4);
-    } finally {
-      solrClientCache.close();
-    }
+    tuple = tuples.get(2);
+    bucket = tuple.getString("a_s");
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+
+    assertTrue(bucket.equals("hello3"));
+    assertTrue(sumi.doubleValue() == 38.0D);
+    assertTrue(sumf.doubleValue() == 26.0D);
+    assertTrue(mini.doubleValue() == 3.0D);
+    assertTrue(minf.doubleValue() == 3.0D);
+    assertTrue(maxi.doubleValue() == 13.0D);
+    assertTrue(maxf.doubleValue() == 9.0D);
+    assertTrue(avgi.doubleValue() == 9.5D);
+    assertTrue(avgf.doubleValue() == 6.5D);
+    assertTrue(count.doubleValue() == 4);
   }
 
   @Test
@@ -2000,62 +1866,55 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("innerJoin", InnerJoinStream.class);
 
-    try {
-      // Basic test
-      expression = StreamExpressionParser.parse("innerJoin("
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
-          + "on=\"join1_i=join1_i, join2_s=join2_s\")");
-      stream = new InnerJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 8);
-      assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
+    // Basic test
+    expression = StreamExpressionParser.parse("innerJoin("
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
+        + "on=\"join1_i=join1_i, join2_s=join2_s\")");
+    stream = new InnerJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 8);
+    assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
 
-      // Basic desc
-      expression = StreamExpressionParser.parse("innerJoin("
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-          + "on=\"join1_i=join1_i, join2_s=join2_s\")");
-      stream = new InnerJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 8);
-      assertOrder(tuples, 7, 3, 4, 5, 1, 1, 15, 15);
+    // Basic desc
+    expression = StreamExpressionParser.parse("innerJoin("
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "on=\"join1_i=join1_i, join2_s=join2_s\")");
+    stream = new InnerJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 8);
+    assertOrder(tuples, 7, 3, 4, 5, 1, 1, 15, 15);
 
-      // Results in both searches, no join matches
-      expression = StreamExpressionParser.parse("innerJoin("
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
-          + "on=\"ident_s=right.ident_s\")");
-      stream = new InnerJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 0);
+    // Results in both searches, no join matches
+    expression = StreamExpressionParser.parse("innerJoin("
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
+        + "on=\"ident_s=right.ident_s\")");
+    stream = new InnerJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 0);
 
-      // Differing field names
-      expression = StreamExpressionParser.parse("innerJoin("
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\", aliases=\"join3_i=aliasesField\"),"
-          + "on=\"join1_i=aliasesField, join2_s=join2_s\")");
-      stream = new InnerJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // Differing field names
+    expression = StreamExpressionParser.parse("innerJoin("
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\", aliases=\"join3_i=aliasesField\"),"
+        + "on=\"join1_i=aliasesField, join2_s=join2_s\")");
+    stream = new InnerJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 8);
-      assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
-    } finally {
-      solrClientCache.close();
-    }
+    assert (tuples.size() == 8);
+    assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
   }
 
   @Test
@@ -2083,62 +1942,56 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class);
     
     // Basic test
-    try {
-      expression = StreamExpressionParser.parse("leftOuterJoin("
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
-          + "on=\"join1_i=join1_i, join2_s=join2_s\")");
-      stream = new LeftOuterJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 10);
-      assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
+    expression = StreamExpressionParser.parse("leftOuterJoin("
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
+        + "on=\"join1_i=join1_i, join2_s=join2_s\")");
+    stream = new LeftOuterJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 10);
+    assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
 
-      // Basic desc
-      expression = StreamExpressionParser.parse("leftOuterJoin("
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-          + "on=\"join1_i=join1_i, join2_s=join2_s\")");
-      stream = new LeftOuterJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 10);
-      assertOrder(tuples, 7, 6, 3, 4, 5, 1, 1, 15, 15, 2);
+    // Basic desc
+    expression = StreamExpressionParser.parse("leftOuterJoin("
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "on=\"join1_i=join1_i, join2_s=join2_s\")");
+    stream = new LeftOuterJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 10);
+    assertOrder(tuples, 7, 6, 3, 4, 5, 1, 1, 15, 15, 2);
 
-      // Results in both searches, no join matches
-      expression = StreamExpressionParser.parse("leftOuterJoin("
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
-          + "on=\"ident_s=right.ident_s\")");
-      stream = new LeftOuterJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 8);
-      assertOrder(tuples, 1, 15, 2, 3, 4, 5, 6, 7);
+    // Results in both searches, no join matches
+    expression = StreamExpressionParser.parse("leftOuterJoin("
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
+        + "on=\"ident_s=right.ident_s\")");
+    stream = new LeftOuterJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 8);
+    assertOrder(tuples, 1, 15, 2, 3, 4, 5, 6, 7);
 
-      // Differing field names
-      expression = StreamExpressionParser.parse("leftOuterJoin("
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-          + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\", aliases=\"join3_i=aliasesField\"),"
-          + "on=\"join1_i=aliasesField, join2_s=join2_s\")");
-      stream = new LeftOuterJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 10);
-      assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
-    } finally {
-      solrClientCache.close();
-    }
+    // Differing field names
+    expression = StreamExpressionParser.parse("leftOuterJoin("
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+        + "search(" + COLLECTIONORALIAS + ", q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\", aliases=\"join3_i=aliasesField\"),"
+        + "on=\"join1_i=aliasesField, join2_s=join2_s\")");
+    stream = new LeftOuterJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 10);
+    assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
+
   }
 
   @Test
@@ -2166,62 +2019,55 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("hashJoin", HashJoinStream.class);
-    try {
-      // Basic test
-      expression = StreamExpressionParser.parse("hashJoin("
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-          + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
-          + "on=\"join1_i, join2_s\")");
-      stream = new HashJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 8);
-      assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
+    // Basic test
+    expression = StreamExpressionParser.parse("hashJoin("
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
+        + "on=\"join1_i, join2_s\")");
+    stream = new HashJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 8);
+    assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
 
-      // Basic desc
-      expression = StreamExpressionParser.parse("hashJoin("
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-          + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-          + "on=\"join1_i, join2_s\")");
-      stream = new HashJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 8);
-      assertOrder(tuples, 7, 3, 4, 5, 1, 1, 15, 15);
+    // Basic desc
+    expression = StreamExpressionParser.parse("hashJoin("
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "on=\"join1_i, join2_s\")");
+    stream = new HashJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 8);
+    assertOrder(tuples, 7, 3, 4, 5, 1, 1, 15, 15);
 
-      // Results in both searches, no join matches
-      expression = StreamExpressionParser.parse("hashJoin("
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-          + "hashed=search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-          + "on=\"ident_s\")");
-      stream = new HashJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 0);
+    // Results in both searches, no join matches
+    expression = StreamExpressionParser.parse("hashJoin("
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "on=\"ident_s\")");
+    stream = new HashJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 0);
 
-      // Basic test with "on" mapping
-      expression = StreamExpressionParser.parse("hashJoin("
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join3_i,ident_s\", sort=\"join1_i asc, join3_i asc, id asc\"),"
-          + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join3_i,ident_s\", sort=\"join1_i asc, join3_i asc\"),"
-          + "on=\"join1_i=join3_i\")");
-      stream = new HashJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assertEquals(17, tuples.size());
+    // Basic test with "on" mapping
+    expression = StreamExpressionParser.parse("hashJoin("
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join3_i,ident_s\", sort=\"join1_i asc, join3_i asc, id asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join3_i,ident_s\", sort=\"join1_i asc, join3_i asc\"),"
+        + "on=\"join1_i=join3_i\")");
+    stream = new HashJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assertEquals(17, tuples.size());
 
-      //Does a lexical sort
-      assertOrder(tuples, 1, 1, 15, 15, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7);
-    } finally {
-      solrClientCache.close();
-    }
+    //Does a lexical sort
+    assertOrder(tuples, 1, 1, 15, 15, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7);
   }
   
   @Test
@@ -2235,31 +2081,22 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("hashJoin", HashJoinStream.class);
-    try {
-      // Basic test
-      expression = StreamExpressionParser.parse("hashJoin("
-          + "  search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:left\", sort=\"bbid_s asc, ykey_s asc\"),"
-          + "  hashed=search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:right\", sort=\"bbid_s asc, ykey_s asc\"),"
-          + "  on=\"bbid_s,ykey_s\""
-          + ")");
-      stream = new HashJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      
-      assertEquals(0, tuples.size());
-    
-    
-    } finally {
-      solrClientCache.close();
-    }
+    // Basic test
+    expression = StreamExpressionParser.parse("hashJoin("
+        + "  search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:left\", sort=\"bbid_s asc, ykey_s asc\"),"
+        + "  hashed=search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:right\", sort=\"bbid_s asc, ykey_s asc\"),"
+        + "  on=\"bbid_s,ykey_s\""
+        + ")");
+    stream = new HashJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+
+    assertEquals(0, tuples.size());
   }
 
   @Test
@@ -2273,31 +2110,23 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
-    try {
-      // Basic test
-      expression = StreamExpressionParser.parse("outerHashJoin("
-          + "  search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:left\", sort=\"bbid_s asc, ykey_s asc\"),"
-          + "  hashed=search(collection1, q=*:*, fl=\"bbid_s,ykey_s,extra_s\", fq=\"type_s:right\", sort=\"bbid_s asc, ykey_s asc\"),"
-          + "  on=\"bbid_s,ykey_s\""
-          + ")");
-      stream = new OuterHashJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      
-      assertEquals(1, tuples.size());
-      assertFalse(tuples.get(0).getFields().containsKey("extra_s"));
-    
-    } finally {
-      solrClientCache.close();
-    }
+    // Basic test
+    expression = StreamExpressionParser.parse("outerHashJoin("
+        + "  search(collection1, q=*:*, fl=\"bbid_s,ykey_s\", fq=\"type_s:left\", sort=\"bbid_s asc, ykey_s asc\"),"
+        + "  hashed=search(collection1, q=*:*, fl=\"bbid_s,ykey_s,extra_s\", fq=\"type_s:right\", sort=\"bbid_s asc, ykey_s asc\"),"
+        + "  on=\"bbid_s,ykey_s\""
+        + ")");
+    stream = new OuterHashJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+
+    assertEquals(1, tuples.size());
+    assertFalse(tuples.get(0).getFields().containsKey("extra_s"));
   }
 
   @Test
@@ -2325,61 +2154,54 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
+
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
-    try {
-      // Basic test
-      expression = StreamExpressionParser.parse("outerHashJoin("
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-          + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
-          + "on=\"join1_i, join2_s\")");
-      stream = new OuterHashJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 10);
-      assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
+    // Basic test
+    expression = StreamExpressionParser.parse("outerHashJoin("
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
+        + "on=\"join1_i, join2_s\")");
+    stream = new OuterHashJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 10);
+    assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
 
-      // Basic desc
-      expression = StreamExpressionParser.parse("outerHashJoin("
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-          + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-          + "on=\"join1_i, join2_s\")");
-      stream = new OuterHashJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 10);
-      assertOrder(tuples, 7, 6, 3, 4, 5, 1, 1, 15, 15, 2);
+    // Basic desc
+    expression = StreamExpressionParser.parse("outerHashJoin("
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+        + "on=\"join1_i, join2_s\")");
+    stream = new OuterHashJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 10);
+    assertOrder(tuples, 7, 6, 3, 4, 5, 1, 1, 15, 15, 2);
 
-      // Results in both searches, no join matches
-      expression = StreamExpressionParser.parse("outerHashJoin("
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-          + "hashed=search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-          + "on=\"ident_s\")");
-      stream = new OuterHashJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 8);
-      assertOrder(tuples, 1, 15, 2, 3, 4, 5, 6, 7);
+    // Results in both searches, no join matches
+    expression = StreamExpressionParser.parse("outerHashJoin("
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+        + "on=\"ident_s\")");
+    stream = new OuterHashJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 8);
+    assertOrder(tuples, 1, 15, 2, 3, 4, 5, 6, 7);
 
-      // Basic test
-      expression = StreamExpressionParser.parse("outerHashJoin("
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-          + "hashed=search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join2_s asc\"),"
-          + "on=\"join1_i=join3_i, join2_s\")");
-      stream = new OuterHashJoinStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assert (tuples.size() == 10);
-      assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
-    } finally {
-      solrClientCache.close();
-    }
+    // Basic test
+    expression = StreamExpressionParser.parse("outerHashJoin("
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+        + "hashed=search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join2_s asc\"),"
+        + "on=\"join1_i=join3_i, join2_s\")");
+    stream = new OuterHashJoinStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assert (tuples.size() == 10);
+    assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
   }
 
   @Test
@@ -2408,10 +2230,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
 
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
@@ -2424,100 +2242,96 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       .withFunctionName("gt", GreaterThanEvaluator.class)
       ;
 
-    try {
-      // Basic test
-      clause = "select("
-          + "id, join1_i as join1, join2_s as join2, ident_s as identity,"
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
-          + ")";
+    // Basic test
+    clause = "select("
+        + "id, join1_i as join1, join2_s as join2, ident_s as identity,"
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+        + ")";
 
-      stream = factory.constructStream(clause);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assertFields(tuples, "id", "join1", "join2", "identity");
-      assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
+    stream = factory.constructStream(clause);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "join1", "join2", "identity");
+    assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
 
-      // Basic with replacements test
-      clause = "select("
-          + "id, join1_i as join1, join2_s as join2, ident_s as identity,"
-          + "replace(join1, 0, withValue=12), replace(join1, 3, withValue=12), replace(join1, 2, withField=join2),"
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
-          + ")";
-      stream = factory.constructStream(clause);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assertFields(tuples, "id", "join1", "join2", "identity");
-      assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
-      assertLong(tuples.get(0), "join1", 12);
-      assertLong(tuples.get(1), "join1", 12);
-      assertLong(tuples.get(2), "join1", 12);
-      assertLong(tuples.get(7), "join1", 12);
-      assertString(tuples.get(6), "join1", "d");
+    // Basic with replacements test
+    clause = "select("
+        + "id, join1_i as join1, join2_s as join2, ident_s as identity,"
+        + "replace(join1, 0, withValue=12), replace(join1, 3, withValue=12), replace(join1, 2, withField=join2),"
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+        + ")";
+    stream = factory.constructStream(clause);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "join1", "join2", "identity");
+    assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
+    assertLong(tuples.get(0), "join1", 12);
+    assertLong(tuples.get(1), "join1", 12);
+    assertLong(tuples.get(2), "join1", 12);
+    assertLong(tuples.get(7), "join1", 12);
+    assertString(tuples.get(6), "join1", "d");
 
 
-      // Basic with replacements and concat test
-      clause = "select("
-          + "id, join1_i as join1, join2_s as join2, ident_s as identity,"
-          + "replace(join1, 0, withValue=12), replace(join1, 3, withValue=12), replace(join1, 2, withField=join2),"
-          + "concat(fields=\"identity,join1\", as=\"newIdentity\",delim=\"-\"),"
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
-          + ")";
-      stream = factory.constructStream(clause);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assertFields(tuples, "id", "join1", "join2", "identity", "newIdentity");
-      assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
-      assertLong(tuples.get(0), "join1", 12);
-      assertString(tuples.get(0), "newIdentity", "left_1-12");
-      assertLong(tuples.get(1), "join1", 12);
-      assertString(tuples.get(1), "newIdentity", "left_1-12");
-      assertLong(tuples.get(2), "join1", 12);
-      assertString(tuples.get(2), "newIdentity", "left_2-12");
-      assertLong(tuples.get(7), "join1", 12);
-      assertString(tuples.get(7), "newIdentity", "left_7-12");
-      assertString(tuples.get(6), "join1", "d");
-      assertString(tuples.get(6), "newIdentity", "left_6-d");
+    // Basic with replacements and concat test
+    clause = "select("
+        + "id, join1_i as join1, join2_s as join2, ident_s as identity,"
+        + "replace(join1, 0, withValue=12), replace(join1, 3, withValue=12), replace(join1, 2, withField=join2),"
+        + "concat(fields=\"identity,join1\", as=\"newIdentity\",delim=\"-\"),"
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+        + ")";
+    stream = factory.constructStream(clause);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "join1", "join2", "identity", "newIdentity");
+    assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
+    assertLong(tuples.get(0), "join1", 12);
+    assertString(tuples.get(0), "newIdentity", "left_1-12");
+    assertLong(tuples.get(1), "join1", 12);
+    assertString(tuples.get(1), "newIdentity", "left_1-12");
+    assertLong(tuples.get(2), "join1", 12);
+    assertString(tuples.get(2), "newIdentity", "left_2-12");
+    assertLong(tuples.get(7), "join1", 12);
+    assertString(tuples.get(7), "newIdentity", "left_7-12");
+    assertString(tuples.get(6), "join1", "d");
+    assertString(tuples.get(6), "newIdentity", "left_6-d");
 
-      // Inner stream test
-      clause = "innerJoin("
-          + "select("
-          + "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
-          + "),"
-          + "select("
-          + "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
-          + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
-          + "),"
-          + "on=\"left.join1=right.join1, left.join2=right.join2\""
-          + ")";
-      stream = factory.constructStream(clause);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assertFields(tuples, "id", "left.join1", "left.join2", "left.ident", "right.join1", "right.join2", "right.ident");
+    // Inner stream test
+    clause = "innerJoin("
+        + "select("
+        + "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+        + "),"
+        + "select("
+        + "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
+        + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
+        + "),"
+        + "on=\"left.join1=right.join1, left.join2=right.join2\""
+        + ")";
+    stream = factory.constructStream(clause);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "left.join1", "left.join2", "left.ident", "right.join1", "right.join2", "right.ident");
 
-      // Wrapped select test
-      clause = "select("
-          + "id, left.ident, right.ident,"
-          + "innerJoin("
-          + "select("
-          + "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
-          + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
-          + "),"
-          + "select("
-          + "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
-          + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
-          + "),"
-          + "on=\"left.join1=right.join1, left.join2=right.join2\""
-          + ")"
-          + ")";
-      stream = factory.constructStream(clause);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
-      assertFields(tuples, "id", "left.ident", "right.ident");
-      assertNotFields(tuples, "left.join1", "left.join2", "right.join1", "right.join2");
-    } finally {
-      solrClientCache.close();
-    }
+    // Wrapped select test
+    clause = "select("
+        + "id, left.ident, right.ident,"
+        + "innerJoin("
+        + "select("
+        + "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
+        + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+        + "),"
+        + "select("
+        + "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
+        + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
+        + "),"
+        + "on=\"left.join1=right.join1, left.join2=right.join2\""
+        + ")"
+        + ")";
+    stream = factory.constructStream(clause);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "left.ident", "right.ident");
+    assertNotFields(tuples, "left.join1", "left.join2", "right.join1", "right.join2");
   }
 
   @Test
@@ -2546,52 +2360,45 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
 
-    SolrClientCache cache = new SolrClientCache();
+    FieldComparator comp = new FieldComparator("a_i", ComparatorOrder.ASCENDING);
 
-    try {
-      FieldComparator comp = new FieldComparator("a_i", ComparatorOrder.ASCENDING);
+    expression = StreamExpressionParser.parse("priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
+        "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
+    stream = factory.constructStream(expression);
+    StreamContext context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
 
-      expression = StreamExpressionParser.parse("priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
-          "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
-      stream = factory.constructStream(expression);
-      StreamContext context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
-      tuples = getTuples(stream);
+    Collections.sort(tuples, comp);
+    //The tuples from the first topic (high priority) should be returned.
 
-      Collections.sort(tuples, comp);
-      //The tuples from the first topic (high priority) should be returned.
+    assertEquals(tuples.size(), 4);
+    assertOrder(tuples, 5, 6, 7, 8);
 
-      assertEquals(tuples.size(), 4);
-      assertOrder(tuples, 5, 6, 7, 8);
+    expression = StreamExpressionParser.parse("priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
+        "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
+    stream = factory.constructStream(expression);
+    context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+    Collections.sort(tuples, comp);
 
-      expression = StreamExpressionParser.parse("priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
-          "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
-      stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
-      tuples = getTuples(stream);
-      Collections.sort(tuples, comp);
+    //The Tuples from the second topic (Low priority) should be returned.
+    assertEquals(tuples.size(), 6);
+    assertOrder(tuples, 0, 1, 2, 3, 4, 9);
 
-      //The Tuples from the second topic (Low priority) should be returned.
-      assertEquals(tuples.size(), 6);
-      assertOrder(tuples, 0, 1, 2, 3, 4, 9);
+    expression = StreamExpressionParser.parse("priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
+        "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
+    stream = factory.constructStream(expression);
+    context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
 
-      expression = StreamExpressionParser.parse("priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
-          "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
-      stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
-      tuples = getTuples(stream);
-
-      //Both queus are empty.
-      assertEquals(tuples.size(), 0);
-
-    } finally {
-      cache.close();
-    }
+    //Both queus are empty.
+    assertEquals(tuples.size(), 0);
   }
 
   @Test
@@ -2621,52 +2428,46 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
 
-    SolrClientCache cache = new SolrClientCache();
+    FieldComparator comp = new FieldComparator("a_i", ComparatorOrder.ASCENDING);
 
-    try {
-      FieldComparator comp = new FieldComparator("a_i", ComparatorOrder.ASCENDING);
+    expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
+        "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
+    stream = factory.constructStream(expression);
+    StreamContext context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
 
-      expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
-          "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
-      stream = factory.constructStream(expression);
-      StreamContext context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
-      tuples = getTuples(stream);
+    Collections.sort(tuples, comp);
+    //The tuples from the first topic (high priority) should be returned.
 
-      Collections.sort(tuples, comp);
-      //The tuples from the first topic (high priority) should be returned.
+    assertEquals(tuples.size(), 4);
+    assertOrder(tuples, 5, 6, 7, 8);
 
-      assertEquals(tuples.size(), 4);
-      assertOrder(tuples, 5, 6, 7, 8);
+    expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
+        "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
+    stream = factory.constructStream(expression);
+    context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+    Collections.sort(tuples, comp);
 
-      expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
-          "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
-      stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
-      tuples = getTuples(stream);
-      Collections.sort(tuples, comp);
+    //The Tuples from the second topic (Low priority) should be returned.
+    assertEquals(tuples.size(), 6);
+    assertOrder(tuples, 0, 1, 2, 3, 4, 9);
 
-      //The Tuples from the second topic (Low priority) should be returned.
-      assertEquals(tuples.size(), 6);
-      assertOrder(tuples, 0, 1, 2, 3, 4, 9);
+    expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
+        "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
+    stream = factory.constructStream(expression);
+    context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
 
-      expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
-          "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
-      stream = factory.constructStream(expression);
-      context = new StreamContext();
-      context.setSolrClientCache(cache);
-      stream.setStreamContext(context);
-      tuples = getTuples(stream);
+    //Both queus are empty.
+    assertEquals(tuples.size(), 0);
 
-      //Both queus are empty.
-      assertEquals(tuples.size(), 0);
-
-    } finally {
-      cache.close();
-    }
   }
 
   @Test
@@ -2685,9 +2486,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     Tuple t;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -2758,12 +2556,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
       CollectionAdminRequest.deleteCollection("destinationCollection").process(cluster.getSolrClient());
-      solrClientCache.close();
     }
   }
 
   @Test
-  @Ignore // nocommit ~ TJP
+  @Ignore // nocommit ~ failing because of straggler updates not getting fully committed
   public void testParallelUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -2779,10 +2576,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     Tuple t;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
+
     String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -2856,12 +2650,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
       CollectionAdminRequest.deleteCollection("parallelDestinationCollection").process(cluster.getSolrClient());
-      solrClientCache.close();
     }
   }
 
   @Test
-  @Ignore // nocommit ~ TJP
+  @Nightly
   public void testParallelDaemonUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
@@ -2877,9 +2670,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     Tuple t;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
     String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new StreamFactory()
@@ -3029,12 +2819,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
       CollectionAdminRequest.deleteCollection("parallelDestinationCollection1").process(cluster.getSolrClient());
-      solrClientCache.close();
     }
   }
 
   @Test
-  @Ignore // nocommit ~ TJP
+  //@Ignore // nocommit ~ TJP
   public void testParallelTerminatingDaemonUpdateStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -3051,9 +2840,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     Tuple t;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
     String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new StreamFactory()
@@ -3149,7 +2935,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
       CollectionAdminRequest.deleteCollection("parallelDestinationCollection1").process(cluster.getSolrClient());
-      solrClientCache.close();
     }
   }
 
@@ -3219,7 +3004,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ TJP
   public void testCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3235,10 +3019,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     Tuple t;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withCollectionZkHost("destinationCollection", cluster.getZkServer().getZkAddress())
@@ -3307,12 +3088,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
       CollectionAdminRequest.deleteCollection("destinationCollection").process(cluster.getSolrClient());
-      solrClientCache.close();
     }
   }
 
   @Test
-  @Ignore // nocommit ~ see testCommitStream, perhaps same issue involved
   public void testParallelCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3328,10 +3107,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     Tuple t;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
+
     String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
@@ -3405,7 +3181,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
       CollectionAdminRequest.deleteCollection("parallelDestinationCollection").process(cluster.getSolrClient());
-      solrClientCache.close();
     }
   }
 
@@ -3425,9 +3200,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     Tuple t;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
     String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new StreamFactory()
@@ -3575,7 +3347,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
     } finally {
       CollectionAdminRequest.deleteCollection("parallelDestinationCollection1").process(cluster.getSolrClient());
-      solrClientCache.close();
     }
   }
 
@@ -3598,30 +3369,23 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("intersect", IntersectStream.class);
 
-    try {
-      // basic
-      expression = StreamExpressionParser.parse("intersect("
-          + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\"),"
-          + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\"),"
-          + "on=\"a_i\")");
-      stream = new IntersectStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // basic
+    expression = StreamExpressionParser.parse("intersect("
+        + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\"),"
+        + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\"),"
+        + "on=\"a_i\")");
+    stream = new IntersectStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
-      assertOrder(tuples, 0, 7, 3, 4, 8);
-    } finally {
-      solrClientCache.close();
-    }
+    assert (tuples.size() == 5);
+    assertOrder(tuples, 0, 7, 3, 4, 8);
   }
 
   @Test
@@ -3852,11 +3616,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ TJP ~ slow and/or flakey, esp. around collection creation / deletion
   public void testExecutorStream() throws Exception {
-    CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection("destination", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).processAndWait( cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("destination", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     UpdateRequest workRequest = new UpdateRequest();
     UpdateRequest dataRequest = new UpdateRequest();
@@ -3887,12 +3650,20 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     executorStream = factory.constructStream(executorExpression);
 
     StreamContext context = new StreamContext();
-    SolrClientCache clientCache = new SolrClientCache();
-    context.setSolrClientCache(clientCache);
+    context.setSolrClientCache(solrClientCache);
     executorStream.setStreamContext(context);
     getTuples(executorStream);
     //Destination collection should now contain all the records in the main corpus.
     cluster.getSolrClient().commit("destination");
+
+    // TODO: the commit doesn't seem to catch all docs, but a second commit works ...
+    // some internal buffering maybe?
+    long numFound = cluster.getSolrClient().query("destination", new SolrQuery("*:*").setRows(0).setFields("id")).getResults().getNumFound();
+    if (numFound < numDocs) {
+      Thread.sleep(100);
+      cluster.getSolrClient().commit("destination");
+    }
+
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", "search(destination, q=\"*:*\", fl=\"id, body_t, field_i\", rows=1000, sort=\"field_i asc\")");
     paramsLoc.set("qt","/stream");
@@ -3908,23 +3679,17 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertTrue(body.equals("hello world "+i));
     }
 
-    solrStream.close();
-    clientCache.close();
-
     CollectionAdminRequest.deleteCollection("workQueue").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteCollection("mainCorpus").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteCollection("destination").process(cluster.getSolrClient());
   }
 
-
   @Test
-  @Ignore // nocommit ~ hangs during shutdown
+  @Nightly
   public void testParallelExecutorStream() throws Exception {
-    CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1).process(cluster.getSolrClient());
-
-    CollectionAdminRequest.createCollection("mainCorpus1", "conf", 2, 1).process(cluster.getSolrClient());
-
-    CollectionAdminRequest.createCollection("destination1", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("mainCorpus1", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("destination1", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     UpdateRequest workRequest = new UpdateRequest();
     UpdateRequest dataRequest = new UpdateRequest();
@@ -3955,12 +3720,20 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     executorStream = factory.constructStream(executorExpression);
 
     StreamContext context = new StreamContext();
-    SolrClientCache clientCache = new SolrClientCache();
-    context.setSolrClientCache(clientCache);
+    context.setSolrClientCache(solrClientCache);
     executorStream.setStreamContext(context);
     getTuples(executorStream);
     //Destination collection should now contain all the records in the main corpus.
     cluster.getSolrClient().commit("destination1");
+
+    // TODO: the commit doesn't seem to catch all docs, but a second commit works ...
+    // some internal buffering maybe?
+    long numFound = cluster.getSolrClient().query("destination1", new SolrQuery("*:*").setRows(0).setFields("id")).getResults().getNumFound();
+    if (numFound < cnt) {
+      Thread.sleep(100);
+      cluster.getSolrClient().commit("destination1");
+    }
+
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", "search(destination1, q=\"*:*\", fl=\"id, body_t, field_i\", rows=1000, sort=\"field_i asc\")");
     paramsLoc.set("qt", "/stream");
@@ -3977,7 +3750,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
 
     solrStream.close();
-    clientCache.close();
     CollectionAdminRequest.deleteCollection("workQueue1").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteCollection("mainCorpus1").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteCollection("destination1").process(cluster.getSolrClient());
@@ -4015,29 +3787,21 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       .withFunctionName("parallel", ParallelStream.class);
     // basic
 
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    String zkHost = cluster.getZkServer().getZkAddress();
+    final TupleStream stream = streamFactory.constructStream("parallel("
+        + "collection1, "
+        + "intersect("
+        + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
+        + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
+        + "on=\"a_i\"),"
+        + "workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i asc\")");
 
-    try {
-      String zkHost = cluster.getZkServer().getZkAddress();
-      final TupleStream stream = streamFactory.constructStream("parallel("
-          + "collection1, "
-          + "intersect("
-          + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
-          + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
-          + "on=\"a_i\"),"
-          + "workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i asc\")");
+    stream.setStreamContext(streamContext);
 
-      stream.setStreamContext(streamContext);
+    final List<Tuple> tuples = getTuples(stream);
 
-      final List<Tuple> tuples = getTuples(stream);
-
-      assert (tuples.size() == 5);
-      assertOrder(tuples, 0, 7, 3, 4, 8);
-    } finally {
-      solrClientCache.close();
-    }
+    assert (tuples.size() == 5);
+    assertOrder(tuples, 0, 7, 3, 4, 8);
   }
 
   @Test
@@ -4060,30 +3824,23 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
 
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("complement", ComplementStream.class);
 
-    try {
-      // basic
-      expression = StreamExpressionParser.parse("complement("
-          + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\"),"
-          + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\"),"
-          + "on=\"a_i\")");
-      stream = new ComplementStream(expression, factory);
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // basic
+    expression = StreamExpressionParser.parse("complement("
+        + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\"),"
+        + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\"),"
+        + "on=\"a_i\")");
+    stream = new ComplementStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assert (tuples.size() == 1);
-      assertOrder(tuples, 2);
-    } finally {
-      solrClientCache.close();
-    }
+    assert (tuples.size() == 1);
+    assertOrder(tuples, 2);
   }
 
   @Test
@@ -4097,135 +3854,128 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-    
+
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("cartesian", CartesianProductStream.class);
       
     // single selection, no sort
-    try {
-      stream = factory.constructStream("cartesian("
-          + "search(collection1, q=*:*, fl=\"id,a_ss\", sort=\"id asc\"),"
-          + "a_ss"
-          + ")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    stream = factory.constructStream("cartesian("
+        + "search(collection1, q=*:*, fl=\"id,a_ss\", sort=\"id asc\"),"
+        + "a_ss"
+        + ")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assertEquals(10, tuples.size());
-      assertOrder(tuples, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
-      assertEquals("a", tuples.get(0).get("a_ss"));
-      assertEquals("c", tuples.get(2).get("a_ss"));
-      assertEquals("a", tuples.get(5).get("a_ss"));
-      assertEquals("c", tuples.get(7).get("a_ss"));
+    assertEquals(10, tuples.size());
+    assertOrder(tuples, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
+    assertEquals("a", tuples.get(0).get("a_ss"));
+    assertEquals("c", tuples.get(2).get("a_ss"));
+    assertEquals("a", tuples.get(5).get("a_ss"));
+    assertEquals("c", tuples.get(7).get("a_ss"));
 
-      // single selection, sort
-      stream = factory.constructStream("cartesian("
-          + "search(collection1, q=*:*, fl=\"id,a_ss\", sort=\"id asc\"),"
-          + "a_ss,"
-          + "productSort=\"a_ss DESC\""
-          + ")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // single selection, sort
+    stream = factory.constructStream("cartesian("
+        + "search(collection1, q=*:*, fl=\"id,a_ss\", sort=\"id asc\"),"
+        + "a_ss,"
+        + "productSort=\"a_ss DESC\""
+        + ")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assertEquals(10, tuples.size());
-      assertOrder(tuples, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
-      assertEquals("e", tuples.get(0).get("a_ss"));
-      assertEquals("c", tuples.get(2).get("a_ss"));
-      assertEquals("e", tuples.get(5).get("a_ss"));
-      assertEquals("c", tuples.get(7).get("a_ss"));
+    assertEquals(10, tuples.size());
+    assertOrder(tuples, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
+    assertEquals("e", tuples.get(0).get("a_ss"));
+    assertEquals("c", tuples.get(2).get("a_ss"));
+    assertEquals("e", tuples.get(5).get("a_ss"));
+    assertEquals("c", tuples.get(7).get("a_ss"));
 
-      // multi selection, sort
-      stream = factory.constructStream("cartesian("
-          + "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
-          + "a_ss,"
-          + "b_ls,"
-          + "productSort=\"a_ss ASC\""
-          + ")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // multi selection, sort
+    stream = factory.constructStream("cartesian("
+        + "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
+        + "a_ss,"
+        + "b_ls,"
+        + "productSort=\"a_ss ASC\""
+        + ")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assertEquals(20, tuples.size()); // (5 * 3) + 5
-      assertOrder(tuples, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
-      assertEquals("a", tuples.get(0).get("a_ss"));
-      assertEquals(1L, tuples.get(0).get("b_ls"));
-      assertEquals("a", tuples.get(1).get("a_ss"));
-      assertEquals(2L, tuples.get(1).get("b_ls"));
-      assertEquals("a", tuples.get(2).get("a_ss"));
-      assertEquals(3L, tuples.get(2).get("b_ls"));
+    assertEquals(20, tuples.size()); // (5 * 3) + 5
+    assertOrder(tuples, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
+    assertEquals("a", tuples.get(0).get("a_ss"));
+    assertEquals(1L, tuples.get(0).get("b_ls"));
+    assertEquals("a", tuples.get(1).get("a_ss"));
+    assertEquals(2L, tuples.get(1).get("b_ls"));
+    assertEquals("a", tuples.get(2).get("a_ss"));
+    assertEquals(3L, tuples.get(2).get("b_ls"));
 
-      assertEquals("b", tuples.get(3).get("a_ss"));
-      assertEquals(1L, tuples.get(3).get("b_ls"));
-      assertEquals("b", tuples.get(4).get("a_ss"));
-      assertEquals(2L, tuples.get(4).get("b_ls"));
-      assertEquals("b", tuples.get(5).get("a_ss"));
-      assertEquals(3L, tuples.get(5).get("b_ls"));
+    assertEquals("b", tuples.get(3).get("a_ss"));
+    assertEquals(1L, tuples.get(3).get("b_ls"));
+    assertEquals("b", tuples.get(4).get("a_ss"));
+    assertEquals(2L, tuples.get(4).get("b_ls"));
+    assertEquals("b", tuples.get(5).get("a_ss"));
+    assertEquals(3L, tuples.get(5).get("b_ls"));
 
-      // multi selection, sort
-      stream = factory.constructStream("cartesian("
-          + "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
-          + "a_ss,"
-          + "b_ls,"
-          + "productSort=\"a_ss ASC, b_ls DESC\""
-          + ")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // multi selection, sort
+    stream = factory.constructStream("cartesian("
+        + "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
+        + "a_ss,"
+        + "b_ls,"
+        + "productSort=\"a_ss ASC, b_ls DESC\""
+        + ")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assertEquals(20, tuples.size()); // (5 * 3) + 5
-      assertOrder(tuples, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
-      assertEquals("a", tuples.get(0).get("a_ss"));
-      assertEquals(3L, tuples.get(0).get("b_ls"));
-      assertEquals("a", tuples.get(1).get("a_ss"));
-      assertEquals(2L, tuples.get(1).get("b_ls"));
-      assertEquals("a", tuples.get(2).get("a_ss"));
-      assertEquals(1L, tuples.get(2).get("b_ls"));
+    assertEquals(20, tuples.size()); // (5 * 3) + 5
+    assertOrder(tuples, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
+    assertEquals("a", tuples.get(0).get("a_ss"));
+    assertEquals(3L, tuples.get(0).get("b_ls"));
+    assertEquals("a", tuples.get(1).get("a_ss"));
+    assertEquals(2L, tuples.get(1).get("b_ls"));
+    assertEquals("a", tuples.get(2).get("a_ss"));
+    assertEquals(1L, tuples.get(2).get("b_ls"));
 
-      assertEquals("b", tuples.get(3).get("a_ss"));
-      assertEquals(3L, tuples.get(3).get("b_ls"));
-      assertEquals("b", tuples.get(4).get("a_ss"));
-      assertEquals(2L, tuples.get(4).get("b_ls"));
-      assertEquals("b", tuples.get(5).get("a_ss"));
-      assertEquals(1L, tuples.get(5).get("b_ls"));
+    assertEquals("b", tuples.get(3).get("a_ss"));
+    assertEquals(3L, tuples.get(3).get("b_ls"));
+    assertEquals("b", tuples.get(4).get("a_ss"));
+    assertEquals(2L, tuples.get(4).get("b_ls"));
+    assertEquals("b", tuples.get(5).get("a_ss"));
+    assertEquals(1L, tuples.get(5).get("b_ls"));
 
-      // multi selection, sort
-      stream = factory.constructStream("cartesian("
-          + "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
-          + "a_ss,"
-          + "b_ls,"
-          + "productSort=\"b_ls DESC\""
-          + ")");
-      stream.setStreamContext(streamContext);
-      tuples = getTuples(stream);
+    // multi selection, sort
+    stream = factory.constructStream("cartesian("
+        + "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
+        + "a_ss,"
+        + "b_ls,"
+        + "productSort=\"b_ls DESC\""
+        + ")");
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
 
-      assertEquals(20, tuples.size()); // (5 * 3) + 5
-      assertOrder(tuples, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
-      assertEquals("a", tuples.get(0).get("a_ss"));
-      assertEquals(3L, tuples.get(0).get("b_ls"));
-      assertEquals("b", tuples.get(1).get("a_ss"));
-      assertEquals(3L, tuples.get(1).get("b_ls"));
-      assertEquals("c", tuples.get(2).get("a_ss"));
-      assertEquals(3L, tuples.get(2).get("b_ls"));
-      assertEquals("d", tuples.get(3).get("a_ss"));
-      assertEquals(3L, tuples.get(3).get("b_ls"));
-      assertEquals("e", tuples.get(4).get("a_ss"));
-      assertEquals(3L, tuples.get(4).get("b_ls"));
+    assertEquals(20, tuples.size()); // (5 * 3) + 5
+    assertOrder(tuples, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1);
+    assertEquals("a", tuples.get(0).get("a_ss"));
+    assertEquals(3L, tuples.get(0).get("b_ls"));
+    assertEquals("b", tuples.get(1).get("a_ss"));
+    assertEquals(3L, tuples.get(1).get("b_ls"));
+    assertEquals("c", tuples.get(2).get("a_ss"));
+    assertEquals(3L, tuples.get(2).get("b_ls"));
+    assertEquals("d", tuples.get(3).get("a_ss"));
+    assertEquals(3L, tuples.get(3).get("b_ls"));
+    assertEquals("e", tuples.get(4).get("a_ss"));
+    assertEquals(3L, tuples.get(4).get("b_ls"));
 
-      assertEquals("a", tuples.get(5).get("a_ss"));
-      assertEquals(2L, tuples.get(5).get("b_ls"));
-      assertEquals("b", tuples.get(6).get("a_ss"));
-      assertEquals(2L, tuples.get(6).get("b_ls"));
-      assertEquals("c", tuples.get(7).get("a_ss"));
-      assertEquals(2L, tuples.get(7).get("b_ls"));
-      assertEquals("d", tuples.get(8).get("a_ss"));
-      assertEquals(2L, tuples.get(8).get("b_ls"));
-      assertEquals("e", tuples.get(9).get("a_ss"));
-      assertEquals(2L, tuples.get(9).get("b_ls"));
-    } finally {
-      solrClientCache.close();
-    }
+    assertEquals("a", tuples.get(5).get("a_ss"));
+    assertEquals(2L, tuples.get(5).get("b_ls"));
+    assertEquals("b", tuples.get(6).get("a_ss"));
+    assertEquals(2L, tuples.get(6).get("b_ls"));
+    assertEquals("c", tuples.get(7).get("a_ss"));
+    assertEquals(2L, tuples.get(7).get("b_ls"));
+    assertEquals("d", tuples.get(8).get("a_ss"));
+    assertEquals(2L, tuples.get(8).get("b_ls"));
+    assertEquals("e", tuples.get(9).get("a_ss"));
+    assertEquals(2L, tuples.get(9).get("b_ls"));
   }
 
   @Test
@@ -4251,27 +4001,19 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       .withFunctionName("complement", ComplementStream.class)
       .withFunctionName("parallel", ParallelStream.class);
 
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
+    final String zkHost = cluster.getZkServer().getZkAddress();
+    final TupleStream stream = streamFactory.constructStream("parallel("
+        + "collection1, "
+        + "complement("
+        + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
+        + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
+        + "on=\"a_i\"),"
+        + "workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i asc\")");
 
-    try {
-      final String zkHost = cluster.getZkServer().getZkAddress();
-      final TupleStream stream = streamFactory.constructStream("parallel("
-          + "collection1, "
-          + "complement("
-          + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
-          + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\", qt=\"/export\"),"
-          + "on=\"a_i\"),"
-          + "workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i asc\")");
-
-      stream.setStreamContext(streamContext);
-      final List<Tuple> tuples = getTuples(stream);
-      assert (tuples.size() == 1);
-      assertOrder(tuples, 2);
-    } finally {
-      solrClientCache.close();
-    }
+    stream.setStreamContext(streamContext);
+    final List<Tuple> tuples = getTuples(stream);
+    assert (tuples.size() == 1);
+    assertOrder(tuples, 2);
   }
 
   @Nightly // slower

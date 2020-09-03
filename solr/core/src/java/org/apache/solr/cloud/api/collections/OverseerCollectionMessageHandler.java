@@ -899,6 +899,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           }
           if (event.getType().equals(Watcher.Event.EventType.NodeCreated)) {
             latch.countDown();
+          } else if (event.getType().equals(Event.EventType.NodeDeleted)) {
+            // no-op: gets deleted below once we're done with it
+            return;
           } else {
             Stat rstats2 = null;
             try {
@@ -923,6 +926,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       }
 
       latch.await(15, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
+      // we're done with this entry in the DistributeMap
+      overseer.getCoreContainer().getZkController().clearAsyncId(requestId);
 
       shardHandler.submit(sreq, replica, sreq.params);
 
