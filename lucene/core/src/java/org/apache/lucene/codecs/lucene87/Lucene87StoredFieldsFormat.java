@@ -307,7 +307,7 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
 
   private static class DeflateWithPresetDictCompressor extends Compressor {
 
-    final int dictLength;
+    final byte[] dictBytes;
     final int blockLength;
     final Deflater compressor;
     byte[] compressed;
@@ -316,7 +316,7 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
     DeflateWithPresetDictCompressor(int level, int dictLength, int blockLength) {
       compressor = new Deflater(level, true);
       compressed = new byte[64];
-      this.dictLength = dictLength;
+      this.dictBytes = new byte[dictLength];
       this.blockLength = blockLength;
     }
 
@@ -349,7 +349,8 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
 
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
-      final int dictLength = Math.min(this.dictLength, len);
+      final int dictLength = Math.min(dictBytes.length, len);
+      System.arraycopy(bytes, off, dictBytes, 0, dictLength);
       out.writeVInt(dictLength);
       out.writeVInt(blockLength);
       final int end = off + len;
@@ -361,7 +362,8 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
       // And then sub blocks
       for (int start = off + dictLength; start < end; start += blockLength) {
         compressor.reset();
-        compressor.setDictionary(bytes, off, dictLength);
+        // NOTE: offset MUST be 0 when setting the dictionary in order to work around JDK-8252739
+        compressor.setDictionary(dictBytes, 0, dictLength);
         doCompress(bytes, start, Math.min(blockLength, off + len - start), out);
       }
     }
