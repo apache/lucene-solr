@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -142,7 +143,7 @@ public class AnalyticsShardRequestManager {
    * @throws IOException if an exception occurs while sending requests.
    */
   private void streamFromShards() throws IOException {
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("SolrAnalyticsStream"));
+    ExecutorService service = ParWork.getRootSharedExecutor();
     List<Future<SolrException>> futures = new ArrayList<>();
     List<AnalyticsShardRequester> openers = new ArrayList<>();
     for (String replicaUrl : replicaUrls) {
@@ -163,11 +164,11 @@ public class AnalyticsShardRequestManager {
         }
       }
     } catch (InterruptedException e1) {
+      ParWork.propegateInterrupt(e1);
       throw new RuntimeException(e1);
     } catch (ExecutionException e1) {
       throw new RuntimeException(e1);
     } finally {
-      service.shutdown();
       for (AnalyticsShardRequester opener : openers) {
         opener.close();
       }

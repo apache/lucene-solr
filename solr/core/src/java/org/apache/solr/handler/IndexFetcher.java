@@ -154,6 +154,8 @@ public class IndexFetcher {
 
   private volatile ExecutorService fsyncService;
 
+  private volatile Future<?> fsyncServiceFuture;
+
   private volatile boolean stop = false;
 
   private boolean useInternalCompression = false;
@@ -515,7 +517,7 @@ public class IndexFetcher {
       }
 
       // Create the sync service
-      fsyncService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("fsyncService"));
+      fsyncService = ParWork.getRootSharedExecutor();
       // use a synchronized list because the list is read by other threads (to show details)
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generation of master is older than that of the slave , it means they are not compatible to be copied
@@ -750,8 +752,8 @@ public class IndexFetcher {
       markReplicationStop();
       dirFileFetcher = null;
       localFileFetcher = null;
-      if (fsyncService != null && !fsyncService.isShutdown()) fsyncService.shutdown();
       fsyncService = null;
+      fsyncServiceFuture = null;
       stop = false;
       fsyncException = null;
     } finally {
@@ -809,10 +811,9 @@ public class IndexFetcher {
    * terminate the fsync service and wait for all the tasks to complete. If it is already terminated
    */
   private void terminateAndWaitFsyncService() throws Exception {
-    if (fsyncService.isTerminated()) return;
-    fsyncService.shutdown();
+    if (fsyncServiceFuture == null) return;
      // give a long wait say 1 hr
-    fsyncService.awaitTermination(3600, TimeUnit.SECONDS);
+    fsyncServiceFuture.get(3600, TimeUnit.SECONDS);
     // if any fsync failed, throw that exception back
     Exception fsyncExceptionCopy = fsyncException;
     if (fsyncExceptionCopy != null) throw fsyncExceptionCopy;
@@ -1742,7 +1743,7 @@ public class IndexFetcher {
       } finally {
         cleanup();
         //if cleanup succeeds . The file is downloaded fully. do an fsync
-        fsyncService.submit(() -> {
+        fsyncServiceFuture = fsyncService.submit(() -> {
           try {
             file.sync();
           } catch (IOException e) {
