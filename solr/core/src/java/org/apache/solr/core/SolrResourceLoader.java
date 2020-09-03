@@ -43,6 +43,7 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.request.SolrRequestHandler;
@@ -66,7 +67,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
       "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
-      "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
+      "update.processor.", "util.", "spelling.", "handler.component.",
       "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;

@@ -864,7 +864,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
-    result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion);
+    if(luceneMatchVersion != null) result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion.toString());
     result.put("updateHandler", getUpdateHandlerInfo());
     Map m = new LinkedHashMap();
     result.put("query", m);

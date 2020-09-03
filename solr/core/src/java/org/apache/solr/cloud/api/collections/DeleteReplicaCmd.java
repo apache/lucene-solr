@@ -62,7 +62,6 @@ public class DeleteReplicaCmd implements Cmd {
 
   @Override
   @SuppressWarnings("unchecked")
-
   public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     deleteReplica(clusterState, message, results,null);
   }

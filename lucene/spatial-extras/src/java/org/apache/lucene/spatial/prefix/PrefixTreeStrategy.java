@@ -157,6 +157,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     return new Field[]{field};
   }
 
+  /** Tokenstream for indexing cells of a shape */
   public class ShapeTokenStream extends BytesRefIteratorTokenStream {
 
     public void setShape(Shape shape) {

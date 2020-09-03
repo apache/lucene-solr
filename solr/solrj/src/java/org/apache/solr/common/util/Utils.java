@@ -94,7 +94,9 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+
 public class Utils {
+
   @SuppressWarnings({"rawtypes"})
   public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
   @SuppressWarnings({"rawtypes"})
@@ -236,7 +238,7 @@ public class Utils {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     public void handleUnknownClass(Object o) {
       if (o instanceof MapWriter) {
         Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
@@ -404,7 +406,6 @@ public class Utils {
     return getObjectByPath(root, onlyPrimitive, parts);
   }
 
-  @SuppressWarnings({"unchecked"})
   public static boolean setObjectByPath(Object root, String hierarchy, Object value) {
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return setObjectByPath(root, parts, value);
@@ -693,7 +694,7 @@ public class Utils {
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public static boolean mergeJson(Map<String, Object> sink, Map<String, Object> input) {
     boolean isModified = false;
     for (Map.Entry<String, Object> e : input.entrySet()) {
