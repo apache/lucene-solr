@@ -89,14 +89,14 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
     state = CollectionAdminRequest.addReplicaToShard("testasynccollectioncreation", "shard1")
       .processAndWait(client, MAX_TIMEOUT_SECONDS);
-    assertSame("Add replica did not complete", RequestStatusState.COMPLETED, state);
+      assertSame("Add replica did not complete", RequestStatusState.COMPLETED, state);
 
     state = CollectionAdminRequest.splitShard("testasynccollectioncreation")
         .setShardName("shard1")
         .processAndWait(client, MAX_TIMEOUT_SECONDS * 2);
     assertEquals("Shard split did not complete. Last recorded state: " + state, RequestStatusState.COMPLETED, state);
 
-  }
+    }
 
   @Test
   public void testAsyncRequests() throws Exception {
@@ -269,7 +269,6 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
           }
         });
       }
-      es.shutdown();
       assertTrue(es.awaitTermination(10, TimeUnit.SECONDS));
       assertEquals(1, numSuccess.get());
       assertEquals((TEST_NIGHTLY ? 10 : 3) - 1, numFailure.get());
