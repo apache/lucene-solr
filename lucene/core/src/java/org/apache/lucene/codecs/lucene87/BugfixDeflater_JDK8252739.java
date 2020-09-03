@@ -36,9 +36,6 @@ final class BugfixDeflater_JDK8252739 extends Deflater {
   @Override
   public void setDictionary(byte[] dictBytes, int off, int len) {
     if (off > 0) {
-      if (len > this.dictBytesScratch.length) {
-        throw new IllegalArgumentException("Too large dictionary");
-      }
       System.arraycopy(dictBytes, off, dictBytesScratch, 0, len);
       super.setDictionary(dictBytesScratch, 0, len);
     } else {
