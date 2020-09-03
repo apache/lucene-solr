@@ -29,7 +29,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
-import org.apache.solr.cluster.events.ClusterSingleton;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.events.NodeDownEvent;
 import org.apache.solr.cluster.events.NodeUpEvent;
 import org.apache.solr.common.cloud.LiveNodesListener;

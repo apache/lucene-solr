@@ -24,7 +24,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
-import org.apache.solr.cluster.events.ClusterSingleton;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

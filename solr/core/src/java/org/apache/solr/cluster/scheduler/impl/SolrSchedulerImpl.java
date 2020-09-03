@@ -25,7 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.cluster.events.ClusterSingleton;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.scheduler.Schedule;
 import org.apache.solr.cluster.scheduler.Schedulable;
 import org.apache.solr.cluster.scheduler.SolrScheduler;
