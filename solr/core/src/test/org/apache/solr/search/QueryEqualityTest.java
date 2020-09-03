@@ -523,25 +523,56 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertQueryEquals(null, "{!parent which='+*:* -foo_s:parent'}",
         "{!child of=foo_s:parent}");
 
-    final SolrQueryRequest req = req(
-        "fq","bar_s:baz","fq","{!tag=fqban}bar_s:ban",
-        "ffq","bar_s:baz","ffq","{!tag=ffqban}bar_s:ban");
-    try {
-    assertQueryEquals("filters", req,
-        "{!parent which=foo_s:parent param=$fq}foo_s:bar",
-        "{!parent which=foo_s:parent param=$ffq}foo_s:bar" // differently named params
-        );
-    assertQueryEquals("filters", req,
-        "{!parent which=foo_s:parent param=$fq excludeTags=fqban}foo_s:bar",
-        "{!parent which=foo_s:parent param=$ffq excludeTags=ffqban}foo_s:bar" // differently named params
-        );
+    try (SolrQueryRequest req = req("fq","bar_s:baz","fq","{!tag=fqban}bar_s:ban",
+                                    "ffq","bar_s:baz","ffq","{!tag=ffqban}bar_s:ban")) {
+      assertQueryEquals("filters", req,
+                        "{!parent which=foo_s:parent param=$fq}foo_s:bar",
+                        "{!parent which=foo_s:parent param=$ffq}foo_s:bar" // differently named params
+                        );
+      assertQueryEquals("filters", req,
+                        "{!parent which=foo_s:parent param=$fq excludeTags=fqban}foo_s:bar",
+                        "{!parent which=foo_s:parent param=$ffq excludeTags=ffqban}foo_s:bar" // differently named params
+                        );
 
-    QueryUtils.checkUnequal(// parent filter is not an equal to child
-        QParser.getParser("{!child of=foo_s:parent}", req).getQuery(),
-        QParser.getParser("{!parent which=foo_s:parent}", req).getQuery());
+      QueryUtils.checkUnequal(// parent filter is not an equal to child
+                              QParser.getParser("{!child of=foo_s:parent}", req).getQuery(),
+                              QParser.getParser("{!parent which=foo_s:parent}", req).getQuery());
+    }
 
-    } finally {
-      req.close();
+    // sanity check multiple ways of specifing _nest_path_ prefixes
+    final String parent_path = "/aa/bb";
+    try (SolrQueryRequest req = req("parent_filt", "(*:* -{!prefix f='_nest_path_' v='"+parent_path+"/'})",
+                                    "child_q", "(+foo +{!prefix f='_nest_path_' v='"+parent_path+"/'})",
+                                    "parent_q", "(+bar +{!field f='_nest_path_' v='"+parent_path+"'})")) {
+      
+      assertQueryEquals("parent", req,
+                        
+                        // using local params to refer to other query params using 'prefix' parser...
+                        "{!parent which=$parent_filt v=$child_q}",
+                        
+                        // using 'inline' prefix query syntax...
+                        //
+                        // '/' has to be escaped other wise it will be treated as a regex query...
+                        // ...and when used inside the 'which' param it has to be escaped *AGAIN* because of
+                        // the "quoted" localparam evaluation layer...
+                        // (and of course '\' escaping is the java syntax as well, we have to double it)
+                        "{!parent which='*:* -_nest_path_:"+(parent_path + "/").replace("/","\\\\/") +"*'}"
+                        + "(+foo +_nest_path_:" + (parent_path + "/").replace("/", "\\/") + "*)");
+
+      assertQueryEquals("child", req,
+                        
+                        // using local params to refer to other query params using 'prefix' parser...
+                        "{!child of=$parent_filt v=$parent_q}",
+                        
+                        // using 'inline' prefix query syntax...
+                        //
+                        // '/' has to be escaped other wise it will be treated as a regex query...
+                        // ...and when used inside the 'which' param it has to be escaped *AGAIN* because of
+                        // the "quoted" localparam evaluation layer...
+                        // (and of course '\' escaping is the java syntax as well, we have to double it)
+                        "{!child of='*:* -_nest_path_:"+(parent_path + "/").replace("/","\\\\/") +"*'}"
+                        + "(+bar +_nest_path_:" + parent_path.replace("/", "\\/") + ")");
+
     }
   }
 

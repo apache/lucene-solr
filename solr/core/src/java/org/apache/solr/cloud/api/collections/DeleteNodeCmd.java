@@ -32,7 +32,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CloudConfig;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ocmh.checkRequired(message, "node");
     String node = message.getStr("node");
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);

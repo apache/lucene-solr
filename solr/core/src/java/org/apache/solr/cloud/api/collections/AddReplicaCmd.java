@@ -67,7 +67,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -83,12 +82,12 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
-    addReplica(state, cloudConfig, message, results, null);
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+    addReplica(state, message, results, null);
   }
 
   @SuppressWarnings({"unchecked"})
-  List<ZkNodeProps> addReplica(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
+  List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
       throws IOException, InterruptedException, KeeperException {
     if (log.isDebugEnabled()) {
       log.debug("addReplica() : {}", Utils.toJSONString(message));
@@ -147,7 +146,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
 
-    List<CreateReplica> createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, cloudConfig, collectionName, message, replicaTypesVsCount)
+    List<CreateReplica> createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collectionName, message, replicaTypesVsCount)
           .stream()
           .map(replicaPosition -> assignReplicaDetails(ocmh.cloudManager, clusterState, message, replicaPosition))
           .collect(Collectors.toList());
@@ -159,7 +158,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
     for (CreateReplica createReplica : createReplicas) {
       assert createReplica.coreName != null;
-      ModifiableSolrParams params = getReplicaParams(clusterState, cloudConfig, message, results, collectionName, coll, skipCreateReplicaInClusterState, asyncId, shardHandler, createReplica);
+      ModifiableSolrParams params = getReplicaParams(clusterState, message, results, collectionName, coll, skipCreateReplicaInClusterState, asyncId, shardHandler, createReplica);
       shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
     }
 
@@ -202,7 +201,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         .collect(Collectors.toList());
   }
 
-  private ModifiableSolrParams getReplicaParams(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, String collectionName, DocCollection coll, boolean skipCreateReplicaInClusterState, String asyncId, ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException, KeeperException {
+  private ModifiableSolrParams getReplicaParams(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, String collectionName, DocCollection coll, boolean skipCreateReplicaInClusterState, String asyncId, ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException, KeeperException {
     if (coll.getStr(WITH_COLLECTION) != null) {
       String withCollectionName = coll.getStr(WITH_COLLECTION);
       DocCollection withCollection = clusterState.getCollection(withCollectionName);
@@ -222,7 +221,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             // since we already computed node assignments (which include assigning a node for this withCollection replica) we want to skip the assignment step
             CollectionAdminParams.SKIP_NODE_ASSIGNMENT, "true",
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
-        addReplica(clusterState, cloudConfig, props, results, null);
+        addReplica(clusterState, props, results, null);
       }
     }
 
@@ -329,7 +328,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     return new CreateReplica(collection, shard, node, replicaType, coreName, coreNodeName);
   }
 
-  public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState, CloudConfig cloudConfig,
+  public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
                                                             String collectionName, ZkNodeProps message,
                                                             EnumMap<Replica.Type, Integer> replicaTypeVsCount) throws IOException, InterruptedException {
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
@@ -354,7 +353,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     List<ReplicaPosition> positions = null;
     if (!skipCreateReplicaInClusterState && !skipNodeAssignment) {
 
-      positions = Assign.getNodesForNewReplicas(clusterState, cloudConfig, collection.getName(), sliceName, numNrtReplicas,
+      positions = Assign.getNodesForNewReplicas(clusterState, collection.getName(), sliceName, numNrtReplicas,
                     numTlogReplicas, numPullReplicas, createNodeSetStr, cloudManager);
     }
 

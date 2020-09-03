@@ -27,7 +27,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CloudConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +47,7 @@ public class SetAliasPropCmd implements Cmd {
   }
 
   @Override
-  public void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String aliasName = message.getStr(NAME);
 
     final ZkStateReader.AliasesManager aliasesManager = messageHandler.zkStateReader.aliasesManager;

@@ -56,6 +56,7 @@ configure(rootProject) {
       // excludes:
       exclude '**/build/**'
       exclude '**/dist/**'
+      exclude 'dev-tools/missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
       exclude 'lucene/benchmark/work/**'
       exclude 'lucene/benchmark/temp/**'
       exclude '**/CheckLoggingConfiguration.java'
