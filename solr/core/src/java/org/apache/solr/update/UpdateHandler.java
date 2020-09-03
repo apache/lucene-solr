@@ -163,9 +163,12 @@ UpdateHandler implements SolrInfoBean, Closeable {
       } else {
         ourUpdateLog = updateLog;
       }
-    } catch (Exception e) {
+    } catch (Throwable e) {
       IOUtils.closeQuietly(ourUpdateLog);
       ObjectReleaseTracker.release(this);
+      if (e instanceof Error) {
+        throw e;
+      }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
       ulog = ourUpdateLog;
