@@ -171,6 +171,7 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
 
     private final CachedNumericDVs dvs;
     private int docID = -1;
+    private long cost = -1;
 
     SortingNumericDocValues(CachedNumericDVs dvs) {
       this.dvs = dvs;
@@ -211,7 +212,10 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
 
     @Override
     public long cost() {
-      return dvs.docsWithField.cardinality();
+      if (cost == -1) {
+        cost = dvs.docsWithField.cardinality();
+      }
+      return cost;
     }
   }
 
