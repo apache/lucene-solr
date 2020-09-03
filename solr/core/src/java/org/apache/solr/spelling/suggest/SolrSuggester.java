@@ -176,7 +176,7 @@ public class SolrSuggester implements Accountable {
   }
 
   /** Build the underlying Lucene Suggester */
-  public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
+  public synchronized void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     log.info("SolrSuggester.build({})", name);
 
     dictionary = dictionaryFactory.create(core, searcher);

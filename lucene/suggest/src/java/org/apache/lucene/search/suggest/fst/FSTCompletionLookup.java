@@ -163,7 +163,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
   }
 
   @Override
-  public void build(InputIterator iterator) throws IOException {
+  public synchronized void build(InputIterator iterator) throws IOException {
     if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
