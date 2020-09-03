@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -132,11 +133,16 @@ public class ExecutorStream extends TupleStream implements Expressible {
   }
 
   public void open() throws IOException {
-    executorService = ParWork.getRootSharedExecutor();
+    executorService = ParWork.getMyPerThreadExecutor();
     stream.open();
   }
 
   public void close() throws IOException {
+    try {
+      executorService.awaitTermination(30, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      ParWork.propegateInterrupt(e);
+    }
     stream.close();
   }
 
