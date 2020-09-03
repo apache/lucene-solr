@@ -856,7 +856,7 @@ public class Http2SolrClient extends SolrClient {
     // wait for async requests
     private final Phaser phaser = new ThePhaser(1);
     // maximum outstanding requests left
-    private final Request.QueuedListener queuedListener;
+    private final Request.BeginListener queuedListener;
     private final Response.CompleteListener completeListener;
 
     AsyncTracker() {
@@ -906,12 +906,12 @@ public class Http2SolrClient extends SolrClient {
       if (log.isDebugEnabled()) {
         log.debug("Registered new party");
       }
-      phaser.register();
       try {
         available.acquire();
       } catch (InterruptedException ignored) {
         ParWork.propegateInterrupt(ignored);
       }
+      phaser.register();
     }
 
     private static class ThePhaser extends Phaser {
