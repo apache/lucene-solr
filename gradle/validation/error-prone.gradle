@@ -24,6 +24,30 @@ allprojects { prj ->
             }
             tasks.withType(JavaCompile) {
                 options.errorprone.errorproneArgs = [
+                        // test
+                        '-Xep:ExtendingJUnitAssert:OFF',
+                        '-Xep:UseCorrectAssertInTests:OFF',
+                        '-Xep:DefaultPackage:OFF',
+                        '-Xep:FloatingPointLiteralPrecision:OFF',
+                        '-Xep:CatchFail:OFF',
+                        '-Xep:TryFailThrowable:OFF',
+                        '-Xep:MathAbsoluteRandom:OFF',
+                        '-Xep:AssertionFailureIgnored:OFF',
+                        '-Xep:JUnit4TestNotRun:OFF',
+                        '-Xep:FallThrough:OFF',
+                        '-Xep:CatchAndPrintStackTrace:OFF',
+                        '-Xep:ToStringReturnsNull:OFF',
+                        '-Xep:ArrayAsKeyOfSetOrMap:OFF',
+                        '-Xep:StaticAssignmentInConstructor:OFF',
+                        '-Xep:SelfAssignment:OFF',
+                        '-Xep:InvalidPatternSyntax:OFF',
+                        '-Xep:MissingFail:OFF',
+                        '-Xep:LossyPrimitiveCompare:OFF',
+                        '-Xep:ComparableType:OFF',
+                        '-Xep:InfiniteRecursion:OFF',
+                        '-Xep:MisusedDayOfYear:OFF',
+                        '-Xep:FloatingPointAssertionWithinEpsilon:OFF',
+
                         '-Xep:ThrowNull:OFF',
                         '-Xep:StaticGuardedByInstance:OFF',
                         '-Xep:ArrayHashCode:OFF',
