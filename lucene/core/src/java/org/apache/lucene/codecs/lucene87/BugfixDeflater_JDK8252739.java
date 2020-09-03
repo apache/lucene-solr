@@ -16,9 +16,10 @@
  */
 package org.apache.lucene.codecs.lucene87;
 
+import java.util.Arrays;
+import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
-
-import org.apache.lucene.util.Constants;
+import java.util.zip.Inflater;
 
 /**
  * This class is a workaround for JDK bug
@@ -47,11 +48,55 @@ final class BugfixDeflater_JDK8252739 extends Deflater {
     if (dictLength < 0) {
       throw new IllegalArgumentException("dictLength must be >= 0");
     }
-    if (Constants.JRE_IS_MINIMUM_JAVA11) {
+    if (IS_BUGGY_JDK) {
       return new BugfixDeflater_JDK8252739(level, nowrap, dictLength);
     } else {
       return new Deflater(level, nowrap);
     }
+  }
+  
+  private static boolean detectBuggyJDK() {
+    final byte[] testData = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+    final byte[] compressed = new byte[32]; // way enough space
+    final Deflater deflater = new Deflater(6, true);
+    try {
+      deflater.reset();
+      deflater.setDictionary(testData, 4, 4);
+      deflater.setInput(testData);
+      deflater.finish();
+      deflater.deflate(compressed, 0, compressed.length, Deflater.FULL_FLUSH);
+    } finally {
+      deflater.end();
+    }
+    
+    final Inflater inflater = new Inflater(true);
+    final byte[] restored = new byte[testData.length];
+    try {
+      inflater.reset();
+      inflater.setDictionary(testData, 4, 4);
+      inflater.setInput(compressed);
+      final int restoredLength = inflater.inflate(restored);
+      if (restoredLength != testData.length) {
+        return true;
+      }
+    } catch (DataFormatException e) {
+      return true;
+    } finally {
+      inflater.end();
+    }
+
+    if (Arrays.equals(testData, restored) == false) {
+      return true;
+    }
+    
+    // all fine
+    return false;
+  }
+  
+  public static final boolean IS_BUGGY_JDK = detectBuggyJDK();
+  
+  static {
+    System.err.println("JDK is buggy: " + IS_BUGGY_JDK);
   }
 
 }
