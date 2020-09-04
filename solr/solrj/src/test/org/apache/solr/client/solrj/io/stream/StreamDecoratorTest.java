@@ -3619,6 +3619,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit can be slow, can hang - perhaps try back to root shared exec and add the per thread execs await method?
   public void testExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).processAndWait( cluster.getSolrClient(), DEFAULT_TIMEOUT);
