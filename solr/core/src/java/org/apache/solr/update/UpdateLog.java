@@ -365,6 +365,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * for an existing log whenever the core or update handler changes.
    */
   public void init(UpdateHandler uhandler, SolrCore core) {
+    if (dataDir != null) {
+      ObjectReleaseTracker.release(this);
+    }
     ObjectReleaseTracker.track(this);
     try {
       dataDir = core.getUlogDir();
@@ -445,10 +448,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
     } catch (Throwable e) {
       ParWork.propegateInterrupt(e);
+      ObjectReleaseTracker.release(this);
       if (e instanceof Error) {
         throw e;
       }
-      ObjectReleaseTracker.release(this);
     }
   }
 
