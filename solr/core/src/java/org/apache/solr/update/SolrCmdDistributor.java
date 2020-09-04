@@ -150,7 +150,7 @@ public class SolrCmdDistributor implements Closeable {
       if (cmd.isDeleteById()) {
         uReq.deleteById(cmd.getId(), cmd.getRoute(), cmd.getVersion());
       } else {
-        blockAndDoRetries();
+        solrClient.waitForOutstandingRequests();
 
         uReq.deleteByQuery(cmd.query);
       }

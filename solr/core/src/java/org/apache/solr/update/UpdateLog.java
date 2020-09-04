@@ -443,8 +443,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       }
       core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       ParWork.propegateInterrupt(e);
+      if (e instanceof Error) {
+        throw e;
+      }
       ObjectReleaseTracker.release(this);
     }
   }
