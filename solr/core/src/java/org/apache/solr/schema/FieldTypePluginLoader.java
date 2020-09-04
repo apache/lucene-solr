@@ -80,23 +80,23 @@ public final class FieldTypePluginLoader
     ft.setTypeName(name);
     
     String expression = "./analyzer[@type='query']";
-    ConfigNode anode = node.child(it -> "analyzer".equals(it.name()) && "query".equals(it.attributes().get("type")));
+    ConfigNode anode = node.child(it -> "query".equals(it.attributes().get("type")) , "analyzer");
     Analyzer queryAnalyzer = readAnalyzer(anode);
 
 //    expression = "./analyzer[@type='multiterm']";
-    anode = node.child(it -> "analyzer".equals(it.name()) && "multiterm".equals(it.attributes().get("type"))) ;
+    anode = node.child(it -> "multiterm".equals(it.attributes().get("type") ), "analyzer");
     Analyzer multiAnalyzer = readAnalyzer(anode);
 
     // An analyzer without a type specified, or with type="index"
     expression = "./analyzer[not(@type)] | ./analyzer[@type='index']";
-    anode = node.child(it -> "analyzer".equals(it.name()) &&
-        (it.attributes().get("type") == null || "index".equals(it.attributes().get("type"))));
+    anode = node.child(it ->
+        (it.attributes().get("type") == null || "index".equals(it.attributes().get("type"))), "analyzer");
 //    anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
     Analyzer analyzer = readAnalyzer(anode);
 
     // a custom similarity[Factory]
     expression = "./similarity";
-    anode = node.child(it -> "similarity".equals(it.name()) && "multiterm".equals(it.attributes().get("type"))) ;
+    anode = node.child(it -> "multiterm".equals(it.attributes().get("type")), "similarity") ;
 
     SimilarityFactory simFactory = IndexSchema.readSimilarity(loader, anode);
     if (null != simFactory) {

@@ -74,6 +74,9 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.ConcurrentLRUCache;
+import org.apache.solr.util.DOMConfigNode;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.DataConfigNode;
 import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -144,7 +147,8 @@ public class IndexSchema {
 
   public DynamicField[] getDynamicFields() { return dynamicFields; }
 
-  private final Set<String> FIELDTYPE_KEYS = ImmutableSet.of("fieldtype", "fieldType");
+  private static final Set<String> FIELDTYPE_KEYS = ImmutableSet.of("fieldtype", "fieldType");
+  private static final Set<String> FIELD_KEYS = ImmutableSet.of("dynamicField", "field");
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
@@ -166,6 +170,8 @@ public class IndexSchema {
    * directives that target them.
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
+//  static AtomicLong totalSchemaLoadTime = new AtomicLong();
+
 
   /**
    * Constructs a schema using the specified resource name and stream.
@@ -483,7 +489,7 @@ public class IndexSchema {
 //      final XPath xpath = schemaConf.getXPath();
 //      String expression = stepsToPath(SCHEMA, AT + NAME);
 //      Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
-      ConfigNode rootNode = schemaConf.rootNode();
+      ConfigNode rootNode = new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()) , Collections.singleton("similarity")) ;
       name = rootNode.attributes().get("name");
       StringBuilder sb = new StringBuilder();
       // Another case where the initialization from the test harness is different than the "real world"
@@ -508,7 +514,7 @@ public class IndexSchema {
 //      NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
 
       typeLoader.load(solrClassLoader,
-          rootNode.children(it -> FIELDTYPE_KEYS.contains( it.name())));
+          rootNode.children(null, FIELDTYPE_KEYS));
 
       // load the fields
       Map<String,Boolean> explicitRequiredProp = loadFields(rootNode);
@@ -657,8 +663,7 @@ public class IndexSchema {
         + XPATH_OR + stepsToPath(SCHEMA, DYNAMIC_FIELD)
         + XPATH_OR + stepsToPath(SCHEMA, FIELDS, FIELD)
         + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);*/
-    List<ConfigNode> nodes = n.children(it -> "field".equals(it.name()) ||
-        "dynamicField".equals(it.name()));
+    List<ConfigNode> nodes = n.children(null,  FIELD_KEYS);
 
 //    NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
 

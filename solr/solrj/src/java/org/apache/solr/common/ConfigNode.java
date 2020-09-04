@@ -17,7 +17,9 @@
 package org.apache.solr.common;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -28,26 +30,33 @@ import org.apache.solr.cluster.api.SimpleMap;
  */
 public interface ConfigNode {
 
-  /**Name of the tag
+  /**
+   * Name of the tag
    */
   String name();
 
-  /**Text value of the node
+  /**
+   * Text value of the node
    */
   String textValue();
 
-  /**Attributes
+  /**
+   * Attributes
    */
   SimpleMap<String> attributes();
 
-  /** Child by name
+  /**
+   * Child by name
    */
-  ConfigNode child(String name);
+  default ConfigNode child(String name) {
+    return child(null, name);
+  }
 
-  default ConfigNode child(Predicate<ConfigNode> test) {
+  default ConfigNode child(Predicate<ConfigNode> test, String name) {
     ConfigNode[] result = new ConfigNode[1];
     forEachChild(it -> {
-      if (test.test(it)) {
+      if (name!=null && !name.equals(it.name())) return Boolean.TRUE;
+      if (test == null || test.test(it)) {
         result[0] = it;
         return Boolean.FALSE;
       }
@@ -56,16 +65,23 @@ public interface ConfigNode {
     return result[0];
   }
 
-  default List<ConfigNode> children(Predicate<ConfigNode> test) {
+  default List<ConfigNode> children(Predicate<ConfigNode> test, String... nodeNames) {
+    return children(test, nodeNames == null ? Collections.emptySet() : Set.of(nodeNames));
+  }
+
+  default List<ConfigNode> children(Predicate<ConfigNode> test, Set<String> set) {
     List<ConfigNode> result = new ArrayList<>();
     forEachChild(it -> {
-      if (test.test(it)) result.add(it);
+      if (set != null && !set.isEmpty() && !set.contains(it.name())) return Boolean.TRUE;
+      if (test == null || test.test(it)) result.add(it);
       return Boolean.TRUE;
     });
     return result;
   }
 
-  List<ConfigNode> children(String name);
+  default List<ConfigNode> children(String name) {
+    return children(null, Collections.singleton(name));
+  }
 
   void forEachChild(Function<ConfigNode, Boolean> fun);
 

@@ -35,6 +35,7 @@ public class DOMConfigNode implements ConfigNode {
   private final Node node;
   SimpleMap<String> attrs;
 
+
   @Override
   public String name() {
     return node.getNodeName();
@@ -83,4 +84,5 @@ public class DOMConfigNode implements ConfigNode {
       if (Boolean.FALSE == toContinue) break;
     }
   }
+
 }
