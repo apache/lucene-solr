@@ -68,6 +68,9 @@ public class AttributeValuesImpl implements AttributeValues {
     @Override
     public Optional<String> getSystemProperty(Node node, String name) {
         Map<Node, String> nodeToValue = syspropSnitchToNodeToValue.get(AttributeFetcherImpl.getSystemPropertySnitchTag(name));
+        if (nodeToValue == null) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(nodeToValue.get(node));
     }
 
@@ -80,6 +83,9 @@ public class AttributeValuesImpl implements AttributeValues {
     @Override
     public Optional<Double> getMetric(Node node, String metricName, AttributeFetcher.NodeMetricRegistry registry) {
         Map<Node, Double> nodeToValue = metricSnitchToNodeToValue.get(AttributeFetcherImpl.getMetricSnitchTag(metricName, registry));
+        if (nodeToValue == null) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(nodeToValue.get(node));
     }
 
