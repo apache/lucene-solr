@@ -261,13 +261,6 @@ configure(project(":solr").allprojects) {
   }
 }
 
-configure(project(":solr:contrib:velocity")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [ "org.apache.solr.response" ]
-  }
-}
-
 configure(project(":solr:contrib:analysis-extras")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
