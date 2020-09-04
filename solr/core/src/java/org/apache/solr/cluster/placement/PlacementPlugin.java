@@ -39,13 +39,11 @@ public interface PlacementPlugin {
    *                while the plugin is executing and will be thrown away once the plugin is done. The plugin code can
    *                therefore modify them if needed.
    * @param placementRequest request for placing new replicas or moving existing replicas on the cluster.
-   * @param propertyFactory Factory used by the plugin to build instances of {@link PropertyKey} to resolve properties
-   *                        to their values.
-   * @param propertyFetcher Allows fetching values for {@link PropertyKey}'s by contacting the
-   *                        relevant {@link PropertyValueSource} defined in each {@link PropertyKey}.
+   * @param attributeFetcher Factory used by the plugin to fetch additional attributes from the cluster nodes, such as
+   *                         count of coresm ssytem properties etc..
    * @param placementPlanFactory Factory used to create instances of {@link PlacementPlan} to return computed decision.
    * @return plan satisfying the placement request.
    */
-  PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
-                                 PropertyValueFetcher propertyFetcher, PlacementPlanFactory placementPlanFactory) throws PlacementException, InterruptedException;
+  PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, AttributeFetcher attributeFetcher,
+                                 PlacementPlanFactory placementPlanFactory) throws PlacementException, InterruptedException;
 }

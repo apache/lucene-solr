@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Shard in a {@link SolrCollection}, i.e. a subset of the data indexed in that collection.
  */
-public interface Shard extends PropertyValueSource {
+public interface Shard {
   String getShardName();
 
   SolrCollection getCollection();

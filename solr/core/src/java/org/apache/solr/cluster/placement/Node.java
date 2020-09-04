@@ -20,6 +20,6 @@ package org.apache.solr.cluster.placement;
 /**
  * Representation of a SolrCloud node or server in the SolrCloud cluster.
  */
-public interface Node extends PropertyValueSource {
+public interface Node {
   String getName();
 }

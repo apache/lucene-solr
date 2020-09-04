@@ -35,7 +35,6 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
   private static final PlacementPlanFactoryImpl PLACEMENT_PLAN_FACTORY = new PlacementPlanFactoryImpl();
-  private static final PropertyKeyFactoryImpl PROPERTY_KEY_FACTORY = new PropertyKeyFactoryImpl();
 
   private final PlacementPlugin plugin;
   private final DocCollection collection;
@@ -59,7 +58,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
     final PlacementPlan placementPlan;
     try {
-      placementPlan = plugin.computePlacement(cluster, placementRequest, PROPERTY_KEY_FACTORY, new PropertyValueFetcherImpl(solrCloudManager), PLACEMENT_PLAN_FACTORY);
+      placementPlan = plugin.computePlacement(cluster, placementRequest, new AttributeFetcherImpl(solrCloudManager), PLACEMENT_PLAN_FACTORY);
     } catch (PlacementException pe) {
       throw new Assign.AssignmentException(pe);
     }

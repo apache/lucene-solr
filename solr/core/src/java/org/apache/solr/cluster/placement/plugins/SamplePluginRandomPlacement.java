@@ -23,20 +23,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.solr.cluster.placement.AddReplicasPlacementRequest;
-import org.apache.solr.cluster.placement.Cluster;
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.PlacementException;
-import org.apache.solr.cluster.placement.PlacementPlugin;
-import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.cluster.placement.PlacementPluginConfig;
-import org.apache.solr.cluster.placement.PropertyKeyFactory;
-import org.apache.solr.cluster.placement.PropertyValueFetcher;
-import org.apache.solr.cluster.placement.Replica;
-import org.apache.solr.cluster.placement.ReplicaPlacement;
-import org.apache.solr.cluster.placement.PlacementRequest;
-import org.apache.solr.cluster.placement.PlacementPlan;
-import org.apache.solr.cluster.placement.PlacementPlanFactory;
+import org.apache.solr.cluster.placement.*;
 
 /**
  * Implements random placement for new collection creation while preventing two replicas of same shard from being placed on same node.
@@ -58,8 +45,8 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
     }
   }
 
-  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
-                                        PropertyValueFetcher propertyFetcher, PlacementPlanFactory placementPlanFactory) throws PlacementException {
+  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, AttributeFetcher attributeFetcher,
+                                        PlacementPlanFactory placementPlanFactory) throws PlacementException {
     // This plugin only supports Creating a collection, and only one collection. Real code would be different...
     if (!(placementRequest instanceof AddReplicasPlacementRequest)) {
       throw new PlacementException("This plugin only supports adding replicas");

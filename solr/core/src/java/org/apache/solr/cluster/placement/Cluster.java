@@ -24,11 +24,8 @@ import java.util.Set;
 /**
  * <p>A representation of the (initial) cluster state, providing information on which nodes are part of the cluster and a way
  * to get to more detailed info.
- *
- * <p>This instance can also be used as a {@link PropertyValueSource} if {@link PropertyKey}'s need to be specified with
- * a global cluster target.
  */
-public interface Cluster extends PropertyValueSource {
+public interface Cluster {
   /**
    * @return current set of live nodes. Never <code>null</code>, never empty (Solr wouldn't call the plugin if empty
    * since no useful work could then be done).

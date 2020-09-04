@@ -18,7 +18,6 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -27,21 +26,7 @@ import java.util.Map;
 
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
-import org.apache.solr.cluster.placement.AddReplicasPlacementRequest;
-import org.apache.solr.cluster.placement.Cluster;
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.PlacementException;
-import org.apache.solr.cluster.placement.PlacementPlugin;
-import org.apache.solr.cluster.placement.PlacementPluginConfig;
-import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.cluster.placement.PropertyKey;
-import org.apache.solr.cluster.placement.PropertyKeyFactory;
-import org.apache.solr.cluster.placement.PropertyValueFetcher;
-import org.apache.solr.cluster.placement.Replica;
-import org.apache.solr.cluster.placement.ReplicaPlacement;
-import org.apache.solr.cluster.placement.PlacementRequest;
-import org.apache.solr.cluster.placement.PlacementPlan;
-import org.apache.solr.cluster.placement.PlacementPlanFactory;
+import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
@@ -74,8 +59,8 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
   }
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
-                                        PropertyValueFetcher propertyFetcher, PlacementPlanFactory placementPlanFactory) throws PlacementException {
+  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, AttributeFetcher attributeFetcher,
+                                        PlacementPlanFactory placementPlanFactory) throws PlacementException {
     // This plugin only supports Creating a collection.
     if (!(placementRequest instanceof AddReplicasPlacementRequest)) {
       throw new PlacementException("This toy plugin only supports adding replicas");
@@ -93,16 +78,19 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
     // Get number of cores on each Node
     TreeMultimap<Integer, Node> nodesByCores = TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
 
-    // Get the number of cores on each node and sort the nodes by increasing number of cores
-    for (Node node : cluster.getLiveNodes()) {
-      // TODO: redo this. It is potentially less efficient to call propertyFetcher.getProperties() multiple times rather than once
-      final PropertyKey.CoresCount coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
-      propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey)); // ISSUE HERE property not set - DEBUG once/if this PR is deemed ok for merging
+    Set<Node> nodes = reqAddReplicas.getTargetNodes();
 
-      if (coresCountPropertyKey.getCoresCount().isEmpty()) {
+    attributeFetcher.requestNodeCoreCount();
+    attributeFetcher.fetchFrom(nodes);
+    AttributeValues attrValues = attributeFetcher.fetchAttributes();
+
+
+    // Get the number of cores on each node and sort the nodes by increasing number of cores
+    for (Node node : nodes) {
+      if (attrValues.getCoresCount(node).isEmpty()) {
         throw new PlacementException("Can't get number of cores in " + node);
       }
-      nodesByCores.put(coresCountPropertyKey.getCoresCount().get(), node);
+      nodesByCores.put(attrValues.getCoresCount(node).get(), node);
     }
 
     Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * reqAddReplicas.getShardNames().size());

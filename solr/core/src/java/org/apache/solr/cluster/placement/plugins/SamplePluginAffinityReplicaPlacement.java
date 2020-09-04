@@ -114,18 +114,21 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
   }
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, PropertyKeyFactory propertyFactory,
-                                        PropertyValueFetcher propertyFetcher, PlacementPlanFactory placementPlanFactory) throws PlacementException {
+  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, AttributeFetcher attributeFetcher,
+                                        PlacementPlanFactory placementPlanFactory) throws PlacementException {
     if (!(placementRequest instanceof AddReplicasPlacementRequest)) {
       throw new PlacementException("This plugin only supports adding replicas, no support for " + placementRequest.getClass().getName());
     }
 
     final AddReplicasPlacementRequest reqAddReplicas = (AddReplicasPlacementRequest) placementRequest;
 
-    Set<Node> nodes = cluster.getLiveNodes();
+    Set<Node> nodes = reqAddReplicas.getTargetNodes();
 
-    Map<Node, PropertyKey> azKeys = propertyFactory.createSyspropKeys(nodes, AVAILABILITY_ZONE_SYSPROP);
-    Map<Node, PropertyKey> replicaTypesKeys = propertyFactory.createSyspropKeys(nodes, REPLICA_TYPE_SYSPROP);
+    attributeFetcher.requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP).requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
+    attributeFetcher.requestNodeCoreCount().requestNodeFreeDisk();
+    attributeFetcher.fetchFrom(nodes);
+    AttributeValues attrValues = attributeFetcher.fetchAttributes();
+
 
 
     // WIP - continue here.
@@ -143,14 +146,10 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
 
     // Get the number of cores on each node and sort the nodes by increasing number of cores
     for (Node node : cluster.getLiveNodes()) {
-      // TODO: redo this. It is potentially less efficient to call propertyFetcher.getProperties() multiple times rather than once
-      final PropertyKey.CoresCount coresCountPropertyKey = propertyFactory.createCoreCountKey(node);
-      propertyFetcher.fetchProperties(Collections.singleton(coresCountPropertyKey)); // ISSUE HERE property not fetched - DEBUG once/if this PR is deemed ok for merging
-
-      if (coresCountPropertyKey.getCoresCount().isEmpty()) {
+      if (attrValues.getCoresCount(node).isEmpty()) {
         throw new PlacementException("Can't get number of cores in " + node);
       }
-      nodesByCores.put(coresCountPropertyKey.getCoresCount().get(), node);
+      nodesByCores.put(attrValues.getCoresCount(node).get(), node);
     }
 
     Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * reqAddReplicas.getShardNames().size());

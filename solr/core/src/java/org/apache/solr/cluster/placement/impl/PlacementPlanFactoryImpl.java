@@ -15,15 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster.placement.impl;
+
+import org.apache.solr.cluster.placement.*;
 
 import java.util.Set;
 
-public interface PropertyValueFetcher {
-  /**
-   * Fetched values from the various sources {@link PropertyValueSource}s in the {@link PropertyKey}s
-   * and sets those values on the keys.
-   * @param props the properties to retrieve. Can't be {@code null} but can be empty.
-   */
-  void fetchProperties(Set<PropertyKey> props);
+class PlacementPlanFactoryImpl implements PlacementPlanFactory {
+    @Override
+    public PlacementPlan createPlacementPlanAddReplicas(AddReplicasPlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
+        return new PlacementPlanAddReplicasImpl(request, replicaPlacements);
+    }
+
+    @Override
+    public ReplicaPlacement createReplicaPlacement(String shardName, Node node, Replica.ReplicaType replicaType) {
+        return new ReplicaPlacementImpl(shardName, node, replicaType);
+    }
 }

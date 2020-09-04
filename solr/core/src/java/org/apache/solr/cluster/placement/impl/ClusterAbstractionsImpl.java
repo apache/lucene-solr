@@ -29,11 +29,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.Pair;
 
-/**
- * This class implements {@link PropertyValueSource} and as such can (and likely will) end up as a key in a Map.
- * Leaving the default implementation of {@link #equals} and {@link #hashCode} to handle things. This will not be
- * an issue for placement plugins that will only be handed a single instance of {@link Cluster}.
- */
 class ClusterImpl implements Cluster {
   private final Set<Node> liveNodes;
   private final ClusterState clusterState;
@@ -91,10 +86,9 @@ class NodeImpl implements Node {
   }
 
   /**
-   * This class implements {@link PropertyValueSource} and will end up as a key in a Map for fetching {@link org.apache.solr.cluster.placement.PropertyKey}'s.
+   * This class ends up as a key in Maps in {@link org.apache.solr.cluster.placement.AttributeValues}.
    * It is important to implement this method comparing node names given that new instances of {@link Node} are created
    * with names equal to existing instances (See {@link ReplicaImpl} constructor).
-   *
    */
   public boolean equals(Object obj) {
     if (obj == null) { return false; }
@@ -148,7 +142,9 @@ class SolrCollectionImpl implements SolrCollection {
   }
 
   /**
-   * This class implements {@link PropertyValueSource} and will end up as a key in a Map for fetching {@link org.apache.solr.cluster.placement.PropertyKey}'s
+   * Multiple instances of this class can be created for the same underlying actual collection. OTOH if the underlying
+   * collection does change between the calls, resulting {@link SolrCollection} instances will not be equal. Unsure we
+   * need to redefine these methods here anyway, so maybe TODO remove?
    */
   public boolean equals(Object obj) {
     if (obj == null) { return false; }
@@ -233,9 +229,6 @@ class ShardImpl implements Shard {
     return shardState;
   }
 
-  /**
-   * This class implements {@link PropertyValueSource} and will end up as a key in a Map for fetching {@link org.apache.solr.cluster.placement.PropertyKey}'s
-   */
   public boolean equals(Object obj) {
     if (obj == null) { return false; }
     if (obj == this) { return true; }
@@ -356,9 +349,6 @@ class ReplicaImpl implements Replica {
     }
   }
 
-  /**
-   * This class implements {@link PropertyValueSource} and will end up as a key in a Map for fetching {@link org.apache.solr.cluster.placement.PropertyKey}'s
-   */
   public boolean equals(Object obj) {
     if (obj == null) { return false; }
     if (obj == this) { return true; }
