@@ -123,6 +123,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   FixedBitSet[] sets = null;
   PushWriter writer;
   private String wt;
+  private boolean closeWriter;
+  private boolean closeRespWriter;
 
   private static class TupleEntryWriter implements EntryWriter {
     Tuple tuple;
@@ -270,9 +272,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   @Override
   public void close() throws IOException {
-    if (writer != null) writer.close();
-    if (respWriter != null) {
-      respWriter.flush();
+    if (closeWriter) {
+      if (writer != null) writer.close();
+      writer = null;
+    }
+    if (respWriter != null && closeRespWriter) {
       respWriter.close();
     }
 
@@ -295,9 +299,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     if (rw instanceof BinaryResponseWriter) {
       //todo add support for other writers after testing
       writer = new JavaBinCodec(os, null);
+      closeWriter = true;
     } else {
       respWriter = new OutputStreamWriter(os, StandardCharsets.UTF_8);
       writer = JSONResponseWriter.getPushWriter(respWriter, req, res);
+      closeRespWriter = true;
+      closeWriter = true;
     }
     Exception exception = res.getException();
     if (exception != null) {
