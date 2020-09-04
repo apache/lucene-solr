@@ -2771,6 +2771,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       }
 
       assertEquals(cluster.getJettySolrRunners().size(), workersComplete);
+
+      parallelUpdateStream.close();
+
       //Ensure that destinationCollection actually has the new docs.
       expression = StreamExpressionParser.parse("search(parallelDestinationCollection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_i asc\")");
       stream = new CloudSolrStream(expression, factory);
