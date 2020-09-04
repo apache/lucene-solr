@@ -30,10 +30,13 @@ buildscript {
 }
 
 configure(rootProject) {
-  task("validateSourcePatterns", type: ValidateSourcePatternsTask) {
+  task("validateSourcePatterns", type: ValidateSourcePatternsTask) { task ->
     group = 'Verification'
     description = 'Validate Source Patterns'
-    
+
+    // This task has no proper outputs.
+    setupDummyOutputs(task)
+
     sourceFiles = project.fileTree(project.rootDir) {
       [
         'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
@@ -67,11 +70,6 @@ configure(rootProject) {
 }
 
 class ValidateSourcePatternsTask extends DefaultTask {
-
-  ValidateSourcePatternsTask() {
-    // this task has no outputs, so it's always uptodate (if inputs don't change).
-    outputs.upToDateWhen { true }
-  }
 
   @InputFiles
   ConfigurableFileTree sourceFiles
