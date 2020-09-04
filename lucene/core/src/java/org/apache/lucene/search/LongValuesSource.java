@@ -305,7 +305,11 @@ public abstract class LongValuesSource implements SegmentCacheable {
 
     @Override
     public SortField rewrite(IndexSearcher searcher) throws IOException {
-      LongValuesSortField rewritten = new LongValuesSortField(producer.rewrite(searcher), reverse);
+      LongValuesSource rewrittenSource = producer.rewrite(searcher);
+      if (producer == rewrittenSource) {
+        return this;
+      }
+      LongValuesSortField rewritten = new LongValuesSortField(rewrittenSource, reverse);
       if (missingValue != null) {
         rewritten.setMissingValue(missingValue);
       }
