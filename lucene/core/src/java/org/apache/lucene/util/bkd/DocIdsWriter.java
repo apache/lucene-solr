@@ -24,7 +24,8 @@ import org.apache.lucene.store.IndexInput;
 
 class DocIdsWriter {
 
-  private DocIdsWriter() {}
+  private DocIdsWriter() {
+  }
 
   static void writeDocIds(int[] docIds, int start, int count, DataOutput out) throws IOException {
     // docs can be sorted either when all docs in a block have the same value
@@ -51,13 +52,40 @@ class DocIdsWriter {
       }
       if (max <= 0xffffff) {
         out.writeByte((byte) 24);
-        for (int i = 0; i < count; ++i) {
+        int i;
+        for (i = 0; i < count - 7; i += 8) {
+          // 1st long
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 2] >>> 8)));
+          out.writeByte((byte) docIds[start + i + 1]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 1] >>> 8)));
+          out.writeByte((byte) docIds[start + i]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i] >>> 8)));
+          // 2nd long
+          out.writeByte((byte) (docIds[start + i + 5] >>> 16));
+          out.writeByte((byte) docIds[start + i + 4]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 4] >>> 8)));
+          out.writeByte((byte) docIds[start + i + 3]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 3] >>> 8)));
+          out.writeByte((byte) docIds[start + i + 2]);
+          // 3rd long
+          out.writeByte((byte) docIds[start + i + 7]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 7] >>> 8)));
+          out.writeByte((byte) docIds[start + i + 6]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 6] >>> 8)));
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 5])));
+        }
+        for (; i < count; ++i) {
           out.writeShort((short) (docIds[start + i] >>> 8));
           out.writeByte((byte) docIds[start + i]);
         }
       } else {
         out.writeByte((byte) 32);
-        for (int i = 0; i < count; ++i) {
+        int i;
+        for (i = 0; i < count - 1; i += 2) {
+          out.writeInt(Integer.reverseBytes(docIds[start + i + 1]));
+          out.writeInt(Integer.reverseBytes(docIds[start + i]));
+        }
+        for (; i < count; ++i) {
           out.writeInt(docIds[start + i]);
         }
       }
@@ -65,17 +93,17 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers into {@code docIDs}. */
-  static void readInts(IndexInput in, int count, int[] docIDs) throws IOException {
+  static void readInts(IndexInput in, int count, int[] docIDs, long[] tmp, int version) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case 0:
         readDeltaVInts(in, count, docIDs);
         break;
       case 32:
-        readInts32(in, count, docIDs);
+        readInts32(in, count, docIDs, tmp, version);
         break;
       case 24:
-        readInts24(in, count, docIDs);
+        readInts24(in, count, docIDs, tmp, version);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
@@ -90,26 +118,48 @@ class DocIdsWriter {
     }
   }
 
-  static <T> void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int i = 0; i < count; i++) {
+  private static void readInts32(IndexInput in, int count, int[] docIDs, long[] tmp, int version) throws IOException {
+    assert tmp.length >= count / 2;
+    in.readLELongs(tmp, 0, count / 2);
+    int i, j;
+    for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
+      final long l1;
+      if (version < BKDWriter.VERSION_DOCIDS_LITTLE_ENDIAN) {
+        l1 = Long.reverseBytes(tmp[j]);
+      } else {
+        l1 = tmp[j];
+      }
+      docIDs[i] = (int)(l1 >>> 32);
+      docIDs[i+1] = (int)(l1 & 0xffffffff);
+    }
+    for (;i < count; i++) {
       docIDs[i] = in.readInt();
     }
   }
 
-  private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
-    int i;
-    for (i = 0; i < count - 7; i += 8) {
-      long l1 = in.readLong();
-      long l2 = in.readLong();
-      long l3 = in.readLong();
-      docIDs[i] =  (int) (l1 >>> 40);
-      docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
+  private static void readInts24(IndexInput in, int count, int[] docIDs, long[] tmp, int version) throws IOException {
+    assert tmp.length >= 3 * (count / 8);
+    in.readLELongs(tmp, 0, 3 * (count / 8));
+    int i, j;
+    for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
+      final long l1, l2, l3;
+      if (version < BKDWriter.VERSION_DOCIDS_LITTLE_ENDIAN) {
+        l1 = Long.reverseBytes(tmp[j]);
+        l2 = Long.reverseBytes(tmp[j+1]);
+        l3 = Long.reverseBytes(tmp[j+2]);
+      } else {
+        l1 = tmp[j];
+        l2 = tmp[j+1];
+        l3 = tmp[j+2];
+      }
+      docIDs[i] =   (int) (l1 >>> 40);
+      docIDs[i+1] = (int) ((l1 >>> 16) & 0xffffff);
       docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
-      docIDs[i+3] = (int) (l2 >>> 32) & 0xffffff;
-      docIDs[i+4] = (int) (l2 >>> 8) & 0xffffff;
+      docIDs[i+3] = (int) ((l2 >>> 32) & 0xffffff);
+      docIDs[i+4] = (int) ((l2 >>> 8) & 0xffffff);
       docIDs[i+5] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
-      docIDs[i+6] = (int) (l3 >>> 24) & 0xffffff;
-      docIDs[i+7] = (int) l3 & 0xffffff;
+      docIDs[i+6] = (int) ((l3 >>> 24) & 0xffffff);
+      docIDs[i+7] = (int) (l3 & 0xffffff);
     }
     for (; i < count; ++i) {
       docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
@@ -117,17 +167,17 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
-  static void readInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+  static void readInts(IndexInput in, int count, IntersectVisitor visitor, long[] tmp, int version) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case 0:
         readDeltaVInts(in, count, visitor);
         break;
       case 32:
-        readInts32(in, count, visitor);
+        readInts32(in, count, visitor, tmp, version);
         break;
       case 24:
-        readInts24(in, count, visitor);
+        readInts24(in, count, visitor, tmp, version);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
@@ -142,18 +192,40 @@ class DocIdsWriter {
     }
   }
 
-  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; i++) {
+  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor, long[] tmp, int version) throws IOException {
+    assert tmp.length >= count / 2;
+    in.readLELongs(tmp, 0, count / 2);
+    int i, j;
+    for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
+      final long l1;
+      if (version < BKDWriter.VERSION_DOCIDS_LITTLE_ENDIAN) {
+        l1 = Long.reverseBytes(tmp[j]);
+      } else {
+        l1 = tmp[j];
+      }
+      visitor.visit((int)(l1 >>> 32));
+      visitor.visit((int)(l1 & 0xffffffff));
+    }
+    for (;i < count; i++) {
       visitor.visit(in.readInt());
     }
   }
 
-  private static void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int i;
-    for (i = 0; i < count - 7; i += 8) {
-      long l1 = in.readLong();
-      long l2 = in.readLong();
-      long l3 = in.readLong();
+  private static void readInts24(IndexInput in, int count, IntersectVisitor visitor, long[] tmp, int version) throws IOException {
+    assert tmp.length >= 3 * (count / 8);
+    in.readLELongs(tmp, 0, 3 * (count / 8));
+    int i, j;
+    for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
+      final long l1, l2, l3;
+      if (version < BKDWriter.VERSION_DOCIDS_LITTLE_ENDIAN) {
+        l1 = Long.reverseBytes(tmp[j]);
+        l2 = Long.reverseBytes(tmp[j+1]);
+        l3 = Long.reverseBytes(tmp[j+2]);
+      } else {
+        l1 = tmp[j];
+        l2 = tmp[j+1];
+        l3 = tmp[j+2];
+      }
       visitor.visit((int) (l1 >>> 40));
       visitor.visit((int) (l1 >>> 16) & 0xffffff);
       visitor.visit((int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
