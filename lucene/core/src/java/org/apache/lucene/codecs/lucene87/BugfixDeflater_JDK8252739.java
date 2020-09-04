@@ -32,8 +32,8 @@ final class BugfixDeflater_JDK8252739 extends Deflater {
   /**
    * Creates a {@link Deflater} instance, which works around JDK-8252739.
    * <p>
-   * Use this whenever you intend to call {@link #setDictionary(byte[], int, int)} or
-   * {@link #setDictionary(java.nio.ByteBuffer)} on a {@code Deflater}.
+   * Use this whenever you intend to call {@link #setDictionary(byte[], int, int)}
+   * on a {@code Deflater}.
    * */
   public static Deflater createDeflaterInstance(int level, boolean nowrap, int dictLength) {
     if (dictLength < 0) {
