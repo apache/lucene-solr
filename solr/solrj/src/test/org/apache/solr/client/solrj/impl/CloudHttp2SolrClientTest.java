@@ -258,33 +258,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         .add(id, "2", "a_t", "hello2")
         .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     
-    // Test single threaded routed updates for UpdateRequest
-    NamedList<Object> response = getRandomClient().request(request, "routing_collection");
-    if (getRandomClient().isDirectUpdatesToLeadersOnly()) {
-      checkSingleServer(response);
-    }
-    RouteResponse rr = (RouteResponse) response;
-    Map<String,LBSolrClient.Req> routes = rr.getRoutes();
-    Iterator<Map.Entry<String,LBSolrClient.Req>> it = routes.entrySet()
-        .iterator();
-    while (it.hasNext()) {
-      Map.Entry<String,LBSolrClient.Req> entry = it.next();
-      String url = entry.getKey();
-      UpdateRequest updateRequest = (UpdateRequest) entry.getValue()
-          .getRequest();
-      SolrInputDocument doc = updateRequest.getDocuments().get(0);
-      String id = doc.getField("id").getValue().toString();
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.add("q", "id:" + id);
-      params.add("distrib", "false");
-      QueryRequest queryRequest = new QueryRequest(params);
-      try (Http2SolrClient solrClient = SolrTestCaseJ4.getHttpSolrClient(url)) {
-        QueryResponse queryResponse = queryRequest.process(solrClient);
-        SolrDocumentList docList = queryResponse.getResults();
-        assertTrue(docList.getNumFound() == 1);
-      }
-    }
-    
     // Test the deleteById routing for UpdateRequest
     
     final UpdateResponse uResponse = new UpdateRequest()
@@ -305,16 +278,15 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         .withParallelUpdates(true)
         .build()) {
       threadedClient.setDefaultCollection("routing_collection");
-      response = threadedClient.request(request);
+      NamedList<Object> response = threadedClient.request(request);
       if (threadedClient.isDirectUpdatesToLeadersOnly()) {
         checkSingleServer(response);
       }
-      rr = (RouteResponse) response;
-      routes = rr.getRoutes();
-      it = routes.entrySet()
-          .iterator();
+      RouteResponse rr = (RouteResponse) response;
+      Map routes = rr.getRoutes();
+      Iterator it = routes.entrySet().iterator();
       while (it.hasNext()) {
-        Map.Entry<String,LBSolrClient.Req> entry = it.next();
+        Map.Entry<String,LBSolrClient.Req> entry = (Map.Entry<String,LBSolrClient.Req>) it.next();
         String url = entry.getKey();
         UpdateRequest updateRequest = (UpdateRequest) entry.getValue()
             .getRequest();
