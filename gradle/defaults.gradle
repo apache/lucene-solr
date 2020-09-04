@@ -63,5 +63,17 @@ allprojects {
     scriptResources = { buildscript ->
       return file(buildscript.sourceFile.absolutePath.replaceAll('.gradle$', ""))
     }
+
+    // LUCENE-9505: utility function that sets up dummy outputs for a task so that
+    // clean[TaskName] works and allows selective re-runs.
+    setupDummyOutputs = { Task task ->
+      File dummyOutput = file("${task.project.buildDir}/tasks/${task.name}/dummy-output.txt")
+      task.outputs.file(dummyOutput)
+      task.doLast {
+        if (!dummyOutput.exists()) {
+          dummyOutput.createNewFile()
+        }
+      }
+    }
   }
 }
