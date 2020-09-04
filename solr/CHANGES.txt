@@ -217,6 +217,9 @@ Bug Fixes
 * SOLR-14714: Solr.cmd in windows loads the incorrect jetty module when using java>=9 (Endika Posadas via
   Erick Erickson)
 
+* SOLR-14821: {!terms} docValuesTermsFilterTopLevel method now works with single-valued strings (Anatolii Siuniaev
+  via Jason Gerlowski)
+
 Other Changes
 ---------------------
 
