@@ -368,7 +368,6 @@ public class SolrIndexWriter extends IndexWriter {
       super.close();
     } catch (Throwable e) {
       ParWork.propegateInterrupt("Error closing IndexWriter", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
       cleanup("close");
     }
