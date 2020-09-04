@@ -2191,11 +2191,11 @@ public class ZkController implements Closeable {
       if (cloudDesc.getShardId() == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "No shard id for " + cd);
       }
-
+      StringBuilder sb = new StringBuilder(256);
       AtomicReference<String> errorMessage = new AtomicReference<>();
       AtomicReference<DocCollection> collectionState = new AtomicReference<>();
       try {
-        zkStateReader.waitForState(cd.getCollectionName(), WAIT_FOR_STATE, TimeUnit.SECONDS, (c) -> {
+        zkStateReader.waitForState(cd.getCollectionName(), WAIT_FOR_STATE, TimeUnit.SECONDS, (l, c) -> {
           collectionState.set(c);
           if (c == null)
             return false;
@@ -2206,7 +2206,7 @@ public class ZkController implements Closeable {
           }
           Replica replica = slice.getReplica(coreNodeName);
           if (replica == null) {
-            StringBuilder sb = new StringBuilder();
+            sb.setLength(0);
             slice.getReplicas().stream().forEach(replica1 -> sb.append(replica1.getName() + " "));
             errorMessage.set("coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId() +
                 ", ignore the exception if the replica was deleted. Found: " + sb.toString());
@@ -2220,7 +2220,7 @@ public class ZkController implements Closeable {
           error = "coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId() +
               ", ignore the exception if the replica was deleted" ;
 
-        throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error + "\n" + getZkStateReader().getClusterState().getCollection(cd.getCollectionName()));
+        throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error + "\n" + collectionState.get());
       }
     }
   }
