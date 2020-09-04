@@ -17,11 +17,16 @@
 package org.apache.solr.cluster.scheduler;
 
 /**
- *
+ * Component to be scheduled and executed according to the schedule.
  */
 public interface Schedulable {
 
   Schedule getSchedule();
 
+  /**
+   * Execute the component.
+   * <p>NOTE: this should be a lightweight method that executes quickly, to avoid blocking the
+   * execution of other schedules. If it requires more work it should do this in a separate thread.</p>
+   */
   void run();
 }
