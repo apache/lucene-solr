@@ -153,7 +153,6 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testWaitForStateWatcherIsRetainedOnPredicateFailure() throws Exception {
 
     CloudHttp2SolrClient client = cluster.getSolrClient();

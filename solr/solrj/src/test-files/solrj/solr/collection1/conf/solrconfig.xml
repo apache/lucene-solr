@@ -49,7 +49,6 @@
     <lst name="defaults">
        <str name="echoParams">all</str>
     </lst>
-    <str name="healthcheckFile">server-enabled.txt</str>
   </requestHandler>
 
   <!-- config for the admin interface --> 
