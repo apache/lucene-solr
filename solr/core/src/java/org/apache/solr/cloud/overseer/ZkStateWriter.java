@@ -38,6 +38,7 @@ import javax.print.Doc;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -178,6 +179,14 @@ public class ZkStateWriter {
             c.getSlicesMap().forEach((sliceId, slice) -> {
               if (finalColl.getSlice(sliceId) != null) {
                 Map<String,Replica> newReplicas = new HashMap<>();
+
+                // start with existing state unless it's a replica that has been removed
+                Collection<Replica> nReplicas = finalC.getSlice(sliceId).getReplicas();
+                for (Replica oReplica : slice.getReplicas()) {
+                  if (nReplicas.contains(oReplica)) {
+                    newReplicas.put(oReplica.getName(), oReplica);
+                  }
+                }
                 
                 finalC.getSlice(sliceId).getReplicas().forEach((replica) -> {
                   newReplicas.put(replica.getName(), replica);
