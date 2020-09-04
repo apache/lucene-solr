@@ -188,7 +188,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     //max found by trial & error.  If we used 8 decimal places then we could get down to 1.04cm accuracy but then we
     // lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
-    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.41);
+    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.47);
     // Pt(x=105.29894270124083,y=-0.4371673760042398) to  Pt(x=105.2989428,y=-0.4371673) is 1.38568
   }
 
