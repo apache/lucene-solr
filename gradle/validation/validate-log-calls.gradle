@@ -36,9 +36,12 @@ import org.apache.tools.ant.BuildException
 
 configure(subprojects.findAll { it.path.startsWith(':solr') }) {
   plugins.withType(JavaPlugin) {
-    task validateLogCalls(type: ValidateLogCallsTask) {
+    task validateLogCalls(type: ValidateLogCallsTask) { task ->
       description "Checks that log calls are either validated or conform to efficient patterns."
       group "verification"
+
+      // This task has no proper outputs.
+      setupDummyOutputs(task)
 
       sourceFiles = files(sourceSets*.java)
     }
@@ -229,11 +232,6 @@ class ValidateLogCallsTask extends DefaultTask {
 
   @InputFiles
   FileCollection sourceFiles
-
-  ValidateLogCallsTask() {
-    // No explicit outputs (outputs always up to date).
-    outputs.upToDateWhen { true }
-  }
 
   @TaskAction
   def checkLogLines() {
