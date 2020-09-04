@@ -170,7 +170,7 @@ public class IndexSchema {
    * directives that target them.
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
-//  static AtomicLong totalSchemaLoadTime = new AtomicLong();
+  static AtomicLong totalSchemaLoadTime = new AtomicLong();
 
 
   /**
@@ -183,9 +183,9 @@ public class IndexSchema {
 
     this.resourceName = Objects.requireNonNull(name);
     try {
-//      long start = System.currentTimeMillis();
+      long start = System.currentTimeMillis();
       readSchema(is);
-//      System.out.println("schema-load-time : "+ totalSchemaLoadTime.addAndGet (System.currentTimeMillis() - start));
+      System.out.println("schema-load-time : "+ totalSchemaLoadTime.addAndGet (System.currentTimeMillis() - start));
       loader.inform(loader);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -513,8 +513,10 @@ public class IndexSchema {
 //      expression = getFieldTypeXPathExpressions();
 //      NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
 
-      typeLoader.load(solrClassLoader,
-          rootNode.children(null, FIELDTYPE_KEYS));
+      List<ConfigNode> fTypes = rootNode.children(null, FIELDTYPE_KEYS);
+      ConfigNode types = rootNode.child(TYPES);
+      if(types != null) fTypes.addAll(types.children(null, FIELDTYPE_KEYS));
+      typeLoader.load(solrClassLoader, fTypes);
 
       // load the fields
       Map<String,Boolean> explicitRequiredProp = loadFields(rootNode);
@@ -664,6 +666,10 @@ public class IndexSchema {
         + XPATH_OR + stepsToPath(SCHEMA, FIELDS, FIELD)
         + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);*/
     List<ConfigNode> nodes = n.children(null,  FIELD_KEYS);
+    ConfigNode child = n.child(FIELDS);
+    if(child != null) {
+      nodes.addAll(child.children(null, FIELD_KEYS));
+    }
 
 //    NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
 

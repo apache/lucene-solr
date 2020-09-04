@@ -79,7 +79,7 @@ public final class FieldTypePluginLoader
     FieldType ft = loader.newInstance(className, FieldType.class);
     ft.setTypeName(name);
     
-    String expression = "./analyzer[@type='query']";
+//    String expression = "./analyzer[@type='query']";
     ConfigNode anode = node.child(it -> "query".equals(it.attributes().get("type")) , "analyzer");
     Analyzer queryAnalyzer = readAnalyzer(anode);
 
@@ -88,15 +88,15 @@ public final class FieldTypePluginLoader
     Analyzer multiAnalyzer = readAnalyzer(anode);
 
     // An analyzer without a type specified, or with type="index"
-    expression = "./analyzer[not(@type)] | ./analyzer[@type='index']";
+//    expression = "./analyzer[not(@type)] | ./analyzer[@type='index']";
     anode = node.child(it ->
         (it.attributes().get("type") == null || "index".equals(it.attributes().get("type"))), "analyzer");
 //    anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
     Analyzer analyzer = readAnalyzer(anode);
 
     // a custom similarity[Factory]
-    expression = "./similarity";
-    anode = node.child(it -> "multiterm".equals(it.attributes().get("type")), "similarity") ;
+//    expression = "./similarity";
+    anode = node.child("similarity") ;
 
     SimilarityFactory simFactory = IndexSchema.readSimilarity(loader, anode);
     if (null != simFactory) {

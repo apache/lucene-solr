@@ -29,6 +29,9 @@ import java.util.function.Predicate;
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
 
+/**
+ * ConfigNode impl that copies and maintains data internally
+ */
 public class DataConfigNode implements ConfigNode {
   final String name;
   final SimpleMap<String> attributes;
