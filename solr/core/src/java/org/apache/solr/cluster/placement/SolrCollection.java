@@ -17,7 +17,7 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.Map;
+import java.util.Iterator;
 
 /**
  * Represents a Collection in SolrCloud (unrelated to {@link java.util.Collection} that uses the nicer name).
@@ -29,11 +29,25 @@ public interface SolrCollection {
   String getName();
 
   /**
-   * <p>The {@link Shard}'s over which the data of this {@link SolrCollection} is distributed.
-   *
-   * <p>The map is from {@link Shard#getShardName()} to {@link Shard} instance.
+   * Returns the {@link Shard} of the given name for that collection, if such a shard exists. Note that when a request
+   * for adding replicas for a collection is received, it is possible that replicas need to be added for non existing
+   * shards (see {@link AddReplicasPlacementRequest#getShardNames()}. Non existing shards will not be returned by this
+   * method. Only shards already existing will be returned.
+   * @return {@code null} if the shard does not or does not yet exist for the collection.
    */
-  Map<String, Shard> getShards();
+  Shard getShard(String name);
+
+  /**
+   * @return an iterator over {@link Shard}s already existing for this {@link SolrCollection}. When a collection is being
+   * created, replicas have to be added to shards that do not already exist for the collection and that will not be returned
+   * by this iterator nor will be fetchable using {@link #getShard(String)}.
+   */
+  Iterator<Shard> iterator();
+
+  /**
+   * Allow foreach iteration on shards such as: {@code for (Shard s : solrCollection.shards()) {...}}.
+   */
+  Iterable<Shard> shards();
 
   /**
    * <p>Returns the value of a custom property name set on the {@link SolrCollection} or {@code null} when no such

@@ -29,6 +29,8 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.Pair;
 
+import javax.annotation.Nonnull;
+
 class ClusterImpl implements Cluster {
   private final Set<Node> liveNodes;
   private final ClusterState clusterState;
@@ -132,8 +134,19 @@ class SolrCollectionImpl implements SolrCollection {
   }
 
   @Override
-  public Map<String, Shard> getShards() {
-    return shards;
+  public Shard getShard(String name) {
+    return shards.get(name);
+  }
+
+  @Override
+  @Nonnull
+  public Iterator<Shard> iterator() {
+    return shards.values().iterator();
+  }
+
+  @Override
+  public Iterable<Shard> shards() {
+    return SolrCollectionImpl.this::iterator;
   }
 
   @Override
@@ -215,8 +228,19 @@ class ShardImpl implements Shard {
   }
 
   @Override
-  public Map<String, Replica> getReplicas() {
-    return replicas;
+  public Replica getReplica(String name) {
+    return replicas.get(name);
+  }
+
+  @Override
+  @Nonnull
+  public Iterator<Replica> iterator() {
+    return replicas.values().iterator();
+  }
+
+  @Override
+  public Iterable<Replica> replicas() {
+    return ShardImpl.this::iterator;
   }
 
   @Override

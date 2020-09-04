@@ -22,8 +22,8 @@ import java.util.Set;
 /**
  * <p>Request passed by Solr to a {@link PlacementPlugin} to compute placement for one or more {@link Replica}'s for one
  * or more {@link Shard}'s of an existing {@link SolrCollection}.
- * The shard might or might not already exist, plugin code can easily find out by using {@link SolrCollection#getShards()}
- * and verifying if the shard name(s) from {@link #getShardNames()} are there.
+ * The shard might or might not already exist, plugin code can easily find out by calling {@link SolrCollection#getShard(String)}
+ * with the shard name(s) returned by {@link #getShardNames()}.
  *
  * <p>The set of {@link Node}s on which the replicas should be placed
  * is specified (defaults to being equal to the set returned by {@link Cluster#getLiveNodes()}).

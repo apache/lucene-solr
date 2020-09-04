@@ -17,12 +17,17 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>Implements placing replicas in a way that replicate past Autoscaling config defined
@@ -71,6 +76,7 @@ import java.util.*;
  * TODO: disclaimer: code not tested and never really run
  */
 public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * <p>Name of the system property on a node indicating which (public cloud) Availability Zone that node is in. The value
@@ -82,15 +88,13 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
 
   /**
    * <p>Name of the system property on a node indicating the type of replicas allowed on that node.
-   * The value of that system property is a comma separated list or a single string from {@link #TYPE_TLOG},
-   * {@link #TYPE_TLOG} and {@link #TYPE_TLOG}. If that property is not defined, that node is considered accepting
-   * all replica types (i.e. undefined is equivalent to {@code "tlog,pull,tlog"}).
+   * The value of that system property is a comma separated list or a single string of value names of
+   * {@link org.apache.solr.cluster.placement.Replica.ReplicaType} (case insensitive). If that property is not defined, that node is
+   * considered accepting all replica types (i.e. undefined is equivalent to {@code "NRT,Pull,tlog"}).
+   *
+   * <p>See {@link #getNodesPerReplicaType}.
    */
   public static final String REPLICA_TYPE_SYSPROP = "replica_type";
-  public static final String TYPE_TLOG = "tlog";
-  public static final String TYPE_NRT = "nrt";
-  public static final String TYPE_PULL = "pull";
-
 
   private final PlacementPluginConfig config;
 
@@ -120,22 +124,49 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
       throw new PlacementException("This plugin only supports adding replicas, no support for " + placementRequest.getClass().getName());
     }
 
-    final AddReplicasPlacementRequest reqAddReplicas = (AddReplicasPlacementRequest) placementRequest;
+    final AddReplicasPlacementRequest request = (AddReplicasPlacementRequest) placementRequest;
 
-    Set<Node> nodes = reqAddReplicas.getTargetNodes();
+    Set<Node> nodes = request.getTargetNodes();
+    SolrCollection solrCollection = request.getCollection();
 
+    // Request all needed attributes
     attributeFetcher.requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP).requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
     attributeFetcher.requestNodeCoreCount().requestNodeFreeDisk();
     attributeFetcher.fetchFrom(nodes);
     AttributeValues attrValues = attributeFetcher.fetchAttributes();
+
+    // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap if nodes accept multiple replica types)
+    // These subsets sets are actually maps, because we capture the number of cores (of any replica type) present on each node.
+    // The EnumMap below maps a replica type to a map of nodes -> number of cores on the node
+    EnumMap<Replica.ReplicaType, Map<Node, Integer>> replicaTypeToNodesAndCounts = getNodesPerReplicaType(nodes, attrValues);
+
+    // Build the replic placement decisions here
+    Set<ReplicaPlacement> replicaPlacements = new HashSet<>();
+
+    // Let's now iterate on all shards to create replicas for and start finding home sweet homes for the replicas
+    for (String shardName : request.getShardNames()) {
+      // Iterate on the replica types in the enum order. We place more strategic replicas first
+      // (NRT is more strategic than TLOG more strategic than PULL). This is in case we eventually decide that less
+      // strategic replica placement impossibility is not a problem that should lead to replica placement computation
+      // failure. Current code does fail if placement is impossible (constraint is at most one replica of a shard on any node).
+      for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
+        makePlacementDecisions(solrCollection, shardName, replicaType, request.getCountReplicasToCreate(replicaType),
+                attrValues, replicaTypeToNodesAndCounts, replicaPlacements);
+      }
+    }
 
 
 
     // WIP - continue here.
 
 
-    final int totalReplicasPerShard = reqAddReplicas.getCountNrtReplicas() +
-        reqAddReplicas.getCountTlogReplicas() + reqAddReplicas.getCountPullReplicas();
+
+
+
+
+
+    final int totalReplicasPerShard = request.getCountNrtReplicas() +
+        request.getCountTlogReplicas() + request.getCountPullReplicas();
 
     if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
       throw new PlacementException("Cluster size too small for number of replicas per shard");
@@ -152,13 +183,12 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
       nodesByCores.put(attrValues.getCoresCount(node).get(), node);
     }
 
-    Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * reqAddReplicas.getShardNames().size());
 
     // Now place all replicas of all shards on nodes, by placing on nodes with the smallest number of cores and taking
     // into account replicas placed during this computation. Note that for each shard we must place replicas on different
     // nodes, when moving to the next shard we use the nodes sorted by their updated number of cores (due to replica
     // placements for previous shards).
-    for (String shardName : reqAddReplicas.getShardNames()) {
+    for (String shardName : request.getShardNames()) {
       // Assign replicas based on the sort order of the nodesByCores tree multimap to put replicas on nodes with less
       // cores first. We only need totalReplicasPerShard nodes given that's the number of replicas to place.
       // We assign based on the passed nodeEntriesToAssign list so the right nodes get replicas.
@@ -177,12 +207,12 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
         nodesByCores.put(coreCount + 1, node);
       }
 
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, reqAddReplicas.getCountNrtReplicas(), Replica.ReplicaType.NRT);
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, reqAddReplicas.getCountTlogReplicas(), Replica.ReplicaType.TLOG);
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, reqAddReplicas.getCountPullReplicas(), Replica.ReplicaType.PULL);
+      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountNrtReplicas(), Replica.ReplicaType.NRT);
+      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountTlogReplicas(), Replica.ReplicaType.TLOG);
+      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountPullReplicas(), Replica.ReplicaType.PULL);
     }
 
-    return placementPlanFactory.createPlacementPlanAddReplicas(reqAddReplicas, replicaPlacements);
+    return placementPlanFactory.createPlacementPlanAddReplicas(request, replicaPlacements);
   }
 
   private void placeReplicas(ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
@@ -194,5 +224,84 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
 
       replicaPlacements.add(placementPlanFactory.createReplicaPlacement(shardName, node, replicaType));
     }
+  }
+
+  /**
+   * Given the set of all nodes on which to do placement and fetched attributes, builds the maps representing
+   * candidate nodes for placement of replicas of each replica type. The map values are the number of cores on these nodes.
+   * These maps are packaged and returned in an EnumMap keyed by replica type.
+   * Nodes for which the number of cores is not available for whatever reason are excluded from acceptable candidate nodes
+   * as it would not be possible to make any meaningful placement decisions.
+   * @param nodes all nodes on which this plugin should compute placement
+   * @param attrValues attributes fetched for the nodes. This method uses system property {@link #REPLICA_TYPE_SYSPROP} as
+   *                   well as the number of cores on each node.
+   */
+  private EnumMap<Replica.ReplicaType, Map<Node, Integer>> getNodesPerReplicaType(Set<Node> nodes, AttributeValues attrValues) {
+    EnumMap<Replica.ReplicaType, Map<Node, Integer>> replicaTypeToNodesAndCounts = new EnumMap<>(Replica.ReplicaType.class);
+    for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
+      replicaTypeToNodesAndCounts.put(replicaType, Maps.newHashMap());
+    }
+
+    for (Node node : nodes) {
+      if (attrValues.getCoresCount(node).isEmpty()) {
+        if (log.isWarnEnabled()) {
+          log.warn("Unknown number of cores on node {}, skipping for placement decisions.", node.getName());
+        }
+        continue;
+      }
+
+      Integer coresCount = attrValues.getCoresCount(node).get();
+
+      String supportedReplicaTypes = attrValues.getSystemProperty(node, REPLICA_TYPE_SYSPROP).isPresent() ? attrValues.getSystemProperty(node, REPLICA_TYPE_SYSPROP).get() : null;
+      // If property not defined or is only whitespace on a node, assuming node can take any replica type
+      if (supportedReplicaTypes == null || supportedReplicaTypes.isBlank()) {
+        for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
+          replicaTypeToNodesAndCounts.get(rt).put(node, coresCount);
+        }
+      } else {
+        Set<String> acceptedTypes = Arrays.stream(supportedReplicaTypes.split(",")).map(String::trim).map(s -> s.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+        for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
+          if (acceptedTypes.contains(rt.name().toLowerCase(Locale.ROOT))) {
+            replicaTypeToNodesAndCounts.get(rt).put(node, coresCount);
+          }
+        }
+      }
+    }
+    return replicaTypeToNodesAndCounts;
+  }
+
+  /**
+   * <p>Picks nodes from {@code targetNodes} for placing {@code numReplicas} replicas.
+   *
+   * <p>The criteria used in this method are, in this order:
+   * <ol>
+   *     <li>No more than one replica of a given shard on a given node (strictly enforced)</li>
+   *     <li>Balance as much as possible the number of replicas of the given {@link org.apache.solr.cluster.placement.Replica.ReplicaType} over available AZ's.
+   *     This balancing takes into account existing replicas of the corresponding type, if any.</li>
+   *     <li>Place replicas on nodes having more than a certain amount of free disk space (note that nodes with a too small
+   *     amount of free disk space were eliminated as placement targets earlier, see TODO</li>
+   *     <li>Place replicas on nodes having a smaller number of cores (the number of cores considered
+   *     for this decision includes decisions made during the processing of the placement request)</li>
+   * </ol>
+   */
+  private void makePlacementDecisions(SolrCollection solrCollection, String shardName, Replica.ReplicaType replicaType,
+                                      int numReplicas, AttributeValues attrValues,
+                                      EnumMap<Replica.ReplicaType, Map<Node, Integer>> replicaTypeToNodesAndCounts,
+                                      Set<ReplicaPlacement> replicaPlacements) {
+    // Build the set of candidate nodes, i.e. nodes not having (yet) a replica of the given shard
+    Set<Node> candidateNodes = new HashSet<>(replicaTypeToNodesAndCounts.get(replicaType).keySet());
+    Shard shard = solrCollection.getShard(shardName);
+    if (shard != null) {
+      // shard is non null if we're adding replicas to an already existing collection.
+      // If we're creating the collection, the shards do not exist yet.
+      for (Replica replica : shard.replicas()) {
+        candidateNodes.remove(replica.getNode());
+      }
+    }
+
+    // We now have the set of real candidate nodes, we've enforced "No more than one replica of a given shard on a given node"
+
+    // WIP - continue here
+
   }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.solr.cluster.placement;
 
-import java.util.Map;
+import java.util.Iterator;
 
 /**
  * Shard in a {@link SolrCollection}, i.e. a subset of the data indexed in that collection.
@@ -28,11 +28,20 @@ public interface Shard {
   SolrCollection getCollection();
 
   /**
-   * <p>The {@link Replica} of this {@link Shard}.
-   *
-   * <p>The map is from {@link Replica#getReplicaName()} to {@link Replica} instance.
+   * Returns the {@link Replica} of the given name for that shard, if such a replica exists.
+   * @return {@code null} if the replica does not or does not yet exist for the shard.
    */
-  Map<String, Replica> getReplicas();
+  Replica getReplica(String name);
+
+  /**
+   * @return an iterator over {@link Replica}s already existing for this {@link Shard}.
+   */
+  Iterator<Replica> iterator();
+
+  /**
+   * Allow foreach iteration on replicas such as: {@code for (Replica r : shard.replicas()) {...}}.
+   */
+  Iterable<Replica> replicas();
 
   /**
    * The current leader {@link Replica} of this {@link Shard}. Note that by the time this method returns the leader might
