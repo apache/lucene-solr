@@ -195,7 +195,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     synchronized (this) {
       closed = true;
       if (log.isDebugEnabled()) log.debug("Closing {} - {} directories currently being tracked", this.getClass().getSimpleName(), byDirectoryCache.size());
-      TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS,  TimeSource.NANO_TIME); // nocommit sensible timeout control
+      TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS,  TimeSource.NANO_TIME); // nocommit sensible timeout control
       Collection<CacheValue> values = new HashSet<>(byDirectoryCache.values());
       for (CacheValue val : values) {
         if (log.isDebugEnabled()) log.debug("Closing {} - currently tracking: {}",
