@@ -35,9 +35,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.FastJavaBinDecoder.Tag;
 
-import static org.apache.solr.common.util.Utils.NEW_ARRAYLIST_FUN;
-import static org.apache.solr.common.util.Utils.NEW_LINKED_HASHMAP_FUN;
-
 public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
   public void testTagRead() throws Exception {
@@ -101,15 +98,13 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
         .withInputStream(new FastInputStream(null, baos.getbuf(), 0, baos.size()))
         .decode(e -> {
           e.listenContainer(new LinkedHashMap<>(), e_ -> {
-            @SuppressWarnings({"rawtypes"})
             Map rootMap = (Map) e_.ctx();
             if (e_.type() == DataEntry.Type.ENTRY_ITER) {
-              e_.listenContainer(rootMap.computeIfAbsent(e_.name(), NEW_ARRAYLIST_FUN),
+              e_.listenContainer(rootMap.computeIfAbsent(e_.name(), o -> new ArrayList<Object>()),
                   FastJavaBinDecoder.getEntryListener());
             } else if (e_.type() == DataEntry.Type.KEYVAL_ITER) {
-              e_.listenContainer(rootMap.computeIfAbsent(e_.name(), NEW_LINKED_HASHMAP_FUN), e1 -> {
-                @SuppressWarnings({"rawtypes"})
-                Map m1 = (Map) e1.ctx();
+              e_.listenContainer(rootMap.computeIfAbsent(e_.name(), o -> new LinkedHashMap<Object,Object>()), e1 -> {
+                Map<CharSequence,String> m1 = (Map<CharSequence,String>) e1.ctx();
                 if ("k1".equals(e1.name())) {
                   m1.put(e1.name(), e1.val().toString());
                 }

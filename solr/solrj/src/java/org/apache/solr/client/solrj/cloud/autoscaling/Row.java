@@ -170,9 +170,8 @@ public class Row implements MapWriter {
   }
 
 
-  public Row(String node, Cell[] cells, boolean anyValueMissing,
-             @SuppressWarnings({"rawtypes"}) Map<String,
-                     Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive, Policy.Session session,
+  public Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas,
+      boolean isLive, Policy.Session session,
              @SuppressWarnings({"rawtypes"}) Map perRowCache,
              @SuppressWarnings({"rawtypes"})Map globalCache) {
     this.session = session;
@@ -294,10 +293,9 @@ public class Row implements MapWriter {
     return collectionVsShardVsReplicas.containsKey(coll);
   }
 
-  @SuppressWarnings({"unchecked"})
   public void createCollShard(Pair<String, String> collShard) {
-    Map<String, List<ReplicaInfo>> shardInfo = collectionVsShardVsReplicas.computeIfAbsent(collShard.first(), Utils.NEW_HASHMAP_FUN);
-    if (collShard.second() != null) shardInfo.computeIfAbsent(collShard.second(), Utils.NEW_ARRAYLIST_FUN);
+    Map<String, List<ReplicaInfo>> shardInfo = collectionVsShardVsReplicas.computeIfAbsent(collShard.first(), o -> new HashMap<String, List<ReplicaInfo>>());
+    if (collShard.second() != null) shardInfo.computeIfAbsent(collShard.second(), o -> new ArrayList<ReplicaInfo>());
   }
 
 

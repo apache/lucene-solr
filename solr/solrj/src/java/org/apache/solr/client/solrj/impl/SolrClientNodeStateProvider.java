@@ -148,8 +148,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   @Override
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-    @SuppressWarnings({"unchecked"})
-    Map<String, Map<String, List<ReplicaInfo>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, Utils.NEW_HASHMAP_FUN);
+    Map<String, Map<String, List<ReplicaInfo>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, o -> new HashMap<String, Map<String, List<ReplicaInfo>>>());
     if (!keys.isEmpty()) {
       Map<String, Pair<String, ReplicaInfo>> metricsKeyVsTagReplica = new HashMap<>();
       Row.forEachReplica(result, r -> {

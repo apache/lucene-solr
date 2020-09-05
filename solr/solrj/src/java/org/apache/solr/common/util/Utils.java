@@ -53,7 +53,6 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -98,18 +97,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class Utils {
 
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_LINKED_HASHMAP_FUN = o -> new LinkedHashMap<>();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_ATOMICLONG_FUN = o -> new AtomicLong();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_ARRAYLIST_FUN = o -> new ArrayList<>();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_SYNCHRONIZED_ARRAYLIST_FUN = o -> Collections.synchronizedList(new ArrayList<>());
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @SuppressWarnings({"rawtypes"})
