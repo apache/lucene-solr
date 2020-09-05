@@ -1602,8 +1602,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       this.isClosed = true;
-      searcherExecutor.shutdown();
-      assert ObjectReleaseTracker.release(searcherExecutor);
 
       closer.collect("snapshotsDir", () -> {
         Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
@@ -1649,6 +1647,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       closer.collect("SolrCoreInternals", closeCalls);
       closer.addCollect();
+
+
+      closer.collect("searcherExecutor#shutdown", () -> {
+        searcherExecutor.shutdown();
+        return solrCoreState;
+      });
+
+      assert ObjectReleaseTracker.release(searcherExecutor);
 
       closer.collect(updateHandler);
 
@@ -1880,7 +1886,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
-  final ExecutorService searcherExecutor = new ParWorkExecutor("searcherExecutor", 1, 1, 0, new ArrayBlockingQueue(4, true));
+  final ExecutorService searcherExecutor = new ParWorkExecutor("searcherExecutor", 1, 1, 0, new ArrayBlockingQueue(6, true));
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private final Object searcherLock = new Object();  // the sync object for the searcher
