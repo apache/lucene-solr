@@ -239,6 +239,9 @@ Other Changes
 * SOLR-14731: Rename @SolrSingleThreaded to @SolrThreadUnsafe, mark DistribPackageStore with the annotation
   (marcussorealheis)
 
+* SOLR-14579: Comment SolrJ 'Utils' generic map functions 
+  (Megan Carey and a lot of education from Uwe Schindler via Erick Erickson)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
