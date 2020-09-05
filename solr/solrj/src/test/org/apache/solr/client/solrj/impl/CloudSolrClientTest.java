@@ -31,6 +31,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.google.common.collect.Lists;
@@ -68,6 +69,8 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -626,6 +629,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         } catch (Exception e) {
           // expected
         }
+
         long errorsAfter = 0;
         for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
           Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), adminPath, true);
@@ -634,6 +638,19 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
             log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
           }
         }
+
+        if (errorsBefore + 1 != errorsAfter) {
+          Thread.sleep(100);
+          errorsAfter = 0;
+          for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), adminPath, true);
+            errorsAfter += numRequests;
+            if (log.isInfoEnabled()) {
+              log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
+            }
+          }
+        }
+
         assertEquals(errorsBefore + 1, errorsAfter);
       }
     }
