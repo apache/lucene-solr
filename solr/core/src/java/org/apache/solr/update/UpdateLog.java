@@ -365,6 +365,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * for an existing log whenever the core or update handler changes.
    */
   public synchronized void init(UpdateHandler uhandler, SolrCore core) {
+    if (isClosed) {
+      throw new AlreadyClosedException();
+    }
     if (dataDir != null) {
       ObjectReleaseTracker.release(this);
     }
