@@ -50,7 +50,6 @@ dependencies {
    ":solr:contrib:langid",
    ":solr:contrib:ltr",
    ":solr:contrib:prometheus-exporter",
-   ":solr:contrib:velocity",
   ].each { contribName ->
     distSolr project(contribName)
     contrib  project(path: contribName, configuration: "packaging")
