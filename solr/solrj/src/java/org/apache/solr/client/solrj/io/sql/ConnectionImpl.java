@@ -44,7 +44,7 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 class ConnectionImpl implements Connection {
 
   private final String url;
-  private final SolrClientCache solrClientCache = new SolrClientCache();
+  private final SolrClientCache solrClientCache;
   private final CloudHttp2SolrClient client;
   private final Properties properties;
   private final DatabaseMetaData databaseMetaData;
@@ -55,7 +55,8 @@ class ConnectionImpl implements Connection {
 
   ConnectionImpl(String url, String zkHost, String collection, Properties properties) throws SQLException {
     this.url = url;
-    this.client = this.solrClientCache.getCloudSolrClient(zkHost);
+    solrClientCache = new SolrClientCache(zkHost);
+    this.client = this.solrClientCache.getCloudSolrClient();
     this.collection = collection;
     this.properties = properties;
     this.connectionStatement = createStatement();

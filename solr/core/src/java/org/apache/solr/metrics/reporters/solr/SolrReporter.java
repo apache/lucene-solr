@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
@@ -65,7 +66,7 @@ public class SolrReporter extends ScheduledReporter {
   public static final String REPORTER_ID = "_reporter_";
   public static final String GROUP_ID = "_group_";
   public static final String LABEL_ID = "_label_";
-
+  private final ZkStateReader zkStateReader;
 
   /**
    * Specification of what registries and what metrics to send.
@@ -259,10 +260,10 @@ public class SolrReporter extends ScheduledReporter {
      *                    null to indicate that reporting should be skipped. Note: this
      *                    function will be called every time just before report is sent.
      * @return configured instance of reporter
-     * @deprecated use {@link #build(SolrClientCache, Supplier)} instead.
+     * @deprecated use {@link #build(ZkStateReader, SolrClientCache, Supplier)} instead.
      */
-    public SolrReporter build(Http2SolrClient client, Supplier<String> urlProvider) {
-      return new SolrReporter(client, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
+    public SolrReporter build(ZkStateReader zkStateReader, Http2SolrClient client, Supplier<String> urlProvider) {
+      return new SolrReporter(zkStateReader, client, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
           params, skipHistograms, skipAggregateValues, cloudClient, compact);
     }
 
@@ -274,8 +275,8 @@ public class SolrReporter extends ScheduledReporter {
      *                    function will be called every time just before report is sent.
      * @return configured instance of reporter
      */
-    public SolrReporter build(SolrClientCache solrClientCache, Supplier<String> urlProvider) {
-      return new SolrReporter(solrClientCache, false, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
+    public SolrReporter build(ZkStateReader zkStateReader, SolrClientCache solrClientCache, Supplier<String> urlProvider) {
+      return new SolrReporter(zkStateReader, solrClientCache, false, urlProvider, metricManager, reports, handler, reporterId, rateUnit, durationUnit,
           params, skipHistograms, skipAggregateValues, cloudClient, compact);
     }
 
@@ -341,15 +342,15 @@ public class SolrReporter extends ScheduledReporter {
    * @param cloudClient if true then use CloudSolrClient, plain HttpSolrClient otherwise.
    * @param compact if true then use compact representation.
    *
-   * @deprecated use {@link SolrReporter#SolrReporter(SolrClientCache, boolean, Supplier, SolrMetricManager, List, String, String, TimeUnit, TimeUnit, SolrParams, boolean, boolean, boolean, boolean)} instead.
+   * @deprecated use {@link SolrReporter#SolrReporter(ZkStateReader, SolrClientCache, boolean, Supplier, SolrMetricManager, List, String, String, TimeUnit, TimeUnit, SolrParams, boolean, boolean, boolean, boolean)} instead.
    */
   @Deprecated
-  public SolrReporter(Http2SolrClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
+  public SolrReporter(ZkStateReader zkStateReader, Http2SolrClient httpClient, Supplier<String> urlProvider, SolrMetricManager metricManager,
                       List<Report> metrics, String handler,
                       String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
                       SolrParams params, boolean skipHistograms, boolean skipAggregateValues,
                       boolean cloudClient, boolean compact) {
-    this (new SolrClientCache(httpClient), true, urlProvider, metricManager,
+    this (zkStateReader, new SolrClientCache(zkStateReader, httpClient), true, urlProvider, metricManager,
         metrics, handler, reporterId, rateUnit, durationUnit,
         params, skipHistograms, skipAggregateValues, cloudClient, compact);
   }
@@ -370,14 +371,14 @@ public class SolrReporter extends ScheduledReporter {
    * @param cloudClient if true then use CloudSolrClient, plain HttpSolrClient otherwise.
    * @param compact if true then use compact representation.
    */
-  public SolrReporter(SolrClientCache solrClientCache, boolean closeClientCache,
+  public SolrReporter(ZkStateReader zkStateReader, SolrClientCache solrClientCache, boolean closeClientCache,
                       Supplier<String> urlProvider, SolrMetricManager metricManager,
                       List<Report> metrics, String handler,
                       String reporterId, TimeUnit rateUnit, TimeUnit durationUnit,
                       SolrParams params, boolean skipHistograms, boolean skipAggregateValues,
                       boolean cloudClient, boolean compact) {
     super(dummyRegistry, "solr-reporter", MetricFilter.ALL, rateUnit, durationUnit, null, true);
-
+    this.zkStateReader = zkStateReader;
     this.metricManager = metricManager;
     this.urlProvider = urlProvider;
     this.reporterId = reporterId;
@@ -429,7 +430,7 @@ public class SolrReporter extends ScheduledReporter {
 
     SolrClient solr;
     if (cloudClient) {
-      solr = clientCache.getCloudSolrClient(url);
+      solr = clientCache.getCloudSolrClient();
     } else {
       solr = clientCache.getHttpSolrClient(url);
     }

@@ -233,7 +233,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     }
 
     StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
+    SolrClientCache solrClientCache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     streamContext.setSolrClientCache(solrClientCache);
     
     // Load Solr
@@ -315,7 +315,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
     StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
+    SolrClientCache solrClientCache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     streamContext.setSolrClientCache(solrClientCache);
 
     try {
@@ -400,7 +400,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
     StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
+    SolrClientCache solrClientCache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     streamContext.setSolrClientCache(solrClientCache);
 
     try {
@@ -516,7 +516,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     List<Tuple> tuples;
 
     StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
+    SolrClientCache solrClientCache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     streamContext.setSolrClientCache(solrClientCache);
 
     try {

@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -270,10 +271,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   * Opens the CloudSolrStream
   *
   ***/
-  public void open() throws IOException {
+  public synchronized void open() throws IOException {
     this.tuples = new TreeSet();
     this.solrStreams = new ArrayList();
-    this.eofTuples = Collections.synchronizedMap(new HashMap());
+    this.eofTuples = new ConcurrentHashMap();
     constructStreams();
     openStreams();
   }
@@ -397,7 +398,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected void openStreams() throws IOException {
     final ExecutorService service = ParWork.getRootSharedExecutor();
     List<Future<TupleWrapper>> futures =
-        solrStreams.stream().map(ss -> service.submit(new StreamOpener((SolrStream)ss, comp))).collect(Collectors.toList());
+        solrStreams.stream().map(ss -> service.submit(new StreamOpener((SolrStream)ss, comp, eofTuples))).collect(Collectors.toList());
     try {
       for (Future<TupleWrapper> f : futures) {
         TupleWrapper w = f.get();
@@ -414,7 +415,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   /**
    *  Closes the CloudSolrStream
    **/
-  public void close() throws IOException {
+  public synchronized void close() throws IOException {
     if(solrStreams != null) {
       for (TupleStream solrStream : solrStreams) {
         solrStream.close();
@@ -453,12 +454,14 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class TupleWrapper implements Comparable<TupleWrapper> {
+  protected static class TupleWrapper implements Comparable<TupleWrapper> {
+    private final Map<String,Tuple> eofTuples;
     private Tuple tuple;
     private SolrStream stream;
     private StreamComparator comp;
 
-    public TupleWrapper(SolrStream stream, StreamComparator comp) {
+    public TupleWrapper(SolrStream stream, StreamComparator comp, Map<String, Tuple> eofTuples) {
+      this.eofTuples = eofTuples;
       this.stream = stream;
       this.comp = comp;
     }
@@ -495,19 +498,21 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class StreamOpener implements Callable<TupleWrapper> {
+  protected static class StreamOpener implements Callable<TupleWrapper> {
 
     private SolrStream stream;
     private StreamComparator comp;
+    Map<String, Tuple> eofTuples;
 
-    public StreamOpener(SolrStream stream, StreamComparator comp) {
+    public StreamOpener(SolrStream stream, StreamComparator comp, Map<String, Tuple> eofTuples) {
       this.stream = stream;
       this.comp = comp;
+      this.eofTuples = eofTuples;
     }
 
     public TupleWrapper call() throws Exception {
       stream.open();
-      TupleWrapper wrapper = new TupleWrapper(stream, comp);
+      TupleWrapper wrapper = new TupleWrapper(stream, comp, eofTuples);
       if(wrapper.next()) {
         return wrapper;
       } else {

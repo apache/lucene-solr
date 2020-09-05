@@ -225,7 +225,7 @@ public class StatsStream extends TupleStream implements Expressible  {
     Map<String, List<String>> shardsMap = (Map<String, List<String>>)context.get("shards");
     if(shardsMap == null) {
       QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+      cloudSolrClient = cache.getCloudSolrClient();
       try {
         NamedList response = cloudSolrClient.request(request, collection);
         getTuples(response, metrics);

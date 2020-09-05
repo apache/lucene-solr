@@ -715,7 +715,7 @@ public class CoreContainer implements Closeable {
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
-    solrClientCache = new SolrClientCache(updateShardHandler.getTheSharedHttpClient());
+    solrClientCache = new SolrClientCache(isZkAware ? zkSys.getZkController().getZkStateReader() : null, updateShardHandler.getTheSharedHttpClient());
 
     // initialize CalciteSolrDriver instance to use this solrClientCache
     CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);
@@ -958,6 +958,7 @@ public class CoreContainer implements Closeable {
       cloudManager = getZkController().getSolrCloudManager();
       client = new CloudHttp2SolrClient.Builder(getZkController().getZkStateReader())
           .withHttpClient(updateShardHandler.getTheSharedHttpClient()).build();
+      ((CloudHttp2SolrClient)client).connect();
     } else {
       name = getNodeConfig().getNodeName();
       if (name == null || name.isEmpty()) {
@@ -1137,12 +1138,14 @@ public class CoreContainer implements Closeable {
         auditPlugin = auditloggerPlugin.plugin;
       }
 
-      closer.collect(authPlugin);
       closer.collect(solrCoreLoadExecutor);
+      closer.addCollect();
+      
+      closer.collect(authPlugin);
+      closer.collect(solrClientCache);
       closer.collect(authenPlugin);
       closer.collect(auditPlugin);
       closer.collect(callables);
-      closer.collect(solrClientCache);
       closer.collect(loader);
       closer.addCollect();
 

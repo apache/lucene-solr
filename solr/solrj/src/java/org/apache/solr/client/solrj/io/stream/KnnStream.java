@@ -190,7 +190,7 @@ public class KnnStream extends TupleStream implements Expressible  {
   }
 
   public void open() throws IOException {
-    cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    cloudSolrClient = cache.getCloudSolrClient();
     ModifiableSolrParams params = getParams(this.props);
 
     StringBuilder builder = new StringBuilder();

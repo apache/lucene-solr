@@ -164,12 +164,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     final TupleStream finalStream = tupleStream;
 
-    return new AbstractEnumerable<Object>() {
-      // Use original fields list to make sure only the fields specified are enumerated
-      public Enumerator<Object> enumerator() {
-        return new SolrEnumerator(finalStream, fields);
-      }
-    };
+    return new MyAbstractEnumerable(finalStream, fields);
   }
 
   private static StreamComparator bucketSortComp(List<Bucket> buckets, Map<String,String> dirs) {
@@ -887,6 +882,21 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       return ComparatorOrder.DESCENDING;
     } else {
       return ComparatorOrder.ASCENDING;
+    }
+  }
+
+  private static class MyAbstractEnumerable extends AbstractEnumerable<Object> {
+    private final TupleStream finalStream;
+    private final List<Map.Entry<String,Class>> fields;
+
+    public MyAbstractEnumerable(TupleStream finalStream, List<Map.Entry<String,Class>> fields) {
+      this.finalStream = finalStream;
+      this.fields = fields;
+    }
+
+    // Use original fields list to make sure only the fields specified are enumerated
+    public Enumerator<Object> enumerator() {
+      return new SolrEnumerator(finalStream, fields);
     }
   }
 }

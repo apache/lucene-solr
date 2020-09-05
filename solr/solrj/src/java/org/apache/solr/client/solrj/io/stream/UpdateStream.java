@@ -284,7 +284,7 @@ public class UpdateStream extends TupleStream implements Expressible {
   
   private void setCloudSolrClient() {
     if(this.cache != null) {
-      this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
+      this.cloudSolrClient = this.cache.getCloudSolrClient();
     } else {
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);

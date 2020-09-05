@@ -221,7 +221,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
         .cloudClient(false) // we want to send reports specifically to a selected leader instance
         .skipAggregateValues(true) // we don't want to transport details of aggregates
         .skipHistograms(true) // we don't want to transport histograms
-        .build(httpClient, new OverseerUrlSupplier(zk));
+        .build(cc.getZkController().getZkStateReader(), httpClient, new OverseerUrlSupplier(zk));
 
     reporter.start(period, TimeUnit.SECONDS);
   }

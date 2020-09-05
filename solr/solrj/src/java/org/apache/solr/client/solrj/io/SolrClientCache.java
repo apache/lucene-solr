@@ -23,6 +23,8 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,35 +46,49 @@ import java.util.Optional;
 public class SolrClientCache implements Serializable, Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final ZkStateReader zkStateReader;
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
   private final Http2SolrClient httpClient;
   private boolean closeClient;
+  private boolean closeZKStateReader = false;
 
-  public SolrClientCache() {
-    this(new Http2SolrClient.Builder().markInternalRequest().build());
+  public SolrClientCache(String zkHost) {
+    this.httpClient = new Http2SolrClient.Builder().markInternalRequest().build();
+    zkStateReader = new ZkStateReader(zkHost, 10000, 30000);
+    zkStateReader.createClusterStateWatchersAndUpdate();
+    closeZKStateReader = true;
     closeClient = true;
-  }
-
-  public SolrClientCache(Http2SolrClient httpClient) {
-    this.httpClient = httpClient;
     assert ObjectReleaseTracker.track(this);
   }
 
-  public synchronized CloudHttp2SolrClient getCloudSolrClient(String zkHost) {
+  public SolrClientCache(ZkStateReader reader) {
+    this(reader, new Http2SolrClient.Builder().markInternalRequest().build());
+    closeClient = true;
+  }
+
+  public SolrClientCache(ZkStateReader reader, Http2SolrClient httpClient) {
+    this.httpClient = httpClient;
+    this.zkStateReader = reader;
+    closeZKStateReader = false;
+    assert ObjectReleaseTracker.track(this);
+  }
+
+  public synchronized CloudHttp2SolrClient getCloudSolrClient() {
     CloudHttp2SolrClient client;
-    if (solrClients.containsKey(zkHost)) {
-      client = (CloudHttp2SolrClient) solrClients.get(zkHost);
+    SolrZkClient zkClient = zkStateReader.getZkClient();
+    if (solrClients.containsKey(zkClient.getZkServerAddress())) {
+      client = (CloudHttp2SolrClient) solrClients.get(zkClient.getZkServerAddress());
     } else {
       final List<String> hosts = new ArrayList<String>();
-      hosts.add(zkHost);
-      CloudHttp2SolrClient.Builder builder = new CloudHttp2SolrClient.Builder(hosts, Optional.empty());
+      hosts.add(zkClient.getZkServerAddress());
+      CloudHttp2SolrClient.Builder builder = new CloudHttp2SolrClient.Builder(zkStateReader);
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }
       client = builder.markInternalRequest().build();
       client.connect();
-      solrClients.put(zkHost, client);
+      solrClients.put(zkClient.getZkServerAddress(), client);
     }
 
     return client;
@@ -93,16 +109,19 @@ public class SolrClientCache implements Serializable, Closeable {
     return client;
   }
 
-  public synchronized void close() {
-    try (ParWork closer = new ParWork(this, true)) {
-      for (Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
-        closer.collect("solrClient", entry.getValue());
+  public void close() {
+    synchronized (this) {
+      try (ParWork closer = new ParWork(this, true)) {
+        for (Map.Entry<String,SolrClient> entry : solrClients.entrySet()) {
+          closer.collect("solrClient", entry.getValue());
+        }
       }
+      solrClients.clear();
     }
+    if (closeZKStateReader && zkStateReader != null) zkStateReader.close();
     if (closeClient) {
       httpClient.close();
     }
-    solrClients.clear();
     assert ObjectReleaseTracker.release(this);
   }
 }

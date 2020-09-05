@@ -126,7 +126,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     Set<String> paths = null;
     ShortestPathStream stream = null;
     StreamContext context = new StreamContext();
-    SolrClientCache cache = new SolrClientCache();
+    SolrClientCache cache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     context.setSolrClientCache(cache);
 
     StreamFactory factory = new StreamFactory()
@@ -269,7 +269,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     Set<String> paths = null;
     GatherNodesStream stream = null;
     StreamContext context = new StreamContext();
-    SolrClientCache cache = new SolrClientCache();
+    SolrClientCache cache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     context.setSolrClientCache(cache);
 
     StreamFactory factory = new StreamFactory()
@@ -424,7 +424,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = null;
     TupleStream stream = null;
     StreamContext context = new StreamContext();
-    SolrClientCache cache = new SolrClientCache();
+    SolrClientCache cache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     context.setSolrClientCache(cache);
 
     StreamFactory factory = new StreamFactory()
@@ -541,7 +541,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = null;
     TupleStream stream = null;
     StreamContext context = new StreamContext();
-    SolrClientCache cache = new SolrClientCache();
+    SolrClientCache cache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     context.setSolrClientCache(cache);
 
     StreamFactory factory = new StreamFactory()
@@ -607,7 +607,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = null;
     GatherNodesStream stream = null;
     StreamContext context = new StreamContext();
-    SolrClientCache cache = new SolrClientCache();
+    SolrClientCache cache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     context.setSolrClientCache(cache);
 
     StreamFactory factory = new StreamFactory()

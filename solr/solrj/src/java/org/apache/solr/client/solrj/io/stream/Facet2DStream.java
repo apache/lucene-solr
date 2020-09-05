@@ -276,7 +276,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   public void open() throws IOException {
     if (cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+      cloudSolrClient = cache.getCloudSolrClient();
     } else {
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);

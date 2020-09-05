@@ -68,14 +68,13 @@ class SolrSchema extends AbstractSchema implements Closeable {
 
   @Override
   protected Map<String, Table> getTableMap() {
-    String zk = this.properties.getProperty("zk");
-    CloudHttp2SolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    CloudHttp2SolrClient cloudSolrClient = solrClientCache.getCloudSolrClient();
     ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
 
     final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
 
-    Set<String> collections = clusterState.getCollectionsMap().keySet();
+    Set<String> collections = clusterState.getCollectionStates().keySet();
     for (String collection : collections) {
       builder.put(collection, new SolrTable(this, collection));
     }
@@ -92,8 +91,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
   }
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
-    String zk = this.properties.getProperty("zk");
-    CloudHttp2SolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    CloudHttp2SolrClient cloudSolrClient = solrClientCache.getCloudSolrClient();
     try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);

@@ -241,12 +241,12 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
   public void open() throws IOException {
     if (cache == null) {
       isCloseCache = true;
-      cache = new SolrClientCache();
+      cache = new SolrClientCache(zkHost);
     } else {
       isCloseCache = false;
     }
 
-    this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
+    this.cloudSolrClient = this.cache.getCloudSolrClient();
     this.executorService = ParWork.getRootSharedExecutor();
   }
 

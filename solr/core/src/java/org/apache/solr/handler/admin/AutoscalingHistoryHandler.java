@@ -128,6 +128,7 @@ public class AutoscalingHistoryHandler extends RequestHandlerBase implements Per
     try (CloudHttp2SolrClient cloudSolrClient = new CloudHttp2SolrClient.Builder(req.getCore().getCoreContainer().getZkController().getZkStateReader())
         .withHttpClient(coreContainer.getUpdateShardHandler().getTheSharedHttpClient())
         .build()) {
+      cloudSolrClient.connect();
       QueryResponse qr = cloudSolrClient.query(collection, params);
       rsp.setAllValues(qr.getResponse());
     } catch (Exception e) {

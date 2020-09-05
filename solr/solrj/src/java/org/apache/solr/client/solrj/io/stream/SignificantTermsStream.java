@@ -227,7 +227,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
   public void open() throws IOException {
     if (cache == null) {
       isCloseCache = true;
-      cache = new SolrClientCache();
+      cache = new SolrClientCache(zkHost);
     } else {
       isCloseCache = false;
     }

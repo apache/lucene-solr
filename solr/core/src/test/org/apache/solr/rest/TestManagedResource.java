@@ -70,7 +70,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
     }
   }
 
-  private class ManagedTestResource extends ManagedResource {
+  private static class ManagedTestResource extends ManagedResource {
 
     private Object managedData;
     
@@ -218,8 +218,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
         new ManagedResourceStorage.InMemoryStorageIO();
     storageIO.storage.put(storedResourceId, new BytesRef(json(storedJson)));
     
-    ManagedTestResource res = 
-        new ManagedTestResource(resourceId, new SolrResourceLoader(Paths.get("./")), storageIO);
+    ManagedTestResource res = new ManagedTestResource(resourceId, new SolrResourceLoader(Paths.get("./")), storageIO);
     res.loadManagedDataAndNotify(observers);
     
     assertTrue("Observer was not notified by ManagedResource!", observer.wasNotified);

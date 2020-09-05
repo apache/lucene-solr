@@ -91,7 +91,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
     StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
+    SolrClientCache solrClientCache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     streamContext.setSolrClientCache(solrClientCache);
     
     StreamFactory factory = new StreamFactory()

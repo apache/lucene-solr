@@ -208,7 +208,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
       builder.append(nodeId);
     }
 
-    CloudHttp2SolrClient client = clientCache.getCloudSolrClient(zkHost);
+    CloudHttp2SolrClient client = clientCache.getCloudSolrClient();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.QT, "/terms");
     params.add(TermsParams.TERMS, "true");

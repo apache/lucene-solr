@@ -84,7 +84,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
 
-    SolrClientCache cache = new SolrClientCache();
+    SolrClientCache cache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     try {
 
       String expr = "cartesianProduct(search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id, test_t\", sort=\"id desc\"), analyze(test_t, test_t) as test_t)";
