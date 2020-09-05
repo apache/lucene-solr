@@ -364,7 +364,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * This must be called when a new log is created, or
    * for an existing log whenever the core or update handler changes.
    */
-  public void init(UpdateHandler uhandler, SolrCore core) {
+  public synchronized void init(UpdateHandler uhandler, SolrCore core) {
     if (dataDir != null) {
       ObjectReleaseTracker.release(this);
     }
