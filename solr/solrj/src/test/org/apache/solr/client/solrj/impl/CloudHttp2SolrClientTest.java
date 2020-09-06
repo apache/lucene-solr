@@ -99,7 +99,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private static final int TIMEOUT = 30;
   private static final int NODE_COUNT = 3;
 
-  private CloudHttp2SolrClient httpBasedCloudSolrClient = null;
   private CloudHttp2SolrClient zkBasedCloudSolrClient = null;
 
   @BeforeClass
@@ -112,23 +111,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Before
   public void initTestClients() {
-    final List<String> solrUrls = new ArrayList<>();
-    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-    httpBasedCloudSolrClient = new CloudHttp2SolrClient.Builder(solrUrls).build();
     zkBasedCloudSolrClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty()).build();
+    zkBasedCloudSolrClient.connect();
   }
   
   @After 
   public void tearDown() throws Exception {
-    if (httpBasedCloudSolrClient != null) {
-      try {
-        httpBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      } finally {
-        httpBasedCloudSolrClient = null;
-      }
-    }
     if (zkBasedCloudSolrClient != null) {
       try {
         zkBasedCloudSolrClient.close();
@@ -159,8 +147,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
    * Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC.
    */
   private CloudHttp2SolrClient getRandomClient() {
-//    return random().nextBoolean()? zkBasedCloudSolrClient : httpBasedCloudSolrClient;
-    return httpBasedCloudSolrClient;
+    return zkBasedCloudSolrClient;
   }
 
   @Test
@@ -829,7 +816,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   public void testInitializationWithSolrUrls() throws Exception {
     String collection = "testInitializationWithSolrUrls";
     createTestCollection(collection);
-    CloudHttp2SolrClient client = httpBasedCloudSolrClient;
+    CloudHttp2SolrClient client = zkBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     client.add(collection, doc);
     client.commit(collection);
