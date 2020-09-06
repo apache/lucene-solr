@@ -55,7 +55,10 @@ Assuming you can exectue "./gradlew help" should show you the main tasks that
 can be executed to show help sub-topics.
 
 If you want to build Lucene independent of Solr, type:
-  ./gradlew -p lucene assemble
+
+```
+./gradlew -p lucene assemble
+```
 
 NOTE: DO NOT use `gradle` command that is already installed on your machine (unless you know what you'll do).
 The "gradle wrapper" does the job - download the correct version of it, setup necessary configurations.
@@ -64,7 +67,11 @@ The first time you run Gradle, it will create a file "gradle.properties" that
 contains machine-specific settings. Normally you can use this file as-is, but it
 can be modified if necessary.
 
-If you want to build the documentation, type "./gradlew -p lucene documentation".
+If you want to build the documentation, type:
+
+```
+./gradlew -p lucene documentation
+```
 
 For further information on Lucene, go to:
 
