@@ -29,7 +29,9 @@ https://lucene.apache.org/solr
 Getting Started
 ---------------
 
-To start Solr for the first time after installation, simply do:
+All the following commands are entered from the "solr" directory which should be just below the install directory
+
+To start Solr for the first time after installation, simply enter:
 
 ```
   bin/solr start
@@ -38,20 +40,20 @@ To start Solr for the first time after installation, simply do:
 This will launch a standalone Solr server in the background of your shell,
 listening on port 8983. Alternatively, you can launch Solr in "cloud" mode,
 which allows you to scale out using sharding and replication. To launch Solr
-in cloud mode, do:
+in cloud mode, enter:
 
 ```
   bin/solr start -cloud
 ```
 
-To see all available options for starting Solr, please do:
+To see all available options for starting Solr, please enter:
 
 ```
   bin/solr start -help
 ```
 
 After starting Solr, create either a core or collection depending on whether
-Solr is running in standalone (core) or SolrCloud mode (collection) by doing:
+Solr is running in standalone (core) or SolrCloud mode (collection) by entering:
 
 ```
   bin/solr create -c <name>
@@ -59,7 +61,7 @@ Solr is running in standalone (core) or SolrCloud mode (collection) by doing:
 
 This will create a collection that uses a data-driven schema which tries to guess
 the correct field type when you add documents to the index. To see all available
-options for creating a new collection, execute:
+options for creating a new collection, enter:
 
 ```
   bin/solr create -help
@@ -84,21 +86,20 @@ where more than one Solr is running on the machine.
 Solr Examples
 ---------------
 
-Solr includes a few examples to help you get started. To run a specific example, do:
+Solr includes a few examples to help you get started. To run a specific example, enter:
 
 ```
   bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
 
     cloud        : SolrCloud example
-    dih          : Data Import Handler (rdbms, mail, atom, tika)
     schemaless   : Schema-less example (schema is inferred from data during indexing)
     techproducts : Kitchen sink example providing comprehensive examples of Solr features
 ```
 
-For instance, if you want to run the Solr Data Import Handler example, do:
+For instance, if you want to run the SolrCloud example, enter:
 
 ```
-  bin/solr -e dih
+  bin/solr -e cloud
 ```
 
 Indexing Documents
@@ -142,8 +143,7 @@ server/
 
 example/
   Contains example documents and an alternative Solr home
-  directory containing examples of how to use the Data Import Handler,
-  see example/example-DIH/README.md for more information.
+  directory containing various examples.
 
 dist/solr-<component>-XX.jar
   The Apache Solr libraries.  To compile Apache Solr Plugins,
@@ -177,8 +177,15 @@ Instructions for Building Apache Solr from Source
    cd to "./solr/packaging/build/solr-9.0.0-SNAPSHOT" and run the bin/solr script
    to start Solr.
    
-   NOTE: `gradlew` is the "Gradle Wrapper" and will automaticaly download and
+   NOTE: `gradlew` is the "Gradle Wrapper" and will automatically download and
    start using the correct version of Gradle.
+   
+   NOTE: `./gradlew help` will print a list of high-level tasks. There are also a 
+   number of plain-text files in <source folder root>/help.
+   
+   NOTE: This CWiki page describes getting/building/testing Solr
+   in more detail:
+   `https://cwiki.apache.org/confluence/display/solr/HowToContribute` 
 
 Export control
 -------------------------------------------------
