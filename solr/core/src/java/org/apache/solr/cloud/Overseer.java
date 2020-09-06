@@ -439,7 +439,8 @@ public class Overseer implements SolrCloseable {
             }
           }
 
-          collStates.put(docCollection.getName(), new ClusterState.CollectionRef(new DocCollection(docCollection.getName(), slicesMap, docCollection.getProperties(), docCollection.getRouter())));
+          collStates.put(docCollection.getName(), new ClusterState.CollectionRef(new DocCollection(docCollection.getName(),
+              slicesMap, docCollection.getProperties(), docCollection.getRouter(), docCollection.getZNodeVersion(), docCollection.getZNode())));
         }
       }
 
