@@ -263,7 +263,7 @@ public class TestCustomFunctions extends LuceneTestCase {
     PrintWriter pw = new PrintWriter(sw);
     expected.printStackTrace(pw);
     pw.flush();
-    assertTrue(sw.toString().contains("JavascriptCompiler$CompiledExpression.evaluate(" + source + ")"));
+    assertTrue(sw.toString(), sw.toString().contains("JavascriptCompiler$CompiledExpression.evaluate(" + source + ")"));
   }
 
   /** test that namespaces work with custom expressions. */
