@@ -51,6 +51,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -118,7 +119,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   
   public DirectUpdateHandler2(SolrCore core) {
     super(core);
-   
+    CoreDescriptor coreDescriptor = core.getCoreDescriptor();
     solrCoreState = core.getSolrCoreState();
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
@@ -136,7 +137,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
     ZkController zkController = core.getCoreContainer().getZkController();
-    if (zkController != null && core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
+    if (zkController != null && coreDescriptor != null && coreDescriptor.getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
       commitWithinSoftCommit = false;
       commitTracker.setOpenSearcher(true);
     }

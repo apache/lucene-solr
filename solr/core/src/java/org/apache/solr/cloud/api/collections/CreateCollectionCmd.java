@@ -329,8 +329,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       if(!isLegacyCloud) {
         // wait for all replica entries to be created
         Map<String,Replica> replicas = new ConcurrentHashMap<>();
-        zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (n, c) -> c != null && c.getSlices().size() == shardNames.size());
-        zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, expectedReplicas(coresToCreate.size(), replicas)); // nocommit - timeout - keep this below containing timeouts - need central timeout stuff
+        //zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (n, c) -> c != null && c.getSlices().size() == shardNames.size());
+        zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, expectedReplicas(coresToCreate.size(), replicas)); // nocommit - timeout - keep this below containing timeouts - need central timeout stuff
         // TODO what if replicas comes back wrong?
         if (replicas.size() > 0) {
           for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
