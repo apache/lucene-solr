@@ -86,6 +86,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -327,7 +328,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       if(!isLegacyCloud) {
         // wait for all replica entries to be created
-        Map<String,Replica> replicas = new HashMap<>();
+        Map<String,Replica> replicas = new ConcurrentHashMap<>();
         zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (n, c) -> c != null && c.getSlices().size() == shardNames.size());
         zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, expectedReplicas(coresToCreate.size(), replicas)); // nocommit - timeout - keep this below containing timeouts - need central timeout stuff
         // TODO what if replicas comes back wrong?
