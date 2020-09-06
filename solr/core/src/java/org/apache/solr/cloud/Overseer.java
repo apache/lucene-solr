@@ -40,6 +40,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -66,8 +67,10 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -425,10 +428,24 @@ public class Overseer implements SolrCloseable {
       Map<String,DocCollection> updatesToWrite = zkStateWriter
           .getUpdatesToWrite();
       for (DocCollection docCollection : updatesToWrite.values()) {
-        collStates.put(docCollection.getName(), new ClusterState.CollectionRef(docCollection));
+        Map<String,Slice> slicesMap = docCollection.getSlicesMap();
+        for (Slice slice : slicesMap.values()) {
+          Collection<Replica> existingReplicas = slice.getReplicas();
+          for (Replica ereplica : existingReplicas) {
+            if (!docCollection.getReplicas().contains(ereplica)) {
+              Map<String,Replica> replicas = new HashMap<>(slice.getReplicasMap());
+              replicas.put(ereplica.getName(), ereplica);
+              slicesMap.put(slice.getName(), new Slice(slice.getName(), replicas, slice.getProperties(), docCollection.getName()));
+            }
+          }
+
+          collStates.put(docCollection.getName(), new ClusterState.CollectionRef(new DocCollection(docCollection.getName(), slicesMap, docCollection.getProperties(), docCollection.getRouter())));
+        }
       }
+
       ClusterState prevState = new ClusterState(state.getLiveNodes(),
           collStates, state.getZNodeVersion());
+
         List<ZkWriteCommand> zkWriteOps = processMessage(updatesToWrite.isEmpty() ? state : prevState, message, operation);
 
         cs = zkStateWriter.enqueueUpdate(clusterState, zkWriteOps,
