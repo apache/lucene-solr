@@ -61,7 +61,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
   public void inform(SolrCore core) {
     CoreContainer coreContainer = core.getCoreContainer();
 
-    if(coreContainer.isZooKeeperAware()) {
+    if (coreContainer.isZooKeeperAware()) {
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
       isCloud = true;
