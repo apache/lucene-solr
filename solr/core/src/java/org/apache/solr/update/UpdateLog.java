@@ -1406,9 +1406,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public void close(boolean committed, boolean deleteOnClose) {
-    this.isClosed = true;
-
     synchronized (this) {
+      this.isClosed = true;
 
       // Don't delete the old tlogs, we want to be able to replay from them and retrieve old versions
 
