@@ -2407,6 +2407,9 @@ public class ZkController implements Closeable {
   }
 
   public void rejoinOverseerElection(String electionNode, boolean joinAtHead) {
+    if (overseerElector == null) {
+      return;
+    }
     try {
       if (electionNode != null) {
         // Check whether we came to this node by mistake

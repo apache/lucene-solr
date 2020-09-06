@@ -872,6 +872,9 @@ public class Overseer implements SolrCloseable {
     }
     if (context != null) {
       context.close(fromCSUpdateThread);
+      if (!closeAndDone) {
+        zkController.rejoinOverseerElection(context.electionPath, false);
+      }
     }
     //doClose(fromCSUpdateThread);
   }
