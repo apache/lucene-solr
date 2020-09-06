@@ -42,7 +42,7 @@ Or you can directly checkout the source code from GitHub:
 
   https://github.com/apache/lucene-solr
 
-## Step 2) From the command line, change (cd) into the top-level directory of your Lucene/Solr source tree
+## Step 2) Change directory (cd) into the top-level directory of the source tree
 
 The parent directory for both Lucene and Solr contains the base configuration
 file for the combined build. By default, you do not need to change any of
