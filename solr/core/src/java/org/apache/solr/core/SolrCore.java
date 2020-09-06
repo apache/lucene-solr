@@ -3066,25 +3066,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public void unloadOnClose(final CoreDescriptor desc, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
-    if (deleteIndexDir) {
-      try {
-        directoryFactory.remove(getIndexDir());
-      } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
-        SolrException.log(log, "Failed to flag index dir for removal for core:" + name + " dir:" + getIndexDir());
-      }
+    if (deleteIndexDir || deleteDataDir || deleteInstanceDir) {
+      addCloseHook(new SolrCoreDeleteCloseHook(desc, deleteDataDir, deleteIndexDir, deleteInstanceDir));
     }
-    if (deleteDataDir) {
-      try {
-        directoryFactory.remove(getDataDir(), true);
-      } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
-        SolrException.log(log, "Failed to flag data dir for removal for core:" + name + " dir:" + getDataDir());
-      }
-    }
-    if (deleteInstanceDir) {
-      addCloseHook(new SolrCoreDeleteCloseHook(desc));
-    }
+
   }
 
   public static void deleteUnloadedCore(CoreDescriptor cd, boolean deleteDataDir, boolean deleteInstanceDir) {
@@ -3332,9 +3317,16 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private static class SolrCoreDeleteCloseHook extends CloseHook {
     private final CoreDescriptor desc;
+    private final boolean deleteDataDir;
+    private final boolean deteIndexDir;
+    private final boolean deleteInstanecDir;
 
-    public SolrCoreDeleteCloseHook(CoreDescriptor desc) {
+    public SolrCoreDeleteCloseHook(CoreDescriptor desc, boolean deleteDataDir, boolean deleteIndexDir, boolean deleteInstanceDir) {
+      super();
       this.desc = desc;
+      this.deleteDataDir = deleteDataDir;
+      this.deteIndexDir = deleteIndexDir;
+      this.deleteInstanecDir = deleteInstanceDir;
     }
 
     @Override
@@ -3345,11 +3337,31 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     @Override
     public void postClose(SolrCore core) {
       if (desc != null) {
-        try {
-          FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
-        } catch (IOException e) {
-          SolrException.log(log, "Failed to delete instance dir for core:"
-              + core.getName() + " dir:" + desc.getInstanceDir());
+
+        if (deteIndexDir) {
+          try {
+            core.getDirectoryFactory().remove(core.getIndexDir(), true);
+          } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
+            SolrException.log(log, "Failed to flag index dir for removal for core:" + core.getName() + " dir:" + core.getIndexDir());
+          }
+        }
+
+        if (deleteDataDir) {
+          try {
+            core.getDirectoryFactory().remove(core.getDataDir(), true);
+          } catch (Exception e) {
+            ParWork.propegateInterrupt(e);
+            SolrException.log(log, "Failed to flag data dir for removal for core:" + core.getName() + " dir:" + core.getDataDir());
+          }
+        }
+
+        if (deleteInstanecDir) {
+          try {
+            FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
+          } catch (IOException e) {
+            SolrException.log(log, "Failed to delete instance dir for core:" + core.getName() + " dir:" + desc.getInstanceDir());
+          }
         }
       }
     }
