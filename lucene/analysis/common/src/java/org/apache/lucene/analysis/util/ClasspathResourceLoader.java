@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.util;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.lucene.analysis.ResourceLoader;
 import org.apache.lucene.util.SuppressForbidden;
 
 /**

@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.ResourceLoader;
+import org.apache.lucene.analysis.ResourceLoaderAware;
 
 /**
  * Factory for {@link MappingCharFilter}. 

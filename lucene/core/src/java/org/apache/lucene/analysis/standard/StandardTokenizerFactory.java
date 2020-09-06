@@ -17,32 +17,32 @@
 package org.apache.lucene.analysis.standard;
 
 
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
 import java.util.Map;
 
 /**
- * Factory for {@link UAX29URLEmailTokenizer}. 
+ * Factory for {@link StandardTokenizer}. 
  * <pre class="prettyprint">
- * &lt;fieldType name="text_urlemail" class="solr.TextField" positionIncrementGap="100"&gt;
+ * &lt;fieldType name="text_stndrd" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.UAX29URLEmailTokenizerFactory" maxTokenLength="255"/&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory" maxTokenLength="255"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
  *
  * @since 3.1
  * @lucene.spi {@value #NAME}
  */
-public class UAX29URLEmailTokenizerFactory extends TokenizerFactory {
+public class StandardTokenizerFactory extends TokenizerFactory {
 
   /** SPI name */
-  public static final String NAME = "uax29UrlEmail";
+  public static final String NAME = "standard";
 
   private final int maxTokenLength;
-
-  /** Creates a new UAX29URLEmailTokenizerFactory */
-  public UAX29URLEmailTokenizerFactory(Map<String,String> args) {
+  
+  /** Creates a new StandardTokenizerFactory */
+  public StandardTokenizerFactory(Map<String,String> args) {
     super(args);
     maxTokenLength = getInt(args, "maxTokenLength", StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
     if (!args.isEmpty()) {
@@ -51,13 +51,13 @@ public class UAX29URLEmailTokenizerFactory extends TokenizerFactory {
   }
 
   /** Default ctor for compatibility with SPI */
-  public UAX29URLEmailTokenizerFactory() {
+  public StandardTokenizerFactory() {
     throw defaultCtorException();
   }
 
   @Override
-  public UAX29URLEmailTokenizer create(AttributeFactory factory) {
-    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(factory);
+  public StandardTokenizer create(AttributeFactory factory) {
+    StandardTokenizer tokenizer = new StandardTokenizer(factory);
     tokenizer.setMaxTokenLength(maxTokenLength);
     return tokenizer;
   }

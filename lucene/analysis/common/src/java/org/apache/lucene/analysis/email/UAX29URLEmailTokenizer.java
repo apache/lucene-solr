@@ -15,77 +15,93 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.standard;
+package org.apache.lucene.analysis.email;
+
 
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeFactory;
 
-/** A grammar-based tokenizer constructed with JFlex
- *
- * <p> This should be a good tokenizer for most European-language documents:
- *
- * <ul>
- *   <li>Splits words at punctuation characters, removing punctuation. However, a 
- *     dot that's not followed by whitespace is considered part of a token.
- *   <li>Splits words at hyphens, unless there's a number in the token, in which case
- *     the whole token is interpreted as a product number and is not split.
- *   <li>Recognizes email addresses and internet hostnames as one token.
- * </ul>
- *
- * <p>Many applications have specific tokenizer needs.  If this tokenizer does
- * not suit your application, please consider copying this source code
- * directory to your project and maintaining your own grammar-based tokenizer.
- *
- * ClassicTokenizer was named StandardTokenizer in Lucene versions prior to 3.1.
- * As of 3.1, {@link StandardTokenizer} implements Unicode text segmentation,
- * as specified by UAX#29.
+/**
+ * This class implements Word Break rules from the Unicode Text Segmentation 
+ * algorithm, as specified in 
+ * <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a> 
+ * URLs and email addresses are also tokenized according to the relevant RFCs.
  */
 
-public final class ClassicTokenizer extends Tokenizer {
+public final class UAX29URLEmailTokenizer extends Tokenizer {
   /** A private instance of the JFlex-constructed scanner */
-  private ClassicTokenizerImpl scanner;
+  private final UAX29URLEmailTokenizerImpl scanner;
 
-  public static final int ALPHANUM          = 0;
-  public static final int APOSTROPHE        = 1;
-  public static final int ACRONYM           = 2;
-  public static final int COMPANY           = 3;
-  public static final int EMAIL             = 4;
-  public static final int HOST              = 5;
-  public static final int NUM               = 6;
-  public static final int CJ                = 7;
-
-  public static final int ACRONYM_DEP       = 8;
+  /** Alpha/numeric token type */
+  public static final int ALPHANUM = 0;
+  /** Numeric token type */
+  public static final int NUM = 1;
+  /** Southeast Asian token type */
+  public static final int SOUTHEAST_ASIAN = 2;
+  /** Ideographic token type */
+  public static final int IDEOGRAPHIC = 3;
+  /** Hiragana token type */
+  public static final int HIRAGANA = 4;
+  /** Katakana token type */
+  public static final int KATAKANA = 5;
+  /** Hangul token type */
+  public static final int HANGUL = 6;
+  /** URL token type */
+  public static final int URL = 7;
+  /** Email token type */
+  public static final int EMAIL = 8;
+  /** Emoji token type. */
+  public static final int EMOJI = 9;
 
   /** String token types that correspond to token type int constants */
   public static final String [] TOKEN_TYPES = new String [] {
-    "<ALPHANUM>",
-    "<APOSTROPHE>",
-    "<ACRONYM>",
-    "<COMPANY>",
+    StandardTokenizer.TOKEN_TYPES[StandardTokenizer.ALPHANUM],
+    StandardTokenizer.TOKEN_TYPES[StandardTokenizer.NUM],
+    StandardTokenizer.TOKEN_TYPES[StandardTokenizer.SOUTHEAST_ASIAN],
+    StandardTokenizer.TOKEN_TYPES[StandardTokenizer.IDEOGRAPHIC],
+    StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HIRAGANA],
+    StandardTokenizer.TOKEN_TYPES[StandardTokenizer.KATAKANA],
+    StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HANGUL],
+    "<URL>",
     "<EMAIL>",
-    "<HOST>",
-    "<NUM>",
-    "<CJ>",
-    "<ACRONYM_DEP>"
+    StandardTokenizer.TOKEN_TYPES[StandardTokenizer.EMOJI]
   };
+
+  /** Absolute maximum sized token */
+  public static final int MAX_TOKEN_LENGTH_LIMIT = 1024 * 1024;
   
   private int skippedPositions;
 
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
-  /** Set the max allowed token length.  Any token longer
-   *  than this is skipped. */
+  /**
+   * Set the max allowed token length.  Tokens larger than this will be chopped
+   * up at this token length and emitted as multiple tokens.  If you need to
+   * skip such large tokens, you could increase this max length, and then
+   * use {@code LengthFilter} to remove long tokens.  The default is
+   * {@link UAX29URLEmailAnalyzer#DEFAULT_MAX_TOKEN_LENGTH}.
+   * 
+   * @throws IllegalArgumentException if the given length is outside of the
+   *  range [1, {@value #MAX_TOKEN_LENGTH_LIMIT}].
+   */ 
   public void setMaxTokenLength(int length) {
     if (length < 1) {
       throw new IllegalArgumentException("maxTokenLength must be greater than zero");
+    } else if (length > MAX_TOKEN_LENGTH_LIMIT) {
+      throw new IllegalArgumentException("maxTokenLength may not exceed " + MAX_TOKEN_LENGTH_LIMIT);
     }
-    this.maxTokenLength = length;
+    if (length != maxTokenLength) {
+      this.maxTokenLength = length;
+      scanner.setBufferSize(length);
+    }
   }
 
   /** @see #setMaxTokenLength */
@@ -94,25 +110,24 @@ public final class ClassicTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new instance of the {@link ClassicTokenizer}.  Attaches
+   * Creates a new instance of the UAX29URLEmailTokenizer.  Attaches
    * the <code>input</code> to the newly created JFlex scanner.
-   *
-   * See http://issues.apache.org/jira/browse/LUCENE-1068
+
    */
-  public ClassicTokenizer() {
-    init();
+  public UAX29URLEmailTokenizer() {
+    this.scanner = getScanner();
   }
 
   /**
-   * Creates a new ClassicTokenizer with a given {@link org.apache.lucene.util.AttributeFactory} 
+   * Creates a new UAX29URLEmailTokenizer with a given {@link AttributeFactory} 
    */
-  public ClassicTokenizer(AttributeFactory factory) {
+  public UAX29URLEmailTokenizer(AttributeFactory factory) {
     super(factory);
-    init();
+    this.scanner = getScanner();
   }
 
-  private void init() {
-    this.scanner = new ClassicTokenizerImpl(input);
+  private UAX29URLEmailTokenizerImpl getScanner() {
+    return new UAX29URLEmailTokenizerImpl(input);
   }
 
   // this tokenizer generates three attributes:
@@ -122,11 +137,6 @@ public final class ClassicTokenizer extends Tokenizer {
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.lucene.analysis.TokenStream#next()
-   */
   @Override
   public final boolean incrementToken() throws IOException {
     clearAttributes();
@@ -135,7 +145,7 @@ public final class ClassicTokenizer extends Tokenizer {
     while(true) {
       int tokenType = scanner.getNextToken();
 
-      if (tokenType == ClassicTokenizerImpl.YYEOF) {
+      if (tokenType == UAX29URLEmailTokenizerImpl.YYEOF) {
         return false;
       }
 
@@ -144,13 +154,7 @@ public final class ClassicTokenizer extends Tokenizer {
         scanner.getText(termAtt);
         final int start = scanner.yychar();
         offsetAtt.setOffset(correctOffset(start), correctOffset(start+termAtt.length()));
-
-        if (tokenType == ClassicTokenizer.ACRONYM_DEP) {
-          typeAtt.setType(ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.HOST]);
-          termAtt.setLength(termAtt.length() - 1); // remove extra '.'
-        } else {
-          typeAtt.setType(ClassicTokenizer.TOKEN_TYPES[tokenType]);
-        }
+        typeAtt.setType(TOKEN_TYPES[tokenType]);
         return true;
       } else
         // When we skip a too-long term, we still increment the

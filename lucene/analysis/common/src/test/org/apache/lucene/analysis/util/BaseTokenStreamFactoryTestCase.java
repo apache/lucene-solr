@@ -21,7 +21,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.ResourceLoader;
+import org.apache.lucene.analysis.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.Version;
 
 /** 

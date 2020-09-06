@@ -23,8 +23,8 @@ import java.util.*;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.ResourceLoader;
+import org.apache.lucene.analysis.ResourceLoaderAware;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;

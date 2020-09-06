@@ -14,43 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.util;
+package org.apache.lucene.analysis;
 
 
-import java.io.Reader;
+import org.apache.lucene.util.AttributeFactory;
+
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.CharFilter;
-
 /**
- * Abstract parent class for analysis factories that create {@link CharFilter}
+ * Abstract parent class for analysis factories that create {@link Tokenizer}
  * instances.
  *
  * @since 3.1
  */
-public abstract class CharFilterFactory extends AbstractAnalysisFactory {
+public abstract class TokenizerFactory extends AbstractAnalysisFactory {
 
-  private static final AnalysisSPILoader<CharFilterFactory> loader =
-      new AnalysisSPILoader<>(CharFilterFactory.class);
+  private static final AnalysisSPILoader<TokenizerFactory> loader =
+      new AnalysisSPILoader<>(TokenizerFactory.class);
   
-  /** looks up a charfilter by name from context classpath */
-  public static CharFilterFactory forName(String name, Map<String,String> args) {
+  /** looks up a tokenizer by name from context classpath */
+  public static TokenizerFactory forName(String name, Map<String,String> args) {
     return loader.newInstance(name, args);
   }
   
-  /** looks up a charfilter class by name from context classpath */
-  public static Class<? extends CharFilterFactory> lookupClass(String name) {
+  /** looks up a tokenizer class by name from context classpath */
+  public static Class<? extends TokenizerFactory> lookupClass(String name) {
     return loader.lookupClass(name);
   }
   
-  /** returns a list of all available charfilter names */
-  public static Set<String> availableCharFilters() {
+  /** returns a list of all available tokenizer names from context classpath */
+  public static Set<String> availableTokenizers() {
     return loader.availableServices();
   }
 
-  /** looks up a SPI name for the specified char filter factory */
-  public static String findSPIName(Class<? extends CharFilterFactory> serviceClass) {
+  /** looks up a SPI name for the specified tokenizer factory */
+  public static String findSPIName(Class<? extends TokenizerFactory> serviceClass) {
     try {
       return AnalysisSPILoader.lookupSPIName(serviceClass);
     } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
@@ -61,7 +60,7 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
   /** 
    * Reloads the factory list from the given {@link ClassLoader}.
    * Changes to the factories are visible after the method ends, all
-   * iterators ({@link #availableCharFilters()},...) stay consistent. 
+   * iterators ({@link #availableTokenizers()},...) stay consistent. 
    * 
    * <p><b>NOTE:</b> Only new factories are added, existing ones are
    * never removed or replaced.
@@ -69,31 +68,27 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
    * <p><em>This method is expensive and should only be called for discovery
    * of new factories on the given classpath/classloader!</em>
    */
-  public static void reloadCharFilters(ClassLoader classloader) {
+  public static void reloadTokenizers(ClassLoader classloader) {
     loader.reload(classloader);
   }
-
+  
   /** Default ctor for compatibility with SPI */
-  protected CharFilterFactory() {
+  protected TokenizerFactory() {
     super();
   }
 
   /**
    * Initialize this factory via a set of key-value pairs.
    */
-  protected CharFilterFactory(Map<String,String> args) {
+  protected TokenizerFactory(Map<String,String> args) {
     super(args);
   }
 
-  /** Wraps the given Reader with a CharFilter. */
-  public abstract Reader create(Reader input);
-
-  /**
-   * Normalize the specified input Reader
-   * While the default implementation returns input unchanged,
-   * char filters that should be applied at normalization time can delegate to {@code create} method.
-   */
-  public Reader normalize(Reader input) {
-    return input;
+  /** Creates a TokenStream of the specified input using the default attribute factory. */
+  public final Tokenizer create() {
+    return create(TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY);
   }
+  
+  /** Creates a TokenStream of the specified input using the given AttributeFactory */
+  abstract public Tokenizer create(AttributeFactory factory);
 }

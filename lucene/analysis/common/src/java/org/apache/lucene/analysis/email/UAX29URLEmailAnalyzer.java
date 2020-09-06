@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.standard;
+package org.apache.lucene.analysis.email;
 
 
 import java.io.IOException;
@@ -25,24 +25,21 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
 /**
- * Filters {@link ClassicTokenizer} with {@link ClassicFilter}, {@link
- * LowerCaseFilter} and {@link StopFilter}, using a list of
+ * Filters {@link UAX29URLEmailTokenizer}
+ * with {@link org.apache.lucene.analysis.LowerCaseFilter} and
+ * {@link org.apache.lucene.analysis.StopFilter}, using a list of
  * English stop words.
- * 
- * ClassicAnalyzer was named StandardAnalyzer in Lucene versions prior to 3.1. 
- * As of 3.1, {@link StandardAnalyzer} implements Unicode text segmentation,
- * as specified by UAX#29.
  *
- * @since 3.1
+ * @since 3.6.0
  */
-public final class ClassicAnalyzer extends StopwordAnalyzerBase {
-
+public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
+  
   /** Default maximum allowed token length */
-  public static final int DEFAULT_MAX_TOKEN_LENGTH = 255;
+  public static final int DEFAULT_MAX_TOKEN_LENGTH = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
   private int maxTokenLength = DEFAULT_MAX_TOKEN_LENGTH;
 
@@ -52,29 +49,30 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
 
   /** Builds an analyzer with the given stop words.
    * @param stopWords stop words */
-  public ClassicAnalyzer(CharArraySet stopWords) {
+  public UAX29URLEmailAnalyzer(CharArraySet stopWords) {
     super(stopWords);
   }
 
   /** Builds an analyzer with the default stop words ({@link
    * #STOP_WORDS_SET}).
    */
-  public ClassicAnalyzer() {
+  public UAX29URLEmailAnalyzer() {
     this(STOP_WORDS_SET);
   }
 
   /** Builds an analyzer with the stop words from the given reader.
-   * @see WordlistLoader#getWordSet(Reader)
+   * @see org.apache.lucene.analysis.WordlistLoader#getWordSet(java.io.Reader)
    * @param stopwords Reader to read stop words from */
-  public ClassicAnalyzer(Reader stopwords) throws IOException {
+  public UAX29URLEmailAnalyzer(Reader stopwords) throws IOException {
     this(loadStopwordSet(stopwords));
   }
 
   /**
-   * Set maximum allowed token length.  If a token is seen
-   * that exceeds this length then it is discarded.  This
-   * setting only takes effect the next time tokenStream or
-   * tokenStream is called.
+   * Set the max allowed token length.  Tokens larger than this will be chopped
+   * up at this token length and emitted as multiple tokens.  If you need to
+   * skip such large tokens, you could increase this max length, and then
+   * use {@code LengthFilter} to remove long tokens.  The default is
+   * {@link UAX29URLEmailAnalyzer#DEFAULT_MAX_TOKEN_LENGTH}.
    */
   public void setMaxTokenLength(int length) {
     maxTokenLength = length;
@@ -89,13 +87,12 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStreamComponents createComponents(final String fieldName) {
-    final ClassicTokenizer src = new ClassicTokenizer();
+    final UAX29URLEmailTokenizer src = new UAX29URLEmailTokenizer();
     src.setMaxTokenLength(maxTokenLength);
-    TokenStream tok = new ClassicFilter(src);
-    tok = new LowerCaseFilter(tok);
+    TokenStream tok = new LowerCaseFilter(src);
     tok = new StopFilter(tok, stopwords);
     return new TokenStreamComponents(r -> {
-      src.setMaxTokenLength(ClassicAnalyzer.this.maxTokenLength);
+      src.setMaxTokenLength(UAX29URLEmailAnalyzer.this.maxTokenLength);
       src.setReader(r);
     }, tok);
   }

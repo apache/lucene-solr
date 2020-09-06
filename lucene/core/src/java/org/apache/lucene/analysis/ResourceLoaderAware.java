@@ -14,31 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.util;
-
+package org.apache.lucene.analysis;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
- * Abstraction for loading resources (streams, files, and classes).
+ * Interface for a component that needs to be initialized by
+ * an implementation of {@link ResourceLoader}.
+ * 
+ * @see ResourceLoader
  */
-public interface ResourceLoader {
+public interface ResourceLoaderAware {
 
   /**
-   * Opens a named resource
+   * Initializes this component with the provided ResourceLoader
+   * (used for loading classes, files, etc).
    */
-  public InputStream openResource(String resource) throws IOException;
-  
-  
-  /**
-   * Finds class of the name and expected type
-   */
-  public <T> Class<? extends T> findClass(String cname, Class<T> expectedType);
-  
-  /**
-   * Creates an instance of the name and expected type
-   */
-  // TODO: fix exception handling
-  public <T> T newInstance(String cname, Class<T> expectedType);
+  void inform(ResourceLoader loader) throws IOException;
 }

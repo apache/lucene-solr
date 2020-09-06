@@ -21,7 +21,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Testcase for {@link TypeTokenFilterFactory}

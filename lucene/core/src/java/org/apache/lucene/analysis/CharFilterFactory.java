@@ -14,42 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.util;
+package org.apache.lucene.analysis;
 
 
+import java.io.Reader;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.TokenStream;
-
 /**
- * Abstract parent class for analysis factories that create {@link org.apache.lucene.analysis.TokenFilter}
+ * Abstract parent class for analysis factories that create {@link CharFilter}
  * instances.
  *
  * @since 3.1
  */
-public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
+public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 
-  private static final AnalysisSPILoader<TokenFilterFactory> loader =
-      new AnalysisSPILoader<>(TokenFilterFactory.class);
-
-  /** looks up a tokenfilter by name from context classpath */
-  public static TokenFilterFactory forName(String name, Map<String,String> args) {
+  private static final AnalysisSPILoader<CharFilterFactory> loader =
+      new AnalysisSPILoader<>(CharFilterFactory.class);
+  
+  /** looks up a charfilter by name from context classpath */
+  public static CharFilterFactory forName(String name, Map<String,String> args) {
     return loader.newInstance(name, args);
   }
   
-  /** looks up a tokenfilter class by name from context classpath */
-  public static Class<? extends TokenFilterFactory> lookupClass(String name) {
+  /** looks up a charfilter class by name from context classpath */
+  public static Class<? extends CharFilterFactory> lookupClass(String name) {
     return loader.lookupClass(name);
   }
   
-  /** returns a list of all available tokenfilter names from context classpath */
-  public static Set<String> availableTokenFilters() {
+  /** returns a list of all available charfilter names */
+  public static Set<String> availableCharFilters() {
     return loader.availableServices();
   }
 
-  /** looks up a SPI name for the specified token filter factory */
-  public static String findSPIName(Class<? extends TokenFilterFactory> serviceClass) {
+  /** looks up a SPI name for the specified char filter factory */
+  public static String findSPIName(Class<? extends CharFilterFactory> serviceClass) {
     try {
       return AnalysisSPILoader.lookupSPIName(serviceClass);
     } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
@@ -60,7 +59,7 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
   /** 
    * Reloads the factory list from the given {@link ClassLoader}.
    * Changes to the factories are visible after the method ends, all
-   * iterators ({@link #availableTokenFilters()},...) stay consistent. 
+   * iterators ({@link #availableCharFilters()},...) stay consistent. 
    * 
    * <p><b>NOTE:</b> Only new factories are added, existing ones are
    * never removed or replaced.
@@ -68,31 +67,31 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
    * <p><em>This method is expensive and should only be called for discovery
    * of new factories on the given classpath/classloader!</em>
    */
-  public static void reloadTokenFilters(ClassLoader classloader) {
+  public static void reloadCharFilters(ClassLoader classloader) {
     loader.reload(classloader);
   }
-  
+
   /** Default ctor for compatibility with SPI */
-  protected TokenFilterFactory() {
+  protected CharFilterFactory() {
     super();
   }
 
   /**
    * Initialize this factory via a set of key-value pairs.
    */
-  protected TokenFilterFactory(Map<String,String> args) {
+  protected CharFilterFactory(Map<String,String> args) {
     super(args);
   }
 
-  /** Transform the specified input TokenStream */
-  public abstract TokenStream create(TokenStream input);
+  /** Wraps the given Reader with a CharFilter. */
+  public abstract Reader create(Reader input);
 
   /**
-   * Normalize the specified input TokenStream
+   * Normalize the specified input Reader
    * While the default implementation returns input unchanged,
-   * filters that should be applied at normalization time can delegate to {@code create} method.
+   * char filters that should be applied at normalization time can delegate to {@code create} method.
    */
-  public TokenStream normalize(TokenStream input) {
+  public Reader normalize(Reader input) {
     return input;
   }
 }
