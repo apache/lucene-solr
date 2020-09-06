@@ -202,7 +202,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
                 this.getClass().getSimpleName(), val);
         try {
           // if there are still refs out, we have to wait for them
-          assert val.refCnt > -1 : val.refCnt + " path=" + val.path;
           while (val.refCnt != 0) {
             wait(250);
 
@@ -214,7 +213,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
               throw new SolrException(ErrorCode.SERVER_ERROR, msg);
             }
           }
-          assert val.refCnt == 0 : val.refCnt;
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt("Interrupted closing directory", e);
           return;
@@ -228,7 +226,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       for (CacheValue val : values) {
         try {
           for (CacheValue v : val.closeEntries) {
-            assert v.refCnt == 0 : val.refCnt;
             if (log.isDebugEnabled()) log.debug("Closing directory when closing factory: " + v.path);
             boolean cl = closeCacheValue(v);
             if (cl) {
@@ -564,8 +561,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
       //    }
       cacheValue.refCnt--;
-
-      assert cacheValue.refCnt >= 0 : cacheValue.refCnt;
 
       if (cacheValue.refCnt == 0 && cacheValue.doneWithDir) {
         boolean cl = closeCacheValue(cacheValue);
