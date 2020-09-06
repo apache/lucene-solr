@@ -597,6 +597,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         } catch (Exception e) {
           // expected
         }
+
         long errorsAfter = 0;
         for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
           Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), adminPath, true);
@@ -605,6 +606,19 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
           }
         }
+
+        if (errorsBefore + 1 != errorsAfter) {
+          Thread.sleep(100);
+          errorsAfter = 0;
+          for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), adminPath, true);
+            errorsAfter += numRequests;
+            if (log.isInfoEnabled()) {
+              log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
+            }
+          }
+        }
+
         assertEquals(errorsBefore + 1, errorsAfter);
       }
     }
