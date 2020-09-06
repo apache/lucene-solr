@@ -728,6 +728,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "flakey, can return 99 instead of 100 results, missing 95 in results")
   public void testExpr() throws Exception {
     assertU(delQ("*:*"));
     assertU(commit());
@@ -752,12 +753,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     List<Map<String, Object>> docs = (List<Map<String, Object>>) Utils.getObjectByPath(rspMap, false, "/response/docs");
     assertNotNull("missing document results: " + rspMap, docs);
 
-    if (docs.size() == 99) {
-      // TODO: sometimes this can happen
-    } else {
-      assertEquals("wrong number of unique docs", 100, docs.size());
-    }
-
+    assertEquals("wrong number of unique docs", 100, docs.size());
 
     for (int i = 0; i < 99; i++) {
       boolean found = false;
