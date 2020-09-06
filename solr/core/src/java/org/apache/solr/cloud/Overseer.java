@@ -201,7 +201,6 @@ public class Overseer implements SolrCloseable {
     private final ZkDistributedQueue workQueue;
 
     private volatile boolean isClosed = false;
-    private int lastVersion;
 
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
       this.zkClient = reader.getZkClient();
@@ -453,7 +452,6 @@ public class Overseer implements SolrCloseable {
                 () -> {
                   // log.info("on write callback");
                 });
-        lastVersion = cs.getZNodeVersion();
     //  }
 
       return cs;

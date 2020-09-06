@@ -324,7 +324,6 @@ public class ZkStateWriter {
         try {
 
          // if (reader.getClusterState().getCollectionOrNull(c.getName()) != null) {
-            if (true) {
 
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
 
@@ -334,7 +333,6 @@ public class ZkStateWriter {
             // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
             try {
               stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), false);
-              break;
             } catch (KeeperException.BadVersionException bve) {
               // this is a tragic error, we must disallow usage of this instance
               log.warn(
@@ -345,26 +343,7 @@ public class ZkStateWriter {
 //              failedUpdates.put(name, c);
 //              continue;
             }
-          } else {
 
-            byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
-            // reader.getZkClient().getCurator().create().storingStatIn(stat).forPath(path, data); // nocommit look at
-            // async updates
-            if (log.isDebugEnabled()) {
-              log.debug("Write state.json bytes={} cs={}", data.length,
-                  state);
-            }
-            try {
-              reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
-
-            } catch (KeeperException.NodeExistsException e) {
-              log.error("collection already exists");
-              failedUpdates.put(name, c);
-              continue;
-            }
-          }
-
-          break;
         } catch (InterruptedException | AlreadyClosedException e) {
           ParWork.propegateInterrupt(e);
           throw e;

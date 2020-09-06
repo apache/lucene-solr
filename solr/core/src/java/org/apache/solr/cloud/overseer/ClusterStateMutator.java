@@ -116,7 +116,7 @@ public class ClusterStateMutator {
             : ZkStateReader.getCollectionPath(cName);
 
     DocCollection newCollection = new DocCollection(cName,
-            slices, collectionProps, router, -1, znode);
+            slices, collectionProps, router, 1, znode);
 
     return new ZkWriteCommand(cName, newCollection);
   }
