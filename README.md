@@ -79,7 +79,7 @@ For development, especially when you have created test indexes etc, use
 the `./gradlew dev` task which will copy binaries to `./solr/packaging/build/dev`
 but _only_ overwrite the binaries which will preserve your test setup.
 
-If you want to build the documentation, type `./gradlew buildSite`.
+If you want to build the documentation, type `./gradlew -p solr documentation`.
 
 ## Running Solr
 
