@@ -194,6 +194,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private volatile String name;
   private String logid; // used to show what name is set
 
+  private final Object closeAndWait = new Object();
+
   private volatile boolean isReloaded = false;
 
   private final SolrConfig solrConfig;
@@ -1413,17 +1415,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public void closeAndWait() {
     close();
     while (!isClosed()) {
-      final long milliSleep = 250;
-      if (log.isDebugEnabled()) {
-        log.debug("Core {} is not yet closed, waiting {} ms before checking again.", getName(), milliSleep);
-      }
-      try {
-        Thread.sleep(milliSleep);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Caught InterruptedException whilst waiting for core " + getName() + " to close: "
-                + e.getMessage(), e);
+      synchronized (closeAndWait) {
+        try {
+          closeAndWait.wait(500);
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+        }
       }
     }
   }
@@ -1573,9 +1570,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   @Override
   public void close() {
-    int count = refCount.decrementAndGet();
-    if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
-    if (count < 0) {
+    int count = refCount.get();
+    if (count - 1 > 0) {
+      refCount.decrementAndGet();
+      return; // close is called often, and only actually closes if nothing is using it.
+    }
+    if (count - 1 < 0) {
       log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Too many closes on SolrCore");
     }
@@ -1729,13 +1729,16 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
 
     } finally {
+      infoRegistry.clear();
+
+      //areAllSearcherReferencesEmpty();
+      refCount.set(-1);
+      synchronized (closeAndWait) {
+        closeAndWait.notifyAll();
+      }
       assert ObjectReleaseTracker.release(this);
     }
-    infoRegistry.clear();
 
-    //areAllSearcherReferencesEmpty();
-    refCount.set(-1);
-    ObjectReleaseTracker.release(this);
   }
 
   /**

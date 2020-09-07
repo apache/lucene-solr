@@ -2114,7 +2114,7 @@ public class ZkController implements Closeable {
     return coreNodeName;
   }
 
-  public void preRegister(CoreDescriptor cd, boolean publishState) {
+  public void preRegister(CoreDescriptor cd) {
     log.info("PreRegister SolrCore, collection={}, shard={} coreNodeName={}", cd.getCloudDescriptor().getCollectionName(), cd.getCloudDescriptor().getShardId());
 
     CloudDescriptor cloudDesc = cd.getCloudDescriptor();

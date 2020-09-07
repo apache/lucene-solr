@@ -1565,6 +1565,10 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
+  public boolean watched(String collection) {
+    return collectionWatches.contains(collection);
+  }
+
   /**
    * Notify this reader that a local core that is a member of a collection has been closed.
    * <p>

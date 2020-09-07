@@ -585,7 +585,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private long waitForDependentUpdates(AddUpdateCommand cmd, long versionOnUpdate,
                                boolean isReplayOrPeersync, VersionBucket bucket) throws IOException {
     long lastFoundVersion = 0;
-    TimeOut waitTimeout = new TimeOut(Integer.getInteger("solr.dependentupdate.timeout", 3) , TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    int wait = Integer.getInteger("solr.dependentupdate.timeout", 5);
+    TimeOut waitTimeout = new TimeOut(wait, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     vinfo.lockForUpdate();
     try {
@@ -684,7 +685,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     String leaderUrl = getLeaderUrl(id);
 
-    if(leaderUrl == null) {
+    if (leaderUrl == null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Can't find document with id=" + id);
     }
 

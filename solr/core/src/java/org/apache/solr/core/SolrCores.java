@@ -228,9 +228,9 @@ class SolrCores implements Closeable {
     return set;
   }
 
-  SolrCore getCore(String name) {
-      return cores.get(name);
-  }
+//  SolrCore getCore(String name) {
+//      return cores.get(name);
+//  }
 
   protected void swap(String n0, String n1) {
     if (isClosed()) {
@@ -289,7 +289,7 @@ class SolrCores implements Closeable {
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
   SolrCore  getCoreFromAnyList(String name, boolean incRefCount, boolean onClose) {
-    if (!onClose && closed) {
+    if (closed) {
       throw new AlreadyClosedException("SolrCores has been closed");
     }
     SolrCore core = cores.get(name);

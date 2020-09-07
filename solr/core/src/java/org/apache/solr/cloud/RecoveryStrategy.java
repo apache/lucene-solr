@@ -132,12 +132,18 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private volatile Replica.Type replicaType;
   private volatile CoreDescriptor coreDescriptor;
 
+  private volatile SolrCore core;
+
   private final CoreContainer cc;
 
   protected RecoveryStrategy(CoreContainer cc, CoreDescriptor cd, RecoveryListener recoveryListener) {
     // ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.coreName = cd.getName();
+    this.core = cc.getCore(coreName, false);
+    if (core == null) {
+      throw new IllegalStateException("SolrCore is null");
+    }
     this.recoveryListener = recoveryListener;
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
@@ -194,17 +200,15 @@ public class RecoveryStrategy implements Runnable, Closeable {
   @Override
   final public void close() {
     close = true;
-    try (ParWork closer = new ParWork(this, true)) {
-      closer.collect("prevSendPreRecoveryHttpUriRequestAbort", () -> {
-        try {
-          prevSendPreRecoveryHttpUriRequest.abort();
-        } catch (NullPointerException e) {
-          // expected
-        }
-      });
-
-
-      try (SolrCore core = cc.getCore(coreName)) {
+    try {
+      try (ParWork closer = new ParWork(this, true)) {
+        closer.collect("prevSendPreRecoveryHttpUriRequestAbort", () -> {
+          try {
+            prevSendPreRecoveryHttpUriRequest.abort();
+          } catch (NullPointerException e) {
+            // expected
+          }
+        });
 
         if (core == null) {
           SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
@@ -214,16 +218,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
         ReplicationHandler replicationHandler = (ReplicationHandler) handler;
 
         if (replicationHandler == null) {
-          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-                  "Skipping recovery, no " + ReplicationHandler.PATH + " handler found");
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Skipping recovery, no " + ReplicationHandler.PATH + " handler found");
         }
         closer.collect("abortFetch", () -> {
           replicationHandler.abortFetch();
         });
 
       }
+    } finally {
+      core = null;
     }
-
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
     //ObjectReleaseTracker.release(this);
   }
@@ -351,7 +355,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return;
       }
       // set request info for logging
-      try (SolrCore core = cc.getCore(coreName)) {
+
 
         if (core == null) {
           SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
@@ -370,7 +374,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           log.error("", e);
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
         }
-      }
+
     } finally {
       close();
     }
@@ -771,8 +775,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
             zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
           } catch (InterruptedException e) {
             ParWork.propegateInterrupt(e);
-            return;
-          }catch (Exception e) {
+            close = true;
+          } catch (Exception e) {
             log.error("Could not publish as ACTIVE after succesful recovery", e);
             successfulRecovery = false;
           }

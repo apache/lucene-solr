@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import io.opentracing.Span;
 import org.apache.commons.io.IOUtils;
@@ -185,7 +186,7 @@ public class HttpSolrCall {
   protected Action action;
   protected String coreUrl;
   protected SolrConfig config;
-  protected Map<String, Integer> invalidStates;
+  protected volatile Map<String, Integer> invalidStates;
 
   //The states of client that is invalid in this request
   protected String origCorename; // What's in the URL path; might reference a collection/alias or a Solr core name
@@ -260,9 +261,7 @@ public class HttpSolrCall {
       solrReq.getContext().put(CoreContainer.class.getName(), cores);
       requestType = RequestType.ADMIN;
       action = ADMIN;
-      if (cores.isZooKeeperAware()) {
-        invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
-      }
+      ensureStatesAreAtLeastAtClient();
       return;
     }
 
@@ -347,6 +346,8 @@ public class HttpSolrCall {
           solrReq = parser.parse(core, path, req);
         }
 
+        ensureStatesAreAtLeastAtClient();
+
         invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
 
         addCollectionParamIfNeeded(getCollectionsList());
@@ -358,6 +359,31 @@ public class HttpSolrCall {
     log.debug("no handler or core retrieved for {}, follow through...", path);
 
     action = PASSTHROUGH;
+  }
+
+  private void ensureStatesAreAtLeastAtClient() throws InterruptedException, TimeoutException {
+    if (cores.isZooKeeperAware()) {
+      invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
+      if (invalidStates != null) {
+      Set<Map.Entry<String,Integer>> entries = invalidStates.entrySet();
+      for (Map.Entry<String,Integer> entry : entries) {
+        String collection = entry.getKey();
+        Integer version = entry.getValue();
+
+        if (cores.getZkController().getZkStateReader().watched(collection)) {
+          cores.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+            if (collectionState == null) {
+              return false;
+            }
+            if (collectionState.getZNodeVersion() < version) {
+              return false;
+            }
+            return true;
+          });
+        }
+       }
+      }
+    }
   }
 
   protected void autoCreateSystemColl(String corename) throws Exception {

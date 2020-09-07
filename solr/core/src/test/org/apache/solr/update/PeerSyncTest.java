@@ -50,6 +50,11 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     params(DISTRIB_UPDATE_PARAM, FROM_LEADER);
   
   public PeerSyncTest() {
+    try {
+      useFactory(null);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
     stress = 0;
 
     // TODO: a better way to do this?

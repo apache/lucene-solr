@@ -146,7 +146,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
         return;
       }
       lastValueSeen = value;
-      Thread.sleep(250);
+      Thread.sleep(50);
     }
     String collectionpropsInZk = null;
     try {
@@ -177,7 +177,6 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     // Trigger a new znode event
     log.info("setting value1");
     collectionProps.setCollectionProperty(collectionName, "property", "value1");
-    Thread.sleep(1000);
     assertEquals(1, watcher.waitForTrigger());
     assertEquals("value1", watcher.getProps().get("property"));
 

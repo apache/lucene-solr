@@ -124,74 +124,62 @@ public class ZkStateWriter {
       String name = entry.getKey();
       String path = ZkStateReader.getCollectionPath(name);
 
-      while (true) {
-        try {
+      try {
 
-          if (c == null) {
-            // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
-            if (log.isDebugEnabled()) {
-              log.debug("going to delete state.json {}", path);
-            }
-            reader.getZkClient().clean(path);
-            updatesToWrite.remove(name);
-          } else if (updatesToWrite.get(name) != null || prevState.getCollectionOrNull(name) != null) {
-            if (log.isDebugEnabled()) {
-              log.debug(
-                  "enqueueUpdate() - going to update_collection {} version: {}",
-                  path, c.getZNodeVersion());
-            }
-
-            // assert c.getStateFormat() > 1;
-            // stat = reader.getZkClient().getCurator().checkExists().forPath(path);
-            DocCollection coll = updatesToWrite.get(name);
-            if (coll == null) {
-              coll = prevState.getCollectionOrNull(name);
-            }
-
-            if (log.isDebugEnabled()) {
-              log.debug("The new collection {}", c);
-            }
-            updatesToWrite.put(name, c);
-            LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
-            collStates.put(name, new ClusterState.CollectionRef(c));
-            prevState = new ClusterState(prevState.getLiveNodes(),
-                collStates, prevState.getZNodeVersion());
-          } else {
-            if (log.isDebugEnabled()) {
-              log.debug(
-                  "enqueueUpdate() - going to create_collection {}",
-                  path);
-            }
-            //   assert c.getStateFormat() > 1;
-            DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(),
-                0, path);
-
-            LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
-            collStates.put(name, new ClusterState.CollectionRef(newCollection));
-            prevState = new ClusterState(prevState.getLiveNodes(),
-                collStates, prevState.getZNodeVersion());
-            updatesToWrite.put(name, newCollection);
+        if (c == null) {
+          // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
+          if (log.isDebugEnabled()) {
+            log.debug("going to delete state.json {}", path);
+          }
+          reader.getZkClient().clean(path);
+          updatesToWrite.remove(name);
+        } else if (updatesToWrite.get(name) != null || prevState.getCollectionOrNull(name) != null) {
+          if (log.isDebugEnabled()) {
+            log.debug("enqueueUpdate() - going to update_collection {} version: {}", path, c.getZNodeVersion());
           }
 
-          break;
-        } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propegateInterrupt(e);
-          throw e;
-        } catch (KeeperException.SessionExpiredException e) {
-          throw e;
-        } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
-          if (e instanceof KeeperException.BadVersionException) {
-            log.warn(
-                "Tried to update the cluster state using but we where rejected, currently at {}", c == null ? "null" : c.getZNodeVersion(), e);
-            throw e;
+          // assert c.getStateFormat() > 1;
+          // stat = reader.getZkClient().getCurator().checkExists().forPath(path);
+          DocCollection coll = updatesToWrite.get(name);
+          if (coll == null) {
+            coll = prevState.getCollectionOrNull(name);
           }
-          ParWork.propegateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Failed processing update=" + c + "\n" + prevState, e);
+
+          if (log.isDebugEnabled()) {
+            log.debug("The new collection {}", c);
+          }
+          updatesToWrite.put(name, c);
+          LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
+          collStates.put(name, new ClusterState.CollectionRef(c));
+          prevState = new ClusterState(prevState.getLiveNodes(), collStates, prevState.getZNodeVersion());
+        } else {
+          if (log.isDebugEnabled()) {
+            log.debug("enqueueUpdate() - going to create_collection {}", path);
+          }
+          //   assert c.getStateFormat() > 1;
+          DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
+
+          LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
+          collStates.put(name, new ClusterState.CollectionRef(newCollection));
+          prevState = new ClusterState(prevState.getLiveNodes(), collStates, prevState.getZNodeVersion());
+          updatesToWrite.put(name, newCollection);
         }
+      } catch (InterruptedException | AlreadyClosedException e) {
+        ParWork.propegateInterrupt(e);
+        throw e;
+      } catch (KeeperException.SessionExpiredException e) {
+        throw e;
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
+        if (e instanceof KeeperException.BadVersionException) {
+          log.warn("Tried to update the cluster state using but we where rejected, currently at {}", c == null ? "null" : c.getZNodeVersion(), e);
+          throw e;
+        }
+        ParWork.propegateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed processing update=" + c + "\n" + prevState, e);
       }
     }
+
 
     if (log.isDebugEnabled()) {
       log.debug("enqueueUpdate(ClusterState, List<ZkWriteCommand>, ZkWriteCallback) - end");
