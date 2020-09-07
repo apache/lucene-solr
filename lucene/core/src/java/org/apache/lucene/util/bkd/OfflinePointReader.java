@@ -20,6 +20,7 @@ import java.io.EOFException;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -62,17 +63,17 @@ public final class OfflinePointReader implements PointReader {
 
     this.maxPointOnHeap =  reusableBuffer.length / bytesPerDoc;
     // Best-effort checksumming:
-    if (start == 0 && length*bytesPerDoc == tempDir.fileLength(tempFileName) - CodecUtil.footerLength()) {
+    IndexInput in = tempDir.openInput(tempFileName, IOContext.READONCE);
+    if (start == 0 && length*bytesPerDoc == in.length() - CodecUtil.footerLength()) {
       // If we are going to read the entire file, e.g. because BKDWriter is now
       // partitioning it, we open with checksums:
-      in = tempDir.openChecksumInput(tempFileName, IOContext.READONCE);
-    } else {
-      // Since we are going to seek somewhere in the middle of a possibly huge
-      // file, and not read all bytes from there, don't use ChecksumIndexInput here.
-      // This is typically fine, because this same file will later be read fully,
-      // at another level of the BKDWriter recursion
-      in = tempDir.openInput(tempFileName, IOContext.READONCE);
+      in = new BufferedChecksumIndexInput(in);
     }
+    // Else since we are going to seek somewhere in the middle of a possibly huge
+    // file, and not read all bytes from there, don't use ChecksumIndexInput here.
+    // This is typically fine, because this same file will later be read fully,
+    // at another level of the BKDWriter recursion
+    this.in = in;
 
     name = tempFileName;
 

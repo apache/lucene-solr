@@ -87,13 +87,6 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
   private void truncateOneFile(Directory dir, String victim) throws IOException {
     try (BaseDirectoryWrapper dirCopy = newDirectory()) {
       dirCopy.setCheckIndexOnClose(false);
-      long victimLength = dir.fileLength(victim);
-      int lostBytes = TestUtil.nextInt(random(), 1, (int) Math.min(100, victimLength));
-      assert victimLength > 0;
-
-      if (VERBOSE) {
-        System.out.println("TEST: now truncate file " + victim + " by removing " + lostBytes + " of " + victimLength + " bytes");
-      }
 
       for(String name : dir.listAll()) {
         if (name.equals(victim) == false) {
@@ -101,6 +94,12 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
         } else {
           try(IndexOutput out = dirCopy.createOutput(name, IOContext.DEFAULT);
               IndexInput in = dir.openInput(name, IOContext.DEFAULT)) {
+              long victimLength = in.length();
+              int lostBytes = TestUtil.nextInt(random(), 1, (int) Math.min(100, victimLength));
+              assert victimLength > 0;
+              if (VERBOSE) {
+                System.out.println("TEST: now truncate file " + victim + " by removing " + lostBytes + " of " + victimLength + " bytes");
+              }
               out.copyBytes(in, victimLength - lostBytes);
             }
         }

@@ -96,19 +96,17 @@ public class TestAllFilesDetectBitFlips extends LuceneTestCase {
     try (BaseDirectoryWrapper dirCopy = newDirectory()) {
       dirCopy.setCheckIndexOnClose(false);
 
-      long victimLength = dir.fileLength(victim);
-      long flipOffset = TestUtil.nextLong(random(), 0, victimLength - 1);
-
-      if (VERBOSE) {
-        System.out.println("TEST: now corrupt file " + victim + " by changing byte at offset " + flipOffset + " (length= " + victimLength + ")");
-      }
-
       for(String name : dir.listAll()) {
         if (name.equals(victim) == false) {
           dirCopy.copyFrom(dir, name, name, IOContext.DEFAULT);
         } else {
           try (IndexOutput out = dirCopy.createOutput(name, IOContext.DEFAULT);
               IndexInput in = dir.openInput(name, IOContext.DEFAULT)) {
+              long victimLength = in.length();
+              long flipOffset = TestUtil.nextLong(random(), 0, victimLength - 1);
+              if (VERBOSE) {
+                System.out.println("TEST: now corrupt file " + victim + " by changing byte at offset " + flipOffset + " (length= " + victimLength + ")");
+              }
               out.copyBytes(in, flipOffset);
               out.writeByte((byte) (in.readByte() + TestUtil.nextInt(random(), 0x01, 0xFF)));
               out.copyBytes(in, victimLength - flipOffset - 1);
