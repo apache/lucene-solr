@@ -59,7 +59,7 @@ To build Lucene and Solr, run (`./` can be omitted on Windows):
 `./gradlew assemble`
 
 NOTE: DO NOT use `gradle` command that is already installed on your machine (unless you know what you'll do).
-The "gradle wrapper" does the job - download the correct version of it, setup necessary configurations.
+The "gradle wrapper" (gradlew) does the job - downloads the correct version of it, setups necessary configurations.
 
 The first time you run Gradle, it will create a file "gradle.properties" that
 contains machine-specific settings. Normally you can use this file as-is, but it
