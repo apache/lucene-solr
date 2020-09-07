@@ -247,8 +247,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           return;
         }
       }
-
-      if (onComplete != null) onComplete.run();
+      if (asyncId != null) {
+        if (onComplete != null) onComplete.run();
+      }
     };
 
 
@@ -258,8 +259,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       for (CreateReplica replica : createReplicas) {
         coreNodeNames.add(ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName));
       }
-      ParWork.getRootSharedExecutor().execute(runnable);
-
+      runnable.run();
       try {
         zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
           if (collectionState == null) {
@@ -289,6 +289,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       } catch (TimeoutException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
+
+      if (onComplete != null) onComplete.run();
     } else {
       ParWork.getRootSharedExecutor().execute(runnable);
     }

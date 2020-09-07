@@ -57,6 +57,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ConcurrentNamedList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -143,6 +144,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -287,11 +290,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     @SuppressWarnings({"rawtypes"})
     NamedList results = new NamedList();
+    NamedList threadSafeResults = new ConcurrentNamedList();
     try {
       CollectionAction action = getCollectionAction(operation);
       Cmd command = commandMap.get(action);
       if (command != null) {
-        command.call(overseer.getZkStateReader().getClusterState(), message, results);
+        command.call(overseer.getZkStateReader().getClusterState(), message, threadSafeResults);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);
@@ -316,6 +320,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       nl.add("rspCode", e instanceof SolrException ? ((SolrException)e).code() : -1);
       results.add("exception", nl);
     }
+    results.addAll(threadSafeResults);
     return new OverseerSolrResponse(results);
   }
 
@@ -1027,7 +1032,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   protected interface Cmd {
-    void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception;
+    void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception;
   }
 
   /*
