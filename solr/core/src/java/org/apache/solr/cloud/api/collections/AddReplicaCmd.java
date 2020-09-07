@@ -41,6 +41,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -206,7 +208,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       if (asyncId != null) {
-        List<String> coreNodeNames = new ArrayList<>();
+        Set<String> coreNodeNames = ConcurrentHashMap.newKeySet(createReplicas.size());
         for (CreateReplica replica : createReplicas) {
           coreNodeNames.add(ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName));
         }
@@ -247,7 +249,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
     if (asyncId == null) {
-      List<String> coreNodeNames = new ArrayList<>();
+      Set<String> coreNodeNames = ConcurrentHashMap.newKeySet(createReplicas.size());
       for (CreateReplica replica : createReplicas) {
         coreNodeNames.add(ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName));
       }
