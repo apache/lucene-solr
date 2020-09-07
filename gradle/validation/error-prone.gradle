@@ -24,6 +24,7 @@ allprojects { prj ->
     }
 
     tasks.withType(JavaCompile) { task ->
+      options.errorprone.disableWarningsInGeneratedCode = true
       options.errorprone.errorproneArgs = [
           // test
           '-Xep:ExtendingJUnitAssert:OFF',
