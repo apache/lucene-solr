@@ -190,7 +190,7 @@ public class IndexSchema {
   protected IndexSchema(Version luceneVersion, SolrResourceLoader loader, Properties substitutableProperties) {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
-    this.solrClassLoader = loader;//loader.getCore() == null? loader: loader.getCore().getSchemaPluginsLoader();
+    this.solrClassLoader = loader.getSchemaLoader() == null ? loader : loader.getSchemaLoader();
     this.substitutableProperties = substitutableProperties;
   }
 
