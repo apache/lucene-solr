@@ -74,7 +74,7 @@ subprojects {
         include "**/*.${it}"
       }
       
-      // Don't go into subprojects (scanned separately).
+      // Don't go into child projects (scanned separately).
       childProjects.keySet().each{
         exclude "${it}/**"
       }
@@ -113,10 +113,10 @@ configure(rootProject) {
       }
 
       // We do not scan for *.txt by default (broken files in subprojects),
-      // but on root we can do this).
+      // but in root we can do this).
       include '**/*.txt'
 
-      // Don't go into subprojects (scanned separately).
+      // Don't go into child projects (scanned separately).
       childProjects.keySet().each{
         exclude "${it}/**"
       }
