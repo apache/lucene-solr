@@ -221,7 +221,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             int found = 0;
             for (String name : coreNodeNames) {
               for (Replica replica : replicas) {
-                if (replica.getName().equals(name) && replica.getState().equals(Replica.State.ACTIVE)) {
+                if (replica.getName().equals(name) && replica.getState().equals(Replica.State.ACTIVE) && liveNodes.contains(replica.getNodeName())) {
                   found++;
                 }
               }
@@ -256,14 +256,13 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       try {
         zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
           if (collectionState == null) {
-            return true; // deleted collection
+            return false;
           }
-
           List<Replica> replicas = collectionState.getReplicas();
           int found = 0;
           for (String name : coreNodeNames) {
             for (Replica replica : replicas) {
-              if (replica.getName().equals(name) && replica.getState().equals(Replica.State.ACTIVE)) {
+              if (replica.getName().equals(name) && replica.getState().equals(Replica.State.ACTIVE) && liveNodes.contains(replica.getNodeName())) {
                 found++;
               }
             }
@@ -277,7 +276,6 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       } catch (TimeoutException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-
     } else {
       ParWork.getRootSharedExecutor().execute(runnable);
     }
