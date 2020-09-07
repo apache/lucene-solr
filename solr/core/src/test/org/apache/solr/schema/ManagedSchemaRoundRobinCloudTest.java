@@ -37,7 +37,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug, speed up
 public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
   private static final String COLLECTION = "managed_coll";
   private static final String CONFIG = "cloud-managed";

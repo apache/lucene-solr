@@ -52,7 +52,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @org.apache.solr.SolrTestCaseJ4.SuppressSSL()
-@Ignore // nocommit - seems sim to NestedShardedAtomicUpdateTest, need certain docs to stay in the same request
+@Ignore // nocommit - fails with "no servers hosting shard"
 public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   
   private static final String support = "These guys help customers";

@@ -50,6 +50,7 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -81,6 +82,8 @@ import org.xml.sax.InputSource;
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
 public final class ManagedIndexSchema extends IndexSchema {
 
+  public static final DynamicField[] EMPTY_DYNAMIC_FIELDS = {};
+  public static final DynamicCopy[] EMPTY_DYNAMIC_COPY_FIELDS = {};
   private final boolean isMutable;
 
   @Override public boolean isMutable() { return isMutable; }
@@ -329,20 +332,19 @@ public final class ManagedIndexSchema extends IndexSchema {
     @Override
     public Integer call() throws Exception {
       int remoteVersion = -1;
-      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).markInternalRequest().build()) {
+      try (Http2SolrClient solr = new Http2SolrClient.Builder(coreUrl).markInternalRequest().build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1 || remoteVersion < expectedZkVersion) {
           try {
-            HttpSolrClient.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
-            NamedList<Object> zkversionResp = mrr.future.get();
+            NamedList<Object> zkversionResp = solr.request(this);
             if (zkversionResp != null)
               remoteVersion = (Integer)zkversionResp.get("zkversion");
 
             if (remoteVersion < expectedZkVersion) {
               // rather than waiting and re-polling, let's be proactive and tell the replica
               // to refresh its schema from ZooKeeper, if that fails, then the
-              Thread.sleep(250); // slight delay before requesting version again
-              log.error("Replica {} returned schema version {} and has not applied schema version {}"
+              Thread.sleep(500); // slight delay before requesting version again
+              log.info("Replica {} returned schema version {} and has not applied schema version {}"
                   , coreUrl, remoteVersion, expectedZkVersion);
             }
 
@@ -669,7 +671,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           System.arraycopy(newSchema.dynamicFields, dfPos + 1, temp, dfPos, newSchema.dynamicFields.length - dfPos - 1);
           newSchema.dynamicFields = temp;
         } else {
-          newSchema.dynamicFields = new DynamicField[] {};
+          newSchema.dynamicFields = EMPTY_DYNAMIC_FIELDS;
         }
       }
       // After removing all dynamic fields, rebuild affected dynamic copy fields.
@@ -870,7 +872,7 @@ public final class ManagedIndexSchema extends IndexSchema {
             System.arraycopy(dynamicCopyFields, i + 1, temp, i, dynamicCopyFields.length - i - 1);
             dynamicCopyFields = temp;
           } else {
-            dynamicCopyFields = new DynamicCopy[] {};
+            dynamicCopyFields = EMPTY_DYNAMIC_COPY_FIELDS;
           }
           break;
         }

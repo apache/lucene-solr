@@ -74,8 +74,13 @@ public abstract class ConfigSetService {
       // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
 
       // there are no flags in non cloud mode, it just returns null
+
       NamedList flags = null;
-      flags = loadConfigSetFlags(dcore, coreLoader);
+      try {
+        flags = loadConfigSetFlags(dcore, coreLoader);
+      } catch (Exception e) {
+        log.info("Could not find/load configset flags");
+      }
 
 
       boolean trusted =

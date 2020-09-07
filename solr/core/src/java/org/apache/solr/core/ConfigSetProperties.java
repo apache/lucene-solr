@@ -86,7 +86,6 @@ public class ConfigSetProperties {
       }
       return new NamedList((Map) object);
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load ConfigSet properties", ex);
     } finally {
       IOUtils.closeQuietly(reader);

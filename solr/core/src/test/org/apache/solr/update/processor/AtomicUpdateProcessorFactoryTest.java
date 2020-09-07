@@ -209,14 +209,14 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   }
 
-  @Ignore // debug, parallel dist update
+  @Ignore // debug
   public void testMultipleThreads() throws Exception {
     clearIndex();
     String[] strings = new String[5];
     for (int i=0; i<5; i++) {
       strings[i] = generateRandomString();
     }
-    // nocommit - use testExec
+    // TODO - use testExec
     List<Thread> threads = new ArrayList<>(100);
     int finalCount = 0; //int_i
 

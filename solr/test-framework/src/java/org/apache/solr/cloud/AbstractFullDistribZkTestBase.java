@@ -1903,6 +1903,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             - DEFAULT_COLLECTION.length() - 1);
   }
 
+  protected String getBaseUrl(Http2SolrClient client) {
+    return client .getBaseURL().substring(
+        0, client.getBaseURL().length()
+            - DEFAULT_COLLECTION.length() - 1);
+  }
+
   public static SolrInputDocument getDoc(Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);
