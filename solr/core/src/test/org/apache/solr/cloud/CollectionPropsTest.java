@@ -193,7 +193,13 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     log.info("deleting props");
     zkStateReader.getZkClient().delete("/collections/" + collectionName + "/collectionprops.json", -1);
     watcher.waitForTrigger();
-    final Map<String, String> props = watcher.getProps();
+    Map<String, String> props = watcher.getProps();
+
+    // TODO: delete is not a normal, good op here (should clear the file) and it may take a moment to arrive
+    if (!props.isEmpty()) {
+      Thread.sleep(100);
+    }
+    props = watcher.getProps();
     assertTrue(props.toString(), props.isEmpty());
   }
 
