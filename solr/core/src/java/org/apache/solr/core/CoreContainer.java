@@ -68,8 +68,11 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.Credential
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cluster.events.ClusterEventProducer;
+import org.apache.solr.cluster.events.impl.ClusterEventProducerImpl;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -174,6 +177,7 @@ public class CoreContainer {
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
 
   private final CustomContainerPlugins customContainerPlugins =  new CustomContainerPlugins(this, containerHandlers.getApiBag());
+  private final Map<String, ClusterSingleton> containerSingletons = new HashMap<>();
 
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
@@ -240,6 +244,8 @@ public class CoreContainer {
   protected volatile MetricsCollectorHandler metricsCollectorHandler;
 
   private volatile SolrClientCache solrClientCache;
+
+  private volatile ClusterEventProducer clusterEventProducer;
 
   private final ObjectCache objectCache = new ObjectCache();
 
@@ -885,6 +891,19 @@ public class CoreContainer {
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
+      // create the default ClusterEventProducer
+      // XXX can we load it as a pluggable component? or configurable?
+      clusterEventProducer = new ClusterEventProducerImpl(this);
+      // register ClusterSingleton handlers
+      // XXX register also other ClusterSingleton-s from packages - how?
+      containerHandlers.keySet().forEach(handlerName -> {
+        SolrRequestHandler handler = containerHandlers.get(handlerName);
+        if (handler instanceof ClusterSingleton) {
+          containerSingletons.put(handlerName, (ClusterSingleton) handler);
+        }
+      });
+      // our default clusterEventProducer is also a ClusterSingleton
+      containerSingletons.put("clusterEventProducer", (ClusterSingleton) clusterEventProducer);
       zkSys.getZkController().checkOverseerDesignate();
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
@@ -2081,6 +2100,14 @@ public class CoreContainer {
 
   public CustomContainerPlugins getCustomContainerPlugins(){
     return customContainerPlugins;
+  }
+
+  public Map<String, ClusterSingleton> getContainerSingletons() {
+    return Collections.unmodifiableMap(containerSingletons);
+  }
+
+  public ClusterEventProducer getClusterEventProducer() {
+    return clusterEventProducer;
   }
 
   static {

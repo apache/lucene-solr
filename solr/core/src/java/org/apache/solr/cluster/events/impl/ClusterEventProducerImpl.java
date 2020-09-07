@@ -63,12 +63,12 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
 
   public ClusterEventProducerImpl(CoreContainer coreContainer) {
     this.cc = coreContainer;
-    this.zkController = this.cc.getZkController();
   }
 
   // ClusterSingleton lifecycle methods
   @Override
   public void start() {
+    this.zkController = this.cc.getZkController();
     if (zkController == null) {
       liveNodesListener = null;
       return;

@@ -30,7 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * XXX nocommit.
+ * This is an (incomplete) illustration how to re-implement the combination of 8x
+ * NodeLostTrigger and AutoAddReplicasPlanAction to maintain the collection's replication factor.
  */
 public class AutoAddReplicasEventListener implements ClusterSingleton, ClusterEventListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -67,7 +69,7 @@ public class AutoAddReplicasEventListener implements ClusterSingleton, ClusterEv
         handleNodeDown(event);
         break;
       case NODE_UP:
-        // ignore?
+        // ignore? rebalance replicas?
         break;
       case REPLICA_DOWN:
         handleReplicaDown(event);
