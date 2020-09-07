@@ -47,6 +47,7 @@ def extensions = [
     'jj',
     'js',
     'json',
+    'md',
     'mdtext',
     'pl',
     'policy',
@@ -101,10 +102,9 @@ configure(rootProject) {
         include "**/*.${it}"
       }
 
-      // TODO: For now we don't scan txt / md files, so we
-      // check licenses in top-level folders separately:
+      // We do not scan for *.txt by default (broken files in subprojects),
+      // but on root we can do this).
       include '**/*.txt'
-      include '**/*.md'
 
       // Don't go into subprojects (scanned separately).
       childProjects.keySet().each{
