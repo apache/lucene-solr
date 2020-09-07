@@ -81,15 +81,25 @@ subprojects {
 
       // default excludes.
       exclude 'build/**'
-      exclude 'work/**' // benchmark module
-      exclude 'temp/**' // benchmark module
-      exclude 'src/**/CheckLoggingConfiguration.java'
-      exclude 'src/test/org/apache/hadoop/**'
     }
   }
 
   // Add source validation to per-project checks as well.
   check.dependsOn validateSourcePatterns
+}
+
+configure(project(':lucene:benchmark')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude 'temp/**'
+    sourceFiles.exclude 'work/**'
+  }
+}
+
+configure(project(':solr:core')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
+    sourceFiles.exclude 'src/test/org/apache/hadoop/**'
+  }
 }
 
 configure(rootProject) {
