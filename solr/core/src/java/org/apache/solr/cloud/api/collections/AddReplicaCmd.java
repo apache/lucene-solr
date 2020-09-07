@@ -198,10 +198,11 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       try {
         shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
       } catch (KeeperException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper exception", e);
+        log.error("ZooKeeper exception", e);
+        return;
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Interrupted", e);
+        log.error("Interrupted", e);
+        return;
       }
 
       if (asyncId != null) {
@@ -232,10 +233,11 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             return false;
           });
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          log.error("Interrupted", e);
+          return;
         } catch (TimeoutException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          log.error("Timeout", e);
+          return;
         }
       }
 
