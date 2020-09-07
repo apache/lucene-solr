@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -170,7 +169,7 @@ public class IndexSchema {
    * directives that target them.
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
-  static AtomicLong totalSchemaLoadTime = new AtomicLong();
+//  static AtomicLong totalSchemaLoadTime = new AtomicLong();
 
 
   /**
@@ -183,9 +182,9 @@ public class IndexSchema {
 
     this.resourceName = Objects.requireNonNull(name);
     try {
-      long start = System.currentTimeMillis();
+//      long start = System.currentTimeMillis();
       readSchema(is);
-      System.out.println("schema-load-time : "+ totalSchemaLoadTime.addAndGet (System.currentTimeMillis() - start));
+//      System.out.println("schema-load-time : "+ totalSchemaLoadTime.addAndGet (System.currentTimeMillis() - start));
       loader.inform(loader);
     } catch (IOException e) {
       throw new RuntimeException(e);
