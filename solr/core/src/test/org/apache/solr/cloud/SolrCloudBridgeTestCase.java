@@ -553,15 +553,14 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       final int freezeI = i;
       executor.execute(() -> {
         try {
-          assertTrue(CollectionAdminRequest.addReplicaToShard(collection, "shard"+((freezeI%numShards)+1))
+          CollectionAdminRequest.addReplicaToShard(collection, "shard"+((freezeI%numShards)+1))
               .setCoreName(collection + freezeI)
-              .setNode(nodeName).process(client).isSuccess());
+              .setNode(nodeName).process(client);
         } catch (SolrServerException | IOException e) {
           throw new RuntimeException(e);
         }
       });
     }
-    cluster.waitForActiveCollection(collection, numShards, numReplicas);
   }
   
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {

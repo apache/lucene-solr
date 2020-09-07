@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -54,7 +55,6 @@ import org.junit.Test;
  * work as expected.
  */
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@Ignore // nocommit debug
 public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
 
   public UnloadDistributedZkTest() {
@@ -100,6 +100,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
+  @Nightly
   public void testUnloadShardAndCollection() throws Exception{
     final int numShards = 2;
 
@@ -108,22 +109,18 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     final String coreName1 = collection+"_1";
     final String coreName2 = collection+"_2";
 
-    assertEquals(0, CollectionAdminRequest.createCollection(collection, "conf1", numShards, 1)
+    assertEquals(0, CollectionAdminRequest.createCollection(collection, "_default", numShards, 1)
             .setCreateNodeSet("")
             .process(cloudClient).getStatus());
-    assertTrue(CollectionAdminRequest.addReplicaToShard(collection, "shard1")
+    CollectionAdminRequest.addReplicaToShard(collection, "shard1")
             .setCoreName(coreName1)
             .setNode(cluster.getJettySolrRunner(0).getNodeName())
-            .process(cloudClient).isSuccess());
+            .process(cloudClient);
 
-    assertTrue(CollectionAdminRequest.addReplicaToShard(collection, "shard2")
+    CollectionAdminRequest.addReplicaToShard(collection, "shard2")
             .setCoreName(coreName2)
             .setNode(cluster.getJettySolrRunner(0).getNodeName())
-            .process(cloudClient).isSuccess());
-
-
-    // does not mean they are active and up yet :*
-    waitForRecoveriesToFinish(collection);
+            .process(cloudClient);
 
     final boolean unloadInOrder = random().nextBoolean();
     final String unloadCmdCoreName1 = (unloadInOrder ? coreName1 : coreName2);
@@ -168,7 +165,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
 
     assertEquals(0, CollectionAdminRequest
-            .createCollection("unloadcollection", "conf1", 1,1)
+            .createCollection("unloadcollection", "_default", 1,1)
             .setCreateNodeSet(jetty1.getNodeName())
             .process(cloudClient).getStatus());
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
@@ -330,9 +327,10 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
+  @Ignore // nocommit - needs to be hardened
   public void testUnloadLotsOfCores() throws Exception {
     JettySolrRunner jetty = cluster.getJettySolrRunner(0);
-    try (final HttpSolrClient adminClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
+    try (final Http2SolrClient adminClient = (Http2SolrClient) jetty.newClient(15000, 60000)) {
       int numReplicas = atLeast(3);
 
 

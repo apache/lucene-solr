@@ -76,6 +76,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   @Override
   public void tearDown() throws Exception {
     cluster.shutdown();
+    cluster = null;
     super.tearDown();
   }
 
@@ -98,7 +99,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // nocommit "was expecting to find a node without a replica
   public void testCollectionCreateSearchDelete() throws Exception {
     final CloudHttp2SolrClient client = cluster.getSolrClient();
     final String collectionName = "testcollection";
@@ -183,7 +184,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
-  @Ignore // nocommit - need to finish addressing async
   public void testCollectionCreateWithoutCoresThenDelete() throws Exception {
 
     final String collectionName = "testSolrCloudCollectionWithoutCores";
@@ -208,7 +208,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - good debug for parallel commit
   public void testStopAllStartAll() throws Exception {
 
     final String collectionName = "testStopAllStartAllCollection";
@@ -338,10 +337,9 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
         }
       }
     } else {
+      log.info("START JETTY'S BACK UP");
       try (ParWork worker = new ParWork(this)) {
-        for (Integer ii : restartIndicesList) {
-          final JettySolrRunner jetty = jettys.get(ii);
-          if (!jetty.isRunning()) {
+        for (JettySolrRunner jetty : jettys) {
             worker.collect("startJetties", () -> {
               try {
                 cluster.startJettySolrRunner(jetty);
@@ -350,12 +348,10 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
               }
               assertTrue(jetty.isRunning());
             });
-
-          }
         }
       }
     }
-    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
+//    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
 
     // re-query collection
     assertEquals(numDocs, client.query(collectionName, query).getResults().getNumFound());

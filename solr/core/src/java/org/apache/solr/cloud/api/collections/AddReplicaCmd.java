@@ -101,8 +101,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       throws IOException, InterruptedException, KeeperException {
 
     log.info("addReplica() : {}", Utils.toJSONString(message));
-
-
+    
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String shard = message.getStr(SHARD_ID_PROP);
@@ -148,7 +147,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     if (totalReplicas > 1)  {
       if (node != null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create " + totalReplicas + " replicas if 'name' parameter is specified");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create " + totalReplicas + " replicas if 'node' parameter is specified");
       }
       if (message.getStr(CoreAdminParams.CORE_NODE_NAME) != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create " + totalReplicas + " replicas if 'coreNodeName' parameter is specified");
@@ -159,7 +158,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     List<CreateReplica> createReplicas;
 
     try {
-      ocmh.zkStateReader.waitForState(collectionName, 3, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      ocmh.zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
         if (collectionState == null) {
           return false;
         }
@@ -183,6 +182,10 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       if (sessionWrapper.get() != null) {
         sessionWrapper.get().release();
       }
+    }
+
+    if (createReplicas.size() != totalReplicas) {
+      throw new IllegalStateException("Did not get enough positions to cover new replicas");
     }
 
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
@@ -216,7 +219,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         try {
           zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
             if (collectionState == null) {
-              return true; // deleted collection
+              return false;
             }
 
             List<Replica> replicas = collectionState.getReplicas();

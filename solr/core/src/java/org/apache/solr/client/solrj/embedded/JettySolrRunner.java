@@ -502,8 +502,7 @@ public class JettySolrRunner implements Closeable {
   }
 
   public boolean isStopped() {
-    return (server.isStopped() && dispatchFilter == null) || (server.isStopped() && dispatchFilter.isStopped()
-        && ((QueuedThreadPool) server.getThreadPool()).isStopped());
+    return (server.isStopped() && dispatchFilter == null) || (server.isStopped() && dispatchFilter.isStopped());
   }
 
   // ------------------------------------------------------------------------------------------------

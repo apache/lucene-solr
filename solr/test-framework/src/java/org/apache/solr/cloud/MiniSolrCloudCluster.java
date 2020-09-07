@@ -663,9 +663,6 @@ public class MiniSolrCloudCluster {
    * Shut down the cluster, including all Solr nodes and ZooKeeper
    */
   public synchronized void shutdown() throws Exception {
-    if (this.isShutDown) {
-      throw new AlreadyClosedException("This MiniSolrCloudCluster has already been shutdown");
-    }
     this.isShutDown = true;
 //    if (zkServer.getZkClient().isConnected()) {
 //      try {

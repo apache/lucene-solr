@@ -1055,7 +1055,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
    */
   @Test
   @ShardsFixed(num = 2)
-  @Ignore // debug
   public void testRecreateCollectionAfterFailure() throws Exception {
     // Upload a bad configset
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), ZkTestServer.TIMEOUT,
