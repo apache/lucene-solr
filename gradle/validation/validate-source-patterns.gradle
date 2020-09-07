@@ -72,6 +72,11 @@ subprojects {
       extensions.each{
         include "**/*.${it}"
       }
+      
+      // Don't go into subprojects (scanned separately).
+      childProjects.keySet().each{
+        exclude "${it}/**"
+      }
 
       // default excludes.
       exclude '**/dist/**'
@@ -103,8 +108,9 @@ configure(rootProject) {
       include '**/*.md'
 
       // Don't go into subprojects (scanned separately).
-      exclude 'lucene/**'
-      exclude 'solr/**'
+      childProjects.keySet().each{
+        exclude "${it}/**"
+      }
 
       // default excludes.
       exclude '**/build/**'
@@ -291,7 +297,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
           checkMockitoAssume(f, text);
         }
 
-        if (project.path.startsWith(':solr')
+        if (project.path.startsWith(':solr:')
             && f.name.equals("SolrTestCase.java") == false
             && f.name.equals("TestXmlQParser.java") == false) {
           if (extendsLuceneTestCasePattern.matcher(text).find()) {
