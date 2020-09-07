@@ -239,6 +239,8 @@ public final class JavascriptCompiler {
   }
 
   private Class<? extends Expression> defineClass(ClassLoader parent, byte[] bc) throws IllegalAccessException {
+    // if we are on Java 15+ and the classloader is our own classloader, we can create an
+    // anonymous hidden class (JEP-371):
     if (MH_defineHiddenClass != null && parent == getClass().getClassLoader()) {
       final Lookup hiddenLookup;
       try {
