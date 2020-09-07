@@ -102,6 +102,7 @@ import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -118,22 +119,7 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static Path confDir;
-
-  @BeforeClass
-  public static void beforeFullSolrCloudTest() throws IOException {
-    qtp = getQtp();
-    try {
-      qtp.start();
-    } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Before
-  public void setup() throws IOException {
-
-  }
+  protected static volatile SolrQueuedThreadPool qtp;
 
   private static void copyConfigFileToTmpConf(Path confDir, String file) throws IOException {
     Files.copy(Paths.get(SolrTestCaseJ4.TEST_HOME(), "collection1", "conf", file),
@@ -148,6 +134,20 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   @Before
   public void beforeTest() {
     cloudInit = false;
+    qtp = getQtp();
+    try {
+      qtp.start();
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+      throw new RuntimeException(e);
+    }
+  }
+
+  @After
+  public void afterTest() throws Exception {
+    if (qtp != null) {
+      qtp.stop();
+    }
   }
 
   public static final String SHARD1 = "shard1";

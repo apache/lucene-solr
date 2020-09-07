@@ -700,6 +700,7 @@ public class JettySolrRunner implements Closeable {
       try {
         if (config.qtp == null) {
           qtp.close();
+          qtp.stop();
         }
       } catch (Exception e) {
         ParWork.propegateInterrupt(e);

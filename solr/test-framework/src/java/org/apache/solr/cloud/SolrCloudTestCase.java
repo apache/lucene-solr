@@ -91,6 +91,8 @@ public class SolrCloudTestCase extends SolrTestCase {
   public static final int DEFAULT_TIMEOUT = 15; // this is SECONDS, not MILLIS
   public static final TimeUnit DEFAULT_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
+  protected static volatile SolrQueuedThreadPool qtp;
+
   private static class Config {
     final String name;
     final Path path;
@@ -102,14 +104,19 @@ public class SolrCloudTestCase extends SolrTestCase {
 
 
   @BeforeClass
-  public static void beforeSolrCloudTestCase() {
+  public static void beforeSolrCloudTestCase() throws Exception {
     qtp = getQtp();
-    try {
-      qtp.start();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+    qtp.start();
+  }
+
+  @AfterClass
+  public static void afterSolrCloudTestCase() throws Exception {
+    if (qtp != null) {
+      qtp.close();
+      qtp.stop();
     }
   }
+
 
   /**
    * Builder class for a MiniSolrCloudCluster

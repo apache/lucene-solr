@@ -121,7 +121,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
 
   protected static boolean enableProxy = false;
   
-  protected final List<SolrClient> clients = new ArrayList<>();
+  protected final List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
   protected volatile static boolean createControl;
   protected volatile static CloudHttp2SolrClient controlClient;
   protected volatile static MiniSolrCloudCluster controlCluster;

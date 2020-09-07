@@ -33,7 +33,6 @@ import org.junit.Test;
 /**
  * Tests for PREPRECOVERY CoreAdmin API
  */
-@Ignore // nocommit debug
 public class TestPrepRecovery extends SolrCloudTestCase {
 
   @BeforeClass
@@ -58,7 +57,6 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testLeaderUnloaded() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
@@ -94,6 +92,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit - this is a long timeout to wait for, we need to lower it and test this better
   public void testLeaderNotResponding() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
@@ -103,12 +102,10 @@ public class TestPrepRecovery extends SolrCloudTestCase {
 
     TestInjection.prepRecoveryOpPauseForever = "true:100";
     try {
-      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
-          .process(solrClient);
-
       // in the absence of fixes made in SOLR-9716, prep recovery waits forever and the following statement
       // times out
-      cluster.waitForActiveCollection(collectionName, 1, 2);
+      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+          .process(solrClient);
     } finally {
       TestInjection.prepRecoveryOpPauseForever = null;
       TestInjection.notifyPauseForeverDone();

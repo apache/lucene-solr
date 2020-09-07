@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -54,7 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-@Ignore // nocommit flakey
+@Ignore // nocommit - test hangs on stop
 public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -430,31 +431,30 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
       threads.add(thread);
     }
 
-    testExecutor.invokeAll(threads);
+    ParWork.getRootSharedExecutor().invokeAll(threads);
 
     { // final pass over uncommitted model with RTG
+      synchronized (clients) {
+        for (SolrClient client : clients) {
+          for (Map.Entry<Integer,DocInfo> entry : model.entrySet()) {
+            final Integer id = entry.getKey();
+            final DocInfo expected = entry.getValue();
+            final SolrDocument actual = client.getById(id.toString());
 
-      for (SolrClient client : clients) {
-        for (Map.Entry<Integer,DocInfo> entry : model.entrySet()) {
-          final Integer id = entry.getKey();
-          final DocInfo expected = entry.getValue();
-          final SolrDocument actual = client.getById(id.toString());
-
-          String msg = "RTG: " + id + "=" + expected;
-          if (null == actual) {
-            // a deleted or non-existent document
-            // sanity check of the model agrees...
-            assertTrue(msg + " is deleted/non-existent in Solr, but model has non-neg version",
-                       expected.version < 0);
-            assertEquals(msg + " is deleted/non-existent in Solr", expected.intFieldValue, 0);
-            assertEquals(msg + " is deleted/non-existent in Solr", expected.longFieldValue, 0);
-          } else {
-            msg = msg + " <==VS==> " + actual;
-            assertEquals(msg, expected.intFieldValue, actual.getFieldValue("val1_i_dvo"));
-            assertEquals(msg, expected.longFieldValue, actual.getFieldValue("val2_l_dvo"));
-            assertEquals(msg, expected.version, actual.getFieldValue("_version_"));
-            assertTrue(msg + " doc exists in solr, but version is negative???",
-                       0 < expected.version);
+            String msg = "RTG: " + id + "=" + expected;
+            if (null == actual) {
+              // a deleted or non-existent document
+              // sanity check of the model agrees...
+              assertTrue(msg + " is deleted/non-existent in Solr, but model has non-neg version", expected.version < 0);
+              assertEquals(msg + " is deleted/non-existent in Solr", expected.intFieldValue, 0);
+              assertEquals(msg + " is deleted/non-existent in Solr", expected.longFieldValue, 0);
+            } else {
+              msg = msg + " <==VS==> " + actual;
+              assertEquals(msg, expected.intFieldValue, actual.getFieldValue("val1_i_dvo"));
+              assertEquals(msg, expected.longFieldValue, actual.getFieldValue("val2_l_dvo"));
+              assertEquals(msg, expected.version, actual.getFieldValue("_version_"));
+              assertTrue(msg + " doc exists in solr, but version is negative???", 0 < expected.version);
+            }
           }
         }
       }
@@ -487,26 +487,26 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
         }
       }
 
-      for (SolrClient client : clients) {
-        QueryResponse rsp = client.query(params("q","*:*", "sort", "id asc", "rows", ndocs+""));
-        for (SolrDocument actual : rsp.getResults()) {
-          final Integer id = Integer.parseInt(actual.getFieldValue("id").toString());
-          final DocInfo expected = committedModel.get(id); 
-          
-          assertNotNull("Doc found but missing/deleted from model: " + actual, expected);
-          
-          final String msg = "Search: " + id + "=" + expected + " <==VS==> " + actual;
-          assertEquals(msg, expected.intFieldValue, actual.getFieldValue("val1_i_dvo"));
-          assertEquals(msg, expected.longFieldValue, actual.getFieldValue("val2_l_dvo"));
-          assertEquals(msg, expected.version, actual.getFieldValue("_version_"));
-          assertTrue(msg + " doc exists in solr, but version is negative???",
-                     0 < expected.version);
+      synchronized (clients) {
+        for (SolrClient client : clients) {
+          QueryResponse rsp = client.query(params("q", "*:*", "sort", "id asc", "rows", ndocs + ""));
+          for (SolrDocument actual : rsp.getResults()) {
+            final Integer id = Integer.parseInt(actual.getFieldValue("id").toString());
+            final DocInfo expected = committedModel.get(id);
 
-          // also sanity check the model (which we already know matches the doc)
-          assertEquals("Inconsistent (modulo) values in model for id " + id + "=" + expected,
-                       0, (expected.longFieldValue % expected.intFieldValue));
+            assertNotNull("Doc found but missing/deleted from model: " + actual, expected);
+
+            final String msg = "Search: " + id + "=" + expected + " <==VS==> " + actual;
+            assertEquals(msg, expected.intFieldValue, actual.getFieldValue("val1_i_dvo"));
+            assertEquals(msg, expected.longFieldValue, actual.getFieldValue("val2_l_dvo"));
+            assertEquals(msg, expected.version, actual.getFieldValue("_version_"));
+            assertTrue(msg + " doc exists in solr, but version is negative???", 0 < expected.version);
+
+            // also sanity check the model (which we already know matches the doc)
+            assertEquals("Inconsistent (modulo) values in model for id " + id + "=" + expected, 0, (expected.longFieldValue % expected.intFieldValue));
+          }
+          assertEquals(committedModel.size(), rsp.getResults().getNumFound());
         }
-        assertEquals(committedModel.size(), rsp.getResults().getNumFound());
       }
     }
   }

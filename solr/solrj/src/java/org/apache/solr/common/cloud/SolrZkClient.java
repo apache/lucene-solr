@@ -770,10 +770,10 @@ public class SolrZkClient implements Closeable {
         }
       }
     }
-    if (errors.size() > 0) {
-      log.error("Errors", errors.toString());
-      //return results;
-    }
+//    if (errors.size() > 0) {
+//      log.error("Errors", errors.toString());
+//      //return results;
+//    }
 
     if (ex != null) {
       throw ex;

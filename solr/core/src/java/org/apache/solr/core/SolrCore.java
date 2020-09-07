@@ -1597,6 +1597,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       this.isClosed = true;
 
+      closer.collect("searcherExecutor#shutdown", () -> {
+        searcherExecutor.shutdown();
+        return solrCoreState;
+      });
+
+
       closer.collect("snapshotsDir", () -> {
         Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
         this.directoryFactory.doneWithDirectory(snapshotsDir);
@@ -1642,12 +1648,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       closer.collect("SolrCoreInternals", closeCalls);
       closer.addCollect();
 
-
-      closer.collect("searcherExecutor#shutdown", () -> {
-        searcherExecutor.shutdown();
-        return solrCoreState;
-      });
-
       assert ObjectReleaseTracker.release(searcherExecutor);
 
       closer.collect(updateHandler);
@@ -1667,6 +1667,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         return solrCoreState;
       });
 
+      closer.collect("searcherExecutor#shutdownNow", () -> {
+        searcherExecutor.shutdownNow();
+        return solrCoreState;
+      });
       closer.collect(searcherExecutor);
 
       closer.addCollect();
