@@ -210,20 +210,32 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           coreNodeNames.add(ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName));
         }
 
-        SolrCloseableLatch latch = new SolrCloseableLatch(finalTotalReplicas, ocmh);
-        ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collectionName, coreNodeNames, null, latch);
         try {
-          zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
-          try {
-            if (!latch.await(timeout, TimeUnit.SECONDS)) {
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting " + timeout + " seconds for replica to become active.");
+          zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+            if (collectionState == null) {
+              return true; // deleted collection
             }
-          } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          }
-        } finally {
-          zkStateReader.removeCollectionStateWatcher(collectionName, watcher);
+
+            List<Replica> replicas = collectionState.getReplicas();
+            int found = 0;
+            for (String name : coreNodeNames) {
+              for (Replica replica : replicas) {
+                if (replica.getName().equals(name) && replica.getState().equals(Replica.State.ACTIVE)) {
+                  found++;
+                }
+              }
+            }
+            if (found == coreNodeNames.size()) {
+              return true;
+            }
+
+            return false;
+          });
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (TimeoutException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       }
 
@@ -237,17 +249,33 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       for (CreateReplica replica : createReplicas) {
         coreNodeNames.add(ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName));
       }
-      SolrCloseableLatch latch = new SolrCloseableLatch(totalReplicas, ocmh);
-      ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collectionName, coreNodeNames, null, latch);
+      ParWork.getRootSharedExecutor().execute(runnable);
+
       try {
-        zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
-        ParWork.getRootSharedExecutor().execute(runnable);
-        if (!latch.await(timeout, TimeUnit.SECONDS)) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting " + timeout + " seconds for replica to become active.");
-        }
-      } finally {
-        zkStateReader.removeCollectionStateWatcher(collectionName, watcher);
+        zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+          if (collectionState == null) {
+            return true; // deleted collection
+          }
+
+          List<Replica> replicas = collectionState.getReplicas();
+          int found = 0;
+          for (String name : coreNodeNames) {
+            for (Replica replica : replicas) {
+              if (replica.getName().equals(name) && replica.getState().equals(Replica.State.ACTIVE)) {
+                found++;
+              }
+            }
+          }
+          if (found == coreNodeNames.size()) {
+            return true;
+          }
+
+          return false;
+        });
+      } catch (TimeoutException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
+
     } else {
       ParWork.getRootSharedExecutor().execute(runnable);
     }

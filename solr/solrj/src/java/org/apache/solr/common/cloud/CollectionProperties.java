@@ -95,7 +95,7 @@ public class CollectionProperties {
 
     while (true) {
       Stat s = new Stat();
-      int version = 1;
+      int version = -1;
       try {
         byte[] propData = client.getData(znodePath, null, s);
         if (propData != null) {
@@ -103,31 +103,34 @@ public class CollectionProperties {
           if (propertyValue == null) {
             if (properties.remove(propertyName) != null) { // Don't update ZK unless absolutely necessary.
               client.setData(znodePath, Utils.toJSON(properties), s.getVersion(), true);
+              version = s.getVersion();
             }
           } else {
             if (!propertyValue.equals(properties.put(propertyName, propertyValue))) { // Don't update ZK unless absolutely necessary.
               client.setData(znodePath, Utils.toJSON(properties), s.getVersion(), true);
+              version = s.getVersion();
             }
           }
-          version = s.getVersion();
+
         } else {
           Map<String, String> properties = new LinkedHashMap<>();
           properties.put(propertyName, propertyValue);
           client.create(znodePath, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
         }
 
-        int finalVersion = version;
-        try {
-          zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
-            if (collectionState != null && collectionState.getZNodeVersion() >= finalVersion) {
-              return true;
-            }
-            return false;
-          });
-        } catch (TimeoutException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        if (version > -1) {
+          int finalVersion = version;
+          try {
+            zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+              if (collectionState != null && collectionState.getZNodeVersion() >= finalVersion) {
+                return true;
+              }
+              return false;
+            });
+          } catch (TimeoutException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
         }
-
       } catch (KeeperException.BadVersionException e) {
         //race condition
         try {

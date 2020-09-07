@@ -122,7 +122,6 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
     assertTrue("Gave up waitng an excessive amount of time for watcher to see final expected props",
                sawExpectedProps.tryAcquire(1, 120, TimeUnit.SECONDS));
-    cluster.getSolrClient().getZkStateReader().removeCollectionPropsWatcher(collectionName, w);
     
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
 
@@ -193,7 +192,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     // Delete the properties znode
     log.info("deleting props");
     zkStateReader.getZkClient().delete("/collections/" + collectionName + "/collectionprops.json", -1);
-    assertEquals(1, watcher.waitForTrigger());
+    watcher.waitForTrigger();
     final Map<String, String> props = watcher.getProps();
     assertTrue(props.toString(), props.isEmpty());
   }

@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -158,6 +159,8 @@ public class AddReplicaTest extends SolrCloudTestCase {
     create.setMaxShardsPerNode(2);
     cloudClient.request(create);
 
+    cluster.waitForActiveCollection(collection, 0, TimeUnit.MILLISECONDS, 2, 2);
+
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocCollection coll = clusterState.getCollection(collection);
     String sliceName = coll.getSlices().iterator().next().getName();
@@ -188,9 +191,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     replicas2.removeAll(replicas);
     assertEquals(1, replicas2.size());
 
-
-    cluster.waitForActiveCollection(collection, 2, 2);
-
     // use waitForFinalState
     addReplica.setWaitForFinalState(true);
     int aid2 = asyncId.incrementAndGet();
@@ -215,7 +215,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     coll = clusterState.getCollection(collection);
     Collection<Replica> replicas3 = coll.getSlice(sliceName).getReplicas();
     replicas3.removeAll(replicas);
-    String replica2 = replicas2.iterator().next().getName();
     assertEquals(2, replicas3.size());
     for (Replica replica : replicas3) {
       assertSame(coll.toString() + "\n" + replica.toString(), replica.getState(), Replica.State.ACTIVE);
