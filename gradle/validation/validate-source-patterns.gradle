@@ -79,7 +79,6 @@ subprojects {
       }
 
       // default excludes.
-      exclude '**/dist/**'
       exclude 'build/**'
       exclude 'work/**' // benchmark module
       exclude 'temp/**' // benchmark module
@@ -114,7 +113,6 @@ configure(rootProject) {
 
       // default excludes.
       exclude '**/build/**'
-      exclude '**/dist/**'
       exclude 'dev-tools/missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
 
       // ourselves :-)
