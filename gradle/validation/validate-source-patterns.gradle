@@ -318,7 +318,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
           }
         }
       }
-      if (f.name.endsWith('.xml') || f.name.endsWith('.xml.template')) {
+      if (f.name.endsWith('.xml')) {
         checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
       }
       if (f.name.endsWith('.adoc')) {
