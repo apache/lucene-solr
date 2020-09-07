@@ -39,6 +39,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -59,14 +60,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
 
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
-  @Ignore // nocommit creating a collection that has exiting collection node is a fail
-  public void testParticipationOfReplicas() throws IOException, SolrServerException, InterruptedException {
+  public void testParticipationOfReplicas() throws Exception {
     String collection = "collection1";
-    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
-      zkShardTerms.registerTerm("replica1");
-      zkShardTerms.registerTerm("replica2");
-      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
-    }
 
     // When new collection is created, the old term nodes will be removed
     CollectionAdminRequest.createCollection(collection, 2, 2)

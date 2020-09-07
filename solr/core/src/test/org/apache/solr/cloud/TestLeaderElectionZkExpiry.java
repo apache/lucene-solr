@@ -53,7 +53,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
           .setLeaderConflictResolveWait(5000)
           .setLeaderVoteWait(5000)
           .build();
-      final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, () -> Collections.emptyList());
+      final ZkController zkController = new ZkController(cc, server.getZkClient(), cloudConfig, () -> Collections.emptyList());
       try {
         Thread killer = new Thread() {
           @Override

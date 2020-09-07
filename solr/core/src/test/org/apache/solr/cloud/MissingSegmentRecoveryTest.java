@@ -41,7 +41,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
-@Ignore // nocommit flakey
 public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
   final String collection = getClass().getSimpleName();
   

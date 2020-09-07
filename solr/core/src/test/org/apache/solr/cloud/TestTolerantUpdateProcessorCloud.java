@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  */
-@Ignore // nocommit debug
+@Ignore // nocommit
 public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -131,7 +131,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     HashMap<String, String> urlMap = new HashMap<>();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       String jettyURL = jetty.getBaseUrl();
-      String nodeKey = jetty.getHost() + ":" + jetty.getLocalPort() + jetty.getBaseUrl().replace("/","_");
+      String nodeKey = jetty.getBaseUrl().replace("/","_");
       urlMap.put(nodeKey, jettyURL.toString());
     }
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -140,7 +140,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       Replica leader = slice.getLeader();
       assertNotNull("slice has null leader: " + slice.toString(), leader);
       assertNotNull("slice leader has null node name: " + slice.toString(), leader.getNodeName());
-      String leaderUrl = urlMap.remove(leader.getNodeName());
+      String leaderUrl = urlMap.remove("http:__" + leader.getNodeName());
       assertNotNull("could not find URL for " + shardName + " leader: " + leader.getNodeName(),
                     leaderUrl);
       assertEquals("expected two total replicas for: " + slice.getName(),
@@ -150,7 +150,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       
       for (Replica replica : slice.getReplicas()) {
         if ( ! replica.equals(leader)) {
-          passiveUrl = urlMap.remove(replica.getNodeName());
+          passiveUrl = urlMap.remove("http:__" + replica.getNodeName());
           assertNotNull("could not find URL for " + shardName + " replica: " + replica.getNodeName(),
                         passiveUrl);
         }
@@ -183,8 +183,13 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertEquals(0, CLOUD_CLIENT.add(doc(f("id", S_TWO_PRE + random().nextInt()),
                                          f("expected_shard_s", "shard2"))).getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
+
+//    Thread.sleep(100);
+//    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
+
     SolrDocumentList docs = CLOUD_CLIENT.query(params("q", "*:*",
                                                       "fl","id,expected_shard_s,[shard]")).getResults();
+
     assertEquals(2, docs.getNumFound());
     assertEquals(2, docs.size());
     for (SolrDocument doc : docs) {

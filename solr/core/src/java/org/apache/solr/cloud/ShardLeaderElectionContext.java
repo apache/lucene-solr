@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -85,19 +86,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public void close() {
-    try (ParWork closer = new ParWork(this, true)) {
-      closer.collect("superClose",() -> super.close());
-      closer.collect("cancelElection",() -> {
-        try {
-          cancelElection();
-        } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
-          log.error("Exception canceling election", e);
-        }
-      });
-      closer.collect(syncStrategy);
-    }
-
+    super.close();
+    IOUtils.closeQuietly(syncStrategy);
     this.isClosed = true;
     ObjectReleaseTracker.release(this);
   }

@@ -48,7 +48,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   @Override
   void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
           InterruptedException, IOException {
-    if (isClosed() || !zkClient.isConnected()) {
+    if (isClosed() || !zkClient.isConnected() || overseer.isDone()) {
       return;
     }
 
@@ -149,7 +149,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
           super.close();
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
-          log.error("Exception canceling election", e);
+          log.error("Exception closing election", e);
         }
       });
       closer.collect("Overseer", () -> {
@@ -157,7 +157,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
           cancelElection(fromCSUpdateThread);
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
-          log.error("Exception closing Overseer", e);
+          log.error("Exception canceling election", e);
         }
       });
     }

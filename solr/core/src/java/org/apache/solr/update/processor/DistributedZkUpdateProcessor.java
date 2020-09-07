@@ -192,11 +192,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         nodes = getCollectionUrls(collection,
             EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT), true);
 
-        if (nodes != null) {
-          nodes.removeIf((node) -> node.getNodeProps().getCoreNodeName().equals(
-              cmd.getReq().getCore().getCoreDescriptor().getCloudDescriptor().getCoreNodeName()));
-        }
-
         try {
           leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
         } catch (InterruptedException e) {
@@ -207,6 +202,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
         isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
 
+        ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         if (nodes == null) {
           // This could happen if there are only pull replicas
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -216,6 +212,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         log.info(
             "processCommit - distrib commit isLeader={} commit_end_point={} replicaType={}",
             isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
+
         if (req.getParams().get(COMMIT_END_POINT, "").equals("replicas")) {
           if (replicaType == Replica.Type.PULL) {
             log.warn("processCommit - Commit not supported on replicas of type "
@@ -225,9 +222,41 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                 "processCommit - Do a local commit on NRT endpoint for replica");
             doLocalCommit(cmd);
           }
+        } else if (req.getParams().get(COMMIT_END_POINT, "").equals("leaders")) {
+
+          params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
+
+          params.set(COMMIT_END_POINT, "replicas");
+
+          List<SolrCmdDistributor.Node> useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
+
+          log.info(
+              "processCommit - Found the following replicas to send commit to {}",
+              useNodes);
+
+          worker.collect("localCommit", () -> {
+            try {
+              doLocalCommit(cmd);
+            } catch (IOException e) {
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            }
+          });
+
+          if (useNodes != null && useNodes.size() > 0) {
+            log.info("processCommit - send commit to replicas nodes={}",
+                useNodes);
+
+            params.set(DISTRIB_FROM, ZkCoreNodeProps
+                .getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
+
+            List<SolrCmdDistributor.Node> finalUseNodes = useNodes;
+
+            worker.collect("distCommit", () -> {
+              cmdDistrib.distribCommit(cmd, finalUseNodes, params);
+            });
+          }
         } else {
           // zk
-          ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
 
           List<SolrCmdDistributor.Node> useNodes = null;
           if (req.getParams().get(COMMIT_END_POINT) == null) {
@@ -235,20 +264,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
             params.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
             params.set(COMMIT_END_POINT, "leaders");
-
-            if (isLeader) {
-
-              worker.collect("localCommit", () -> {
-                log.info(
-                    "processCommit - Do a local commit on NRT endpoint for leader");
-                try {
-                  doLocalCommit(cmd);
-                } catch (IOException e) {
-                  log.error("Error on local commit");
-                  throw new SolrException(ErrorCode.SERVER_ERROR, e);
-                }
-              });
-            }
 
             if (useNodes != null && useNodes.size() > 0) {
               log.info("processCommit - send commit to leaders nodes={}",
@@ -262,34 +277,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                 cmdDistrib.distribCommit(cmd, finalUseNodes1, params);
               });
             }
-          }
-          if (isLeader) {
-
-            params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-
-            params.set(COMMIT_END_POINT, "replicas");
-
-            useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(),
-                leaderReplica);
-
-            log.info(
-                "processCommit - Found the following replicas to send commit to {}",
-                useNodes);
-
-            if (useNodes != null && useNodes.size() > 0) {
-              log.info("processCommit - send commit to replicas nodes={}",
-                  useNodes);
-
-              params.set(DISTRIB_FROM, ZkCoreNodeProps
-                  .getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
-
-              List<SolrCmdDistributor.Node> finalUseNodes = useNodes;
-              worker.collect("distCommit", () -> {
-                cmdDistrib.distribCommit(cmd, finalUseNodes, params);
-              });
-
-            }
-
+            return;
           }
 
         }
