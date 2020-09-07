@@ -223,6 +223,11 @@ Documentation
 
 * LUCENE-9424: Add a performance warning to AttributeSource.captureState javadocs (Haoyu Zhai)
 
+Other
+---------------------
+
+* LUCENE-9497: Integrate Error Prone, a static analysis tool during compilation (Dawid Weiss, Varun Thacker)
+
 
 Other
 ---------------------
