@@ -52,7 +52,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 /** Default general purpose indexing chain, which handles
  *  indexing all types of fields. */
 final class DefaultIndexingChain extends DocConsumer {
-  final Counter bytesUsed;
+  final Counter bytesUsed = Counter.newCounter();
   final DocumentsWriterPerThread docWriter;
   final FieldInfos.Builder fieldInfos;
 
@@ -74,21 +74,20 @@ final class DefaultIndexingChain extends DocConsumer {
   private PerField[] fields = new PerField[1];
   private final InfoStream infoStream;
 
-  public DefaultIndexingChain(DocumentsWriterPerThread docWriter) {
+  DefaultIndexingChain(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
     this.fieldInfos = docWriter.getFieldInfosBuilder();
-    this.bytesUsed = docWriter.bytesUsed;
     this.infoStream = docWriter.getIndexWriterConfig().getInfoStream();
 
     final TermsHash termVectorsWriter;
     if (docWriter.getSegmentInfo().getIndexSort() == null) {
-      storedFieldsConsumer = new StoredFieldsConsumer(docWriter);
+      storedFieldsConsumer = new StoredFieldsConsumer(docWriter.codec, docWriter.directory, docWriter.getSegmentInfo());
       termVectorsWriter = new TermVectorsConsumer(docWriter);
     } else {
-      storedFieldsConsumer = new SortingStoredFieldsConsumer(docWriter);
+      storedFieldsConsumer = new SortingStoredFieldsConsumer(docWriter.codec, docWriter.directory, docWriter.getSegmentInfo());
       termVectorsWriter = new SortingTermVectorsConsumer(docWriter);
     }
-    termsHash = new FreqProxTermsWriter(docWriter, termVectorsWriter);
+    termsHash = new FreqProxTermsWriter(docWriter, bytesUsed, termVectorsWriter);
   }
 
   private LeafReader getDocValuesLeafReader() {
@@ -302,7 +301,6 @@ final class DefaultIndexingChain extends DocConsumer {
 
   /** Writes all buffered doc values (called from {@link #flush}). */
   private void writeDocValues(SegmentWriteState state, Sorter.DocMap sortMap) throws IOException {
-    int maxDoc = state.segmentInfo.maxDoc();
     DocValuesConsumer dvConsumer = null;
     boolean success = false;
     try {
@@ -582,7 +580,7 @@ final class DefaultIndexingChain extends DocConsumer {
     fp.fieldInfo.setPointDimensions(pointDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
 
     if (fp.pointValuesWriter == null) {
-      fp.pointValuesWriter = new PointValuesWriter(docWriter, fp.fieldInfo);
+      fp.pointValuesWriter = new PointValuesWriter(docWriter.byteBlockAllocator, bytesUsed, fp.fieldInfo);
     }
     fp.pointValuesWriter.addPackedValue(docID, field.binaryValue());
   }
@@ -772,6 +770,11 @@ final class DefaultIndexingChain extends DocConsumer {
     // change the index options of this field, will throw an IllegalArgExc:
     fieldInfos.globalFieldNumbers.setIndexOptions(info.number, info.name, indexOptions);
     info.setIndexOptions(indexOptions);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return bytesUsed.get() + storedFieldsConsumer.ramBytesUsed();
   }
 
   /** NOTE: not static: accesses at least docState, termsHash. */

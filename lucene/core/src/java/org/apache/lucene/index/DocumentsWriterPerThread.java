@@ -18,8 +18,10 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -33,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
@@ -48,7 +51,7 @@ import org.apache.lucene.util.Version;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
-final class DocumentsWriterPerThread {
+final class DocumentsWriterPerThread implements Accountable {
 
   LiveIndexWriterConfig getIndexWriterConfig() {
     return indexWriterConfig;
@@ -132,7 +135,7 @@ final class DocumentsWriterPerThread {
   final Codec codec;
   final TrackingDirectoryWrapper directory;
   private final DocConsumer consumer;
-  final Counter bytesUsed;
+  private final Counter bytesUsed;
   
   // Updates for our still-in-RAM (to be flushed next) segment
   private final BufferedUpdates pendingUpdates;
@@ -292,7 +295,7 @@ final class DocumentsWriterPerThread {
     for (int docId = from; docId < to; docId++) {
       deleteDocIDs[numDeletedDocIds++] = docId;
     }
-    bytesUsed.addAndGet((deleteDocIDs.length - size) * Integer.SIZE);
+    bytesUsed.addAndGet((deleteDocIDs.length - size) * Integer.BYTES);
     // NOTE: we do not trigger flush here.  This is
     // potentially a RAM leak, if you have an app that tries
     // to add docs but every single doc always hits a
@@ -338,8 +341,8 @@ final class DocumentsWriterPerThread {
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
     segmentInfo.setMaxDoc(numDocsInRAM);
     final SegmentWriteState flushState = new SegmentWriteState(infoStream, directory, segmentInfo, fieldInfos.finish(),
-        pendingUpdates, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
-    final double startMBUsed = bytesUsed() / 1024. / 1024.;
+        pendingUpdates, new IOContext(new FlushInfo(numDocsInRAM, ramBytesUsed())));
+    final double startMBUsed = ramBytesUsed() / 1024. / 1024.;
 
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
@@ -351,7 +354,7 @@ final class DocumentsWriterPerThread {
         flushState.liveDocs.clear(deleteDocIDs[i]);
       }
       flushState.delCountOnFlush = numDeletedDocIds;
-      bytesUsed.addAndGet(-(deleteDocIDs.length * Integer.SIZE));
+      bytesUsed.addAndGet(-(deleteDocIDs.length * Integer.BYTES));
       deleteDocIDs = null;
 
     }
@@ -545,12 +548,18 @@ final class DocumentsWriterPerThread {
     return segmentInfo;
   }
 
-  long bytesUsed() {
-    return bytesUsed.get() + pendingUpdates.ramBytesUsed();
+  @Override
+  public long ramBytesUsed() {
+    return bytesUsed.get() + pendingUpdates.ramBytesUsed() + consumer.ramBytesUsed();
+  }
+
+  @Override
+  public Collection<Accountable> getChildResources() {
+    return List.of(pendingUpdates, consumer);
   }
 
   /* Initial chunks size of the shared byte[] blocks used to
-     store postings data */
+       store postings data */
   final static int BYTE_BLOCK_NOT_MASK = ~BYTE_BLOCK_MASK;
 
   /* if you increase this, you must fix field cache impl for
@@ -613,13 +622,13 @@ final class DocumentsWriterPerThread {
   }
 
   /**
-   * Commits the current {@link #bytesUsed()} and stores it's value for later reuse.
+   * Commits the current {@link #ramBytesUsed()} and stores it's value for later reuse.
    * The last committed bytes used can be retrieved via {@link #getLastCommittedBytesUsed()}
-   * @return the delta between the current {@link #bytesUsed()} and the current {@link #getLastCommittedBytesUsed()}
+   * @return the delta between the current {@link #ramBytesUsed()} and the current {@link #getLastCommittedBytesUsed()}
    */
   long commitLastBytesUsed() {
     assert isHeldByCurrentThread();
-    long delta = bytesUsed() - lastCommittedBytesUsed;
+    long delta = ramBytesUsed() - lastCommittedBytesUsed;
     lastCommittedBytesUsed += delta;
     return delta;
   }
