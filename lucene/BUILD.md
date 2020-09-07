@@ -24,23 +24,21 @@ progress at: https://issues.apache.org/jira/browse/SOLR-14497
 NOTE: Lucene changed from Ant to Gradle as of release 9.0. Prior releases
 still use Ant.
 
-## Step 1) Download/Checkout Lucene source code
+## Step 1) Checkout/Download Lucene source code
 
 We'll assume you already did this, or you wouldn't be reading this
-file.  However, you might have received this file by some alternate
-route, or you might have an incomplete copy of the Lucene, so: Lucene
-releases are available as part of Solr for download at:
+file. However, you might have received this file by some alternate
+route, or you might have an incomplete copy of the Lucene, so: you 
+can directly checkout the source code from GitHub:
+
+  https://github.com/apache/lucene-solr
+  
+Or Lucene source archives at particlar releases are available as part of Solr downloads:
 
   https://lucene.apache.org/solr/downloads.html
-  
-See the note above for why it is necessary currently to download Solr
 
 Download either a zip or a tarred/gzipped version of the archive, and
 uncompress it into a directory of your choice.
-
-Or you can directly checkout the source code from GitHub:
-
-  https://github.com/apache/lucene-solr
 
 ## Step 2) Change directory (cd) into the top-level directory of the source tree
 
