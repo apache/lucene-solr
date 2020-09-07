@@ -93,7 +93,8 @@ public final class JavascriptCompiler {
    * classes (this ensures we can create classes in our package without extra permissions).
    * The classes are initialized and have no strong relationship to our classloader.
    * This ensures they can be unloaded.
-   * Signature of MH: {@code static Lookup defineHiddenClass(byte[] bc)}
+   * Signature of MH:
+   * {@code static Lookup defineHiddenClass(byte[] bc) throws IllegalAccessException}
    * The MH is {@code null} if an earlier JDK is used. 
    * @see "https://openjdk.java.net/jeps/371"
    */
@@ -221,18 +222,7 @@ public final class JavascriptCompiler {
     try {
       generateClass(getAntlrParseTree(), classWriter, externalsMap);
       
-      final Class<? extends Expression> evaluatorClass;
-      if (MH_defineHiddenClass != null && parent == getClass().getClassLoader()) {
-        final Lookup hiddenLookup;
-        try {
-          hiddenLookup = (Lookup) MH_defineHiddenClass.invokeExact(classWriter.toByteArray());
-        } catch (Throwable t) {
-          throw JavascriptCompiler.<RuntimeException>rethrow0(t);
-        }
-        evaluatorClass = hiddenLookup.lookupClass().asSubclass(Expression.class);
-      } else {
-        evaluatorClass = new Loader(parent).define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
-      }
+      final Class<? extends Expression> evaluatorClass = defineClass(parent, classWriter.toByteArray());
       // System.err.println("Expression class name: " + evaluatorClass.getName());
       
       final Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
@@ -247,11 +237,21 @@ public final class JavascriptCompiler {
       throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
     }
   }
-  
-  /** This is needed for MethodHandles to allow rethrowing the generic Throwable without wrapping. */
-  @SuppressWarnings("unchecked")
-  private static <T extends Throwable> RuntimeException rethrow0(Throwable t) throws T {
-    throw (T) t;
+
+  private Class<? extends Expression> defineClass(ClassLoader parent, byte[] bc) throws IllegalAccessException {
+    if (MH_defineHiddenClass != null && parent == getClass().getClassLoader()) {
+      final Lookup hiddenLookup;
+      try {
+        hiddenLookup = (Lookup) MH_defineHiddenClass.invokeExact(bc);
+      } catch (IllegalAccessException | Error | RuntimeException e) {
+        throw e;
+      } catch (Throwable t) {
+        throw new AssertionError(t); // should never be thrown by MH, just trick compiler
+      }
+      return hiddenLookup.lookupClass().asSubclass(Expression.class);
+    }
+    
+    return new Loader(parent).define(COMPILED_EXPRESSION_CLASS, bc);
   }
 
   /**
