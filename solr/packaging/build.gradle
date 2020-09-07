@@ -68,6 +68,7 @@ task toDir(type: Sync) {
   from(project(":solr").projectDir, {
     include "bin/**"
     include "licenses/**"
+    exclude "licenses/README.committers.txt"
     include "CHANGES.txt"
     include "LICENSE.txt"
     include "NOTICE.txt"

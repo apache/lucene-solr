@@ -372,16 +372,7 @@ configure(project(":lucene")) {
 configure(project(":solr")) {
   checkDanglingLicenseFiles {
     exclude += [
-        "README.committers.txt",
-
-        // solr-ref-guide compilation-only dependencies.
-        "android-json-*",
-        "ant-*",
-        "asciidoctor-ant-*",
-        "jsoup-*",
-        "junit4-ant-*",
-        "slf4j-simple-*",
-        "start.jar.sha1"
+        "README.committers.txt"
     ]
   }
 }
