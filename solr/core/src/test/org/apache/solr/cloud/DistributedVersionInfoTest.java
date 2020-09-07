@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCase;
@@ -63,6 +64,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 @Slow
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly // pretty slow test
 public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -77,7 +79,6 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
   private static final String COLLECTION = "c8n_vers_1x3";
 
   @Test
-  @Ignore // nocommit debug, flakey
   public void testReplicaVersionHandling() throws Exception {
 
     final String shardId = "shard1";
@@ -261,7 +262,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     maxOnReplica = getMaxVersionFromIndex(replica);
     assertEquals("leader and replica should have same max version after reload", maxOnLeader, maxOnReplica);
 
-    assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, 1000, deletedDocs);
+    assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, TEST_NIGHTLY ? 1000 : 100, deletedDocs);
 
   }
 

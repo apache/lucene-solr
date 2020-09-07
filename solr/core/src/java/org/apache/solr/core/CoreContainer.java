@@ -55,6 +55,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -1377,7 +1378,7 @@ public class CoreContainer implements Closeable {
           throw new AlreadyClosedException("Solr has been shutdown.");
         }
         core = new SolrCore(this, dcore, coreConfig);
-      } catch (SolrException e) {
+      } catch (Exception e) {
         core = processCoreCreateException(e, dcore, coreConfig);
       }
 
@@ -1439,7 +1440,7 @@ public class CoreContainer implements Closeable {
    *                       original exception as a suppressed exception if there is a second problem creating the solr core.
    * @see CoreInitFailedAction
    */
-  private SolrCore processCoreCreateException(SolrException original, CoreDescriptor dcore, ConfigSet coreConfig) {
+  private SolrCore processCoreCreateException(Exception original, CoreDescriptor dcore, ConfigSet coreConfig) {
     log.error("Error creating SolrCore", original);
 
     // Traverse full chain since CIE may not be root exception
@@ -1451,7 +1452,13 @@ public class CoreContainer implements Closeable {
     }
 
     // If no CorruptIndexException, nothing we can try here
-    if (cause == null) throw original;
+    if (cause == null) {
+      if (original instanceof RuntimeException) {
+        throw (RuntimeException) original;
+      } else {
+        throw new SolrException(ErrorCode.SERVER_ERROR, original);
+      }
+    }
 
     CoreInitFailedAction action = CoreInitFailedAction.valueOf(System.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));
     log.debug("CorruptIndexException while creating core, will attempt to repair via {}", action);
@@ -1477,13 +1484,25 @@ public class CoreContainer implements Closeable {
             throw se;
           }
         }
-        throw original;
+        if (original instanceof RuntimeException) {
+          throw (RuntimeException) original;
+        } else {
+          throw new SolrException(ErrorCode.SERVER_ERROR, original);
+        }
       case none:
-        throw original;
+        if (original instanceof RuntimeException) {
+          throw (RuntimeException) original;
+        } else {
+          throw new SolrException(ErrorCode.SERVER_ERROR, original);
+        }
       default:
         log.warn("Failed to create core, and did not recognize specified 'CoreInitFailedAction': [{}]. Valid options are {}.",
             action, Arrays.asList(CoreInitFailedAction.values()));
-        throw original;
+        if (original instanceof RuntimeException) {
+          throw (RuntimeException) original;
+        } else {
+          throw new SolrException(ErrorCode.SERVER_ERROR, original);
+        }
     }
   }
 

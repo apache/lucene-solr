@@ -138,7 +138,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       log.info("Send DELETE operation to Overseer collection={}", collection);
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
       ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
-
+      zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
       // wait for a while until we don't see the collection
       zkStateReader.waitForState(collection, 10, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
 

@@ -711,6 +711,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         Overseer.QUEUE_OPERATION, DELETE.toLower(),
         NAME, collectionName);
     commandMap.get(DELETE).call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
+    zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState == null);
   }
 
   Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreUrls, boolean requireActive) {
@@ -927,8 +928,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       }
 
       latch.await(15, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
-      // we're done with this entry in the DistributeMap
-      overseer.getCoreContainer().getZkController().clearAsyncId(requestId);
 
       shardHandler.submit(sreq, replica, sreq.params);
 
@@ -950,6 +949,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           throw new SolrException(ErrorCode.BAD_REQUEST, "Task is still running even after reporting complete requestId: " + requestId + "" + srsp.getSolrResponse().getResponse().get("STATUS") +
                   "retried " + counter + "times");
         } else if (r.equals("completed")) {
+          // we're done with this entry in the DistributeMap
+          overseer.getCoreContainer().getZkController().clearAsyncId(requestId);
           if (log.isDebugEnabled()) log.debug("The task is COMPLETED, returning");
           return srsp.getSolrResponse().getResponse();
         } else if (r.equals("failed")) {

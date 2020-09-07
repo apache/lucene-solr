@@ -455,6 +455,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       if (e instanceof Error) {
         throw e;
       }
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -564,7 +565,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     final String prefix = TLOG_NAME+'.';
     String[] names = directory.list(new MyFilenameFilter(prefix));
     if (names == null) {
-      throw new RuntimeException(new FileNotFoundException(directory.getAbsolutePath()));
+      throw new SolrException(ErrorCode.SERVER_ERROR, new FileNotFoundException(directory.getAbsolutePath()));
     }
     Arrays.sort(names);
     return names;
