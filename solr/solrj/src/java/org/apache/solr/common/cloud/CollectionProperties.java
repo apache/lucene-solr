@@ -118,19 +118,6 @@ public class CollectionProperties {
           client.create(znodePath, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
         }
 
-        if (version > -1) {
-          int finalVersion = version;
-          try {
-            zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
-              if (collectionState != null && collectionState.getZNodeVersion() >= finalVersion) {
-                return true;
-              }
-              return false;
-            });
-          } catch (TimeoutException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          }
-        }
       } catch (KeeperException.BadVersionException e) {
         //race condition
         try {
