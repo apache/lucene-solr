@@ -756,9 +756,13 @@ public class IndexSchema {
 //    NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
 
     List<ConfigNode> nodes = n.children(COPY_FIELD);
-    for (int i=0; i<nodes.size(); i++) {
-      ConfigNode node = nodes.get(i);
-//      NamedNodeMap attrs = node.getAttributes();
+    ConfigNode f = n.child(FIELDS);
+    if (f != null) {
+      List<ConfigNode> c = f.children(COPY_FIELD);
+      if (nodes.isEmpty()) nodes = c;
+      else nodes.addAll(c);
+    }
+    for (ConfigNode node : nodes) {
 
       String source = DOMUtil.getAttr(node, SOURCE, COPY_FIELD + " definition");
       String dest   = DOMUtil.getAttr(node, DESTINATION,  COPY_FIELD + " definition");
