@@ -39,7 +39,6 @@ configure(rootProject) {
           "javadoc",
           "rat",
           "ecjLint",
-          "checkMissingDocs",
           "validateLogCalls",
           "validateSourcePatterns",
       ]}
