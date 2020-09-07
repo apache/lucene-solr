@@ -221,11 +221,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             if (collectionState == null) {
               return false;
             }
-            Slice slice = collectionState.getSlice(shard);
-            if (slice == null || slice.getLeader() == null) {
+            if (collectionState.getSlices() == null) {
               return false;
             }
-
             List<Replica> replicas = collectionState.getReplicas();
             int found = 0;
             for (String name : coreNodeNames) {
