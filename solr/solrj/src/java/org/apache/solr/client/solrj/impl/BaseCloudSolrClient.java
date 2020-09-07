@@ -298,7 +298,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       getClusterStateProvider().connect();
       return provider.zkStateReader;
     }
-    throw new IllegalStateException("This has no Zk stateReader");
+    throw new IllegalStateException("This has no Zk stateReader: " + getClusterStateProvider().getClass().getSimpleName());
   }
 
   /**
@@ -507,6 +507,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     DocCollection col = getDocCollection(collection, null);
+
+    if (col == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + collection);
+    }
 
     DocRouter router = col.getRouter();
 
@@ -875,6 +879,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     connect(); // important to call this before you start working with the ZkStateReader
 
+
     // build up a _stateVer_ param to pass to the server containing all of the
     // external collection state versions involved in this request, which allows
     // the server to notify us that our cached state for one or more of the external
@@ -889,18 +894,26 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
     boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
+
     boolean isUpdate = (request instanceof IsUpdateRequest) && (request instanceof UpdateRequest);
-    if (!inputCollections.isEmpty() && !isAdmin && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
-      Set<String> requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
+
+    if (true) { // we always state check all our collections TODO: we could just do it for the collections related to our request
+     // Set<String> requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
+      Set<String> requestedCollectionNames;
+      if (getClusterStateProvider() instanceof ZkClientClusterStateProvider && isAdmin) {
+        requestedCollectionNames = getZkStateReader().getClusterState().getCollectionStates().keySet();
+      } else {
+        requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
+      }
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
         DocCollection coll = getDocCollection(requestedCollection, null);
         if (coll == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
-          // TODO if we are creating it, we wouldn't find it?
+          continue;
         }
+
         int collVer = coll.getZNodeVersion();
         if (coll.getStateFormat()>1) {
           if(requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());

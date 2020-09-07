@@ -213,10 +213,9 @@ public class AddReplicaTest extends SolrCloudTestCase {
     // let the client watch fire
     clusterState = cloudClient.getZkStateReader().getClusterState();
     coll = clusterState.getCollection(collection);
-    Collection<Replica> replicas3 = coll.getSlice(sliceName).getReplicas();
-    replicas3.removeAll(replicas);
-    assertEquals(2, replicas3.size());
-    for (Replica replica : replicas3) {
+    Collection<Replica> reps = coll.getSlice(sliceName).getReplicas();
+
+    for (Replica replica : reps) {
       assertSame(coll.toString() + "\n" + replica.toString(), replica.getState(), Replica.State.ACTIVE);
     }
   }

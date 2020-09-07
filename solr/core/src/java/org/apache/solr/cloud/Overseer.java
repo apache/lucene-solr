@@ -430,18 +430,19 @@ public class Overseer implements SolrCloseable {
           .getUpdatesToWrite();
       for (DocCollection docCollection : updatesToWrite.values()) {
         Map<String,Slice> slicesMap = docCollection.getSlicesMap();
+        Map<String,Slice> newSlicesMap = new HashMap(slicesMap);
         for (Slice slice : slicesMap.values()) {
           Collection<Replica> existingReplicas = slice.getReplicas();
           for (Replica ereplica : existingReplicas) {
             if (!docCollection.getReplicas().contains(ereplica)) {
               Map<String,Replica> replicas = new HashMap<>(slice.getReplicasMap());
               replicas.put(ereplica.getName(), ereplica);
-              slicesMap.put(slice.getName(), new Slice(slice.getName(), replicas, slice.getProperties(), docCollection.getName()));
+              newSlicesMap.put(slice.getName(), new Slice(slice.getName(), replicas, slice.getProperties(), docCollection.getName()));
             }
           }
 
           collStates.put(docCollection.getName(), new ClusterState.CollectionRef(new DocCollection(docCollection.getName(),
-              slicesMap, docCollection.getProperties(), docCollection.getRouter(), docCollection.getZNodeVersion(), docCollection.getZNode())));
+              newSlicesMap, docCollection.getProperties(), docCollection.getRouter(), docCollection.getZNodeVersion(), docCollection.getZNode())));
         }
       }
 
@@ -450,7 +451,7 @@ public class Overseer implements SolrCloseable {
 
         List<ZkWriteCommand> zkWriteOps = processMessage(updatesToWrite.isEmpty() ? state : prevState, message, operation);
 
-        cs = zkStateWriter.enqueueUpdate(clusterState, zkWriteOps,
+        cs = zkStateWriter.enqueueUpdate(prevState, zkWriteOps,
                 () -> {
                   // log.info("on write callback");
                 });

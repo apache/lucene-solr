@@ -101,7 +101,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       throws IOException, InterruptedException, KeeperException {
 
     log.info("addReplica() : {}", Utils.toJSONString(message));
-    
+
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String shard = message.getStr(SHARD_ID_PROP);
@@ -217,8 +217,12 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         }
 
         try {
-          zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+          zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
             if (collectionState == null) {
+              return false;
+            }
+            Slice slice = collectionState.getSlice(shard);
+            if (slice == null || slice.getLeader() == null) {
               return false;
             }
 
@@ -263,6 +267,12 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           if (collectionState == null) {
             return false;
           }
+
+          Slice slice = collectionState.getSlice(shard);
+          if (slice == null || slice.getLeader() == null) {
+            return false;
+          }
+
           List<Replica> replicas = collectionState.getReplicas();
           int found = 0;
           for (String name : coreNodeNames) {

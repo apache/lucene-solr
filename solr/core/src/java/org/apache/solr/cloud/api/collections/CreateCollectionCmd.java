@@ -333,25 +333,26 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       if(!isLegacyCloud) {
         // wait for all replica entries to be created
         Map<String,Replica> replicas = new ConcurrentHashMap<>();
-        //zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (n, c) -> c != null && c.getSlices().size() == shardNames.size());
+
         zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, expectedReplicas(coresToCreate.size(), replicas)); // nocommit - timeout - keep this below containing timeouts - need central timeout stuff
         // TODO what if replicas comes back wrong?
         if (replicas.size() > 0) {
           for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
             ShardRequest sreq = e.getValue();
+            Replica replica = null;
             for (Replica rep : replicas.values()) {
               if (rep.getCoreName().equals(sreq.params.get(CoreAdminParams.NAME)) && rep.getBaseUrl().equals(sreq.shards[0])) {
                 sreq.params.set(CoreAdminParams.CORE_NODE_NAME, rep.getName());
+                replica = rep;
+                break;
               }
             }
-            Replica replica = replicas.get(e.getKey());
 
-            if (replica != null) {
-              String coreNodeName = replica.getName();
-              sreq.params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
-              log.info("Set the {} for replica {} to {}", CoreAdminParams.CORE_NODE_NAME, replica, coreNodeName);
+            if (sreq.params.get(CoreAdminParams.CORE_NODE_NAME) == null || replica == null) {
+              throw new IllegalStateException("No core node name found for " + e.getKey() +
+                  " replica=" + replica + " positions:" + replicaPositions.size() + " cores:" + coresToCreate.size() + " replicas:" + replicas.size());
             }
-           
+
             log.info("Submit request to shard for for replica={}", sreq.actualShards != null ? Arrays.asList(sreq.actualShards) : "null");
             shardHandler.submit(sreq, sreq.shards[0], sreq.params);
           }
@@ -821,7 +822,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       int replicas = 0;
       for (Slice slice : collectionState) {
         for (Replica replica : slice) {
-            replicaMap.put(replica.getCoreName(), replica);
+            replicaMap.put(replica.getName(), replica);
             replicas++;
         }
       }

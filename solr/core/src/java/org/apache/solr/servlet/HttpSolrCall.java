@@ -253,13 +253,16 @@ public class HttpSolrCall {
       path = path.substring(0, idx);
     }
 
-    // Check for container handlers
+      // Check for container handlers
     handler = cores.getRequestHandler(path);
     if (handler != null) {
       solrReq = SolrRequestParsers.DEFAULT.parse(null, path, req);
       solrReq.getContext().put(CoreContainer.class.getName(), cores);
       requestType = RequestType.ADMIN;
       action = ADMIN;
+      if (cores.isZooKeeperAware()) {
+        invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
+      }
       return;
     }
 
@@ -289,9 +292,7 @@ public class HttpSolrCall {
     }
 
     if (core != null) {
-      while (cores.isCoreLoading(origCorename)) {
-        Thread.sleep(250); // nocommit - make efficient
-      }
+      cores.waitForLoadingCore(origCorename, 150000);
     }
 
 
@@ -997,6 +998,7 @@ public class HttpSolrCall {
 
   /** Returns null if the state ({@link CloudSolrClient#STATE_VERSION}) is good; otherwise returns state problems. */
   private Map<String, Integer> checkStateVersionsAreValid(String stateVer) {
+    // TODO: for collections that are local and watched, we should just wait for the right min state, not eager fetch everything
     Map<String, Integer> result = null;
     String[] pairs;
     if (stateVer != null && !stateVer.isEmpty() && cores.isZooKeeperAware()) {
