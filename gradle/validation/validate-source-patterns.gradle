@@ -70,18 +70,16 @@ subprojects {
 
     sourceFiles = fileTree(projectDir) {
       extensions.each{
-        include "*.${it}"
+        include "**/*.${it}"
       }
 
       // default excludes.
-      exclude "$buildDir/**"
       exclude '**/dist/**'
-      exclude 'dev-tools/missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
-      exclude 'lucene/benchmark/work/**'
-      exclude 'lucene/benchmark/temp/**'
-      exclude '**/CheckLoggingConfiguration.java'
-      exclude 'solr/core/src/test/org/apache/hadoop/**'
-      exclude '**/validate-source-patterns.gradle' // ourselves :-)
+      exclude 'build/**'
+      exclude 'work/**' // benchmark module
+      exclude 'temp/**' // benchmark module
+      exclude 'src/**/CheckLoggingConfiguration.java'
+      exclude 'src/test/org/apache/hadoop/**'
     }
   }
 
@@ -96,14 +94,12 @@ configure(rootProject) {
 
     sourceFiles = fileTree(projectDir) {
       extensions.each{
-        include "*.${it}"
+        include "**/*.${it}"
       }
 
       // TODO: For now we don't scan txt / md files, so we
       // check licenses in top-level folders separately:
-      include '*.txt'
-      include '*/*.txt'
-      include '*.md'
+      include '**/*.txt'
       include '**/*.md'
 
       // Don't go into subprojects (scanned separately).
@@ -170,12 +166,10 @@ class ValidateSourcePatternsTask extends DefaultTask {
       (~$/\n\s*var\s+/$) : 'var is not allowed in until we stop development on the 8x code line'
     ]
 
-    def baseDirLen = sourceFiles.dir.toString().length() + 1;
-
     def found = 0;
     def violations = new TreeSet();
     def reportViolation = { f, name ->
-      logger.error('{}: {}', name, f.toString().substring(baseDirLen).replace(File.separatorChar, (char)'/'));
+      logger.error('{}: {}', name, f);
       violations.add(name);
       found++;
     }
@@ -257,7 +251,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
 
     sourceFiles.each{ f ->
       progress.progress("Scanning ${f.name}")
-      logger.info('Scanning source file: {}', f);
+      logger.debug('Scanning source file: {}', f);
 
       def text = f.getText('UTF-8');
       invalidPatterns.each{ pattern,name ->
@@ -297,7 +291,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
           checkMockitoAssume(f, text);
         }
 
-        if (f.path.substring(baseDirLen).contains("solr/")
+        if (project.path.startsWith(':solr')
             && f.name.equals("SolrTestCase.java") == false
             && f.name.equals("TestXmlQParser.java") == false) {
           if (extendsLuceneTestCasePattern.matcher(text).find()) {
