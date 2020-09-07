@@ -379,7 +379,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
               + " is enabled by default, which is NOT RECOMMENDED for production use. To turn it off:"
               + " curl http://{host:port}/solr/" + collectionName + "/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'");
         }
-        if (async != null) {
+        if (async == null) {
           zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(shardNames.size(), replicaPositions.size()));
         }
       }

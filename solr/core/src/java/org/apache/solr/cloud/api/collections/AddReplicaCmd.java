@@ -133,7 +133,6 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     int timeout = message.getInt(TIMEOUT, 15); // 10 minutes
-    boolean parallel = message.getBool("parallel", true);
 
     Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()).toUpperCase(Locale.ROOT));
     EnumMap<Replica.Type, Integer> replicaTypesVsCount = new EnumMap<>(Replica.Type.class);
@@ -209,22 +208,20 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       if (onComplete != null) onComplete.run();
     };
 
-    if (!parallel || waitForFinalState) {
-      if (waitForFinalState) {
-        SolrCloseableLatch latch = new SolrCloseableLatch(totalReplicas, ocmh);
-        ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collectionName, null,
-            createReplicas.stream().map(createReplica -> createReplica.coreName).collect(Collectors.toList()), latch);
-        try {
-          zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
-          runnable.run();
-          if (!latch.await(timeout, TimeUnit.SECONDS)) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting " + timeout + " seconds for replica to become active.");
-          }
-        } finally {
-          zkStateReader.removeCollectionStateWatcher(collectionName, watcher);
+
+
+    if (asyncId == null) {
+
+      SolrCloseableLatch latch = new SolrCloseableLatch(totalReplicas, ocmh);
+      ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collectionName, null, createReplicas.stream().map(createReplica -> createReplica.coreName).collect(Collectors.toList()), latch);
+      try {
+        zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
+        ParWork.getRootSharedExecutor().execute(runnable);
+        if (!latch.await(timeout, TimeUnit.SECONDS)) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting " + timeout + " seconds for replica to become active.");
         }
-      } else {
-        runnable.run();
+      } finally {
+        zkStateReader.removeCollectionStateWatcher(collectionName, watcher);
       }
     } else {
       ParWork.getRootSharedExecutor().execute(runnable);

@@ -293,6 +293,20 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
       invokeAction(req, rsp, cores, action, operation);
+
+      String collection = req.getParams().get("collection");
+      if (collection == null) {
+        collection = req.getParams().get("name");
+      }
+      if (collection != null) {
+        DocCollection coll = coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
+        if (coll != null) {
+          rsp.add("csver", coll.getZNodeVersion());
+        } else {
+          // deleted
+        }
+      }
+
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
     }
@@ -887,7 +901,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String collection = h.coreContainer.getZkController().getZkStateReader().getAliases().resolveSimpleAlias(extCollection);
       String name = req.getParams().required().get(PROPERTY_NAME);
       String val = req.getParams().get(PROPERTY_VALUE);
-      CollectionProperties cp = new CollectionProperties(h.coreContainer.getZkController().getZkClient());
+      CollectionProperties cp = new CollectionProperties(h.coreContainer.getZkController().getZkStateReader());
       cp.setCollectionProperty(collection, name, val);
       return null;
     }),

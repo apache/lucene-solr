@@ -60,7 +60,8 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
         .configure();
     
     String collection;
-    useAlias = random().nextBoolean();
+    // nocommit - need alias work
+    // useAlias = random().nextBoolean();
     if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
     } else {

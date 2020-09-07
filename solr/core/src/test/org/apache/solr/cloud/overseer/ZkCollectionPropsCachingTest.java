@@ -73,7 +73,7 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
   public void testReadWriteCached() throws InterruptedException, IOException {
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
 
-    CollectionProperties collectionProps = new CollectionProperties(zkClient());
+    CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());
 
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
     checkValue("property1", "value1"); //Should be no cache, so the change should take effect immediately

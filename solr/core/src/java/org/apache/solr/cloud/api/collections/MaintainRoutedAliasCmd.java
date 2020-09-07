@@ -153,7 +153,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
               Map<String, String> collectionProperties = ocmh.zkStateReader
                   .getCollectionProperties(action.targetCollection, 1000);
               if (!collectionProperties.containsKey(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP)) {
-                CollectionProperties props = new CollectionProperties(ocmh.zkStateReader.getZkClient());
+                CollectionProperties props = new CollectionProperties(ocmh.zkStateReader);
                 props.setCollectionProperty(action.targetCollection, RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, aliasName);
               }
             }

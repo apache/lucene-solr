@@ -52,6 +52,7 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
@@ -618,8 +619,14 @@ public class MiniSolrCloudCluster {
     ZkStateReader reader = solrClient.getZkStateReader();
 
     reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
-    for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
-      CollectionAdminRequest.deleteCollection(collection).process(solrClient);
+    for (String collection : reader.getClusterState().getCollectionsMap().keySet()) {
+      try {
+        CollectionAdminRequest.deleteCollection(collection).process(solrClient);
+      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+        if (!e.getMessage().contains("Could not find")) {
+          throw e;
+        }
+      }
     }
 
     // TODO timeouts

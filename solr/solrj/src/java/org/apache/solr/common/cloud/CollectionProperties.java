@@ -21,8 +21,11 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -38,12 +41,15 @@ import org.apache.zookeeper.data.Stat;
 public class CollectionProperties {
 
   private final SolrZkClient client;
+  private final ZkStateReader zkStateReader;
 
   /**
    * Creates a CollectionProperties object using a provided SolrZkClient
+   * @param zkStateReader
    */
-  public CollectionProperties(SolrZkClient client) {
-    this.client = client;
+  public CollectionProperties(ZkStateReader zkStateReader) {
+    this.client = zkStateReader.getZkClient();
+    this.zkStateReader = zkStateReader;
   }
 
   /**
@@ -89,6 +95,7 @@ public class CollectionProperties {
 
     while (true) {
       Stat s = new Stat();
+      int version = 1;
       try {
         byte[] propData = client.getData(znodePath, null, s);
         if (propData != null) {
@@ -102,11 +109,25 @@ public class CollectionProperties {
               client.setData(znodePath, Utils.toJSON(properties), s.getVersion(), true);
             }
           }
+          version = s.getVersion();
         } else {
           Map<String, String> properties = new LinkedHashMap<>();
           properties.put(propertyName, propertyValue);
           client.create(znodePath, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
         }
+
+        int finalVersion = version;
+        try {
+          zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+            if (collectionState != null && collectionState.getZNodeVersion() >= finalVersion) {
+              return true;
+            }
+            return false;
+          });
+        } catch (TimeoutException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+
       } catch (KeeperException.BadVersionException e) {
         //race condition
         try {

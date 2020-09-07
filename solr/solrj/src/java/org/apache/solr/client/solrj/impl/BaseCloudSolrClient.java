@@ -1056,75 +1056,46 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     }
     if (resp != null && resp.get("exception") == null) {
-      waitForClusterStateUpdates(request);
+      waitForClusterStateUpdates(request, resp);
     }
 
     return resp;
   }
 
-  protected void waitForClusterStateUpdates(SolrRequest request) {
-    if (request.getParams() == null) {
+  protected void waitForClusterStateUpdates(SolrRequest request, NamedList<Object> resp) {
+    // TODO - better check that this is a collections api call
+    if (request.getParams() == null || request.getParams().get(CoreAdminParams.ACTION) == null) {
       return;
     }
 
-    SolrParams params = request.getParams();
-    String asyncId = params.get(ASYNC);
-    boolean waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE, false);
-    if (asyncId != null && !waitForFinalState) {
-      return;
+    String collection = request.getParams().get("collection");
+    if (collection == null) {
+      collection = request.getParams().get("name");
     }
-
-    String action = request.getParams().get(CoreAdminParams.ACTION);
-    if (action != null && action.equals(CollectionParams.CollectionAction.CREATE.toString())) {
-
-      String router = request.getParams().get("router.name", DocRouter.DEFAULT_NAME);
-
-      ZkNodeProps zkProps = new ZkNodeProps(request.getParams().toMap(new HashMap<>()));
-      // fail fast if parameters are wrong or incomplete
-      List<String> shardNames = BaseCloudSolrClient.populateShardNames(zkProps, router);
-      int expectedReplicas;
-      String createNodeSet = params.get(ZkStateReader.CREATE_NODE_SET);
-      if (createNodeSet != null && (createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY) || createNodeSet.equals(""))) {
-        expectedReplicas = 0;
-      } else {
-        expectedReplicas = BaseCloudSolrClient.getTotalReplicas(zkProps);
-      }
-
-      try {
-        getZkStateReader().waitForState(params.get("name"), 10, TimeUnit.SECONDS, expectedShardsAndActiveReplicas(shardNames.size(), expectedReplicas * shardNames.size(), false));
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Interrupted waiting for active collection");
-      } catch (TimeoutException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Timeout waiting for active collection expectedShards=" + shardNames.size() + " expectedReplicas=" + expectedReplicas * shardNames.size(), e);
-      }
-    } else if (action != null && request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.DELETE.toString())) {
-      try {
-        getZkStateReader().waitForState(params.get("name"), 10, TimeUnit.SECONDS, (c)->c==null);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
-      } catch (TimeoutException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
-    } else if (action != null && request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.ADDREPLICA.toString())) {
-      // nocommit how do we do this right? We need to know how many replicas at start of the request and look for at least that +1
-    } else if (action != null && request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.DELETENODE.toString())) {
-      // TODO: make efficient, timeout
-      String node = request.getParams().get("node");
-
-        boolean wait = true;
-        while (wait) {
-          ClusterState clusterState = getZkStateReader().getClusterState();
-          for (DocCollection docCollection : clusterState.getCollectionsMap().values()) {
-            for (Replica replica : docCollection.getReplicas()) {
-              if (replica.getNodeName().equals(node)) {
-                continue;
-              }
+    if (collection != null) {
+      Integer ver = (Integer) resp.get("csver");
+      if (ver != null) {
+        try {
+          getZkStateReader().waitForState(collection, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+            if (collectionState != null && collectionState.getZNodeVersion() >= ver) {
+              return true;
             }
-          }
-          break;
+            return false;
+          });
+        } catch (TimeoutException | InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
+      } else {
+        try {
+          getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (c) -> c == null);
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+        } catch (TimeoutException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      }
 
     }
   }
@@ -1476,7 +1447,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   public static CollectionStatePredicate expectedShardsAndActiveReplicas(int expectedShards, int expectedReplicas) {
-    return expectedShardsAndActiveReplicas(expectedShards, expectedReplicas, true);
+    return expectedShardsAndActiveReplicas(expectedShards, expectedReplicas, false);
   }
 
   public static CollectionStatePredicate expectedShardsAndActiveReplicas(int expectedShards, int expectedReplicas, boolean exact) {

@@ -97,7 +97,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .configure();
 
     String collection;
-    useAlias = random().nextBoolean();
+
+    // nocommit - need alias work
+    useAlias = false;
+
+    // useAlias = random().nextBoolean();
     if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
     } else {

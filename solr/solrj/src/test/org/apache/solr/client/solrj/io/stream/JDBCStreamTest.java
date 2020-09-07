@@ -65,8 +65,9 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     configureCluster(4)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
-
-    boolean useAlias = random().nextBoolean();
+    // nocommit - need alias work
+    boolean useAlias = false;
+   // boolean useAlias = random().nextBoolean();
     String collection;
     if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";

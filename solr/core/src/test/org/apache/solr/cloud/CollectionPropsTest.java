@@ -74,7 +74,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   
   @Test
   public void testReadWriteCached() throws InterruptedException, IOException {
-    CollectionProperties collectionProps = new CollectionProperties(zkClient());
+    CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());
 
     // NOTE: Using a semaphore to ensure we wait for Watcher to fire before proceeding with
     // test logic, to prevent triggering SOLR-13678
@@ -168,7 +168,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   @Test
   public void testWatcher() throws KeeperException, InterruptedException, IOException {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    CollectionProperties collectionProps = new CollectionProperties(zkClient());
+    CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());
 
     // Add a watcher to collection props
     final Watcher watcher = new Watcher("Watcher", random().nextBoolean());
@@ -202,7 +202,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   @Ignore // nocommit - currently we only allow a single watcher per collection .. hmmm, we need to allow multiple observers for one collection
   public void testMultipleWatchers() throws InterruptedException, IOException {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    CollectionProperties collectionProps = new CollectionProperties(zkClient());
+    CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());
 
     // Register the core with ZkStateReader
     zkStateReader.registerCore(collectionName);
