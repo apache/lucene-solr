@@ -30,7 +30,7 @@ def extensions = [
   'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
   'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
   'properties', 'mdtext', 'groovy',
-  'template', 'adoc', 'json',
+  'template', 'adoc', 'json', 'md'
 ];
 def invalidPatterns = [
   (~$/@author\b/$) : '@author javadoc tag',
