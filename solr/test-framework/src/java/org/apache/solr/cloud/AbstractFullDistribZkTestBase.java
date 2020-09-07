@@ -119,7 +119,7 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static Path confDir;
-  protected static volatile SolrQueuedThreadPool qtp;
+  protected volatile SolrQueuedThreadPool qtp;
 
   private static void copyConfigFileToTmpConf(Path confDir, String file) throws IOException {
     Files.copy(Paths.get(SolrTestCaseJ4.TEST_HOME(), "collection1", "conf", file),
@@ -146,7 +146,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   @After
   public void afterTest() throws Exception {
     if (qtp != null) {
-      qtp.stop();
+      qtp.close();
     }
   }
 

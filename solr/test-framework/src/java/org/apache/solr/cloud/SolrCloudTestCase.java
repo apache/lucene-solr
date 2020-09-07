@@ -113,7 +113,7 @@ public class SolrCloudTestCase extends SolrTestCase {
   public static void afterSolrCloudTestCase() throws Exception {
     if (qtp != null) {
       qtp.close();
-      qtp.stop();
+      qtp = null;
     }
   }
 
