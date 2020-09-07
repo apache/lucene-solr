@@ -353,10 +353,12 @@ public class Assign {
       }
       return nodeNameVsShardCount;
     }
+
     DocCollection coll = clusterState.getCollection(collectionName);
     int maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+      if (entry.getValue() == null) continue;
       DocCollection c = entry.getValue();
       //identify suitable nodes  by checking the no:of cores in each of them
       for (Slice slice : c.getSlices()) {

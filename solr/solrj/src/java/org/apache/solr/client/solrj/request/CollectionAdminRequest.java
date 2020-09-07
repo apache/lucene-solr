@@ -1475,40 +1475,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   // DELETESHARD request
   public static class DeleteShard extends AsyncShardSpecificAdminRequest {
 
-    private Boolean deleteInstanceDir;
-    private Boolean deleteDataDir;
-
     private DeleteShard(String collection, String shard) {
       super(CollectionAction.DELETESHARD, collection, shard);
-    }
-
-    public Boolean getDeleteInstanceDir() {
-      return deleteInstanceDir;
-    }
-
-    public DeleteShard setDeleteInstanceDir(Boolean deleteInstanceDir) {
-      this.deleteInstanceDir = deleteInstanceDir;
-      return this;
-    }
-
-    public Boolean getDeleteDataDir() {
-      return deleteDataDir;
-    }
-
-    public DeleteShard setDeleteDataDir(Boolean deleteDataDir) {
-      this.deleteDataDir = deleteDataDir;
-      return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      if (deleteInstanceDir != null) {
-        params.set(CoreAdminParams.DELETE_INSTANCE_DIR, deleteInstanceDir);
-      }
-      if (deleteDataDir != null) {
-        params.set(CoreAdminParams.DELETE_DATA_DIR, deleteDataDir);
-      }
+
       return params;
     }
   }

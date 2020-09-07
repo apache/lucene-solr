@@ -1815,8 +1815,8 @@ public class CoreContainer implements Closeable {
     // delete metrics specific to this core
     metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
 
-
     core.unloadOnClose(cd, deleteIndexDir, deleteDataDir, deleteInstanceDir);
+
     core.closeAndWait();
   }
 

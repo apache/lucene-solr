@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -57,6 +58,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.UpdateShardHandler;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -471,7 +473,23 @@ public class Overseer implements SolrCloseable {
           case DELETE:
             return Collections.singletonList(new ClusterStateMutator(getSolrCloudManager()).deleteCollection(clusterState, message));
           case CREATESHARD:
-            return Collections.singletonList(new CollectionMutator(getSolrCloudManager()).createShard(clusterState, message));
+            List<ZkWriteCommand> ret = Collections.singletonList(new CollectionMutator(getSolrCloudManager()).createShard(clusterState, message));
+            String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
+            String shardName = message.getStr(ZkStateReader.SHARD_ID_PROP);
+            try {
+              // TODO: remove this makePath calls and require making each path individually correctly
+              getSolrCloudManager().getDistribStateManager().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/" + shardName, null, CreateMode.PERSISTENT, false);
+              // stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect", null, CreateMode.PERSISTENT, false);
+              getSolrCloudManager().getDistribStateManager().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" + shardName, null, CreateMode.PERSISTENT, false);
+              getSolrCloudManager().getDistribStateManager().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" + shardName + "/election", null, CreateMode.PERSISTENT, false);
+              getSolrCloudManager().getDistribStateManager().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leaders/" + shardName, null, CreateMode.PERSISTENT, false);
+              getSolrCloudManager().getDistribStateManager().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/terms/" + shardName, ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
+
+            } catch (KeeperException | AlreadyExistsException | IOException | InterruptedException e) {
+              ParWork.propegateInterrupt(e);
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+            }
+            return ret;
           case DELETESHARD:
             return Collections.singletonList(new CollectionMutator(getSolrCloudManager()).deleteShard(clusterState, message));
           case ADDREPLICA:

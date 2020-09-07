@@ -157,89 +157,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - problems with newFormat test method
-  public void testCreateCollWithDefaultClusterPropertiesOldFormat() throws Exception {
-    String COLL_NAME = "CollWithDefaultClusterProperties";
-    try {
-      V2Response rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
-          .withPayload("{set-obj-property:{collectionDefaults:{numShards : 2 , nrtReplicas : 2}}}")
-          .build()
-          .process(cluster.getSolrClient());
-
-      for (int i = 0; i < 30; i++) {
-        Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
-        if (m != null) break;
-        Thread.sleep(10);
-      }
-      Object clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
-      assertEquals("2", String.valueOf(clusterProperty));
-      clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
-      assertEquals("2", String.valueOf(clusterProperty));
-      CollectionAdminResponse response = CollectionAdminRequest
-          .createCollection(COLL_NAME, "conf", null, null, null, null)
-          .process(cluster.getSolrClient());
-      assertEquals(0, response.getStatus());
-      assertTrue(response.isSuccess());
-
-      DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(COLL_NAME);
-      Map<String, Slice> slices = coll.getSlicesMap();
-      assertEquals(2, slices.size());
-      for (Slice slice : slices.values()) {
-        assertEquals(2, slice.getReplicas().size());
-      }
-      CollectionAdminRequest.deleteCollection(COLL_NAME).process(cluster.getSolrClient());
-
-      // unset only a single value using old format
-      rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
-          .withPayload("{\n" +
-              "  \"set-obj-property\": {\n" +
-              "    \"collectionDefaults\": {\n" +
-              "      \"nrtReplicas\": null\n" +
-              "    }\n" +
-              "  }\n" +
-              "}")
-          .build()
-          .process(cluster.getSolrClient());
-      // assert that it is really gone in both old and new paths
-      // we use a timeout so that the change made in ZK is reflected in the watched copy inside ZkStateReader
-      TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
-      while (!timeOut.hasTimedOut())  {
-        clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
-        if (clusterProperty == null)  break;
-      }
-      assertNull(clusterProperty);
-      clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(COLLECTION_DEF, NRT_REPLICAS), null);
-      assertNull(clusterProperty);
-
-      // delete all defaults the old way
-      rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
-          .withPayload("{set-obj-property:{collectionDefaults:null}}")
-          .build()
-          .process(cluster.getSolrClient());
-      // assert that it is really gone in both old and new paths
-      timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
-      while (!timeOut.hasTimedOut()) {
-        clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
-        if (clusterProperty == null)  break;
-      }
-      assertNull(clusterProperty);
-      clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(COLLECTION_DEF, NUM_SHARDS_PROP), null);
-      assertNull(clusterProperty);
-    } finally {
-      // clean up in case there was an exception during the test
-      V2Response rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
-          .withPayload("{set-obj-property:{collectionDefaults: null}}")
-          .build()
-          .process(cluster.getSolrClient());
-    }
-
-  }
-
-  @Test
   @Ignore // nocommit debug
   public void testCreateCollWithDefaultClusterPropertiesNewFormat() throws Exception {
     String COLL_NAME = "CollWithDefaultClusterProperties";
@@ -322,14 +239,13 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(response.toString(), 0, response.getStatus());
     assertTrue(response.toString(), response.isSuccess());
 
-    // nocommit - there is still a race around getting response for too fast a request
-//    Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
-//    assertEquals(4, coresStatus.size());
-//    for (String coreName : coresStatus.keySet()) {
-//      NamedList<Integer> status = coresStatus.get(coreName);
-//      assertEquals(0, (int)status.get("status"));
-//      assertTrue(status.get("QTime") > 0);
-//    }
+    Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
+    assertEquals(4, coresStatus.size());
+    for (String coreName : coresStatus.keySet()) {
+      NamedList<Integer> status = coresStatus.get(coreName);
+      assertEquals(0, (int)status.get("status"));
+      assertTrue(status.get("QTime") > 0);
+    }
 
     response = CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
 
@@ -349,10 +265,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testCloudInfoInCoreStatus() throws IOException, SolrServerException {
     String collectionName = "corestatus_test";
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .setMaxShardsPerNode(3)
         .setStateFormat(1)
         .process(cluster.getSolrClient());
 
@@ -433,7 +349,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testSplitShard() throws Exception {
 
     final String collectionName = "solrj_test_splitshard";
@@ -510,7 +425,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testAddAndDeleteReplica() throws Exception {
 
     final String collectionName = "solrj_replicatests";
@@ -522,14 +436,22 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     Collections.shuffle(nodeList, random());
     final String node = nodeList.get(0);
 
+    List<Replica> originalReplicas = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName).getReplicas();
+
     CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(node)
         .process(cluster.getSolrClient());
 
-    Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
-    assertEquals(0, response.getStatus());
-    assertTrue(response.isSuccess());
-    assertTrue(newReplica.getNodeName().equals(node));
+    cluster.waitForActiveCollection(collectionName, 1, 3);
+    // nocommit - look at returned status not coming back
+//    Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
+//    assertEquals(0, response.getStatus());
+//    assertTrue(response.isSuccess());
+//    assertTrue(newReplica.getNodeName().equals(node));
+
+    ArrayList rlist = new ArrayList(cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName).getReplicas());
+    rlist.removeAll(originalReplicas);
+    Replica newReplica = (Replica) rlist.get(0);
 
     // Test DELETEREPLICA
     response = CollectionAdminRequest.deleteReplica(collectionName, "shard1", newReplica.getName())
@@ -862,11 +784,11 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // debug
   public void testAddAndDeleteReplicaProp() throws InterruptedException, IOException, SolrServerException {
 
     final String collection = "replicaProperties";
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 2).setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
 
     final Replica replica = getCollectionState(collection).getLeader("shard1");

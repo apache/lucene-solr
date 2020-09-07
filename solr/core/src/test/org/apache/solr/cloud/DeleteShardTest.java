@@ -40,7 +40,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
 public class DeleteShardTest extends SolrCloudTestCase {
 
   // TODO: Custom hash slice deletion test
@@ -112,7 +111,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
-  @Ignore //nocommit
   public void testDirectoryCleanupAfterDeleteShard() throws InterruptedException, IOException, SolrServerException {
 
     final String collection = "deleteshard_test";
@@ -145,8 +143,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     // Delete shard 'b'
     CollectionAdminRequest.deleteShard(collection, "b")
-        .setDeleteDataDir(false)
-        .setDeleteInstanceDir(false)
         .process(cluster.getSolrClient());
 
     waitForState("Expected 'b' to be removed", collection, (n, c) -> {
@@ -154,7 +150,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     });
     
     assertEquals(1, getCollectionState(collection).getActiveSlices().size());
-    assertTrue("Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
-    assertTrue("Data directory still exists", FileUtils.fileExists(coreStatus.getDataDirectory()));
+    assertFalse("Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
+    assertFalse("Data directory still exists", FileUtils.fileExists(coreStatus.getDataDirectory()));
   }
 }

@@ -1348,6 +1348,32 @@ public class ZkStateReader implements SolrCloseable {
           //        return new VersionedCollectionProps(stat.getVersion(), (Map<String, String>) Utils.fromJSON(data));
         } catch (KeeperException e) {
           log.error("", e);
+          return;
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+        }
+      }  else if (EventType.NodeDeleted.equals(event.getType())) {
+        watchedCollectionProps.put(coll, new VersionedCollectionProps(0, Collections.emptyMap()));
+        try {
+          zkClient.exists(getCollectionPropsPath(coll), this);
+        } catch (KeeperException e) {
+          log.error("", e);
+          return;
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+        }
+        try (ParWork work = new ParWork(this, true)) {
+          for (CollectionPropsWatcher observer : collectionPropsObservers.values()) {
+            work.collect("collectionPropsObservers", () -> {
+              observer.onStateChanged(Collections.emptyMap());
+            });
+          }
+        }
+      } else {
+        try {
+          zkClient.exists(getCollectionPropsPath(coll), this);
+        } catch (KeeperException e) {
+          log.error("", e);
         } catch (InterruptedException e) {
           ParWork.propegateInterrupt(e);
         }
@@ -1888,6 +1914,20 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public void registerCollectionPropsWatcher(final String collection, CollectionPropsWatcher propsWatcher) {
+    Stat stat = new Stat();
+    byte[] data = EMPTY_ARRAY;
+    try {
+      data = zkClient.getData(getCollectionPropsPath(collection), new PropsWatcher(collection), stat);
+    } catch (KeeperException e) {
+      log.error("KeeperException", e);
+      return;
+    } catch (InterruptedException e) {
+      log.warn("", e);
+      return;
+    }
+
+    VersionedCollectionProps props = new VersionedCollectionProps(stat.getVersion(), (Map<String,String>) fromJSON(data));
+    watchedCollectionProps.put(collection, props);
     collectionPropsObservers.put(collection, propsWatcher);
   }
 

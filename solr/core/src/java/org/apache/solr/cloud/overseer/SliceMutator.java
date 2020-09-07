@@ -224,26 +224,6 @@ public class SliceMutator {
       props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
       Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props, collectionName);
 
-      // nocommit - fix makePath, async, single node
-      try {
-        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
-                + "/leader_elect/" + slice.getName());
-        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
-                + "/leader_elect/" + slice.getName() + LeaderElector.ELECTION_NODE);
-        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE+ "/" + collection + "/" + slice.getName()
-                + ZkStateReader.SHARD_LEADERS_ZKNODE);
-      } catch (AlreadyExistsException e) {
-        throw new AlreadyClosedException();
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (KeeperException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
-
-
       slicesCopy.put(slice.getName(), newSlice);
     }
 

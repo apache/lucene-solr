@@ -51,9 +51,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 
-// nocommit - need to allow for a configurable flush interval again
 public class ZkStateWriter {
-  // pleeeease leeeeeeeeeeets not - THERE HAS TO BE  BETTER WAY
   // private static final long MAX_FLUSH_INTERVAL = TimeUnit.NANOSECONDS.convert(Overseer.STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -110,7 +108,7 @@ public class ZkStateWriter {
       log.debug("enqueueUpdate(ClusterState prevState={}, List<ZkWriteCommand> cmds={}, updates={}, ZkWriteCallback callback={}) - start", state, cmds, updatesToWrite, callback);
     }
     Map<String,DocCollection> updateCmds = new LinkedHashMap<>(cmds.size());
-// nocommit - all this
+
     for (ZkWriteCommand cmd : cmds) {
         updateCmds.put(cmd.name, cmd.collection);
     }
@@ -126,11 +124,6 @@ public class ZkStateWriter {
       String name = entry.getKey();
       String path = ZkStateReader.getCollectionPath(name);
 
-      Integer prevVersion = -1;
-      if (lastUpdatedTime == -1) {
-        prevVersion = -1;
-      }
-      Stat stat = new Stat();
       while (true) {
         try {
 
@@ -155,73 +148,12 @@ public class ZkStateWriter {
               coll = prevState.getCollectionOrNull(name);
             }
 
-            prevVersion = coll.getZNodeVersion();
-
-            Map<String,Slice> existingSlices = coll.getSlicesMap();
-
-            Map<String,Slice> newSliceMap = new HashMap<>(
-                existingSlices.size() + 1);
-
             if (log.isDebugEnabled()) {
-              log.debug("Existing slices {}", existingSlices);
+              log.debug("The new collection {}", c);
             }
-
-            existingSlices.forEach((sliceId, slice) -> {
-              newSliceMap.put(sliceId, slice);
-            });
-
-            if (log.isDebugEnabled()) {
-              log.debug("Add collection {}", c);
-            }
-
-            DocCollection finalC = c;
-            DocCollection finalColl = coll;
-            c.getSlicesMap().forEach((sliceId, slice) -> {
-              if (finalColl.getSlice(sliceId) != null) {
-                Map<String,Replica> newReplicas = new HashMap<>();
-                
-                finalC.getSlice(sliceId).getReplicas().forEach((replica) -> {
-                  newReplicas.put(replica.getName(), replica);
-                });
-                Map<String,Object> newProps = new HashMap<>();
-                newProps.putAll(slice.getProperties());
-                Slice newSlice = new Slice(sliceId, newReplicas, newProps,
-                    finalC.getName());
-                newSliceMap.put(sliceId, newSlice);
-              } else {
-                Map<String,Replica> newReplicas = new HashMap<>();
-
-                Map<String,Object> newProps = new HashMap<>();
-
-                newProps.putAll(slice.getProperties());
-
-                finalC.getSlice(sliceId).getReplicas().forEach((replica) -> {
-                  newReplicas.put(replica.getName(), replica);
-                });
-
-                Slice newSlice = new Slice(sliceId, newReplicas, newProps,
-                    finalC.getName());
-                if (log.isDebugEnabled()) {
-                  log.debug("Add slice to new slices {}", newSlice);
-                }
-                newSliceMap.put(sliceId, newSlice);
-              }
-            });
-
-            if (log.isDebugEnabled()) {
-              log.debug("New Slice Map after combining {}", newSliceMap);
-            }
-
-            DocCollection newCollection = new DocCollection(name, newSliceMap,
-                c.getProperties(), c.getRouter(), prevVersion,
-                path);
-
-            if (log.isDebugEnabled()) {
-              log.debug("The new collection {}", newCollection);
-            }
-            updatesToWrite.put(name, newCollection);
+            updatesToWrite.put(name, c);
             LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
-            collStates.put(name, new ClusterState.CollectionRef(newCollection));
+            collStates.put(name, new ClusterState.CollectionRef(c));
             prevState = new ClusterState(prevState.getLiveNodes(),
                 collStates, prevState.getZNodeVersion());
           } else {
@@ -250,12 +182,8 @@ public class ZkStateWriter {
         } catch (Exception e) {
           ParWork.propegateInterrupt(e);
           if (e instanceof KeeperException.BadVersionException) {
-            // nocommit invalidState = true;
-            //if (log.isDebugEnabled())
-            log.info(
-                "Tried to update the cluster state using version={} but we where rejected, currently at {}",
-                prevVersion, c == null ? "null" : c.getZNodeVersion(), e);
-
+            log.warn(
+                "Tried to update the cluster state using but we where rejected, currently at {}", c == null ? "null" : c.getZNodeVersion(), e);
             throw e;
           }
           ParWork.propegateInterrupt(e);
@@ -263,20 +191,12 @@ public class ZkStateWriter {
               "Failed processing update=" + c + "\n" + prevState, e);
         }
       }
-      // }
-
-      // numUpdates = 0;
-
-      // Thread.sleep(500);
     }
 
     if (log.isDebugEnabled()) {
       log.debug("enqueueUpdate(ClusterState, List<ZkWriteCommand>, ZkWriteCallback) - end");
     }
     return prevState;
-    // }
-
-//    return clusterState;
   }
 
   public boolean hasPendingUpdates() {

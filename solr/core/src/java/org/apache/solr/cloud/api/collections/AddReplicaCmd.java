@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -155,10 +156,27 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
     List<CreateReplica> createReplicas;
+
     try {
+      ocmh.zkStateReader.waitForState(collectionName, 3, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+        if (collectionState == null) {
+          return false;
+        }
+        if (collectionState.getSlices() == null) {
+          return false;
+        }
+        return true;
+      });
+    } catch (TimeoutException e) {
+      log.warn("Could not find collection with populated shards in clusterstate \n{}", clusterState);
+    }
+    clusterState = ocmh.zkStateReader.getClusterState();
+
+    try {
+      ClusterState finalClusterState = clusterState;
       createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collectionName, message, replicaTypesVsCount, sessionWrapper)
           .stream()
-          .map(replicaPosition -> assignReplicaDetails(ocmh.cloudManager, clusterState, message, replicaPosition))
+          .map(replicaPosition -> assignReplicaDetails(ocmh.cloudManager, finalClusterState, message, replicaPosition))
           .collect(Collectors.toList());
     } finally {
       if (sessionWrapper.get() != null) {
