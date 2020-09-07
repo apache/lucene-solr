@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -47,6 +48,9 @@ import org.slf4j.LoggerFactory;
  */
 public class AddReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private AtomicInteger asyncId = new AtomicInteger();
+
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -159,8 +163,9 @@ public class AddReplicaTest extends SolrCloudTestCase {
     String sliceName = coll.getSlices().iterator().next().getName();
     Collection<Replica> replicas = coll.getSlice(sliceName).getReplicas();
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collection, sliceName);
-    addReplica.processAsync("000", cloudClient);
-    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
+    int aid1 = asyncId.incrementAndGet();
+    addReplica.processAsync(Integer.toString(aid1), cloudClient);
+    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(Integer.toString(aid1));
     CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
 
     assertNotSame(rsp.getRequestStatus(), COMPLETED);
@@ -183,10 +188,14 @@ public class AddReplicaTest extends SolrCloudTestCase {
     replicas2.removeAll(replicas);
     assertEquals(1, replicas2.size());
 
+
+    cluster.waitForActiveCollection(collection, 2, 2);
+
     // use waitForFinalState
     addReplica.setWaitForFinalState(true);
-    addReplica.processAsync("001", cloudClient);
-    requestStatus = CollectionAdminRequest.requestStatus("001");
+    int aid2 = asyncId.incrementAndGet();
+    addReplica.processAsync(Integer.toString(aid2), cloudClient);
+    requestStatus = CollectionAdminRequest.requestStatus(Integer.toString(aid2));
     rsp = requestStatus.process(cloudClient);
     assertNotSame(rsp.getRequestStatus(), COMPLETED);
     // wait for async request success
@@ -209,9 +218,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     String replica2 = replicas2.iterator().next().getName();
     assertEquals(2, replicas3.size());
     for (Replica replica : replicas3) {
-      if (replica.getName().equals(replica2)) {
-        continue; // may be still recovering
-      }
       assertSame(coll.toString() + "\n" + replica.toString(), replica.getState(), Replica.State.ACTIVE);
     }
   }

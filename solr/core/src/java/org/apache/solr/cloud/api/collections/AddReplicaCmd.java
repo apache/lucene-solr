@@ -193,6 +193,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
     }
 
+    int finalTotalReplicas = totalReplicas;
     Runnable runnable = () -> {
       try {
         shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
@@ -202,18 +203,42 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         ParWork.propegateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Interrupted", e);
       }
-      for (CreateReplica replica : createReplicas) {
-        ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName);
+
+      if (asyncId != null) {
+        List<String> coreNodeNames = new ArrayList<>();
+        for (CreateReplica replica : createReplicas) {
+          coreNodeNames.add(ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName));
+        }
+
+        SolrCloseableLatch latch = new SolrCloseableLatch(finalTotalReplicas, ocmh);
+        ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collectionName, coreNodeNames, null, latch);
+        try {
+          zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
+          try {
+            if (!latch.await(timeout, TimeUnit.SECONDS)) {
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting " + timeout + " seconds for replica to become active.");
+            }
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        } finally {
+          zkStateReader.removeCollectionStateWatcher(collectionName, watcher);
+        }
       }
+
       if (onComplete != null) onComplete.run();
     };
 
 
 
     if (asyncId == null) {
-
+      List<String> coreNodeNames = new ArrayList<>();
+      for (CreateReplica replica : createReplicas) {
+        coreNodeNames.add(ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName));
+      }
       SolrCloseableLatch latch = new SolrCloseableLatch(totalReplicas, ocmh);
-      ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collectionName, null, createReplicas.stream().map(createReplica -> createReplica.coreName).collect(Collectors.toList()), latch);
+      ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collectionName, coreNodeNames, null, latch);
       try {
         zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
         ParWork.getRootSharedExecutor().execute(runnable);

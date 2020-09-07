@@ -894,7 +894,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       Watcher waitForAsyncId = new Watcher() {
         @Override
         public void process(WatchedEvent event) {
-          if (Watcher.Event.EventType.None.equals(event.getType()) && !Watcher.Event.KeeperState.Expired.equals(event.getState())) {
+          if (Watcher.Event.EventType.None.equals(event.getType())) {
             return;
           }
           if (event.getType().equals(Watcher.Event.EventType.NodeCreated)) {
@@ -902,20 +902,21 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           } else if (event.getType().equals(Event.EventType.NodeDeleted)) {
             // no-op: gets deleted below once we're done with it
             return;
-          } else {
-            Stat rstats2 = null;
-            try {
-              rstats2 = zkStateReader.getZkClient().exists(asyncPathToWaitOn, this);
-            } catch (KeeperException e) {
-              log.error("ZooKeeper exception", e);
-            } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
-              return;
-            }
-            if (rstats2 != null) {
-              latch.countDown();
-            }
           }
+
+          Stat rstats2 = null;
+          try {
+            rstats2 = zkStateReader.getZkClient().exists(asyncPathToWaitOn, this);
+          } catch (KeeperException e) {
+            log.error("ZooKeeper exception", e);
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+            return;
+          }
+          if (rstats2 != null) {
+            latch.countDown();
+          }
+
         }
       };
 

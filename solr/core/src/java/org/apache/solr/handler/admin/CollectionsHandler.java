@@ -300,7 +300,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       if (collection != null) {
         DocCollection coll = coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
-        if (coll != null) {
+        if (coll != null && !action.equals(DELETE)) {
           rsp.add("csver", coll.getZNodeVersion());
         } else {
           // deleted
