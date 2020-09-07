@@ -210,6 +210,12 @@ public class AddReplicaTest extends SolrCloudTestCase {
       Thread.sleep(100);
     }
     assertTrue(success);
+
+    // we wait for the replicas here - the async addReplica call will carry on in the background
+    // and while it will ensure the server sees the finished state when it's marked complete
+    // that doesn't mean our local cloud client has the state yet
+    cluster.waitForActiveCollection(collection, 2, 4);
+
     // let the client watch fire
     clusterState = cloudClient.getZkStateReader().getClusterState();
     coll = clusterState.getCollection(collection);

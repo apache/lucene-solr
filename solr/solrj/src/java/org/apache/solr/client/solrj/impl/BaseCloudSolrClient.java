@@ -1089,6 +1089,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       Integer ver = (Integer) resp.get("csver");
       if (ver != null) {
         try {
+          DocCollection coll = getZkStateReader().getClusterState().getCollection(collection);
+          log.info("Wait for catch up to server state {} ours is {}", ver, coll == null ? -1 : coll.getZNodeVersion());
           getZkStateReader().waitForState(collection, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
             if (collectionState != null && collectionState.getZNodeVersion() >= ver) {
               return true;
@@ -1099,7 +1101,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           ParWork.propegateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
-      } else {
+      } else if (request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.DELETE.toString())) {
         try {
           getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (c) -> c == null);
         } catch (InterruptedException e) {
