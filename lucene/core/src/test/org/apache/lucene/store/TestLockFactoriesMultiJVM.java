@@ -16,17 +16,15 @@
  */
 package org.apache.lucene.store;
 
+import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.SuppressForbidden;
 
 public class TestLockFactoriesMultiJVM extends LuceneTestCase {
@@ -44,9 +42,6 @@ public class TestLockFactoriesMultiJVM extends LuceneTestCase {
   }
   
   private void runImpl(Class<? extends LockFactory> impl) throws Exception {
-    // make sure we are in clean state:
-    LockVerifyServer.PORT.set(-1);
-    
     final int clients = 2;
     final String host = "127.0.0.1";
     final int delay = 1;
@@ -54,53 +49,46 @@ public class TestLockFactoriesMultiJVM extends LuceneTestCase {
     
     final Path dir = LuceneTestCase.createTempDir(impl.getSimpleName());
     
-    // create the LockVerifyServer in a separate thread
-    final ExecutorService pool = Executors.newSingleThreadExecutor(new NamedThreadFactory("lockfactory-tester-"));
-    try {
-      pool.submit(() -> {
-        LockVerifyServer.main(host, Integer.toString(clients));
-        return (Void) null;
-      });
-      
-      // wait for it to boot up
-      int port;
-      while ((port = LockVerifyServer.PORT.get()) == -1) {
-        Thread.sleep(100L);
-      }
-      
+    final List<Process> processes = new ArrayList<>();
+
+    LockVerifyServer.execute(addr -> {
       // spawn clients as separate Java processes
-      final List<Process> processes = new ArrayList<>();
       for (int i = 0; i < clients; i++) {
-        processes.add(applyRedirection(new ProcessBuilder(
-            Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
-            "-cp",
-            System.getProperty("java.class.path"),
-            LockStressTest.class.getName(),
-            Integer.toString(i),
-            host,
-            Integer.toString(port),
-            impl.getName(),
-            dir.toString(),
-            Integer.toString(delay),
-            Integer.toString(rounds)
-          ), i, dir).start());
+        try {
+          processes.add(applyRedirection(new ProcessBuilder(
+              Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
+              "-cp",
+              System.getProperty("java.class.path"),
+              "-Xmx32M",
+              LockStressTest.class.getName(),
+              Integer.toString(i),
+              addr.getHostString(),
+              Integer.toString(addr.getPort()),
+              impl.getName(),
+              dir.toString(),
+              Integer.toString(delay),
+              Integer.toString(rounds)
+            ), i, dir).start());
+        } catch (IOException ioe) {
+          throw new AssertionError(ioe);
+        }
       }
-      
-      // wait for all processes to exit
-      int exited = 0;
-      while (exited < clients) {
-        for (Process p : processes) {
-          if (p.waitFor(1, TimeUnit.SECONDS)) {
-            exited++;
-            assertEquals("Process died abnormally?", 0, p.waitFor());
-          }
+    }, host, clients);
+     
+    // wait for all processes to exit...
+    try {
+      for (Process p : processes) {
+        if (p.waitFor(15, TimeUnit.SECONDS)) {
+          assertEquals("Process " + p.pid() + " died abnormally?", 0, p.waitFor());
         }
       }
     } finally {
-      // shutdown threadpool
-      pool.shutdown();
-      assertTrue("LockVerifyServer did not exit after 20s.",
-          pool.awaitTermination(20, TimeUnit.SECONDS));
+      // kill all processes, which are still alive.
+      for (Process p : processes) {
+        if (p.isAlive()) {
+          p.destroyForcibly();
+        }
+      }
     }
   }
   
