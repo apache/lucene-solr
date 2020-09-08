@@ -17,7 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterConfig;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -26,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.annotation.SolrThreadSafe;
+import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,9 +164,9 @@ public class RateLimitManager {
   }
 
   public static class Builder {
-    protected FilterConfig config;
+    protected NodeConfig config;
 
-    public Builder(FilterConfig config) {
+    public Builder(NodeConfig config) {
       this.config = config;
     }
 

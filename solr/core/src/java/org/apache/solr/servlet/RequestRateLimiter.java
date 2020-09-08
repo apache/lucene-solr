@@ -17,12 +17,13 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterConfig;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.annotation.SolrThreadSafe;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.PluginInfo;
 
 /**
  * Handles rate limiting for a specific request type.
@@ -95,34 +96,40 @@ public class RequestRateLimiter {
     return rateLimiterConfig;
   }
 
-  static long getParamAndParseLong(FilterConfig config, String parameterName, long defaultValue) {
-    String tempBuffer = config.getInitParameter(parameterName);
+  static long getParamAndParseLong(PluginInfo config, String parameterName, long defaultValue) {
+    long result = defaultValue;
 
-    if (tempBuffer != null) {
-      return Long.parseLong(tempBuffer);
+    if (config != null) {
+      NamedList args = config.initArgs;
+
+      result = Long.parseLong(args._getStr(parameterName, String.valueOf(defaultValue)));
     }
 
-    return defaultValue;
+    return result;
   }
 
-  static int getParamAndParseInt(FilterConfig config, String parameterName, int defaultValue) {
-    String tempBuffer = config.getInitParameter(parameterName);
+  static int getParamAndParseInt(PluginInfo config, String parameterName, int defaultValue) {
+    int result = defaultValue;
 
-    if (tempBuffer != null) {
-      return Integer.parseInt(tempBuffer);
+    if (config != null) {
+      NamedList args = config.initArgs;
+
+      result = Integer.parseInt(args._getStr(parameterName, String.valueOf(defaultValue)));
     }
 
-    return defaultValue;
+    return result;
   }
 
-  static boolean getParamAndParseBoolean(FilterConfig config, String parameterName, boolean defaultValue) {
-    String tempBuffer = config.getInitParameter(parameterName);
+  static boolean getParamAndParseBoolean(PluginInfo config, String parameterName, boolean defaultValue) {
+    boolean result = defaultValue;
 
-    if (tempBuffer != null) {
-      return Boolean.parseBoolean(tempBuffer);
+    if (config != null) {
+      NamedList args = config.initArgs;
+
+      result = Boolean.parseBoolean(args._getStr(parameterName, String.valueOf(defaultValue)));
     }
 
-    return defaultValue;
+    return result;
   }
 
   /* Rate limiter config for a specific request rate limiter instance */

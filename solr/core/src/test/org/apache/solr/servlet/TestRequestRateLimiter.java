@@ -17,7 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterConfig;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -33,6 +32,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.core.NodeConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -60,8 +60,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
     RequestRateLimiter.RateLimiterConfig rateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(SolrRequest.SolrRequestType.QUERY,
         true, 1, DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isSlotBorrowing */);
-    // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes its parent here
-    RateLimitManager.Builder builder = new MockBuilder(null /* dummy FilterConfig */, new MockRequestRateLimiter(rateLimiterConfig, 5));
+    // We are fine with a null NodeConfig here since we ensure that MockBuilder never invokes its parent here
+    RateLimitManager.Builder builder = new MockBuilder(null /* dummy NodeConfig */, new MockRequestRateLimiter(rateLimiterConfig, 5));
     RateLimitManager rateLimitManager = builder.build();
 
     solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
@@ -95,8 +95,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
         true, 1, DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isSlotBorrowing */);
     RequestRateLimiter.RateLimiterConfig indexRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig(SolrRequest.SolrRequestType.UPDATE,
         true, 1, DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isSlotBorrowing */);
-    // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes its parent
-    RateLimitManager.Builder builder = new MockBuilder(null /*dummy FilterConfig */, new MockRequestRateLimiter(queryRateLimiterConfig, 5), new MockRequestRateLimiter(indexRateLimiterConfig, 5));
+    // We are fine with a null NodeConfig here since we ensure that MockBuilder never invokes its parent
+    RateLimitManager.Builder builder = new MockBuilder(null /*dummy NodeConfig */, new MockRequestRateLimiter(queryRateLimiterConfig, 5), new MockRequestRateLimiter(indexRateLimiterConfig, 5));
     RateLimitManager rateLimitManager = builder.build();
 
     solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
@@ -205,14 +205,14 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     private final RequestRateLimiter queryRequestRateLimiter;
     private final RequestRateLimiter indexRequestRateLimiter;
 
-    public MockBuilder(FilterConfig config, RequestRateLimiter queryRequestRateLimiter) {
+    public MockBuilder(NodeConfig config, RequestRateLimiter queryRequestRateLimiter) {
       super(config);
 
       this.queryRequestRateLimiter = queryRequestRateLimiter;
       this.indexRequestRateLimiter = null;
     }
 
-    public MockBuilder(FilterConfig config, RequestRateLimiter queryRequestRateLimiter, RequestRateLimiter indexRequestRateLimiter) {
+    public MockBuilder(NodeConfig config, RequestRateLimiter queryRequestRateLimiter, RequestRateLimiter indexRequestRateLimiter) {
       super(config);
 
       this.queryRequestRateLimiter = queryRequestRateLimiter;

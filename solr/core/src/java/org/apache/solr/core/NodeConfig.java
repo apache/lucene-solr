@@ -48,6 +48,8 @@ public class NodeConfig {
 
   private final PluginInfo shardHandlerFactoryConfig;
 
+  private final PluginInfo rateLimitManagerConfig;
+
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
 
   private final String coreAdminHandlerClass;
@@ -90,7 +92,7 @@ public class NodeConfig {
 
   private NodeConfig(String nodeName, Path coreRootDirectory, Path solrDataHome, Integer booleanQueryMaxClauseCount,
                      Path configSetBaseDirectory, String sharedLibDirectory,
-                     PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
+                     PluginInfo shardHandlerFactoryConfig, PluginInfo rateLimitManagerConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
                      String coreAdminHandlerClass, String collectionsAdminHandlerClass,
                      String healthCheckHandlerClass, String infoHandlerClass, String configSetsHandlerClass,
                      LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads, int replayUpdatesThreads,
@@ -107,6 +109,7 @@ public class NodeConfig {
     this.configSetBaseDirectory = configSetBaseDirectory;
     this.sharedLibDirectory = sharedLibDirectory;
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
+    this.rateLimitManagerConfig = rateLimitManagerConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
     this.coreAdminHandlerClass = coreAdminHandlerClass;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
@@ -161,6 +164,10 @@ public class NodeConfig {
   
   public PluginInfo getShardHandlerFactoryPluginInfo() {
     return shardHandlerFactoryConfig;
+  }
+
+  public PluginInfo getRateLimitManagerConfig() {
+    return rateLimitManagerConfig;
   }
 
   public UpdateShardHandlerConfig getUpdateShardHandlerConfig() {
@@ -282,6 +289,7 @@ public class NodeConfig {
     private Path configSetBaseDirectory;
     private String sharedLibDirectory;
     private PluginInfo shardHandlerFactoryConfig;
+    private PluginInfo rateLimitManagerConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
@@ -368,6 +376,11 @@ public class NodeConfig {
 
     public NodeConfigBuilder setShardHandlerFactoryConfig(PluginInfo shardHandlerFactoryConfig) {
       this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
+      return this;
+    }
+
+    public NodeConfigBuilder setRateLimitManagerConfig(PluginInfo rateLimitManagerConfig) {
+      this.rateLimitManagerConfig = rateLimitManagerConfig;
       return this;
     }
 
@@ -479,7 +492,7 @@ public class NodeConfig {
         loader = new SolrResourceLoader(solrHome);
       }
       return new NodeConfig(nodeName, coreRootDirectory, solrDataHome, booleanQueryMaxClauseCount,
-                            configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
+                            configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig, rateLimitManagerConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
                             solrHome, loader, solrProperties,
