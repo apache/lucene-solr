@@ -58,6 +58,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -221,15 +222,14 @@ public final class ManagedIndexSchema extends IndexSchema {
    * Block up to a specified maximum time until we see agreement on the schema
    * version in ZooKeeper across all replicas for a collection.
    */
-  public static void waitForSchemaZkVersionAgreement(String collection, String localCoreNodeName,
-                                                     int schemaZkVersion, ZkController zkController, int maxWaitSecs)
+  public static void waitForSchemaZkVersionAgreement(String collection, String localCoreNodeName, int schemaZkVersion, ZkController zkController, int maxWaitSecs, ConnectionManager.IsClosed isClosed)
   {
     RTimer timer = new RTimer();
 
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
     for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localCoreNodeName))
-      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion));
+      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient(), isClosed));
     if (concurrentTasks.isEmpty())
       return; // nothing to wait for ...
 
@@ -242,7 +242,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
     try {
       List<Future<Integer>> results =
-          ParWork.getMyPerThreadExecutor().invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
+          ParWork.getRootSharedExecutor().invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
 
       // determine whether all replicas have the update
       List<String> failedList = null; // lazily init'd
@@ -312,14 +312,18 @@ public final class ManagedIndexSchema extends IndexSchema {
 
   private static class GetZkSchemaVersionCallable extends SolrRequest implements Callable<Integer> {
 
+    private final ConnectionManager.IsClosed isClosed;
+    private final Http2SolrClient solrClient;
     private String coreUrl;
     private int expectedZkVersion;
 
-    GetZkSchemaVersionCallable(String coreUrl, int expectedZkVersion) {
+    GetZkSchemaVersionCallable(String coreUrl, int expectedZkVersion, Http2SolrClient solrClient, ConnectionManager.IsClosed isClosed) {
       super(METHOD.GET, "/schema/zkversion");
-
+      setBasePath(coreUrl);
+      this.isClosed = isClosed;
       this.coreUrl = coreUrl;
       this.expectedZkVersion = expectedZkVersion;
+      this.solrClient = solrClient;
     }
 
     @Override
@@ -332,15 +336,21 @@ public final class ManagedIndexSchema extends IndexSchema {
     @Override
     public Integer call() throws Exception {
       int remoteVersion = -1;
-      try (Http2SolrClient solr = new Http2SolrClient.Builder(coreUrl).markInternalRequest().build()) {
+
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1 || remoteVersion < expectedZkVersion) {
           try {
-            NamedList<Object> zkversionResp = solr.request(this);
+            if (isClosed.isClosed()) {
+              return -1;
+            }
+            NamedList<Object> zkversionResp = solrClient.request(this);
             if (zkversionResp != null)
               remoteVersion = (Integer)zkversionResp.get("zkversion");
 
             if (remoteVersion < expectedZkVersion) {
+              if (isClosed.isClosed()) {
+                return -1;
+              }
               // rather than waiting and re-polling, let's be proactive and tell the replica
               // to refresh its schema from ZooKeeper, if that fails, then the
               Thread.sleep(500); // slight delay before requesting version again
@@ -350,7 +360,6 @@ public final class ManagedIndexSchema extends IndexSchema {
 
           } catch (Exception e) {
             if (e instanceof InterruptedException) {
-              ParWork.propegateInterrupt(e);
               break; // stop looping
             } else if (e instanceof  KeeperException.SessionExpiredException) {
               break; // stop looping
@@ -359,7 +368,7 @@ public final class ManagedIndexSchema extends IndexSchema {
             }
           }
         }
-      }
+
       return remoteVersion;
     }
 

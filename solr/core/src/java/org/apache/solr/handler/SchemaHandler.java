@@ -31,6 +31,7 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -76,7 +77,13 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     level2 = Collections.unmodifiableMap(s);
   }
 
+  private volatile boolean isClosed;
 
+  @Override
+  public void close() {
+    this.isClosed = true;
+  }
+  
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     RequestHandlerUtils.setWt(req, JSON);
@@ -91,7 +98,12 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
 
       try {
         @SuppressWarnings({"rawtypes"})
-        List errs = new SchemaManager(req).performOperations();
+        List errs = new SchemaManager(req, new ConnectionManager.IsClosed() {
+          @Override
+          public boolean isClosed() {
+            return isClosed;
+          }
+        }).performOperations();
         if (!errs.isEmpty())
           throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
       } catch (IOException e) {

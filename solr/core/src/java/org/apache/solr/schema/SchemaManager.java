@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.TimeSource;
@@ -62,11 +63,13 @@ public class SchemaManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final SolrQueryRequest req;
+  private final ConnectionManager.IsClosed isClosed;
   ManagedIndexSchema managedIndexSchema;
   int timeout;
 
-  public SchemaManager(SolrQueryRequest req){
+  public SchemaManager(SolrQueryRequest req, ConnectionManager.IsClosed isClosed){
     this.req = req;
+    this.isClosed = isClosed;
     //The default timeout is 10 minutes when no BaseSolrResource.UPDATE_TIMEOUT_SECS is specified
     timeout = req.getParams().getInt(BaseSolrResource.UPDATE_TIMEOUT_SECS, 600);
 
@@ -82,6 +85,10 @@ public class SchemaManager {
    * @return List of errors. If the List is empty then the operation was successful.
    */
   public List performOperations() throws Exception {
+    if (isClosed.isClosed()) {
+      return Collections.singletonList("Already Closed");
+    }
+
     List<CommandOperation> ops = req.getCommands(false);
     List errs = CommandOperation.captureErrors(ops);
     if (!errs.isEmpty()) return errs;
@@ -129,6 +136,11 @@ public class SchemaManager {
             latestVersion = ZkController.persistConfigResourceToZooKeeper
                 (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
                  sw.toString().getBytes(StandardCharsets.UTF_8), true);
+
+            if (isClosed.isClosed()) {
+              return Collections.singletonList("Already Closed");
+            }
+
             req.getCore().getCoreContainer().reload(req.getCore().getName());
             break;
           } catch (ZkController.ResourceModifiedInZkException e) {
@@ -139,6 +151,11 @@ public class SchemaManager {
             //only for non cloud stuff
             managedIndexSchema.persistManagedSchema(false);
             core.setLatestSchema(managedIndexSchema);
+
+            if (isClosed.isClosed()) {
+              return Collections.singletonList("Already Closed");
+            }
+
             core.getCoreContainer().reload(core.getName());
           } catch (SolrException e) {
             log.warn(errorMsg);
@@ -170,7 +187,7 @@ public class SchemaManager {
             "Not enough time left to update replicas. However, the schema is updated already.");
       }
       ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection, cd.getCloudDescriptor().getCoreNodeName(),
-          latestVersion, core.getCoreContainer().getZkController(), (int) timeOut.timeLeft(TimeUnit.SECONDS));
+          latestVersion, core.getCoreContainer().getZkController(), (int) timeOut.timeLeft(TimeUnit.SECONDS), isClosed);
     }
   }
 
