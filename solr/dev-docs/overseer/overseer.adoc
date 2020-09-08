@@ -45,7 +45,7 @@ image::images/state-change-steps.png[]
 * _Example in <<Command execution,CreateCollectionCmd Command execution>>._
 . The *message handler enqueues on the state update queue* the updates to be done to `state.json`.
 * _Same as above in <<Command execution,CreateCollectionCmd Command execution>>._
-. At some later time, the *message is dequeued** and executed by the cluster state updater*.
+. At some later time, the *message is dequeued and executed by the cluster state updater*.
 * _Description in <<Inner class ClusterStateUpdater,ClusterStateUpdater>>._
 . The *cluster state updater applies the requested updates to Zookeeper*.
 * _Uses <<ReplicaMutator>>, <<SliceMutator>>, <<CollectionMutator>>, etc., for generating the updates and <<ZkStateWriter>> for writing them._
@@ -142,14 +142,14 @@ All SolrCloud znodes in Zookeeper can (must?) have a prefix, it is not captured 
 
 Methods for other nodes to get the queues for interacting with Overseer:
 
-* State update queue (in Zookeeper at `/overseer/queue`) used to send cluster change messages: `ZkDistributedQueue get*StateUpdate*Queue()`. Actions are processed by `<<ClusterStateUpdater>>`.
-* Collection queue used to send collection API tasks: `OverseerTaskQueue get*Collection*Queue()`. The queue is in Zookeeper at `/overseer/collection-queue-work`. Actions are processed by `<<OverseerCollectionMessageHandler>>`.
-* Config set queue used to send configset API tasks: `OverseerTaskQueue get*ConfigSet*Queue()`. Returns the Collection queue (in Zookeeper at `/overseer/collection-queue-work`, same queue as the collection queue), actions expected have a `"configsets:"` prefix and are processed by `<<OverseerConfigSetMessageHandler>>`.
+* State update queue (in Zookeeper at `/overseer/queue`) used to send cluster change messages: `ZkDistributedQueue get**StateUpdate**Queue()`. Actions are processed by `<<ClusterStateUpdater>>`.
+* Collection queue used to send collection API tasks: `OverseerTaskQueue get**Collection**Queue()`. The queue is in Zookeeper at `/overseer/collection-queue-work`. Actions are processed by `<<OverseerCollectionMessageHandler>>`.
+* Config set queue used to send configset API tasks: `OverseerTaskQueue get**ConfigSet**Queue()`. Returns the Collection queue (in Zookeeper at `/overseer/collection-queue-work`, same queue as the collection queue), actions expected have a `"configsets:"` prefix and are processed by `<<OverseerConfigSetMessageHandler>>`.
 
-The deprecated work queue `ZkDistributedQueue get*InternalWork*Queue()` at `"/overseer/queue-work"` is used by Overseer to store operations removed from the state update queue and currently being executed (and was used to manage Overseer failures). It is no longer used and only supported for migrations from older versions of SolrCloud (7) to version 8. Should be removed by version 9. +
+The deprecated work queue `ZkDistributedQueue get**InternalWork**Queue()` at `"/overseer/queue-work"` is used by Overseer to store operations removed from the state update queue and currently being executed (and was used to manage Overseer failures). It is no longer used and only supported for migrations from older versions of SolrCloud (7) to version 8. Should be removed by version 9. +
 Do note though that other queues are sometimes called “work queues” because work is enqueued into them.
 
-Zookeeper backed maps used for tracking async tasks (running, successfully completed and failed): `get**RunningMap**()`, `get*CompletedMap*()`, `get*FailureMap*()`. These maps can also be obtained from `ZkController getOverseerRunningMap()`, `getOverseerCompletedMap()` and `getOverseerFailureMap()`. +
+Zookeeper backed maps used for tracking async tasks (running, successfully completed and failed): `get**RunningMap**()`, `get**CompletedMap**()`, `get**FailureMap**()`. These maps can also be obtained from `ZkController getOverseerRunningMap()`, `getOverseerCompletedMap()` and `getOverseerFailureMap()`. +
 These maps are updated in `<<OverseerTaskProcessor>>` as tasks are executed and are used to wait for async requests to complete (for example `RebalanceLeader.waitAsyncRequests()`) or to get the status of a task (for example `CollectionHandler.CollectionOperation.REQUESTSTATUS_OP` enum implementation). +
 Note “async id” and “request id” are used interchangeably in the code and refer to the same thing.
 
