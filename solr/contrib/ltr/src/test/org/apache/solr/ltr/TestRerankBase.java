@@ -32,6 +32,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -78,6 +79,7 @@ public class TestRerankBase extends RestTestBase {
 
   final private static String SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT = "solr.ltr.transformer.fv.defaultFormat";
   private static String defaultFeatureFormat;
+  protected static JettySolrRunner jetty;
 
   protected String chooseDefaultFeatureVector(String dense, String sparse) {
     if (defaultFeatureFormat == null) {
@@ -204,7 +206,7 @@ public class TestRerankBase extends RestTestBase {
         setupTestInit(solrconfig,schema,false);
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
         "/solr", true, extraServlets);
   }
 
@@ -214,7 +216,7 @@ public class TestRerankBase extends RestTestBase {
     SortedMap<ServletHolder,String> extraServlets =
         setupTestInit(solrconfig,schema,true);
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
         "/solr", true, extraServlets);
   }
 

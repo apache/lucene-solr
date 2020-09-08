@@ -39,7 +39,6 @@ import java.util.SortedMap;
 abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static volatile RestTestHarness restTestHarness;
-  protected static JettySolrRunner jetty;
 
   @AfterClass
   public synchronized static void cleanUpHarness() throws IOException {
@@ -51,9 +50,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       (String solrHome, String configFile, String schemaFile, String context,
        boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) throws Exception {
 
-    jetty = createAndStartJetty(
-        solrHome, configFile, schemaFile, context, stopAtShutdown,
-        extraServlets);
+    JettySolrRunner jetty = createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
     if (restTestHarness != null) {
       restTestHarness.close();
     }

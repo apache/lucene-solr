@@ -144,7 +144,7 @@ public class JettySolrRunner implements Closeable {
   private volatile boolean isClosed;
 
 
-  private static final Scheduler scheduler = new SolrScheduledExecutorScheduler("JettySolrRunnerScheduler");
+  private final Scheduler scheduler;
   private volatile SolrQueuedThreadPool qtp;
   private volatile boolean closed;
 
@@ -270,6 +270,11 @@ public class JettySolrRunner implements Closeable {
    */
   public JettySolrRunner(String solrHome, Properties nodeProperties, JettyConfig config, boolean enableProxy) {
     assert ObjectReleaseTracker.track(this);
+
+    SecurityManager s = System.getSecurityManager();
+    ThreadGroup group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+    scheduler = new SolrScheduledExecutorScheduler("jetty-scheduler", null, group);
+
     this.enableProxy = enableProxy;
     this.solrHome = solrHome;
     this.config = config;
@@ -694,14 +699,6 @@ public class JettySolrRunner implements Closeable {
       } catch (InterruptedException e) {
         SolrZkClient.checkInterrupted(e);
         throw new RuntimeException(e);
-      }
-
-      try {
-        if (config.qtp == null) {
-          qtp.close();
-        }
-      } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
       }
 
       if (wait && coreContainer != null && coreContainer
