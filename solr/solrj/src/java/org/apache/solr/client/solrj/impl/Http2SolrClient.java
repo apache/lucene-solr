@@ -231,7 +231,11 @@ public class Http2SolrClient extends SolrClient {
 
     httpClient.setIdleTimeout(idleTimeout);
     try {
-      httpClient.setScheduler(new SolrScheduledExecutorScheduler("http2client-scheduler"));
+      SecurityManager s = System.getSecurityManager();
+      ThreadGroup group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+      SolrScheduledExecutorScheduler scheduler = new SolrScheduledExecutorScheduler("http2client-scheduler", null, group);
+      httpClient.setScheduler(scheduler);
+      httpClient.manage(scheduler);
       httpClient.setExecutor(httpClientExecutor);
       httpClient.setStrictEventOrdering(true);
       httpClient.setConnectBlocking(false);

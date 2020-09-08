@@ -100,8 +100,9 @@ public class SolrScheduledExecutorScheduler extends AbstractLifeCycle implements
   protected void doStop() throws Exception {
     ScheduledThreadPoolExecutor fscheduler = scheduler;
     if (fscheduler != null) {
-      fscheduler.shutdownNow();
+      fscheduler.shutdown();
       super.doStop();
+      fscheduler.shutdownNow();
       ExecutorUtil.awaitTermination(fscheduler);
     }
     scheduler = null;
