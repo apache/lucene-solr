@@ -158,6 +158,11 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
             //no need to update
             return;
         }
+        doReloadAction(ctx);
+    }
+
+    protected void doReloadAction(Ctx ctx) {
+        if(onReload == null) return;
         ctx.runLater(null, onReload);
     }
 }

@@ -47,6 +47,14 @@ public class PackageListeners {
 
   public synchronized void addListener(Listener listener) {
     listeners.add(new SoftReference<>(listener));
+  }
+
+  public synchronized void addListener(Listener listener, boolean addFirst) {
+    if(addFirst) {
+      listeners.add(0, new SoftReference<>(listener));
+    } else {
+      addListener(listener);
+    }
 
   }
 

@@ -1402,7 +1402,6 @@ public class CoreContainer {
         return core.getDirectoryFactory().isSharedStorage();
       } else {
         ConfigSet configSet = coreConfigService.loadConfigSet(cd);
-        configSet.getSolrConfig().getResourceLoader().core = core;
         return DirectoryFactory.loadDirectoryFactory(configSet.getSolrConfig(), this, null).isSharedStorage();
       }
     }

@@ -44,8 +44,10 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
@@ -62,15 +64,14 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader {
+public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader, SolrCoreAware  {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
       "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
-      "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
-      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin.",
-      "cloud.autoscaling."
+      "update.processor.", "util.", "spelling.", "handler.component.",
+      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
@@ -78,12 +79,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
+  private String coreName;
+  private UUID coreId;
+  private SolrConfig config;
+  private CoreContainer coreContainer;
+  private PackageListeningClassLoader schemaLoader ;
 
-  /**
-   * this is set  by the {@link SolrCore}
-   * This could be null if the core is not yet initialized
-   */
-  SolrCore core;
+  private PackageListeningClassLoader coreReloadingClassLoader ;
+
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
@@ -105,6 +108,33 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       managedResourceRegistry = new RestManager.Registry();
     }
     return managedResourceRegistry;
+  }
+
+  private PackageListeningClassLoader createSchemaLoader() {
+    CoreContainer cc = getCoreContainer();
+    if (cc == null) {
+      //corecontainer not available . can't load from packages
+      return null;
+    }
+    return new PackageListeningClassLoader(cc, this, pkg -> {
+      if (getSolrConfig() == null) return null;
+      return getSolrConfig().maxPackageVersion(pkg);
+    }, () -> {
+      if(getCoreContainer() == null || config == null || coreName == null || coreId==null) return;
+      try (SolrCore c = getCoreContainer().getCore(coreName, coreId)) {
+        if (c != null) {
+          c.fetchLatestSchema();
+        }
+      }
+    });
+  }
+
+
+  public SolrClassLoader getSchemaLoader() {
+    if (schemaLoader == null) {
+      schemaLoader = createSchemaLoader();
+    }
+    return schemaLoader;
   }
 
   public SolrResourceLoader() {
@@ -206,11 +236,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     TokenFilterFactory.reloadTokenFilters(this.classLoader);
     TokenizerFactory.reloadTokenizers(this.classLoader);
   }
-
-  public SolrCore getCore(){
-    return core;
-  }
-
 
   private static URLClassLoader addURLsToClassLoader(final URLClassLoader oldLoader, List<URL> urls) {
     if (urls.size() == 0) {
@@ -617,7 +642,22 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   /**
    * Tell all {@link SolrCoreAware} instances about the SolrCore
    */
+  @Override
   public void inform(SolrCore core) {
+    this.coreName = core.getName();
+    this.config = core.getSolrConfig();
+    this.coreId = core.uniqueId;
+    this.coreContainer = core.getCoreContainer();
+    this.coreReloadingClassLoader = new PackageListeningClassLoader(core.getCoreContainer(),
+        this, s -> config.maxPackageVersion(s), null){
+      @Override
+      protected void doReloadAction(Ctx ctx) {
+         coreContainer.reload(coreName, coreId, true);
+      }
+    };
+    core.getPackageListeners().addListener(coreReloadingClassLoader, true);
+    if(getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
+
     // make a copy to avoid potential deadlock of a callback calling newInstance and trying to
     // add something to waitingForCore.
     SolrCoreAware[] arr;
@@ -756,6 +796,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, builder.toString());
   }
 
+  public CoreContainer getCoreContainer(){
+    return coreContainer;
+  }
+
+  public SolrConfig getSolrConfig() {
+    return config;
+
+  }
   @Override
   public void close() throws IOException {
     IOUtils.close(classLoader);
@@ -780,12 +828,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private  <T> T _classLookup(PluginInfo info, Function<PackageLoader.Package.Version, T> fun, boolean registerCoreReloadListener ) {
     PluginInfo.ClassName cName = info.cName;
     if (registerCoreReloadListener) {
-      if (getCore() == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not set");
+      if (coreReloadingClassLoader == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core not set");
       }
-      return fun.apply(getCore().getCoreReloadingClassLoader().findPackageVersion(cName, true));
+      return fun.apply(coreReloadingClassLoader.findPackageVersion(cName, true));
     } else {
-      return fun.apply(getCore().getCoreReloadingClassLoader().findPackageVersion(cName, false));
+      return fun.apply(coreReloadingClassLoader.findPackageVersion(cName, false));
     }
   }
 
