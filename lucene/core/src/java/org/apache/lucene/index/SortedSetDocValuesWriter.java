@@ -139,7 +139,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     bytesUsed = newBytesUsed;
   }
 
-  private long[][] sortDocValues(int maxDoc, Sorter.DocMap sortMap, SortedSetDocValues oldValues) throws IOException {
+  static long[][] sortDocValues(int maxDoc, Sorter.DocMap sortMap, SortedSetDocValues oldValues) throws IOException {
     long[][] ords = new long[maxDoc][];
     int docID;
     while ((docID = oldValues.nextDoc()) != NO_MORE_DOCS) {
@@ -222,7 +222,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
                                      if (sorted == null) {
                                        return buf;
                                      } else {
-                                       return new SortingLeafReader.SortingSortedSetDocValues(buf, sorted);
+                                       return new SortingSortedSetDocValues(buf, sorted);
                                      }
                                    }
                                  });
@@ -241,7 +241,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     private int ordCount;
     private int ordUpto;
 
-    public BufferedSortedSetDocValues(int[] sortedValues, int[] ordMap, BytesRefHash hash, PackedLongValues ords, PackedLongValues ordCounts, int maxCount, DocIdSetIterator docsWithField) {
+    BufferedSortedSetDocValues(int[] sortedValues, int[] ordMap, BytesRefHash hash, PackedLongValues ords, PackedLongValues ordCounts, int maxCount, DocIdSetIterator docsWithField) {
       this.currentDoc = new int[maxCount];
       this.sortedValues = sortedValues;
       this.ordMap = ordMap;
@@ -308,4 +308,75 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     }
   }
 
+  static class SortingSortedSetDocValues extends SortedSetDocValues {
+
+    private final SortedSetDocValues in;
+    private final long[][] ords;
+    private int docID = -1;
+    private int ordUpto;
+
+    SortingSortedSetDocValues(SortedSetDocValues in, long[][] ords) {
+      this.in = in;
+      this.ords = ords;
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int nextDoc() {
+      while (true) {
+        docID++;
+        if (docID == ords.length) {
+          docID = NO_MORE_DOCS;
+          break;
+        }
+        if (ords[docID] != null) {
+          break;
+        }
+        // skip missing docs
+      }
+      ordUpto = 0;
+      return docID;
+    }
+
+    @Override
+    public int advance(int target) {
+      throw new UnsupportedOperationException("use nextDoc instead");
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      // needed in IndexSorter#StringSorter
+      docID = target;
+      ordUpto = 0;
+      return ords[docID] != null;
+    }
+
+    @Override
+    public long nextOrd() {
+      if (ordUpto == ords[docID].length) {
+        return NO_MORE_ORDS;
+      } else {
+        return ords[docID][ordUpto++];
+      }
+    }
+
+    @Override
+    public long cost() {
+      return in.cost();
+    }
+
+    @Override
+    public BytesRef lookupOrd(long ord) throws IOException {
+      return in.lookupOrd(ord);
+    }
+
+    @Override
+    public long getValueCount() {
+      return in.getValueCount();
+    }
+  }
 }

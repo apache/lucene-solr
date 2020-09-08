@@ -1,5 +1,5 @@
 = Documents, Fields, and Schema Design
-:page-children: overview-of-documents-fields-and-schema-design, solr-field-types, defining-fields, copying-fields, dynamic-fields, other-schema-elements, schema-api, putting-the-pieces-together, docvalues, schemaless-mode
+:page-children: overview-of-documents-fields-and-schema-design, solr-field-types, defining-fields, copying-fields, dynamic-fields, other-schema-elements, schema-api, putting-the-pieces-together, docvalues, schemaless-mode, luke-request-handler
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

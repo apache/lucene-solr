@@ -376,7 +376,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           throw new CorruptIndexException("invalid deletion count: " + softDelCount + " vs maxDoc=" + info.maxDoc(), input);
         }
         if (softDelCount + delCount > info.maxDoc()) {
-          throw new CorruptIndexException("invalid deletion count: " + softDelCount + delCount + " vs maxDoc=" + info.maxDoc(), input);
+          throw new CorruptIndexException("invalid deletion count: " + (softDelCount + delCount) + " vs maxDoc=" + info.maxDoc(), input);
         }
         final byte[] sciId;
         if (format > VERSION_74) {

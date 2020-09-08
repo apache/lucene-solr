@@ -28,6 +28,8 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * take longer than the maximum allowed search time limit. After this time is
  * exceeded, the search thread is stopped by throwing a
  * {@link TimeExceededException}.
+ *
+ * @see org.apache.lucene.index.ExitableDirectoryReader
  */
 public class TimeLimitingCollector implements Collector {
 

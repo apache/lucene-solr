@@ -517,10 +517,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           ColStatus.RAW_SIZE_DETAILS_PROP,
           ColStatus.RAW_SIZE_SAMPLING_PERCENT_PROP,
           ColStatus.SIZE_INFO_PROP);
-      // make sure we can get the name if there's "name" but not "collection"
-      if (props.containsKey(CoreAdminParams.NAME) && !props.containsKey(COLLECTION_PROP)) {
-        props.put(COLLECTION_PROP, props.get(CoreAdminParams.NAME));
-      }
+
       new ColStatus(h.coreContainer.getSolrClientCache(),
           h.coreContainer.getZkController().getZkStateReader().getClusterState(), new ZkNodeProps(props))
           .getColStatus(rsp.getValues());

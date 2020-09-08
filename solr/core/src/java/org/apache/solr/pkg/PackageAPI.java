@@ -282,15 +282,11 @@ public class PackageAPI {
             log.error("Error deserializing packages.json", e);
             packages = new Packages();
           }
-          @SuppressWarnings({"rawtypes"})
-          List list = packages.packages.computeIfAbsent(add.pkg, Utils.NEW_ARRAYLIST_FUN);
-          for (Object o : list) {
-            if (o instanceof PkgVersion) {
-              PkgVersion version = (PkgVersion) o;
-              if (Objects.equals(version.version, add.version)) {
-                payload.addError("Version '" + add.version + "' exists already");
-                return null;
-              }
+          List<PkgVersion> list = packages.packages.computeIfAbsent(add.pkg, o -> new ArrayList<>());
+          for (PkgVersion version : list) {
+            if (Objects.equals(version.version, add.version)) {
+              payload.addError("Version '" + add.version + "' exists already");
+              return null;
             }
           }
           list.add(new PkgVersion(add));

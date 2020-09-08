@@ -332,6 +332,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
 
   }
 
+  /** Randomly generated document: call toDocument to index it */
   protected class RandomDocument {
 
     private final String[] fieldNames;
@@ -366,6 +367,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
 
   }
 
+  /** Factory for generating random documents, call newDocument to generate each one */
   protected class RandomDocumentFactory {
 
     private final String[] fieldNames;
