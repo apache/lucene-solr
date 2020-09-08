@@ -1879,9 +1879,9 @@ public class IndexFetcher {
       params.set(CommonParams.QT, ReplicationHandler.PATH);
       //add the version to download. This is used to reserve the download
       params.set(solrParamOutput, fileName);
-      if (useInternalCompression) {
-        params.set(COMPRESSION, "true");
-      }
+//      if (useInternalCompression) {
+//        params.set(COMPRESSION, "true");
+//      }
       //use checksum
       if (this.includeChecksum) {
         params.set(CHECKSUM, true);

@@ -869,7 +869,8 @@ public class CoreContainer implements Closeable {
 //              metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
 //              SolrMetricManager.mkName("coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
       final List<Future<SolrCore>> futures = new ArrayList<>();
-      try {
+      Set<Future> zkRegFutures = null;
+    try {
         List<CoreDescriptor> cds = coresLocator.discover(this);
         if (isZooKeeperAware()) {
           // sort the cores if it is in SolrCloud. In standalone node the order does not matter
@@ -877,9 +878,11 @@ public class CoreContainer implements Closeable {
               .init(zkSys.zkController, cds);
           cds = new ArrayList<>(cds);// make a copy
           Collections.sort(cds, coreComparator::compare);
+          zkRegFutures = ConcurrentHashMap.newKeySet(cds.size());
         }
         checkForDuplicateCoreNames(cds);
         status |= CORE_DISCOVERY_COMPLETE;
+
         try (ParWork register = new ParWork(this)) {
           for (final CoreDescriptor cd : cds) {
             if (cd.isTransient() || !cd.isLoadOnStartup()) {
@@ -888,6 +891,7 @@ public class CoreContainer implements Closeable {
               solrCores.markCoreAsLoading(cd);
             }
             if (cd.isLoadOnStartup()) {
+              Set<Future> finalZkRegFutures = zkRegFutures;
               futures.add(solrCoreLoadExecutor.submit(() -> {
                 SolrCore core;
                 try {
@@ -901,7 +905,7 @@ public class CoreContainer implements Closeable {
                   }
                 }
                 register.collect("registerCoreInZk", () -> {
-                  zkSys.registerInZk(core, false);
+                  finalZkRegFutures.add(zkSys.registerInZk(core, false));
                 });
                 return core;
               }));
@@ -923,7 +927,17 @@ public class CoreContainer implements Closeable {
             } catch (ExecutionException e) {
               log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
             }
-
+          }
+          if (isZooKeeperAware()) {
+            for (Future<SolrCore> future : zkRegFutures) {
+              try {
+                future.get();
+              } catch (InterruptedException e) {
+                ParWork.propegateInterrupt(e);
+              } catch (ExecutionException e) {
+                log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
+              }
+            }
           }
         }
       }
@@ -1217,14 +1231,28 @@ public class CoreContainer implements Closeable {
     if (old == null || old == core) {
       if (log.isDebugEnabled()) log.debug("registering core: " + cd.getName());
       if (registerInZk) {
-        zkSys.registerInZk(core, skipRecovery);
+        try {
+          zkSys.registerInZk(core, skipRecovery).get();
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        } catch (ExecutionException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
       }
       return null;
     } else {
       if (log.isDebugEnabled()) log.debug("replacing core: " + cd.getName());
       old.close();
       if (registerInZk) {
-        zkSys.registerInZk(core, skipRecovery);
+        try {
+          zkSys.registerInZk(core, skipRecovery).get();
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        } catch (ExecutionException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
       }
       return old;
     }

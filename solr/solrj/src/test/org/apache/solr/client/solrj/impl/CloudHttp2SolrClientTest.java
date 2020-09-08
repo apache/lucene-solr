@@ -929,6 +929,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
    */
   @Test
   // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @Nightly
   public void preferReplicaTypesTest() throws Exception {
 
     String collectionName = "replicaTypesTestColl";
