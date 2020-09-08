@@ -1,4 +1,6 @@
 = Indexing Nested Child Documents
+:solr-root-path: ../../
+:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -17,137 +19,478 @@
 // under the License.
 
 Solr supports indexing nested documents, described here, and ways to <<searching-nested-documents.adoc#searching-nested-documents,search and retrieve>> them very efficiently.
-By way of example, nested documents in Solr can be used to bind a blog post (parent document) with comments (child documents)
--- or products as parent documents and sizes, colors, or other variations as child documents. +
-The parent with all children is referred to as a nested document or "block" and it explains some of the nomenclature of related features.
+By way of examples: nested documents in Solr can be used to bind a blog post (parent document) with comments (child documents) -- or as a way to model major product lines as parent documents, with multiple types of child documents representing individual SKUs (with unique sizes / colors) and supporting documention (either directly nested under the products, or under individual SKUs.
+The "top most" parent with all children is referred to as a "root level" document or "block document" and it explains some of the nomenclature of related features.
 At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships,
- and the `<<transforming-result-documents.adoc#child-childdoctransformerfactory,[child]>>` Document Transformer can attach child documents to the result documents.
-In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent "query time join",
+ and the `<<transforming-result-documents.adoc#child-childdoctransformerfactory,[child]>>` Document Transformer can attach child (or other "descendent") documents to the result documents.
+In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent "<<other-parsers#join-query-parser,query time join>>",
  since the relationships are already stored in the index and do not need to be computed.
 However, nested documents are less flexible than query time joins as it imposes rules that some applications may not be able to accept.
 Nested documents may be indexed via either the XML or JSON data syntax, and is also supported by <<using-solrj.adoc#using-solrj,SolrJ>> with javabin.
 
+
+[CAUTION]
+====
+.Re-Indexing Considerations
+With the exception of in-place updates, <<#maintaining-integrity-with-updates-and-deletes,blocks of nested documents must be updated/deleted together>>.  Modifying or replacing individual child documents requires re-indexing of the entire block (either explicitly/externally, or under the covers inside of Solr).  For some applications this may result in a lot of extra indexing overhead and may not be worth the performance gains at query time.
+====
+
+[#example-indexing-syntax]
+== Example Indexing Syntax: Psuedo-Fields
+
+This example shows what it looks like to index two root level "product" documents, each containing two different types of child documents specified in "psuedo-fields": "skus" and "manuals".  Two of the "sku" type documents have their own nested child "manuals" documents...
+
 [NOTE]
 ====
-.Limitation
-With the exception of in-place updates, the whole block must be updated or deleted together, not separately.  For some applications this may result in tons of extra indexing and thus may be a deal-breaker.
+Even though the child documents in these examples are provided syntactically as field values syntactically, this is simply a matter of syntax and as such `skus` and `manuals` are not actual fields in the documents.  Consequently, these field names need not be defined in the schema and probably shouldn't be as it would be confusing.  There is no "child document" field type.
 ====
 
-== Schema Configuration
+//
+// DO NOT MODIFY THESE EXAMPLE DOCS WITH OUT REVIEWING ALL PAGES THAT INCLUDE/REFER BACK TO THESE EXAMPLES
+// INCLUDING THE SEMI-EQUIVILENT ANONYMOUS CHILDREN EXAMPLE AT THE BOTTOM OF THIS PAGE
+//
+[.dynamic-tabs]
+--
+[example.tab-pane#json]
+====
+[.tab-label]*JSON*
+// tag::sample-indexing-deeply-nested-documents[]
+[source,json]
+----
+[{ "id": "P11!prod",
+   "name_s": "Swingline Stapler",
+   "description_t": "The Cadillac of office staplers ...",
+   "skus": [ { "id": "P11!S21",
+               "color_s": "RED",
+               "price_i": 42,
+               "manuals": [ { "id": "P11!D41",
+                              "name_s": "Red Swingline Brochure",
+                              "pages_i":1,
+                              "content_t": "..."
+                            } ]
+             },
+             { "id": "P11!S31",
+               "color_s": "BLACK",
+               "price_i": 3
+             } ],
+   "manuals": [ { "id": "P11!D51",
+                  "name_s": "Quick Reference Guide",
+                  "pages_i":1,
+                  "content_t": "How to use your stapler ..."
+                },
+                { "id": "P11!D61",
+                  "name_s": "Warranty Details",
+                  "pages_i":42,
+                  "content_t": "... lifetime guarantee ..."
+                } ]
+ },
+ { "id": "P22!prod",
+   "name_s": "Mont Blanc Fountain Pen",
+   "description_t": "A Premium Writing Instrument ...",
+   "skus": [ { "id": "P22!S22",
+               "color_s": "RED",
+               "price_i": 89,
+               "manuals": [ { "id": "P22!D42",
+                              "name_s": "Red Mont Blanc Brochure",
+                              "pages_i":1,
+                              "content_t": "..."
+                            } ]
+             },
+             { "id": "P22!S32",
+               "color_s": "BLACK",
+               "price_i": 67
+             } ],
+   "manuals": [ { "id": "P22!D52",
+                  "name_s": "How To Use A Pen",
+                  "pages_i":42,
+                  "content_t": "Start by removing the cap ..."
+                } ]
+ } ]
+----
+// end::sample-indexing-deeply-nested-documents[]
 
- * The schema must include an indexed field `\_root_`. Solr automatically populates this with the value of the top/parent ID. +
- `<field name="\_root_" type="string" indexed="true" stored="false" docValues="false" />`
- ** `\_root_` must be set either as stored (stored="true") or doc values (docValues="true") to enable
-    <<updating-parts-of-documents#updating-child-documents, atomic updates of nested documents>>. Also, beware of `uniqueBlock(\_root_)` <<json-facet-api#stat-facet-functions,field type limitation>>, if you plan to use one.
- * `\_nest_path_` is populated by Solr automatically with the path of the document in the hierarchy for non-root documents. This field is optional. +
- `<fieldType name="\_nest_path_" class="solr.NestPathField" />
-  <field name="\_nest_path_" type="_nest_path_" />`
- * `\_nest_parent_` is populated by Solr automatically to store the ID of each document's parent document (if there is one). This field is optional. +
- `<field name="\_nest_parent_" type="string" indexed="true" stored="true"/>`
- * Nested documents are very much documents in their own right even if certain nested documents hold different information from the parent.
-   Therefore:
- ** a field can only be configured one way no matter what sort of document uses it
- ** it may be infeasible to use `required`
- ** even child documents need a unique ID
- * Even though child documents are provided as field values syntactically and with SolrJ, it's a matter of syntax and it isn't an actual field in the schema.
-  Consequently, the field need not be defined in the schema and probably shouldn't be as it would be confusing.
-  There is no child document field type, at least not yet.
+[CAUTION]
+=====
+The <<uploading-data-with-index-handlers#json-update-convenience-paths,`/update/json/docs` convenience path>> will automatically flatten complex JSON documents by default -- so to index nested JSON documents make sure to use `/update`.
+=====
+====
 
-=== Rudimentary Root-only Schemas
-
-These schemas do not contain any other nested related fields apart from `\_root_`.
-Many schemas in existence are this way simply because default configsets are this way, even if the application isn't using nested documents.
-If an application uses nested documents with such a schema, keep in mind that that some related features aren't as effective since there is less information.  Mainly the <<searching-nested-documents.adoc#child-doc-transformer,[child]>> transformer returns matching children in a flat list (not nested) and it's attached to the parent using the special field name `\_childDocuments_`.
-
-With such a schema, typically you should have a field that differentiates a root doc from any nested children.
-However this isn't strictly necessary; so long as it's possible to write a query that can select only root documents somehow.
-Such a query is needed for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer to function.
-
-=== XML Examples
-
-Here are two documents and their child documents.
-It illustrates two styles of adding child documents: the first is associated via a field "comment" (preferred),
-and the second is done in the classic way now referred to as an "anonymous" or "unlabelled" child document.
-This field label relationship is available to the URP chain in Solr but is ultimately discarded unless the special fields are defined.
-
+[example.tab-pane#xml]
+====
+[.tab-label]*XML*
 [source,xml]
 ----
 <add>
   <doc>
-    <field name="ID">1</field>
-    <field name="title">Solr adds block join support</field>
-    <field name="content_type">parentDocument</field>
-    <field name="content">
+    <field name="id">P11!prod</field>
+    <field name="name_s">Swingline Stapler</field>
+    <field name="description_t">The Cadillac of office staplers ...</field>
+    <field name="skus">
       <doc>
-        <field name="ID">2</field>
-        <field name="comments">SolrCloud supports it too!</field>
+        <field name="id">P11!S21</field>
+        <field name="color_s">RED</field>
+        <field name="price_i">42</field>
+        <field name="manuals">
+          <doc>
+            <field name="id">P11!D41</field>
+            <field name="name_s">Red Swingline Brochure</field>
+            <field name="pages_i">1</field>
+            <field name="content_t">...</field>
+          </doc>
+        </field>
+      </doc>
+      <doc>
+        <field name="id">P11!S31</field>
+        <field name="color_s">BLACK</field>
+        <field name="price_i">3</field>
+      </doc>
+    </field>
+    <field name="manuals">
+      <doc>
+        <field name="id">P11!D51</field>
+        <field name="name_s">Quick Reference Guide</field>
+        <field name="pages_i">1</field>
+        <field name="content_t">How to use your stapler ...</field>
+      </doc>
+      <doc>
+        <field name="id">P11!D61</field>
+        <field name="name_s">Warranty Details</field>
+        <field name="pages_i">42</field>
+        <field name="content_t">... lifetime guarantee ...</field>
       </doc>
     </field>
   </doc>
   <doc>
-    <field name="ID">3</field>
-    <field name="title">New Lucene and Solr release is out</field>
-    <field name="content_type">parentDocument</field>
+    <field name="id">P22!prod</field>
+    <field name="name_s">Mont Blanc Fountain Pen</field>
+    <field name="description_t">A Premium Writing Instrument ...</field>
+    <field name="skus">
+      <doc>
+        <field name="id">P22!S22</field>
+        <field name="color_s">RED</field>
+        <field name="price_i">89</field>
+        <field name="manuals">
+          <doc>
+            <field name="id">P22!D42</field>
+            <field name="name_s">Red Mont Blanc Brochure</field>
+            <field name="pages_i">1</field>
+            <field name="content_t">...</field>
+          </doc>
+        </field>
+      </doc>
+      <doc>
+        <field name="id">P22!S32</field>
+        <field name="color_s">BLACK</field>
+        <field name="price_i">67</field>
+      </doc>
+    </field>
+    <field name="manuals">
+      <doc>
+        <field name="id">P22!D52</field>
+        <field name="name_s">How To Use A Pen</field>
+        <field name="pages_i">42</field>
+        <field name="content_t">Start by removing the cap ...</field>
+      </doc>
+    </field>
+  </doc>
+</add>
+----
+====
+
+[example.tab-pane#solrj]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+include::{example-source-dir}IndexingNestedDocuments.java[tag=nest-path]
+----
+====
+--
+
+
+== Schema Configuration
+
+Indexing nested documents _requires_ an indexed field named `\_root_`:
+
+[source,xml]
+----
+<field name="_root_" type="string" indexed="true" />
+----
+
+Solr automatically populates this field in every nested document with the `id` value of the top most parent document in the block.
+
+
+There are several additional schema considerations that should be considered for people who wish to use nested documents:
+
+* Nested child documents are very much documents in their own right even if certain nested documents hold different information from the parent, Therefore:
+** All field names in the schema can only be configured in one -- different types of child documents can not have the same field name configured in different ways.
+** It may be infeasible to use `required` for any field names that aren't reqiured for all types of documents.
+** Even child documents need a _globally_ unique `id`.
+* `\_root_` must be configured to either be stored (`stored="true"`) or use doc values (`docValues="true"`) to enable <<updating-parts-of-documents#updating-child-documents,atomic updates of nested documents>>.
+** Also, beware of `uniqueBlock(\_root_)` <<json-facet-api#stat-facet-functions,field type limitation>>, if you plan to use one.
+* `\_nest_path_` is an optional field that (if definied) will be populated by Solr automatically with the ancestor path of each non-root document.
++
+[source,xml]
+----
+<fieldType name="_nest_path_" class="solr.NestPathField" />
+<field name="_nest_path_" type="_nest_path_" />`
+----
+** This field is neccessary if you wish to use <<updating-parts-of-documents#updating-child-documents,atomic updates of nested documents>>
+** This field is neccessary in order for Solr to properly record & reconstruct the nested relationship of documents when using the `<<searching-nested-documents.adoc#child-doc-transformer,[child]>>` doc transformer.
+*** If this field does not exist, the `[child]` transformer will return all descendent child documents as a flattened list -- just as if they had been <<#indexing-anonymous-children,indexed as anonymous children>>.
+** If you do not use `\_nest_path_` it is strongly recomended that every document have some field that differentiates root documents from their nested children -- and differentiates different "types" of child documents.  This is not strictly neccessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer
+* `\_nest_parent_` is an optional field that (if defined) will be populated by Solr automatically to store the `id` of each document's _immediate_ parent document (if there is one).
++
+[source,xml]
+----
+<field name="_nest_parent_" type="string" indexed="true" stored="true" />
+----
+
+[TIP]
+====
+When using Solr Cloud it is a _VERY_ good idea to use <<shards-and-indexing-data-in-solrcloud#document-routing,prefix based compositeIds>> with a common prefix for all documents in the block.  This makes it much easier to apply <<updating-parts-of-documents#updating-child-documents,atomic updates to individual child documents>>
+====
+
+
+== Maintaining Integrity with Updates and Deletes
+
+Blocks of nested documents can be modified simply by adding/replacing the root document with more or fewer child/descendent documents as an application desires.  This can either be done explicitly/externaly by an indexing client completely re-indexing the root level document, or internally by Solr when a client uses <<updating-parts-of-documents#updating-child-documents,atomic updates>> to modify child documents.  This aspect isn't different than updating any normal document except that Solr takes care to ensure that all related child documents of the existing version get deleted.
+
+Clients should however be very careful to *never* add a root document that has the same `id` of a child document -- or vice-versa.  Solr does not prevent clients from attempting this, but *_it will violate integrity assumptions that Solr expects._*
+
+To delete an entire block of documents, you can simply delete-by-ID using the `id` of the root document.  Delete-by-ID will not work with the `id` of a child document, since only root document IDs are considered. (Instead, use <<updating-parts-of-documents#updating-child-documents,atomic updates>> to remove the child document from it's parent)
+
+If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any deletion query is strutured to ensure no descendent children remain of any documents that are being deleted.  *_Doing otherwise will violate integrity assumptions that Solr expects._*
+
+
+
+
+== Indexing Anonymous Children
+
+Although not recommended, it is also possible to index child documents "anonymously":
+
+[.dynamic-tabs]
+--
+[example.tab-pane#anon_json]
+====
+[.tab-label]*JSON*
+[source,json]
+----
+[{ "id": "P11!prod",
+   "name_s": "Swingline Stapler",
+   "type_s": "PRODUCT",
+   "description_t": "The Cadillac of office staplers ...",
+   "_childDocuments_": [
+       { "id": "P11!S21",
+         "type_s": "SKU",
+         "color_s": "RED",
+         "price_i": 42,
+         "_childDocuments_": [
+             { "id": "P11!D41",
+               "type_s": "MANUAL",
+               "name_s": "Red Swingline Brochure",
+               "pages_i":1,
+               "content_t": "..."
+             } ]
+       },
+       { "id": "P11!S31",
+         "type_s": "SKU",
+         "color_s": "BLACK",
+         "price_i": 3
+       },
+       { "id": "P11!D51",
+         "type_s": "MANUAL",
+         "name_s": "Quick Reference Guide",
+         "pages_i":1,
+         "content_t": "How to use your stapler ..."
+       },
+       { "id": "P11!D61",
+         "type_s": "MANUAL",
+         "name_s": "Warranty Details",
+         "pages_i":42,
+         "content_t": "... lifetime guarantee ..."
+       }
+    ]
+} ]
+----
+====
+
+[example.tab-pane#anon_xml]
+====
+[.tab-label]*XML*
+[source,xml]
+----
+<add>
+  <doc>
+    <field name="id">P11!prod</field>
+    <field name="type_s">PRODUCT</field>
+    <field name="name_s">Swingline Stapler</field>
+    <field name="description_t">The Cadillac of office staplers ...</field>
     <doc>
-      <field name="ID">4</field>
-      <field name="comments">Lots of new features</field>
+      <field name="id">P11!S21</field>
+      <field name="type_s">SKU</field>
+      <field name="color_s">RED</field>
+      <field name="price_i">42</field>
+      <doc>
+        <field name="id">P11!D41</field>
+        <field name="type_s">MANUAL</field>
+        <field name="name_s">Red Swingline Brochure</field>
+        <field name="pages_i">1</field>
+        <field name="content_t">...</field>
+      </doc>
+    </doc>
+    <doc>
+      <field name="id">P11!S31</field>
+      <field name="type_s">SKU</field>
+      <field name="color_s">BLACK</field>
+      <field name="price_i">3</field>
+    </doc>
+    <doc>
+      <field name="id">P11!D51</field>
+      <field name="type_s">MANUAL</field>
+      <field name="name_s">Quick Reference Guide</field>
+      <field name="pages_i">1</field>
+      <field name="content_t">How to use your stapler ...</field>
+    </doc>
+    <doc>
+      <field name="id">P11!D61</field>
+      <field name="type_s">MANUAL</field>
+      <field name="name_s">Warranty Details</field>
+      <field name="pages_i">42</field>
+      <field name="content_t">... lifetime guarantee ...</field>
     </doc>
   </doc>
 </add>
 ----
+====
 
-In this example, we have indexed the parent documents with the field `content_type`, which has the value "parentDocument".
-We could have also used a boolean field, such as `isParent`, with a value of "true", or any other similar approach.
-
-=== JSON Examples
-
-This example is equivalent to the XML example above.
-Again, the field labelled relationship is preferred.
-The labelled relationship here is one child document but could have been wrapped in array brackets.
-For the anonymous relationship, note the special `\_childDocuments_` key whose contents must be an array of child documents.
-
-[source,json]
+[example.tab-pane#anon_solrj]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
 ----
-[
-  {
-    "ID": "1",
-    "title": "Solr adds block join support",
-    "content_type": "parentDocument",
-    "comments": [{
-        "ID": "2",
-        "content": "SolrCloud supports it too!"
-      },
-      {
-        "ID": "3",
-        "content": "New filter syntax"
-      }
-    ]
-  },
-  {
-    "ID": "4",
-    "title": "New Lucene and Solr release is out",
-    "content_type": "parentDocument",
-    "_childDocuments_": [
-      {
-        "ID": "5",
-        "comments": "Lots of new features"
-      }
-    ]
-  }
-]
+include::{example-source-dir}IndexingNestedDocuments.java[tag=anon-kids]
 ----
+====
 
-.Root-Only Mode
-[NOTE]
- In Root-only schemas, these two documents will result in the same docs being indexed (Root-only schemas do not honor nested relationships).
- When queried, child docs will be appended to the _childDocuments_ field/key.
+--
 
-=== Important: Maintaining Integrity with Updates and Deletes
 
-Nested documents (children and all) can simply be replaced by adding a new document with more or fewer documents as an application desires.  This aspect isn't different than updating any normal document except that Solr takes care to ensure that all related child documents of the existing version get deleted.
+This simplified approach was common in older versions of Solr, and can still be used with "Root-Only" schemas that do not contain any other nested related fields apart from `\_root_`.  (Many schemas in existence are this way simply because default configsets are this way, even if the application isn't using nested documents.)
 
-Do *not* add a root document that has the same ID of a child document.  _This will violate integrity assumptions that Solr expects._
+This approach should *NOT* be used when schemas include a `\_nest_path_` field, as the existence of that field triggers assumptions and changes in behavior in various query time functionality, such as the <<searching-nested-documents.adoc#child-doc-transformer,[child]>>, that will not work when nested documents do not have any intrinsic "nested path" information.
 
-To delete a nested document, you can delete it by the ID of the root document.
-If you try to use an ID of a child document, nothing will happen since only root document IDs are considered.
-If you use Solr's delete-by-query APIs, you *have to be careful* to ensure that no children remain of any documents that are being deleted.  _Doing otherwise will violate integrity assumptions that Solr expects._
+The results of indexing anonymous nested children with a "Root-Only" schema are similar to what happens if you attempt to index "psuedo field" nested documents using a "Root-Only" schema.  Notably: since there is no nested path information for the <<searching-nested-documents.adoc#child-doc-transformer,[child]>> transformer to use to reconstruct the structured of a block of documents, it returns all matching children as a flat list, similar in structure to how they were originally indexed:
+
+
+
+[.dynamic-tabs]
+--
+[example.tab-pane#anon_json_out]
+====
+[.tab-label]*JSON*
+[source,bash]
+----
+$ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=id:P11!prod&fl=*,[child%20parentFilter=%22type_s:PRODUCT%22]'
+{
+  "response":{"numFound":1,"start":0,"maxScore":0.7002023,"numFoundExact":true,"docs":[
+      {
+        "id":"P11!prod",
+        "name_s":"Swingline Stapler",
+        "type_s":"PRODUCT",
+        "description_t":"The Cadillac of office staplers ...",
+        "_version_":1673055562829398016,
+        "_childDocuments_":[
+        {
+          "id":"P11!D41",
+          "type_s":"MANUAL",
+          "name_s":"Red Swingline Brochure",
+          "pages_i":1,
+          "content_t":"...",
+          "_version_":1673055562829398016},
+        {
+          "id":"P11!S21",
+          "type_s":"SKU",
+          "color_s":"RED",
+          "price_i":42,
+          "_version_":1673055562829398016},
+        {
+          "id":"P11!S31",
+          "type_s":"SKU",
+          "color_s":"BLACK",
+          "price_i":3,
+          "_version_":1673055562829398016},
+        {
+          "id":"P11!D51",
+          "type_s":"MANUAL",
+          "name_s":"Quick Reference Guide",
+          "pages_i":1,
+          "content_t":"How to use your stapler ...",
+          "_version_":1673055562829398016},
+        {
+          "id":"P11!D61",
+          "type_s":"MANUAL",
+          "name_s":"Warranty Details",
+          "pages_i":42,
+          "content_t":"... lifetime guarantee ...",
+          "_version_":1673055562829398016}]}]
+  }}
+----
+====
+
+[example.tab-pane#anon_xml_out]
+====
+[.tab-label]*XML*
+[source,bash]
+----
+$ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=id:P11!prod&fl=*,[child%20parentFilter=%22type_s:PRODUCT%22]&wt=xml'
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+
+<result name="response" numFound="1" start="0" maxScore="0.7002023" numFoundExact="true">
+  <doc>
+    <str name="id">P11!prod</str>
+    <str name="name_s">Swingline Stapler</str>
+    <str name="type_s">PRODUCT</str>
+    <str name="description_t">The Cadillac of office staplers ...</str>
+    <long name="_version_">1673055562829398016</long>
+    <doc>
+      <str name="id">P11!D41</str>
+      <str name="type_s">MANUAL</str>
+      <str name="name_s">Red Swingline Brochure</str>
+      <int name="pages_i">1</int>
+      <str name="content_t">...</str>
+      <long name="_version_">1673055562829398016</long></doc>
+    <doc>
+      <str name="id">P11!S21</str>
+      <str name="type_s">SKU</str>
+      <str name="color_s">RED</str>
+      <int name="price_i">42</int>
+      <long name="_version_">1673055562829398016</long></doc>
+    <doc>
+      <str name="id">P11!S31</str>
+      <str name="type_s">SKU</str>
+      <str name="color_s">BLACK</str>
+      <int name="price_i">3</int>
+      <long name="_version_">1673055562829398016</long></doc>
+    <doc>
+      <str name="id">P11!D51</str>
+      <str name="type_s">MANUAL</str>
+      <str name="name_s">Quick Reference Guide</str>
+      <int name="pages_i">1</int>
+      <str name="content_t">How to use your stapler ...</str>
+      <long name="_version_">1673055562829398016</long></doc>
+    <doc>
+      <str name="id">P11!D61</str>
+      <str name="type_s">MANUAL</str>
+      <str name="name_s">Warranty Details</str>
+      <int name="pages_i">42</int>
+      <str name="content_t">... lifetime guarantee ...</str>
+      <long name="_version_">1673055562829398016</long></doc></doc>
+</result>
+</response>
+----
+====
+
+
+--

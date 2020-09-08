@@ -47,6 +47,7 @@ configure(rootProject) {
           projects.each { prj ->
             prj.sourceSets.each { sourceSet ->
               sources += sourceSet.java.srcDirs.findAll { dir -> dir.exists() }.collect { dir -> relativize(dir) }
+              sources += sourceSet.resources.srcDirs.findAll { dir -> dir.exists() }.collect { dir -> relativize(dir) }
             }
 
             // This is hacky - we take the resolved compile classpath and just

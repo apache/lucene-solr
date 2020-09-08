@@ -31,6 +31,7 @@ public class PointsStackTracker {
 
   public final List<Cell> stack = new ArrayList<>();
 
+  /** Individual BKD stack frame */
   public class Cell {
     public final byte[] minPackedValue;
     public final byte[] maxPackedValue;

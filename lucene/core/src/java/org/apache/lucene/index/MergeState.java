@@ -241,9 +241,9 @@ public class MergeState {
 
   /** A map of doc IDs. */
   public static abstract class DocMap {
-    /** Sole constructor */
-    public DocMap() {
-    }
+    /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+    // Explicitly declared so that we have non-empty javadoc
+    protected DocMap() {}
 
     /** Return the mapped docID or -1 if the given doc is not mapped. */
     public abstract int get(int docID);

@@ -36,12 +36,20 @@ comprehensive documentation, visit:
 - Lucene: <http://lucene.apache.org/core/documentation.html>
 - Solr: <http://lucene.apache.org/solr/guide/>
 
-## Building Lucene/Solr
+## Building with Gradle
 
-(You do not need to do this if you downloaded a pre-built package)
+### Building Lucene
 
+See [lucene/BUILD.md](./lucene/BUILD.md).
 
-### Building with Gradle
+### Building Solr
+
+Firstly, you need to set up your development environment (OpenJDK 11 or greater).
+
+We'll assume that you know how to get and set up the JDK - if you
+don't, then we suggest starting at https://www.oracle.com/java/ and learning
+more about Java, before returning to this README. Solr runs with
+Java 11 and later.
 
 As of 9.0, Lucene/Solr uses [Gradle](https://gradle.org/) as the build
 system. Ant build support has been removed.
@@ -50,6 +58,12 @@ To build Lucene and Solr, run (`./` can be omitted on Windows):
 
 `./gradlew assemble`
 
+NOTE: DO NOT use `gradle` command that is already installed on your machine (unless you know what you'll do).
+The "gradle wrapper" (gradlew) does the job - downloads the correct version of it, setups necessary configurations.
+
+The first time you run Gradle, it will create a file "gradle.properties" that
+contains machine-specific settings. Normally you can use this file as-is, but it
+can be modified if necessary.
 
 The command above packages a full distribution of Solr server; the 
 package can be located at:
@@ -64,6 +78,8 @@ is rewritten on each build.
 For development, especially when you have created test indexes etc, use
 the `./gradlew dev` task which will copy binaries to `./solr/packaging/build/dev`
 but _only_ overwrite the binaries which will preserve your test setup.
+
+If you want to build the documentation, type `./gradlew -p solr documentation`.
 
 ## Running Solr
 

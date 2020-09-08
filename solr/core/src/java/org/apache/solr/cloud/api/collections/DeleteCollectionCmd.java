@@ -43,7 +43,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
@@ -71,7 +70,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   @Override
-  public void call(ClusterState state, CloudConfig cloudConfig, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
     if (o != null) {
       ((Runnable)o).run(); // this will ensure the collection is removed from the alias before it disappears.

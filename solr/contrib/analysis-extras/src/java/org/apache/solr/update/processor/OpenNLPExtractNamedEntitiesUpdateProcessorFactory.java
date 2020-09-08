@@ -73,14 +73,14 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *     &lt;/analyzer&gt;
  *   &lt;/fieldType&gt;
  * </pre>
- * 
+ *
  * <p>See the <a href="http://opennlp.apache.org/models.html">OpenNLP website</a>
  * for information on downloading pre-trained models.</p>
  *
- * Note that in order to use model files larger than 1MB on SolrCloud, 
- * <a href="https://lucene.apache.org/solr/guide/setting-up-an-external-zookeeper-ensemble#increasing-zookeeper-s-1mb-file-size-limit"
+ * Note that in order to use model files larger than 1MB on SolrCloud,
+ * <a href="https://lucene.apache.org/solr/guide/setting-up-an-external-zookeeper-ensemble.html#increasing-the-file-size-limit"
  * >ZooKeeper server and client configuration is required</a>.
- * 
+ *
  * <p>
  * The <code>source</code> field(s) can be configured as either:
  * </p>
