@@ -2610,7 +2610,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @lucene.experimental
    * @lucene.internal
    */
-  private static void randomizeNumericTypesProperties() {
+  public static void randomizeNumericTypesProperties() {
 
     final boolean useDV = random().nextBoolean();
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP, ""+useDV);

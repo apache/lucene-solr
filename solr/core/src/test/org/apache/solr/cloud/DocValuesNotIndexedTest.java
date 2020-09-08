@@ -65,7 +65,6 @@ import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
-@Ignore // nocommit flakey
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -83,9 +82,11 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createCluster() throws Exception {
+
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
+        .addConfig("conf1", configset("cloud-managed"))
         .configure();
 
     // Need enough shards that we have some shards that don't have any docs on them.
