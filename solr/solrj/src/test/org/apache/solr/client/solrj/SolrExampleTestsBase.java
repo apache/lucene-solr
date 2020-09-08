@@ -67,9 +67,10 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     up.add(doc3);
     up.setCommitWithin(10);
     up.process(client);
-    
-    rsp = client.query(new SolrQuery("*:*"));
-    Assert.assertEquals(0, rsp.getResults().getNumFound());
+
+    // terrible, flakey way to test and we test commitWithin like this a lot already
+//    rsp = client.query(new SolrQuery("*:*"));
+//    Assert.assertEquals(0, rsp.getResults().getNumFound());
     
     // now check that it comes out...
     rsp = client.query(new SolrQuery("id:id3"));
@@ -83,7 +84,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
         break;
       }
       
-      Thread.sleep(50);
+      Thread.sleep(10);
       
       rsp = client.query(new SolrQuery("id:id3"));
     }
@@ -95,7 +96,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     doc4.addField("id", "id4");
     doc4.addField("name", "doc4");
     doc4.addField("price", 10);
-    client.add(doc4, 50);
+    client.add(doc4, 10);
 
     // now check that it comes out...
     rsp = client.query(new SolrQuery("id:id4"));
@@ -109,7 +110,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
         break;
       }
       
-      Thread.sleep(50);
+      Thread.sleep(10);
       
       rsp = client.query(new SolrQuery("id:id3"));
     }
@@ -152,7 +153,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     // check if the doc has been deleted every 250 ms for 30 seconds
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     do {
-      Thread.sleep(250); // wait 250 ms
+      Thread.sleep(50); // wait 250 ms
       
       rsp = client.query(new SolrQuery("id:id3"));
       if (rsp.getResults().getNumFound() == 0) {
