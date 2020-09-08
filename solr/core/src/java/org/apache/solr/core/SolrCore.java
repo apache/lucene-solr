@@ -963,6 +963,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     this.coreContainer = coreContainer;
 
     try {
+      if (reload) {
+        updateHandler.getSolrCoreState().increfSolrCoreState();
+      }
+
       IndexSchema schema = configSet.getIndexSchema();
 
       CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
@@ -1095,10 +1099,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.snapshotDelLock = new ReentrantLock();
 
       registerConfListener();
-
-      if (reload) {
-        solrCoreState.increfSolrCoreState();
-      }
 
       resourceLoader.inform(this); // last call before the latch is released.
       searcherReadyLatch.countDown();
@@ -1570,12 +1570,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   @Override
   public void close() {
-    int count = refCount.get();
-    if (count - 1 > 0) {
-      refCount.decrementAndGet();
-      return; // close is called often, and only actually closes if nothing is using it.
-    }
-    if (count - 1 < 0) {
+    int count = refCount.decrementAndGet();
+    if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
+    if (count < 0) {
       log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Too many closes on SolrCore");
     }
@@ -1596,12 +1593,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       this.isClosed = true;
-
-      closer.collect("searcherExecutor#shutdown", () -> {
-        searcherExecutor.shutdown();
-        return solrCoreState;
-      });
-
+      searcherExecutor.shutdown();
 
       closer.collect("snapshotsDir", () -> {
         Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
@@ -1756,7 +1748,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * Whether this core is closed.
    */
   public boolean isClosed() {
-    return refCount.get() < 0;
+    return refCount.get() <= 0;
   }
 
   private final Collection<CloseHook> closeHooks = ConcurrentHashMap.newKeySet(128);
@@ -3162,20 +3154,22 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
     final String managedSchmaResourcePath = schemaRes == null ? null : zkSolrResourceLoader.getConfigSetZkPath() + "/" + schemaRes;
     return () -> {
+
+      if (cc.isShutDown() || core.isClosed) {
+        return;
+      }
       log.info("config update listener called for core {}", coreName);
       SolrZkClient zkClient = cc.getZkController().getZkClient();
       int solrConfigversion, overlayVersion, managedSchemaVersion = 0;
       SolrConfig cfg = null;
-      try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-        if (solrCore == null || solrCore.isClosed() || solrCore.getCoreContainer().isShutDown()) return;
-        cfg = solrCore.getSolrConfig();
-        solrConfigversion = solrCore.getSolrConfig().getOverlay().getZnodeVersion();
-        overlayVersion = solrCore.getSolrConfig().getZnodeVersion();
-        if (managedSchmaResourcePath != null) {
-          managedSchemaVersion = ((ManagedIndexSchema) solrCore.getLatestSchema()).getSchemaZkVersion();
-        }
 
+      cfg = core.getSolrConfig();
+      solrConfigversion = core.getSolrConfig().getOverlay().getZnodeVersion();
+      overlayVersion = core.getSolrConfig().getZnodeVersion();
+      if (managedSchmaResourcePath != null) {
+        managedSchemaVersion = ((ManagedIndexSchema) core.getLatestSchema()).getSchemaZkVersion();
       }
+
       if (cfg != null) {
         cfg.refreshRequestParams();
       }
@@ -3201,9 +3195,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
       //some files in conf directory may have  other than managedschema, overlay, params
       try (ParWork worker = new ParWork("ConfListeners")) {
-        try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-          if (solrCore == null || solrCore.isClosed() || cc.isShutDown()) return;
-          for (Runnable listener : solrCore.confListeners) {
+
+          if (core.isClosed() || cc.isShutDown()) return;
+          for (Runnable listener : core.confListeners) {
             worker.collect("confListeners", () -> {
               try {
                 listener.run();
@@ -3211,7 +3205,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
                 ParWork.propegateInterrupt("Error in listener ", e);
               }
             });
-          }
+
         }
       }
 

@@ -102,7 +102,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void after() throws Exception {
-    zkClient().printLayout();
+
   }
 
   /**
@@ -161,7 +161,8 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     assertEquals(0, cloudClient.query(params("q","*:*")).getResults().getNumFound());
 
    // checkShardConsistency(params("q","*:*", "rows", "9999","_trace","delAll"));
-    
+
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
   @Nightly
@@ -180,28 +181,24 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     // create a new node for the purpose of killing it...
     final JettySolrRunner leaderToPartition = cluster.startJettySolrRunner();
     try {
-      cluster.waitForNode(leaderToPartition, DEFAULT_TIMEOUT);
 
       // HACK: we have to stop the node in order to enable the proxy, in order to then restart the node
       // (in order to then "partition it" later via the proxy)
       final SocketProxy proxy = new SocketProxy();
       cluster.stopJettySolrRunner(leaderToPartition);
-      cluster.waitForJettyToStop(leaderToPartition);
+
       leaderToPartition.setProxyPort(proxy.getListenPort());
       cluster.startJettySolrRunner(leaderToPartition);
       proxy.open(new URI(leaderToPartition.getBaseUrl()));
       try {
         log.info("leaderToPartition's Proxy: {}", proxy);
-        
-        cluster.waitForNode(leaderToPartition, DEFAULT_TIMEOUT);
+
         // create a 2x1 collection using a nodeSet that includes our leaderToPartition...
         assertEquals(RequestStatusState.COMPLETED,
                      CollectionAdminRequest.createCollection(collectionName, 2, 1)
                      .setCreateNodeSet(leaderToPartition.getNodeName() + "," + otherLeader.getNodeName())
                      .processAndWait(cloudClient, DEFAULT_TIMEOUT));
 
-        cloudClient.waitForState(collectionName, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT_UNIT,
-                                 (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
         { // HACK: Check the leaderProps for the shard hosted on the node we're going to kill...
           final Replica leaderProps = cloudClient.getZkStateReader()
@@ -216,12 +213,16 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         }
         
         // create client to send our updates to...
-        try (Http2SolrClient indexClient = SolrTestCaseJ4.getHttpSolrClient(indexingUrl)) {
+       Http2SolrClient indexClient = cloudClient.getHttpClient();
           
           // Sanity check: we should be able to send a bunch of updates that work right now...
+
+          UpdateRequest req = new UpdateRequest();
+          req.setBasePath(indexingUrl);
+
           for (int i = 0; i < 100; i++) {
-            final UpdateResponse rsp = indexClient.add
-              (SolrTestCaseJ4.sdoc("id", i, "text_t", TestUtil.randomRealisticUnicodeString(random(), 200)));
+            req.add(SolrTestCaseJ4.sdoc("id", i, "text_t", TestUtil.randomRealisticUnicodeString(random(), 200)));
+            UpdateResponse rsp = req.process(indexClient, collectionName);
             assertEquals(0, rsp.getStatus());
           }
 
@@ -241,13 +242,14 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
               }
             });
           assertEquals(500, e.code());
-        }
+
       } finally {
         proxy.close(); // don't leak this port
       }
     } finally {
+      CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
       cluster.stopJettySolrRunner(leaderToPartition); // don't let this jetty bleed into other tests
-      cluster.waitForJettyToStop(leaderToPartition);
+      cluster.startJettySolrRunner();
     }
   }
   
@@ -303,7 +305,6 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
   }
 
-  @Ignore // nocommit debug
   public long testIndexQueryDeleteHierarchical() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
@@ -358,7 +359,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     assertEquals(0, cloudClient.query(params("q","*:*")).getResults().getNumFound());
 
     checkShardConsistency(params("q","*:*", "rows", "9999","_trace","delAll"));
-    
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
     return docId;
   }
 
@@ -382,8 +383,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     topDocument.addChildDocument(childDocument);
     return docId;
   }
-  
-  @Ignore // nocommit debug
+
   public void testIndexingOneDocPerRequestWithHttpSolrClient() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
@@ -399,6 +399,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     assertEquals(numDocs, cloudClient.query(params("q","*:*")).getResults().getNumFound());
     
     checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
   public void testIndexingBatchPerRequestWithHttpSolrClient() throws Exception {
@@ -485,6 +486,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     assertEquals(numDocs, cloudClient.query(params("q","*:*")).getResults().getNumFound());
 
     //checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
   
   /**

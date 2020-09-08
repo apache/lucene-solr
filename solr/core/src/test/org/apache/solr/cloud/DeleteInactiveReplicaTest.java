@@ -72,27 +72,13 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
     cluster.stopJettySolrRunner(jetty);
 
-    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (n,c)->{
-      if (c == null) return false;
-      Replica rep = c.getReplica(replica.getName());
-      if (rep == null) return true;
-      if (rep.getState() != Replica.State.ACTIVE) {
-        return true;
-      }
-      return false;
-    });
-
     if (log.isInfoEnabled()) {
       log.info("Removing replica {}/{} ", shard.getName(), replica.getName());
     }
     CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
         .process(cluster.getSolrClient());
 
-    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (n,c)->{
-      if (c == null) return false;
-      if (c.getReplica(replica.getName()) == null) return true;
-      return false;
-    });
+// TODO: this coule come back in
 
 //    cluster.startJettySolrRunner(jetty);
 //    log.info("restarted jetty");

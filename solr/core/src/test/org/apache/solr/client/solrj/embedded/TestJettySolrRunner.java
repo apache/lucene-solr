@@ -36,7 +36,6 @@ import java.util.Properties;
 public class TestJettySolrRunner extends SolrTestCaseJ4 {
 
   @Test
-  @Ignore // nocommit something off with this test
   public void testPassSolrHomeToRunner() throws Exception {
 
     // We set a non-standard coreRootDirectory, create a core, and check that it has been
@@ -78,7 +77,7 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
 
   @SuppressWarnings("ThrowableNotThrown")
   @Test
-  @Ignore // nocommit look at this test again
+  @Ignore // nocommit look at this test again, should prob be nightly in the end
   public void testLookForBindException() throws IOException {
     Path solrHome = createTempDir();
     Files.write(solrHome.resolve("solr.xml"), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.getBytes(Charset.defaultCharset()));

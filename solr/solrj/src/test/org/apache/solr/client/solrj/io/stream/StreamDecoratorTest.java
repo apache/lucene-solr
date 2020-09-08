@@ -2615,6 +2615,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
       stream.close();
     } finally {
+      System.out.println("DELETECOLL");
       CollectionAdminRequest.deleteCollection("destinationCollection").process(cluster.getSolrClient());
     }
   }

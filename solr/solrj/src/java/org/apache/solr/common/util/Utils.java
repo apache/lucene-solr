@@ -101,6 +101,7 @@ public class Utils {
   @SuppressWarnings({"rawtypes"})
   public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final byte[] EMPTY_BYTES = new byte[0];
 
   @SuppressWarnings({"rawtypes"})
   public static Map getDeepCopy(Map map, int maxDepth) {
@@ -263,7 +264,7 @@ public class Utils {
       }
 
       public static byte[] toJSON (Object o){
-        if (o == null) return new byte[0];
+        if (o == null) return EMPTY_BYTES;
         CharArr out = new CharArr();
         if (!(o instanceof List) && !(o instanceof Map)) {
           if (o instanceof MapWriter) {

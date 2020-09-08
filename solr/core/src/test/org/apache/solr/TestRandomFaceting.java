@@ -150,7 +150,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit my nightly changes need work
+  @Ignore // nocommit debug
   public void testRandomFaceting() throws Exception {
     Random rand = random();
     int iter = atLeast(TEST_NIGHTLY ? 100 : 15);

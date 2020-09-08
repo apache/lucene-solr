@@ -28,7 +28,10 @@ import org.junit.BeforeClass;
 @LuceneTestCase.Nightly
 public class HdfsSyncSliceTest extends SyncSliceTest {
   private static MiniDFSCluster dfsCluster;
-  
+
+  public HdfsSyncSliceTest() throws Exception {
+  }
+
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());

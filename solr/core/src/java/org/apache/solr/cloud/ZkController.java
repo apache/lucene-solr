@@ -1992,14 +1992,15 @@ public class ZkController implements Closeable {
           ZkStateReader.BASE_URL_PROP, getBaseUrl(),
           ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
       overseerJobQueue.offer(Utils.toJSON(m));
-      zkStateReader.waitForState(cloudDescriptor.getCollectionName(), 10, TimeUnit.SECONDS, (l,c) -> {
-        if (c == null) return true;
-        Slice slice = c.getSlice(cloudDescriptor.getShardId());
-        if (slice == null) return true;
-        Replica r = slice.getReplica(cloudDescriptor.getCoreNodeName());
-        if (r == null) return true;
-        return false;
-      });
+
+//      zkStateReader.waitForState(cloudDescriptor.getCollectionName(), 10, TimeUnit.SECONDS, (l,c) -> {
+//        if (c == null) return true;
+//        Slice slice = c.getSlice(cloudDescriptor.getShardId());
+//        if (slice == null) return true;
+//        Replica r = slice.getReplica(cloudDescriptor.getCoreNodeName());
+//        if (r == null) return true;
+//        return false;
+//      });
     }
   }
 
@@ -2707,7 +2708,7 @@ public class ZkController implements Closeable {
     @Override
     public void process(WatchedEvent event) {
       // session events are not change events, and do not remove the watcher
-      if (Event.EventType.None.equals(event.getType())) {
+      if (Event.EventType.None.equals(event.getType()) || isClosed() || cc.isShutDown()) {
         return;
       }
 
@@ -2717,7 +2718,7 @@ public class ZkController implements Closeable {
       } catch (KeeperException e) {
         //ignore , it is not a big deal
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        log.info("WatcherImpl Interrupted");
         return;
       }
 
@@ -2728,8 +2729,14 @@ public class ZkController implements Closeable {
         if (Event.EventType.None.equals(event.getType())) {
           log.debug("A node got unwatched for {}", zkDir);
         } else {
-          if (resetWatcher) setConfWatcher(zkDir, this, stat);
-          else log.debug("A node got unwatched for {}", zkDir);
+          if (!isClosed() && !cc.isShutDown()) {
+            if (resetWatcher) {
+              setConfWatcher(zkDir, this, stat);
+            } else {
+              log.debug("A node got unwatched for {}", zkDir);
+            }
+          }
+
         }
       }
     }
@@ -2885,17 +2892,17 @@ public class ZkController implements Closeable {
       return;
     }
 
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
-        ZkStateReader.NODE_NAME_PROP, nodeName);
-    try {
-      overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
-    } catch (AlreadyClosedException e) {
-      log.info("Not publishing node as DOWN because a resource required to do so is already closed.");
-      return;
-    } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
-      return;
-    }
+//    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
+//        ZkStateReader.NODE_NAME_PROP, nodeName);
+//    try {
+//      overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
+//    } catch (AlreadyClosedException e) {
+//      log.info("Not publishing node as DOWN because a resource required to do so is already closed.");
+//      return;
+//    } catch (InterruptedException e) {
+//      ParWork.propegateInterrupt(e);
+//      return;
+//    }
 //    Collection<SolrCore> cores = cc.getCores();
 //    for (SolrCore core : cores) {
 //      CoreDescriptor desc = core.getCoreDescriptor();

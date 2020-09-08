@@ -183,7 +183,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       
       SolrZkClient zkClientControl = controlCluster.getZkClient();
       
-      zkClientControl.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf"), "configs" + "/" + "_default", filenameExclusions);
+      zkClientControl.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf"), "/configs" + "/" + "_default", filenameExclusions);
 
       if (schemaString != null) {
         //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString), "/configs/_default", null);

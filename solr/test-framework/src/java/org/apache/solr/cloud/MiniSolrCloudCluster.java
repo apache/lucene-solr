@@ -148,18 +148,18 @@ public class MiniSolrCloudCluster {
       "</solr>\n";
 
   private final Object startupWait = new Object();
-  private final SolrZkClient solrZkClient;
+  private SolrZkClient solrZkClient;
   private volatile ZkTestServer zkServer; // non-final due to injectChaos()
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
-  private final CloudHttp2SolrClient solrClient;
+  private CloudHttp2SolrClient solrClient;
   private final JettyConfig jettyConfig;
   private final boolean trackJettyMetrics;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
   private boolean isShutDown;
-
+  private ZkStateReader zkStateReader;
 
   /**
    * Create a MiniSolrCloudCluster with default solr.xml
@@ -339,7 +339,8 @@ public class MiniSolrCloudCluster {
 
       // build the client
       solrClient = buildSolrClient();
-      solrZkClient = solrClient.getZkStateReader().getZkClient();
+      solrZkClient = zkStateReader.getZkClient();
+
       if (numServers > 0) {
         waitForAllNodes(numServers, STARTUP_WAIT_SECONDS);
       }
@@ -717,15 +718,18 @@ public class MiniSolrCloudCluster {
       }
       jettys.clear();
 
-      try (ParWork parWork = new ParWork(this, false)) {
+      try (ParWork parWork = new ParWork(this, true)) {
         parWork.collect(shutdowns);
-        parWork.addCollect();
-        parWork.collect(solrClient);
-        parWork.addCollect();
-        if (!externalZkServer) {
-          parWork.collect(zkServer);
-        }
       }
+
+      IOUtils.closeQuietly(zkStateReader);
+
+      IOUtils.closeQuietly(solrClient);
+
+      if (!externalZkServer) {
+        IOUtils.closeQuietly(zkServer);
+      }
+
     } finally {
       System.clearProperty("zkHost");
       ObjectReleaseTracker.release(this);
@@ -746,7 +750,10 @@ public class MiniSolrCloudCluster {
   }
   
   protected CloudHttp2SolrClient buildSolrClient() {
-    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkServer.getZkHost()), Optional.of("/solr")).build();
+   // return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkServer.getZkHost()), Optional.of("/solr")).build();
+    zkStateReader = new ZkStateReader(zkServer.getZkAddress(), 15, 30);
+    zkStateReader.createClusterStateWatchersAndUpdate();
+    return new CloudHttp2SolrClient.Builder(zkStateReader).build();
   }
 
   private static String getHostContextSuitableForServletContext(String ctx) {
@@ -918,12 +925,12 @@ public class MiniSolrCloudCluster {
   }
 
   public void waitForActiveCollection(String collection, int shards, int totalReplicas) {
-    waitForActiveCollection(collection,  30, TimeUnit.SECONDS, shards, totalReplicas);
+    waitForActiveCollection(collection,  10, TimeUnit.SECONDS, shards, totalReplicas);
   }
   
   public void waitForRemovedCollection(String collection) {
     try {
-      getSolrClient().waitForState(collection, 30, TimeUnit.SECONDS, (n, c) -> {
+      getSolrClient().waitForState(collection, 10, TimeUnit.SECONDS, (n, c) -> {
         return c == null;
       });
     } catch (TimeoutException | InterruptedException e) {

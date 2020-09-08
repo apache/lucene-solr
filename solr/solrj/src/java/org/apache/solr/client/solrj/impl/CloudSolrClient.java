@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 
@@ -109,11 +110,11 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     }
     this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
-    if(builder.lbClientBuilder != null) {
+    if (builder.lbClientBuilder != null) {
       propagateLBClientConfigOptions(builder);
       builder.loadBalancedSolrClient = builder.lbClientBuilder.build();
     }
-    if(builder.loadBalancedSolrClient != null) builder.httpClient = builder.loadBalancedSolrClient.getHttpClient();
+    if (builder.loadBalancedSolrClient != null) builder.httpClient = builder.loadBalancedSolrClient.getHttpClient();
     this.myClient = (builder.httpClient == null) ? HttpClientUtil.createClient(null) : builder.httpClient;
     if (builder.loadBalancedSolrClient == null) builder.loadBalancedSolrClient = createLBHttpSolrClient(builder, myClient);
     this.lbClient = builder.loadBalancedSolrClient;
@@ -186,15 +187,15 @@ public class CloudSolrClient extends BaseCloudSolrClient {
 
   @Override
   public void close() throws IOException {
-    try (ParWork closer = new ParWork(this, true)) {
-      closer.collect(stateProvider);
-      if (shutdownLBHttpSolrServer) {
-        closer.collect(lbClient);
-      }
-      if (clientIsInternal) {
-        closer.collect(myClient);
-      }
+
+    if (shutdownLBHttpSolrServer) {
+      IOUtils.closeQuietly(lbClient);
     }
+    IOUtils.closeQuietly(stateProvider);
+    if (clientIsInternal) {
+      HttpClientUtil.close(myClient);
+    }
+
     super.close();
     ObjectReleaseTracker.release(this);
   }

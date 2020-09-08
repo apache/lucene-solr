@@ -426,8 +426,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       return currentIndexFetcher.fetchLatestIndex(forceReplication);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
-      SolrException.log(log, "Index fetch failed ", e);
+      if (e instanceof AlreadyClosedException) {
+        throw (AlreadyClosedException) e;
+      }
+
+      ParWork.propegateInterrupt("Index fetch failed", e);
       if (currentIndexFetcher != pollingIndexFetcher) {
         currentIndexFetcher.destroy();
       }

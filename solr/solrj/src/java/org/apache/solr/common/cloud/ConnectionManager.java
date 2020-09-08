@@ -209,6 +209,7 @@ public class ConnectionManager implements Watcher, Closeable {
     KeeperState state = event.getState();
 
     if (state == KeeperState.SyncConnected) {
+      if (isClosed()) return;
       log.info("zkClient has connected");
       client.zkConnManagerCallbackExecutor.execute(() -> {
         connected();
@@ -347,13 +348,13 @@ public class ConnectionManager implements Watcher, Closeable {
     log.info("Close called on ZK ConnectionManager");
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
-    synchronized (keeper) {
-      client.zkCallbackExecutor.shutdownNow();
-      keeper.close();
-      client.zkConnManagerCallbackExecutor.shutdown();
-      ExecutorUtil.awaitTermination(client.zkCallbackExecutor);
-      ExecutorUtil.awaitTermination(client.zkConnManagerCallbackExecutor);
-    }
+    client.zkCallbackExecutor.shutdown();
+    client.zkConnManagerCallbackExecutor.shutdown();
+    keeper.close();
+    ExecutorUtil.awaitTermination(client.zkCallbackExecutor);
+    client.zkConnManagerCallbackExecutor.shutdownNow();
+    ExecutorUtil.awaitTermination(client.zkConnManagerCallbackExecutor);
+
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -369,11 +370,12 @@ public class ConnectionManager implements Watcher, Closeable {
           throws TimeoutException, InterruptedException {
     log.info("Waiting for client to connect to ZooKeeper");
     TimeOut timeout = new TimeOut(waitForConnection, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    while (!timeout.hasTimedOut() || isClosed()) {
+    while (!timeout.hasTimedOut()  && !isClosed()) {
       if (client.isConnected()) return;
       boolean success = connectedLatch.await(50, TimeUnit.MILLISECONDS);
       if (client.isConnected()) return;
     }
+    if (isClosed()) return;
     if (timeout.hasTimedOut()) {
       throw new TimeoutException("Timeout waiting to connect to ZooKeeper "
               + zkServerAddress + " " + waitForConnection + "ms");
@@ -386,16 +388,16 @@ public class ConnectionManager implements Watcher, Closeable {
     log.info("Client is connected to ZooKeeper");
   }
 
-  public void waitForDisconnected(long waitForDisconnected)
-      throws InterruptedException, TimeoutException {
-
-    if (!client.isConnected() || lastConnectedState != 1) return;
-    boolean success = disconnectedLatch.await(1000, TimeUnit.MILLISECONDS);
-    if (!success) {
-      throw new TimeoutException("Timeout waiting to disconnect from ZooKeeper");
-    }
-
-  }
+//  public void waitForDisconnected(long waitForDisconnected)
+//      throws InterruptedException, TimeoutException {
+//
+//    if (!client.isConnected() || lastConnectedState != 1) return;
+//    boolean success = disconnectedLatch.await(1000, TimeUnit.MILLISECONDS);
+//    if (!success) {
+//      throw new TimeoutException("Timeout waiting to disconnect from ZooKeeper");
+//    }
+//
+//  }
 
   public interface DisconnectListener {
     void disconnected();

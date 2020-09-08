@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -68,7 +70,6 @@ import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STO
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
 
-@Ignore // nocommit debug
 public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
   @Rule
@@ -265,9 +266,9 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
         .collect(Collectors.joining(","));
 
     // Even a single multiValued and stored field should cause stored fields to be visited.
-
+    Random random = LuceneTestCase.random();
     List<Integer> shuffled = Arrays.asList(0, 1, 2);
-    Collections.shuffle(shuffled, random());
+    Collections.shuffle(shuffled, random);
     for (int which : shuffled) {
       switch (which) {
         case 0:
@@ -280,7 +281,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
         case 2:
           List<RetrieveField> toCheckPlusMv = new ArrayList<>(toCheck);
-          toCheckPlusMv.add(fieldsHolder.storedMvFields.get(random().nextInt(fieldsHolder.storedMvFields.size())));
+          toCheckPlusMv.add(fieldsHolder.storedMvFields.get(random.nextInt(fieldsHolder.storedMvFields.size())));
 
           String flWithMv = idField + toCheckPlusMv.stream()
               .map(RetrieveField::getName) // This will call testField.getName()
@@ -520,26 +521,27 @@ class RetrieveField {
     sb.setLength(0);
 
     for (int idx = 0; idx < 10; ++idx) {
-      sb.append(chars.charAt(random().nextInt(chars.length())));
+      sb.append(chars.charAt(LuceneTestCase.random().nextInt(chars.length())));
     }
     return sb.toString();
   }
 
   private String randDate() {
-    return new Date(Math.abs(random().nextLong()) % 3_000_000_000_000L).toInstant().toString();
+    return new Date(Math.abs(LuceneTestCase.random().nextLong()) % 3_000_000_000_000L).toInstant().toString();
   }
 
   List<String> getValsForField() {
+    Random random = LuceneTestCase.random();
     List<String> valsAsStrings = new ArrayList<>();
     switch (testFieldType.getSolrTypeClass()) {
       case "solr.TrieIntField":
       case "solr.TrieLongField":
       case "solr.IntPointField":
       case "solr.LongPointField":
-        valsAsStrings.add(Integer.toString(random().nextInt(10_000)));
+        valsAsStrings.add(Integer.toString(random.nextInt(10_000)));
         if (schemaField.multiValued() == false) break;
-        for (int idx = 0; idx < random().nextInt(5); ++idx) {
-          valsAsStrings.add(Integer.toString(random().nextInt(10_000)));
+        for (int idx = 0; idx < random.nextInt(5); ++idx) {
+          valsAsStrings.add(Integer.toString(random.nextInt(10_000)));
         }
         break;
 
@@ -547,10 +549,10 @@ class RetrieveField {
       case "solr.TrieDoubleField":
       case "solr.FloatPointField":
       case "solr.DoublePointField":
-        valsAsStrings.add(Float.toString(random().nextFloat()));
+        valsAsStrings.add(Float.toString(random.nextFloat()));
         if (schemaField.multiValued() == false) break;
-        for (int idx = 0; idx < random().nextInt(5); ++idx) {
-          valsAsStrings.add(Float.toString(random().nextFloat()));
+        for (int idx = 0; idx < random.nextInt(5); ++idx) {
+          valsAsStrings.add(Float.toString(random.nextFloat()));
         }
         break;
 
@@ -558,7 +560,7 @@ class RetrieveField {
       case "solr.DatePointField":
         valsAsStrings.add(randDate());
         if (schemaField.multiValued() == false) break;
-        for (int idx = 0; idx < random().nextInt(5); ++idx) {
+        for (int idx = 0; idx < random.nextInt(5); ++idx) {
           valsAsStrings.add(randDate());
         }
         break;
@@ -566,16 +568,16 @@ class RetrieveField {
       case "solr.StrField":
         valsAsStrings.add(randString());
         if (schemaField.multiValued() == false) break;
-        for (int idx = 0; idx < random().nextInt(5); ++idx) {
+        for (int idx = 0; idx < random.nextInt(5); ++idx) {
           valsAsStrings.add(randString());
         }
         break;
 
       case "solr.BoolField":
-        valsAsStrings.add(Boolean.toString(random().nextBoolean()));
+        valsAsStrings.add(Boolean.toString(random.nextBoolean()));
         if (schemaField.multiValued() == false) break;
-        for (int idx = 0; idx < random().nextInt(5); ++idx) {
-          valsAsStrings.add(Boolean.toString(random().nextBoolean()));
+        for (int idx = 0; idx < random.nextInt(5); ++idx) {
+          valsAsStrings.add(Boolean.toString(random.nextBoolean()));
         }
         break;
 
@@ -585,8 +587,8 @@ class RetrieveField {
     }
     // There are tricky cases with multiValued fields that are sometimes fetched from docValues that obey set
     // semantics so be sure we include at least one duplicate in a multValued field sometimes
-    if (random().nextBoolean() && valsAsStrings.size() > 1) {
-      valsAsStrings.add(valsAsStrings.get(random().nextInt(valsAsStrings.size())));
+    if (random.nextBoolean() && valsAsStrings.size() > 1) {
+      valsAsStrings.add(valsAsStrings.get(random.nextInt(valsAsStrings.size())));
 
     }
 

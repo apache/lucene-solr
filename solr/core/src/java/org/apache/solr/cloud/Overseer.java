@@ -79,6 +79,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.LongAccumulator;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 
 /**
@@ -410,52 +412,71 @@ public class Overseer implements SolrCloseable {
       return false;
     }
 
-    private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter, boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
+    private LongAdder itemsQueued = new LongAdder();
+
+    private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter,
+        boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
       if (log.isDebugEnabled()) log.debug("Consume state update from queue {}", message);
-     // assert clusterState != null;
+      // assert clusterState != null;
 
       ClusterState cs = null;
-    //  if (clusterState.getZNodeVersion() == 0 || clusterState.getZNodeVersion() > lastVersion) {
+      //  if (clusterState.getZNodeVersion() == 0 || clusterState.getZNodeVersion() > lastVersion) {
 
-
-        final String operation = message.getStr(QUEUE_OPERATION);
-        if (operation == null) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Message missing " + QUEUE_OPERATION + ":" + message);
-        }
-
-      ClusterState state = reader.getClusterState();
-      LinkedHashMap collStates = new LinkedHashMap<>();
-
-      Map<String,DocCollection> updatesToWrite = zkStateWriter
-          .getUpdatesToWrite();
+      final String operation = message.getStr(QUEUE_OPERATION);
+      if (operation == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Message missing " + QUEUE_OPERATION + ":" + message);
+      }
+      itemsQueued.increment();
+      Map<String,DocCollection> updatesToWrite = zkStateWriter.getUpdatesToWrite();
+      ClusterState state;
+      LinkedHashMap<String,ClusterState.CollectionRef> collStates;
+      ClusterState prevState = null;
+      if (itemsQueued.sum() == 1) {
+        log.info("First queue item for Overseer, pull cluster state ...");
+        zkClient.printLayout();
+        zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
+        prevState = state = reader.getClusterState();
+      } else {
+        state = clusterState;
+      }
+      collStates = new LinkedHashMap<>(state.getCollectionStates());
       for (DocCollection docCollection : updatesToWrite.values()) {
         Map<String,Slice> slicesMap = docCollection.getSlicesMap();
-        Map<String,Slice> newSlicesMap = new HashMap(slicesMap);
+        DocCollection oldDoc = state.getCollectionOrNull(docCollection.getName());
+        Map<String,Slice> newSlicesMap;
+        if (oldDoc != null) {
+          newSlicesMap = new HashMap(oldDoc.getSlicesMap());
+        } else {
+          newSlicesMap = new HashMap();
+        }
+
         for (Slice slice : slicesMap.values()) {
-          Collection<Replica> existingReplicas = slice.getReplicas();
-          for (Replica ereplica : existingReplicas) {
-            if (!docCollection.getReplicas().contains(ereplica)) {
-              Map<String,Replica> replicas = new HashMap<>(slice.getReplicasMap());
-              replicas.put(ereplica.getName(), ereplica);
-              newSlicesMap.put(slice.getName(), new Slice(slice.getName(), replicas, slice.getProperties(), docCollection.getName()));
-            }
+          Slice oldSlice = oldDoc.getSlicesMap().get(slice.getName());
+          Map<String,Replica> existingReplicas;
+          if (oldSlice != null) {
+            existingReplicas = new HashMap<>(oldSlice.getReplicasMap());
+          } else {
+            existingReplicas = new HashMap<>();
           }
 
-          collStates.put(docCollection.getName(), new ClusterState.CollectionRef(new DocCollection(docCollection.getName(),
-              newSlicesMap, docCollection.getProperties(), docCollection.getRouter(), docCollection.getZNodeVersion(), docCollection.getZNode())));
+          for (Replica ereplica : slice.getReplicas()) {
+            existingReplicas.put(ereplica.getName(), ereplica);
+          }
+
+          newSlicesMap.put(slice.getName(), new Slice(slice.getName(), existingReplicas, slice.getProperties(), docCollection.getName()));
         }
+        collStates.put(docCollection.getName(), new ClusterState.CollectionRef(
+            new DocCollection(docCollection.getName(), newSlicesMap, docCollection.getProperties(), docCollection.getRouter(), docCollection.getZNodeVersion(), docCollection.getZNode())));
+
       }
+      prevState = new ClusterState(state.getLiveNodes(), collStates, state.getZNodeVersion());
 
-      ClusterState prevState = new ClusterState(state.getLiveNodes(),
-          collStates, state.getZNodeVersion());
+      List<ZkWriteCommand> zkWriteOps = processMessage(prevState, message, operation);
 
-        List<ZkWriteCommand> zkWriteOps = processMessage(updatesToWrite.isEmpty() ? state : prevState, message, operation);
-
-        cs = zkStateWriter.enqueueUpdate(prevState, zkWriteOps,
-                () -> {
-                  // log.info("on write callback");
-                });
-    //  }
+      cs = zkStateWriter.enqueueUpdate(prevState, zkWriteOps, () -> {
+        // log.info("on write callback");
+      });
+      //  }
 
       return cs;
     }
@@ -463,7 +484,8 @@ public class Overseer implements SolrCloseable {
     private List<ZkWriteCommand> processMessage(ClusterState clusterState,
                                                 final ZkNodeProps message, final String operation) {
       if (log.isDebugEnabled()) {
-        log.debug("processMessage(ClusterState clusterState={}, ZkNodeProps message={}, String operation={}) - start", clusterState, message, operation);
+        // nocommit
+      //  log.debug("processMessage(ClusterState clusterState={}, ZkNodeProps message={}, String operation={}) - start", clusterState, message, operation);
       }
 
       CollectionParams.CollectionAction collectionAction = CollectionParams.CollectionAction.get(operation);

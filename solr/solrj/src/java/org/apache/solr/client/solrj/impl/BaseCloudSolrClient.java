@@ -231,7 +231,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   protected BaseCloudSolrClient(boolean updatesToLeaders, boolean parallelUpdates, boolean directUpdatesToLeadersOnly) {
     if (parallelUpdates) {
-      threadPool = new ParWorkExecutor("ParWork-CloudSolrClient", Integer.MAX_VALUE);
+      threadPool = new ParWorkExecutor("ParWork-CloudSolrClient", Math.max(12, Runtime.getRuntime().availableProcessors()));
     } else {
       threadPool = null;
     }
@@ -257,8 +257,19 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   @Override
   public void close() throws IOException {
-    if (threadPool != null) threadPool.shutdownNow();
-    ExecutorUtil.shutdownAndAwaitTermination(threadPool);
+    if (threadPool != null) {
+      threadPool.shutdown();
+      boolean success = false;
+      try {
+        success = threadPool.awaitTermination(3, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e, true);
+      }
+      if (!success) {
+        threadPool.shutdownNow();
+        ExecutorUtil.shutdownAndAwaitTermination(threadPool);
+      }
+    }
   }
 
   public ResponseParser getParser() {
@@ -295,7 +306,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   public ZkStateReader getZkStateReader() {
     if (getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
       ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) getClusterStateProvider();
-      getClusterStateProvider().connect();
       return provider.zkStateReader;
     }
     throw new IllegalStateException("This has no Zk stateReader: " + getClusterStateProvider().getClass().getSimpleName());
@@ -611,9 +621,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       final LBSolrClient.Req lbRequest = entry.getValue();
       try {
         MDC.put("CloudSolrClient.url", url);
-        responseFutures.put(url, threadPool.submit(() -> {
-          return getLbClient().request(lbRequest).getResponse();
-        }));
+        responseFutures.put(url, threadPool.submit(() -> getLbClient().request(lbRequest).getResponse()));
       } finally {
         MDC.remove("CloudSolrClient.url");
       }

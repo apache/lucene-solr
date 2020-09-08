@@ -26,6 +26,8 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -105,7 +107,8 @@ public class ZkStateWriter {
    */
   public ClusterState enqueueUpdate(ClusterState state, List<ZkWriteCommand> cmds, ZkWriteCallback callback) throws IllegalStateException, Exception {
     if (log.isDebugEnabled()) {
-      log.debug("enqueueUpdate(ClusterState prevState={}, List<ZkWriteCommand> cmds={}, updates={}, ZkWriteCallback callback={}) - start", state, cmds, updatesToWrite, callback);
+      // nocommit trace?
+      //log.debug("enqueueUpdate(ClusterState prevState={}, List<ZkWriteCommand> cmds={}, updates={}, ZkWriteCallback callback={}) - start", state, cmds, updatesToWrite, callback);
     }
     Map<String,DocCollection> updateCmds = new LinkedHashMap<>(cmds.size());
 
@@ -116,7 +119,7 @@ public class ZkStateWriter {
     if (updateCmds.isEmpty()) {
       return state;
     }
-    ClusterState prevState = reader.getClusterState();
+    ClusterState prevState = state;
     Set<Map.Entry<String,DocCollection>> entries = updateCmds.entrySet();
     for (Map.Entry<String,DocCollection> entry : entries) {
       DocCollection c = entry.getValue();
@@ -131,8 +134,22 @@ public class ZkStateWriter {
           if (log.isDebugEnabled()) {
             log.debug("going to delete state.json {}", path);
           }
-          reader.getZkClient().clean(path);
+
           updatesToWrite.remove(name);
+
+          reader.getZkClient().clean(path);
+
+          TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+          DocCollection coll;
+          timeout.waitFor("", () -> {
+            DocCollection rc = reader.getClusterState().getCollectionOrNull(name);
+            if (rc == null) return true;
+            return false;
+          });
+
+          LinkedHashMap<String,ClusterState.CollectionRef> collStates = new LinkedHashMap<>(prevState.getCollectionStates());
+          collStates.remove(name);
+          prevState = new ClusterState(prevState.getLiveNodes(), collStates, prevState.getZNodeVersion());
         } else if (updatesToWrite.get(name) != null || prevState.getCollectionOrNull(name) != null) {
           if (log.isDebugEnabled()) {
             log.debug("enqueueUpdate() - going to update_collection {} version: {}", path, c.getZNodeVersion());
@@ -149,7 +166,7 @@ public class ZkStateWriter {
             log.debug("The new collection {}", c);
           }
           updatesToWrite.put(name, c);
-          LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
+          LinkedHashMap<String,ClusterState.CollectionRef> collStates = new LinkedHashMap<>(prevState.getCollectionStates());
           collStates.put(name, new ClusterState.CollectionRef(c));
           prevState = new ClusterState(prevState.getLiveNodes(), collStates, prevState.getZNodeVersion());
         } else {
@@ -159,7 +176,7 @@ public class ZkStateWriter {
           //   assert c.getStateFormat() > 1;
           DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
 
-          LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
+          LinkedHashMap<String,ClusterState.CollectionRef> collStates = new LinkedHashMap<>(prevState.getCollectionStates());
           collStates.put(name, new ClusterState.CollectionRef(newCollection));
           prevState = new ClusterState(prevState.getLiveNodes(), collStates, prevState.getZNodeVersion());
           updatesToWrite.put(name, newCollection);

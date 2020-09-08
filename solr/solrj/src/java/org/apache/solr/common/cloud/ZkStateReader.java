@@ -47,6 +47,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -197,7 +198,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private final Runnable securityNodeListener;
 
-  private ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches = new ConcurrentHashMap<>(16, 0.75f, 5);
+  private final ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches = new ConcurrentHashMap<>(16, 0.75f, 5);
 
   // named this observers so there's less confusion between CollectionPropsWatcher map and the PropsWatcher map.
   private final ConcurrentHashMap<String, CollectionPropsWatcher> collectionPropsObservers = new ConcurrentHashMap<>(16, 0.75f, 5);
@@ -308,7 +309,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private final SolrZkClient zkClient;
 
-  protected volatile boolean closeClient;
+  protected final boolean closeClient;
 
   private volatile boolean closed = false;
 
@@ -354,6 +355,31 @@ public class ZkStateReader implements SolrCloseable {
 
   public ZkConfigManager getConfigManager() {
     return configManager;
+  }
+
+  // don't call this, used in one place
+
+  public void forciblyRefreshAllClusterStateSlow() throws KeeperException, InterruptedException {
+    synchronized (getUpdateLock()) {
+      if (clusterState == null) {
+        // Never initialized, just run normal initialization.
+        createClusterStateWatchersAndUpdate();
+        return;
+      }
+      // No need to set watchers because we should already have watchers registered for everything.
+      refreshCollectionList(null);
+      refreshLiveNodes(null);
+      // Need a copy so we don't delete from what we're iterating over.
+      Collection<String> safeCopy = new ArrayList<>(watchedCollectionStates.keySet());
+      Set<String> updatedCollections = new HashSet<>();
+      for (String coll : safeCopy) {
+        DocCollection newState = fetchCollectionState(coll, null);
+        if (updateWatchedCollection(coll, newState)) {
+          updatedCollections.add(coll);
+        }
+      }
+      constructState(updatedCollections);
+    }
   }
 
   /**
@@ -858,6 +884,8 @@ public class ZkStateReader implements SolrCloseable {
       if (closeClient) {
         IOUtils.closeQuietly(zkClient);
       }
+
+      waitLatches.forEach((w) -> w.countDown());
 
     } finally {
       assert ObjectReleaseTracker.release(this);
@@ -1552,16 +1580,18 @@ public class ZkStateReader implements SolrCloseable {
    */
   public void registerCore(String collection) {
     AtomicBoolean reconstructState = new AtomicBoolean(false);
-    collectionWatches.compute(collection, (k, v) -> {
-      if (v == null) {
-        reconstructState.set(true);
-        v = new CollectionWatch<>();
+    synchronized (collectionWatches) {
+      collectionWatches.compute(collection, (k, v) -> {
+        if (v == null) {
+          reconstructState.set(true);
+          v = new CollectionWatch<>();
+        }
+        v.coreRefCount.incrementAndGet();
+        return v;
+      });
+      if (reconstructState.get()) {
+        new StateWatcher(collection).refreshAndWatch();
       }
-      v.coreRefCount.incrementAndGet();
-      return v;
-    });
-    if (reconstructState.get()) {
-      new StateWatcher(collection).refreshAndWatch();
     }
   }
 
@@ -1581,18 +1611,20 @@ public class ZkStateReader implements SolrCloseable {
    */
   public void unregisterCore(String collection) {
     AtomicBoolean reconstructState = new AtomicBoolean(false);
-    collectionWatches.compute(collection, (k, v) -> {
-      if (v == null)
-        return null;
-      v.coreRefCount.decrementAndGet();
-      if (v.canBeRemoved()) {
-        watchedCollectionStates.remove(collection);
-        lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
-        reconstructState.set(true);
-        return null;
-      }
-      return v;
-    });
+
+    synchronized (collectionWatches) {
+      collectionWatches.compute(collection, (k, v) -> {
+        if (v == null) return null;
+        v.coreRefCount.decrementAndGet();
+        if (v.canBeRemoved()) {
+          watchedCollectionStates.remove(collection);
+          lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
+          reconstructState.set(true);
+          return null;
+        }
+        return v;
+      });
+    }
     if (reconstructState.get()) {
       synchronized (getUpdateLock()) {
         constructState(Collections.emptySet());
@@ -1642,14 +1674,16 @@ public class ZkStateReader implements SolrCloseable {
    */
   public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
     AtomicBoolean watchSet = new AtomicBoolean(false);
-    collectionWatches.compute(collection, (k, v) -> {
-      if (v == null) {
-        v = new CollectionWatch<>();
-        watchSet.set(true);
-      }
-      v.stateWatchers.add(stateWatcher);
-      return v;
-    });
+    synchronized (collectionWatches) {
+      collectionWatches.compute(collection, (k, v) -> {
+        if (v == null) {
+          v = new CollectionWatch<>();
+          watchSet.set(true);
+        }
+        v.stateWatchers.add(stateWatcher);
+        return v;
+      });
+    }
 
     if (watchSet.get()) {
       new StateWatcher(collection).refreshAndWatch();
@@ -1813,8 +1847,8 @@ public class ZkStateReader implements SolrCloseable {
     final DocCollectionAndLiveNodesWatcherWrapper wrapper
         = new DocCollectionAndLiveNodesWatcherWrapper(collection, watcher);
 
-    removeDocCollectionWatcher(collection, wrapper);
-    removeLiveNodesListener(wrapper);
+//    removeDocCollectionWatcher(collection, wrapper);
+//    removeLiveNodesListener(wrapper);
   }
 
   /**
@@ -1831,35 +1865,39 @@ public class ZkStateReader implements SolrCloseable {
   public void removeDocCollectionWatcher(String collection, DocCollectionWatcher watcher) {
     if (log.isDebugEnabled()) log.debug("remove watcher for collection {}", collection);
     AtomicBoolean reconstructState = new AtomicBoolean(false);
-    collectionWatches.compute(collection, (k, v) -> {
-      if (v == null)
-        return null;
-      v.stateWatchers.remove(watcher);
-      if (v.canBeRemoved()) {
-        log.info("no longer watch collection {}", collection);
-        watchedCollectionStates.remove(collection);
-        lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
-        reconstructState.set(true);
-        return null;
-      }
-      return v;
-    });
-    if (reconstructState.get()) {
-      synchronized (getUpdateLock()) {
-        constructState(Collections.emptySet());
-      }
+    synchronized (collectionWatches) {
+//      collectionWatches.compute(collection, (k, v) -> {
+//        if (v == null) return null;
+//        v.stateWatchers.remove(watcher);
+//        if (v.canBeRemoved()) {
+//          // nocommit
+////          log.info("no longer watch collection {}", collection);
+////          watchedCollectionStates.remove(collection);
+////          lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
+////          reconstructState.set(true);
+//          return null;
+//        }
+//        return v;
+//      });
     }
+//    if (reconstructState.get()) {
+//      synchronized (getUpdateLock()) {
+//        constructState(Collections.emptySet());
+//      }
+//    }
   }
 
   /* package-private for testing */
   Set<DocCollectionWatcher> getStateWatchers(String collection) {
     final Set<DocCollectionWatcher> watchers = new HashSet<>();
-    collectionWatches.compute(collection, (k, v) -> {
-      if (v != null) {
-        watchers.addAll(v.stateWatchers);
-      }
-      return v;
-    });
+    synchronized (collectionWatches) {
+      collectionWatches.compute(collection, (k, v) -> {
+        if (v != null) {
+          watchers.addAll(v.stateWatchers);
+        }
+        return v;
+      });
+    }
     return watchers;
   }
 
@@ -1973,12 +2011,13 @@ public class ZkStateReader implements SolrCloseable {
     @Override
     public void run() {
       List<DocCollectionWatcher> watchers = new ArrayList<>();
-      collectionWatches.compute(collection, (k, v) -> {
-        if (v == null)
-          return null;
-        watchers.addAll(v.stateWatchers);
-        return v;
-      });
+      synchronized (collectionWatches) {
+        collectionWatches.compute(collection, (k, v) -> {
+          if (v == null) return null;
+          watchers.addAll(v.stateWatchers);
+          return v;
+        });
+      }
       for (DocCollectionWatcher watcher : watchers) {
         try {
           if (watcher.onStateChanged(collectionState)) {
@@ -2058,7 +2097,7 @@ public class ZkStateReader implements SolrCloseable {
 
       final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
       // note: triesLeft tuning is based on ConcurrentCreateRoutedAliasTest
-      for (int triesLeft = 30; triesLeft > 0; triesLeft--) {
+      for (int triesLeft = 5; triesLeft > 0; triesLeft--) {
         // we could synchronize on "this" but there doesn't seem to be a point; we have a retry loop.
         Aliases curAliases = getAliases();
         Aliases modAliases = op.apply(curAliases);
@@ -2076,6 +2115,7 @@ public class ZkStateReader implements SolrCloseable {
           } catch (KeeperException.BadVersionException e) {
             log.debug("{}", e, e);
             log.warn("Couldn't save aliases due to race with another modification; will update and retry until timeout");
+            Thread.sleep(500);
             // considered a backoff here, but we really do want to compete strongly since the normal case is
             // that we will do one update and succeed. This is left as a hot loop for limited tries intentionally.
             // More failures than that here probably indicate a bug or a very strange high write frequency usage for

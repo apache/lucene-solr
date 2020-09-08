@@ -171,6 +171,7 @@ public class LBHttpSolrClient extends LBSolrClient {
       synchronized (this) {
         http2SolrClientBuilder
                 .withBaseUrl(server)
+                .markInternalRequest()
                 .withHeaders(headers);
         if (connectionTimeout != null) {
           http2SolrClientBuilder.connectionTimeout(connectionTimeout);
@@ -189,6 +190,7 @@ public class LBHttpSolrClient extends LBSolrClient {
         httpSolrClientBuilder
             .withBaseSolrUrl(server)
             .withResponseParser(new BinaryResponseParser())
+            .markInternalRequest()
             .withHeaders(headers);
         if (connectionTimeout != null) {
           httpSolrClientBuilder.withConnectionTimeout(connectionTimeout);
@@ -205,6 +207,7 @@ public class LBHttpSolrClient extends LBSolrClient {
     } else {
       final HttpSolrClient.Builder clientBuilder = new HttpSolrClient.Builder(server)
           .withHttpClient(httpClient)
+          .markInternalRequest()
           .withResponseParser(parser)
           .withHeaders(headers);
       if (connectionTimeout != null) {
@@ -286,10 +289,9 @@ public class LBHttpSolrClient extends LBSolrClient {
     super.close();
     if(clientIsInternal) {
       HttpClientUtil.close(httpClient);
-
-      try (ParWork closer = new ParWork(this)) {
-        closer.collect(urlToClient.values());
-      }
+    }
+    try (ParWork closer = new ParWork(this)) {
+      closer.collect(urlToClient.values());
     }
     urlToClient.clear();
     ObjectReleaseTracker.release(this);

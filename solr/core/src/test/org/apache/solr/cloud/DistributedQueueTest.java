@@ -261,7 +261,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   private void forceSessionExpire() throws InterruptedException, TimeoutException {
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();
     zkServer.expire(sessionId);
-    zkClient.getConnectionManager().waitForDisconnected(5000);
+
     zkClient.getConnectionManager().waitForConnected(5000);
 
     assertTrue(zkClient.getConnectionManager().isConnected());

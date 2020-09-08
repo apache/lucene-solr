@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -50,7 +51,6 @@ import org.junit.Test;
  */
 @SolrTestCase.SuppressSSL
 // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
-@Ignore // nocommit flakey
 public class TestRemoteStreaming extends SolrJettyTestBase {
   private static File solrHomeDirectory;
   private static JettySolrRunner jetty;
@@ -87,7 +87,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @Test
   public void testStreamUrl() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient(jetty);
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     String streamUrl = client.getBaseURL()+"/select?q=*:*&fl=id&wt=csv";
 
     String getUrl = client.getBaseURL()+"/debug/dump?wt=xml&stream.url="+URLEncoder.encode(streamUrl,"UTF-8");
@@ -123,7 +123,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   
   /** Compose a url that if you get it, it will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient(jetty);
+    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     String deleteQuery = "<delete><query>*:*</query></delete>";
     return client.getBaseURL()+"/update?commit=true&stream.body="+ URLEncoder.encode(deleteQuery, "UTF-8");
   }

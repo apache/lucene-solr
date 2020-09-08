@@ -157,7 +157,6 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - working on dependent updates
   public void test() throws Exception {
     assertPartialResults(params("q", "name:a*", "timeAllowed", "1", "sleep", sleep));
 

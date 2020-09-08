@@ -43,6 +43,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
@@ -114,6 +116,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private final OverseerNodePrioritizer prioritizer;
 
   private final String thisNode;
+  private Map<Runner,Future> taskFutures = new ConcurrentHashMap<>();
 
   public OverseerTaskProcessor(CoreContainer cc, String myId,
                                         Stats stats,
@@ -290,7 +293,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
                     .getId() + " message:" + message.toString());
             Runner runner = new Runner(messageHandler, message, operation, head,
                 lock);
-            ParWork.getRootSharedExecutor().execute(runner);
+            taskFutures.put(runner, ParWork.getRootSharedExecutor().submit(runner));
           }
 
         } catch (InterruptedException | AlreadyClosedException e) {
@@ -336,9 +339,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     try (ParWork work = new ParWork(this)) {
       for (Map.Entry<String, QueueEvent> entry : entrySet) {
         work.collect("cleanWorkQueue", ()->{
-          if (interrupted.get() || sessionExpired.get()) {
-            return;
-          }
           try {
             workQueue.remove(entry.getValue());
           } catch (KeeperException.SessionExpiredException e) {
@@ -372,6 +372,16 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     if (log.isDebugEnabled()) {
       log.debug("close() - start");
     }
+    for (Future future : taskFutures.values()) {
+      try {
+        future.get();
+      } catch (InterruptedException e) {
+        ParWork.propegateInterrupt(e, true);
+      } catch (ExecutionException e) {
+        log.error("", e);
+      }
+    }
+
     ParWork.close(selector);
     isClosed = true;
   }
@@ -484,6 +494,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
         log.debug(messageHandler.getName() + ": Message id:" + head.getId() +
             " complete, response:" + response.getResponse().toString());
+
+        taskFutures.remove(this);
         success = true;
       } catch (InterruptedException | AlreadyClosedException e) {
         ParWork.propegateInterrupt(e);
@@ -503,21 +515,23 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     private void markTaskComplete(String id, String asyncId)
         throws KeeperException, InterruptedException {
-      synchronized (completedTasks) {
-        completedTasks.put(id, head);
-      }
-
-      synchronized (runningTasks) {
-        runningTasks.remove(id);
-      }
-
-      if (asyncId != null) {
-        if (!runningMap.remove(asyncId)) {
-          log.warn("Could not find and remove async call [{}] from the running map.", asyncId );
+      try {
+        synchronized (completedTasks) {
+          completedTasks.put(id, head);
         }
-      }
 
-      workQueue.remove(head);
+        synchronized (runningTasks) {
+          runningTasks.remove(id);
+        }
+
+        if (asyncId != null) {
+          if (!runningMap.remove(asyncId)) {
+            log.warn("Could not find and remove async call [{}] from the running map.", asyncId);
+          }
+        }
+      } finally {
+        workQueue.remove(head);
+      }
     }
 
     private void resetTaskWithException(OverseerMessageHandler messageHandler, String id, String asyncId, String taskKey, ZkNodeProps message) throws KeeperException, InterruptedException {
@@ -552,21 +566,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private void printTrackingMaps() {
     if (log.isDebugEnabled()) {
+
       log.debug("RunningTasks: {}", runningTasks);
 
-      if (log.isDebugEnabled()) {
-        log.debug("BlockedTasks: {}", blockedTasks.keySet());
-      }
-      if (log.isDebugEnabled()) {
-        log.debug("CompletedTasks: {}", completedTasks.keySet());
-      }
+      log.debug("BlockedTasks: {}", blockedTasks.keySet());
 
-      log.info("RunningZKTasks: {}", runningZKTasks);
-
+      log.debug("CompletedTasks: {}", completedTasks.keySet());
     }
   }
-
-
 
   String getId(){
     return myId;

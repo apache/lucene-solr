@@ -716,7 +716,7 @@ public class CoreContainer implements Closeable {
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
-    solrClientCache = new SolrClientCache(isZkAware ? zkSys.getZkController().getZkStateReader() : null, updateShardHandler.getTheSharedHttpClient());
+    solrClientCache = new SolrClientCache(isZooKeeperAware() ? zkSys.getZkController().getZkStateReader() : null, updateShardHandler.getTheSharedHttpClient());
 
     // initialize CalciteSolrDriver instance to use this solrClientCache
     CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);

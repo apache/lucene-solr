@@ -63,7 +63,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
   @Before
   public void setUp() throws Exception  {
     super.setUp();
-    cluster.deleteAllCollections();
   }
 
   @After

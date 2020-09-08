@@ -39,7 +39,6 @@ import org.junit.Test;
  */
 @Slow
 // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6443")
-@Ignore // nocommit
 public class TestManagedResourceStorage extends AbstractZkTestCase {
 
   /**

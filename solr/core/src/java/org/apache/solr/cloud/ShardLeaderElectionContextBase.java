@@ -50,8 +50,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   private volatile boolean closed;
   private volatile Integer leaderZkNodeParentVersion;
 
-  private static Set<String> locks = ConcurrentHashMap.newKeySet();
-
   public ShardLeaderElectionContextBase(final String coreNodeName, String electionPath, String leaderPath,
                                         ZkNodeProps props, SolrZkClient zkClient) {
     super(coreNodeName, electionPath, leaderPath, props);
@@ -76,7 +74,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       return;
     }
     super.cancelElection();
-    getLock(leaderPath);
       try {
         if (leaderZkNodeParentVersion != null) {
           try {
@@ -135,8 +132,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         Stat stat = new Stat();
         zkClient.getData(Paths.get(leaderPath).getParent().toString(), null, stat);
         log.error("Exception trying to cancel election {} {} {}", stat.getVersion(), e.getClass().getName(), e.getMessage(), e);
-      } finally {
-        releaseLock(leaderPath);
       }
 
   }
@@ -146,72 +141,45 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
 
-    getLock(leaderPath);
+    String parent = Paths.get(leaderPath).getParent().toString();
+    List<String> errors = new ArrayList<>();
+
     try {
-
-      String parent = Paths.get(leaderPath).getParent().toString();
-      List<String> errors = new ArrayList<>();
-      try {
-        if (isClosed()) {
-          log.info("Bailing on becoming leader, we are closed");
-          return;
-        }
-        log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
-        List<Op> ops = new ArrayList<>(3);
-
-        // We use a multi operation to get the parent nodes version, which will
-        // be used to make sure we only remove our own leader registration node.
-        // The setData call used to get the parent version is also the trigger to
-        // increment the version. We also do a sanity check that our leaderSeqPath exists.
-
-        ops.add(Op.check(leaderSeqPath, -1));
-        ops.add(Op.create(leaderPath, Utils.toJSON(leaderProps), zkClient.getZkACLProvider().getACLsToAdd(leaderPath), CreateMode.EPHEMERAL));
-        ops.add(Op.setData(parent, null, -1));
-        List<OpResult> results;
-
-        results = zkClient.multi(ops);
-        log.info("Results from call {}", results);
-        Iterator<Op> it = ops.iterator();
-        for (OpResult result : results) {
-          if (result.getType() == ZooDefs.OpCode.setData) {
-            SetDataResult dresult = (SetDataResult) result;
-            Stat stat = dresult.getStat();
-            leaderZkNodeParentVersion = stat.getVersion();
-            log.info("Got leaderZkNodeParentVersion {}", leaderZkNodeParentVersion);
-          }
-        }
-        // assert leaderZkNodeParentVersion != null;
-
-      } catch (Throwable t) {
-        ParWork.propegateInterrupt(t);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: " + errors, t);
+      if (isClosed()) {
+        log.info("Bailing on becoming leader, we are closed");
+        return;
       }
-    } finally {
-      releaseLock(leaderPath);
-    }
-  }
+      log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
+      List<Op> ops = new ArrayList<>(3);
 
-  // TODO: this is a bit hackey to start - we don't always use the same elector, so this is to protect against mistakes,
-  // but it could be more efficient and use wait/notify
-  private void getLock(String leaderPath) {
-    while (locks.contains(leaderPath)) {
-      try {
-        Thread.sleep(50);
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      // We use a multi operation to get the parent nodes version, which will
+      // be used to make sure we only remove our own leader registration node.
+      // The setData call used to get the parent version is also the trigger to
+      // increment the version. We also do a sanity check that our leaderSeqPath exists.
+
+      ops.add(Op.check(leaderSeqPath, -1));
+      ops.add(Op.create(leaderPath, Utils.toJSON(leaderProps), zkClient.getZkACLProvider().getACLsToAdd(leaderPath), CreateMode.EPHEMERAL));
+      ops.add(Op.setData(parent, null, -1));
+      List<OpResult> results;
+
+      results = zkClient.multi(ops);
+      log.info("Results from call {}", results);
+      Iterator<Op> it = ops.iterator();
+      for (OpResult result : results) {
+        if (result.getType() == ZooDefs.OpCode.setData) {
+          SetDataResult dresult = (SetDataResult) result;
+          Stat stat = dresult.getStat();
+          leaderZkNodeParentVersion = stat.getVersion();
+          log.info("Got leaderZkNodeParentVersion {}", leaderZkNodeParentVersion);
+        }
       }
+      // assert leaderZkNodeParentVersion != null;
+
+    } catch (Throwable t) {
+      ParWork.propegateInterrupt(t);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: " + errors, t);
     }
 
-    if (!locks.add(leaderPath)) {
-      getLock(leaderPath);
-    } else {
-      return;
-    }
-  }
-
-  private void releaseLock(String leaderPath) {
-    locks.remove(leaderPath);
   }
 
   @Override

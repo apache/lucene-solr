@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -53,7 +54,6 @@ import org.slf4j.LoggerFactory;
  * Tests the Cloud Collections API.
  */
 @Slow
-@Ignore // nocommit debug
 public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
   private static final int MAX_TIMEOUT_SECONDS = 90;
@@ -79,7 +79,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();
 
-    RequestStatusState state = CollectionAdminRequest.createCollection("testasynccollectioncreation","conf1",1,1)
+    RequestStatusState state = CollectionAdminRequest.createCollection("testasynccollectioncreation",
+        "conf1",1,1).setMaxShardsPerNode(3)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
 
@@ -99,6 +100,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     }
 
   @Test
+  @Ignore // nocommit keep looking at processAndWait
   public void testAsyncRequests() throws Exception {
     boolean legacy = random().nextBoolean();
     if (legacy) {
@@ -219,6 +221,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     }
   }
 
+  @Ignore // nocommit debug
   public void testAsyncIdRaceCondition() throws Exception {
 
     SolrClient[] clients = new SolrClient[cluster.getJettySolrRunners().size()];
@@ -237,9 +240,10 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     final CountDownLatch latch = new CountDownLatch((TEST_NIGHTLY ? 10 : 3));
     
     ExecutorService es = testExecutor;
+    List<Future> futures = new ArrayList<>();
     try {
       for (int i = 0; i < (TEST_NIGHTLY ? 10 : 3); i++) {
-        es.submit(new Runnable() {
+        futures.add(es.submit(new Runnable() {
           
           @Override
           public void run() {
@@ -267,9 +271,13 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
               throw new RuntimeException();
             }
           }
-        });
+        }));
       }
-      assertTrue(es.awaitTermination(10, TimeUnit.SECONDS));
+
+      for (Future future : futures) {
+        future.get();
+      }
+
       assertEquals(1, numSuccess.get());
       assertEquals((TEST_NIGHTLY ? 10 : 3) - 1, numFailure.get());
     } finally {

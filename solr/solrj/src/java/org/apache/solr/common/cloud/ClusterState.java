@@ -141,11 +141,7 @@ public class ClusterState implements JSONWriter.Writable {
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
    */
   public DocCollection getCollectionOrNull(String collectionName, boolean allowCached) {
-    Object collObject = collectionStates.get(collectionName);
-    if (collObject instanceof  DocCollection) {
-      return (DocCollection) collObject;
-    }
-    CollectionRef ref = (CollectionRef) collObject;
+    CollectionRef ref = collectionStates.get(collectionName);
     return ref == null ? null : ref.get(allowCached);
   }
 
@@ -156,16 +152,14 @@ public class ClusterState implements JSONWriter.Writable {
    * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
    *
-   * @return a map of collection name vs DocCollection object
+   * @return a map of collection name vs DocCollection objectoldDoc.getSlicesMap()
    */
   public Map<String, DocCollection> getCollectionsMap()  {
     Map<String, DocCollection> result = new HashMap<>(collectionStates.size());
-
     for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
-      CollectionRef collection = entry.getValue();
-
+      DocCollection collection = entry.getValue().get();
       if (collection != null) {
-        result.put(entry.getKey(), collection.get(true));
+        result.put(entry.getKey(), collection);
       }
     }
     return result;

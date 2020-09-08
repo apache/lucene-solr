@@ -79,6 +79,7 @@ import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -997,6 +998,11 @@ public class IndexFetcher {
         currentFile = file;
         localFileFetcher.fetchFile();
         confFilesDownloaded.add(new HashMap<>(file));
+
+        if (stop) {
+          throw new AlreadyClosedException();
+        }
+
       }
       // this is called before copying the files to the original conf dir
       // so that if there is an exception avoid corrupting the original files.
@@ -1677,7 +1683,7 @@ public class IndexFetcher {
     private byte[] buf;
     private final Checksum checksum;
     private int errorCount = 0;
-    private boolean aborted = false;
+    private volatile boolean aborted = false;
 
     FileFetcher(FileInterface file, Map<String, Object> fileDetails, String saveAs,
                 String solrParamOutput, long latestGen) throws IOException {
@@ -1719,7 +1725,7 @@ public class IndexFetcher {
     
     private void fetch() throws Exception {
       try {
-        while (true) {
+        while (true && !aborted && !stop) {
           final FastInputStream is = getStream();
           int result;
           try {

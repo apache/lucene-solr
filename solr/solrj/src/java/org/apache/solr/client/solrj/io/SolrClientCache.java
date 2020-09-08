@@ -75,6 +75,9 @@ public class SolrClientCache implements Serializable, Closeable {
   }
 
   public synchronized CloudHttp2SolrClient getCloudSolrClient() {
+    if (zkStateReader == null) {
+      throw new UnsupportedOperationException();
+    }
     CloudHttp2SolrClient client;
     SolrZkClient zkClient = zkStateReader.getZkClient();
     if (solrClients.containsKey(zkClient.getZkServerAddress())) {

@@ -79,7 +79,7 @@ public class NodeMutator {
         zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy)));
       }
     }
-
+    log.info("DownNode state done: {}", zkWriteCommands);
     return zkWriteCommands;
   }
 }

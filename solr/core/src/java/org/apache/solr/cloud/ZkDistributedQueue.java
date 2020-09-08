@@ -566,7 +566,7 @@ public class ZkDistributedQueue implements DistributedQueue {
       } catch (KeeperException e) {
         log.error("", e);
       } catch (InterruptedException e) {
-        log.error("", e);
+        log.info("ZkDistributedQueue ChildWatcher interrupted");
       } finally {
         updateLock.unlock();
       }

@@ -255,13 +255,13 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 //    assertEquals(TEST_NIGHTLY ? 4 : 2, nodesStatus.size());
 
     // Test Creating a collection with new stateformat.
-    collectionName = "solrj_newstateformat";
-
-    response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-        .setStateFormat(2)
-        .setMaxShardsPerNode(4).process(cluster.getSolrClient());
-    assertEquals(0, response.getStatus());
-    assertTrue(response.isSuccess());
+//    collectionName = "solrj_newstateformat";
+//
+//    response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+//        .setStateFormat(2)
+//        .setMaxShardsPerNode(4).process(cluster.getSolrClient());
+//    assertEquals(0, response.getStatus());
+//    assertTrue(response.isSuccess());
   }
 
   @Test

@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-@Ignore // nocommit I have not fixed processAndWait yet
+
 public class DeleteStatusTest extends SolrCloudTestCase {
 
   public static final int MAX_WAIT_TIMEOUT = 5;
@@ -50,10 +50,10 @@ public class DeleteStatusTest extends SolrCloudTestCase {
       state = CollectionAdminRequest.requestStatus(id).process(client).getRequestStatus();
       if (state == RequestStatusState.COMPLETED)
         break;
-      assumeTrue("Error creating collection - skipping test", state != RequestStatusState.FAILED);
+    //  assumeTrue("Error creating collection - skipping test", state != RequestStatusState.FAILED);
       TimeUnit.MILLISECONDS.sleep(10);
     }
-    assumeTrue("Timed out creating collection - skipping test", state == RequestStatusState.COMPLETED);
+    //assumeTrue("Timed out creating collection - skipping test", state == RequestStatusState.COMPLETED);
     return state;
   }
 
@@ -105,6 +105,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testDeleteStatusFlush() throws Exception {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();

@@ -503,7 +503,7 @@ public class JettySolrRunner implements Closeable {
   }
 
   public boolean isRunning() {
-    return server.isRunning() && dispatchFilter != null && dispatchFilter.isRunning();
+    return server.isRunning();
   }
 
   public boolean isStopped() {
