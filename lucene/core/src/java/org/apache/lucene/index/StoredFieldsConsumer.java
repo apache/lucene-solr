@@ -19,25 +19,29 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsWriter;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 
 class StoredFieldsConsumer {
-  final DocumentsWriterPerThread docWriter;
+  final Codec codec;
+  final Directory directory;
+  final SegmentInfo info;
   StoredFieldsWriter writer;
-  int lastDoc;
+  private int lastDoc;
 
-  StoredFieldsConsumer(DocumentsWriterPerThread docWriter) {
-    this.docWriter = docWriter;
+  StoredFieldsConsumer(Codec codec, Directory directory, SegmentInfo info) {
+    this.codec = codec;
+    this.directory = directory;
+    this.info = info;
     this.lastDoc = -1;
   }
 
   protected void initStoredFieldsWriter() throws IOException {
-    if (writer == null) {
-      this.writer =
-          docWriter.codec.storedFieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegmentInfo(),
-              IOContext.DEFAULT);
+    if (writer == null) { // TODO can we allocate this in the ctor? we call start document for every doc anyway
+      this.writer = codec.storedFieldsFormat().fieldsWriter(directory, info, IOContext.DEFAULT);
     }
   }
 
@@ -81,5 +85,9 @@ class StoredFieldsConsumer {
       IOUtils.closeWhileHandlingException(writer);
       writer = null;
     }
+  }
+
+  long ramBytesUsed() {
+    return writer == null ? 0 : writer.ramBytesUsed();
   }
 }

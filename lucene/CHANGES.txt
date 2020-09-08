@@ -206,6 +206,10 @@ Improvements
 
 * LUCENE-9501: Improve how Asserting* test classes handle singleton doc values.
 
+* LUCENE-9511: Include StoredFieldsWriter in DWPT accounting to ensure that it's 
+  heap consumption is taken into account when IndexWriter stalls or should flush
+  DWPTs. (Simon Willnauer)
+
 Optimizations
 ---------------------
 
