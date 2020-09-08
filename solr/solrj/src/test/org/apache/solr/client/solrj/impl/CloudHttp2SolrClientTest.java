@@ -89,8 +89,7 @@ import static org.apache.solr.client.solrj.impl.BaseCloudSolrClient.RouteRespons
 public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  private static final String COLLECTION = "collection1";
+
   private static final String COLLECTION2 = "2nd_collection";
   private static final String TEST_CONFIGSET_NAME = "conf";
 
@@ -125,11 +124,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       } finally {
         zkBasedCloudSolrClient = null;
       }
-    }
-    // clear the shared collection before next test run
-    final CloudHttp2SolrClient solrClient = cluster.getSolrClient();
-    if (CollectionAdminRequest.listCollections(solrClient).contains(COLLECTION)) {
-      solrClient.deleteByQuery(COLLECTION, "*:*");
     }
     super.tearDown();
   }
@@ -376,6 +370,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertEquals("Unexpected number of requests to unexpected URLs: " + numRequestsToUnexpectedUrls,
         0, increaseFromUnexpectedUrls);
 
+    CollectionAdminRequest.deleteCollection("routing_collection")
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
   }
 
   /**
@@ -406,6 +402,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // Run the actual test for 'preferLocalShards'
     queryWithShardsPreferenceRules(getRandomClient(), false, collectionName);
     queryWithShardsPreferenceRules(getRandomClient(), true, collectionName);
+
+    CollectionAdminRequest.deleteCollection(collectionName)
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
   }
 
   @SuppressWarnings("deprecation")
@@ -488,6 +487,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     queryReplicaType(getRandomClient(), Replica.Type.PULL, collectionName);
     queryReplicaType(getRandomClient(), Replica.Type.TLOG, collectionName);
     queryReplicaType(getRandomClient(), Replica.Type.NRT, collectionName);
+
+    CollectionAdminRequest.deleteCollection(collectionName)
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
   }
 
   private void queryReplicaType(CloudHttp2SolrClient cloudClient,
@@ -620,6 +622,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         }
 
         assertEquals(errorsBefore + 1, errorsAfter);
+        
       }
     }
   }
@@ -664,6 +667,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
       assertEquals(3, client.query("multicollection2", queryParams).getResults().size());
 
+
+      CollectionAdminRequest.deleteCollection(async1)
+          .processAndWait(cluster.getSolrClient(), TIMEOUT);
+      CollectionAdminRequest.deleteCollection(async2)
+          .processAndWait(cluster.getSolrClient(), TIMEOUT);
     }
 
   }
@@ -736,7 +744,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       assertNotNull(sse);
       assertEquals(" Error code should be 510", SolrException.ErrorCode.INVALID_STATE.code, sse.code());
     }
-
+    CollectionAdminRequest.deleteCollection(collection)
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
   }
 
   @Test
@@ -824,6 +833,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertNotNull("There must be a deletes parameter", deletesObject);
     NamedList deletes = (NamedList) deletesObject;
     assertEquals("There must be 1 version", 1, deletes.size());
+    CollectionAdminRequest.deleteCollection("versions_collection")
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
   }
   
   @Test
@@ -835,6 +846,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     client.add(collection, doc);
     client.commit(collection);
     assertEquals(1, client.query(collection, params("q", "*:*")).getResults().getNumFound());
+    CollectionAdminRequest.deleteCollection(collection)
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
   }
 
   @Test
@@ -907,6 +920,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       // pointing solely to a node that's no longer part of our collection...
       assertEquals(0, (new UpdateRequest().add("id", "1").commit(stale_client, COL)).getStatus());
       assertEquals(1, stale_client.query(new SolrQuery("*:*")).getResults().getNumFound());
+
+      CollectionAdminRequest.deleteCollection(COL)
+          .processAndWait(cluster.getSolrClient(), TIMEOUT);
     }
   }
   
