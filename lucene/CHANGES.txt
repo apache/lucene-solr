@@ -12,6 +12,12 @@ API Changes
   is now public, making it easier for applications to decode facet
   ordinals into their corresponding labels (Ankur)
 
+* LUCENE-9449: Field comparators for numeric fields and _doc
+  were moved to their own package. TopFieldCollector sets
+  TotalHits.relation to GREATER_THAN_OR_EQUAL_TO,
+  as soon as the requested total hits threshold is reached, even though
+  in some cases no skipping optimization is applied and all hits are collected.
+
 New Features
 ---------------------
 
@@ -58,6 +64,12 @@ Optimizations
 
 * LUCENE-9373: FunctionMatchQuery now accepts a "matchCost" optimization hint.
   (Maxim Glazkov, David Smiley)
+
+* LUCENE-9449: Enhance DocComparator to provide an iterator over competitive
+  documents when searching with "after". This iterator can quickly position
+  on the desired "after" document skipping all documents and segments before
+  "after". Also redesign numeric comparators to provide skipping functionality
+  by default. (Mayya Sharipova, Jim Ferenczi)
 
 Bug Fixes
 ---------------------
