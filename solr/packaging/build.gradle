@@ -109,6 +109,21 @@ task toDir(type: Sync) {
   }
 }
 
+task toTgz(type: Tar) {
+  description "Assemble Solr distribution tarball"
+  group "build"
+
+  dependsOn toDir
+
+  from toDir.outputs
+  destinationDirectory = buildDir
+  compression = Compression.GZIP
+
+  doLast {
+    logger.lifecycle "Solr distribution tarball assembled at: " + archiveFile.get()
+  }
+}
+
 task dev(type: Copy) {
   description "Assemble Solr distribution into 'development' folder at ${devDir}"
   group "build"
