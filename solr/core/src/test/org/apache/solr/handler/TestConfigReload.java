@@ -52,7 +52,6 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
 
-@Ignore // nocommit investigate - i think this needs to be managed schema and is not?
 public class TestConfigReload extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -72,7 +71,7 @@ public class TestConfigReload extends SolrCloudBridgeTestCase {
     if (log.isInfoEnabled()) {
       log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getClusterState().getLiveNodes());
     }
-    String confPath = ZkConfigManager.CONFIGS_ZKNODE+"/conf1/";
+    String confPath = ZkConfigManager.CONFIGS_ZKNODE+"/_default/";
 //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
     checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE,"config", "/config");
 
@@ -90,7 +89,7 @@ public class TestConfigReload extends SolrCloudBridgeTestCase {
     }
     long startTime = System.nanoTime();
     Stat newStat = client.setData(resPath, data, true);
-    client.setData("/configs/conf1", new byte[]{1}, true);
+    client.setData("/configs/_default", new byte[]{1}, true);
     assertTrue(newStat.getVersion() > stat.getVersion());
     if (log.isInfoEnabled()) {
       log.info("new_version {}", newStat.getVersion());

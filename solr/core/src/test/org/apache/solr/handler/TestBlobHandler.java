@@ -58,14 +58,13 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
-@Ignore // nocommit debug
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void doBlobHandlerTest() throws Exception {
 
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((Http2SolrClient) clients.get(0)))) {
       CollectionAdminResponse response1;
       CollectionAdminRequest.Create createCollectionRequest = CollectionAdminRequest.createCollection(".system",1,2);
       response1 = createCollectionRequest.process(client);
@@ -169,7 +168,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
         assertEquals(b.get(i), bytarr[i]);
       }
     } finally {
-      httpGet.releaseConnection();
+     HttpClientUtil.close(httpClient);
     }
 
   }
