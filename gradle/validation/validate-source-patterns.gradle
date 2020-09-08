@@ -103,7 +103,10 @@ configure(project(':solr:core')) {
 }
 
 configure(rootProject) {
-  task validateRootAndOtherFiles(type: ValidateSourcePatternsTask) { task ->
+  task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
+    group = 'Verification'
+    description = 'Validate Source Patterns'
+
     // This task has no proper outputs.
     setupDummyOutputs(task)
 
@@ -127,17 +130,6 @@ configure(rootProject) {
 
       // ourselves :-)
       exclude 'gradle/validation/validate-source-patterns.gradle'
-    }
-  }
-
-  task validateSourcePatterns() {
-    group = 'Verification'
-    description = 'Validate Source Patterns'
-
-    // Make it depend on all so-named tasks from subprojects.
-    dependsOn validateRootAndOtherFiles
-    dependsOn subprojects.collect { prj ->
-      prj.tasks.matching { task -> task.name == "validateSourcePatterns"}
     }
   }
 
