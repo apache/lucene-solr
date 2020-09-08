@@ -709,7 +709,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
           PendingTerm term = (PendingTerm) ent;
 
-          assert StringHelper.startsWith(term.termBytes, prefix): "term.term=" + term.termBytes + " prefix=" + prefix;
+          assert StringHelper.startsWith(term.termBytes, prefix): term + " prefix=" + prefix;
           BlockTermState state = term.state;
           final int suffix = term.termBytes.length - prefixLength;
           //if (DEBUG2) {
@@ -741,7 +741,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
           if (ent.isTerm) {
             PendingTerm term = (PendingTerm) ent;
 
-            assert StringHelper.startsWith(term.termBytes, prefix): "term.term=" + term.termBytes + " prefix=" + prefix;
+            assert StringHelper.startsWith(term.termBytes, prefix): term + " prefix=" + prefix;
             BlockTermState state = term.state;
             final int suffix = term.termBytes.length - prefixLength;
             //if (DEBUG2) {
