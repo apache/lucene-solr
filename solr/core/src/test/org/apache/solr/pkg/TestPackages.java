@@ -68,10 +68,10 @@ import org.junit.Test;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
-import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
-import static org.apache.solr.filestore.TestDistribPackageStore.waitForAllNodesHaveFile;
+import static org.apache.solr.filestore.TestDistribPackageStore.checkAllNodesForFile;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
@@ -432,14 +432,12 @@ public class TestPackages extends SolrCloudTestCase {
           .setNode(jetty.getNodeName())
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 5);
-      waitForAllNodesHaveFile(cluster,FILE3,
+      checkAllNodesForFile(cluster,FILE3,
           Utils.makeMap(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
           false);
-
     } finally {
       cluster.shutdown();
     }
-
   }
 
   @SuppressWarnings({"unchecked"})
@@ -575,7 +573,7 @@ public class TestPackages extends SolrCloudTestCase {
 
       delVersion.version = "0.12";//correct version. Should succeed
       req.process(cluster.getSolrClient());
-      //Verify with ZK that the data is correcy
+      //Verify with ZK that the data is correct
       TestDistribPackageStore.assertResponseValues(1,
           () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
               null, new Stat(), true))),
@@ -583,7 +581,6 @@ public class TestPackages extends SolrCloudTestCase {
               ":packages:test_pkg[0]:version", "0.13",
               ":packages:test_pkg[0]:files[0]", FILE2
           ));
-
 
       //So far we have been verifying the details with  ZK directly
       //use the package read API to verify with each node that it has the correct data
@@ -724,6 +721,11 @@ public class TestPackages extends SolrCloudTestCase {
         public SolrResponse createResponse(SolrClient client) {
           return new SolrResponseBase();
         }
+
+        @Override
+        public String getRequestType() {
+          return SolrRequestType.UNSPECIFIED.toString();
+        }
       });
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
               Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
@@ -782,8 +784,8 @@ public class TestPackages extends SolrCloudTestCase {
         fileContent,
         path, sig);// has file, but no signature
 
-    TestDistribPackageStore.waitForAllNodesHaveFile(cluster, path, Utils.makeMap(
-        ":files:" + path + ":sha512",
+    TestDistribPackageStore.checkAllNodesForFile(cluster, path, Utils.makeMap(
+            ":files:" + path + ":sha512",
         sha512
     ), false);
   }

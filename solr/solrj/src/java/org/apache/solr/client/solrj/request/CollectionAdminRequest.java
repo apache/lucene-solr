@@ -55,10 +55,8 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
@@ -88,8 +86,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       RULE,
       SNITCH,
       REPLICATION_FACTOR,
-      AUTO_ADD_REPLICAS,
-      POLICY,
       COLL_CONF,
       WITH_COLLECTION,
       COLOCATED_WITH,
@@ -148,6 +144,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   @Override
   public String toString() {
     return jsonStr();
+  }
+
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
   }
 
   /**
@@ -443,10 +444,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Integer tlogReplicas;
 
     protected Properties properties;
-    protected Boolean autoAddReplicas;
     protected String alias;
     protected String[] rule , snitch;
-    protected String withCollection;
 
     /** Constructor intended for typical use cases */
     protected Create(String collection, String config, Integer numShards, Integer numNrtReplicas, Integer numTlogReplicas, Integer numPullReplicas) { // TODO: maybe add other constructors
@@ -476,7 +475,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setCreateNodeSet(String nodeSet) { this.createNodeSet = nodeSet; return this; }
     public Create setRouterName(String routerName) { this.routerName = routerName; return this; }
     public Create setRouterField(String routerField) { this.routerField = routerField; return this; }
-    public Create setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
     public Create setNrtReplicas(Integer nrtReplicas) { this.nrtReplicas = nrtReplicas; return this;}
     public Create setTlogReplicas(Integer tlogReplicas) { this.tlogReplicas = tlogReplicas; return this;}
     public Create setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this;}
@@ -498,7 +496,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public Integer getReplicationFactor() { return getNumNrtReplicas(); }
     public Integer getNumNrtReplicas() { return nrtReplicas; }
-    public Boolean getAutoAddReplicas() { return autoAddReplicas; }
     public Integer getNumTlogReplicas() {return tlogReplicas;}
     public Integer getNumPullReplicas() {return pullReplicas;}
 
@@ -562,9 +559,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (nrtReplicas != null) {
         params.set( ZkStateReader.NRT_REPLICAS, nrtReplicas);
       }
-      if (autoAddReplicas != null) {
-        params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
-      }
       if (properties != null) {
         addProperties(params, properties);
       }
@@ -576,23 +570,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (rule != null) params.set(DocCollection.RULE, rule);
       if (snitch != null) params.set(DocCollection.SNITCH, snitch);
-      params.setNonNull(POLICY, policy);
-      params.setNonNull(WITH_COLLECTION, withCollection);
       params.setNonNull(ALIAS, alias);
       return params;
     }
 
     public Create setPolicy(String policy) {
       this.policy = policy;
-      return this;
-    }
-
-    public String getWithCollection() {
-      return withCollection;
-    }
-
-    public Create setWithCollection(String withCollection) {
-      this.withCollection = withCollection;
       return this;
     }
   }
@@ -685,19 +668,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CollectionParams.TARGET_NODE, targetNode);
       if (parallel != null) params.set("parallel", parallel.toString());
       return params;
-    }
-
-  }
-  public static class UtilizeNode extends AsyncCollectionAdminRequest {
-    protected String node;
-
-    public UtilizeNode(String node) {
-      super(CollectionAction.UTILIZENODE);
-      this.node = node;
-    }
-    @Override
-    public SolrParams getParams() {
-      return ((ModifiableSolrParams) super.getParams()).set(CoreAdminParams.NODE, node);
     }
 
   }
@@ -898,13 +868,23 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
-   * Return a SolrRequest for low-level detailed status of the collection.
+   * Return a SolrRequest for low-level detailed status of the specified collection. 
+   * @param collection the collection to get the status of.
    */
   public static ColStatus collectionStatus(String collection) {
+    checkNotNull(CoreAdminParams.COLLECTION, collection);
     return new ColStatus(collection);
   }
+  
+  /**
+   * Return a SolrRequest for low-level detailed status of all collections on the cluster.
+   */
+  public static ColStatus collectionStatuses() {
+    return new ColStatus();
+  }
 
-  public static class ColStatus extends AsyncCollectionSpecificAdminRequest {
+  public static class ColStatus extends AsyncCollectionAdminRequest {
+    protected String collection = null;
     protected Boolean withSegments = null;
     protected Boolean withFieldInfo = null;
     protected Boolean withCoreInfo = null;
@@ -915,7 +895,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Float rawSizeSamplingPercent = null;
 
     private ColStatus(String collection) {
-      super(CollectionAction.COLSTATUS, collection);
+      super(CollectionAction.COLSTATUS);
+      this.collection = collection;
+    }
+    
+    private ColStatus() {
+      super(CollectionAction.COLSTATUS);
     }
 
     public ColStatus setWithSegments(boolean withSegments) {
@@ -961,6 +946,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams)super.getParams();
+      params.setNonNull(CoreAdminParams.COLLECTION, collection);
       params.setNonNull("segments", withSegments);
       params.setNonNull("fieldInfo", withFieldInfo);
       params.setNonNull("coreInfo", withCoreInfo);
@@ -1079,7 +1065,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Integer nrtReplicas;
     protected Integer tlogReplicas;
     protected Integer pullReplicas;
-    protected Boolean autoAddReplicas;
     protected Optional<String> createNodeSet = Optional.empty();
     protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
     protected Properties properties;
@@ -1139,9 +1124,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Integer getPullReplicas() { return pullReplicas; }
     public Restore setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this; }
 
-    public Boolean getAutoAddReplicas() { return autoAddReplicas; }
-    public Restore setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
-
     public Properties getProperties() {
       return properties;
     }
@@ -1171,9 +1153,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (tlogReplicas != null) {
         params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
-      }
-      if (autoAddReplicas != null) {
-        params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
       }
       if (properties != null) {
         addProperties(params, properties);

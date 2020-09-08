@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Strings;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -231,17 +232,21 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
 
   public void init(String defaultField, QParser parser) {
+    if ((parser == null) || (parser.getReq() == null) || (parser.getReq().getSchema() == null)) {
+      throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+                      "query parser is null or invalid");
+    }
+    if ((defaultField != null) && (defaultField.isEmpty())) {
+      throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+                      "default field name is empty");
+    }
     this.schema = parser.getReq().getSchema();
     this.parser = parser;
     this.flags = parser.getFlags();
     this.defaultField = defaultField;
     setAnalyzer(schema.getQueryAnalyzer());
-    // TODO in 8.0(?) remove this.  Prior to 7.2 we defaulted to allowing sub-query parsing by default
-    /*
-    if (!parser.getReq().getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_2_0)) {
-      setAllowSubQueryParsing(true);
-    } // otherwise defaults to false
-     */
   }
 
   // Turn on the "filter" bit and return the previous flags for the caller to save
@@ -284,7 +289,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   /** Handles the default field if null is passed */
   public String getField(String fieldName) {
     explicitField = fieldName;
-    return fieldName != null ? fieldName : this.defaultField;
+    return !Strings.isNullOrEmpty(fieldName) ? fieldName : this.defaultField;
   }
 
   /** For a fielded query, returns the actual field specified (i.e. null if default is being used)
@@ -852,7 +857,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (boost == null || boost.image.length()==0 || q == null) {
       return q;
     }
-    if (boost.image.charAt(0) == '=') {
+    if (boost.image.startsWith("=")) {
       // syntax looks like foo:x^=3
       float val = Float.parseFloat(boost.image.substring(1));
       Query newQ = q;
@@ -1003,7 +1008,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
 
   private void checkNullField(String field) throws SolrException {
-    if (field == null && defaultField == null) {
+    if (Strings.isNullOrEmpty(field) && Strings.isNullOrEmpty(defaultField)) {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
               "no field name specified in query and no default specified via 'df' param");
@@ -1068,7 +1073,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     } else {
       // intercept magic field name of "_" to use as a hook for our
       // own functions.
-      if (allowSubQueryParsing && field.charAt(0) == '_' && parser != null) {
+      if (allowSubQueryParsing && field.startsWith("_") && parser != null) {
         MagicFieldName magic = MagicFieldName.get(field);
         if (null != magic) {
           subQParser = parser.subQuery(queryText, magic.subParser);
@@ -1116,7 +1121,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     } else {
       // intercept magic field name of "_" to use as a hook for our
       // own functions.
-      if (allowSubQueryParsing && field.charAt(0) == '_' && parser != null) {
+      if (allowSubQueryParsing && field.startsWith("_") && parser != null) {
         MagicFieldName magic = MagicFieldName.get(field);
         if (null != magic) {
           subQParser = parser.subQuery(String.join(" ", queryTerms), magic.subParser);

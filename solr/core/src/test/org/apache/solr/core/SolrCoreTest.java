@@ -87,7 +87,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     int ihCount = 0;
     {
-      ++ihCount; assertEquals(pathToClassMap.get("/admin/health"), "solr.HealthCheckHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/file"), "solr.ShowFileRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/logging"), "solr.LoggingHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/luke"), "solr.LukeRequestHandler");
@@ -266,8 +265,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
     assertEquals("wrong config for enableLazyFieldLoading", true, solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
-    assertEquals("wrong config for useCircuitBreakers", false, solrConfig.useCircuitBreakers);
-    assertEquals("wrong config for memoryCircuitBreakerThresholdPct", 95, solrConfig.memoryCircuitBreakerThresholdPct);
   }
 
   /**

@@ -197,6 +197,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     return stats;
   }
 
+  /** Simulated shard node under test */
   protected final class NodeState implements Closeable {
     public final Directory dir;
     public final IndexWriter writer;

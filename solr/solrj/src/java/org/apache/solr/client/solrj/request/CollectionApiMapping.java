@@ -207,11 +207,6 @@ public class CollectionApiMapping {
         POST,
         null,
         "set-obj-property", null),
-    UTILIZE_NODE(CLUSTER_CMD,
-        POST,
-        UTILIZENODE,
-        "utilize-node",null),
-
     BACKUP_COLLECTION(COLLECTIONS_COMMANDS,
         POST,
         BACKUP,

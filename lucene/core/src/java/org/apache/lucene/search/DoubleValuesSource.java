@@ -268,10 +268,22 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
   private static class ConstantValuesSource extends DoubleValuesSource {
 
+    private final DoubleValues doubleValues;
     private final double value;
 
     private ConstantValuesSource(double value) {
       this.value = value;
+      this.doubleValues = new DoubleValues() {
+        @Override
+        public double doubleValue() {
+          return value;
+        }
+
+        @Override
+        public boolean advanceExact(int doc) {
+          return true;
+        }
+      };
     }
 
     @Override
@@ -282,17 +294,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
     @Override
     public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-      return new DoubleValues() {
-        @Override
-        public double doubleValue() throws IOException {
-          return value;
-        }
-
-        @Override
-        public boolean advanceExact(int doc) throws IOException {
-          return true;
-        }
-      };
+      return doubleValues;
     }
 
     @Override
@@ -454,13 +456,16 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
 
     @Override
     public SortField rewrite(IndexSearcher searcher) throws IOException {
-      DoubleValuesSortField rewritten = new DoubleValuesSortField(producer.rewrite(searcher), reverse);
+      DoubleValuesSource rewrittenSource = producer.rewrite(searcher);
+      if (rewrittenSource == producer) {
+        return this;
+      }
+      DoubleValuesSortField rewritten = new DoubleValuesSortField(rewrittenSource, reverse);
       if (missingValue != null) {
         rewritten.setMissingValue(missingValue);
       }
       return rewritten;
     }
-
   }
 
   private static class DoubleValuesHolder {

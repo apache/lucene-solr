@@ -1,0 +1,105 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.gradle.plugins.ide.eclipse.model.SourceFolder
+import org.gradle.plugins.ide.eclipse.model.ClasspathEntry
+
+def resources = scriptResources(buildscript)
+
+configure(rootProject) {
+  apply plugin: "eclipse"
+
+  def relativize = { other -> rootProject.rootDir.relativePath(other).toString() }
+
+  eclipse {
+    project {
+      name = "Apache Lucene Solr ${version}"
+    }
+
+    classpath {
+      defaultOutputDir = file('build/eclipse')
+
+      file {
+        beforeMerged { classpath -> classpath.entries.removeAll { it.kind == "src" } }
+
+        whenMerged { classpath ->
+          def projects = allprojects.findAll { prj ->
+            return prj.plugins.hasPlugin(JavaPlugin) &&
+                   prj.path != ":solr:solr-ref-guide"
+          }
+
+          Set<String> sources = []
+          Set<File> jars = []
+          projects.each { prj ->
+            prj.sourceSets.each { sourceSet ->
+              sources += sourceSet.java.srcDirs.findAll { dir -> dir.exists() }.collect { dir -> relativize(dir) }
+              sources += sourceSet.resources.srcDirs.findAll { dir -> dir.exists() }.collect { dir -> relativize(dir) }
+            }
+
+            // This is hacky - we take the resolved compile classpath and just
+            // include JAR files from there. We should probably make it smarter
+            // by looking at real dependencies. But then: this Eclipse configuration
+            // doesn't really separate sources anyway so why bother.
+            jars += prj.configurations.compileClasspath.resolve()
+            jars += prj.configurations.testCompileClasspath.resolve()
+          }
+
+          classpath.entries += sources.sort().collect {name -> new SourceFolder(name, "build/eclipse/" + name) }
+          classpath.entries += jars.unique().findAll { location -> location.isFile() }.collect { location ->
+            new LibEntry(location.toString())
+          }
+        }
+      }
+    }
+
+    jdt {
+      sourceCompatibility = rootProject.minJavaVersion
+      targetCompatibility = rootProject.minJavaVersion
+      javaRuntimeName = "JavaSE-${rootProject.minJavaVersion}"
+    }
+  }
+
+  eclipseJdt {
+    doLast {
+      project.sync {
+        from rootProject.file("${resources}/dot.settings")
+        into rootProject.file(".settings")
+      }
+    }
+  }
+}
+
+public class LibEntry implements ClasspathEntry {
+  private String path;
+
+  LibEntry(String path) {
+    this.path = path;
+  }
+
+  @Override
+  String getKind() {
+    return "lib"
+  }
+
+  @Override
+  void appendNode(Node node) {
+    node.appendNode("classpathentry", Map.of(
+        "kind", "lib",
+        "path", path
+    ));
+  }
+}

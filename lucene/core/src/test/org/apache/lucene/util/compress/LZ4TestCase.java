@@ -47,6 +47,12 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     }
 
     @Override
+    void initDictionary(int dictLen) {
+      assertTrue(in.assertReset());
+      in.initDictionary(dictLen);
+    }
+
+    @Override
     int get(int off) {
       return in.get(off);
     }
@@ -64,7 +70,7 @@ public abstract class LZ4TestCase extends LuceneTestCase {
   }
 
   private void doTest(byte[] data, LZ4.HashTable hashTable) throws IOException {
-    int offset = random().nextBoolean()
+    int offset = data.length >= (1 << 16) || random().nextBoolean()
         ? random().nextInt(10)
         : (1<<16) - data.length / 2; // this triggers special reset logic for high compression
     byte[] copy = new byte[data.length + offset + random().nextInt(10)];
@@ -135,8 +141,57 @@ public abstract class LZ4TestCase extends LuceneTestCase {
 
     // Now restore and compare bytes
     byte[] restored = new byte[length + random().nextInt(10)];
-    LZ4.decompress(new ByteArrayDataInput(compressed), length, restored);
+    LZ4.decompress(new ByteArrayDataInput(compressed), length, restored, 0);
     assertArrayEquals(ArrayUtil.copyOfSubArray(data, offset, offset+length), ArrayUtil.copyOfSubArray(restored, 0, length));
+
+    // Now restore with an offset
+    int restoreOffset = TestUtil.nextInt(random(), 1, 10);
+    restored = new byte[restoreOffset + length + random().nextInt(10)];
+    LZ4.decompress(new ByteArrayDataInput(compressed), length, restored, restoreOffset);
+    assertArrayEquals(ArrayUtil.copyOfSubArray(data, offset, offset+length), ArrayUtil.copyOfSubArray(restored, restoreOffset, restoreOffset+length));
+  }
+
+  private void doTestWithDictionary(byte[] data, LZ4.HashTable hashTable) throws IOException {
+    ByteBuffersDataOutput copy = new ByteBuffersDataOutput();
+    int dictOff = TestUtil.nextInt(random(), 0, 10);
+    copy.writeBytes(new byte[dictOff]);
+
+    // Create a dictionary from substrings of the input to compress
+    int dictLen = 0;
+    for (int i = TestUtil.nextInt(random(), 0, data.length); i < data.length && dictLen < LZ4.MAX_DISTANCE; ) {
+      int l = Math.min(data.length - i, TestUtil.nextInt(random(), 1, 32));
+      l = Math.min(l, LZ4.MAX_DISTANCE - dictLen);
+      copy.writeBytes(data, i, l);
+      dictLen += l;
+      i += l;
+      i += TestUtil.nextInt(random(), 1, 32);
+    }
+
+    copy.writeBytes(data);
+    copy.writeBytes(new byte[random().nextInt(10)]);
+
+    byte[] copyBytes = copy.toArrayCopy();
+    doTestWithDictionary(copyBytes, dictOff, dictLen, data.length, hashTable);
+  }
+
+  private void doTestWithDictionary(byte[] data, int dictOff, int dictLen, int length, LZ4.HashTable hashTable) throws IOException {
+    ByteBuffersDataOutput out = new ByteBuffersDataOutput();
+    LZ4.compressWithDictionary(data, dictOff, dictLen, length, out, hashTable);
+    byte[] compressed = out.toArrayCopy();
+
+    // Compress once again with the same hash table to test reuse
+    ByteBuffersDataOutput out2 = new ByteBuffersDataOutput();
+    LZ4.compressWithDictionary(data, dictOff, dictLen, length, out2, hashTable);
+    assertArrayEquals(compressed, out2.toArrayCopy());
+
+    // Now restore and compare bytes
+    int restoreOffset = TestUtil.nextInt(random(), 1, 10);
+    byte[] restored = new byte[restoreOffset + dictLen + length + random().nextInt(10)];
+    System.arraycopy(data, dictOff, restored, restoreOffset, dictLen);
+    LZ4.decompress(new ByteArrayDataInput(compressed), length, restored, dictLen + restoreOffset);
+    assertArrayEquals(
+        ArrayUtil.copyOfSubArray(data, dictOff+dictLen, dictOff+dictLen+length),
+        ArrayUtil.copyOfSubArray(restored, restoreOffset+dictLen, restoreOffset+dictLen+length));
   }
 
   public void testEmpty() throws IOException {
@@ -149,6 +204,7 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     // literals and matchs lengths <= 15
     final byte[] data = "1234562345673456745678910123".getBytes(StandardCharsets.UTF_8);
     doTest(data, newHashTable());
+    doTestWithDictionary(data, newHashTable());
   }
 
   public void testLongMatchs() throws IOException {
@@ -179,10 +235,11 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     byte[] b = new byte[TestUtil.nextInt(random(), 1, 1 << 32)];
     random().nextBytes(b);
     doTest(b, newHashTable());
+    doTestWithDictionary(b, newHashTable());
   }
 
   public void testCompressibleRandom() throws IOException {
-    byte[] b = new byte[TestUtil.nextInt(random(), 1, 1 << 32)];
+    byte[] b = new byte[TestUtil.nextInt(random(), 1, 1 << 18)];
     final int base = random().nextInt(256);
     final int maxDelta = 1 + random().nextInt(8);
     Random r = random();
@@ -190,6 +247,7 @@ public abstract class LZ4TestCase extends LuceneTestCase {
       b[i] = (byte) (base + r.nextInt(maxDelta));
     }
     doTest(b, newHashTable());
+    doTestWithDictionary(b, newHashTable());
   }
 
   public void testLUCENE5201() throws IOException {
@@ -244,5 +302,22 @@ public abstract class LZ4TestCase extends LuceneTestCase {
         13, 85, 5, 72, 13, 72, 13, 85, 5, 72, 13, -19, -24, -101, -35
       };
     doTest(data, 9, data.length - 9, newHashTable());
+  }
+
+  public void testUseDictionary() throws IOException {
+    byte[] b = new byte[] {
+        1, 2, 3, 4, 5, 6, // dictionary
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+    };
+    int dictOff = 0;
+    int dictLen = 6;
+    int len = b.length - dictLen;
+
+    doTestWithDictionary(b, dictOff, dictLen, len, newHashTable());
+    ByteBuffersDataOutput out = new ByteBuffersDataOutput();
+    LZ4.compressWithDictionary(b, dictOff, dictLen, len, out, newHashTable());
+
+    // The compressed output is smaller than the original input despite being incompressible on its own
+    assertTrue(out.size() < len);
   }
 }

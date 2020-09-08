@@ -48,7 +48,7 @@ enum CompressionAlgorithm {
 
     @Override
     void read(DataInput in, byte[] out, int len) throws IOException {
-      org.apache.lucene.util.compress.LZ4.decompress(in, len, out);
+      org.apache.lucene.util.compress.LZ4.decompress(in, len, out, 0);
     }
 
   };

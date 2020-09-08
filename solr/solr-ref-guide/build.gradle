@@ -52,6 +52,11 @@ plugins {
     id 'com.github.jruby-gradle.base' version '2.0.0-alpha.7'
 }
 
+// This project does not contribute anything to main dependencies.
+versionsLock {
+    testProject()
+}
+
 description = 'Solr reference guide'
 
 // Use an internal proxy to ruby gems.
@@ -108,8 +113,6 @@ sourceSets {
     main {
         java {
             srcDirs = ['tools']
-            exclude "**/CustomizedAsciidoctorAntTask.java"
-            exclude "**/asciidoctor-antlib.xml"
         }
     }
 
@@ -127,9 +130,7 @@ ext {
     solrDocsVersion = "${version}".replaceAll(/^(\d+\.\d+)(|\..*)$/, "\$1")
     solrDocsVersionPath = "${solrDocsVersion}".replaceAll(/^(\d+)\.(\d+)$/, "\$1_\$2_0")
 
-    if (!project.hasProperty("solrGuideVersion")) {
-        solrGuideVersion = "${solrDocsVersion}-DRAFT"
-    }
+    solrGuideVersion = propertyOrDefault("solrGuideVersion", "${solrDocsVersion}-DRAFT")
 
     solrRootPath = '../../../../solr/'
     solrGuideDraftStatus = solrGuideVersion.matches(/^\d+\.\d+(|\.\d+)$/) ? "" : "DRAFT"
@@ -195,7 +196,7 @@ task setupLazyProps {
                 ["ivyversions./org.apache.opennlp/opennlp-tools", "org.apache.opennlp", "opennlp-tools"],
                 ["ivyversions.org.apache.tika.version", "org.apache.tika", "tika-core"],
                 ["ivyversions.org.apache.velocity.tools.version", "org.apache.velocity.tools", "velocity-tools-generic"],
-                ["ivyversions./org.apache.zookeeper/zookeeper", "org.apache.zookeeper", "zookeeper"],
+                ["ivyversions.org.apache.zookeeper.version", "org.apache.zookeeper", "zookeeper"],
 
                 ["ivy-zookeeper-version", "org.apache.zookeeper", "zookeeper"],
                 ["ivy-log4j-version", "org.apache.logging.log4j", "log4j-core"],
