@@ -50,8 +50,6 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/LUCENE-6036)",
-      new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
     tempDir = createTempDir("jrecrash");
   }
   
