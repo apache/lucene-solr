@@ -140,7 +140,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
   private ProgressLoggerFactory progressLoggerFactory
 
   @InputFiles
-  ConfigurableFileTree sourceFiles
+  FileTree sourceFiles
 
   @Inject
   ValidateSourcePatternsTask(ProgressLoggerFactory progressLoggerFactory) {
