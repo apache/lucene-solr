@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -27,7 +28,7 @@ import org.apache.lucene.util.UnicodeUtil;
  *
  * @lucene.internal
  */
-public final class GrowableByteArrayDataOutput extends DataOutput {
+public final class GrowableByteArrayDataOutput extends DataOutput implements Accountable {
 
   /** Minimum utf8 byte size of a string over which double pass over string is to save memory during encode */
   static final int MIN_UTF8_SIZE_TO_ENABLE_DOUBLE_PASS_ENCODING = 65536;
@@ -98,5 +99,10 @@ public final class GrowableByteArrayDataOutput extends DataOutput {
 
   public void reset() {
     length = 0;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return bytes.length + (scratchBytes == null ? 0 : scratchBytes.length);
   }
 }

@@ -1044,7 +1044,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // note: tiny rambuffer used, as with a 1MB buffer the test is too slow (flush @ 128,999)
     IndexWriter w = new IndexWriter(dir,
                                     newIndexWriterConfig(new MockAnalyzer(random()))
-                                      .setRAMBufferSizeMB(0.1f)
+                                      .setRAMBufferSizeMB(0.8f)
                                       .setMaxBufferedDocs(1000)
                                       .setMergePolicy(NoMergePolicy.INSTANCE)
                                       .setReaderPooling(false));

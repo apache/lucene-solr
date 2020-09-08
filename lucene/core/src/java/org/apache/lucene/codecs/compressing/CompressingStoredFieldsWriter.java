@@ -671,7 +671,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     private final int maxDoc;
     int docID = -1;
 
-    public CompressingStoredFieldsMergeSub(CompressingStoredFieldsReader reader, MergeState.DocMap docMap, int maxDoc) {
+    CompressingStoredFieldsMergeSub(CompressingStoredFieldsReader reader, MergeState.DocMap docMap, int maxDoc) {
       super(docMap);
       this.maxDoc = maxDoc;
       this.reader = reader;
@@ -686,5 +686,10 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
         return docID;
       }
     }
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return bufferedDocs.ramBytesUsed() + numStoredFields.length * Integer.BYTES + endOffsets.length * Integer.BYTES;
   }
 }
