@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Random;
 import org.apache.lucene.index.LeafReaderContext;
 
+import static org.apache.lucene.util.LuceneTestCase.usually;
+
 class AssertingWeight extends FilterWeight {
 
   final Random random;
@@ -88,7 +90,7 @@ class AssertingWeight extends FilterWeight {
     BulkScorer inScorer;
     // We explicitly test both the delegate's bulk scorer, and also the normal scorer.
     // This ensures that normal scorers are sometimes tested with an asserting wrapper.
-    if (random.nextBoolean()) {
+    if (usually(random)) {
       inScorer = in.bulkScorer(context);
     } else {
       inScorer = super.bulkScorer(context);
