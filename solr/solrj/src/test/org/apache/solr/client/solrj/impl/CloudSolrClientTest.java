@@ -699,6 +699,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
       assertEquals(3, client.query("multicollection2", queryParams).getResults().size());
 
+      CollectionAdminRequest.deleteCollection(async1).process(cluster.getSolrClient());
+      CollectionAdminRequest.deleteCollection(async2).process(cluster.getSolrClient());
     }
 
   }
