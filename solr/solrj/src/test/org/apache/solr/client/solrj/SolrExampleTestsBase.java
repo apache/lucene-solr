@@ -65,7 +65,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     doc3.addField("price", 10);
     UpdateRequest up = new UpdateRequest();
     up.add(doc3);
-    up.setCommitWithin(50);
+    up.setCommitWithin(10);
     up.process(client);
     
     rsp = client.query(new SolrQuery("*:*"));
