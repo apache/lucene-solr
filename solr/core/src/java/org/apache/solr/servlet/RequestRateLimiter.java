@@ -96,6 +96,7 @@ public class RequestRateLimiter {
     return rateLimiterConfig;
   }
 
+  @SuppressWarnings({"rawtypes"})
   static long getParamAndParseLong(PluginInfo config, String parameterName, long defaultValue) {
     long result = defaultValue;
 
@@ -108,6 +109,7 @@ public class RequestRateLimiter {
     return result;
   }
 
+  @SuppressWarnings({"rawtypes"})
   static int getParamAndParseInt(PluginInfo config, String parameterName, int defaultValue) {
     int result = defaultValue;
 
@@ -120,6 +122,7 @@ public class RequestRateLimiter {
     return result;
   }
 
+  @SuppressWarnings({"rawtypes"})
   static boolean getParamAndParseBoolean(PluginInfo config, String parameterName, boolean defaultValue) {
     boolean result = defaultValue;
 

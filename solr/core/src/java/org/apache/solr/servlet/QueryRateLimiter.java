@@ -40,7 +40,12 @@ public class QueryRateLimiter extends RequestRateLimiter {
 
   protected static RequestRateLimiter.RateLimiterConfig constructQueryRateLimiterConfig(NodeConfig nodeConfig) {
     RequestRateLimiter.RateLimiterConfig queryRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig();
-    PluginInfo pluginInfo = nodeConfig.getRateLimitManagerConfig();
+
+    PluginInfo pluginInfo = null;
+
+    if (nodeConfig != null) {
+      pluginInfo = nodeConfig.getRateLimitManagerConfig();
+    }
 
     queryRateLimiterConfig.requestType = SolrRequest.SolrRequestType.QUERY;
     queryRateLimiterConfig.isEnabled = getParamAndParseBoolean(pluginInfo, IS_QUERY_RATE_LIMITER_ENABLED, false);

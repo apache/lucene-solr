@@ -31,12 +31,17 @@ pronounced under high stress in production workloads. The current implementation
 resources for indexing.
 
 == Rate Limiter Configurations
-The default rate limiter is search rate limiter. Accordingly, it can be configured in `web.xml` under `initParams` for
-`SolrRequestFilter`.
+The default rate limiter is search rate limiter. Accordingly, it can be configured in `solr.xml`.
 
 [source,xml]
 ----
-<filter-name>SolrRequestFilter</filter-name>
+  <rateLimitManager class="RateLimitManager">
+    <str name="isQueryRateLimiterEnabled">true</str>
+    <str name="maxQueryRequests">15</int>
+    <str name="queryWaitForSlotAllocationInMS">150</str>
+    <str name="queryGuaranteedSlots">8</str>
+    <str name="queryAllowSlotBorrowing">true</str>
+  </rateLimitManager>
 ----
 
 === Enable Query Rate Limiter
@@ -44,11 +49,7 @@ Controls enabling of query rate limiter. Default value is `false`.
 
 [source,xml]
 ----
-<param-name>isQueryRateLimiterEnabled</param-name>
-----
-[source,xml]
-----
-<param-value>true</param-value>
+<str name="isQueryRateLimiterEnabled">true</str>
 ----
 
 === Maximum Number Of Concurrent Requests
@@ -56,11 +57,7 @@ Allows setting maximum concurrent search requests at a given point in time. Defa
 
 [source,xml]
 ----
-<param-name>maxQueryRequests</param-name>
-----
-[source,xml]
-----
-<param-value>15</param-value>
+<str name="maxQueryRequests">15</int>
 ----
 
 === Request Slot Allocation Wait Time
@@ -71,11 +68,7 @@ is -1, indicating no wait. 0 will represent the same -- no wait. Note that highe
 can lead to larger queue times and can potentially lead to longer wait times for queries.
 [source,xml]
 ----
-<param-name>queryWaitForSlotAllocationInMS</param-name>
-----
-[source,xml]
-----
-<param-value>100</param-value>
+<str name="queryWaitForSlotAllocationInMS">100</str>
 ----
 
 === Slot Borrowing Enabled
@@ -86,11 +79,7 @@ borrowing request is long lived.
 
 [source,xml]
 ----
-<param-name>queryAllowSlotBorrowing</param-name>
-----
-[source,xml]
-----
-<param-value>true</param-value>
+<str name="queryAllowSlotBorrowing">true</str>
 ----
 
 === Guaranteed Slots
@@ -104,12 +93,9 @@ borrowing request is long lived.
 
 [source,xml]
 ----
-<param-name>queryGuaranteedSlots</param-name>
+<str name="queryGuaranteedSlots">8</str>
 ----
-[source,xml]
-----
-<param-value>200</param-value>
-----
+
 
 == Salient Points
 
