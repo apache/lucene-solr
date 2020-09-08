@@ -558,7 +558,7 @@ public abstract class MergePolicy {
   /**
    * Creates a new merge policy instance.
    */
-  public MergePolicy() {
+  protected MergePolicy() {
     this(DEFAULT_NO_CFS_RATIO, DEFAULT_MAX_CFS_SEGMENT_SIZE);
   }
   

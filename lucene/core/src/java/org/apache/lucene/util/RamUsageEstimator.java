@@ -195,7 +195,7 @@ public final class RamUsageEstimator {
 
   /** Approximate memory usage that we assign to a Hashtable / HashMap entry. */
   public static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
-      2 * NUM_BYTES_OBJECT_REF // key + value
+      2L * NUM_BYTES_OBJECT_REF // key + value
           * 2; // hash tables need to be oversized to avoid collisions, assume 2x capacity
 
   /** Approximate memory usage that we assign to a LinkedHashMap entry. */
