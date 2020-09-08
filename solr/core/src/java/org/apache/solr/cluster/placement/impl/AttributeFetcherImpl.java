@@ -10,11 +10,15 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.function.BiConsumer;
 
 public class AttributeFetcherImpl implements AttributeFetcher {
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     boolean requestedNodeCoreCount;
     boolean requestedNodeDiskType;
@@ -168,6 +172,8 @@ public class AttributeFetcherImpl implements AttributeFetcher {
                 // If inserter is null it's a return of a tag that we didn't request
                 if (inserter != null) {
                     inserter.accept(node, value);
+                } else {
+                    log.error("Received unsolicited snitch tag {} from node {}", tag, node);
                 }
             }
         }

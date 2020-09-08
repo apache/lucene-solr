@@ -85,7 +85,7 @@ public class AddReplicasPlacementRequestImpl implements AddReplicasPlacementRequ
    */
   static AddReplicasPlacementRequestImpl toPlacementRequest(Cluster cluster, DocCollection docCollection,
                                                             Assign.AssignRequest assignRequest) throws Assign.AssignmentException {
-    SolrCollection solrCollection = new SolrCollectionImpl(docCollection);
+    SolrCollection solrCollection = new SimpleClusterAbstractionsImpl.SolrCollectionImpl(docCollection);
     Set<String> shardNames = new HashSet<>(assignRequest.shardNames);
     if (shardNames.size() < 1) {
       throw new Assign.AssignmentException("Bad assign request: no shards specified for collection " + docCollection.getName());
@@ -94,7 +94,7 @@ public class AddReplicasPlacementRequestImpl implements AddReplicasPlacementRequ
     final Set<Node> nodes;
     // If no nodes specified, use all live nodes. If nodes are specified, use specified list.
     if (assignRequest.nodes != null) {
-      nodes = NodeImpl.getNodes(assignRequest.nodes);
+      nodes = SimpleClusterAbstractionsImpl.NodeImpl.getNodes(assignRequest.nodes);
       if (nodes.isEmpty()) {
         throw new Assign.AssignmentException("Bad assign request: empty list of nodes for collection " + docCollection.getName());
       }

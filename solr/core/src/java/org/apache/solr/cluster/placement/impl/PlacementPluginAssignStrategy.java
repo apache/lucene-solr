@@ -52,7 +52,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
   public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, Assign.AssignRequest assignRequest)
       throws Assign.AssignmentException, IOException, InterruptedException {
 
-    Cluster cluster = new ClusterImpl(solrCloudManager);
+    Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(solrCloudManager);
 
     AddReplicasPlacementRequestImpl placementRequest = AddReplicasPlacementRequestImpl.toPlacementRequest(cluster, collection, assignRequest);
 

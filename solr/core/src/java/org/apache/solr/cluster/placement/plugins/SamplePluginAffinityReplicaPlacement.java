@@ -17,9 +17,7 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.TreeMultimap;
+import com.google.common.collect.*;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
@@ -73,18 +71,50 @@ import java.util.stream.Collectors;
  * </li>
  * </ul>
  *
+ * <p>This code is a realistic placement computation, based on a few assumptions. The code is written in such a way to
+ * make it relatively easy to adapt it to (somewhat) different assumptions. Configuration options could be introduced
+ * to allow configuration base option selection as well...</p>
+ *
  * TODO: disclaimer: code not tested and never really run
  */
 public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
+   * This factory is instantiated by config from its class name. Using it is the only way to create instances of
+   * {@link SamplePluginAffinityReplicaPlacement}.
+   */
+  static public class Factory implements PlacementPluginFactory {
+
+    /**
+     * Empty public constructor is used to instantiate this factory. Using a factory pattern to allow the factory to do one
+     * time costly operations if needed, and to only have to instantiate a default constructor class by name, rather than
+     * having to call a constructor with more parameters (if we were to instantiate the plugin class directly without going
+     * through a factory).
+     */
+    public Factory() {
+    }
+
+    @Override
+    public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
+      // TODO configuration not yet implemented, so hard coding config for this plugin
+      final long minimalFreeDiskGB = 5L;
+      final long deprioritizedFreeDiskGB = 50L;
+      return new SamplePluginAffinityReplicaPlacement(minimalFreeDiskGB, deprioritizedFreeDiskGB);
+    }
+  }
+
+
+  /**
    * <p>Name of the system property on a node indicating which (public cloud) Availability Zone that node is in. The value
    * is any string, different strings denote different availability zones.
    *
-   * <p>Nodes on which this system property is not defined are considered being in the same Availability Zone.
+   * <p>Nodes on which this system property is not defined are considered being in the same Availability Zone
+   * {@link #UNDEFINED_AVAILABILITY_ZONE} (hopefully the value of this constant is not the name of a real Availability Zone :).
    */
   public static final String AVAILABILITY_ZONE_SYSPROP = "availability_zone";
+  /** This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I think we're safe) */
+  public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
 
   /**
    * <p>Name of the system property on a node indicating the type of replicas allowed on that node.
@@ -96,26 +126,28 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
    */
   public static final String REPLICA_TYPE_SYSPROP = "replica_type";
 
-  private final PlacementPluginConfig config;
+  /**
+   * If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
+   * Set to 0 or less to disable.
+   */
+  private final long minimalFreeDiskGB;
 
-  private SamplePluginAffinityReplicaPlacement(PlacementPluginConfig config) {
-    this.config = config;
+  /**
+   * Replica allocation will assign replicas to nodes with at least this number of GB of free disk space regardless
+   * of the number of cores on these nodes rather than assigning replicas to nodes with less than this amount of free
+   * disk space if that's an option (if that's not an option, replicas can still be assigned to nodes with less than this
+   * amount of free space).
+   */
+  private final long deprioritizedFreeDiskGB;
+
+  /**
+   * The factory has decoded the configuration for the plugin instance and passes it the parameters it needs.
+   */
+  private SamplePluginAffinityReplicaPlacement(long minimalFreeDiskGB, long deprioritizedFreeDiskGB) {
+    this.minimalFreeDiskGB = minimalFreeDiskGB;
+    this.deprioritizedFreeDiskGB = deprioritizedFreeDiskGB;
   }
 
-  static public class Factory implements PlacementPluginFactory {
-
-    /**
-     * Empty public constructor is used to instantiate this factory based on configuration in solr.xml, element
-     * {@code <placementPluginFactory>} in element {@code <solrcloud>}.
-     */
-    public Factory() {
-    }
-
-    @Override
-    public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
-      return new SamplePluginAffinityReplicaPlacement(config);
-    }
-  }
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
   public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, AttributeFetcher attributeFetcher,
@@ -133,14 +165,22 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
     attributeFetcher.requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP).requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
     attributeFetcher.requestNodeCoreCount().requestNodeFreeDisk();
     attributeFetcher.fetchFrom(nodes);
-    AttributeValues attrValues = attributeFetcher.fetchAttributes();
+    final AttributeValues attrValues = attributeFetcher.fetchAttributes();
 
     // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap if nodes accept multiple replica types)
     // These subsets sets are actually maps, because we capture the number of cores (of any replica type) present on each node.
     // The EnumMap below maps a replica type to a map of nodes -> number of cores on the node
+    // (note: we do keep track of the number of cores per node as we do assignments but not of the free disk space because
+    // we don't know the size each new created replica will contribute to a node. The node free disk size thresholds should
+    // be set in such a way to protect from issues or bad placement decisions related to disk space).
     EnumMap<Replica.ReplicaType, Map<Node, Integer>> replicaTypeToNodesAndCounts = getNodesPerReplicaType(nodes, attrValues);
 
-    // Build the replic placement decisions here
+    // All available zones of live nodes. Due to some nodes not being candidates for placement, and some existing replicas
+    // being one availability zones that might be offline (i.e. their nodes are not live), this set might contain zones
+    // on which it is impossible to place replicas. That's ok.
+    ImmutableSet<String> availabilityZones = getZonesFromNodes(nodes, attrValues);
+
+    // Build the replica placement decisions here
     Set<ReplicaPlacement> replicaPlacements = new HashSet<>();
 
     // Let's now iterate on all shards to create replicas for and start finding home sweet homes for the replicas
@@ -150,69 +190,57 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
       // strategic replica placement impossibility is not a problem that should lead to replica placement computation
       // failure. Current code does fail if placement is impossible (constraint is at most one replica of a shard on any node).
       for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
-        makePlacementDecisions(solrCollection, shardName, replicaType, request.getCountReplicasToCreate(replicaType),
-                attrValues, replicaTypeToNodesAndCounts, replicaPlacements);
+        makePlacementDecisions(solrCollection, shardName, availabilityZones, replicaType, request.getCountReplicasToCreate(replicaType),
+                attrValues, replicaTypeToNodesAndCounts, placementPlanFactory, replicaPlacements);
       }
-    }
-
-
-
-    // WIP - continue here.
-
-
-
-
-
-
-
-    final int totalReplicasPerShard = request.getCountNrtReplicas() +
-        request.getCountTlogReplicas() + request.getCountPullReplicas();
-
-    if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
-      throw new PlacementException("Cluster size too small for number of replicas per shard");
-    }
-
-    // Get number of cores on each Node
-    TreeMultimap<Integer, Node> nodesByCores = TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
-
-    // Get the number of cores on each node and sort the nodes by increasing number of cores
-    for (Node node : cluster.getLiveNodes()) {
-      if (attrValues.getCoresCount(node).isEmpty()) {
-        throw new PlacementException("Can't get number of cores in " + node);
-      }
-      nodesByCores.put(attrValues.getCoresCount(node).get(), node);
-    }
-
-
-    // Now place all replicas of all shards on nodes, by placing on nodes with the smallest number of cores and taking
-    // into account replicas placed during this computation. Note that for each shard we must place replicas on different
-    // nodes, when moving to the next shard we use the nodes sorted by their updated number of cores (due to replica
-    // placements for previous shards).
-    for (String shardName : request.getShardNames()) {
-      // Assign replicas based on the sort order of the nodesByCores tree multimap to put replicas on nodes with less
-      // cores first. We only need totalReplicasPerShard nodes given that's the number of replicas to place.
-      // We assign based on the passed nodeEntriesToAssign list so the right nodes get replicas.
-      ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign = new ArrayList<>(totalReplicasPerShard);
-      Iterator<Map.Entry<Integer, Node>> treeIterator = nodesByCores.entries().iterator();
-      for (int i = 0; i < totalReplicasPerShard; i++) {
-        nodeEntriesToAssign.add(treeIterator.next());
-      }
-
-      // Update the number of cores each node will have once the assignments below got executed so the next shard picks the
-      // lowest loaded nodes for its replicas.
-      for (Map.Entry<Integer, Node> e : nodeEntriesToAssign) {
-        int coreCount = e.getKey();
-        Node node = e.getValue();
-        nodesByCores.remove(coreCount, node);
-        nodesByCores.put(coreCount + 1, node);
-      }
-
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountNrtReplicas(), Replica.ReplicaType.NRT);
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountTlogReplicas(), Replica.ReplicaType.TLOG);
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountPullReplicas(), Replica.ReplicaType.PULL);
     }
 
     return placementPlanFactory.createPlacementPlanAddReplicas(request, replicaPlacements);
+  }
+
+  private ImmutableSet<String> getZonesFromNodes(Set<Node> nodes, final AttributeValues attrValues) {
+    Set<String> azs = new HashSet<>();
+
+    for (Node n : nodes) {
+      azs.add(getNodeAZ(n, attrValues));
+    }
+
+    return ImmutableSet.copyOf(azs);
+  }
+
+  /**
+   * Resolves the AZ of a node and takes care of nodes that have no defined AZ in system property {@link #AVAILABILITY_ZONE_SYSPROP}
+   * to then return {@link #UNDEFINED_AVAILABILITY_ZONE} as the AZ name.
+   */
+  private String getNodeAZ(Node n, final AttributeValues attrValues) {
+    Optional<String> nodeAz = attrValues.getSystemProperty(n, AVAILABILITY_ZONE_SYSPROP);
+    if (nodeAz.isPresent()) {
+      return nodeAz.get();
+    } else {
+      // All nodes with undefined AZ will be considered part of the same AZ. This also works for deployments that do not care about AZ's
+      return UNDEFINED_AVAILABILITY_ZONE;
+    }
+  }
+
+  /**
+   * This class captures an availability zone and the nodes that are legitimate targets for replica placement and that
+   * are in the Availability Zone. Instances are used as values in a {@link TreeMap} in which the total number of already
+   * existing replicas in the AZ is the key, this allows picking easily the set of nodes from which to select a node for
+   * placement in order to balance the number of replicas per AZ. Picking one of the nodes from the set will be done using
+   * different criteria. See TODO
+   */
+  private static class AzWithNodes {
+    final String azName;
+    List<Node> availableNodesForPlacement;
+    boolean hasBeenSorted;
+
+    AzWithNodes(String azName, List<Node> availableNodesForPlacement) {
+      this.azName = azName;
+      this.availableNodesForPlacement = availableNodesForPlacement;
+      // Once the list is sorted to an order we're happy with, this flag is set to true to avoid sorting multiple times
+      // unnecessarily.
+      this.hasBeenSorted = false;
+    }
   }
 
   private void placeReplicas(ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
@@ -236,17 +264,32 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
    * @param attrValues attributes fetched for the nodes. This method uses system property {@link #REPLICA_TYPE_SYSPROP} as
    *                   well as the number of cores on each node.
    */
-  private EnumMap<Replica.ReplicaType, Map<Node, Integer>> getNodesPerReplicaType(Set<Node> nodes, AttributeValues attrValues) {
+  private EnumMap<Replica.ReplicaType, Map<Node, Integer>> getNodesPerReplicaType(Set<Node> nodes, final AttributeValues attrValues) {
     EnumMap<Replica.ReplicaType, Map<Node, Integer>> replicaTypeToNodesAndCounts = new EnumMap<>(Replica.ReplicaType.class);
     for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
       replicaTypeToNodesAndCounts.put(replicaType, Maps.newHashMap());
     }
 
     for (Node node : nodes) {
+      // Exclude nodes with unknown or too small disk free space
+      if (attrValues.getFreeDisk(node).isEmpty()) {
+        if (log.isWarnEnabled()) {
+          log.warn("Unknown free disk on node {}, excluding it from placement decisions.", node.getName());
+        }
+        // We rely later on the fact that the free disk optional is present (see CoresAndDiskComparator), be careful it you change anything here.
+        continue;
+      } if (attrValues.getFreeDisk(node).get() < minimalFreeDiskGB) {
+        if (log.isWarnEnabled()) {
+          log.warn("Node {} free disk ({}GB) lower than configured minimum {}GB, excluding it from placement decisions.", node.getName(), attrValues.getFreeDisk(node).get(), minimalFreeDiskGB);
+        }
+        continue;
+      }
+
       if (attrValues.getCoresCount(node).isEmpty()) {
         if (log.isWarnEnabled()) {
-          log.warn("Unknown number of cores on node {}, skipping for placement decisions.", node.getName());
+          log.warn("Unknown number of cores on node {}, excluding it from placement decisions.", node.getName());
         }
+        // We rely later on the fact that the number of cores optional is present (see CoresAndDiskComparator), be careful it you change anything here.
         continue;
       }
 
@@ -277,31 +320,172 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
    * <ol>
    *     <li>No more than one replica of a given shard on a given node (strictly enforced)</li>
    *     <li>Balance as much as possible the number of replicas of the given {@link org.apache.solr.cluster.placement.Replica.ReplicaType} over available AZ's.
-   *     This balancing takes into account existing replicas of the corresponding type, if any.</li>
-   *     <li>Place replicas on nodes having more than a certain amount of free disk space (note that nodes with a too small
-   *     amount of free disk space were eliminated as placement targets earlier, see TODO</li>
+   *     This balancing takes into account existing replicas <b>of the corresponding replica type</b>, if any.</li>
+   *     <li>Place replicas is possible on nodes having more than a certain amount of free disk space (note that nodes with a too small
+   *     amount of free disk space were eliminated as placement targets earlier, in {@link #getNodesPerReplicaType}). There's
+   *     a threshold here rather than sorting on the amount of free disk space, because sorting on that value would in
+   *     practice lead to never considering the number of cores on a node.</li>
    *     <li>Place replicas on nodes having a smaller number of cores (the number of cores considered
    *     for this decision includes decisions made during the processing of the placement request)</li>
    * </ol>
    */
-  private void makePlacementDecisions(SolrCollection solrCollection, String shardName, Replica.ReplicaType replicaType,
-                                      int numReplicas, AttributeValues attrValues,
+  @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
+  private void makePlacementDecisions(SolrCollection solrCollection, String shardName, ImmutableSet<String> availabilityZones,
+                                      Replica.ReplicaType replicaType, int numReplicas, final AttributeValues attrValues,
                                       EnumMap<Replica.ReplicaType, Map<Node, Integer>> replicaTypeToNodesAndCounts,
-                                      Set<ReplicaPlacement> replicaPlacements) {
+                                      PlacementPlanFactory placementPlanFactory, Set<ReplicaPlacement> replicaPlacements) throws PlacementException {
     // Build the set of candidate nodes, i.e. nodes not having (yet) a replica of the given shard
     Set<Node> candidateNodes = new HashSet<>(replicaTypeToNodesAndCounts.get(replicaType).keySet());
+
+    // Count existing replicas per AZ. We count only instances the type of replica for which we need to do placement. This
+    // can be changed in the loop below if we want to count all replicas for the shard.
+    Map<String, Integer> azToNumReplicas = Maps.newHashMap();
+    // Add all "interesting" AZ's, i.e. AZ's for which there's a chance we can do placement.
+    for (String az : availabilityZones) {
+      azToNumReplicas.put(az, 0);
+    }
+
     Shard shard = solrCollection.getShard(shardName);
     if (shard != null) {
       // shard is non null if we're adding replicas to an already existing collection.
       // If we're creating the collection, the shards do not exist yet.
       for (Replica replica : shard.replicas()) {
+        // Nodes already having any type of replica for the shard can't get another replica.
         candidateNodes.remove(replica.getNode());
+        // The node's AZ has to be counted as having a replica if it has a replica of the same type as the one we need
+        // to place here (remove the "if" below to balance the number of replicas per AZ across all replica types rather
+        // than within each replica type, but then there's a risk that all NRT replicas for example end up on the same AZ).
+        // Note that if in the cluster nodes are configured to accept a single replica type and not multiple ones, the
+        // two options are equivalent (governed by system property AVAILABILITY_ZONE_SYSPROP on each node)
+        if (replica.getType() == replicaType) {
+          final String az = getNodeAZ(replica.getNode(), attrValues);
+          if (azToNumReplicas.containsKey(az)) {
+            // We do not count replicas on AZ's for which we don't have any node to place on because it would not help
+            // the placement decision. If we did want to do that, note the dereferencing below can't be assumed as the
+            // entry will not exist in the map.
+            azToNumReplicas.put(az, azToNumReplicas.get(az) + 1);
+          }
+        }
       }
     }
 
-    // We now have the set of real candidate nodes, we've enforced "No more than one replica of a given shard on a given node"
+    // We now have the set of real candidate nodes, we've enforced "No more than one replica of a given shard on a given node".
+    // We also counted for the shard and replica type under consideration how many replicas were per AZ, so we can place
+    // (or try to place) replicas on AZ's that have fewer replicas
 
-    // WIP - continue here
+    // Get the candidate nodes per AZ in order to build (further down) a mapping of AZ to placement candidates.
+    Map<String, List<Node>> nodesPerAz = Maps.newHashMap();
+    for (Node node : candidateNodes) {
+      String nodeAz = getNodeAZ(node, attrValues);
+      List<Node> nodesForAz = nodesPerAz.get(nodeAz);
+      if (nodesForAz == null) {
+        nodesForAz = new ArrayList<>();
+        nodesPerAz.put(nodeAz, nodesForAz);
+      }
+      nodesForAz.add(node);
+    }
 
+    // Build a treeMap sorted by the number of replicas per AZ and including candidates nodes suitable for placement on the
+    // AZ, so we can easily select the next AZ to get a replica assignment and quickly (constant time) decide if placement
+    // on this AZ is possible or not.
+    TreeMultimap<Integer, AzWithNodes> azByExistingReplicas = TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
+    for (Map.Entry<String, List<Node>> e : nodesPerAz.entrySet()) {
+      azByExistingReplicas.put(azToNumReplicas.get(e.getKey()), new AzWithNodes(e.getKey(), e.getValue()));
+    }
+
+    CoresAndDiskComparator coresAndDiskComparator = new CoresAndDiskComparator(attrValues, deprioritizedFreeDiskGB);
+
+    // Now we have for each AZ on which we might have a chance of placing a replica, the list of candidate nodes for replicas
+    // (candidate: does not already have a replica of this shard and is in the corresponding AZ).
+    // We must now select those of the nodes on which we actually place the replicas, and will do that based on the total
+    // number of cores already present on these nodes as well as the free disk space.
+    // We sort once by the order related to number of cores and disk space each list of nodes on an AZ. We do not sort all
+    // of them ahead of time because we might be placing a small number of replicas and it might be wasted work.
+    for (int i = 0; i < numReplicas; i++) {
+      // Pick the AZ having the lowest number of replicas for this shard, and if that AZ has available nodes, pick the
+      // most appropriate one (based on number of cores and disk space constraints). In the process, remove entries (AZ's)
+      // that do not have nodes to place replicas on because these are useless to us.
+      Map.Entry<Integer, AzWithNodes> azWithNodesEntry = null;
+      for (Iterator<Map.Entry<Integer, AzWithNodes>> it = azByExistingReplicas.entries().iterator(); it.hasNext(); ) {
+        Map.Entry<Integer, AzWithNodes> entry = it.next();
+        if (!entry.getValue().availableNodesForPlacement.isEmpty()) {
+          azWithNodesEntry = entry;
+          // Remove this entry. Will add it back after a node has been removed from the list of available nodes and the number
+          // of replicas on the AZ has been increased by one.
+          it.remove();
+          break;
+        } else {
+          it.remove();
+        }
+      }
+
+      if (azWithNodesEntry == null) {
+        // This can happen because not enough nodes for the placement request or already too many nodes with replicas of
+        // the shard that can't accept new replicas.
+        throw new PlacementException("Not enough nodes to place " + numReplicas + " replica(s) of type " + replicaType +
+                " for shard " + shardName + " of collection " + solrCollection.getName());
+      }
+
+      AzWithNodes azWithNodes = azWithNodesEntry.getValue();
+      List<Node> nodes = azWithNodes.availableNodesForPlacement;
+
+      if (!azWithNodes.hasBeenSorted) {
+        // Make sure we do not tend to use always the same nodes (within an AZ) if all conditions are identical (well, this
+        // likely is not the case since after having added a replica to a node its number of cores increases for the next
+        // placement decision, but let's be defensive here, given that multiple concurrent placement decisions might see
+        // the same initial cluster state, and we want placement to be reasonable even in that case without creating an
+        // unncessary imbalance).
+        // For example, if all nodes have 0 cores and same amount of free disk space, ideally we want to pick a random node
+        // for placement, not always the same one due to some internal ordering.
+        Collections.shuffle(nodes, new Random());
+
+        // Sort by increasing number of cores but pushing nodes with low free disk space to the end of the list
+        Collections.sort(nodes, coresAndDiskComparator);
+
+        azWithNodes.hasBeenSorted = true;
+      }
+
+      Node assignTarget = nodes.remove(0);
+
+      // Insert back a corrected entry for the AZ: one more replica living there and one less node that can accept new replicas
+      // (the remaining candidate node list might be empty, in which case it will be cleaned up on the next iteration).
+      azByExistingReplicas.put(azWithNodesEntry.getKey() + 1, azWithNodes);
+
+      // Track that now the node has one more core TODO: issue: we rely on attrValues for this, can't update it there.
+
+      // Register the replica assignment just decided
+      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(shardName, assignTarget, replicaType));
+    }
+  }
+
+  /**
+   * Comparator implementing the placement strategy based on free space and number of cores: we want to place new replicas
+   * on nodes with the less number of cores, but only if they do have enough disk space (expressed as a threshold value).
+   */
+  static class CoresAndDiskComparator implements Comparator<Node> {
+    private final AttributeValues attrValues;
+    private final long deprioritizedFreeDiskGB;
+
+
+    /**
+     * The data we sort on is not part of the {@link Node} instances but has to be retrieved from the attributes and configuration.
+     */
+    CoresAndDiskComparator(AttributeValues attrValues, long deprioritizedFreeDiskGB) {
+      this.attrValues = attrValues;
+      this.deprioritizedFreeDiskGB = deprioritizedFreeDiskGB;
+    }
+
+    @Override
+    public int compare(Node a, Node b) {
+      // Note all nodes do have free disk and number of cores defined. This has been verified earlier.
+      boolean aHasLowFreeSpace = attrValues.getFreeDisk(a).get() < deprioritizedFreeDiskGB;
+      boolean bHasLowFreeSpace = attrValues.getFreeDisk(b).get() < deprioritizedFreeDiskGB;
+      if (aHasLowFreeSpace != bHasLowFreeSpace) {
+        // A node with low free space should be considered > node with high free space since it needs to come later in sort order
+        return Boolean.compare(aHasLowFreeSpace, bHasLowFreeSpace);
+      }
+      // The ordering on the number of cores is the natural order.
+      return Integer.compare(attrValues.getCoresCount(a).get(), attrValues.getCoresCount(a).get());
+    }
   }
 }
