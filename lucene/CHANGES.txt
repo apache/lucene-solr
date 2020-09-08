@@ -236,7 +236,9 @@ Documentation
 
 Other
 ---------------------
-(No changes)
+
+* LUCENE-9292: Refactor BKD point configuration into its own class. (Ignacio Vera)
+
 
 ======================= Lucene 8.6.2 =======================
 
