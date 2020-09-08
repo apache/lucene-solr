@@ -29,6 +29,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
@@ -59,6 +60,8 @@ import static org.hamcrest.CoreMatchers.is;
  * {@link SchemaRequest} and {@link SchemaResponse}.
  */
 public class SchemaTest extends RestTestBase {
+  private static JettySolrRunner jetty;
+
   private static void assertValidSchemaResponse(SolrResponseBase schemaResponse) {
     assertEquals("Response contained errors: " + schemaResponse.toString(), 0, schemaResponse.getStatus());
     assertNull("Response contained errors: " + schemaResponse.toString(), schemaResponse.getResponse().get("errors"));
@@ -115,21 +118,8 @@ public class SchemaTest extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema.xml",
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema.xml",
         "/solr", true, extraServlets);
-  }
-
-  @After
-  public void cleanup() throws Exception  {
-//    if (jetty != null) {
-//      jetty.stop();
-//      jetty = null;
-//    }
-//    if (restTestHarness != null) {
-//      restTestHarness.close();
-//    }
-//    restTestHarness = null;
-
   }
 
   @AfterClass
@@ -138,11 +128,6 @@ public class SchemaTest extends RestTestBase {
       jetty.stop();
       jetty = null;
     }
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
-
   }
 
   @Test
