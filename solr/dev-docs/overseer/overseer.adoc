@@ -75,19 +75,18 @@ The rest of this doc is structured as follows:
 
 A few (real or imagined?) issues were identified and are called out in the relevant sections (using a warning sign in the margin), they are summarized here.
 
-. A former overseer might be overwriting cluster state once it is no longer Overseer. #bookmark=id.m1okfcnai3fd[In section ClusterStateUpdater]
-. Efficiency of reading the Collection queue decreases as the queue grows, when things go bad they can get worse. #bookmark=id.bonu9bb600ui[In OveerseerTaskQueue section]. Reported as a real bug, see https://lucene.472066.n3.nabble.com/Overseer-documentation-tp4457133p4457251.html[mail].
-. Config set locking race condition. #bookmark=id.gm592ko784i6[In OverseerConfigSetMessageHandler section].
-. Lock on base config set released too early. #bookmark=id.id9bn1f4hyl6[In OverseerConfigSetMessageHandler section].
-. LockTree Session management is incorrect, Sessions likely useless. #bookmark=id.oh0pwq90n27s[In section Collection API lock usage].
-. It is possible to acquire conflicting locks in collection processing. #bookmark=id.6f042vlsnph9[In section Collection API lock usage].
-. Collection message handler locking is done in an inefficient way. #bookmark=id.rcipcvk38wbv[In section Proposal to fix the infra?]
-. Timing out collection API commands lead to orphaned state change messages that could lead to inconsistencies. #bookmark=id.gazj6pvrxy8a[In section A deeper issue with the locking strategy?]  Reported as a real bug, see https://lucene.472066.n3.nabble.com/Overseer-documentation-tp4457133p4457251.html[mail].
-. Requesting replica creation one by one with ADDREPLICA in the state update queue is inefficient. #bookmark=id.f4ks7mwo0dpa[In CreateCollectionCmd section]
-. Replica placement on the cluster can be unbalanced under high load. #bookmark=id.a74ab6er8nih[In CreateCollectionCmd section]. See https://issues.apache.org/jira/projects/SOLR/issues/SOLR-14462[SOLR-14462].
-. Under specific conditions, dequeue from the collection queue can slow down to a message every two seconds. #bookmark=id.igue2gy2wavc[In OverseerTaskProcessor section]
-. Passing bad parameters when setting shard leader can lead to shard having no leader. #bookmark=id.j0uwimlbgl0o[In SliceMutator section]
-. Inefficiency in how DOWNNODE overseer action is handled. #bookmark=id.sfc6mib8xy6l[In NodeMutator section]
+. A former overseer might be overwriting cluster state once it is no longer Overseer. <<bug1,In ClusterStateUpdater section>>
+. Efficiency of reading the Collection queue decreases as the queue grows, when things go bad they can get worse. <<bug2,In OveerseerTaskQueue section>>. Reported as a real bug, see https://lucene.472066.n3.nabble.com/Overseer-documentation-tp4457133p4457251.html[mail].
+. Config set locking race condition. <<bug3,In OverseerConfigSetMessageHandler section>>.
+. Lock on base config set released too early. <<bug4,In OverseerConfigSetMessageHandler section>>.
+. LockTree Session management is incorrect, Sessions likely useless. <<bug5,In section Collection API lock usage>>.
+. Collection message handler locking is done in an inefficient way. <<bug6,In section Proposal to fix the infra?>>
+. Timing out collection API commands lead to orphaned state change messages that could lead to inconsistencies. <<bug7,In section A deeper issue with the locking strategy?>>  Reported as a real bug, see https://lucene.472066.n3.nabble.com/Overseer-documentation-tp4457133p4457251.html[mail].
+. Requesting replica creation one by one with ADDREPLICA in the state update queue is inefficient. <<bug8,In CreateCollectionCmd section>>
+. Replica placement on the cluster can be unbalanced under high load. <<bug9,In CreateCollectionCmd section>>. See https://issues.apache.org/jira/projects/SOLR/issues/SOLR-14462[SOLR-14462].
+. Under specific conditions, dequeue from the collection queue can slow down to a message every two seconds. <<bug10,In OverseerTaskProcessor section>>
+. Passing bad parameters when setting shard leader can lead to shard having no leader. <<bug11,In SliceMutator section>>
+. Inefficiency in how DOWNNODE overseer action is handled. <<bug12,In NodeMutator section>>
 
 [[CollectionAction,CollectionAction]]
 === org.apache.solr.common.params.CollectionParams.CollectionAction
@@ -187,6 +186,7 @@ The `ClusterStateUpdater` is updating Zookeeper and only that as a result of pro
 
 Note that except when it starts (and in case of some errors?) the `ClusterStateUpdater` does not read from Zookeeper. It is therefore blind to updates that might take place from elsewhere and given how it’s implemented, it might even overwrite these updates. This is not expected to happen on the happy path as only `ClusterStateUpdater` does updates.
 
+[[bug1]]
 [WARNING]
 But… there is a possibility that an Overseer in `ClusterStateUpdater.run()` would be updating Zookeeper after it has lost Overseer leadership and possibly after a long pause (Garbage collection “stop the world” pause for example). It might then be overwriting more recent data with older/wrong data. This likely has a very tiny probability of happening so may not be worth filing a bug for.
 
@@ -234,6 +234,7 @@ When reading from Zookeeper does happen, the whole queue is read and sorted even
 
 The fetch is requested from `<<OverseerTaskProcessor>>` when there are no tasks ready to run but only when the numbers of blocked and running tasks are below their respective limits (`MAX_PARALLEL_TASKS`=100 and `MAX_BLOCKED_TASKS`=1000) and a new message appears in the queue (if these limits are reached, no point in reading more tasks since there will be no space to process them). This implies the queue has less than 1100 messages before new ones appear in order to be read and retrieve the new messages (of course insertions can happen and if Overseer consumes slower than the queue is fed, the queue is going to grow…). In order to read the new messages (or the single new message), the queue will be read in its entirety. Such a situation is rather inefficient but given the contained size of the queue for this to happen (max 1100 requests), it’s likely not a catastrophe. But still inefficient :)
 
+[[bug2]]
 [WARNING]
 If the queue does overflow and grows, the efficiency of Overseer decreases as the queue grows (since it has to read it completely and sort it whenever it wants to get new messages to process, or even a single new message to process), so if Overseer is falling behind, things will go downhill. This might be an issue.
 
@@ -260,6 +261,7 @@ If the number of blocked tasks reaches `MAX_BLOCKED_TASKS`=1000, processing stop
 If all blocked tasks are blocked because of locks and there are less than 1000 blocked tasks, then there’s no direct wait between processing attempts in `OverseerTaskProcessor`, and `peekTopN()` is called with a 2 seconds wait delay and a predicate filtering out blocked and  +
 running tasks from the set of tasks to return. If new tasks arrive in the queue the wait is cut short (see `changed` in `org.apache.solr.cloud.ZkDistributedQueue`) but if no new tasks arrive, the wait is two seconds between processing attempts.
 
+[[bug10]]
 [WARNING]
 If multiple tasks are enqueued for a given collection (or any other type of tasks that compete for the same lock) and there’s no other activity on that queue to the overseer, the maximum processing speed is one task every 2 seconds. This might be considered a bug…
 
@@ -326,6 +328,7 @@ deleteConfigSet() deletes the whole znode structure at `/configs/_<config set na
 
 Creations and deletes directly update Zookeeper without going through the cluster state update queue (as collections do in `<<OverseerCollectionMessageHandler>>`).
 
+[[bug3]]
 [WARNING]
 Locking is implemented based on config set name, but the implementation seems subject to a race condition: `canExecute()` verifies in a critical section that the current config set can be executed. If so, another critical section in `markExclusive()` registers the processing of the current config set to exclude concurrent execution of the same or of conflicting config sets. It seems possible for two conflicting config set messages to make it through at the same time.
 
@@ -333,6 +336,7 @@ In order to be executed (check done in `canExecute()`) a config set task (in `ma
 
 The implementation of the read lock on the base config set is broken: when the acquired Lock is released in `unmarkExclusiveConfigSet()`, it correctly releases the exclusive write lock it got on the config set name, but it also releases the read lock (represented by an entry in a Set) on the base config set.
 
+[[bug4]]
 [WARNING]
 This implies that if multiple config sets with tasks in progress have the same base config set, the first to finish will release the read lock set on the base config set. Reference counting should have been used to correctly track multiple read locks.
 
@@ -369,6 +373,7 @@ As part of the creation, method `OverseerCollectionConfigSetProcessor.getOversee
 Therefore, a single instance of `OverseerCollectionMessageHandler` is used by the Overseer. `LockTree lockTree` being a final member variable of `OverseerCollectionMessageHandler`, a single instance of it is also used during the lifetime of the Overseer. +
 lockTree is used in the `lockTask()` method in which a `LockTree.Session` is created for the current `OverseerTaskProcessor.TaskBatch.getId()`. This ID is managed in `OverseerTaskProcessor.run()` method, starts at 0 and incremented for each sweep over the tasks in the work queue and blocked tasks (there’s a max number of tasks that are swept on each iteration due to limits on the numbers of parallel tasks and blocked tasks).
 
+[[bug5]]
 [WARNING]
 The code in `OverseerCollectionMessageHandler.lockTask()` most likely does not implement the original intention regarding batch id management, since that positive or null ID is being compared to a `sessionId` set to -1 and +++<u>never modified</u>+++. Therefore the task batch id is always different from the `sessionId`, and as a result every time a lock is needed a new `LockTree.Session` object is created. Whatever purpose `Session` was supposed to serve is likely not served, given that grabbing a lock (or “marking node busy” in `Session` vocabulary) on a new instance will always succeed. That `Session` object is therefore apparently useless in the current implementation (if it was supposed to be useful there’s a bug, otherwise just code to remove). Locks are still managed on the `lockTree` instance.
 
@@ -427,6 +432,7 @@ image::images/session-lockTree2.png[]
 
 ===== Proposal to fix the infra?
 
+[[bug6]]
 [WARNING]
 ====
 The existing code iterates over whole subtrees in order to grab a lock. In the case of a collection with many shards and many replicas, getting a lock on the collection itself can get expensive. In the diagram below, getting a lock on C1 requires iterating over all shards and all replicas known in the `LockTree`, which in the figure below represent 20 nodes.
@@ -452,6 +458,7 @@ The previous sections looked at the locking infra itself, but there could be a b
 Multiple Collection commands can be executing in parallel, and these commands grab different levels of locks to protect their actions. Some of the Zookeeper updates are done directly in the command implementation and some updates are enqueued to the state change queue (processed by `<<ClusterStateUpdater>>`). +
 The commands wait for the enqueued action to finish, and only then return success to the Collection API caller. This has the side effect of protecting the execution of the state change update using the lock obtained when the Collection API started processing the command (in addition to locks directly obtained when processing the state update command).
 
+[[bug7]]
 [WARNING]
 But… commands eventually time out, and such time outs are highly probable (a.k.a. “certain to occur”) when the cluster is under heavy load. In this case, the command fails and returns an error to the caller, but the state change message remains enqueued, and will eventually get processed. By then, it is no longer running under the “protection” of a Collection API lock or “in the context” of a Collection API request. It remains to be explored if all such messages are idempotent or harmless or if inconsistencies can result from old orphaned messages executing long after their best-by date...
 
@@ -514,6 +521,7 @@ For each replica, the non legacyCloud behavior (give or take a few details) is:
 * Enqueues in the state update queue a `CollectionAction.ADDREPLICA` request,
 * Prepares a `ShardRequest` for `CoreAdminParams.CoreAdminAction.CREATE` and adds it to `coresToCreate`.
 
+[[bug8]]
 [WARNING]
 Requesting the replica creation one by one (i.e. separate messages in the state update queue) is inefficient as it triggers more Zookeeper chatter than needed to manage the queue (`<<ClusterStateUpdater>>` will do the right thing and batch the updates). State update queue action `ADDREPLICA` should support adding multiple replicas at once. Jira https://issues.apache.org/jira/browse/SOLR-9317[SOLR-9317] implemented a similar change for the Collection API for that action.
 
@@ -525,6 +533,7 @@ It ends up executing `CoreAdminOperation.CREATE_OP` that calls `CoreContainer
 
 The rest of the method deals with failures, with `withCollection` and with `alias`.
 
+[[bug9]]
 [WARNING]
 Note that between the call to `buildReplicaPositions()` and the moment the replicas are actually created in Zookeeper and the cluster state is updated there might be a significant delay: not only the up to 120 seconds of waiting but also prior to that the time `buildReplicaPositions()` takes to execute (https://issues.apache.org/jira/browse/SOLR-14275[SOLR-14275] mentions more than 10 minutes). This means that in case of (relatively) concurrent collection creation activity, multiple creations might be based on a given state of the cluster, making similar placement decisions (targeting the same node) that once executed result in severe cluster imbalance. +
 This has been observed during collection creation perf testing at Salesforce (no Jira filed).
@@ -596,6 +605,7 @@ removeReplica() (implementing `OverseerAction.DELETECORE`, note this is not a `C
 
 setShardLeader() (implementing `OverseerAction.LEADER`) updates the relevant slice of the relevant collection and changes the leader replica of the slice (by calling `ReplicaMutator.setLeader()` and `unsetLeader()` on the relevant replicas).
 
+[[bug11]]
 [WARNING]
 Note that if message properties `ZkStateReader.BASE_URL_PROP` (=`"base_url"`) or `ZkStateReader.CORE_NAME_PROP` (=`"core"`) are null or incorrect there’s a potential bug: constructed `leaderUrl` will be incorrect (might even use the string `"null"` as URL), then the current leader will be unset in the slice but no new leader set. Seems risky.
 
@@ -630,9 +640,11 @@ This class allows dealing with the consequences on all collections in Zookeeper 
 
 downNode() (implementing `OverseerAction.DOWNNODE`) iterates over all replicas of all slices of all collections of the cluster (yes, everything: three nested “for” loops), every replica residing on the specific node is marked having `ZkStateReader.STATE_PROP` equal to `Replica.State.DOWN`. Zookeeper write command is returned containing the update command for all affected collections.
 
-For each DocCollection (collection) in the cluster, shallow (memory) copies are made of the set of slices. For each Slice, shallow copies are made of all replicas, then for each affected Replica a shallow copy is made of all replica properties in which the state is changed to DOWN and a new Replica is built. All Slice are then rebuilt with the modified (or not) replicas. +
+For each DocCollection (collection) in the cluster, shallow (memory) copies are made of the set of slices. For each Slice, shallow copies are made of all replicas, then for each affected Replica a shallow copy is made of all replica properties in which the state is changed to DOWN and a new Replica is built. All Slice are then rebuilt with the modified (or not) replicas.
+
 If any Replica of a collection was affected, a Zookeeper write is added for changing the replica using the rebuilt set of slices (otherwise the rebuilt set of slices is ignored).
 
+[[bug12]]
 [WARNING]
 The overall complexity here is in O(n) where n is the total number of replicas in the cluster. Memory is also allocated to rebuild objects that do not need rebuilding (all non affected slices). There is room for improvement here with the current Zookeeper data structure by not doing unneeded allocations and rebuilds, and even greater room for improvement if the logic of how the state of a replica is tracked is redesigned, for example by always checking the state of the node a replica is on in addition to checking the state of the replica itself. +
 https://issues.apache.org/jira/browse/SOLR-6481[SOLR-6481] was a step in that direction, https://issues.apache.org/jira/browse/SOLR-6923[SOLR-6923] as well. Possibly https://issues.apache.org/jira/browse/SOLR-13882[SOLR-13882] (in Solr 8.4) fixes that. Suggestion made here is to completely stop updating replica state when the node is down, and always assume the actual replica state is a logical “and” between replica state itself and node state. Likely easier said than done.
