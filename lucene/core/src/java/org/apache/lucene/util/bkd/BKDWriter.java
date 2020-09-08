@@ -173,7 +173,7 @@ public class BKDWriter implements Closeable {
 
   private void initPointWriter() throws IOException {
     assert pointWriter == null : "Point writer is already initialized";
-    //total point count is an estimation but the final point count must be equal or lower to that number.
+    // Total point count is an estimation but the final point count must be equal or lower to that number.
     if (totalPointCount > maxPointsSortInHeap) {
       pointWriter = new OfflinePointWriter(config, tempDir, tempFileNamePrefix, "spill", 0);
       tempInput = ((OfflinePointWriter)pointWriter).out;
