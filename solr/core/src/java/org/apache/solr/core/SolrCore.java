@@ -230,8 +230,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final ConfigSet configSet;
   //singleton listener for all packages used in schema
 
-  //a single package listener for all cores that require core reloading
-  private final PackageListeningClassLoader coreReloadingClassLoader;
   private final CircuitBreakerManager circuitBreakerManager;
 
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
@@ -948,11 +946,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
       IndexSchema schema = configSet.getIndexSchema();
 
-      this.coreReloadingClassLoader = new PackageListeningClassLoader(coreContainer,
-              resourceLoader,
-              solrConfig::maxPackageVersion,
-              () -> coreContainer.reload(name, uniqueId));
-      this.packageListeners.addListener(coreReloadingClassLoader);
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
@@ -3233,9 +3226,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return blobRef;
   }
 
-  public PackageListeningClassLoader getCoreReloadingClassLoader(){
-    return coreReloadingClassLoader;
-  }
   /**
    * Run an arbitrary task in it's own thread. This is an expert option and is
    * a method you should use with great care. It would be bad to run something that never stopped
