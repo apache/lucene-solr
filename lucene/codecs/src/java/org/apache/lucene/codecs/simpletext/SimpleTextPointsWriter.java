@@ -32,6 +32,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.bkd.BKDConfig;
 
 class SimpleTextPointsWriter extends PointsWriter {
 
@@ -72,14 +73,17 @@ class SimpleTextPointsWriter extends PointsWriter {
 
     PointValues values = reader.getValues(fieldInfo.name);
 
+
+    BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
+        fieldInfo.getPointIndexDimensionCount(),
+        fieldInfo.getPointNumBytes(),
+        BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+
     // We use our own fork of the BKDWriter to customize how it writes the index and blocks to disk:
     try (SimpleTextBKDWriter writer = new SimpleTextBKDWriter(writeState.segmentInfo.maxDoc(),
                                                               writeState.directory,
                                                               writeState.segmentInfo.name,
-                                                              fieldInfo.getPointDimensionCount(),
-                                                              fieldInfo.getPointIndexDimensionCount(),
-                                                              fieldInfo.getPointNumBytes(),
-                                                              SimpleTextBKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
+                                                              config,
                                                               SimpleTextBKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
                                                               values.size())) {
 

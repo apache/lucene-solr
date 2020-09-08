@@ -760,7 +760,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
   }  
   
   // Decompresses blocks of binary values to retrieve content
-  class BinaryDecoder {
+  static class BinaryDecoder {
     
     private final LongValues addresses;
     private final IndexInput compressedData;

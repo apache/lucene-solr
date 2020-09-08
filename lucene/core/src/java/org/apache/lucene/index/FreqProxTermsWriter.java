@@ -32,6 +32,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TimSorter;
@@ -39,8 +40,8 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 final class FreqProxTermsWriter extends TermsHash {
 
-  public FreqProxTermsWriter(DocumentsWriterPerThread docWriter, TermsHash termVectors) {
-    super(docWriter, true, termVectors);
+  FreqProxTermsWriter(DocumentsWriterPerThread docWriter, Counter bytesUsed, TermsHash termVectors) {
+    super(docWriter, bytesUsed, termVectors);
   }
 
   private void applyDeletes(SegmentWriteState state, Fields fields) throws IOException {

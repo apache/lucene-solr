@@ -217,6 +217,9 @@ Bug Fixes
 * SOLR-14714: Solr.cmd in windows loads the incorrect jetty module when using java>=9 (Endika Posadas via
   Erick Erickson)
 
+* SOLR-14821: {!terms} docValuesTermsFilterTopLevel method now works with single-valued strings (Anatolii Siuniaev
+  via Jason Gerlowski)
+
 Other Changes
 ---------------------
 
@@ -238,6 +241,9 @@ Other Changes
 
 * SOLR-14731: Rename @SolrSingleThreaded to @SolrThreadUnsafe, mark DistribPackageStore with the annotation
   (marcussorealheis)
+
+* SOLR-14579: Comment SolrJ 'Utils' generic map functions 
+  (Megan Carey and a lot of education from Uwe Schindler via Erick Erickson)
 
 ==================  8.6.2 ==================
 

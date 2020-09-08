@@ -164,6 +164,8 @@ Other
 
 * LUCENE-9215: Replace checkJavaDocs.py with doclet (Robert Muir, Dawid Weiss, Uwe Schindler)
 
+* LUCENE-9497: Integrate Error Prone, a static analysis tool during compilation (Dawid Weiss, Varun Thacker)
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes
@@ -204,6 +206,10 @@ Improvements
 
 * LUCENE-9501: Improve how Asserting* test classes handle singleton doc values.
 
+* LUCENE-9511: Include StoredFieldsWriter in DWPT accounting to ensure that it's 
+  heap consumption is taken into account when IndexWriter stalls or should flush
+  DWPTs. (Simon Willnauer)
+
 Optimizations
 ---------------------
 
@@ -234,7 +240,9 @@ Documentation
 
 Other
 ---------------------
-(No changes)
+
+* LUCENE-9292: Refactor BKD point configuration into its own class. (Ignacio Vera)
+
 
 ======================= Lucene 8.6.2 =======================
 
