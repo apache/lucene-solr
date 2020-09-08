@@ -28,9 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.lucene.util.TestRuleLimitSysouts;
 
-@TestRuleLimitSysouts.Limit(bytes = 512_000, hardLimit = TestRuleLimitSysouts.DEFAULT_HARD_LIMIT)
 public class TestLockFactoriesMultiJVM extends LuceneTestCase {
   
   @SuppressForbidden(reason = "ProcessBuilder only allows to redirect to java.io.File")
