@@ -154,7 +154,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     }
     for (int j = 1; j < replicas.size(); j++) {
       if (numCounts[j] != numCounts[j - 1])
-        fail("Mismatch in counts between replicas");  // TODO improve this!
+        fail("Mismatch in counts between replicas replica1=" + numCounts[j] + " replica2=" + numCounts[j - 1]);  // TODO improve this!
       if (numCounts[j] == 0 && expectDocs)
         fail("Expected docs on shard " + shard.getName() + " but found none");
     }

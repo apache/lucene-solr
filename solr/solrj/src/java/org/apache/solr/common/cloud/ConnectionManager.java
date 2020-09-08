@@ -183,6 +183,7 @@ public class ConnectionManager implements Watcher, Closeable {
 
   private void updatezk() throws IOException {
     synchronized (keeperLock) {
+      if (isClosed()) return;
       if (keeper != null) {
         ParWork.close(keeper);
       }
@@ -260,6 +261,7 @@ public class ConnectionManager implements Watcher, Closeable {
       }
 
       synchronized (keeperLock) {
+        if (isClosed()) return;
         if (keeper != null) {
           // if there was a problem creating the new SolrZooKeeper
           // or if we cannot run our reconnect command, close the keeper
