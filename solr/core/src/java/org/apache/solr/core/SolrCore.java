@@ -1620,6 +1620,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         });
       }
       closeCalls.add(() -> {
+        IOUtils.closeQuietly(restManager);
+        return "restManager";
+      });
+      closeCalls.add(() -> {
         IOUtils.closeQuietly(reqHandlers);
         return "reqHandlers";
       });

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.rest;
 
+import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -34,6 +35,7 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -59,7 +61,7 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
  * or /config base paths, depending on which base path is more appropriate
  * for the type of managed resource.
  */
-public class RestManager {
+public class RestManager implements Closeable {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -70,14 +72,15 @@ public class RestManager {
   private static final Pattern resourceIdRegex = Pattern.compile("(/config|/schema)(/.*)");
 
   private static final boolean DECODE = true;
+  private volatile boolean isClosed;
 
   /**
    * Used internally to keep track of registrations during core initialization
    */
   private static class ManagedResourceRegistration {
-    String resourceId;
-    Class<? extends ManagedResource> implClass;
-    Set<ManagedResourceObserver> observers = new LinkedHashSet<>();
+    final String resourceId;
+    final Class<? extends ManagedResource> implClass;
+    Set<ManagedResourceObserver> observers = Collections.synchronizedSet(new LinkedHashSet<>());
 
     private ManagedResourceRegistration(String resourceId,
                                         Class<? extends ManagedResource> implClass, 
@@ -464,6 +467,9 @@ public class RestManager {
      */
     @Override
     protected synchronized void reloadFromStorage() throws SolrException {
+      if (restManager.isClosed) {
+        throw new AlreadyClosedException();
+      }
       String resourceId = getResourceId();
       Object data = null;
       try {
@@ -492,7 +498,9 @@ public class RestManager {
     @Override
     protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs, Object managedData)
         throws SolrException {
-
+      if (restManager.isClosed) {
+        return;
+      }
       if (managedData == null) {
         // this is ok - just means no managed components have been added yet
         return;
@@ -647,12 +655,19 @@ public class RestManager {
     registry.initializedRestManager = this;
   }
 
+  public void close() {
+    this.isClosed = true;
+  }
+
   /**
    * If not already registered, registers the given {@link ManagedResource} subclass
    * at the given resourceId, creates an instance, and attaches it to the appropriate
    * Restlet router.  Returns the corresponding instance.
    */
   public synchronized ManagedResource addManagedResource(String resourceId, Class<? extends ManagedResource> clazz) {
+    if (isClosed) {
+      throw new AlreadyClosedException();
+    }
     final ManagedResource res;
     final ManagedResourceRegistration existingReg = registry.registered.get(resourceId);
     if (existingReg == null) {
@@ -687,11 +702,13 @@ public class RestManager {
     return res;
   }
 
-
   /**
    * Creates a ManagedResource using registration information. 
    */
   protected ManagedResource createManagedResource(ManagedResourceRegistration reg) throws SolrException {
+    if (isClosed) {
+      throw new AlreadyClosedException();
+    }
     ManagedResource res = null;
     try {
       Constructor<? extends ManagedResource> ctor = 
