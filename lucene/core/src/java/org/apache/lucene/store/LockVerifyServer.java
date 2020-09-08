@@ -43,7 +43,7 @@ import org.apache.lucene.util.SuppressForbidden;
 public class LockVerifyServer {
     
   // method pkg-private for tests
-  static void execute(Consumer<InetSocketAddress> startClients, String hostname, int maxClients) throws Exception {
+  static void execute(String hostname, int maxClients, Consumer<InetSocketAddress> startClients) throws Exception {
     try (final ServerSocket s = new ServerSocket()) {
       s.setReuseAddress(true);
       s.setSoTimeout(30000); // initially 30 secs to give clients enough time to startup
@@ -141,7 +141,7 @@ public class LockVerifyServer {
       System.exit(1);
     }
 
-    execute(addr -> {}, args[0], Integer.parseInt(args[1]));
+    execute(args[0], Integer.parseInt(args[1]), addr -> {});
   }
   
 }

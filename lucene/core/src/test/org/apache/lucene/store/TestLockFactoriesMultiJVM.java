@@ -31,7 +31,7 @@ public class TestLockFactoriesMultiJVM extends LuceneTestCase {
   
   @SuppressForbidden(reason = "ProcessBuilder only allows to redirect to java.io.File")
   private static final ProcessBuilder applyRedirection(ProcessBuilder pb, int client, Path dir) {
-    if (LuceneTestCase.VERBOSE) {
+    if (VERBOSE) {
       return pb.inheritIO();
     } else {
       return pb
@@ -45,21 +45,21 @@ public class TestLockFactoriesMultiJVM extends LuceneTestCase {
     final int clients = 2;
     final String host = "127.0.0.1";
     final int delay = 1;
-    final int rounds = (LuceneTestCase.TEST_NIGHTLY ? 30000 : 500) * LuceneTestCase.RANDOM_MULTIPLIER;
+    final int rounds = (TEST_NIGHTLY ? 30000 : 500) * RANDOM_MULTIPLIER;
     
-    final Path dir = LuceneTestCase.createTempDir(impl.getSimpleName());
+    final Path dir = createTempDir(impl.getSimpleName());
     
-    final List<Process> processes = new ArrayList<>();
+    final List<Process> processes = new ArrayList<>(clients);
 
-    LockVerifyServer.execute(addr -> {
+    LockVerifyServer.execute(host, clients, addr -> {
       // spawn clients as separate Java processes
       for (int i = 0; i < clients; i++) {
         try {
           processes.add(applyRedirection(new ProcessBuilder(
               Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
+              "-Xmx32M",
               "-cp",
               System.getProperty("java.class.path"),
-              "-Xmx32M",
               LockStressTest.class.getName(),
               Integer.toString(i),
               addr.getHostString(),
@@ -70,10 +70,10 @@ public class TestLockFactoriesMultiJVM extends LuceneTestCase {
               Integer.toString(rounds)
             ), i, dir).start());
         } catch (IOException ioe) {
-          throw new AssertionError(ioe);
+          throw new AssertionError("Failed to start child process.", ioe);
         }
       }
-    }, host, clients);
+    });
      
     // wait for all processes to exit...
     try {
