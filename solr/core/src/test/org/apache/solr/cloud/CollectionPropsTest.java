@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL
+@Ignore // too flakey atm, and ugly sleeps as well
 public class CollectionPropsTest extends SolrCloudTestCase {
   private String collectionName;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
