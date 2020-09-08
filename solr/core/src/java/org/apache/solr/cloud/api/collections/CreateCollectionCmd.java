@@ -445,7 +445,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     // but (for now) require that each core goes on a distinct node.
 
     List<ReplicaPosition> replicaPositions;
-    List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM);
+    List<String> nodeList = null;
+    try {
+      nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(cloudManager.getDistribStateManager().listData(ZkStateReader.LIVE_NODES_ZKNODE), message, OverseerCollectionMessageHandler.RANDOM);
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
     if (nodeList.isEmpty()) {
       log.warn("It is unusual to create a collection ("+collectionName+") without cores. liveNodes={} message={}", clusterState.getLiveNodes(), message);
 

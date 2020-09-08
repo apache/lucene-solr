@@ -156,7 +156,7 @@ public class Assign {
     return false;
   }
 
-  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
+  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Collection<String> liveNodes, final ZkNodeProps message, final Random random) {
     List<String> nodeList;
     final String createNodeSetStr = message.getStr(ZkStateReader.CREATE_NODE_SET);
     final List<String> createNodeList = (createNodeSetStr == null) ? null :
@@ -341,7 +341,7 @@ public class Assign {
     nodeList.addAll(nodes);
     if (createNodeList != null) nodeList.retainAll(createNodeList);
 
-    HashMap<String, ReplicaCount> nodeNameVsShardCount = new HashMap<>();
+    HashMap<String, ReplicaCount> nodeNameVsShardCount = new HashMap<>(nodeList.size());
     for (String s : nodeList) {
       nodeNameVsShardCount.put(s, new ReplicaCount(s));
     }
@@ -369,7 +369,7 @@ public class Assign {
             count.totalNodes++; // Used to "weigh" whether this node should be used later.
             if (entry.getKey().equals(collectionName)) {
               count.thisCollectionNodes++;
-              if (count.thisCollectionNodes >= maxShardsPerNode) nodeNameVsShardCount.remove(replica.getNodeName());
+             // if (count.thisCollectionNodes >= maxShardsPerNode) nodeNameVsShardCount.remove(replica.getNodeName());
             }
           }
         }
@@ -486,7 +486,7 @@ public class Assign {
       }
 
       int i = 0;
-      List<ReplicaPosition> result = new ArrayList<>();
+      List<ReplicaPosition> result = new ArrayList<>(assignRequest.numNrtReplicas + assignRequest.numPullReplicas + assignRequest.numTlogReplicas);
       for (String aShard : assignRequest.shardNames)
         for (Map.Entry<Replica.Type, Integer> e : ImmutableMap.of(Replica.Type.NRT, assignRequest.numNrtReplicas,
             Replica.Type.TLOG, assignRequest.numTlogReplicas,
