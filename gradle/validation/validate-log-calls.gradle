@@ -45,7 +45,10 @@ configure(subprojects.findAll { it.path.startsWith(':solr') }) {
 
       sourceFiles = files(sourceSets*.java)
     }
-  }
+ 
+    // Add log validation to per-project checks as well.
+    check.dependsOn validateLogCalls
+ }
 }
 
 class ValidateLogCallsTask extends DefaultTask {
