@@ -49,9 +49,6 @@ public class TestCodecLoadingDeadlock extends Assert {
 
   @Test
   public void testDeadlock() throws Exception {
-    LuceneTestCase.assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/LUCENE-6036)",
-      new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
-
     // pick random codec names for stress test in separate process:
     final Random rnd = RandomizedContext.current().getRandom();
     Set<String> avail;
