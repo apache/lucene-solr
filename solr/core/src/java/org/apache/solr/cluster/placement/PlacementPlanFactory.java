@@ -35,7 +35,7 @@ public interface PlacementPlanFactory {
    * {@link org.apache.solr.cloud.api.collections.RestoreCmd}, {@link org.apache.solr.cloud.api.collections.MigrateCmd}
    * as well as of {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd}.
    */
-  PlacementPlan createPlacementPlanAddReplicas(AddReplicasPlacementRequest request, Set<ReplicaPlacement> replicaPlacements);
+  PlacementPlan createPlacementPlan(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements);
 
   /**
    * <p>Creates a {@link ReplicaPlacement} to be passed to {@link PlacementPlan} factory methods.

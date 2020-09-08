@@ -150,14 +150,8 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
 
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, AttributeFetcher attributeFetcher,
+  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
                                         PlacementPlanFactory placementPlanFactory) throws PlacementException {
-    if (!(placementRequest instanceof AddReplicasPlacementRequest)) {
-      throw new PlacementException("This plugin only supports adding replicas, no support for " + placementRequest.getClass().getName());
-    }
-
-    final AddReplicasPlacementRequest request = (AddReplicasPlacementRequest) placementRequest;
-
     Set<Node> nodes = request.getTargetNodes();
     SolrCollection solrCollection = request.getCollection();
 
@@ -195,7 +189,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
       }
     }
 
-    return placementPlanFactory.createPlacementPlanAddReplicas(request, replicaPlacements);
+    return placementPlanFactory.createPlacementPlan(request, replicaPlacements);
   }
 
   private ImmutableSet<String> getZonesFromNodes(Set<Node> nodes, final AttributeValues attrValues) {

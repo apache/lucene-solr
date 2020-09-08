@@ -26,7 +26,7 @@ import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * <p>The internal class instantiating the configured {@link PlacementPluginFactory} and creating a {@link PlacementPlugin}
- * instance by passing the the factory the appropriate configuration created from the {@code <placementPluginFactory>}
+ * instance by passing to the factory the appropriate configuration created from the {@code <placementPluginFactory>}
  * element in {@code solr.xml}.
  *
  * <p>A single instance of {@link PlacementPlugin} is used for all placement computations and therefore must be reentrant.

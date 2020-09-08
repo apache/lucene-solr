@@ -59,17 +59,10 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
   }
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, AttributeFetcher attributeFetcher,
+  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
                                         PlacementPlanFactory placementPlanFactory) throws PlacementException {
-    // This plugin only supports Creating a collection.
-    if (!(placementRequest instanceof AddReplicasPlacementRequest)) {
-      throw new PlacementException("This toy plugin only supports adding replicas");
-    }
-
-    final AddReplicasPlacementRequest reqAddReplicas = (AddReplicasPlacementRequest) placementRequest;
-
-    final int totalReplicasPerShard = reqAddReplicas.getCountNrtReplicas() +
-        reqAddReplicas.getCountTlogReplicas() + reqAddReplicas.getCountPullReplicas();
+    final int totalReplicasPerShard = request.getCountNrtReplicas() +
+        request.getCountTlogReplicas() + request.getCountPullReplicas();
 
     if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
       throw new PlacementException("Cluster size too small for number of replicas per shard");
@@ -78,7 +71,7 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
     // Get number of cores on each Node
     TreeMultimap<Integer, Node> nodesByCores = TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
 
-    Set<Node> nodes = reqAddReplicas.getTargetNodes();
+    Set<Node> nodes = request.getTargetNodes();
 
     attributeFetcher.requestNodeCoreCount();
     attributeFetcher.fetchFrom(nodes);
@@ -93,13 +86,13 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
       nodesByCores.put(attrValues.getCoresCount(node).get(), node);
     }
 
-    Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * reqAddReplicas.getShardNames().size());
+    Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
 
     // Now place all replicas of all shards on nodes, by placing on nodes with the smallest number of cores and taking
     // into account replicas placed during this computation. Note that for each shard we must place replicas on different
     // nodes, when moving to the next shard we use the nodes sorted by their updated number of cores (due to replica
     // placements for previous shards).
-    for (String shardName : reqAddReplicas.getShardNames()) {
+    for (String shardName : request.getShardNames()) {
       // Assign replicas based on the sort order of the nodesByCores tree multimap to put replicas on nodes with less
       // cores first. We only need totalReplicasPerShard nodes given that's the number of replicas to place.
       // We assign based on the passed nodeEntriesToAssign list so the right nodes get replicas.
@@ -118,12 +111,12 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
         nodesByCores.put(coreCount + 1, node);
       }
 
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, reqAddReplicas.getCountNrtReplicas(), Replica.ReplicaType.NRT);
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, reqAddReplicas.getCountTlogReplicas(), Replica.ReplicaType.TLOG);
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, reqAddReplicas.getCountPullReplicas(), Replica.ReplicaType.PULL);
+      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountNrtReplicas(), Replica.ReplicaType.NRT);
+      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountTlogReplicas(), Replica.ReplicaType.TLOG);
+      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountPullReplicas(), Replica.ReplicaType.PULL);
     }
 
-    return placementPlanFactory.createPlacementPlanAddReplicas(reqAddReplicas, replicaPlacements);
+    return placementPlanFactory.createPlacementPlan(request, replicaPlacements);
   }
 
   private void placeReplicas(ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,

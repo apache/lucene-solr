@@ -45,39 +45,32 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
     }
   }
 
-  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, AttributeFetcher attributeFetcher,
+  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
                                         PlacementPlanFactory placementPlanFactory) throws PlacementException {
-    // This plugin only supports Creating a collection, and only one collection. Real code would be different...
-    if (!(placementRequest instanceof AddReplicasPlacementRequest)) {
-      throw new PlacementException("This plugin only supports adding replicas");
-    }
-
-    AddReplicasPlacementRequest reqAddReplicas = (AddReplicasPlacementRequest) placementRequest;
-
-    final int totalReplicasPerShard = reqAddReplicas.getCountNrtReplicas() +
-        reqAddReplicas.getCountTlogReplicas() + reqAddReplicas.getCountPullReplicas();
+    final int totalReplicasPerShard = request.getCountNrtReplicas() +
+        request.getCountTlogReplicas() + request.getCountPullReplicas();
 
     if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
       throw new PlacementException("Cluster size too small for number of replicas per shard");
     }
 
-    Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * reqAddReplicas.getShardNames().size());
+    Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
 
     // Now place randomly all replicas of all shards on available nodes
-    for (String shardName : reqAddReplicas.getShardNames()) {
+    for (String shardName : request.getShardNames()) {
       // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
       ArrayList<Node> nodesToAssign = new ArrayList<>(cluster.getLiveNodes());
       Collections.shuffle(nodesToAssign, new Random());
 
       placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
-          shardName, reqAddReplicas.getCountNrtReplicas(), Replica.ReplicaType.NRT);
+          shardName, request.getCountNrtReplicas(), Replica.ReplicaType.NRT);
       placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
-          shardName, reqAddReplicas.getCountTlogReplicas(), Replica.ReplicaType.TLOG);
+          shardName, request.getCountTlogReplicas(), Replica.ReplicaType.TLOG);
       placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
-          shardName, reqAddReplicas.getCountPullReplicas(), Replica.ReplicaType.PULL);
+          shardName, request.getCountPullReplicas(), Replica.ReplicaType.PULL);
     }
 
-    return placementPlanFactory.createPlacementPlanAddReplicas(reqAddReplicas, replicaPlacements);
+    return placementPlanFactory.createPlacementPlan(request, replicaPlacements);
   }
 
   private void placeForReplicaType(ArrayList<Node> nodesToAssign, PlacementPlanFactory placementPlanFactory,

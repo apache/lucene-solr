@@ -29,6 +29,10 @@ public interface Replica {
   ReplicaState getState();
 
   String getReplicaName();
+
+  /**
+   * The core name on disk
+   */
   String getCoreName();
 
   /**
@@ -38,7 +42,9 @@ public interface Replica {
 
   /**
    * The order of this enum is important: it allows plugin writers to treat replica types from the most to the least
-   * important...
+   * important if they so wish (for example if they're willing to accept the impossibility to place or place correctly
+   * a PULL replica, but want to make sure NRT replicas satisfy all the constraints. It's then better to place the more
+   * important replicas so if placement options are exhausted they impact replica types for which it miught be acceptable).
    */
   enum ReplicaType {
     NRT, TLOG, PULL

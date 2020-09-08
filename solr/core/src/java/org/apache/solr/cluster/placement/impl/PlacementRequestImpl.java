@@ -25,15 +25,15 @@ import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.cloud.DocCollection;
 
-public class AddReplicasPlacementRequestImpl implements AddReplicasPlacementRequest {
+public class PlacementRequestImpl implements PlacementRequest {
   private final SolrCollection solrCollection;
   private final Set<String> shardNames;
   private final Set<Node> targetNodes;
   private final EnumMap<Replica.ReplicaType, Integer> countReplicas = new EnumMap<>(Replica.ReplicaType.class);
 
-  private AddReplicasPlacementRequestImpl(SolrCollection solrCollection,
-                                          Set<String> shardNames, Set<Node> targetNodes,
-                                          int countNrtReplicas, int countTlogReplicas, int countPullReplicas) {
+  private PlacementRequestImpl(SolrCollection solrCollection,
+                               Set<String> shardNames, Set<Node> targetNodes,
+                               int countNrtReplicas, int countTlogReplicas, int countPullReplicas) {
     this.solrCollection = solrCollection;
     this.shardNames = shardNames;
     this.targetNodes = targetNodes;
@@ -83,8 +83,8 @@ public class AddReplicasPlacementRequestImpl implements AddReplicasPlacementRequ
    * Returns a {@link PlacementRequest} that can be consumed by a plugin based on an internal Assign.AssignRequest
    * for adding replicas + additional info (upon creation of a new collection or adding replicas to an existing one).
    */
-  static AddReplicasPlacementRequestImpl toPlacementRequest(Cluster cluster, DocCollection docCollection,
-                                                            Assign.AssignRequest assignRequest) throws Assign.AssignmentException {
+  static PlacementRequestImpl toPlacementRequest(Cluster cluster, DocCollection docCollection,
+                                                 Assign.AssignRequest assignRequest) throws Assign.AssignmentException {
     SolrCollection solrCollection = new SimpleClusterAbstractionsImpl.SolrCollectionImpl(docCollection);
     Set<String> shardNames = new HashSet<>(assignRequest.shardNames);
     if (shardNames.size() < 1) {
@@ -105,7 +105,7 @@ public class AddReplicasPlacementRequestImpl implements AddReplicasPlacementRequ
       }
     }
 
-    return new AddReplicasPlacementRequestImpl(solrCollection, shardNames, nodes,
+    return new PlacementRequestImpl(solrCollection, shardNames, nodes,
         assignRequest.numNrtReplicas, assignRequest.numTlogReplicas, assignRequest.numPullReplicas);
   }
 }

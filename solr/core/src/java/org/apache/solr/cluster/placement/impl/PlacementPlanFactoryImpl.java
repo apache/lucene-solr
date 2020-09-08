@@ -23,8 +23,8 @@ import java.util.Set;
 
 class PlacementPlanFactoryImpl implements PlacementPlanFactory {
     @Override
-    public PlacementPlan createPlacementPlanAddReplicas(AddReplicasPlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
-        return new PlacementPlanAddReplicasImpl(request, replicaPlacements);
+    public PlacementPlan createPlacementPlan(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
+        return new PlacementPlanImpl(request, replicaPlacements);
     }
 
     @Override

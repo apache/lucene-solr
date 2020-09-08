@@ -31,7 +31,7 @@ public interface SolrCollection {
   /**
    * Returns the {@link Shard} of the given name for that collection, if such a shard exists. Note that when a request
    * for adding replicas for a collection is received, it is possible that replicas need to be added for non existing
-   * shards (see {@link AddReplicasPlacementRequest#getShardNames()}. Non existing shards will not be returned by this
+   * shards (see {@link PlacementRequest#getShardNames()}. Non existing shards will not be returned by this
    * method. Only shards already existing will be returned.
    * @return {@code null} if the shard does not or does not yet exist for the collection.
    */

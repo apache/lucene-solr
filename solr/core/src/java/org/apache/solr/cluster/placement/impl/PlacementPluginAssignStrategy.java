@@ -54,7 +54,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
     Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(solrCloudManager);
 
-    AddReplicasPlacementRequestImpl placementRequest = AddReplicasPlacementRequestImpl.toPlacementRequest(cluster, collection, assignRequest);
+    PlacementRequestImpl placementRequest = PlacementRequestImpl.toPlacementRequest(cluster, collection, assignRequest);
 
     final PlacementPlan placementPlan;
     try {
