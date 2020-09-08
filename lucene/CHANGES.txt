@@ -122,6 +122,13 @@ Improvements
 
 * LUCENE-9313: Add SerbianAnalyzer based on the snowball stemmer. (Dragan Ivanovic)
 
+* LUCENE-9449: Enhance DocComparator to provide an iterator over competitive
+  documents when searching with "after". This iterator can quickly position
+  on the desired "after" document skipping all documents and segments before
+  "after". Also redesign numeric comparators to provide skipping functionality
+  by default. (Mayya Sharipova, Jim Ferenczi)
+
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
