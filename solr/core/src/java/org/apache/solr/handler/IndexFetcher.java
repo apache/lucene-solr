@@ -69,11 +69,13 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -225,14 +227,14 @@ public class IndexFetcher {
     }
   }
 
-  private static HttpClient createHttpClient(SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, boolean useCompression) {
-    final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
-    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
-    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
-    httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
-
-    return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getDefaultConnectionManager(), true);
-  }
+//  private static HttpClient createHttpClient(SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, boolean useCompression) {
+//    final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
+//    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
+//    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
+//    httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
+//
+//    return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getDefaultConnectionManager(), true);
+//  }
 
   public IndexFetcher(@SuppressWarnings({"rawtypes"})final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
     solrCore = sc;
@@ -1728,6 +1730,9 @@ public class IndexFetcher {
               return;
             }
             //if there is an error continue. But continue from the point where it got broken
+          } catch (Exception e) {
+            log.error("Exception fetching file", e);
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
           } finally {
             IOUtils.closeQuietly(is);
           }
@@ -1789,13 +1794,15 @@ public class IndexFetcher {
           //if everything is fine, write down the packet to the file
           file.write(buf, packetSize);
           bytesDownloaded += packetSize;
-          log.debug("Fetched and wrote {} bytes of file: {}", bytesDownloaded, fileName);
+          // nocommit
+          log.info("Fetched and wrote {} bytes of file: {}", bytesDownloaded, fileName);
           //errorCount is always set to zero after a successful packet
           errorCount = 0;
           if (bytesDownloaded >= size)
             return 0;
         }
       } catch (ReplicationHandlerException e) {
+        log.error("Exception fetching files", e);
         throw e;
       } catch (Exception e) {
         log.warn("Error in fetching file: {} (downloaded {} of {} bytes)",
@@ -1892,13 +1899,16 @@ public class IndexFetcher {
       NamedList response;
       InputStream is = null;
 
-      // TODO use shardhandler?
-
       try {
         QueryRequest req = new QueryRequest(params);
         req.setBasePath(masterUrl);
+        req.setMethod(SolrRequest.METHOD.POST);
+        req.setResponseParser(new InputStreamResponseParser("json"));
         response = solrClient.request(req);
         is = (InputStream) response.get("stream");
+        if (is == null) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Did not find inputstream in response");
+        }
         if (useInternalCompression) {
           is = new InflaterInputStream(is);
         }

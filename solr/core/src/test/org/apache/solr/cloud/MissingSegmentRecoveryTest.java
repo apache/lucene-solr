@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -39,9 +40,15 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Slow
+@Ignore // harden - do we end up having a good local index directory after trying to recover from corruption? Perhaps a race.
 public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   final String collection = getClass().getSimpleName();
   
   Replica leader;
@@ -49,10 +56,11 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.skipCommitOnClose", "false");
+    useFactory(null);
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    useFactory("solr.StandardDirectoryFactory");
   }
 
   @Before
@@ -75,6 +83,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     DocCollection state = getCollectionState(collection);
     leader = state.getLeader("shard1");
     replica = getRandomReplica(state.getSlice("shard1"), (r) -> leader != r);
+    log.info("leader={} replicaToCorrupt={}", leader.getName(), replica.getName());
   }
   
   @After

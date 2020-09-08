@@ -412,7 +412,6 @@ public class Http2SolrClient extends SolrClient {
               NamedList<Object> rsp;
               try {
                 InputStream is = getContentAsInputStream();
-                assert ObjectReleaseTracker.track(is);
                 rsp = processErrorsAndResponse(req, result.getResponse(), parser, is, getMediaType(), getEncoding(), isV2ApiRequest(solrRequest));
                 onComplete.onSuccess(rsp);
               } catch (Exception e) {
@@ -434,8 +433,6 @@ public class Http2SolrClient extends SolrClient {
         req.send(listener);
         Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
         InputStream is = listener.getInputStream();
-        // nocommit - track this again when streaming use is fixed
-        //assert ObjectReleaseTracker.track(is);
 
         ContentType contentType = getContentType(response);
         String mimeType = null;
@@ -589,6 +586,8 @@ public class Http2SolrClient extends SolrClient {
       if (streams != null) {
         hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
       }
+
+      System.out.println("FETCH FROM " + url + wparams.toQueryString());
 
       boolean isMultipart = streams != null && streams.size() > 1 && !hasNullStreamName;
 
@@ -810,7 +809,6 @@ public class Http2SolrClient extends SolrClient {
       if (shouldClose) {
         try {
           is.close();
-          assert ObjectReleaseTracker.release(is);
         } catch (IOException e) {
           // quitely
         }

@@ -29,7 +29,10 @@ import org.junit.BeforeClass;
 @LuceneTestCase.Nightly
 public class HdfsUnloadDistributedZkTest extends UnloadDistributedZkTest {
   private static MiniDFSCluster dfsCluster;
-  
+
+  public HdfsUnloadDistributedZkTest() throws Exception {
+  }
+
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());

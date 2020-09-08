@@ -57,7 +57,8 @@ import org.junit.Test;
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
 
-  public UnloadDistributedZkTest() {
+
+  public UnloadDistributedZkTest() throws Exception {
     numJettys = 4;
     sliceCount = 2;
   }
@@ -65,7 +66,8 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
   @BeforeClass
   public static void beforeUnloadDistributedZkTest() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
-
+    System.setProperty("solr.skipCommitOnClose", "false");
+    useFactory(null);
   }
 
   protected String getSolrXml() {
@@ -161,6 +163,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
    * @throws Exception on any problem
    */
   @Test
+  @Ignore // unload is not correct here, we should delete the replica
   public void testCoreUnloadAndLeaders() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
 
@@ -211,7 +214,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
             .setNode(cluster.getJettySolrRunner(2).getNodeName())
             .process(cloudClient).isSuccess());
 
-    waitForRecoveriesToFinish("unloadcollection");
+    cluster.waitForActiveCollection("unloadcollection", 1, 3);
 
     // so that we start with some versions when we reload...
     TestInjection.skipIndexWriterCommitOnClose = true;
@@ -229,6 +232,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     //collectionClient.commit();
 
     // unload the leader
+    leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
     try (Http2SolrClient collectionClient = SolrTestCaseJ4.getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
 
       Unload unloadCmd = new Unload(false);
@@ -240,16 +244,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
 //    Thread.currentThread().sleep(500);
 //    printLayout();
 
-    int tries = 50;
-    while (leaderProps.getCoreUrl().equals(zkStateReader.getLeaderUrl("unloadcollection", "shard1", 15000))) {
-      Thread.sleep(100);
-      if (tries-- == 0) {
-        fail("Leader never changed");
-      }
-    }
-
-    // ensure there is a leader
-    zkStateReader.getLeaderRetry("unloadcollection", "shard1");
+    cluster.waitForActiveCollection("unloadcollection", 1, 2);
 
     try (Http2SolrClient addClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(1).getBaseUrl() + "/unloadcollection_shard1_replica2", 30000, 90000)) {
 
@@ -267,7 +262,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
             .setNode(cluster.getJettySolrRunner(3).getNodeName())
             .process(cloudClient).isSuccess());
 
-    waitForRecoveriesToFinish("unloadcollection");
+    cluster.waitForActiveCollection("unloadcollection", 1, 3);
 
     // unload the leader again
     leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
@@ -277,15 +272,8 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
       unloadCmd.setCoreName(leaderProps.getCoreName());
       collectionClient.request(unloadCmd);
     }
-    tries = 50;
-    while (leaderProps.getCoreUrl().equals(zkStateReader.getLeaderUrl("unloadcollection", "shard1", 15000))) {
-      Thread.sleep(100);
-      if (tries-- == 0) {
-        fail("Leader never changed");
-      }
-    }
 
-    zkStateReader.getLeaderRetry("unloadcollection", "shard1");
+    cluster.waitForActiveCollection("unloadcollection", 1, 2);
 
     // set this back
     TestInjection.skipIndexWriterCommitOnClose = false; // set this back
@@ -296,7 +284,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
             .setNode(leaderProps.getNodeName())
             .process(cloudClient).isSuccess());
 
-    waitForRecoveriesToFinish("unloadcollection");
+    cluster.waitForActiveCollection("unloadcollection", 1, 3);
 
     long found1, found3;
 

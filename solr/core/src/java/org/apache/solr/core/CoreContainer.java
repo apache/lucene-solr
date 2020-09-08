@@ -1529,8 +1529,8 @@ public class CoreContainer implements Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
       try {
-        df.release(dir);
         df.doneWithDirectory(dir);
+        df.release(dir);
       } catch (IOException e) {
         SolrException.log(log, e);
       }

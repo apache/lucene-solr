@@ -76,8 +76,8 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
         }
       }
     } finally {
-      for (int shardNum = 0 ; shardNum < NUM_SHARDS ; ++shardNum) {
-        clients.get(shardNum).close();
+      for (SolrClient client : clients) {
+        client.close();
       }
     }
   }

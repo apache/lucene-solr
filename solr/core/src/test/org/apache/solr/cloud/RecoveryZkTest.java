@@ -45,6 +45,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    useFactory(null);
     System.setProperty("solr.skipCommitOnClose", "false");
     configureCluster(2).formatZk(true)
         .addConfig("conf", configset("cloud-minimal"))
