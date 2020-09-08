@@ -27,6 +27,7 @@ import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -49,7 +50,7 @@ class TermVectorsConsumer extends TermsHash {
   private TermVectorsConsumerPerField[] perFields = new TermVectorsConsumerPerField[1];
 
   TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
-    super(docWriter, false, null);
+    super(docWriter, Counter.newCounter(), null);
     this.docWriter = docWriter;
   }
 
@@ -84,7 +85,7 @@ class TermVectorsConsumer extends TermsHash {
 
   void initTermVectorsWriter() throws IOException {
     if (writer == null) {
-      IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.bytesUsed()));
+      IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.ramBytesUsed()));
       writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegmentInfo(), context);
       lastDocID = 0;
     }

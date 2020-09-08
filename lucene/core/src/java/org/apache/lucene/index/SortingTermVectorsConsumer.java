@@ -33,7 +33,7 @@ import org.apache.lucene.util.IOUtils;
 final class SortingTermVectorsConsumer extends TermVectorsConsumer {
   TrackingTmpOutputDirectoryWrapper tmpDirectory;
 
-  public SortingTermVectorsConsumer(DocumentsWriterPerThread docWriter) {
+  SortingTermVectorsConsumer(DocumentsWriterPerThread docWriter) {
     super(docWriter);
   }
 
@@ -71,7 +71,7 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
   @Override
   void initTermVectorsWriter() throws IOException {
     if (writer == null) {
-      IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.bytesUsed()));
+      IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.ramBytesUsed()));
       tmpDirectory = new TrackingTmpOutputDirectoryWrapper(docWriter.directory);
       writer = docWriter.codec.termVectorsFormat().vectorsWriter(tmpDirectory, docWriter.getSegmentInfo(), context);
       lastDocID = 0;
