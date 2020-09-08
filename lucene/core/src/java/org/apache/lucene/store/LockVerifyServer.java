@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.SuppressForbidden;
@@ -39,9 +40,12 @@ import org.apache.lucene.util.SuppressForbidden;
  */
 
 public class LockVerifyServer {
+  
+  // available for tests only:
+  static final AtomicInteger PORT = new AtomicInteger(-1);
 
   @SuppressForbidden(reason = "System.out required: command line tool")
-  public static void main(String[] args) throws Exception {
+  public static void main(String... args) throws Exception {
 
     if (args.length != 2) {
       System.out.println("Usage: java org.apache.lucene.store.LockVerifyServer bindToIp clients\n");
@@ -60,7 +64,7 @@ public class LockVerifyServer {
       System.out.println("Listening on " + localAddr + "...");
       
       // we set the port as a sysprop, so the ANT task can read it. For that to work, this server must run in-process:
-      System.setProperty("lockverifyserver.port", Integer.toString(localAddr.getPort()));
+      PORT.set(localAddr.getPort());
       
       final Object localLock = new Object();
       final int[] lockedID = new int[1];
@@ -139,8 +143,8 @@ public class LockVerifyServer {
         t.join();
       }
       
-      // cleanup sysprop
-      System.clearProperty("lockverifyserver.port");
+      // cleanup port number
+      PORT.set(-1);
 
       System.out.println("Server terminated.");
     }
