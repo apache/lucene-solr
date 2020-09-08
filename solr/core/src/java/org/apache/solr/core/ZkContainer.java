@@ -198,38 +198,35 @@ public class ZkContainer implements Closeable {
   public static volatile Predicate<CoreDescriptor> testing_beforeRegisterInZk;
 
   public void registerInZk(final SolrCore core, boolean skipRecovery) {
+    MDCLoggingContext.setCore(core);
     log.info("Register in ZooKeeper core={} skipRecovery={}", core.getName(), skipRecovery);
     CoreDescriptor cd = core.getCoreDescriptor(); // save this here - the core may not have it later
-    Runnable r = () -> {
-        MDCLoggingContext.setCore(core);
-        try {
-          try {
-            if (testing_beforeRegisterInZk != null) {
-              boolean didTrigger = testing_beforeRegisterInZk.test(cd);
-              if (log.isDebugEnabled()) {
-                log.debug("{} pre-zk hook", (didTrigger ? "Ran" : "Skipped"));
-              }
-            }
-            if (!core.getCoreContainer().isShutDown()) {
-              zkController.register(core.getName(), cd, skipRecovery);
-            }
-          } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
-            SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-            try {
-              zkController.publish(cd, Replica.State.DOWN);
-            } catch (Exception e1) {
-              ParWork.propegateInterrupt(e);
-              exp.addSuppressed(e1);
-            }
-            throw exp;
-          }
-        } finally {
-          MDCLoggingContext.clear();
-        }
-      };
-     ParWork.getMyPerThreadExecutor().submit(r); // ### expert usage
 
+    try {
+      try {
+        if (testing_beforeRegisterInZk != null) {
+          boolean didTrigger = testing_beforeRegisterInZk.test(cd);
+          if (log.isDebugEnabled()) {
+            log.debug("{} pre-zk hook", (didTrigger ? "Ran" : "Skipped"));
+          }
+        }
+        if (!core.getCoreContainer().isShutDown()) {
+          zkController.register(core.getName(), cd, skipRecovery);
+        }
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
+        SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        try {
+          zkController.publish(cd, Replica.State.DOWN);
+        } catch (Exception e1) {
+          ParWork.propegateInterrupt(e);
+          exp.addSuppressed(e1);
+        }
+        throw exp;
+      }
+    } finally {
+      MDCLoggingContext.clear();
+    }
   }
   
   public ZkController getZkController() {

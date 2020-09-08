@@ -116,7 +116,6 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     jetty.stop();
-    cluster.waitForJettyToStop(jetty);
     
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
