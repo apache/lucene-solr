@@ -292,7 +292,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     }
     
     private int waitForTrigger() throws InterruptedException {
-      return waitForTrigger(1000);
+      return waitForTrigger(2000);
     }
 
     private int waitForTrigger(int waitTime) throws InterruptedException {
@@ -300,7 +300,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
         if (triggered.get() > 0) {
           return triggered.getAndSet(0);
         }
-
+        // TODO: these waits are nasty, we should use wait/notify type stuff
         wait(waitTime);
         return triggered.getAndSet(0);
       }
