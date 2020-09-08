@@ -29,7 +29,7 @@ import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.bkd.BKDWriter;
+import org.apache.lucene.util.bkd.BKDConfig;
 
 /** 
  * Access to indexed numeric values.
@@ -87,10 +87,10 @@ public abstract class PointValues {
   public static final int MAX_NUM_BYTES = 16;
 
   /** Maximum number of dimensions */
-  public static final int MAX_DIMENSIONS = BKDWriter.MAX_DIMS;
+  public static final int MAX_DIMENSIONS = BKDConfig.MAX_DIMS;
 
   /** Maximum number of index dimensions */
-  public static final int MAX_INDEX_DIMENSIONS = BKDWriter.MAX_INDEX_DIMS;
+  public static final int MAX_INDEX_DIMENSIONS = BKDConfig.MAX_INDEX_DIMS;
 
   /** Return the cumulated number of points across all leaves of the given
    * {@link IndexReader}. Leaves that do not have points for the given field
