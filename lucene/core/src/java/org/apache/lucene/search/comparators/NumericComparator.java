@@ -47,7 +47,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
     protected boolean hitsThresholdReached;
     protected boolean queueFull;
 
-    public NumericComparator(String field, T missingValue, boolean reverse, int sortPos, int bytesCount) {
+    protected NumericComparator(String field, T missingValue, boolean reverse, int sortPos, int bytesCount) {
         this.field = field;
         this.missingValue = missingValue;
         this.reverse = reverse;
