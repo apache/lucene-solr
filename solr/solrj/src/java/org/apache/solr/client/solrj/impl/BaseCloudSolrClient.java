@@ -1076,10 +1076,13 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   protected void waitForClusterStateUpdates(SolrRequest request, NamedList<Object> resp) {
+
     // TODO - better check that this is a collections api call
     if (request.getParams() == null || request.getParams().get(CoreAdminParams.ACTION) == null) {
       return;
     }
+
+    String action = request.getParams().get(CoreAdminParams.ACTION);
 
     String collection = request.getParams().get("collection");
     if (collection == null) {
@@ -1089,8 +1092,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       Integer ver = (Integer) resp.get("csver");
       if (ver != null) {
         try {
-          DocCollection coll = getZkStateReader().getClusterState().getCollection(collection);
-          log.info("Wait for catch up to server state {} ours is {}", ver, coll == null ? -1 : coll.getZNodeVersion());
+          log.info("Wait for catch up to server state");
           getZkStateReader().waitForState(collection, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
             if (collectionState != null && collectionState.getZNodeVersion() >= ver) {
               return true;
