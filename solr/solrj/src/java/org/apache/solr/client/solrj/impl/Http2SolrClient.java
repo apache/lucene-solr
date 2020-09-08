@@ -591,8 +591,6 @@ public class Http2SolrClient extends SolrClient {
         hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
       }
 
-      System.out.println("FETCH FROM " + url + wparams.toQueryString());
-
       boolean isMultipart = streams != null && streams.size() > 1 && !hasNullStreamName;
 
       HttpMethod method = SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
