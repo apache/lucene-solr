@@ -879,14 +879,9 @@ public class ZkStateReader implements SolrCloseable {
     //closeTracker.close();
     this.closed = true;
     try {
-      waitLatches.forEach((w) -> w.countDown());
-
       if (closeClient) {
         IOUtils.closeQuietly(zkClient);
       }
-
-      waitLatches.forEach((w) -> w.countDown());
-
     } finally {
       assert ObjectReleaseTracker.release(this);
     }
@@ -1847,8 +1842,8 @@ public class ZkStateReader implements SolrCloseable {
     final DocCollectionAndLiveNodesWatcherWrapper wrapper
         = new DocCollectionAndLiveNodesWatcherWrapper(collection, watcher);
 
-//    removeDocCollectionWatcher(collection, wrapper);
-//    removeLiveNodesListener(wrapper);
+    removeDocCollectionWatcher(collection, wrapper);
+    removeLiveNodesListener(wrapper);
   }
 
   /**
@@ -1866,25 +1861,24 @@ public class ZkStateReader implements SolrCloseable {
     if (log.isDebugEnabled()) log.debug("remove watcher for collection {}", collection);
     AtomicBoolean reconstructState = new AtomicBoolean(false);
     synchronized (collectionWatches) {
-//      collectionWatches.compute(collection, (k, v) -> {
-//        if (v == null) return null;
-//        v.stateWatchers.remove(watcher);
-//        if (v.canBeRemoved()) {
-//          // nocommit
-////          log.info("no longer watch collection {}", collection);
-////          watchedCollectionStates.remove(collection);
-////          lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
-////          reconstructState.set(true);
-//          return null;
-//        }
-//        return v;
-//      });
+      collectionWatches.compute(collection, (k, v) -> {
+        if (v == null) return null;
+        v.stateWatchers.remove(watcher);
+        if (v.canBeRemoved()) {
+          log.info("no longer watch collection {}", collection);
+          watchedCollectionStates.remove(collection);
+          lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
+          reconstructState.set(true);
+          return null;
+        }
+        return v;
+      });
     }
-//    if (reconstructState.get()) {
-//      synchronized (getUpdateLock()) {
-//        constructState(Collections.emptySet());
-//      }
-//    }
+    if (reconstructState.get()) {
+      synchronized (getUpdateLock()) {
+        constructState(Collections.emptySet());
+      }
+    }
   }
 
   /* package-private for testing */
@@ -1990,7 +1984,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private void notifyStateWatchers(String collection, DocCollection collectionState) {
     try {
-      notifications.submit(new Notification(collection, collectionState));
+      notifications.submit(new Notification(collection, collectionState, collectionWatches));
     } catch (RejectedExecutionException e) {
       if (closed == false) {
         log.error("Couldn't run collection notifications for {}", collection, e);
@@ -2003,9 +1997,12 @@ public class ZkStateReader implements SolrCloseable {
     final String collection;
     final DocCollection collectionState;
 
-    private Notification(String collection, DocCollection collectionState) {
+    private final ConcurrentHashMap<String,CollectionWatch<DocCollectionWatcher>> collectionWatches;
+
+    public Notification(String collection, DocCollection collectionState, ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches) {
       this.collection = collection;
       this.collectionState = collectionState;
+      this.collectionWatches = collectionWatches;
     }
 
     @Override
