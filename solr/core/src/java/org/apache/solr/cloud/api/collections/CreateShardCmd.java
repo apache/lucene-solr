@@ -30,7 +30,6 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloudConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +52,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void call(ClusterState clusterState, CloudConfig cloudConfig, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
@@ -103,7 +102,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     final NamedList addResult = new NamedList();
     try {
       //ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, () -> {
-      ocmh.addReplica(clusterState, cloudConfig, addReplicasProps, addResult, () -> {
+      ocmh.addReplica(clusterState, addReplicasProps, addResult, () -> {
         Object addResultFailure = addResult.get("failure");
         if (addResultFailure != null) {
           SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
@@ -124,7 +123,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     } catch (Assign.AssignmentException e) {
       // clean up the slice that we created
       ZkNodeProps deleteShard = new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName, ASYNC, async);
-      new DeleteShardCmd(ocmh).call(clusterState, cloudConfig, deleteShard, results);
+      new DeleteShardCmd(ocmh).call(clusterState, deleteShard, results);
       throw e;
     }
 

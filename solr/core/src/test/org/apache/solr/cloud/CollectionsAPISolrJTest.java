@@ -662,6 +662,43 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     Number down = (Number) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "replicas", "down");
     assertTrue("should be some down replicas, but there were none in shard1:" + rsp, down.intValue() > 0);
   }
+  
+  @Test
+  public void testColStatusCollectionName() throws Exception {
+    final String[] collectionNames = {"collectionStatusTest_1", "collectionStatusTest_2"};
+    for (String collectionName : collectionNames) {
+      CollectionAdminRequest.createCollection(collectionName, "conf2", 1, 1)
+      .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(collectionName, 1, 1);
+    }
+    // assert only one collection is returned using the solrj colstatus interface
+    CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(collectionNames[0]);
+    CollectionAdminResponse rsp = req.process(cluster.getSolrClient());
+    assertNotNull(rsp.getResponse().get(collectionNames[0]));
+    assertNull(rsp.getResponse().get(collectionNames[1]));
+   
+    req = CollectionAdminRequest.collectionStatus(collectionNames[1]);
+    rsp = req.process(cluster.getSolrClient());
+    assertNotNull(rsp.getResponse().get(collectionNames[1]));
+    assertNull(rsp.getResponse().get(collectionNames[0]));
+    
+    // assert passing null collection fails
+    expectThrows(NullPointerException.class, 
+        "Passing null to collectionStatus should result in an NPE",
+        () -> CollectionAdminRequest.collectionStatus(null));
+    
+    // assert passing non-existent collection returns no collections
+    req = CollectionAdminRequest.collectionStatus("doesNotExist");
+    rsp = req.process(cluster.getSolrClient());
+    assertNull(rsp.getResponse().get(collectionNames[0]));
+    assertNull(rsp.getResponse().get(collectionNames[1]));
+    
+    // assert collectionStatuses returns all collections
+    req = CollectionAdminRequest.collectionStatuses();
+    rsp = req.process(cluster.getSolrClient());
+    assertNotNull(rsp.getResponse().get(collectionNames[1]));
+    assertNotNull(rsp.getResponse().get(collectionNames[0]));
+  }
 
   private static final int NUM_DOCS = 10;
 

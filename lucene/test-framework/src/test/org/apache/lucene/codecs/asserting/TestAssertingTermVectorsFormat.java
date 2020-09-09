@@ -22,7 +22,12 @@ import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 /** Test AssertingTermVectorsFormat directly */
 public class TestAssertingTermVectorsFormat extends BaseTermVectorsFormatTestCase {
   private final Codec codec = new AssertingCodec();
-  
+
+  @Override
+  protected Class<? extends Throwable> getReadPastLastPositionExceptionClass() {
+    return AssertionError.class;
+  }
+
   @Override
   protected Codec getCodec() {
     return codec;
