@@ -20,6 +20,7 @@
 
 plugins {
   id 'base'
+  id 'distribution'
 }
 
 description = 'Solr packaging'
@@ -64,79 +65,69 @@ dependencies {
   server project(path: ":solr:server", configuration: "packaging")
 }
 
-task toDir(type: Sync) {
-  from(project(":solr").projectDir, {
-    include "bin/**"
-    include "licenses/**"
-    exclude "licenses/README.committers.txt"
-    include "CHANGES.txt"
-    include "LICENSE.txt"
-    include "NOTICE.txt"
-    include "README.md"
-  })
+distributions {
+  main {
+    distributionBaseName = 'solr'
+    contents {
+      from(project(":solr").projectDir, {
+        include "bin/**"
+        include "licenses/**"
+        exclude "licenses/README.committers.txt"
+        include "CHANGES.txt"
+        include "LICENSE.txt"
+        include "NOTICE.txt"
+        include "README.md"
+      })
 
-  from(project(":lucene").projectDir, {
-    include "CHANGES.txt"
-    rename { file -> 'LUCENE_CHANGES.txt' }
-  })
+      from(project(":lucene").projectDir, {
+        include "CHANGES.txt"
+        rename { file -> 'LUCENE_CHANGES.txt' }
+      })
 
-  from(configurations.contrib, {
-    into "contrib"
-  })
+      from(configurations.contrib, {
+        into "contrib"
+      })
 
-  from(configurations.distSolr, {
-    into "dist"
-  })
+      from(configurations.distSolr, {
+        into "dist"
+      })
 
-  from(configurations.distSolrj - configurations.distSolr, {
-    into "dist/solrj-lib"
-  })
+      from(configurations.distSolrj - configurations.distSolr, {
+        into "dist/solrj-lib"
+      })
 
-  from(configurations.example, {
-    into "example"
-  })
+      from(configurations.example, {
+        into "example"
+      })
 
-  from(configurations.server, {
-    into "server"
-  })
+      from(configurations.server, {
+        into "server"
+      })
 
-  // docs/   - TODO: this is assembled via XSLT... leaving out for now.
-
-  into distDir
-
-  doLast {
-    logger.lifecycle "Solr distribution assembled under: ${distDir}"
+      // docs/   - TODO: this is assembled via XSLT... leaving out for now.
+    }
   }
 }
 
-task toTgz(type: Tar) {
-  description "Assemble Solr distribution tarball"
-  group "build"
-
-  dependsOn toDir
-  
-  archiveBaseName = "solr"
-  from(toDir.outputs) {
-    filesMatching(["**/bin/*", "**/*.sh"]) {
-      setMode 0755
-    }
-  }
-  into "solr-${version}/"
-  destinationDirectory = buildDir
+distTar {
   compression = Compression.GZIP
+  // from(toDir.outputs) {
+  //  filesMatching(["**/bin/*", "**/*.sh"]) {
+  //    setMode 0755
+  //   }
+  // }
+}
 
-  doLast {
-    logger.lifecycle "Solr distribution tarball assembled at: " + archiveFile.get()
-  }
+installDist {
+  into distDir
 }
 
 task dev(type: Copy) {
   description "Assemble Solr distribution into 'development' folder at ${devDir}"
   group "build"
 
-  from toDir.outputs
+  from installDist.outputs
   into devDir
 }
 
-assemble.dependsOn toDir
-
+assemble.dependsOn installDist
