@@ -22,7 +22,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -143,7 +142,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
                          boolean isZombie, RetryListener listener) {
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
-    CompletableFuture<NamedList<Object>> future = getClient(baseUrl).requestAsync(req.getRequest(), null);
+    CompletableFuture<NamedList<Object>> future = getClient(baseUrl).requestAsync(req.getRequest());
     future.whenComplete((result, throwable) -> {
       if (!future.isCompletedExceptionally()) {
         onSuccessfulRequest(result, baseUrl, rsp, isZombie, listener);

@@ -33,11 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -376,7 +372,8 @@ public abstract class LBSolrClient extends SolrClient {
    * in the exact order of the server list. This method is similar to {@link LBSolrClient#request(Req)} except that it
    * runs asynchronously.
    *
-   * This method is currently only implemented in the LBHttp2SolrClient.
+   * This method is currently only implemented in the {@link LBHttp2SolrClient}. For other clients,
+   * use {@link LBSolrClient#requestAsync(Req, ExecutorService)}.
    *
    * @param req contains both the request as well as the list of servers to query
    *
@@ -387,6 +384,24 @@ public abstract class LBSolrClient extends SolrClient {
    */
   public CompletableFuture<Rsp> requestAsync(Req req) {
     throw new UnsupportedOperationException("Async requests not supported on this Solr Client.");
+  }
+
+  /**
+   * Asynchronously query a server from the list of servers provided in the Req parameter. Servers are queried
+   * in the exact order of the server list. This method is similar to {@link LBSolrClient#request(Req)} except that it
+   * runs asynchronously. {@link LBHttp2SolrClient} also supports making async requests without an executor service
+   * via {@link LBHttp2SolrClient#requestAsync(Req)}.
+   *
+   * @param req contains both the request as well as the list of servers to query
+   * @param executor the executor service that submits the request
+   *
+   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports cancelling requests via
+   * {@link CompletableFuture#cancel(boolean)}, adding callbacks/error handling using {@link CompletableFuture#whenComplete(BiConsumer)}
+   * and {@link CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture functionality. Will
+   * complete exceptionally in case of either an {@link IOException} or {@link SolrServerException} during the request.
+   */
+  public CompletableFuture<Rsp> requestAsync(Req req, ExecutorService executor) {
+    return this.asyncExecutorCall(() -> this.request(req), executor);
   }
 
   /**

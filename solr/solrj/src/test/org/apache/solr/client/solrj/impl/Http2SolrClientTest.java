@@ -611,7 +611,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   private void makeRequest(Http2SolrClient client, SolrRequest<?> req, boolean useAsyncClient) throws Exception {
     if (useAsyncClient) {
       try {
-        client.requestAsync(req, null).get();
+        client.requestAsync(req).get();
       } catch (ExecutionException e) {}
     } else {
       try {

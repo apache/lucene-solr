@@ -40,7 +40,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -604,14 +603,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         if (isAsyncRequest) {
           reqFuture = getLbClient().requestAsync(lbRequest);
         } else {
-          reqFuture = new CompletableFuture<>();
-          threadPool.submit(() -> {
-            try {
-              reqFuture.complete(getLbClient().request(lbRequest));
-            } catch (Exception e) {
-              reqFuture.completeExceptionally(e);
-            }
-          });
+          reqFuture = getLbClient().requestAsync(lbRequest, threadPool);
         }
         CompletableFuture<LBSolrClient.Rsp> future = reqFuture.whenComplete((result, error) -> {
           if (!reqFuture.isCompletedExceptionally()) {
