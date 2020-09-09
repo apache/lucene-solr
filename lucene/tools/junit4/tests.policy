@@ -71,6 +71,9 @@ grant {
   permission java.lang.RuntimePermission "getClassLoader";
   permission java.lang.RuntimePermission "setContextClassLoader";
 
+  // TestLockFactoriesMultiJVM opens a random port on 127.0.0.1 (port 0 = ephemeral port range):
+  permission java.net.SocketPermission "127.0.0.1:0", "accept,listen,resolve";
+
   // read access to all system properties:
   permission java.util.PropertyPermission "*", "read";
   // write access to only these:
