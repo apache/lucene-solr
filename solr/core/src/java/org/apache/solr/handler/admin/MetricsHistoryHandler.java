@@ -230,7 +230,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           TimeUnit.MILLISECONDS);
       checkSystemCollection();
     }
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   // check that .system exists
@@ -617,15 +617,14 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     if (log.isDebugEnabled()) {
       log.debug("Closing {}", hashCode());
     }
-
+    collectService.shutdownNow();
     try (ParWork closer = new ParWork(this)) {
       closer.collect(factory);
-      closer.addCollect();
+      closer.collect(knownDbs.values());
       closer.collect(collectService);
     }
-
     knownDbs.clear();
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   public enum Cmd {
