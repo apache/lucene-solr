@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+@LuceneTestCase.SuppressFileSystems("*")
 public class TestLockFactoriesMultiJVM extends LuceneTestCase {
 
   @SuppressForbidden(reason = "ProcessBuilder only allows to redirect to java.io.File")
