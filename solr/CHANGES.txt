@@ -120,6 +120,8 @@ Other Changes
 
 * SOLR-14783: Remove Data Import Handler (DIH), previously deprecated (Alexandre Rafalovitch)
 
+* SOLR-14846: Backup/Restore classes no longer take Optional method parameters and will accept nulls instead. (Mike Drob)
+
 
 Bug Fixes
 ---------------------
