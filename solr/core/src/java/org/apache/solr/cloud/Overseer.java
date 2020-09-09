@@ -451,9 +451,12 @@ public class Overseer implements SolrCloseable {
         }
 
         for (Slice slice : slicesMap.values()) {
-          Slice oldSlice = oldDoc.getSlicesMap().get(slice.getName());
+          Slice oldSlice = null;
+          if (oldDoc.getSlicesMap() != null) {
+            oldSlice = oldDoc.getSlicesMap().get(slice.getName());
+          }
           Map<String,Replica> existingReplicas;
-          if (oldSlice != null) {
+          if (oldSlice != null && oldSlice.getReplicasMap() != null) {
             existingReplicas = new HashMap<>(oldSlice.getReplicasMap());
           } else {
             existingReplicas = new HashMap<>();
