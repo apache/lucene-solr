@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
@@ -48,6 +49,7 @@ class TermVectorsConsumer extends TermsHash {
   private int numVectorFields;
   int lastDocID;
   private TermVectorsConsumerPerField[] perFields = new TermVectorsConsumerPerField[1];
+  Accountable accountable = Accountable.NULL_ACCOUNTABLE;
 
   TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
     super(docWriter, Counter.newCounter(), null);
@@ -66,9 +68,6 @@ class TermVectorsConsumer extends TermsHash {
         writer.finish(state.fieldInfos, numDocs);
       } finally {
         IOUtils.close(writer);
-        writer = null;
-        lastDocID = 0;
-        hasVectors = false;
       }
     }
   }
@@ -88,6 +87,7 @@ class TermVectorsConsumer extends TermsHash {
       IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.ramBytesUsed()));
       writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegmentInfo(), context);
       lastDocID = 0;
+      accountable = writer;
     }
   }
 
@@ -122,13 +122,10 @@ class TermVectorsConsumer extends TermsHash {
 
   @Override
   public void abort() {
-    hasVectors = false;
     try {
       super.abort();
     } finally {
       IOUtils.closeWhileHandlingException(writer);
-      writer = null;
-      lastDocID = 0;
       reset();
     }
   }
@@ -159,4 +156,5 @@ class TermVectorsConsumer extends TermsHash {
     resetFields();
     numVectorFields = 0;
   }
+
 }

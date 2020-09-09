@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash.MaxBytesLengthExceededException;
@@ -60,6 +62,8 @@ final class DefaultIndexingChain extends DocConsumer {
   final TermsHash termsHash;
   // Writes stored fields
   final StoredFieldsConsumer storedFieldsConsumer;
+  final TermVectorsConsumer termVectorsWriter;
+
 
   // NOTE: I tried using Hash Map<String,PerField>
   // but it was ~2% slower on Wiki and Geonames with Java
@@ -78,8 +82,6 @@ final class DefaultIndexingChain extends DocConsumer {
     this.docWriter = docWriter;
     this.fieldInfos = docWriter.getFieldInfosBuilder();
     this.infoStream = docWriter.getIndexWriterConfig().getInfoStream();
-
-    final TermsHash termVectorsWriter;
     if (docWriter.getSegmentInfo().getIndexSort() == null) {
       storedFieldsConsumer = new StoredFieldsConsumer(docWriter.codec, docWriter.directory, docWriter.getSegmentInfo());
       termVectorsWriter = new TermVectorsConsumer(docWriter);
@@ -774,7 +776,13 @@ final class DefaultIndexingChain extends DocConsumer {
 
   @Override
   public long ramBytesUsed() {
-    return bytesUsed.get() + storedFieldsConsumer.ramBytesUsed();
+    return bytesUsed.get() + storedFieldsConsumer.accountable.ramBytesUsed()
+        + termVectorsWriter.accountable.ramBytesUsed();
+  }
+
+  @Override
+  public Collection<Accountable> getChildResources() {
+    return List.of(storedFieldsConsumer.accountable, termVectorsWriter.accountable);
   }
 
   /** NOTE: not static: accesses at least docState, termsHash. */

@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
 
 class StoredFieldsConsumer {
@@ -30,6 +31,7 @@ class StoredFieldsConsumer {
   final Directory directory;
   final SegmentInfo info;
   StoredFieldsWriter writer;
+  Accountable accountable = Accountable.NULL_ACCOUNTABLE;
   private int lastDoc;
 
   StoredFieldsConsumer(Codec codec, Directory directory, SegmentInfo info) {
@@ -42,6 +44,7 @@ class StoredFieldsConsumer {
   protected void initStoredFieldsWriter() throws IOException {
     if (writer == null) { // TODO can we allocate this in the ctor? we call start document for every doc anyway
       this.writer = codec.storedFieldsFormat().fieldsWriter(directory, info, IOContext.DEFAULT);
+      accountable = writer;
     }
   }
 
@@ -76,18 +79,10 @@ class StoredFieldsConsumer {
       writer.finish(state.fieldInfos, state.segmentInfo.maxDoc());
     } finally {
       IOUtils.close(writer);
-      writer = null;
     }
   }
 
   void abort() {
-    if (writer != null) {
-      IOUtils.closeWhileHandlingException(writer);
-      writer = null;
-    }
-  }
-
-  long ramBytesUsed() {
-    return writer == null ? 0 : writer.ramBytesUsed();
+    IOUtils.closeWhileHandlingException(writer);
   }
 }

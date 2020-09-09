@@ -181,4 +181,6 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
     assert fieldCount == numFields;
     writer.finishDocument();
   }
+
+
 }
