@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SuppressForbidden;
 
+@LuceneTestCase.SuppressFileSystems("*")
 public class TestStressLockFactories extends LuceneTestCase {
   
   @SuppressForbidden(reason = "ProcessBuilder only allows to redirect to java.io.File")
