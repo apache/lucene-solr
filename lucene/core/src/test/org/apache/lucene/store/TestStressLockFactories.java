@@ -156,7 +156,7 @@ public class TestStressLockFactories extends LuceneTestCase {
   private static LockClient newLockClient(Class<? extends LockFactory> impl,
       int delay, int rounds, Path dir,
       InetSocketAddress addr, int id) {
-    return (id % 4 == 0)
+    return (id % 2 == 0)
         ? localThread(impl, delay, rounds, dir, addr, id)
         : forkedProcess(impl, delay, rounds, dir, addr, id);
   }
@@ -168,7 +168,7 @@ public class TestStressLockFactories extends LuceneTestCase {
 
     final Path dir = createTempDir(impl.getSimpleName());
 
-    final int clients = TEST_NIGHTLY ? 8 : 3;
+    final int clients = TEST_NIGHTLY ? 12 : 4;
     
     final List<LockClient> processes = new ArrayList<>(clients);
     try {
