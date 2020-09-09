@@ -3002,7 +3002,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * Creates and initializes a RestManager based on configuration args in solrconfig.xml.
    * RestManager provides basic storage support for managed resource data, such as to
    * persist stopwords to ZooKeeper if running in SolrCloud mode.
-   * @param cd
+   * @param cd for core
    */
   @SuppressWarnings("unchecked")
   protected RestManager initRestManager(CoreDescriptor cd) throws SolrException {
