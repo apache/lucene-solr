@@ -45,7 +45,7 @@ public class LockVerifyServer {
   public static final int START_GUN_SIGNAL = 43;
 
   // method pkg-private for tests
-  static void execute(InetAddress hostname, int maxClients, Consumer<InetSocketAddress> startClients) throws Exception {
+  static void run(InetAddress hostname, int maxClients, Consumer<InetSocketAddress> startClients) throws Exception {
     try (final ServerSocket s = new ServerSocket()) {
       s.setReuseAddress(true);
       s.setSoTimeout(30000); // initially 30 secs to give clients enough time to startup
@@ -143,7 +143,7 @@ public class LockVerifyServer {
       System.exit(1);
     }
 
-    execute(InetAddress.getByName(args[0]), Integer.parseInt(args[1]), addr -> {});
+    run(InetAddress.getByName(args[0]), Integer.parseInt(args[1]), addr -> {});
   }
   
 }

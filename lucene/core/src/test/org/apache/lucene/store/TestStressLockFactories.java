@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SuppressForbidden;
 
@@ -29,17 +28,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @LuceneTestCase.SuppressFileSystems("*")
 public class TestStressLockFactories extends LuceneTestCase {
-
-  private interface LockClientSupplier {
-    LockClient create(Class<? extends LockFactory> impl,
-                      int delay, int rounds, Path dir,
-                      InetSocketAddress addr, int id);
-  }
 
   private interface LockClient {
     void await();
@@ -56,7 +48,7 @@ public class TestStressLockFactories extends LuceneTestCase {
     @Override
     public void await() {
       try {
-        if (process.waitFor(15, TimeUnit.SECONDS)) {
+        if (process.waitFor(10, TimeUnit.SECONDS)) {
           int exitValue = process.exitValue();
           assertEquals("Process " + process.pid() + " exit status != 0: " + exitValue, 0, exitValue);
         } else {
@@ -89,7 +81,7 @@ public class TestStressLockFactories extends LuceneTestCase {
     @Override
     public void await() {
       try {
-        t.join(TimeUnit.SECONDS.toMillis(5));
+        t.join(TimeUnit.SECONDS.toMillis(10));
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
@@ -99,21 +91,6 @@ public class TestStressLockFactories extends LuceneTestCase {
     public void cleanup() {
       // best-effort to interrupt it.
       t.interrupt();
-    }
-  }
-
-  private static LockClientSupplier clientFactory() {
-    // prefer forked process factory but occasionally run in-JVM o in mixed mode.
-    switch (RandomizedTest.randomIntBetween(0, 5)) {
-      case 0:
-        Random rnd = new Random(random().nextLong());
-        return (impl, delay, rounds, dir, addr, id) -> rnd.nextBoolean()
-            ? forkedProcess(impl, delay, rounds, dir, addr, id)
-            : localThread(impl, delay, rounds, dir, addr, id);
-      case 1:
-        return TestStressLockFactories::localThread;
-      default:
-        return TestStressLockFactories::forkedProcess;
     }
   }
 
@@ -170,13 +147,21 @@ public class TestStressLockFactories extends LuceneTestCase {
       } catch (IOException | InterruptedException e) {
         throw new RuntimeException(e);
       }
-    });
+    }, "LockStressTester-" + id);
     t.start();
 
     return new LocalThreadClient(t);
   }
   
-  private void runImpl(Class<? extends LockFactory> impl, LockClientSupplier supplier) throws Exception {
+  private static LockClient newLockClient(Class<? extends LockFactory> impl,
+      int delay, int rounds, Path dir,
+      InetSocketAddress addr, int id) {
+    return (id % 4 == 0)
+        ? localThread(impl, delay, rounds, dir, addr, id)
+        : forkedProcess(impl, delay, rounds, dir, addr, id);
+  }
+
+  private static void runImpl(Class<? extends LockFactory> impl) throws Exception {
     final InetAddress host = Inet4Address.getLoopbackAddress();
     final int delay = 1;
     final int rounds = (TEST_NIGHTLY ? 30000 : 500) * RANDOM_MULTIPLIER;
@@ -187,9 +172,9 @@ public class TestStressLockFactories extends LuceneTestCase {
     
     final List<LockClient> processes = new ArrayList<>(clients);
     try {
-      LockVerifyServer.execute(host, clients, addr -> {
-        for (int i = 0; i < clients; i++) {
-          processes.add(supplier.create(impl, delay, rounds, dir, addr, i));
+      LockVerifyServer.run(host, clients, addr -> {
+        for (int id = 0; id < clients; id++) {
+          processes.add(newLockClient(impl, delay, rounds, dir, addr, id));
         }
       });
 
@@ -202,11 +187,11 @@ public class TestStressLockFactories extends LuceneTestCase {
 
   
   public void testNativeFSLockFactory() throws Exception {
-    runImpl(NativeFSLockFactory.class, clientFactory());
+    runImpl(NativeFSLockFactory.class);
   }
 
   public void testSimpleFSLockFactory() throws Exception {
-    runImpl(SimpleFSLockFactory.class, clientFactory());
+    runImpl(SimpleFSLockFactory.class);
   }
 
 }
