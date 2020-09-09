@@ -281,7 +281,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.http2solrclient.pool.keepalive", "1500");
 
       System.setProperty("solr.disablePublicKeyHandler", "false");
-      System.setProperty("solr.dependentupdate.timeout", "1"); // seconds
+      System.setProperty("solr.dependentupdate.timeout", "500");
 
      // System.setProperty("lucene.cms.override_core_count", "3");
      // System.setProperty("lucene.cms.override_spins", "false");

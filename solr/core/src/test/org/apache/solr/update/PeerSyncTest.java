@@ -57,6 +57,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
     stress = 0;
 
+    System.setProperty("solr.dependentupdate.timeout", "50");
+
     // TODO: a better way to do this?
     configString = "solrconfig-tlog.xml";
     schemaString = "schema.xml";

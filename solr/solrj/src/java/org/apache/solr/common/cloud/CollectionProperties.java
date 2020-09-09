@@ -44,8 +44,8 @@ public class CollectionProperties {
   private final ZkStateReader zkStateReader;
 
   /**
-   * Creates a CollectionProperties object using a provided SolrZkClient
-   * @param zkStateReader
+   * Creates a CollectionProperties object using a provided ZkStateReader
+   * @param zkStateReader to use for zk access
    */
   public CollectionProperties(ZkStateReader zkStateReader) {
     this.client = zkStateReader.getZkClient();
