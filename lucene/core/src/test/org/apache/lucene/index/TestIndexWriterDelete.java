@@ -1095,7 +1095,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     final AtomicBoolean sawAfterFlush = new AtomicBoolean();
     IndexWriter w = new IndexWriter(dir,
                                     newIndexWriterConfig(new MockAnalyzer(random()))
-                                       .setRAMBufferSizeMB(0.5)
+                                       .setRAMBufferSizeMB(1.2)
                                        .setMaxBufferedDocs(-1)
                                        .setMergePolicy(NoMergePolicy.INSTANCE)
                                        .setReaderPooling(false)
@@ -1103,7 +1103,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                        .setUseCompoundFile(true)) {
         @Override
         public void doAfterFlush() {
-          assertTrue("only " + docsInSegment.get() + " in segment", closing.get() || docsInSegment.get() >= 7);
+          assertTrue("only " + docsInSegment.get() + " docs in segment", closing.get() || docsInSegment.get() >= 7);
           docsInSegment.set(0);
           sawAfterFlush.set(true);
         }
