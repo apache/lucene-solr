@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -41,9 +42,10 @@ import org.apache.lucene.util.SuppressForbidden;
 
 @SuppressForbidden(reason = "System.out required: command line tool")
 public class LockVerifyServer {
-    
+  public static final int START_GUN_SIGNAL = 43;
+
   // method pkg-private for tests
-  static void execute(String hostname, int maxClients, Consumer<InetSocketAddress> startClients) throws Exception {
+  static void execute(InetAddress hostname, int maxClients, Consumer<InetSocketAddress> startClients) throws Exception {
     try (final ServerSocket s = new ServerSocket()) {
       s.setReuseAddress(true);
       s.setSoTimeout(30000); // initially 30 secs to give clients enough time to startup
@@ -72,22 +74,22 @@ public class LockVerifyServer {
               }
               
               startingGun.await();
-              os.write(43);
+              os.write(START_GUN_SIGNAL);
               os.flush();
               
-              while(true) {
+              while (true) {
                 final int command = in.read();
                 if (command < 0) {
                   return; // closed
                 }
                 
-                synchronized(localLock) {
+                synchronized (localLock) {
                   final int currentLock = lockedID[0];
                   if (currentLock == -2) {
                     return; // another thread got error, so we exit, too!
                   }
                   switch (command) {
-                    case 1:
+                    case VerifyingLockFactory.MSG_LOCK_ACQUIRED:
                       // Locked
                       if (currentLock != -1) {
                         lockedID[0] = -2;
@@ -95,7 +97,7 @@ public class LockVerifyServer {
                       }
                       lockedID[0] = id;
                       break;
-                    case 0:
+                    case VerifyingLockFactory.MSG_LOCK_RELEASED:
                       // Unlocked
                       if (currentLock != id) {
                         lockedID[0] = -2;
@@ -141,7 +143,7 @@ public class LockVerifyServer {
       System.exit(1);
     }
 
-    execute(args[0], Integer.parseInt(args[1]), addr -> {});
+    execute(InetAddress.getByName(args[0]), Integer.parseInt(args[1]), addr -> {});
   }
   
 }
