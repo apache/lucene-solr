@@ -227,7 +227,7 @@ public class Http2SolrClient extends SolrClient {
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     }
     // nocommit - look at config again as well
-    httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(12, ParWork.PROC_COUNT), 6, idleTimeout);
+    httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(14, ParWork.PROC_COUNT), 8, idleTimeout);
     httpClientExecutor.setLowThreadsThreshold(-1);
 
     httpClient.setIdleTimeout(idleTimeout);

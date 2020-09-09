@@ -254,9 +254,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertEquals(0, docs.getNumFound());
     
     // Test Multi-Threaded routed updates for UpdateRequest
-    try (CloudSolrClient threadedClient = new SolrTestCaseJ4.CloudSolrClientBuilder
+    try (CloudHttp2SolrClient threadedClient = new SolrTestCaseJ4.CloudHttp2SolrClientBuilder
         (Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-        .withParallelUpdates(true)
         .build()) {
       threadedClient.setDefaultCollection("routing_collection");
       NamedList<Object> response = threadedClient.request(request);
@@ -277,11 +276,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        try (Http2SolrClient solrClient = SolrTestCaseJ4.getHttpSolrClient(url)) {
-          QueryResponse queryResponse = queryRequest.process(solrClient);
-          SolrDocumentList docList = queryResponse.getResults();
-          assertTrue(docList.getNumFound() == 1);
-        }
+        queryRequest.setBasePath(url);
+        Http2SolrClient solrClient = threadedClient.getHttpClient();
+        QueryResponse queryResponse = queryRequest.process(solrClient);
+        SolrDocumentList docList = queryResponse.getResults();
+        assertTrue(docList.getNumFound() == 1);
+
       }
     }
 

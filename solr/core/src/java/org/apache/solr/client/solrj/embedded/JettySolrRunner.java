@@ -109,7 +109,7 @@ public class JettySolrRunner implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // NOTE: should be larger than HttpClientUtil.DEFAULT_SO_TIMEOUT or typical client SO timeout
-  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = HttpClientUtil.DEFAULT_SO_TIMEOUT + 30000;
+  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 30000;
 
   Server server;
 
@@ -324,6 +324,7 @@ public class JettySolrRunner implements Closeable {
       final SslContextFactory.Server sslcontext = SSLConfig.createContextFactory(config.sslConfig);
 
       HttpConfiguration configuration = new HttpConfiguration();
+      configuration.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
       ServerConnector connector;
       if (sslcontext != null) {
         configuration.setSecureScheme("https");
@@ -368,16 +369,15 @@ public class JettySolrRunner implements Closeable {
       connector.setSoLingerTime(-1);
       connector.setPort(port);
       connector.setHost("127.0.0.1");
-      connector.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
       server.setConnectors(new Connector[] {connector});
       server.setSessionIdManager(new NoopSessionManager());
     } else {
       HttpConfiguration configuration = new HttpConfiguration();
+      configuration.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
       ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
       connector.setReuseAddress(true);
       connector.setPort(port);
       connector.setSoLingerTime(-1);
-      connector.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
       server.setConnectors(new Connector[] {connector});
     }
 

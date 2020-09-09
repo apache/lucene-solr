@@ -299,19 +299,19 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("solr.tests.ramBufferSizeMB", "100");
 
-      System.setProperty("solr.http2solrclient.default.idletimeout", "15000");
+      System.setProperty("solr.http2solrclient.default.idletimeout", "10000");
       System.setProperty("distribUpdateSoTimeout", "15000");
-      System.setProperty("socketTimeout", "3000");
-      System.setProperty("connTimeout", "3000");
-      System.setProperty("solr.test.socketTimeout.default", "3000");
-      System.setProperty("solr.connect_timeout.default", "3000");
+      System.setProperty("socketTimeout", "10000");
+      System.setProperty("connTimeout", "10000");
+      System.setProperty("solr.test.socketTimeout.default", "10000");
+      System.setProperty("solr.connect_timeout.default", "10000");
       System.setProperty("solr.so_commit_timeout.default", "15000");
-      System.setProperty("solr.httpclient.defaultConnectTimeout", "3000");
-      System.setProperty("solr.httpclient.defaultSoTimeout", "3000");
-      // System.setProperty("solr.containerThreadsIdle", "30000"); no need to set
+      System.setProperty("solr.httpclient.defaultConnectTimeout", "10000");
+      System.setProperty("solr.httpclient.defaultSoTimeout", "10000");
+      System.setProperty("solr.containerThreadsIdle", "30000");
 
-      System.setProperty("solr.indexfetcher.sotimeout", "3000");
-      System.setProperty("solr.indexfetch.so_timeout.default", "3000");
+      System.setProperty("solr.indexfetcher.sotimeout", "5000");
+      System.setProperty("solr.indexfetch.so_timeout.default", "5000");
 
       System.setProperty("prepRecoveryReadTimeoutExtraWait", "100");
       System.setProperty("validateAfterInactivity", "-1");
@@ -332,9 +332,9 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.default.collection_op_timeout", "15000");
 
 
-      System.setProperty("solr.httpclient.retries", "2");
-      System.setProperty("solr.retries.on.forward", "2");
-      System.setProperty("solr.retries.to.followers", "2");
+      System.setProperty("solr.httpclient.retries", "1");
+      System.setProperty("solr.retries.on.forward", "1");
+      System.setProperty("solr.retries.to.followers", "1");
 
       SolrTestCaseJ4.useFactory("org.apache.solr.core.RAMDirectoryFactory");
       System.setProperty("solr.lock.type", "single");

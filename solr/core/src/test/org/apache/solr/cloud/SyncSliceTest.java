@@ -16,8 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -41,6 +41,7 @@ import java.util.List;
  */
 @Slow
 // nocommit - bridge does not yet have some consistency checks here, finish and back in control client
+@LuceneTestCase.Nightly
 public class SyncSliceTest extends SolrCloudBridgeTestCase {
   private boolean success = false;
 
@@ -106,13 +107,13 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
     request.setPath("/admin/collections");
     
     String baseUrl = replicas.get(1).getBaseUrl();
+    request.setBasePath(baseUrl);
    // baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
     
     // we only set the connect timeout, not so timeout
-    try (Http2SolrClient baseClient = SolrTestCaseJ4
-        .getHttpSolrClient(baseUrl, 10000)) {
-      baseClient.request(request);
-    }
+    Http2SolrClient baseClient = cluster.getSolrClient().getHttpClient();
+    baseClient.request(request);
+
 
    // waitForThingsToLevelOut(15, TimeUnit.SECONDS);
     
