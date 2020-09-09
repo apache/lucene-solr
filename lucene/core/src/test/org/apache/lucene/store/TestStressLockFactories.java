@@ -43,7 +43,7 @@ public class TestStressLockFactories extends LuceneTestCase {
   }
   
   private void runImpl(Class<? extends LockFactory> impl) throws Exception {
-    final int clients = 2;
+    final int clients = TEST_NIGHTLY ? 5 : 2;
     final String host = "127.0.0.1";
     final int delay = 1;
     final int rounds = (TEST_NIGHTLY ? 30000 : 500) * RANDOM_MULTIPLIER;
