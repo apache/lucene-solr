@@ -121,10 +121,6 @@ public interface FacetParams {
    */
   public static final String FACET_OVERREQUEST_COUNT = FACET_OVERREQUEST + ".count";
 
-
-  @Deprecated
-  public static final String FACET_DISTRIB = FACET + ".distrib";
-  
   /**
    * Comma separated list of fields to pivot
    * 
