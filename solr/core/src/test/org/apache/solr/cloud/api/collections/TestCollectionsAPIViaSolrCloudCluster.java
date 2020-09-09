@@ -108,7 +108,12 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   @Test
   public void testDeleteUnknownCollection() throws Exception {
     //  deleting an unknown collection should not be slow
-    CollectionAdminRequest.deleteCollection("foobar432").process(cluster.getSolrClient());
+    try {
+      CollectionAdminRequest.deleteCollection("foobar432").process(cluster.getSolrClient());
+      fail("expected exception");
+    } catch (Exception e) {
+      assertTrue(e.getMessage().contains("Could not find collection"));
+    }
   }
 
   @Test
