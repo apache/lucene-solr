@@ -86,7 +86,6 @@ public class LBHttp2SolrClient extends LBSolrClient {
     Rsp rsp = new Rsp();
     boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
     ServerIterator it = new ServerIterator(req, zombieServers);
-    final AtomicBoolean cancelled = new AtomicBoolean(false);
     AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture = new AtomicReference<>();
     RetryListener retryListener = new RetryListener() {
 
@@ -107,10 +106,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
           }
           try {
             MDC.put("LBSolrClient.url", url);
-            synchronized (cancelled) {
-              if (cancelled.get()) {
-                return;
-              }
+            if (!apiFuture.isCancelled()) {
               CompletableFuture<NamedList<Object>> future = doAsyncRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
               currentFuture.set(future);
             }
@@ -131,12 +127,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     }
     apiFuture.exceptionally((error) -> {
       if (apiFuture.isCancelled()) {
-        synchronized (cancelled) {
-          cancelled.set(true);
-          if (currentFuture.get() != null) {
-            currentFuture.get().cancel(true);
-          }
-        }
+        currentFuture.get().cancel(true);
       }
       return null;
     });

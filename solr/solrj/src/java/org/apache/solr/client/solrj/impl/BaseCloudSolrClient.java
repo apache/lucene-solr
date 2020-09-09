@@ -1021,21 +1021,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
 
     CompletableFuture<NamedList<Object>> apiFuture = new CompletableFuture<>();
-    final AtomicBoolean cancelled = new AtomicBoolean(false);
     final AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture = new AtomicReference<>();
     apiFuture.exceptionally((error) -> {
       if (apiFuture.isCancelled()) {
-        synchronized (cancelled) {
-          cancelled.set(true);
-          if (currentFuture.get() != null) {
-            currentFuture.get().cancel(true);
-          }
-        }
+        currentFuture.get().cancel(true);
       }
       return null;
     });
 
-    requestWithRetryOnStaleState(request, 0, inputCollections, isAsyncRequest, apiFuture, cancelled, currentFuture);
+    requestWithRetryOnStaleState(request, 0, inputCollections, isAsyncRequest, apiFuture, currentFuture);
 
     return apiFuture;
   }
@@ -1050,7 +1044,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
                                               List<String> inputCollections,
                                               boolean isAsyncRequest,
                                               CompletableFuture<NamedList<Object>> apiFuture,
-                                              AtomicBoolean cancelled,
                                               AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture)
       throws SolrServerException, IOException {
     connect(); // important to call this before you start working with the ZkStateReader
@@ -1108,7 +1101,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     } // else: ??? how to set this ???
 
     requestWithRetryOnStaleStateHelper(request, retryCount, inputCollections, requestedCollections, isAdmin,
-        isAsyncRequest, apiFuture, cancelled, currentFuture);
+        isAsyncRequest, apiFuture, currentFuture);
   }
 
   private void requestWithRetryOnStaleStateHelper(final SolrRequest<?> request,
@@ -1118,19 +1111,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
                                                   boolean isAdmin,
                                                   boolean isAsyncRequest,
                                                   CompletableFuture<NamedList<Object>> apiFuture,
-                                                  AtomicBoolean cancelled,
                                                   AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture)
       throws SolrServerException, IOException{
 
+    if (apiFuture.isCancelled()) {
+      return;
+    }
     try {
-      CompletableFuture<NamedList<Object>> rspFuture;
-      synchronized (cancelled) {
-        if (cancelled.get()) {
-          return;
-        }
-        rspFuture = sendRequest(request, inputCollections, isAsyncRequest);
-        currentFuture.set(rspFuture);
-      }
+      CompletableFuture<NamedList<Object>> rspFuture = sendRequest(request, inputCollections, isAsyncRequest);
+      currentFuture.set(rspFuture);
       if (!isAsyncRequest) {
         NamedList<Object> rsp = getNowOrException(rspFuture);
         processRequestResult(rsp, apiFuture);
@@ -1141,7 +1130,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           } else {
             try {
               handleRequestException(request, retryCount, inputCollections, requestedCollections, isAdmin, isAsyncRequest,
-                  apiFuture, cancelled, currentFuture, error);
+                  apiFuture, currentFuture, error);
             } catch (Exception e) {
               apiFuture.completeExceptionally(e);
             }
@@ -1150,7 +1139,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     } catch (Exception exc) {
       handleRequestException(request, retryCount, inputCollections, requestedCollections, isAdmin, isAsyncRequest,
-          apiFuture, cancelled, currentFuture, exc);
+          apiFuture, currentFuture, exc);
     }
   }
 
@@ -1178,7 +1167,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
                                       boolean isAdmin,
                                       boolean isAsyncRequest,
                                       CompletableFuture<NamedList<Object>> apiFuture,
-                                      AtomicBoolean cancelled,
                                       AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture,
                                       Throwable exc) throws SolrServerException, IOException {
     Throwable rootCause = SolrException.getRootCause(exc);
@@ -1231,7 +1219,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         // the state would not have been updated
         log.info("trying request again");
         requestWithRetryOnStaleState(request, retryCount + 1, inputCollections, isAsyncRequest,
-            apiFuture, cancelled, currentFuture);
+            apiFuture, currentFuture);
         return;
       }
     } else {
@@ -1280,7 +1268,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     if (stateWasStale) {
       log.warn("Re-trying request to collection(s) {} after stale state error from server.", inputCollections);
       requestWithRetryOnStaleState(request, retryCount+1, inputCollections, isAsyncRequest,
-          apiFuture, cancelled, currentFuture);
+          apiFuture, currentFuture);
     } else {
       if (exc instanceof SolrServerException) {
         throw (SolrServerException) exc;

@@ -260,18 +260,13 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public final CompletableFuture<T> processAsynchronously(SolrClient client, String collection) {
     final long startNanos = System.nanoTime();
     final CompletableFuture<NamedList<Object>> internalFuture = client.requestAsync(this, collection);
-    final CompletableFuture<T> apiFuture = new CompletableFuture<>();
 
-    internalFuture.whenComplete((result, error) -> {
-      if (!internalFuture.isCompletedExceptionally()) {
-        T res = createResponse(client);
-        res.setResponse(result);
-        long endNanos = System.nanoTime();
-        res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
-        apiFuture.complete(res);
-      } else {
-        apiFuture.completeExceptionally(error);
-      }
+    final CompletableFuture<T> apiFuture = internalFuture.thenApply((result) -> {
+      T res = createResponse(client);
+      res.setResponse(result);
+      long endNanos = System.nanoTime();
+      res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
+      return res;
     });
 
     apiFuture.exceptionally((error) -> {
