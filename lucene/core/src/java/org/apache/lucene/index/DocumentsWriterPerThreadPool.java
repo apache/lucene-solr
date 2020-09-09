@@ -17,7 +17,6 @@
 package org.apache.lucene.index;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +29,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
