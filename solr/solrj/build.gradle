@@ -71,4 +71,13 @@ dependencies {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
   testImplementation "org.hsqldb:hsqldb"
+
+  testImplementation("com.github.tomakehurst:wiremock-jre8:2.27.0", {
+    exclude group: "org.eclipse.jetty"
+    exclude group: "org.eclipse.jetty.http2"
+    exclude group: "com.fasterxml.jackson.core"
+    exclude group: "org.apache.commons"
+    exclude group: "org.slf4j"
+    exclude group: "org.ow2.asm"
+  })
 }

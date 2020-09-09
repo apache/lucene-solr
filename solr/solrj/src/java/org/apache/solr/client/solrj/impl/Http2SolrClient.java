@@ -421,6 +421,7 @@ public class Http2SolrClient extends SolrClient {
                 onComplete.onSuccess(rsp);
               } catch (Exception e) {
                 ParWork.propegateInterrupt(e);
+                onComplete.onFailure(e);
               }
             } finally {
               asyncTracker.completeListener.onComplete(result);
@@ -719,7 +720,8 @@ public class Http2SolrClient extends SolrClient {
           break;
         default:
           if (processor == null || mimeType == null) {
-            throw new RemoteSolrException(serverBaseUrl, httpStatus,
+            String host = serverBaseUrl != null ? serverBaseUrl : req.getHost();
+            throw new RemoteSolrException(host, httpStatus,
                 "non ok status: " + httpStatus + ", message:" + response
                     .getReason(), null);
           }

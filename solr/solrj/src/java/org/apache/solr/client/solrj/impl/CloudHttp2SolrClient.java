@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -32,6 +33,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
@@ -49,6 +52,8 @@ import org.slf4j.MDC;
  */
 @SuppressWarnings("serial")
 public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ClusterStateProvider stateProvider;
   private final LBHttp2SolrClient lbClient;
@@ -139,6 +144,11 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
     exceptions.addAll(tsExceptions);
     shardResponses.addAll(tsResponses);
+
+    if (tsExceptions.isEmpty() && tsResponses.size() < routes.size()) {
+      log.warn("Sent {} requests but only got {} responses", routes.size(), tsResponses.size());
+    }
+
     if (exceptions.size() > 0) {
       Throwable firstException = exceptions.getVal(0);
       if(firstException instanceof SolrException) {
@@ -277,6 +287,11 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
     public Builder withHttpClient(Http2SolrClient httpClient) {
       this.httpClient = httpClient;
+      return this;
+    }
+
+    public Builder withClusterStateProvider(ClusterStateProvider clusterStateProvider) {
+      this.stateProvider = clusterStateProvider;
       return this;
     }
 

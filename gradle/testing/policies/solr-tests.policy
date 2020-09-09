@@ -163,6 +163,8 @@ grant {
 
   // used by solr to create sandboxes (e.g. script execution)
   permission java.security.SecurityPermission "createAccessControlContext";
+
+  permission java.net.NetPermission "getProxySelector";
 };
 
 // additional permissions based on system properties set by /bin/solr
