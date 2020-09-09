@@ -60,7 +60,7 @@ public final class SafeXMLParsing  {
   /** Parses the given InputStream as XML, disabling any external entities with secure processing enabled.
    * The given InputStream is not closed. */
   public static Document parseUntrustedXML(Logger log, InputStream in) throws SAXException, IOException {
-    return getUntrustedDocumentBuilder(log).parse(new CloseShieldInputStream(in), SYSTEMID_UNTRUSTED);
+    return getUntrustedDocumentBuilder(log).parse(in, SYSTEMID_UNTRUSTED);
   }
   
   /** Parses the given InputStream as XML, disabling any external entities with secure processing enabled.

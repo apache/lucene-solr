@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -84,6 +85,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
   private final String collection;
   private final int syncPeriod;
   private final int idPrefixLength;
+  private final ScheduledFuture<?> scheduledFuture;
   private ScheduledThreadPoolExecutor syncService;
   private volatile boolean closed = false;
   private volatile boolean persistent = true;
@@ -110,10 +112,10 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     }
     this.idPrefixLength = ID_PREFIX.length() + ID_SEP.length();
     syncService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2,
-        new SolrNamedThreadFactory("SolrRrdBackendFactory"));
+        new SolrNamedThreadFactory("SolrRrdBackendFactory", true));
     syncService.setRemoveOnCancelPolicy(true);
     syncService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-    syncService.scheduleWithFixedDelay(() -> maybeSyncBackends(),
+    scheduledFuture = syncService.scheduleWithFixedDelay(() -> maybeSyncBackends(),
         timeSource.convertDelay(TimeUnit.SECONDS, syncPeriod, TimeUnit.MILLISECONDS),
         timeSource.convertDelay(TimeUnit.SECONDS, syncPeriod, TimeUnit.MILLISECONDS),
         TimeUnit.MILLISECONDS);
@@ -463,11 +465,13 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
       log.debug("Closing {}", hashCode());
     }
     closed = true;
+    syncService.shutdown();
 
-    syncService.shutdownNow();
+    scheduledFuture.cancel(true);
+
     try (ParWork closer = new ParWork(this)) {
       closer.collect(backends.values());
-      closer.collect(syncService);
+      closer.collect();
       closer.collect(syncService);
     }
     backends.clear();

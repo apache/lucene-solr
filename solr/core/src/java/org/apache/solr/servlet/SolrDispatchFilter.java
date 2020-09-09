@@ -700,11 +700,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     @Override
     public void close() {
-      // even though we skip closes, we let local tests know not to close so that a full understanding can take
-      // place
-      assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-          "org\\.apache\\.(?:solr|lucene).*") ? false : true : CLOSE_STREAM_MSG;
-      this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
+      // don't allow close
     }
   }
 
@@ -715,12 +711,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     @Override
     public void close() {
-      // even though we skip closes, we let local tests know not to close so that a full understanding can take
-      // place
-      assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-          "org\\.apache\\.(?:solr|lucene).*") ? false
-              : true : CLOSE_STREAM_MSG;
-      stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
+      // don't allow close
     }
   }
 }

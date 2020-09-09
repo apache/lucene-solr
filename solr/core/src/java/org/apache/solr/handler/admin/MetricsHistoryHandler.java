@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -157,6 +158,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
   private final Map<String, RrdDb> knownDbs = new ConcurrentHashMap<>(16, 0.75f, 4);
   private final Overseer overseer;
+  private ScheduledFuture<?> scheduledFuture;
 
   private ScheduledThreadPoolExecutor collectService;
   private boolean logMissingCollection = true;
@@ -221,10 +223,10 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
     if (enable) {
       collectService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,
-          new SolrNamedThreadFactory("MetricsHistoryHandler"));
+          new SolrNamedThreadFactory("MetricsHistoryHandler", true));
       collectService.setRemoveOnCancelPolicy(true);
       collectService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-      collectService.scheduleWithFixedDelay(() -> collectMetrics(),
+      scheduledFuture = collectService.scheduleWithFixedDelay(() -> collectMetrics(),
           timeSource.convertDelay(TimeUnit.SECONDS, collectPeriod, TimeUnit.MILLISECONDS),
           timeSource.convertDelay(TimeUnit.SECONDS, collectPeriod, TimeUnit.MILLISECONDS),
           TimeUnit.MILLISECONDS);
@@ -617,10 +619,18 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     if (log.isDebugEnabled()) {
       log.debug("Closing {}", hashCode());
     }
-    collectService.shutdownNow();
+
+    if (collectService != null) {
+      collectService.shutdown();
+
+      scheduledFuture.cancel(true);
+    }
+
     try (ParWork closer = new ParWork(this)) {
-      closer.collect(factory);
       closer.collect(knownDbs.values());
+      closer.collect();
+      closer.collect(factory);
+      closer.collect();
       closer.collect(collectService);
     }
     knownDbs.clear();

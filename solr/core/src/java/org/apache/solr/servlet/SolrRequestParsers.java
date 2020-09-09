@@ -530,11 +530,7 @@ public class SolrRequestParsers {
 
     @Override
     public InputStream getStream() throws IOException {
-      // we explicitly protect this servlet stream from being closed
-      // so that it does not trip our test assert in our close shield
-      // in SolrDispatchFilter - we must allow closes from getStream
-      // due to the other impls of ContentStream
-      return new CloseShieldInputStream(req.getInputStream());
+      return req.getInputStream();
     }
   }
 
@@ -681,8 +677,7 @@ public class SolrRequestParsers {
       final Charset charset = (cs == null) ? StandardCharsets.UTF_8 : Charset.forName(cs);
       FastInputStream fin = null;
       try {
-        // Protect container owned streams from being closed by us, see SOLR-8933
-        fin = FastInputStream.wrap( in == null ? new CloseShieldInputStream(req.getInputStream()) : in );
+        fin = FastInputStream.wrap( in == null ? req.getInputStream() : in );
 
         final long bytesRead = parseFormDataContent(fin, maxLength, charset, map, false);
         if (bytesRead == 0L && totalLength > 0L) {
