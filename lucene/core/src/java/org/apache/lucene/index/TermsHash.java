@@ -41,11 +41,11 @@ abstract class TermsHash {
   ByteBlockPool termBytePool;
   final Counter bytesUsed;
 
-  TermsHash(final DocumentsWriterPerThread docWriter, Counter bytesUsed, TermsHash nextTermsHash) {
+  TermsHash(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Counter bytesUsed, TermsHash nextTermsHash) {
     this.nextTermsHash = nextTermsHash;
     this.bytesUsed = bytesUsed;
-    intPool = new IntBlockPool(docWriter.intBlockAllocator);
-    bytePool = new ByteBlockPool(docWriter.byteBlockAllocator);
+    intPool = new IntBlockPool(intBlockAllocator);
+    bytePool = new ByteBlockPool(byteBlockAllocator);
 
     if (nextTermsHash != null) {
       // We are primary

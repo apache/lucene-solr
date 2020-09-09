@@ -440,7 +440,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     flushDeletes.set(true);
   }
   
-  DocumentsWriterPerThread obtainAndLock() throws IOException {
+  DocumentsWriterPerThread obtainAndLock() {
     while (closed == false) {
       final DocumentsWriterPerThread perThread = perThreadPool.getAndLock();
       if (perThread.deleteQueue == documentsWriter.deleteQueue) {
