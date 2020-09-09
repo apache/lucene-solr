@@ -48,6 +48,8 @@ Improvements
 
 * SOLR-14722: Track timeAllowed from earlier in the request lifecycle. (David Smiley)
 
+* SOLR-14802: Support AbstractSpatialFieldType types as geodist argument (Tom Edge, Craig Wrigglesworth)
+
 Optimizations
 ---------------------
 
