@@ -39,7 +39,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -484,7 +483,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     CoreContainer cc = core.getCoreContainer();
     BackupRepository repo = null;
     if (repoName != null) {
-      repo = cc.newBackupRepository(Optional.of(repoName));
+      repo = cc.newBackupRepository(repoName);
       location = repo.getBackupLocation(location);
       if (location == null) {
         throw new IllegalArgumentException("location is required");
@@ -593,7 +592,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       CoreContainer cc = core.getCoreContainer();
       BackupRepository repo = null;
       if (repoName != null) {
-        repo = cc.newBackupRepository(Optional.of(repoName));
+        repo = cc.newBackupRepository(repoName);
         location = repo.getBackupLocation(location);
         if (location == null) {
           throw new IllegalArgumentException("location is required");
