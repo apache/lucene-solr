@@ -35,18 +35,6 @@ import java.util.concurrent.TimeUnit;
 @LuceneTestCase.SuppressFileSystems("*")
 public class TestStressLockFactories extends LuceneTestCase {
 
-  @SuppressForbidden(reason = "ProcessBuilder only allows to redirect to java.io.File")
-  private static final ProcessBuilder applyRedirection(ProcessBuilder pb, int client, Path dir) {
-    if (VERBOSE) {
-      return pb.inheritIO();
-    } else {
-      return pb
-          .redirectError(dir.resolve("err-" + client + ".txt").toFile())
-          .redirectOutput(dir.resolve("out-" + client + ".txt").toFile())
-          .redirectInput(Redirect.INHERIT);
-    }
-  }
-
   private interface LockClientSupplier {
     LockClient create(Class<? extends LockFactory> impl,
                       int delay, int rounds, Path dir,
@@ -114,39 +102,7 @@ public class TestStressLockFactories extends LuceneTestCase {
     }
   }
 
-  private void runImpl(Class<? extends LockFactory> impl, LockClientSupplier supplier) throws Exception {
-    final InetAddress host = Inet4Address.getLoopbackAddress();
-    final int delay = 1;
-    final int rounds = (TEST_NIGHTLY ? 30000 : 500) * RANDOM_MULTIPLIER;
-
-    final Path dir = createTempDir(impl.getSimpleName());
-
-    final int clients = 2;
-    final List<LockClient> processes = new ArrayList<>();
-
-    try {
-      LockVerifyServer.execute(host, clients, addr -> {
-        for (int i = 0; i < clients; i++) {
-          processes.add(supplier.create(impl, delay, rounds, dir, addr, i));
-        }
-      });
-
-      // Wait for all processes to exit...
-      processes.forEach(LockClient::await);
-    } finally {
-      processes.forEach(LockClient::cleanup);
-    }
-  }
-
-  public void testNativeFSLockFactory() throws Exception {
-    runImpl(NativeFSLockFactory.class, clientFactory());
-  }
-
-  public void testSimpleFSLockFactory() throws Exception {
-    runImpl(SimpleFSLockFactory.class, clientFactory());
-  }
-
-  private LockClientSupplier clientFactory() {
+  private static LockClientSupplier clientFactory() {
     // prefer forked process factory but occasionally run in-JVM o in mixed mode.
     switch (RandomizedTest.randomIntBetween(0, 5)) {
       case 0:
@@ -155,17 +111,29 @@ public class TestStressLockFactories extends LuceneTestCase {
             ? forkedProcess(impl, delay, rounds, dir, addr, id)
             : localThread(impl, delay, rounds, dir, addr, id);
       case 1:
-        return this::localThread;
+        return TestStressLockFactories::localThread;
       default:
-        return this::forkedProcess;
+        return TestStressLockFactories::forkedProcess;
     }
   }
 
-  private ForkedProcessClient forkedProcess(Class<? extends LockFactory> impl,
+  @SuppressForbidden(reason = "ProcessBuilder only allows to redirect to java.io.File")
+  private static final ProcessBuilder applyRedirection(ProcessBuilder pb, int client, Path dir) {
+    if (VERBOSE) {
+      return pb.inheritIO();
+    } else {
+      return pb
+          .redirectError(dir.resolve("err-" + client + ".txt").toFile())
+          .redirectOutput(dir.resolve("out-" + client + ".txt").toFile())
+          .redirectInput(Redirect.INHERIT);
+    }
+  }
+
+  private static LockClient forkedProcess(Class<? extends LockFactory> impl,
                                             int delay, int rounds, Path dir,
                                             InetSocketAddress addr, int id) {
     try {
-      return new ForkedProcessClient(applyRedirection(new ProcessBuilder(
+      ProcessBuilder pb = new ProcessBuilder(
           Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
           "-Xmx32M",
           "-cp",
@@ -178,13 +146,15 @@ public class TestStressLockFactories extends LuceneTestCase {
           dir.toString(),
           Integer.toString(delay),
           Integer.toString(rounds)
-      ), id, dir).start());
+      );
+      applyRedirection(pb, id, dir);
+      return new ForkedProcessClient(pb.start());
     } catch (IOException e) {
       throw new AssertionError("Failed to start a child process.", e);
     }
   }
 
-  private LockClient localThread(Class<? extends LockFactory> impl,
+  private static LockClient localThread(Class<? extends LockFactory> impl,
                                  int delay, int rounds, Path dir, InetSocketAddress addr, Integer id) {
     Thread t = new Thread(() -> {
       try {
@@ -205,4 +175,38 @@ public class TestStressLockFactories extends LuceneTestCase {
 
     return new LocalThreadClient(t);
   }
+  
+  private void runImpl(Class<? extends LockFactory> impl, LockClientSupplier supplier) throws Exception {
+    final InetAddress host = Inet4Address.getLoopbackAddress();
+    final int delay = 1;
+    final int rounds = (TEST_NIGHTLY ? 30000 : 500) * RANDOM_MULTIPLIER;
+
+    final Path dir = createTempDir(impl.getSimpleName());
+
+    final int clients = TEST_NIGHTLY ? 8 : 3;
+    
+    final List<LockClient> processes = new ArrayList<>(clients);
+    try {
+      LockVerifyServer.execute(host, clients, addr -> {
+        for (int i = 0; i < clients; i++) {
+          processes.add(supplier.create(impl, delay, rounds, dir, addr, i));
+        }
+      });
+
+      // Wait for all processes to exit...
+      processes.forEach(LockClient::await);
+    } finally {
+      processes.forEach(LockClient::cleanup);
+    }
+  }
+
+  
+  public void testNativeFSLockFactory() throws Exception {
+    runImpl(NativeFSLockFactory.class, clientFactory());
+  }
+
+  public void testSimpleFSLockFactory() throws Exception {
+    runImpl(SimpleFSLockFactory.class, clientFactory());
+  }
+
 }

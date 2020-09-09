@@ -39,6 +39,7 @@ import org.apache.lucene.util.SuppressForbidden;
 
 public class LockStressTest {
   static final String LOCK_FILE_NAME = "test.lock";
+  
   @SuppressForbidden(reason = "System.out required: command line tool")
   public static void main(String[] args) throws Exception {
     if (args.length != 7) {
