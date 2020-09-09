@@ -163,8 +163,8 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
             String key = collectionName + "_" + replicaName;
             CollectionStateWatcher watcher;
             if (waitForFinalState) {
-              watcher = new ActiveReplicaWatcher(collectionName, null,
-                  Collections.singletonList(addedReplica.getStr(ZkStateReader.CORE_NAME_PROP)), replicasToRecover);
+              watcher = new ActiveReplicaWatcher(collectionName, Collections.singletonList(replicaName),
+                  null, replicasToRecover);
             } else {
               watcher = new LeaderRecoveryWatcher(collectionName, shardName, replicaName,
                   addedReplica.getStr(ZkStateReader.CORE_NAME_PROP), replicasToRecover);

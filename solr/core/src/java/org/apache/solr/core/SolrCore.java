@@ -1539,7 +1539,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * expert: increments the core reference count
    */
   public void open() {
-    refCount.incrementAndGet();
+    if (isClosed()) {
+      throw new AlreadyClosedException();
+    }
+    int cnt = refCount.incrementAndGet();
+    if (log.isDebugEnabled()) log.debug("open refcount {} {}", this, cnt);
     MDCLoggingContext.setCore(this);
   }
 
@@ -1571,6 +1575,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   @Override
   public void close() {
     int count = refCount.decrementAndGet();
+    if (log.isDebugEnabled()) log.debug("close refcount {} {}", this, count);
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
       log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this);
@@ -1728,6 +1733,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       infoRegistry.clear();
 
       //areAllSearcherReferencesEmpty();
+      if (log.isDebugEnabled()) log.debug("close done refcount {} {}", this, -1);
       refCount.set(-1);
       synchronized (closeAndWait) {
         closeAndWait.notifyAll();
@@ -1748,7 +1754,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * Whether this core is closed.
    */
   public boolean isClosed() {
-    return refCount.get() <= 0;
+    return refCount.get() < 0;
   }
 
   private final Collection<CloseHook> closeHooks = ConcurrentHashMap.newKeySet(128);
@@ -3173,26 +3179,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       if (cfg != null) {
         cfg.refreshRequestParams();
       }
-      if (checkStale(zkClient, overlayPath, solrConfigversion) ||
-          checkStale(zkClient, solrConfigPath, overlayVersion) ||
-          checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
+      if (checkStale(zkClient, overlayPath, solrConfigversion) || checkStale(zkClient, solrConfigPath, overlayVersion) || checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
         log.info("core reload {}", coreName);
-        SolrConfigHandler configHandler = ((SolrConfigHandler) core.getRequestHandler("/config"));
-    //    if (configHandler.getReloadLock().tryLock()) {
-
-          try {
-            cc.reload(coreName);
-          } catch (SolrCoreState.CoreIsClosedException e) {
-            /*no problem this core is already closed*/
-          } finally {
-          //  configHandler.getReloadLock().unlock();
-          }
-
-//        } else {
-//          log.info("Another reload is in progress. Not doing anything.");
-//        }
-        return;
+        cc.reload(coreName);
       }
+
       //some files in conf directory may have  other than managedschema, overlay, params
       try (ParWork worker = new ParWork("ConfListeners")) {
 

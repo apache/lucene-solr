@@ -1962,7 +1962,6 @@ public class ZkController implements Closeable {
     synchronized (collectionToTerms) {
       ZkCollectionTerms ct = collectionToTerms.get(collection);
       if (ct != null) {
-        ct.close();
         ct.remove(cd.getCloudDescriptor().getShardId(), cd);
       }
     }

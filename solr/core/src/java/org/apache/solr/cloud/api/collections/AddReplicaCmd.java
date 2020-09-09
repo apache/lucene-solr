@@ -202,11 +202,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     Runnable runnable = () -> {
       try {
         shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
-      } catch (KeeperException e) {
-        log.error("ZooKeeper exception", e);
-        return;
-      } catch (InterruptedException e) {
-        log.error("Interrupted", e);
+      } catch (Exception e) {
+        ParWork.propegateInterrupt(e);
         return;
       }
 
