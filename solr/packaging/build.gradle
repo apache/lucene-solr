@@ -118,6 +118,10 @@ task toTgz(type: Tar) {
   from toDir.outputs
   destinationDirectory = buildDir
   compression = Compression.GZIP
+  
+  archiveBaseName = "solr"
+  
+  into "solr-${version}/"
 
   doLast {
     logger.lifecycle "Solr distribution tarball assembled at: " + archiveFile.get()
