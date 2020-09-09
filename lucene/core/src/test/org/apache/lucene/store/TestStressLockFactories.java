@@ -33,7 +33,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @LuceneTestCase.SuppressFileSystems("*")
-public class TestLockFactoriesMultiJVM extends LuceneTestCase {
+public class TestStressLockFactories extends LuceneTestCase {
 
   @SuppressForbidden(reason = "ProcessBuilder only allows to redirect to java.io.File")
   private static final ProcessBuilder applyRedirection(ProcessBuilder pb, int client, Path dir) {
