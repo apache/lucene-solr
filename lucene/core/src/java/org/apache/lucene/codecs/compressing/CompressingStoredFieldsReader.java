@@ -24,7 +24,9 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HOUR;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HOUR_ENCODING;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.INDEX_CODEC_NAME;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.INDEX_EXTENSION_PREFIX;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.INDEX_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.META_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.META_VERSION_START;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_DOUBLE;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_FLOAT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_INT;
@@ -35,6 +37,7 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_META;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_OFFHEAP_INDEX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
 
@@ -120,14 +123,26 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     numDocs = si.maxDoc();
 
     final String fieldsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION);
+    ChecksumIndexInput metaIn = null;
     try {
-      // Open the data file and read metadata
+      // Open the data file
       fieldsStream = d.openInput(fieldsStreamFN, context);
       version = CodecUtil.checkIndexHeader(fieldsStream, formatName, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix) == fieldsStream.getFilePointer();
 
-      chunkSize = fieldsStream.readVInt();
-      packedIntsVersion = fieldsStream.readVInt();
+      if (version >= VERSION_OFFHEAP_INDEX) {
+        final String metaStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, META_EXTENSION);
+        metaIn = d.openChecksumInput(metaStreamFN, IOContext.READONCE);
+        CodecUtil.checkIndexHeader(metaIn, INDEX_CODEC_NAME + "Meta", META_VERSION_START, version, si.getId(), segmentSuffix);
+      }
+      if (version >= VERSION_META) {
+        chunkSize = metaIn.readVInt();
+        packedIntsVersion = metaIn.readVInt();
+      } else {
+        chunkSize = fieldsStream.readVInt();
+        packedIntsVersion = fieldsStream.readVInt();
+      }
+
       decompressor = compressionMode.newDecompressor();
       this.merging = false;
       this.state = new BlockState();
@@ -163,7 +178,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
           }
         }
       } else {
-        FieldsIndexReader fieldsIndexReader = new FieldsIndexReader(d, si.name, segmentSuffix, INDEX_EXTENSION_PREFIX, INDEX_CODEC_NAME, si.getId());
+        FieldsIndexReader fieldsIndexReader = new FieldsIndexReader(d, si.name, segmentSuffix, INDEX_EXTENSION, INDEX_CODEC_NAME, si.getId(), metaIn);
         indexReader = fieldsIndexReader;
         maxPointer = fieldsIndexReader.getMaxPointer();
       }
@@ -171,17 +186,34 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       this.maxPointer = maxPointer;
       this.indexReader = indexReader;
 
-      fieldsStream.seek(maxPointer);
-      numChunks = fieldsStream.readVLong();
-      numDirtyChunks = fieldsStream.readVLong();
+      if (version >= VERSION_META) {
+        numChunks = metaIn.readVLong();
+        numDirtyChunks = metaIn.readVLong();
+      } else {
+        fieldsStream.seek(maxPointer);
+        numChunks = fieldsStream.readVLong();
+        numDirtyChunks = fieldsStream.readVLong();
+      }
       if (numDirtyChunks > numChunks) {
         throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, fieldsStream);
       }
 
+      if (metaIn != null) {
+        CodecUtil.checkFooter(metaIn, null);
+        metaIn.close();
+      }
+
       success = true;
+    } catch (Throwable t) {
+      if (metaIn != null) {
+        CodecUtil.checkFooter(metaIn, t);
+        throw new AssertionError("unreachable");
+      } else {
+        throw t;
+      }
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(this);
+        IOUtils.closeWhileHandlingException(this, metaIn);
       }
     }
   }
@@ -373,8 +405,17 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     // the start pointer at which you can read the compressed documents
     private long startPointer;
 
-    private final BytesRef spare = new BytesRef();
-    private final BytesRef bytes = new BytesRef();
+    private final BytesRef spare;
+    private final BytesRef bytes;
+
+    BlockState() {
+      if (merging) {
+        spare = new BytesRef();
+        bytes = new BytesRef();
+      } else {
+        spare = bytes = null;
+      }
+    }
 
     boolean contains(int docID) {
       return docID >= docBase && docID < docBase + chunkDocs;
@@ -503,6 +544,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       final int length = offsets[index+1] - offset;
       final int totalLength = offsets[chunkDocs];
       final int numStoredFields = this.numStoredFields[index];
+
+      final BytesRef bytes;
+      if (merging) {
+        bytes = this.bytes;
+      } else {
+        bytes = new BytesRef();
+      }
 
       final DataInput documentInput;
       if (length == 0) {

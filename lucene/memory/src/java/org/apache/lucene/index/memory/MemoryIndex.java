@@ -629,6 +629,7 @@ public class MemoryIndex {
 
   /**
    * Set the Similarity to be used for calculating field norms
+   * @param similarity instance with custom {@link Similarity#computeNorm} implementation
    */
   public void setSimilarity(Similarity similarity) {
     if (frozen)

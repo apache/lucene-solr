@@ -719,6 +719,11 @@ public class CoreContainer {
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
+    /*
+     * HealthCheckHandler needs to be initialized before InfoHandler, since the later one will call CoreContainer.getHealthCheckHandler().
+     * We don't register the handler here because it'll be registered inside InfoHandler
+     */
+    healthCheckHandler = loader.newInstance(cfg.getHealthCheckHandlerClass(), HealthCheckHandler.class, null, new Class<?>[]{CoreContainer.class}, new Object[]{this});
     infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
     coreAdminHandler = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
     configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
@@ -1577,6 +1582,13 @@ public class CoreContainer {
   public void reload(String name) {
     reload(name, null);
   }
+  public void reload(String name, UUID coreId, boolean async) {
+    if(async) {
+      runAsync(() -> reload(name, coreId));
+    } else {
+      reload(name, coreId);
+    }
+  }
   /**
    * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to
@@ -1591,13 +1603,8 @@ public class CoreContainer {
       throw new AlreadyClosedException();
     }
     SolrCore newCore = null;
-    SolrCore core = solrCores.getCoreFromAnyList(name, false);
+    SolrCore core = solrCores.getCoreFromAnyList(name, false, coreId);
     if (core != null) {
-      if(coreId != null && core.uniqueId != coreId) {
-        //trying to reload an already unloaded core
-        return;
-      }
-
       // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
       // CoreDescriptor and we need to reload it from the disk files
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
@@ -1827,6 +1834,9 @@ public class CoreContainer {
     return cfg.getCoreRootDirectory();
   }
 
+  public SolrCore getCore(String name) {
+    return getCore(name, null);
+  }
   /**
    * Gets a core by name and increase its refcount.
    *
@@ -1835,10 +1845,10 @@ public class CoreContainer {
    * @throws SolrCoreInitializationException if a SolrCore with this name failed to be initialized
    * @see SolrCore#close()
    */
-  public SolrCore getCore(String name) {
+  public SolrCore getCore(String name, UUID id) {
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
-    SolrCore core = solrCores.getCoreFromAnyList(name, true);
+    SolrCore core = solrCores.getCoreFromAnyList(name, true, id);
 
     // If a core is loaded, we're done just return it.
     if (core != null) {

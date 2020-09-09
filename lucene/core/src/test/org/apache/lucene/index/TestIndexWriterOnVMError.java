@@ -224,7 +224,9 @@ public class TestIndexWriterOnVMError extends LuceneTestCase {
       // assertTrue("hit OOM but writer is still open, WTF: ", writer.isClosed());
       try {
         writer.rollback();
-      } catch (Throwable t) {}
+      } catch (Throwable t) {
+        t.printStackTrace(log);
+      }
       return (VirtualMachineError) e;
     } else {
       Rethrow.rethrow(disaster);

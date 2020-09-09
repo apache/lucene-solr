@@ -46,8 +46,6 @@ dependencies {
    ":solr:contrib:analytics",
    ":solr:contrib:extraction",
    ":solr:contrib:clustering",
-   ":solr:contrib:dataimporthandler",
-   ":solr:contrib:dataimporthandler-extras",
    ":solr:contrib:jaegertracer-configurator",
    ":solr:contrib:langid",
    ":solr:contrib:ltr",
@@ -70,6 +68,7 @@ task toDir(type: Sync) {
   from(project(":solr").projectDir, {
     include "bin/**"
     include "licenses/**"
+    exclude "licenses/README.committers.txt"
     include "CHANGES.txt"
     include "LICENSE.txt"
     include "NOTICE.txt"

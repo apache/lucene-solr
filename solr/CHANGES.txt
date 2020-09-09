@@ -48,6 +48,8 @@ Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
 
+* SOLR-14616: CDCR support removed (Ishan Chattopadhyaya)
+
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -111,8 +113,13 @@ Other Changes
 
 * SOLR-14654: Remove plugin loading from .system collection (for 9.0) (noble)
 
-* SOLR-14702: All references to "master" and "slave" replaced with "leader" and "follower" (MarcusSorealheis, 
+* SOLR-14702: All references to "master" and "slave" replaced with "leader" and "follower" (MarcusSorealheis,
   Erick Erickson, Tomás Fernández Löbbe)
+
+* LUCENE-9433: Remove Ant support from trunk (Erick Erickson, Uwe Schindler et.al.)
+
+* SOLR-14783: Remove Data Import Handler (DIH), previously deprecated (Alexandre Rafalovitch)
+
 
 Bug Fixes
 ---------------------
@@ -172,6 +179,13 @@ Optimizations
 * SOLR-13132: JSON Facet perf improvements to support "sweeping" collection of "relatedness()"
   (hossman, Michael Gibney)
 
+* SOLR-14422: Admin UI shows Angular placeholders on first load / refresh.  (Colvin Cowie via Eric Pugh)
+
+* SOLR-14819: Fix inefficient iterator pattern in JsonSchemaValidator. (Thomas DuBuisson via Bruno Roustant)
+
+* SOLR-14658: SolrJ's CollectionAdminRequest.collectionStatus(collection) would internally get 
+  all collection statuses instead of just the specified collection. (Andy Vuong)
+
 Bug Fixes
 ---------------------
 
@@ -191,6 +205,20 @@ Bug Fixes
 * SOLR-14677: Improve DIH termination logic to close all DataSources, EntityProcessors (Jason Gerlowski)
 
 * SOLR-14703: Fix edismax replacement of all whitespace characters with spaces (Yuriy Koval via Jason Gerlowski)
+
+* SOLR-14700: Avoid NullPointerException in TupleStream.getShards() when streamContext is null.
+  (Mads Bondo Dydensborg, Christine Poerschke, Mike Drob)
+
+* SOLR-14752: Fix error in Zookeeper status when Prometheus plugin is enabled in ZK (Philipp Trulson via janhoy)
+
+* SOLR-14774: HealthCheckHandler is no longer an implicit SolrCore handler and can be configured from solr.xml
+  (Tomás Fernándex Löbbe)
+
+* SOLR-14714: Solr.cmd in windows loads the incorrect jetty module when using java>=9 (Endika Posadas via
+  Erick Erickson)
+
+* SOLR-14821: {!terms} docValuesTermsFilterTopLevel method now works with single-valued strings (Anatolii Siuniaev
+  via Jason Gerlowski)
 
 Other Changes
 ---------------------
@@ -213,6 +241,17 @@ Other Changes
 
 * SOLR-14731: Rename @SolrSingleThreaded to @SolrThreadUnsafe, mark DistribPackageStore with the annotation
   (marcussorealheis)
+
+* SOLR-14579: Comment SolrJ 'Utils' generic map functions 
+  (Megan Carey and a lot of education from Uwe Schindler via Erick Erickson)
+
+==================  8.6.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+* SOLR-14751: Zookeeper Admin screen not working for old ZK versions (janhoy)
 
 ==================  8.6.1 ==================
 

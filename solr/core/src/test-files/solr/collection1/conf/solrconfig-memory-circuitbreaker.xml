@@ -78,10 +78,12 @@
 
   </query>
 
-  <circuitBreakers enabled="true">
-    <cpuBreaker enabled="true" threshold="75"/>
-    <memBreaker enabled="true" threshold="75"/>
-  </circuitBreakers>
+  <circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
+    <str name="memEnabled">true</str>
+    <str name="memThreshold">75</str>
+    <str name="cpuEnabled">true</str>
+    <str name="cpuThreshold">75</str>
+  </circuitBreaker>
 
   <initParams path="/select">
     <lst name="defaults">

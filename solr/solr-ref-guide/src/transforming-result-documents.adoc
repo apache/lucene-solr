@@ -124,20 +124,24 @@ A default style can be configured by specifying an `args` parameter in your `sol
 
 === [child] - ChildDocTransformerFactory
 
-This transformer returns all <<indexing-nested-documents.adoc#indexing-nested-documents,descendant documents>> of each parent document matching your query.
-This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
+
+This transformer returns all <<indexing-nested-documents.adoc#indexing-nested-documents,descendant documents>> of each parent document matching your query.  This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
+
+Note that this transformer can be used even when the query used to match the result documents is not a <<other-parsers.adoc#block-join-query-parsers,Block Join query>>.
+
 
 [source,plain]
 ----
-fl=id,[child parentFilter=doc_type:book childFilter=doc_type:chapter limit=100]
+q=book_title:Solr&fl=id,[child parentFilter=doc_type:book childFilter=doc_type:chapter limit=100]
 ----
 
-Note that this transformer can be used even though the query itself is not a <<other-parsers.adoc#block-join-query-parsers,Block Join query>>.
+If the documents involved include a `\_nest_path_` field, then it is used to re-create the hierarchical structure of the descendent documents using the original psuedo-field names the documents were indexed with, otherwise the descendent documents are returned as a flat list of <<indexing-nested-documents#indexing-anonymous-children,anonymous children>>.
 
-When using this transformer, the `parentFilter` parameter must be specified _unless_ the schema declares `\_nest_path_`.  It works the same as in all Block Join Queries. Additional optional parameters are:
+`parentFilter`::
+When using a schema that does _not_ include the `\_nest_path_` field, this parameter is mandatory, and serves the same purpose as the `of`/`which` parms in `{!child}`/`{!parent}` query parsers: to identify the set of "all parents" for the purpose of identifying the begining & end of each nested document block.  *When a schema _does_ include a  `\_nest_path_` field, this parameter is prohibited.*
 
 `childFilter`::
-A query to filter which child documents should be included. This can be particularly useful when you have multiple levels of hierarchical documents. The default is all children.  This query supports a special syntax to match nested doc patterns so long as `\_nest_path_` is defined in the schema and the query contains a `/` preceding the first `:`.  Example: `childFilter=/comments/content:recipe`  Further details of this are experimental.
+A query to filter which child documents should be included. This can be particularly useful when you have multiple levels of hierarchical documents. The default is all children.
 
 `limit`::
 The maximum number of child documents to be returned per parent document. The default is `10`.
@@ -146,6 +150,33 @@ The maximum number of child documents to be returned per parent document. The de
 The field list which the transformer is to return. The default is the top level `fl`).
 +
 There is a further limitation in which the fields here should be a subset of those specified by the top level `fl` parameter.
+
+
+[TIP]
+====
+.Experimental `childFilter` Syntax
+
+When a `\_nest_path_` field is defined, the `childFilter` option supports an experimental syntax to combine a "path syntax" restriction with a more traditional filtering query.
+
+*This syntax is triggered by including a `/` seperated path structure prior to a query that includes a `:` character.*
+
+When the "path" begins with a `/` character, it restricts matches to documents that have that exist "path" of nested psuedo-field documents, starting at the Root document of the block (even if the document being transformed is not a Root level document)
+
+Some Examples:
+
+* `childFilter="/skus/\*:*"`
+** Matches any documents that are descendents of the current document and have a "nested path" of `/skus` -- but not any children of those `skus`
+* childFilter="/skus/color_s:RED"
+** Matches any documents that are descendents of the current document; match `color_s:RED`; and have a "nested path" of `/skus` -- but not any children of those `skus`
+* `childFilter="/skus/manuals/\*:*"`
+** Matches any documents that are descendents of the current document and have a "nested path" of `/skus/manuals` -- but not any children of those `manuals`
+
+When paths do not start with a `/` they are treated as "path suffixes":
+
+* `childFilter="manuals/\*:*"`
+** Matches any documents that are descendents of the current document and have a "nested path" that ends with "manuals", regardless of how deeply nested they are -- but not any children of those `manuals`
+
+====
 
 
 === [shard] - ShardAugmenterFactory

@@ -78,6 +78,7 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -227,14 +228,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     queryResultWindowSize = Math.max(1, getInt("query/queryResultWindowSize", 1));
     queryResultMaxDocsCached = getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
     enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
-
-    useCircuitBreakers = getBool("circuitBreakers/@enabled", false);
-    cpuCBEnabled = getBool("circuitBreakers/cpuBreaker/@enabled", false);
-    memCBEnabled = getBool("circuitBreakers/memBreaker/@enabled", false);
-    memCBThreshold = getInt("circuitBreakers/memBreaker/@threshold", 95);
-    cpuCBThreshold = getInt("circuitBreakers/cpuBreaker/@threshold", 95);
-
-    validateCircuitBreakerThresholds();
     
     filterCacheConfig = CacheConfig.getConfig(this, "query/filterCache");
     queryResultCacheConfig = CacheConfig.getConfig(this, "query/queryResultCache");
@@ -365,6 +358,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       .add(new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS))
       .add(new SolrPluginInfo(RestManager.class, "restManager"))
       .add(new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS))
+      .add(new SolrPluginInfo(CircuitBreakerManager.class, "circuitBreaker"))
       .build();
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
@@ -530,13 +524,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   public final int queryResultWindowSize;
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
-
-  // Circuit Breaker Configuration
-  public final boolean useCircuitBreakers;
-  public final int memCBThreshold;
-  public final boolean memCBEnabled;
-  public final boolean cpuCBEnabled;
-  public final int cpuCBThreshold;
 
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
@@ -817,16 +804,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     loader.reloadLuceneSPI();
   }
 
-  private void validateCircuitBreakerThresholds() {
-    if (useCircuitBreakers) {
-      if (memCBEnabled) {
-        if (memCBThreshold > 95 || memCBThreshold < 50) {
-          throw new IllegalArgumentException("Valid value range of memoryCircuitBreakerThresholdPct is 50 -  95");
-        }
-      }
-    }
-  }
-
   public int getMultipartUploadLimitKB() {
     return multipartUploadLimitKB;
   }
@@ -887,7 +864,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
-    result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion);
+    if(luceneMatchVersion != null) result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion.toString());
     result.put("updateHandler", getUpdateHandlerInfo());
     Map m = new LinkedHashMap();
     result.put("query", m);
@@ -896,11 +873,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
     m.put("enableLazyFieldLoading", enableLazyFieldLoading);
     m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
-    m.put("useCircuitBreakers", useCircuitBreakers);
-    m.put("cpuCircuitBreakerEnabled", cpuCBEnabled);
-    m.put("memoryCircuitBreakerEnabled", memCBEnabled);
-    m.put("memoryCircuitBreakerThresholdPct", memCBThreshold);
-    m.put("cpuCircuitBreakerThreshold", cpuCBThreshold);
+
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;

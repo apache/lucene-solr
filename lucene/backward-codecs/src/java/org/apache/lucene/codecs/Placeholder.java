@@ -18,5 +18,6 @@ package org.apache.lucene.codecs;
 
 /** Remove this file when adding back compat codecs */
 public class Placeholder {
-  
+  // no instance
+  private Placeholder() {}
 }

@@ -18,8 +18,7 @@
 package org.apache.lucene.codecs.lucene70;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene84.Lucene84RWCodec;
 import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
 import org.apache.lucene.util.Version;
 
@@ -32,11 +31,6 @@ public class TestLucene70SegmentInfoFormat extends BaseSegmentInfoFormatTestCase
 
   @Override
   protected Codec getCodec() {
-    return new FilterCodec("Lucene84", Codec.forName("Lucene84")) {
-      @Override
-      public SegmentInfoFormat segmentInfoFormat() {
-        return new Lucene70RWSegmentInfoFormat();
-      }
-    };
+    return new Lucene84RWCodec();
   }
 }
