@@ -117,11 +117,9 @@ task toTgz(type: Tar) {
   
   archiveBaseName = "solr"
   from(toDir.outputs) {
-	exclude "**/bin/*", "**/*.sh"
-  }
-  from(toDir.outputs) {
-	include "**/bin/*", "**/*.sh"
-	fileMode 0755
+    filesMatching(["**/bin/*", "**/*.sh"]) {
+      setMode 0755
+    }
   }
   into "solr-${version}/"
   destinationDirectory = buildDir
