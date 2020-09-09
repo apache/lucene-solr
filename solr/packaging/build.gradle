@@ -114,14 +114,18 @@ task toTgz(type: Tar) {
   group "build"
 
   dependsOn toDir
-
-  from toDir.outputs
-  destinationDirectory = buildDir
-  compression = Compression.GZIP
   
   archiveBaseName = "solr"
-  
+  from(toDir.outputs) {
+	exclude "**/bin/*", "**/*.sh"
+  }
+  from(toDir.outputs) {
+	include "**/bin/*", "**/*.sh"
+	fileMode 0755
+  }
   into "solr-${version}/"
+  destinationDirectory = buildDir
+  compression = Compression.GZIP
 
   doLast {
     logger.lifecycle "Solr distribution tarball assembled at: " + archiveFile.get()
