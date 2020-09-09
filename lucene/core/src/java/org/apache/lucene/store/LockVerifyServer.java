@@ -20,7 +20,6 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -45,7 +44,7 @@ public class LockVerifyServer {
   public static final int START_GUN_SIGNAL = 43;
 
   // method pkg-private for tests
-  static void run(InetAddress hostname, int maxClients, Consumer<InetSocketAddress> startClients) throws Exception {
+  static void run(String hostname, int maxClients, Consumer<InetSocketAddress> startClients) throws Exception {
     try (final ServerSocket s = new ServerSocket()) {
       s.setReuseAddress(true);
       s.setSoTimeout(30000); // initially 30 secs to give clients enough time to startup
@@ -143,7 +142,7 @@ public class LockVerifyServer {
       System.exit(1);
     }
 
-    run(InetAddress.getByName(args[0]), Integer.parseInt(args[1]), addr -> {});
+    run(args[0], Integer.parseInt(args[1]), addr -> {});
   }
   
 }

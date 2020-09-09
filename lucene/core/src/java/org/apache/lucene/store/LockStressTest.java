@@ -76,7 +76,7 @@ public class LockStressTest {
 
   @SuppressForbidden(reason = "System.out required: command line tool")
   @SuppressWarnings("try")
-  public static int run(int myID, String verifierHost, int verifierPort, String lockFactoryClassName,
+  private static int run(int myID, String verifierHost, int verifierPort, String lockFactoryClassName,
                         Path lockDirPath, int sleepTimeMS, int count) throws IOException, InterruptedException {
     if (myID < 0 || myID > 255) {
       System.out.println("myID must be a unique int 0..255");
