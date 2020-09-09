@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.codecs.lucene87;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -40,7 +42,9 @@ final class BugfixDeflater_JDK8252739 extends Deflater {
       throw new IllegalArgumentException("dictLength must be >= 0");
     }
     if (IS_BUGGY_JDK) {
-      return new BugfixDeflater_JDK8252739(level, nowrap, dictLength);
+      // Some JDKs need "accessDeclaredMembers" privileges to create a Deflater object
+      return AccessController.doPrivileged(
+              (PrivilegedAction<BugfixDeflater_JDK8252739>) () -> new BugfixDeflater_JDK8252739(level, nowrap, dictLength));
     } else {
       return new Deflater(level, nowrap);
     }
