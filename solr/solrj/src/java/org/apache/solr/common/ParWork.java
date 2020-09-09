@@ -106,7 +106,7 @@ public class ParWork implements Closeable {
   }
 
   public static void closeMyPerThreadExecutor() {
-    closeMyPerThreadExecutor(true);
+    closeMyPerThreadExecutor(false);
   }
 
   public static void closeMyPerThreadExecutor(boolean unlockClose) {

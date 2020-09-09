@@ -245,96 +245,82 @@ public class ConnectionManager implements Watcher, Closeable {
 
   private synchronized void reconnect() {
     if (isClosed()) return;
-    try {
-      if (beforeReconnect != null) {
-        try {
-          beforeReconnect.command();
-        } catch (Exception e) {
-          ParWork
-              .propegateInterrupt("Exception running beforeReconnect command",
-                  e);
-          if (e instanceof InterruptedException
-              || e instanceof AlreadyClosedException) {
-            return;
-          }
-        }
-      }
 
-      synchronized (keeperLock) {
-        if (isClosed()) return;
-        if (keeper != null) {
-          // if there was a problem creating the new SolrZooKeeper
-          // or if we cannot run our reconnect command, close the keeper
-          // our retry loop will try to create one again
-          try {
-            ParWork.close(keeper);
-            keeper = null;
-          } catch (Exception e) {
-            ParWork.propegateInterrupt(
-                "Exception closing keeper after hitting exception", e);
-            if (e instanceof InterruptedException
-                || e instanceof AlreadyClosedException) {
-              return;
-            }
-          }
-        }
-
-      }
-
-      do {
-        if (isClosed()) return;
-        // This loop will break if a valid connection is made. If a connection is not made then it will repeat and
-        // try again to create a new connection.
-        log.info("Running reconnect strategy");
-        try {
-          updatezk();
-          try {
-            waitForConnected(5000);
-            if (isClosed()) return;
-            if (onReconnect != null) {
-              try {
-                onReconnect.command();
-              } catch (Exception e) {
-                SolrException exp = new SolrException(
-                    SolrException.ErrorCode.SERVER_ERROR, e);
-                ParWork.propegateInterrupt(
-                    "$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper="
-                        + keeper + ")", e);
-                if (e instanceof InterruptedException
-                    || e instanceof AlreadyClosedException) {
-                  return;
-                }
-                throw exp;
-              }
-            }
-          } catch (InterruptedException | AlreadyClosedException e) {
-            ParWork.propegateInterrupt(e);
-            return;
-          } catch (Exception e1) {
-            log.error("Exception updating zk instance", e1);
-            SolrException exp = new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR, e1);
-            throw exp;
-          }
-
-          if (log.isDebugEnabled()) {
-            log.debug(
-                "$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper) - end");
-          }
-        } catch (AlreadyClosedException e) {
+    if (beforeReconnect != null) {
+      try {
+        beforeReconnect.command();
+      } catch (Exception e) {
+        ParWork.propegateInterrupt("Exception running beforeReconnect command", e);
+        if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
           return;
-        } catch (Exception e) {
-          SolrException.log(log, "", e);
-          log.info("Could not connect due to error, trying again ..");
+        }
+      }
+    }
+
+    synchronized (keeperLock) {
+      if (isClosed()) return;
+      if (keeper != null) {
+        // if there was a problem creating the new SolrZooKeeper
+        // or if we cannot run our reconnect command, close the keeper
+        // our retry loop will try to create one again
+        try {
           ParWork.close(keeper);
-          break;
+          keeper = null;
+        } catch (Exception e) {
+          ParWork.propegateInterrupt("Exception closing keeper after hitting exception", e);
+          if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
+            return;
+          }
+        }
+      }
+
+    }
+
+    do {
+      if (isClosed()) return;
+      // This loop will break if a valid connection is made. If a connection is not made then it will repeat and
+      // try again to create a new connection.
+      log.info("Running reconnect strategy");
+      try {
+        updatezk();
+        try {
+          waitForConnected(5000);
+          if (isClosed()) return;
+          if (onReconnect != null) {
+            try {
+              onReconnect.command();
+            } catch (Exception e) {
+              SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+              ParWork.propegateInterrupt("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper=" + keeper + ")", e);
+              if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
+                return;
+              }
+              throw exp;
+            }
+          }
+        } catch (InterruptedException | AlreadyClosedException e) {
+          ParWork.propegateInterrupt(e);
+          return;
+        } catch (Exception e1) {
+          log.error("Exception updating zk instance", e1);
+          SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e1);
+          throw exp;
         }
 
-      } while (!isClosed() || Thread.currentThread().isInterrupted());
-    } finally {
-      ParWork
-          .closeMyPerThreadExecutor(); // we are using the root exec directly, let's just make sure it's closed here to avoid a slight delay leak
-    }
+        if (log.isDebugEnabled()) {
+          log.debug("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper) - end");
+        }
+      } catch (AlreadyClosedException e) {
+        return;
+      } catch (Exception e) {
+        SolrException.log(log, "", e);
+        log.info("Could not connect due to error, trying again ..");
+        ParWork.close(keeper);
+        break;
+      }
+
+    } while (!isClosed() || Thread.currentThread().isInterrupted());
+
     log.info("zkClient Connected: {}", connected);
   }
 

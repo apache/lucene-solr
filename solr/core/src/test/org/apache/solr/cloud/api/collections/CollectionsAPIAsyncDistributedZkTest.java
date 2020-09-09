@@ -75,6 +75,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit harden
   public void testSolrJAPICalls() throws Exception {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();

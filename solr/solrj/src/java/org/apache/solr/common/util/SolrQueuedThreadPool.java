@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPoolBudget;
@@ -39,13 +40,17 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, ThreadPool.SizedThreadPool, Dumpable, TryExecutor, Closeable {
@@ -65,7 +70,10 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
     private final AtomicLong _lastShrink = new AtomicLong();
-    private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
+    private final Map<Runnable, Future> _threads = new ConcurrentHashMap<>(256);
+
+    private final Set<Future> _threadFutures = ConcurrentHashMap.newKeySet();
+
     private final Object _joinLock = new Object();
     private final BlockingQueue<Runnable> _jobs;
     private final ThreadGroup _threadGroup;
@@ -206,15 +214,14 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         close();
     }
 
-    private void joinThreads(long stopByNanos) throws InterruptedException
-    {
-        for (Thread thread : _threads)
+    private void joinThreads(long stopByNanos) throws InterruptedException, TimeoutException, ExecutionException {
+        for (Future thread : _threadFutures)
         {
             long canWait = TimeUnit.NANOSECONDS.toMillis(stopByNanos - System.nanoTime());
             if (LOG.isDebugEnabled())
                 LOG.debug("Waiting for {} for {}", thread, canWait);
             if (canWait > 0)
-                thread.join(canWait);
+                thread.get(canWait, TimeUnit.NANOSECONDS);
         }
     }
 
@@ -585,11 +592,11 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         boolean started = false;
         try
         {
-            Thread thread = _threadFactory.newThread(_runnable);
-            ParWork.getRootSharedExecutor().execute(thread);
+            Runnable runnable = newRunnable(_runnable);
+            Future future = ParWork.getRootSharedExecutor().submit(runnable);
             if (LOG.isDebugEnabled())
-                LOG.debug("Starting {}", thread);
-            _threads.add(thread);
+                LOG.debug("Starting {}", runnable);
+            _threads.put(runnable, future);
             _lastShrink.set(System.nanoTime());
             _runnable.waitForStart();
             started = true;
@@ -616,8 +623,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         }
     }
 
-    @Override
-    public Thread newThread(Runnable runnable)
+    public Runnable newRunnable(Runnable runnable)
     {
         ThreadGroup group;
 
@@ -627,74 +633,14 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
                 s.getThreadGroup() :
                 Thread.currentThread().getThreadGroup();
         }
-        Thread thread = new MyThread(group, runnable);
-        thread.setDaemon(isDaemon());
-        thread.setPriority(getThreadsPriority());
-        thread.setName(_name + "-" + thread.getId());
+        Runnable thread = new MyRunnable(runnable);
+
         return thread;
     }
 
-    protected void removeThread(Thread thread)
+    protected void removeThread(Runnable thread)
     {
         _threads.remove(thread);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        List<Object> threads = new ArrayList<>(getMaxThreads());
-        for (final Thread thread : _threads)
-        {
-            final StackTraceElement[] trace = thread.getStackTrace();
-            String knownMethod = "";
-            for (StackTraceElement t : trace)
-            {
-                if ("idleJobPoll".equals(t.getMethodName()) && t.getClassName().equals(SolrQueuedThreadPool.Runner.class.getName()))
-                {
-                    knownMethod = "IDLE ";
-                    break;
-                }
-
-                if ("reservedWait".equals(t.getMethodName()) && t.getClassName().endsWith("ReservedThread"))
-                {
-                    knownMethod = "RESERVED ";
-                    break;
-                }
-
-                if ("select".equals(t.getMethodName()) && t.getClassName().endsWith("SelectorProducer"))
-                {
-                    knownMethod = "SELECTING ";
-                    break;
-                }
-
-                if ("accept".equals(t.getMethodName()) && t.getClassName().contains("ServerConnector"))
-                {
-                    knownMethod = "ACCEPTING ";
-                    break;
-                }
-            }
-            final String known = knownMethod;
-
-            if (isDetailedDump())
-            {
-                threads.add(new MyDumpable(known, thread, trace));
-            }
-            else
-            {
-                int p = thread.getPriority();
-                threads.add(thread.getId() + " " + thread.getName() + " " + known + thread.getState() + " @ " + (trace.length > 0 ? trace[0] : "???") + (p == Thread.NORM_PRIORITY ? "" : (" prio=" + p)));
-            }
-        }
-
-        if (isDetailedDump())
-        {
-            List<Runnable> jobs = new ArrayList<>(getQueue());
-            dumpObjects(out, indent, new DumpableCollection("threads", threads), new DumpableCollection("jobs", jobs));
-        }
-        else
-        {
-            dumpObjects(out, indent, new DumpableCollection("threads", threads));
-        }
     }
 
     @Override
@@ -733,8 +679,6 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         } catch (Error error) {
             log.error("Error in Jetty thread pool thread", error);
             this.error = error;
-        } finally {
-            ParWork.closeMyPerThreadExecutor();
         }
 
         synchronized (notify) {
@@ -759,63 +703,21 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         throw new UnsupportedOperationException("Use constructor injection");
     }
 
-    /**
-     * @param id the thread ID to interrupt.
-     * @return true if the thread was found and interrupted.
-     */
-    @ManagedOperation("interrupts a pool thread")
-    public boolean interruptThread(@Name("id") long id)
-    {
-        for (Thread thread : _threads)
-        {
-            if (thread.getId() == id)
-            {
-                thread.interrupt();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * @param id the thread ID to interrupt.
-     * @return the stack frames dump
-     */
-    @ManagedOperation("dumps a pool thread stack")
-    public String dumpThread(@Name("id") long id)
-    {
-        for (Thread thread : _threads)
-        {
-            if (thread.getId() == id)
-            {
-                StringBuilder buf = new StringBuilder();
-                buf.append(thread.getId()).append(" ").append(thread.getName()).append(" ");
-                buf.append(thread.getState()).append(":").append(System.lineSeparator());
-                for (StackTraceElement element : thread.getStackTrace())
-                {
-                    buf.append("  at ").append(element.toString()).append(System.lineSeparator());
-                }
-                return buf.toString();
-            }
-        }
+    @Override
+    public Thread newThread(Runnable runnable) {
         return null;
     }
 
-    private static class MyThread extends Thread {
+    private static class MyRunnable implements Runnable {
         private final Runnable runnable;
 
-        public MyThread(ThreadGroup group, Runnable runnable) {
-            super(group, "");
+        public MyRunnable(Runnable runnable) {
             this.runnable = runnable;
         }
 
         @Override
         public void run() {
-            try {
-                runnable.run();
-            } finally {
-                ParWork.closeMyPerThreadExecutor();
-            }
+            runnable.run();
         }
     }
 
@@ -955,13 +857,13 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
             }
             finally
             {
-                Thread thread = Thread.currentThread();
-                removeThread(thread);
+
+                removeThread(this);
 
                 // Decrement the total thread count and the idle count if we had no job
                 addCounts(-1, idle ? -1 : 0);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} exited for {}", thread, SolrQueuedThreadPool.this);
+                    LOG.debug("{} exited for {}", this, SolrQueuedThreadPool.this);
 
                 // There is a chance that we shrunk just as a job was queued for us, so
                 // check again if we have sufficient threads to meet demand
@@ -1013,20 +915,21 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         }
 
         // interrupt threads
-        for (Thread thread : _threads)
+        for (Future thread : _threadFutures)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Interrupting {}", thread);
-            thread.interrupt();
+            thread.cancel(true);
         }
 
-        while (getBusyThreads() > 0) {
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-               ParWork.propegateInterrupt(e, true);
-               break;
-            }
+        try {
+            joinThreads(15000);
+        } catch (InterruptedException e) {
+            LOG.warn("Interrupted in joinThreads on close {}", e);
+        } catch (TimeoutException e) {
+            LOG.warn("Timeout in joinThreads on close {}", e);
+        } catch (ExecutionException e) {
+            LOG.warn("Execution exception in joinThreads on close {}", e);
         }
 
         // Close any un-executed jobs

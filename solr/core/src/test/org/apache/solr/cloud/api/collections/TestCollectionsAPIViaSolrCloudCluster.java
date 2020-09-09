@@ -117,6 +117,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit harden
   public void testCollectionCreateSearchDelete() throws Exception {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();
