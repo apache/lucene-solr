@@ -38,6 +38,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -89,6 +90,7 @@ import org.slf4j.LoggerFactory;
  * This test would be faster if we simulated the zk state instead.
  */
 @Slow
+@LuceneTestCase.Nightly // can be randomly fairly slow, I think due to its thread pool executor shutting down
 public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

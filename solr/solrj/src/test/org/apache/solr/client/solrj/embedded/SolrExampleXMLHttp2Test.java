@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.Jetty;
 import org.junit.BeforeClass;
 
 public class SolrExampleXMLHttp2Test extends SolrExampleTests {
-  protected static JettySolrRunner jetty;
 
   @BeforeClass
   public static void beforeSolrExampleXMLHttp2Test() throws Exception {

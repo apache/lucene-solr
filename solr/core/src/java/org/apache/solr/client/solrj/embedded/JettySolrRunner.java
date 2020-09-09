@@ -642,7 +642,7 @@ public class JettySolrRunner implements Closeable {
     int tryCnt = 1;
     while (tryCnt < 3) {
       try {
-        log.info("Trying to start Jetty on port {} try number {} ...", port, tryCnt);
+        log.info(" {} try number {} ...", port, tryCnt);
         server.start();
         break;
       } catch (IOException ioe) {

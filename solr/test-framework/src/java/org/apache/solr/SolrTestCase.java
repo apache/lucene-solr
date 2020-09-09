@@ -301,17 +301,17 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("solr.http2solrclient.default.idletimeout", "15000");
       System.setProperty("distribUpdateSoTimeout", "15000");
-      System.setProperty("socketTimeout", "15000");
-      System.setProperty("connTimeout", "10000");
-      System.setProperty("solr.test.socketTimeout.default", "15000");
-      System.setProperty("solr.connect_timeout.default", "10000");
+      System.setProperty("socketTimeout", "3000");
+      System.setProperty("connTimeout", "3000");
+      System.setProperty("solr.test.socketTimeout.default", "3000");
+      System.setProperty("solr.connect_timeout.default", "3000");
       System.setProperty("solr.so_commit_timeout.default", "15000");
-      System.setProperty("solr.httpclient.defaultConnectTimeout", "10000");
-      System.setProperty("solr.httpclient.defaultSoTimeout", "15000");
+      System.setProperty("solr.httpclient.defaultConnectTimeout", "3000");
+      System.setProperty("solr.httpclient.defaultSoTimeout", "3000");
       // System.setProperty("solr.containerThreadsIdle", "30000"); no need to set
 
-      System.setProperty("solr.indexfetcher.sotimeout", "15000");
-      System.setProperty("solr.indexfetch.so_timeout.default", "15000");
+      System.setProperty("solr.indexfetcher.sotimeout", "3000");
+      System.setProperty("solr.indexfetch.so_timeout.default", "3000");
 
       System.setProperty("prepRecoveryReadTimeoutExtraWait", "100");
       System.setProperty("validateAfterInactivity", "-1");
