@@ -1767,6 +1767,10 @@ if [ $# -gt 0 ]; then
             stop_all=true
             shift
         ;;
+        -jfr)
+            JFR_ON=true
+            shift
+        ;;
         -force)
             FORCE=true
             PASS_TO_RUN_EXAMPLE+=" -force"
@@ -2135,6 +2139,11 @@ SOLR_OPTS+=($SOLR_JAVA_STACK_SIZE)
 if [ -z "$SOLR_TIMEZONE" ]; then
   SOLR_TIMEZONE='UTC'
 fi
+
+if [ -z "$JFR_ON" ]; then
+  JFR_ON=("-XX:+FlightRecorder" "-XX:StartFlightRecording=filename=${HOME}/jfr/jfr_results-${SOLR_PORT}.jfr,dumponexit=true,settings=profile,path-to-gc-roots=true")
+fi
+SOLR_OPTS+=($JFR_ON)
 
 # Launches Solr in foreground/background depending on parameters
 function start_solr() {
