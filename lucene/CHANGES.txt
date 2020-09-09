@@ -80,6 +80,7 @@ Other
 
 * LUCENE-9292: Refactor BKD point configuration into its own class. (Ignacio Vera)
 
+* LUCENE-9470: Make TestXYMultiPolygonShapeQueries more resilient for CONTAINS queries. (Ignacio Vera)
 
 ======================= Lucene 8.6.2 =======================
 
