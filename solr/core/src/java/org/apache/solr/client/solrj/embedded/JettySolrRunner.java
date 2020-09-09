@@ -67,6 +67,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -454,9 +455,9 @@ public class JettySolrRunner implements Closeable {
     }
 
     chain = injectJettyHandlers(chain);
-    ShutdownHandler shutdownHandler = new ShutdownHandler("solrrocks", true, true);
-    shutdownHandler.setHandler(chain);
-    chain = shutdownHandler;
+//    ShutdownHandler shutdownHandler = new ShutdownHandler("solrrocks", false, false);
+//    shutdownHandler.setHandler(chain);
+//    chain = shutdownHandler;
     if(config.enableV2) {
       RewriteHandler rwh = new RewriteHandler();
       rwh.setHandler(chain);
@@ -476,6 +477,7 @@ public class JettySolrRunner implements Closeable {
     gzipHandler.setIncludedMethods("GET");
 
     server.setHandler(gzipHandler);
+   // ShutdownThread.deregister(server);
   }
 
   /** descendants may inject own handler chaining it to the given root

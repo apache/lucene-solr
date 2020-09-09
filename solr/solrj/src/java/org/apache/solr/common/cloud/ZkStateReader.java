@@ -1720,6 +1720,7 @@ public class ZkStateReader implements SolrCloseable {
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
     CollectionStateWatcher watcher = (n, c) -> {
+      if (isClosed()) return true;
       // nocommit
       //log.info("watcher updated:" + c);
       docCollection.set(c);

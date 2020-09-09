@@ -172,6 +172,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
       assertEquals(r.toString(), Replica.State.ACTIVE, r.getState());
     }
     // make sure all replicas on emptyNode are not active
+    // nocommit - make this wait properlly on server or use zkstatereader#waitFor here
     replicas = collection.getReplicas(emptyNode);
     if (replicas != null) {
       for (Replica r : replicas) {

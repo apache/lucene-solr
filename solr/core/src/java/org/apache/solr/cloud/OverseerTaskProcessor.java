@@ -24,6 +24,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -45,6 +46,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
@@ -189,125 +192,102 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       }
     }
 
-    try {
-      while (!this.isClosed()) {
-        try {
+    while (!this.isClosed()) {
+      try {
 
-          if (log.isDebugEnabled()) log.debug(
-              "Cleaning up work-queue. #Running tasks: {} #Completed tasks: {}",
-              runningTasksSize(), completedTasks.size());
-          cleanUpWorkQueue();
+        if (log.isDebugEnabled()) log.debug("Cleaning up work-queue. #Running tasks: {} #Completed tasks: {}", runningTasksSize(), completedTasks.size());
+        cleanUpWorkQueue();
 
-          printTrackingMaps();
+        printTrackingMaps();
 
-          boolean waited = false;
+        boolean waited = false;
 
-          while (runningTasksSize() > MAX_PARALLEL_TASKS) {
-            synchronized (waitLock) {
-              waitLock.wait(1000);//wait for 1000 ms or till a task is complete
-            }
-            waited = true;
+        while (runningTasksSize() > MAX_PARALLEL_TASKS) {
+          synchronized (waitLock) {
+            waitLock.wait(1000);//wait for 1000 ms or till a task is complete
+          }
+          waited = true;
+        }
+
+        if (waited) cleanUpWorkQueue();
+
+        ArrayList<QueueEvent> heads = new ArrayList<>(blockedTasks.size() + MAX_PARALLEL_TASKS);
+        heads.addAll(blockedTasks.values());
+        blockedTasks.clear(); // clear it now; may get refilled below.
+        //If we have enough items in the blocked tasks already, it makes
+        // no sense to read more items from the work queue. it makes sense
+        // to clear out at least a few items in the queue before we read more items
+        if (heads.size() < MAX_BLOCKED_TASKS) {
+          //instead of reading MAX_PARALLEL_TASKS items always, we should only fetch as much as we can execute
+          int toFetch = Math.min(MAX_BLOCKED_TASKS - heads.size(), MAX_PARALLEL_TASKS - runningTasksSize());
+          List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 10000);
+          if (log.isDebugEnabled()) log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(), newTasks);
+          heads.addAll(newTasks);
+        }
+
+        if (isClosed) return;
+
+        taskBatch.batchId++;
+
+        for (QueueEvent head : heads) {
+
+          if (runningZKTasks.contains(head.getId())) {
+            log.warn("Task found in running ZKTasks already, continuing");
+            continue;
           }
 
-          if (waited) cleanUpWorkQueue();
-
-          ArrayList<QueueEvent> heads = new ArrayList<>(
-              blockedTasks.size() + MAX_PARALLEL_TASKS);
-          heads.addAll(blockedTasks.values());
-          blockedTasks.clear(); // clear it now; may get refilled below.
-          //If we have enough items in the blocked tasks already, it makes
-          // no sense to read more items from the work queue. it makes sense
-          // to clear out at least a few items in the queue before we read more items
-          if (heads.size() < MAX_BLOCKED_TASKS) {
-            //instead of reading MAX_PARALLEL_TASKS items always, we should only fetch as much as we can execute
-            int toFetch = Math.min(MAX_BLOCKED_TASKS - heads.size(),
-                MAX_PARALLEL_TASKS - runningTasksSize());
-            List<QueueEvent> newTasks = workQueue
-                .peekTopN(toFetch, excludedTasks, 10000);
-            if (log.isDebugEnabled()) log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(),
-                newTasks);
-            heads.addAll(newTasks);
-          }
-
-          if (isClosed) return;
-
-          taskBatch.batchId++;
-
-          for (QueueEvent head : heads) {
-
-            if (runningZKTasks.contains(head.getId())) {
-              log.warn("Task found in running ZKTasks already, continuing");
-              continue;
-            }
-
-            final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
-            final String asyncId = message.getStr(ASYNC);
-            if (hasLeftOverItems) {
-              if (head.getId().equals(oldestItemInWorkQueue))
-                hasLeftOverItems = false;
-              if (asyncId != null && (completedMap.contains(asyncId)
-                  || failureMap.contains(asyncId))) {
-                log.debug(
-                    "Found already processed task in workQueue, cleaning up. AsyncId [{}]",
-                    asyncId);
-                workQueue.remove(head);
-                continue;
-              }
-            }
-            String operation = message.getStr(Overseer.QUEUE_OPERATION);
-            if (operation == null) {
-              log.error("Msg does not have required " + Overseer.QUEUE_OPERATION
-                  + ": {}", message);
+          final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
+          final String asyncId = message.getStr(ASYNC);
+          if (hasLeftOverItems) {
+            if (head.getId().equals(oldestItemInWorkQueue)) hasLeftOverItems = false;
+            if (asyncId != null && (completedMap.contains(asyncId) || failureMap.contains(asyncId))) {
+              log.debug("Found already processed task in workQueue, cleaning up. AsyncId [{}]", asyncId);
               workQueue.remove(head);
               continue;
             }
-            OverseerMessageHandler messageHandler = selector
-                .selectOverseerMessageHandler(message);
-            OverseerMessageHandler.Lock lock = messageHandler
-                .lockTask(message, taskBatch);
-            if (lock == null) {
-              log.debug("Exclusivity check failed for [{}]",
-                  message.toString());
-              // we may end crossing the size of the MAX_BLOCKED_TASKS. They are fine
-              if (blockedTasks.size() < MAX_BLOCKED_TASKS)
-                blockedTasks.put(head.getId(), head);
-              continue;
-            }
-            try {
-              markTaskAsRunning(head, asyncId);
-              if (log.isDebugEnabled()) {
-                log.debug("Marked task [{}] as running", head.getId());
-              }
-            } catch (Exception e) {
-              if (e instanceof KeeperException.SessionExpiredException
-                  || e instanceof InterruptedException) {
-                ParWork.propegateInterrupt(e);
-                log.error("ZooKeeper session has expired");
-                return;
-              }
-
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-            }
-            if (log.isDebugEnabled()) log.debug(
-                messageHandler.getName() + ": Get the message id:" + head
-                    .getId() + " message:" + message.toString());
-            Runner runner = new Runner(messageHandler, message, operation, head,
-                lock);
-            taskFutures.put(runner, ParWork.getRootSharedExecutor().submit(runner));
           }
+          String operation = message.getStr(Overseer.QUEUE_OPERATION);
+          if (operation == null) {
+            log.error("Msg does not have required " + Overseer.QUEUE_OPERATION + ": {}", message);
+            workQueue.remove(head);
+            continue;
+          }
+          OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
+          OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
+          if (lock == null) {
+            log.debug("Exclusivity check failed for [{}]", message.toString());
+            // we may end crossing the size of the MAX_BLOCKED_TASKS. They are fine
+            if (blockedTasks.size() < MAX_BLOCKED_TASKS) blockedTasks.put(head.getId(), head);
+            continue;
+          }
+          try {
+            markTaskAsRunning(head, asyncId);
+            if (log.isDebugEnabled()) {
+              log.debug("Marked task [{}] as running", head.getId());
+            }
+          } catch (Exception e) {
+            if (e instanceof KeeperException.SessionExpiredException || e instanceof InterruptedException) {
+              ParWork.propegateInterrupt(e);
+              log.error("ZooKeeper session has expired");
+              return;
+            }
 
-        } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propegateInterrupt(e, true);
-          return;
-        } catch (KeeperException.SessionExpiredException e) {
-          log.warn("Zookeeper expiration");
-          return;
-        } catch (Exception e) {
-          log.error("Unexpected exception", e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+          if (log.isDebugEnabled()) log.debug(messageHandler.getName() + ": Get the message id:" + head.getId() + " message:" + message.toString());
+          Runner runner = new Runner(messageHandler, message, operation, head, lock);
+          taskFutures.put(runner, ParWork.getRootSharedExecutor().submit(runner));
         }
+
+      } catch (InterruptedException | AlreadyClosedException e) {
+        ParWork.propegateInterrupt(e, true);
+        return;
+      } catch (KeeperException.SessionExpiredException e) {
+        log.warn("Zookeeper expiration");
+        return;
+      } catch (Exception e) {
+        log.error("Unexpected exception", e);
       }
-    } finally {
-      this.close();
     }
 
     if (log.isDebugEnabled()) {
@@ -353,7 +333,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       }
     }
 
-
     if (interrupted.get()) {
       Thread.currentThread().interrupt();
       throw new InterruptedException();
@@ -368,22 +347,26 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     }
   }
 
+  public void closing() {
+    isClosed = true;
+  }
+
   public void close() {
+    close(false);
+  }
+
+  public void close(boolean closeAndDone) {
     if (log.isDebugEnabled()) {
       log.debug("close() - start");
     }
-    for (Future future : taskFutures.values()) {
-      try {
-        future.get();
-      } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e, true);
-      } catch (ExecutionException e) {
-        log.error("", e);
+    isClosed = true;
+    if (closeAndDone) {
+      for (Future future : taskFutures.values()) {
+        future.cancel(true);
       }
     }
 
-    ParWork.close(selector);
-    isClosed = true;
+    IOUtils.closeQuietly(selector);
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {

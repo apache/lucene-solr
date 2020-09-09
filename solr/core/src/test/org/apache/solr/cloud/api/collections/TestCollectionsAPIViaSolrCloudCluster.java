@@ -59,8 +59,8 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
   private static final int numShards = 2;
   private static final int numReplicas = 2;
-  private static final int maxShardsPerNode = TEST_NIGHTLY ? 1 : 10;
-  private static int nodeCount;
+  private static final int maxShardsPerNode = 1;
+  private static final int nodeCount = 5;
   private static final String configName = "solrCloudCollectionConfig";
   private static final Map<String,String> collectionProperties  // ensure indexes survive core shutdown
       = Collections.singletonMap("solr.directoryFactory", "solr.StandardDirectoryFactory");
@@ -68,7 +68,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     System.setProperty("solr.skipCommitOnClose", "false");
-    nodeCount = TEST_NIGHTLY ? nodeCount : 2;
     configureCluster(nodeCount).addConfig(configName, configset("cloud-minimal")).configure();
     super.setUp();
   }
@@ -87,6 +86,13 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
           .setCreateNodeSet(createNodeSet)
           .setProperties(collectionProperties)
           .processAndWait(cluster.getSolrClient(), 10);
+
+      // async will not currently gaurantee our cloud client is state up to date
+      if (createNodeSet != null && createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY)) {
+        cluster.waitForActiveCollection(collectionName, numShards, 0);
+      } else {
+        cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
+      }
     }
     else {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
@@ -99,7 +105,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit "was expecting to find a node without a replica
   public void testCollectionCreateSearchDelete() throws Exception {
     final CloudHttp2SolrClient client = cluster.getSolrClient();
     final String collectionName = "testcollection";
@@ -114,14 +119,12 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     // shut down a server
     JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
     
-    cluster.waitForJettyToStop(stoppedServer);
-    
     assertTrue(stoppedServer.isStopped());
     assertEquals(nodeCount - 1, cluster.getJettySolrRunners().size());
 
     // create a server
     JettySolrRunner startedServer = cluster.startJettySolrRunner();
-    cluster.waitForAllNodes(30);
+
     assertTrue(startedServer.isRunning());
     assertEquals(nodeCount, cluster.getJettySolrRunners().size());
 
@@ -208,6 +211,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit
   public void testStopAllStartAll() throws Exception {
 
     final String collectionName = "testStopAllStartAllCollection";
@@ -346,12 +350,11 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
               } catch (Exception e) {
                 throw new RuntimeException(e);
               }
-              assertTrue(jetty.isRunning());
             });
         }
       }
     }
-//    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
+    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
 
     // re-query collection
     assertEquals(numDocs, client.query(collectionName, query).getResults().getNumFound());

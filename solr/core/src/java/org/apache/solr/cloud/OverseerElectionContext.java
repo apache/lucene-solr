@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Pair;
@@ -54,20 +55,20 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
     // TODO: the idea here is that we could clear the Overseer queue
     // if we knew we are the first Overseer in a cluster startup
-    // disable until there is more testing in real world vs tests
-//    if (!weAreReplacement) {
-//      // kills the queues
-//      ZkDistributedQueue queue = new ZkDistributedQueue(
-//          overseer.getZkController().getZkStateReader().getZkClient(),
-//          "/overseer/queue", new Stats(), 0, new ConnectionManager.IsClosed() {
-//        public boolean isClosed() {
-//          return overseer.isClosed() || overseer.getZkController()
-//              .getCoreContainer().isShutDown();
-//        }
-//      });
-//      clearQueue(queue);
-//      clearQueue(Overseer.getInternalWorkQueue(zkClient, new Stats()));
-//    }
+    // needs more testing in real world vs tests
+    if (!weAreReplacement) {
+      // kills the queues
+      ZkDistributedQueue queue = new ZkDistributedQueue(
+          overseer.getZkController().getZkStateReader().getZkClient(),
+          "/overseer/queue", new Stats(), 0, new ConnectionManager.IsClosed() {
+        public boolean isClosed() {
+          return overseer.isClosed() || overseer.getZkController()
+              .getCoreContainer().isShutDown();
+        }
+      });
+      clearQueue(queue);
+      clearQueue(Overseer.getInternalWorkQueue(zkClient, new Stats()));
+    }
 
     super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
 
@@ -143,24 +144,13 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
   public void close(boolean fromCSUpdateThread) {
     this.isClosed  = true;
-    try (ParWork closer = new ParWork(this, true)) {
-      closer.collect("superClose", () -> {
-        try {
-          super.close();
-        } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
-          log.error("Exception closing election", e);
-        }
-      });
-      closer.collect("Overseer", () -> {
-        try {
-          cancelElection(fromCSUpdateThread);
-        } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
-          log.error("Exception canceling election", e);
-        }
-      });
+    try {
+      cancelElection(fromCSUpdateThread);
+    } catch (Exception e) {
+      ParWork.propegateInterrupt(e);
+      log.error("Exception canceling election", e);
     }
+    super.close();
   }
 
   @Override

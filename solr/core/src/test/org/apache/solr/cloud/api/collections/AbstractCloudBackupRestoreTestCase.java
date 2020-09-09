@@ -73,6 +73,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
   @BeforeClass
   public static void createCluster() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     docsSeed = random().nextLong();
   }
 

@@ -124,7 +124,6 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   Add a replica. Ensure count matches in leader and replica.
    */
   @Test
-  @Ignore // nocommit debug
   public void testSplitStaticIndexReplication() throws Exception {
     doSplitStaticIndexReplication(SolrIndexSplitter.SplitMethod.REWRITE);
   }

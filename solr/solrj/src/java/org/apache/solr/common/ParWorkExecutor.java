@@ -54,7 +54,8 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
 
   public void shutdown() {
     if (closeLock) {
-      throw new IllegalCallerException();
+      IllegalCallerException e = new IllegalCallerException();
+      log.error("IllegalCallerException", e);
     }
     this.closed = true;
     super.shutdown();
@@ -62,7 +63,8 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
 
   public List<Runnable> shutdownNow() {
     if (closeLock) {
-      throw new IllegalCallerException();
+      IllegalCallerException e = new IllegalCallerException();
+      log.error("IllegalCallerException", e);
     }
     this.closed = true;
     super.shutdownNow();

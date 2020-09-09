@@ -48,6 +48,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    useFactory(null);
     String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
     String poisioned = 
         "    <repository  name=\""+TestLocalFSCloudBackupRestore.poisioned+"\" default=\"true\" "

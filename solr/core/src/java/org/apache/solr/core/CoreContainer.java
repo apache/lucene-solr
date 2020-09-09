@@ -161,6 +161,7 @@ public class CoreContainer implements Closeable {
   final SolrCores solrCores = new SolrCores(this);
   private final boolean isZkAware;
   private volatile boolean startedLoadingCores;
+  private volatile boolean loaded;
 
   public static class CoreLoadFailure {
 
@@ -247,6 +248,8 @@ public class CoreContainer implements Closeable {
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
+
+  private Set<Future> zkRegFutures = zkRegFutures = ConcurrentHashMap.newKeySet();
 
 
   // Bits for the state variable.
@@ -671,10 +674,16 @@ public class CoreContainer implements Closeable {
   /**
    * Load the cores defined for this CoreContainer
    */
-  public void load() {
+  public synchronized void load() {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
+
+    if (loaded) {
+      throw new IllegalStateException("CoreContainer already loaded");
+    }
+
+    loaded = true;
 
     if (isZooKeeperAware()) {
       try {
@@ -721,7 +730,6 @@ public class CoreContainer implements Closeable {
     // initialize CalciteSolrDriver instance to use this solrClientCache
     CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);
 
-
     try (ParWork work = new ParWork(this)) {
 
       work.collect("", () -> {
@@ -733,8 +741,7 @@ public class CoreContainer implements Closeable {
 
         if (isZooKeeperAware()) {
           if (!Boolean.getBoolean("solr.disablePublicKeyHandler")) {
-            pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
-                    (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
+            pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(), (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
             // use deprecated API for back-compat, remove in 9.0
             pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
           }
@@ -747,7 +754,7 @@ public class CoreContainer implements Closeable {
         }
       });
 
-      work.collect("",() -> {
+      work.collect("", () -> {
         MDCLoggingContext.setNode(this);
 
         securityConfHandler = isZooKeeperAware() ? new SecurityConfHandlerZk(this) : new SecurityConfHandlerLocal(this);
@@ -756,37 +763,37 @@ public class CoreContainer implements Closeable {
         this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
       });
 
-      work.collect("",() -> {
+      work.collect("", () -> {
         createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
         createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
       });
 
-      work.collect("",() -> {
+      work.collect("", () -> {
         collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
         infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
       });
 
-      work.collect("",() -> {
+      work.collect("", () -> {
         // metricsHistoryHandler uses metricsHandler, so create it first
         metricsHandler = new MetricsHandler(this);
         containerHandlers.put(METRICS_PATH, metricsHandler);
         metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH);
       });
 
-      work.collect("",() -> {
+      work.collect("", () -> {
         autoscalingHistoryHandler = createHandler(AUTOSCALING_HISTORY_PATH, AutoscalingHistoryHandler.class.getName(), AutoscalingHistoryHandler.class);
         metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
         // may want to add some configuration here in the future
         metricsCollectorHandler.init(null);
       });
 
-      work.collect("",() -> {
+      work.collect("", () -> {
         containerHandlers.put(AUTHZ_PATH, securityConfHandler);
         securityConfHandler.initializeMetrics(solrMetricsContext, AUTHZ_PATH);
         containerHandlers.put(AUTHC_PATH, securityConfHandler);
       });
 
-      work.collect("",() -> {
+      work.collect("", () -> {
         PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
         metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.node);
         metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jvm);
@@ -796,130 +803,114 @@ public class CoreContainer implements Closeable {
       work.addCollect();
 
       if (!Boolean.getBoolean("solr.disableMetricsHistoryHandler")) {
-        work.collect("",() -> {
+        work.collect("", () -> {
           createMetricsHistoryHandler();
         });
       }
 
-    //  work.addCollect();
-      work.collect("",() -> {
+      //  work.addCollect();
+      work.collect("", () -> {
         coreAdminHandler = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
         configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
       });
 
     }
 
-      // initialize gauges for reporting the number of cores and disk total/free
+    // initialize gauges for reporting the number of cores and disk total/free
 
-      solrMetricsContext.gauge(() -> solrCores.getCores().size(),
-              true, "loaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-      solrMetricsContext.gauge(() -> solrCores.getLoadedCoreNames().size() - solrCores.getCores().size(),
-              true, "lazy", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-      solrMetricsContext.gauge(() -> solrCores.getAllCoreNames().size() - solrCores.getLoadedCoreNames().size(),
-              true, "unloaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-      Path dataHome = cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
-      solrMetricsContext.gauge(() -> dataHome.toFile().getTotalSpace(),
-              true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-      solrMetricsContext.gauge(() -> dataHome.toFile().getUsableSpace(),
-              true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-      solrMetricsContext.gauge(() -> dataHome.toAbsolutePath().toString(),
-              true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-      solrMetricsContext.gauge(() -> {
-                try {
-                  return org.apache.lucene.util.IOUtils.spins(dataHome.toAbsolutePath());
-                } catch (IOException e) {
-                  // default to spinning
-                  return true;
-                }
-              },
-              true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-      solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
-              true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-      solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
-              true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-      solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toAbsolutePath().toString(),
-              true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-      solrMetricsContext.gauge(() -> {
-                try {
-                  return org.apache.lucene.util.IOUtils.spins(cfg.getCoreRootDirectory().toAbsolutePath());
-                } catch (IOException e) {
-                  // default to spinning
-                  return true;
-                }
-              },
-              true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-      // add version information
-      solrMetricsContext.gauge(() -> this.getClass().getPackage().getSpecificationVersion(),
-              true, "specification", SolrInfoBean.Category.CONTAINER.toString(), "version");
-      solrMetricsContext.gauge(() -> this.getClass().getPackage().getImplementationVersion(),
-              true, "implementation", SolrInfoBean.Category.CONTAINER.toString(), "version");
+    solrMetricsContext.gauge(() -> solrCores.getCores().size(), true, "loaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
+    solrMetricsContext.gauge(() -> solrCores.getLoadedCoreNames().size() - solrCores.getCores().size(), true, "lazy", SolrInfoBean.Category.CONTAINER.toString(), "cores");
+    solrMetricsContext.gauge(() -> solrCores.getAllCoreNames().size() - solrCores.getLoadedCoreNames().size(), true, "unloaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
+    Path dataHome = cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
+    solrMetricsContext.gauge(() -> dataHome.toFile().getTotalSpace(), true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+    solrMetricsContext.gauge(() -> dataHome.toFile().getUsableSpace(), true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+    solrMetricsContext.gauge(() -> dataHome.toAbsolutePath().toString(), true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+    solrMetricsContext.gauge(() -> {
+      try {
+        return org.apache.lucene.util.IOUtils.spins(dataHome.toAbsolutePath());
+      } catch (IOException e) {
+        // default to spinning
+        return true;
+      }
+    }, true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getTotalSpace(), true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getUsableSpace(), true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toAbsolutePath().toString(), true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+    solrMetricsContext.gauge(() -> {
+      try {
+        return org.apache.lucene.util.IOUtils.spins(cfg.getCoreRootDirectory().toAbsolutePath());
+      } catch (IOException e) {
+        // default to spinning
+        return true;
+      }
+    }, true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+    // add version information
+    solrMetricsContext.gauge(() -> this.getClass().getPackage().getSpecificationVersion(), true, "specification", SolrInfoBean.Category.CONTAINER.toString(), "version");
+    solrMetricsContext.gauge(() -> this.getClass().getPackage().getImplementationVersion(), true, "implementation", SolrInfoBean.Category.CONTAINER.toString(), "version");
 
-      SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-      fieldCacheBean.initializeMetrics(solrMetricsContext, null);
+    SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
+    fieldCacheBean.initializeMetrics(solrMetricsContext, null);
 
+    if (isZooKeeperAware()) {
+      metricManager.loadClusterReporters(cfg.getMetricsConfig().getMetricReporters(), this);
+    }
+
+    final List<Future<SolrCore>> coreLoadFutures = new ArrayList<>();
+
+    try {
+      List<CoreDescriptor> cds = coresLocator.discover(this);
       if (isZooKeeperAware()) {
-        metricManager.loadClusterReporters(cfg.getMetricsConfig().getMetricReporters(), this);
+        // sort the cores if it is in SolrCloud. In standalone node the order does not matter
+        CoreSorter coreComparator = new CoreSorter().init(zkSys.zkController, cds);
+        cds = new ArrayList<>(cds);// make a copy
+        Collections.sort(cds, coreComparator::compare);
+
+      }
+      checkForDuplicateCoreNames(cds);
+      status |= CORE_DISCOVERY_COMPLETE;
+
+      for (final CoreDescriptor cd : cds) {
+        if (cd.isTransient() || !cd.isLoadOnStartup()) {
+          solrCores.addCoreDescriptor(cd);
+        } else if (asyncSolrCoreLoad) {
+          solrCores.markCoreAsLoading(cd);
+        }
+        if (cd.isLoadOnStartup()) {
+          coreLoadFutures.add(solrCoreLoadExecutor.submit(() -> {
+            SolrCore core;
+            try {
+              if (isZooKeeperAware()) {
+                zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+              }
+              core = createFromDescriptor(cd, false, false);
+            } finally {
+              if (asyncSolrCoreLoad) {
+                solrCores.markCoreAsNotLoading(cd);
+              }
+            }
+
+            zkRegFutures.add(zkSys.registerInZk(core, false));
+            return core;
+          }));
+        }
       }
 
-      // setup executor to load cores in parallel
-//      ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
-//              ExecutorUtil.newMDCAwareFixedThreadPool(
-//                      cfg.getCoreLoadThreadCount(isZooKeeperAware()),
-//                      new SolrNamedThreadFactory("coreLoadExecutor")), null,
-//              metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
-//              SolrMetricManager.mkName("coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
-      final List<Future<SolrCore>> futures = new ArrayList<>();
-      Set<Future> zkRegFutures = null;
-    try {
-        List<CoreDescriptor> cds = coresLocator.discover(this);
-        if (isZooKeeperAware()) {
-          // sort the cores if it is in SolrCloud. In standalone node the order does not matter
-          CoreSorter coreComparator = new CoreSorter()
-              .init(zkSys.zkController, cds);
-          cds = new ArrayList<>(cds);// make a copy
-          Collections.sort(cds, coreComparator::compare);
-          zkRegFutures = ConcurrentHashMap.newKeySet(cds.size());
-        }
-        checkForDuplicateCoreNames(cds);
-        status |= CORE_DISCOVERY_COMPLETE;
+    } finally {
 
-        try (ParWork register = new ParWork(this)) {
-          for (final CoreDescriptor cd : cds) {
-            if (cd.isTransient() || !cd.isLoadOnStartup()) {
-              solrCores.addCoreDescriptor(cd);
-            } else if (asyncSolrCoreLoad) {
-              solrCores.markCoreAsLoading(cd);
-            }
-            if (cd.isLoadOnStartup()) {
-              Set<Future> finalZkRegFutures = zkRegFutures;
-              futures.add(solrCoreLoadExecutor.submit(() -> {
-                SolrCore core;
-                try {
-                  if (isZooKeeperAware()) {
-                    zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
-                  }
-                  core = createFromDescriptor(cd, false, false);
-                } finally {
-                  if (asyncSolrCoreLoad) {
-                    solrCores.markCoreAsNotLoading(cd);
-                  }
-                }
-                register.collect("registerCoreInZk", () -> {
-                  finalZkRegFutures.add(zkSys.registerInZk(core, false));
-                });
-                return core;
-              }));
-            }
+      startedLoadingCores = true;
+      if (coreLoadFutures != null && !asyncSolrCoreLoad) {
+
+        for (Future<SolrCore> future : coreLoadFutures) {
+          try {
+            future.get();
+          } catch (InterruptedException e) {
+            ParWork.propegateInterrupt(e);
+          } catch (ExecutionException e) {
+            log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
           }
         }
-
-      } finally {
-        
-        startedLoadingCores = true;
-        if (futures != null && !asyncSolrCoreLoad) {
-
-
-          for (Future<SolrCore> future : futures) {
+        if (isZooKeeperAware()) {
+          for (Future<SolrCore> future : zkRegFutures) {
             try {
               future.get();
             } catch (InterruptedException e) {
@@ -928,27 +919,16 @@ public class CoreContainer implements Closeable {
               log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
             }
           }
-          if (isZooKeeperAware()) {
-            for (Future<SolrCore> future : zkRegFutures) {
-              try {
-                future.get();
-              } catch (InterruptedException e) {
-                ParWork.propegateInterrupt(e);
-              } catch (ExecutionException e) {
-                log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
-              }
-            }
-          }
         }
       }
-      if (isZooKeeperAware()) {
-        zkSys.getZkController().checkOverseerDesignate();
-        // initialize this handler here when SolrCloudManager is ready
-        autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);
-        containerHandlers.put(AutoScalingHandler.HANDLER_PATH, autoScalingHandler);
-        autoScalingHandler.initializeMetrics(solrMetricsContext, AutoScalingHandler.HANDLER_PATH);
-      }
-
+    }
+    if (isZooKeeperAware()) {
+      zkSys.getZkController().checkOverseerDesignate();
+      // initialize this handler here when SolrCloudManager is ready
+      autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);
+      containerHandlers.put(AutoScalingHandler.HANDLER_PATH, autoScalingHandler);
+      autoScalingHandler.initializeMetrics(solrMetricsContext, AutoScalingHandler.HANDLER_PATH);
+    }
 
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
@@ -1058,7 +1038,7 @@ public class CoreContainer implements Closeable {
     // must do before isShutDown=true
     if (isZooKeeperAware()) {
       try {
-        cancelCoreRecoveries();
+        cancelCoreRecoveries(false, true);
       } catch (Exception e) {
 
         ParWork.propegateInterrupt(e);
@@ -1066,6 +1046,15 @@ public class CoreContainer implements Closeable {
       }
     }
 
+    log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
+
+    if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null) {
+      zkSys.zkController.disconnect();
+    }
+    if (replayUpdatesExecutor != null) {
+      // stop accepting new tasks
+      replayUpdatesExecutor.shutdownNow();
+    }
 
     try (ParWork closer = new ParWork(this, true)) {
 
@@ -1074,21 +1063,11 @@ public class CoreContainer implements Closeable {
         // OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
         // overseerCollectionQueue.allowOverseerPendingTasksToComplete();
       }
-      log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
 
-      if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null) {
-        zkSys.zkController.disconnect();
-      }
-      if (replayUpdatesExecutor != null) {
-        // stop accepting new tasks
-        replayUpdatesExecutor.shutdownNow();
-      }
       closer.collect("replayUpdateExec", () -> {
         replayUpdatesExecutor.shutdownAndAwaitTermination();
       });
-      closer.addCollect();
-      closer.collect("metricsHistoryHandler", metricsHistoryHandler);
-      closer.collect("MetricsHistorySolrClient", metricsHistoryHandler != null ? metricsHistoryHandler.getSolrClient(): null);
+
       closer.collect("WaitForSolrCores", solrCores);
       closer.addCollect();
       List<Callable<?>> callables = new ArrayList<>();
@@ -1139,7 +1118,6 @@ public class CoreContainer implements Closeable {
           return coreAdminHandler;
         });
       }
-
       AuthorizationPlugin authPlugin = null;
       if (authorizationPlugin != null) {
         authPlugin = authorizationPlugin.plugin;
@@ -1153,22 +1131,25 @@ public class CoreContainer implements Closeable {
         auditPlugin = auditloggerPlugin.plugin;
       }
 
-      closer.collect(solrCoreLoadExecutor);
-      closer.addCollect();
-      
       closer.collect(authPlugin);
-      closer.collect(solrClientCache);
       closer.collect(authenPlugin);
       closer.collect(auditPlugin);
       closer.collect(callables);
-      closer.collect(loader);
+
       closer.addCollect();
 
       closer.collect(shardHandlerFactory);
       closer.collect(updateShardHandler);
+
       closer.addCollect();
 
+      closer.collect(solrClientCache);
+
       closer.collect(zkSys);
+
+      closer.addCollect();
+
+      closer.collect(loader);
     }
 
     assert ObjectReleaseTracker.release(this);
@@ -1186,7 +1167,7 @@ public class CoreContainer implements Closeable {
     solrCores.waitForLoadingCoresToFinish(30000);
   }
 
-  public void cancelCoreRecoveries() {
+  public void cancelCoreRecoveries(boolean wait, boolean prepForClose) {
 
     List<SolrCore> cores = solrCores.getCores();
 
@@ -1196,7 +1177,7 @@ public class CoreContainer implements Closeable {
       for (SolrCore core : cores) {
         work.collect("cancelRecoveryFor-" + core.getName(), () -> {
           try {
-            core.getSolrCoreState().cancelRecovery(true, true);
+            core.getSolrCoreState().cancelRecovery(wait, prepForClose);
           } catch (Exception e) {
             SolrException.log(log, "Error canceling recovery for core", e);
           }

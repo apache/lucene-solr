@@ -602,9 +602,10 @@ public class SolrTestCase extends LuceneTestCase {
     }
   }
 
-  public static SolrQueuedThreadPool getQtp() {
+  public static SolrQueuedThreadPool getQtp() throws Exception {
 
-    SolrQueuedThreadPool qtp = new SolrQueuedThreadPool("solr-test-qtp");;
+    SolrQueuedThreadPool qtp = new SolrQueuedThreadPool("solr-test-qtp");
+    qtp.start();
     return qtp;
   }
 

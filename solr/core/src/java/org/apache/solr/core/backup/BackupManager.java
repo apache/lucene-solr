@@ -206,7 +206,11 @@ public class BackupManager {
     try (IndexInput is = repository.openInput(sourceDir, ZkStateReader.COLLECTION_PROPS_ZKNODE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()];
       is.readBytes(arr, 0, (int) is.length());
-      zkStateReader.getZkClient().create(zkPath, arr, CreateMode.PERSISTENT, true);
+      if (zkStateReader.getZkClient().exists(zkPath)) {
+        zkStateReader.getZkClient().setData(zkPath, arr,true);
+      } else {
+        zkStateReader.getZkClient().create(zkPath, arr, CreateMode.PERSISTENT, true);
+      }
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error uploading file to zookeeper path " + source.toString() + " to " + zkPath,
           SolrZkClient.checkInterrupted(e));

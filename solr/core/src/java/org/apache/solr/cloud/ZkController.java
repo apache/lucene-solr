@@ -56,6 +56,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeOut;
@@ -423,7 +424,7 @@ public class ZkController implements Closeable {
             markAllAsNotLeader(descriptorsSupplier);
           });
           worker.collect("",() -> {
-            cc.cancelCoreRecoveries();
+            cc.cancelCoreRecoveries(true, false);
           });
         }
       }
@@ -462,7 +463,7 @@ public class ZkController implements Closeable {
             if (overseerElector != null) {
               ParWork.close(overseerElector.getContext());
             }
-            LeaderElector overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), overseerContexts);
+            overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), overseerContexts);
             ZkController.this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getTheSharedHttpClient()), cc.getUpdateShardHandler(),
                     CommonParams.CORES_HANDLER_PATH, zkStateReader, ZkController.this, cloudConfig);
             overseerElector.setup(context);
@@ -535,9 +536,13 @@ public class ZkController implements Closeable {
         return cc.isShutDown();
       }});
     zkClient.setDisconnectListener(() -> {
-
+      if (isClosed()) return;
         try (ParWork worker = new ParWork("disconnected", true)) {
-          worker.collect( ZkController.this.overseer);
+          if (zkClient.isConnected()) {
+            worker.collect(ZkController.this.overseerContexts);
+          } else {
+            worker.collect(ZkController.this.overseer);
+          }
           worker.collect("clearZkCollectionTerms", () -> {
             clearZkCollectionTerms();
           });
@@ -548,7 +553,6 @@ public class ZkController implements Closeable {
             markAllAsNotLeader(descriptorsSupplier);
           });
         }
-      //  ParWork.closeExecutor(); // we are using the root exec directly, let's just make sure it's closed here to avoid a slight delay leak
     });
     init();
   }
@@ -614,25 +618,25 @@ public class ZkController implements Closeable {
     this.shudownCalled = true;
 
     this.isClosed = true;
-    if (overseer != null) {
-      overseer.closeAndDone();
-    }
+
     try (ParWork closer = new ParWork(this, true)) {
+      closer.collect(replicateFromLeaders.values());
       closer.collect(electionContexts.values());
       closer.collect(collectionToTerms.values());
       closer.collect(sysPropsCacher);
       closer.collect(cloudManager);
       closer.collect(cloudSolrClient);
-      closer.collect(replicateFromLeaders.values());
-      closer.collect(overseerContexts.values());
-      closer.addCollect();
-      closer.collect(zkStateReader);
-      closer.addCollect();
-      if (closeZkClient) {
-        closer.collect(zkClient);
-      }
-
     }
+
+    IOUtils.closeQuietly(zkStateReader);
+    if (overseer != null) {
+      overseer.closeAndDone();
+    }
+    ParWork.close(overseerContexts.values());
+    if (closeZkClient) {
+      IOUtils.closeQuietly(zkClient);
+    }
+
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -1103,9 +1107,9 @@ public class ZkController implements Closeable {
         try (ParWork worker = new ParWork((this))) {
           // start the overseer first as following code may need it's processing
           worker.collect("startOverseer", () -> {
-            LeaderElector overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), electionContexts);
+            LeaderElector overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), overseerContexts);
             ElectionContext context = new OverseerElectionContext(getNodeName(), zkClient, overseer);
-            ElectionContext prevContext = electionContexts.put(new ContextKey("overseer", "overser"), context);
+            ElectionContext prevContext = overseerContexts.put(new ContextKey("overseer", "overseer"), context);
             if (prevContext != null) {
               prevContext.close();
             }

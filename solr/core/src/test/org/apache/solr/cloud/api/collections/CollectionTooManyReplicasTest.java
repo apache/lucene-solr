@@ -34,7 +34,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
-@Ignore // nocommit debug
 public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
   @BeforeClass

@@ -560,15 +560,19 @@ public class Overseer implements SolrCloseable {
             return Collections.singletonList(new SliceMutator(getSolrCloudManager()).removeRoutingRule(clusterState, message));
           case UPDATESHARDSTATE:
             return Collections.singletonList(new SliceMutator(getSolrCloudManager()).updateShardState(clusterState, message));
-          case QUIT:
-            if (myId.equals(message.get(ID))) {
-              log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
-              overseerCollectionConfigSetProcessor.close();
-              close();
-            } else {
-              log.warn("Overseer received wrong QUIT message {}", message);
-            }
-            break;
+//          case QUIT:
+//            if (myId.equals(message.get(ID))) {
+//              log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
+//              try {
+//                overseerCollectionConfigSetProcessor.close();
+//              } catch (IOException e) {
+//                log.error("IOException", e);
+//              }
+//              close();
+//            } else {
+//              log.warn("Overseer received wrong QUIT message {}", message);
+//            }
+//            break;
           case DOWNNODE:
             return new NodeMutator().downNode(clusterState, message);
           default:
@@ -588,14 +592,11 @@ public class Overseer implements SolrCloseable {
       if (log.isDebugEnabled()) {
         log.debug("close() - start");
       }
-      //ExecutorUtil.shutdownAndAwaitTermination(executor);
       this.isClosed = true;
-
       if (log.isDebugEnabled()) {
         log.debug("close() - end");
       }
     }
-
   }
 
   public static class OverseerThread extends Thread implements Closeable {
@@ -900,7 +901,6 @@ public class Overseer implements SolrCloseable {
   public void closeAndDone() {
     this.closeAndDone = true;
     this.closed = true;
-    close();
   }
 
   public void close() {
@@ -917,7 +917,6 @@ public class Overseer implements SolrCloseable {
         zkController.rejoinOverseerElection(context.electionPath, false);
       }
     }
-    //doClose(fromCSUpdateThread);
   }
 
   @Override
@@ -936,20 +935,15 @@ public class Overseer implements SolrCloseable {
     }
 
     if (ccThread != null) {
+      ((OverseerCollectionConfigSetProcessor) ccThread.getThread()).closing();
       ccThread.interrupt();
+      ((OverseerCollectionConfigSetProcessor) ccThread.getThread()).close(closeAndDone);
     }
+
     if (updaterThread != null) {
       updaterThread.interrupt();
+      IOUtils.closeQuietly(updaterThread);
     }
-//    if (overseerCollectionConfigSetProcessor != null) {
-//      overseerCollectionConfigSetProcessor.interrupt();
-//    }
-
-
-
-    IOUtils.closeQuietly(ccThread);
-
-    IOUtils.closeQuietly(updaterThread);
 
     if (ccThread != null) {
       while (true) {
@@ -971,11 +965,6 @@ public class Overseer implements SolrCloseable {
         }
       }
     }
-    //      closer.collect(() -> {
-    //
-    //        IOUtils.closeQuietly(triggerThread);
-    //        triggerThread.interrupt();
-    //      });
 
     if (log.isDebugEnabled()) {
       log.debug("doClose() - end");

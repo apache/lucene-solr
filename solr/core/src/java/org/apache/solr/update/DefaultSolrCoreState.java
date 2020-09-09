@@ -319,9 +319,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   @Override
-  public void doRecovery(CoreContainer cc, CoreDescriptor cd) {
+  public synchronized void doRecovery(CoreContainer cc, CoreDescriptor cd) {
     if (prepForClose || cc.isShutDown() || closed) {
-      cc.getUpdateShardHandler().getRecoveryExecutor().shutdownNow();
       return;
     }
     Runnable recoveryTask = () -> {
@@ -352,6 +351,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           cancelRecovery();
 
           recoveryLock.lockInterruptibly();
+          locked = true;
           // don't use recoveryLock.getQueueLength() for this
           if (recoveryWaiting.decrementAndGet() > 0) {
             // another recovery waiting behind us, let it run now instead of after we finish
@@ -363,24 +363,23 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
             log.info("Skipping recovery due to being closed");
             return;
           }
-          log.info("Running recovery");
-
-          recoveryThrottle.minimumWaitBetweenActions();
-          recoveryThrottle.markAttemptingAction();
-          if (recoveryStrat != null) {
-            IOUtils.closeQuietly(recoveryStrat);
-          }
 
           if (prepForClose || cc.isShutDown() || closed) {
             return;
           }
+
+          recoveryThrottle.minimumWaitBetweenActions();
+          recoveryThrottle.markAttemptingAction();
+
           recoveryStrat = recoveryStrategyBuilder
               .create(cc, cd, DefaultSolrCoreState.this);
           recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
+
+          log.info("Running recovery");
           recoveryStrat.run();
 
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          log.info("Recovery thread interrupted");
         } finally {
           if (locked) recoveryLock.unlock();
         }
@@ -394,6 +393,21 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // already queued up - the recovery execution itself is run
       // in another thread on another 'recovery' executor.
       //
+      if (recoveryFuture != null) {
+        if (recoveryStrat != null) recoveryStrat.close();
+        recoveryFuture.cancel(true);
+        try {
+          try {
+            recoveryFuture.get();
+          } catch (ExecutionException e) {
+            log.error("Exception waiting for previous recovery to finish");
+          }
+        } catch (InterruptedException e) {
+          ParWork.propegateInterrupt(e);
+          return;
+        }
+      }
+
       recoveryFuture = cc.getUpdateShardHandler().getRecoveryExecutor()
           .submit(recoveryTask);
     } catch (RejectedExecutionException e) {
@@ -443,8 +457,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           }));
         }
       }
-      recoveryFuture = null;
     }
+    recoveryFuture = null;
+    recoveryStrat = null;
   }
 
   /** called from recoveryStrat on a successful recovery */

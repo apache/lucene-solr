@@ -202,95 +202,8 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     }
 
     @Override
-    protected void doStop() throws Exception
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Stopping {}", this);
-        this.closed = true;
-        this.setStopTimeout(0);
-        super.doStop();
-
-        removeBean(_tryExecutor);
-        _tryExecutor = TryExecutor.NO_TRY;
-
-        // Signal the Runner threads that we are stopping
-        int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
-
-        // If stop timeout try to gracefully stop
-        long timeout = getStopTimeout();
-        BlockingQueue<Runnable> jobs = getQueue();
-        if (timeout > 0)
-        {
-            // Fill the job queue with noop jobs to wakeup idle threads.
-            for (int i = 0; i < threads; ++i)
-            {
-                jobs.offer(NOOP);
-            }
-
-            // try to let jobs complete naturally for half our stop time
-            joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
-
-            // If we still have threads running, get a bit more aggressive
-
-            // interrupt remaining threads
-            for (Thread thread : _threads)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Interrupting {}", thread);
-                thread.interrupt();
-            }
-
-            // wait again for the other half of our stop time
-            joinThreads(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) / 2);
-
-            Thread.yield();
-            if (LOG.isDebugEnabled())
-            {
-                for (Thread unstopped : _threads)
-                {
-                    StringBuilder dmp = new StringBuilder();
-                    for (StackTraceElement element : unstopped.getStackTrace())
-                    {
-                        dmp.append(System.lineSeparator()).append("\tat ").append(element);
-                    }
-                    LOG.warn("Couldn't stop {}{}", unstopped, dmp.toString());
-                }
-            }
-            else
-            {
-                for (Thread unstopped : _threads)
-                {
-                    LOG.warn("{} Couldn't stop {}", this, unstopped);
-                }
-            }
-        }
-
-        // Close any un-executed jobs
-        while (!_jobs.isEmpty())
-        {
-            Runnable job = _jobs.poll();
-            if (job instanceof Closeable)
-            {
-                try
-                {
-                    ((Closeable)job).close();
-                }
-                catch (Throwable t)
-                {
-                    LOG.warn("", t);
-                }
-            }
-            else if (job != NOOP)
-                LOG.warn("Stopped without executing or closing {}", job);
-        }
-
-        if (_budget != null)
-            _budget.reset();
-
-        synchronized (_joinLock)
-        {
-            _joinLock.notifyAll();
-        }
+    protected void doStop() throws Exception {
+        close();
     }
 
     private void joinThreads(long stopByNanos) throws InterruptedException
@@ -1069,22 +982,6 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     private volatile Error error;
     private final Object notify = new Object();
 
-
-
-    public void waitForStopping() throws InterruptedException {
-        int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
-        BlockingQueue<Runnable> jobs = getQueue();
-        // Fill the job queue with noop jobs to wakeup idle threads.
-        for (int i = 0; i < threads; ++i)
-        {
-            jobs.offer(NOOP);
-        }
-
-        // try to let jobs complete naturally our stop time
-        joinThreads( TimeUnit.MILLISECONDS.toNanos(getStopTimeout()));
-
-    }
-
 //    public void fillWithNoops() {
 //        int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
 //        BlockingQueue<Runnable> jobs = getQueue();
@@ -1095,25 +992,68 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 //        }
 //    }
 
-    public void stopReserveExecutor() {
-//        try {
-//            ((ReservedThreadExecutor)_tryExecutor).stop();
-//        } catch (Exception e) {
-//            log.error("", e);
-//        }
-    }
 
     public void close() {
+        this.closed = true;
+        removeBean(_tryExecutor);
+        _tryExecutor = TryExecutor.NO_TRY;
+
         try {
-            if (!isStopping() || !isStopped()) {
-                stop();
-            }
-            while (isStopping()) {
-                Thread.sleep(10);
-            }
+            super.doStop();
         } catch (Exception e) {
-            ParWork.propegateInterrupt("Exception closing", e);
-            throw new RuntimeException(e);
+            LOG.warn("super.doStop", e);
+            return;
+        }
+
+        int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
+        BlockingQueue<Runnable> jobs = getQueue();
+        // Fill the job queue with noop jobs to wakeup idle threads.
+        for (int i = 0; i < threads; ++i) {
+            jobs.offer(NOOP);
+        }
+
+        // interrupt threads
+        for (Thread thread : _threads)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Interrupting {}", thread);
+            thread.interrupt();
+        }
+
+        while (getBusyThreads() > 0) {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+               ParWork.propegateInterrupt(e, true);
+               break;
+            }
+        }
+
+        // Close any un-executed jobs
+        while (!_jobs.isEmpty())
+        {
+            Runnable job = _jobs.poll();
+            if (job instanceof Closeable)
+            {
+                try
+                {
+                    ((Closeable)job).close();
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn("", t);
+                }
+            }
+            else if (job != NOOP)
+                LOG.warn("Stopped without executing or closing {}", job);
+        }
+
+        if (_budget != null)
+            _budget.reset();
+
+        synchronized (_joinLock)
+        {
+            _joinLock.notifyAll();
         }
 
         assert ObjectReleaseTracker.release(this);

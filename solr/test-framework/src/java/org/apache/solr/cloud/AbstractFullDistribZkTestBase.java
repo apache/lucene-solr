@@ -132,7 +132,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
   
   @Before
-  public void beforeTest() {
+  public void beforeTest() throws Exception {
     cloudInit = false;
     qtp = getQtp();
     try {
