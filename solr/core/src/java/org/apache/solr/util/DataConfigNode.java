@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -37,23 +38,42 @@ public class DataConfigNode implements ConfigNode {
   final SimpleMap<String> attributes;
   private final Map<String, List<ConfigNode>> kids = new HashMap<>();
   private String textData;
+  private final Function<String, String> propertySubstitution;
 
-  public DataConfigNode(ConfigNode root, Set<String> ignore) {
+  public DataConfigNode(ConfigNode root, Function<String, String> propertySubstitution) {
+    this.propertySubstitution = propertySubstitution;
     name = root.name();
-    attributes = root.attributes();
+    attributes = wrap(root.attributes());
     textData = root.textValue();
-    if (textData != null) textData = textData.trim();
+    if (textData != null) textData = PropertiesUtil.substitute(textData.trim(), propertySubstitution);
     root.forEachChild(it -> {
       List<ConfigNode> nodes = kids.computeIfAbsent(it.name(),
           k -> new ArrayList<>());
-      if (ignore != null && ignore.contains(it.name())) {
-        nodes.add(it);
-      } else {
-        nodes.add(new DataConfigNode(it, ignore));
-      }
+
+     nodes.add(new DataConfigNode(it,  propertySubstitution));
       return Boolean.TRUE;
     });
 
+  }
+
+  private SimpleMap<String> wrap(SimpleMap<String> delegate) {
+    return propertySubstitution == null ? delegate :
+        new SimpleMap<>() {
+          @Override
+          public String get(String key) {
+            return PropertiesUtil.substitute(delegate.get(key), propertySubstitution);
+          }
+
+          @Override
+          public void forEachEntry(BiConsumer<String, ? super String> fun) {
+            delegate.forEachEntry((k, v) -> fun.accept(k, PropertiesUtil.substitute(v, propertySubstitution)));
+          }
+
+          @Override
+          public int size() {
+            return delegate.size();
+          }
+        };
   }
 
   @Override

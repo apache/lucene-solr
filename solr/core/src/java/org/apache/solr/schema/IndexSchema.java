@@ -483,12 +483,13 @@ public class IndexSchema {
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
       // in the current case though, the stream is valid so we wont load the resource by name
-      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, substitutableProperties);
+      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, null);
 //      Document document = schemaConf.getDocument();
 //      final XPath xpath = schemaConf.getXPath();
 //      String expression = stepsToPath(SCHEMA, AT + NAME);
 //      Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
-      ConfigNode rootNode = new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()) , Collections.singleton("similarity")) ;
+      ConfigNode rootNode = new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()),
+          substitutableProperties::getProperty) ;
       name = rootNode.attributes().get("name");
       StringBuilder sb = new StringBuilder();
       // Another case where the initialization from the test harness is different than the "real world"
