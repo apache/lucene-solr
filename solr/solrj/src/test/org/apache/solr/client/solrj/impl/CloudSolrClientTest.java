@@ -106,6 +106,14 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("distribUpdateSoTimeout", "3000");
+    System.setProperty("socketTimeout", "3000");
+    System.setProperty("connTimeout", "3000");
+    System.setProperty("solr.test.socketTimeout.default", "3000");
+    System.setProperty("solr.connect_timeout.default", "3000");
+    System.setProperty("solr.httpclient.defaultConnectTimeout", "3000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "3000");
+
     configureCluster(NODE_COUNT)
         .addConfig(TEST_CONFIGSET_NAME, getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();

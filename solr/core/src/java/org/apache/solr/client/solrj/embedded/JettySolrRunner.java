@@ -29,11 +29,13 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SolrScheduledExecutorScheduler;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrQoSFilter;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -550,15 +552,14 @@ public class JettySolrRunner implements Closeable {
       } else {
         startedBefore = true;
       }
-
+      boolean success = false;
       if (!server.isRunning()) {
-      //  if (config.portRetryTime > 0) {
-     //     retryOnPortBindFailure(config.portRetryTime, port);
-     //   } else {
+        if (config.portRetryTime > 0) {
+          retryOnPortBindFailure(port);
+        } else {
           server.start();
-          boolean success = startLatch.await(15, TimeUnit.SECONDS);
-     //   }
-
+        }
+        success = startLatch.await(15, TimeUnit.SECONDS);
         if (!success) {
           throw new RuntimeException("Timeout waiting for Jetty to start");
         }
@@ -600,7 +601,7 @@ public class JettySolrRunner implements Closeable {
           if (stat == null) {
             log.info("Collections znode not found, waiting on latch");
             try {
-              boolean success = latch.await(10000, TimeUnit.MILLISECONDS);
+              success = latch.await(10000, TimeUnit.MILLISECONDS);
               if (!success) {
                 log.warn("Timedout waiting to see {} node in zk", ZkStateReader.COLLECTIONS_ZKNODE);
               }
@@ -637,6 +638,27 @@ public class JettySolrRunner implements Closeable {
     }
   }
 
+  private void retryOnPortBindFailure(int port) throws Exception {
+    int tryCnt = 1;
+    while (tryCnt < 3) {
+      try {
+        log.info("Trying to start Jetty on port {} try number {} ...", port, tryCnt);
+        server.start();
+        break;
+      } catch (IOException ioe) {
+        Exception e = lookForBindException(ioe);
+        if (e instanceof BindException) {
+          log.info("Port is in use, will try again");
+          server.stop();
+
+          tryCnt++;
+          continue;
+        }
+
+        throw e;
+      }
+    }
+  }
 
   private void setProtocolAndHost() {
     String protocol = null;
