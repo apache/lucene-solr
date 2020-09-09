@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -46,6 +47,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -98,6 +100,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
    * @param timeSource time source
    */
   public SolrRrdBackendFactory(SolrClient solrClient, String collection, int syncPeriod, TimeSource timeSource) {
+    assert ObjectReleaseTracker.release(this);
     this.solrClient = solrClient;
     this.timeSource = timeSource;
     this.collection = collection;
@@ -460,10 +463,15 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
       log.debug("Closing {}", hashCode());
     }
     closed = true;
-    backends.forEach((p, b) -> IOUtils.closeQuietly(b));
-    backends.clear();
+
     syncService.shutdownNow();
-    ExecutorUtil.awaitTermination(syncService);
+    try (ParWork closer = new ParWork(this)) {
+      closer.collect(backends.values());
+      closer.collect(syncService);
+      closer.collect(syncService);
+    }
+    backends.clear();
     syncService = null;
+    assert ObjectReleaseTracker.release(this);
   }
 }
