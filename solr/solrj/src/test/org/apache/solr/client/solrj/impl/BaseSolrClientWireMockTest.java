@@ -42,10 +42,12 @@ import com.github.tomakehurst.wiremock.http.HttpServerFactory;
 import com.github.tomakehurst.wiremock.http.StubRequestHandler;
 import com.github.tomakehurst.wiremock.jetty94.Jetty94HttpServer;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.MockZkStateReader;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -68,9 +70,6 @@ import org.slf4j.LoggerFactory;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @ThreadLeakFilters(filters = {
     SolrIgnoredThreadsFilter.class,
@@ -190,6 +189,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
   protected static void updateReplicaBaseUrl(JsonNode json, String shard, String replica, String baseUrl) {
     ObjectNode replicaNode = (ObjectNode) json.get(shard).get("replicas").get(replica);
     replicaNode.put("base_url", baseUrl + "/solr");
+    replicaNode.put("node_name", baseUrl);
   }
 
   protected CloudHttp2SolrClient testClient = null;
@@ -198,12 +198,21 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
   @Before
   public void createTestClient() throws TimeoutException, InterruptedException, IOException {
     final String baseUrl = mockSolr.baseUrl();
+
+    Map<String, ClusterState.CollectionRef> collectionStates =
+        Collections.singletonMap(BUILT_IN_MOCK_COLLECTION, new ClusterState.CollectionRef(mockDocCollection));
+    ClusterState clusterState = new ClusterState(Collections.singleton(baseUrl), collectionStates, 1);
+    MockZkStateReader zkStateReader = new MockZkStateReader(clusterState, Collections.singleton(BUILT_IN_MOCK_COLLECTION));
+    stateProvider = new ZkClientClusterStateProvider(zkStateReader, true);
+
+    /*
     stateProvider = mock(ClusterStateProvider.class);
     when(stateProvider.getLiveNodes()).thenReturn(Collections.singleton(baseUrl));
     when(stateProvider.resolveAlias(anyString())).thenReturn(Collections.singletonList(BUILT_IN_MOCK_COLLECTION));
 
     when(stateProvider.getCollection(BUILT_IN_MOCK_COLLECTION)).thenReturn(mockDocCollection);
     when(stateProvider.getState(BUILT_IN_MOCK_COLLECTION)).thenReturn(new ClusterState.CollectionRef(mockDocCollection));
+     */
 
     List<String> solrUrls = Collections.singletonList(baseUrl);
     testClient = new CloudHttp2SolrClient.Builder(solrUrls).sendDirectUpdatesToShardLeadersOnly().withClusterStateProvider(stateProvider).build();
@@ -219,6 +228,23 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
       stateProvider.close();
     }
     mockSolr.resetAll();
+  }
+
+  protected byte[] queryResponseOk() throws IOException {
+    NamedList<Object> rh = new NamedList<>();
+    rh.add("status", 0);
+    rh.add("QTime", 10);
+
+    SolrDocumentList rs = new SolrDocumentList();
+    rs.setNumFound(1);
+    rs.setMaxScore(1f);
+    rs.setNumFoundExact(true);
+    rs.add(new SolrDocument(Collections.singletonMap("id", "test")));
+
+    NamedList<Object> nl = new NamedList<>();
+    nl.add("responseHeader", rh);
+    nl.add("response", rs);
+    return toJavabin(nl);
   }
 
   protected byte[] updateRequestOk() throws IOException {

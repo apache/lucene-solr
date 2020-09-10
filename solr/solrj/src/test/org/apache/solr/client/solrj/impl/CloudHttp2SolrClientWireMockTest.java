@@ -19,24 +19,106 @@ package org.apache.solr.client.solrj.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.routing.ShufflingReplicaListTransformer;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest {
+
+  @Test
+  public void testQueryRequest() throws Exception {
+    stubFor(get(urlPathEqualTo("/solr/wireMock/select"))
+        .willReturn(ok()
+            .withLogNormalRandomDelay(10, 0.1)
+            .withHeader("Content-Type", RESPONSE_CONTENT_TYPE)
+            .withBody(queryResponseOk())));
+
+    QueryResponse response = testClient.query(BUILT_IN_MOCK_COLLECTION, new SolrQuery("*:*"));
+    assertEquals(1L, response.getResults().getNumFound());
+  }
+
+  @Test(expected = SolrServerException.class)
+  public void testQueryRequestErrorHandling() throws Exception {
+    stubFor(get(urlPathEqualTo("/solr/wireMock/select"))
+        .willReturn(aResponse().withStatus(500)));
+
+    testClient.query(BUILT_IN_MOCK_COLLECTION, new SolrQuery("*:*"));
+  }
+
+  @Test
+  public void testUpdateRequestErrorHandling() throws Exception {
+    stubFor(post(urlPathEqualTo(SHARD1_PATH+"/update"))
+        .willReturn(aResponse().withStatus(404)));
+
+    stubFor(post(urlPathEqualTo(SHARD2_PATH+"/update"))
+        .willReturn(ok()
+            .withHeader("Content-Type", RESPONSE_CONTENT_TYPE)
+            .withBody(updateRequestOk())));
+
+    UpdateRequest req = buildUpdateRequest(10);
+    try {
+      req.process(testClient, BUILT_IN_MOCK_COLLECTION);
+    } catch (BaseCloudSolrClient.RouteException re) {
+      assertEquals(404, re.code());
+    }
+  }
+
+  // Basic regression test for route logic, should expand to encompass
+  // ReplicaListTransformer logic and more complex collection layouts
+  @Test
+  public void testUpdateRequestRouteLogic() {
+    final String shard1Route = mockSolr.baseUrl()+SHARD1_PATH+"/";
+    final String shard2Route = mockSolr.baseUrl()+SHARD2_PATH+"/";
+
+    UpdateRequest ur = buildUpdateRequest(10);
+    Map<String,List<String>> urlMap = testClient.buildUrlMap(mockDocCollection, new ShufflingReplicaListTransformer(random()));
+    assertEquals(2, urlMap.size());
+    List<String> shard1 = urlMap.get("shard1");
+    assertEquals(1, shard1.size());
+    assertEquals(shard1Route, shard1.get(0));
+    List<String> shard2 = urlMap.get("shard2");
+    assertEquals(1, shard2.size());
+    assertEquals(shard2Route, shard2.get(0));
+
+    Map<String, LBSolrClient.Req> routes =
+        ur.getRoutesToCollection(mockDocCollection.getRouter(), mockDocCollection, urlMap, ur.getParams(), "id");
+    assertEquals(2, routes.size());
+    assertNotNull(routes.get(shard1Route));
+    assertNotNull(routes.get(shard1Route).getRequest());
+    assertNotNull(routes.get(shard2Route));
+    assertNotNull(routes.get(shard2Route).getRequest());
+
+    final String threadName = Thread.currentThread().getName();
+    ur = new UpdateRequest();
+    for (int i=0; i < 10; i++) {
+      ur.deleteById(threadName+1000+i);
+    }
+    routes = ur.getRoutesToCollection(mockDocCollection.getRouter(), mockDocCollection, urlMap, ur.getParams(), "id");
+    assertEquals(2, routes.size());
+    assertNotNull(routes.get(shard1Route));
+    assertNotNull(routes.get(shard1Route).getRequest());
+    assertNotNull(routes.get(shard2Route));
+    assertNotNull(routes.get(shard2Route).getRequest());
+  }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
@@ -84,7 +166,7 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
             .withBody(updateRequestOk())));
 
     // should fail with a RouteException
-    buildUpdateRequest(40).process(testClient, BUILT_IN_MOCK_COLLECTION);
+    buildUpdateRequest(20).process(testClient, BUILT_IN_MOCK_COLLECTION);
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
