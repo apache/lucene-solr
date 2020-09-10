@@ -19,6 +19,7 @@ package org.apache.solr.cloud.hdfs;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -121,13 +122,13 @@ public class HdfsTestUtil {
    * Ensure that the tests are picking up the modified Hadoop classes
    */
   private static void checkOverriddenHadoopClasses() {
-    List<Class<?>> modifiedHadoopClasses = Arrays.asList(
+    List<Class<?>> modifiedHadoopClasses = new ArrayList<>(Arrays.asList(
         DiskChecker.class,
         FileUtil.class,
         HardLink.class,
         HttpServer2.class,
         NameNodeResourceChecker.class,
-        RawLocalFileSystem.class);
+        RawLocalFileSystem.class));
     // Dodge weird scope errors from the compiler (SOLR-14417)
     try {
       modifiedHadoopClasses.add(
