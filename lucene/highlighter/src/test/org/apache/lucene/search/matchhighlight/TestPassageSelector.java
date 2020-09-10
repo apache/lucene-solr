@@ -16,19 +16,16 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomAsciiLettersOfLengthBetween;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomRealisticUnicodeOfCodepointLengthBetween;
+import org.apache.lucene.util.LuceneTestCase;
+import org.hamcrest.Matchers;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.hamcrest.Matchers;
-import org.junit.Test;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 
 public class TestPassageSelector extends LuceneTestCase {
   @Test
@@ -72,12 +69,12 @@ public class TestPassageSelector extends LuceneTestCase {
     checkPassages("0123456789a", "0123456789a", 300, 1);
     checkPassages("01234...", "0123456789a", 5, 1);
     checkPassages(
-        "0123",
+        "0123|45678",
         "0123456789a",
         15,
         2,
         new OffsetRange[0],
-        new OffsetRange[] {new OffsetRange(0, 4), new OffsetRange(4, 9)});
+        new OffsetRange[]{new OffsetRange(0, 4), new OffsetRange(4, 9)});
   }
 
   @Test
@@ -135,6 +132,36 @@ public class TestPassageSelector extends LuceneTestCase {
         2,
         ranges(new OffsetRange(0, 1)),
         ranges(new OffsetRange(0, 0), new OffsetRange(2, 2), new OffsetRange(6, 11)));
+  }
+
+  @Test
+  public void defaultPassages() {
+    // No highlights, multiple value ranges.
+    checkPassages(
+        "01|23|4567",
+        "0123456789",
+        100,
+        100,
+        ranges(),
+        ranges(new OffsetRange(0, 2), new OffsetRange(2, 4), new OffsetRange(4, 8)));
+
+    // No highlights, multiple value ranges, maxPassages = 1
+    checkPassages(
+        "01",
+        "0123456789",
+        100,
+        1,
+        ranges(),
+        ranges(new OffsetRange(0, 2), new OffsetRange(2, 4), new OffsetRange(4, 8)));
+
+    // No highlights, multiple value ranges, maxWindows size too short.
+    checkPassages(
+        "0123...|5678...",
+        "0123456789",
+        4,
+        2,
+        ranges(),
+        ranges(new OffsetRange(0, 5), new OffsetRange(5, 10)));
   }
 
   @Test
@@ -198,11 +225,23 @@ public class TestPassageSelector extends LuceneTestCase {
   }
 
   @Test
+  public void testHighlightAcrossAllowedValueRange() {
+    checkPassages(
+        "012>34<|>56<789",
+        "0123456789",
+        100,
+        10,
+        ranges(new OffsetRange(3, 7)),
+        ranges(new OffsetRange(0, 5), new OffsetRange(5, 10)));
+  }
+
+  @Test
   public void randomizedSanityCheck() {
     PassageSelector selector = new PassageSelector();
     PassageFormatter formatter = new PassageFormatter("...", ">", "<");
     ArrayList<OffsetRange> highlights = new ArrayList<>();
     ArrayList<OffsetRange> ranges = new ArrayList<>();
+
     for (int i = 0; i < 5000; i++) {
       String value =
           randomBoolean()
@@ -272,8 +311,8 @@ public class TestPassageSelector extends LuceneTestCase {
       OffsetRange[] ranges) {
     PassageFormatter passageFormatter = new PassageFormatter("...", ">", "<");
     PassageSelector selector = new PassageSelector();
-    List<OffsetRange> hlist = Arrays.asList(highlights);
     List<OffsetRange> rangeList = Arrays.asList(ranges);
+    List<OffsetRange> hlist = Arrays.asList(highlights);
     List<Passage> passages = selector.pickBest(value, hlist, charWindow, maxPassages, rangeList);
     return String.join("|", passageFormatter.format(value, passages, rangeList));
   }
