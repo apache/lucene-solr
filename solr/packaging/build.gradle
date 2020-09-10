@@ -69,6 +69,17 @@ distributions {
   main {
     distributionBaseName = 'solr'
     contents {
+      // Manually correct posix permissions (matters when packaging on Windows).
+      filesMatching([
+          "**/*.sh",
+          "**/bin/post",
+          "**/bin/postlogs",
+          "**/bin/solr",
+          "**/bin/init.d/solr",
+      ]) {
+        setMode 0755
+      }
+
       from(project(":solr").projectDir, {
         include "bin/**"
         include "licenses/**"
@@ -111,11 +122,6 @@ distributions {
 
 distTar {
   compression = Compression.GZIP
-  // from(toDir.outputs) {
-  //  filesMatching(["**/bin/*", "**/*.sh"]) {
-  //    setMode 0755
-  //   }
-  // }
 }
 
 installDist {
