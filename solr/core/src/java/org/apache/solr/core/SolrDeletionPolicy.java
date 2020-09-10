@@ -178,7 +178,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
             }
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Exception while checking commit point's age for deletion", e);
         }
 

@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -129,7 +128,7 @@ public class SolrStream extends TupleStream {
       assert tupleStreamParser == null;
       tupleStreamParser = constructParser(client, requestParams);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException("params " + params, e);
     }
   }
@@ -237,7 +236,7 @@ public class SolrStream extends TupleStream {
     } catch (HandledException e) {
       throw new IOException("--> "+this.baseUrl+":"+e.getMessage());
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       //The Stream source did not provide an exception in a format that the SolrStream could propagate.
       throw new IOException("--> "+this.baseUrl+": An exception has occurred on the server, refer to server log for details.", e);
     }

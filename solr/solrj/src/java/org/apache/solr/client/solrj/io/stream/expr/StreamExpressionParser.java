@@ -16,14 +16,14 @@
  */
 package org.apache.solr.client.solrj.io.stream.expr;
 
-import org.apache.solr.common.ParWork;
-
 import java.io.BufferedReader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+
+import org.apache.solr.common.ParWork;
 
 /**
  * Takes a prefix notation expression and returns a tokenized expression
@@ -59,7 +59,7 @@ public class StreamExpressionParser {
         }
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
     }
 

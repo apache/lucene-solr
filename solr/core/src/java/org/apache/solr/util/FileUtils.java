@@ -81,7 +81,7 @@ public class FileUtils {
           // Pause 5 msec
           Thread.sleep(5);
         } catch (InterruptedException ie) {
-          ParWork.propegateInterrupt(ie);
+          ParWork.propagateInterrupt(ie);
           break;
         }
       }

@@ -169,7 +169,7 @@ public class TimeRoutedAlias extends RoutedAlias {
         throw new SolrException(BAD_REQUEST, "duration must add to produce a time in the future");
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(BAD_REQUEST, "bad " + TimeRoutedAlias.ROUTER_INTERVAL + ", " + e, e);
     }
 
@@ -180,7 +180,7 @@ public class TimeRoutedAlias extends RoutedAlias {
           throw new SolrException(BAD_REQUEST, "duration must round or subtract to produce a time in the past");
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(BAD_REQUEST, "bad " + TimeRoutedAlias.ROUTER_AUTO_DELETE_AGE + ", " + e, e);
       }
     }

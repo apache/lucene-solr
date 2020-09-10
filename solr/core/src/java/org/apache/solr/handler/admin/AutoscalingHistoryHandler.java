@@ -132,7 +132,7 @@ public class AutoscalingHistoryHandler extends RequestHandlerBase implements Per
       QueryResponse qr = cloudSolrClient.query(collection, params);
       rsp.setAllValues(qr.getResponse());
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       if ((e instanceof SolrException) && e.getMessage().contains("Collection not found")) {
         // relatively benign
         String msg = "Collection " + collection + " does not exist.";

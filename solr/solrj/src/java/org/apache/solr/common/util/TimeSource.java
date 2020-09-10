@@ -194,7 +194,7 @@ public abstract class TimeSource {
           try {
             mul = Double.parseDouble(parts[1]);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             log.warn("Invalid simTime specification, assuming multiplier==1.0: '{}'.", type);
           }
         }

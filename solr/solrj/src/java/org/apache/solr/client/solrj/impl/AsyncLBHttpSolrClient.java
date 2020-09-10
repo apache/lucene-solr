@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
@@ -60,6 +58,8 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around
@@ -545,7 +545,7 @@ public class AsyncLBHttpSolrClient extends SolrClient {
         throw e;
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrServerException(e);
     }
 
@@ -732,7 +732,7 @@ public class AsyncLBHttpSolrClient extends SolrClient {
           throw e;
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrServerException(e);
       }
     }
@@ -762,7 +762,7 @@ public class AsyncLBHttpSolrClient extends SolrClient {
           throw e;
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrServerException(e);
       }
     }
@@ -839,7 +839,7 @@ public class AsyncLBHttpSolrClient extends SolrClient {
         }
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       //Expected. The server is still down.
       zombieServer.failedPings++;
 

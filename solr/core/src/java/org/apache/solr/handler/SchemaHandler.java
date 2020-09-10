@@ -215,7 +215,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       rsp.setException(e);
     }
   }

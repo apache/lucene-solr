@@ -222,7 +222,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           cleanupLatch.countDown();
           log.warn("Error deleting replica ", e);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Error deleting replica ", e);
           cleanupLatch.countDown();
           throw e;

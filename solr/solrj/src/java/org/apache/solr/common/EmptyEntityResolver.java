@@ -16,16 +16,16 @@
  */
 package org.apache.solr.common;
 
-import java.io.InputStream;
-import org.xml.sax.InputSource;
-import org.xml.sax.EntityResolver;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLResolver;
 import javax.xml.xpath.XPathFactory;
+import java.io.InputStream;
 
 import org.apache.commons.io.input.ClosedInputStream;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 
 /**
  * This class provides several singletons of entity resolvers used by
@@ -60,7 +60,7 @@ public final class EmptyEntityResolver {
     try {
       saxFactory.setFeature(feature, enabled);
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
+      ParWork.propagateInterrupt(ex);
       // ignore
     }
   }
@@ -81,7 +81,7 @@ public final class EmptyEntityResolver {
     try {
       inputFactory.setProperty(key, value);
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
+      ParWork.propagateInterrupt(ex);
       // ignore
     }
   }
@@ -90,7 +90,7 @@ public final class EmptyEntityResolver {
     try {
       xpathFactory.setFeature(key, value);
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
+      ParWork.propagateInterrupt(ex);
       // ignore
     }
   }

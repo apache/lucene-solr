@@ -133,7 +133,7 @@ public class ScheduledTrigger extends TriggerBase {
     try {
       return Instant.from(dateTimeFormatter.parse(startTimeStr));
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new TriggerValidationException("startTime", "error parsing startTime '" + startTimeStr + "': " + e.toString());
     }
   }

@@ -16,6 +16,13 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -33,12 +40,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.AuthFailed;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.Disconnected;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.Expired;
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class ConnectionManager implements Watcher, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -171,7 +172,7 @@ public class ConnectionManager implements Watcher, Closeable {
     } catch (NullPointerException e) {
       // okay
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.warn("Exception firing disonnectListener");
     }
     lastConnectedState = 0;
@@ -250,7 +251,7 @@ public class ConnectionManager implements Watcher, Closeable {
       try {
         beforeReconnect.command();
       } catch (Exception e) {
-        ParWork.propegateInterrupt("Exception running beforeReconnect command", e);
+        ParWork.propagateInterrupt("Exception running beforeReconnect command", e);
         if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
           return;
         }
@@ -267,7 +268,7 @@ public class ConnectionManager implements Watcher, Closeable {
           ParWork.close(keeper);
           keeper = null;
         } catch (Exception e) {
-          ParWork.propegateInterrupt("Exception closing keeper after hitting exception", e);
+          ParWork.propagateInterrupt("Exception closing keeper after hitting exception", e);
           if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
             return;
           }
@@ -291,7 +292,7 @@ public class ConnectionManager implements Watcher, Closeable {
               onReconnect.command();
             } catch (Exception e) {
               SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-              ParWork.propegateInterrupt("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper=" + keeper + ")", e);
+              ParWork.propagateInterrupt("$ZkClientConnectionStrategy.ZkUpdate.update(SolrZooKeeper=" + keeper + ")", e);
               if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
                 return;
               }
@@ -299,7 +300,7 @@ public class ConnectionManager implements Watcher, Closeable {
             }
           }
         } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           return;
         } catch (Exception e1) {
           log.error("Exception updating zk instance", e1);

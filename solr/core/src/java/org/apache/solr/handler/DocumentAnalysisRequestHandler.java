@@ -16,12 +16,21 @@
  */
 package org.apache.solr.handler;
 
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Set;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
-import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -41,16 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Set;
 
 /**
  * An analysis handler that provides a breakdown of the analysis process of provided documents. This handler expects a
@@ -194,7 +193,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
             ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
             : EMPTY_BYTES_SET;
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           // ignore analysis exceptions since we are applying arbitrary text to all fields
           termsToMatch = EMPTY_BYTES_SET;
         }
@@ -204,7 +203,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
             AnalysisContext analysisContext = new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), EMPTY_BYTES_SET);
             fieldTokens.add("query", analyzeValue(request.getQuery(), analysisContext));
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             // ignore analysis exceptions since we are applying arbitrary text to all fields
           }
         }

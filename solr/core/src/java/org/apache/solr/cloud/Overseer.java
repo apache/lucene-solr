@@ -16,6 +16,21 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
+
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -64,24 +79,6 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.ID;
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.LongAccumulator;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.function.BiConsumer;
 
 /**
  * <p>Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
@@ -251,7 +248,7 @@ public class Overseer implements SolrCloseable {
                 try {
                   processQueueItem(message, getZkStateReader().getClusterState(), zkStateWriter, false, null);
                 } catch (InterruptedException | AlreadyClosedException e) {
-                  ParWork.propegateInterrupt(e);
+                  ParWork.propagateInterrupt(e);
                   return;
                 } catch (KeeperException.SessionExpiredException e) {
                   log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
@@ -266,7 +263,7 @@ public class Overseer implements SolrCloseable {
                       fallbackQueue.poll();
                     }
                   } catch (InterruptedException e1) {
-                    ParWork.propegateInterrupt(e);
+                    ParWork.propagateInterrupt(e);
                     return;
                   } catch (Exception e1) {
                     exp.addSuppressed(e1);
@@ -289,7 +286,7 @@ public class Overseer implements SolrCloseable {
               log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
               return;
             } catch (InterruptedException | AlreadyClosedException e) {
-              ParWork.propegateInterrupt(e, true);
+              ParWork.propagateInterrupt(e, true);
               return;
             } catch (Exception e) {
               log.error("Unexpected error in Overseer state update loop", e);
@@ -312,7 +309,7 @@ public class Overseer implements SolrCloseable {
 //            }
             queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> true));
           } catch (InterruptedException | AlreadyClosedException e) {
-            ParWork.propegateInterrupt(e, true);
+            ParWork.propagateInterrupt(e, true);
             return;
           } catch (KeeperException.SessionExpiredException e) {
             log.error("run()", e);
@@ -366,7 +363,7 @@ public class Overseer implements SolrCloseable {
             stateUpdateQueue.remove(processedNodes);
             processedNodes.clear();
           } catch (InterruptedException | AlreadyClosedException e) {
-            ParWork.propegateInterrupt(e, true);
+            ParWork.propagateInterrupt(e, true);
             return;
           } catch (KeeperException.SessionExpiredException e) {
             log.error("run()", e);
@@ -512,7 +509,7 @@ public class Overseer implements SolrCloseable {
               getSolrCloudManager().getDistribStateManager().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/terms/" + shardName, ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
 
             } catch (KeeperException | AlreadyExistsException | IOException | InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
             }
             return ret;
@@ -718,10 +715,10 @@ public class Overseer implements SolrCloseable {
       log.warn("ZooKeeper session expired");
       return;
     } catch (InterruptedException | AlreadyClosedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       return;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Unexpected error in Overseer state update loop", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }

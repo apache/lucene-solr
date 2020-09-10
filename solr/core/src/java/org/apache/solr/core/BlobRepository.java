@@ -140,7 +140,7 @@ public class BlobRepository {
           try {
             aBlob = blobCreator.call();
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Blob loading failed: " + e.getMessage(), e);
           }
         }
@@ -226,7 +226,7 @@ public class BlobRepository {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       if (e instanceof SolrException) {
         throw (SolrException) e;
       } else {

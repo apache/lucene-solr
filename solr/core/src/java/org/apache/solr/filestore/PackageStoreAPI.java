@@ -116,14 +116,14 @@ public class PackageStoreAPI {
               packageStore.refresh(KEYS_DIR);
               validate(entry.meta.signatures, entry, false);
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               log.error("Error validating package artifact", e);
               errs.accept(e.getMessage());
             }
           }
         }, false);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Error reading file ", e);
         errs.accept("Error reading file " + path + " " + e.getMessage());
       }
@@ -170,7 +170,7 @@ public class PackageStoreAPI {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
         }
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       } catch (KeeperException.NodeExistsException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A write is already in process , try later");
       } catch (KeeperException e) {
@@ -179,7 +179,7 @@ public class PackageStoreAPI {
         try {
           coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("Unexpected error  ", e);
         }
       }
@@ -206,7 +206,7 @@ public class PackageStoreAPI {
       try {
         cryptoKeys = new CryptoKeys(keys);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Error parsing public keys in Package store");
       }
@@ -260,7 +260,7 @@ public class PackageStoreAPI {
           try {
             packageStore.fetch(pathCopy, getFrom);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             log.error("Failed to download file: {}", pathCopy, e);
           }
           log.info("downloaded file: {}", pathCopy);
@@ -387,7 +387,7 @@ public class PackageStoreAPI {
     try {
       cryptoKeys = new CryptoKeys(keys);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error parsing public keys in ZooKeeper");
     }

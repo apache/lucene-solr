@@ -105,7 +105,7 @@ public class VariableBase implements Variable {
     try {
       return (Variable) implementation.getConstructor(Type.class).newInstance(t);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException("Unable to instantiate: " + implementation.getName(), e);
     }
   }

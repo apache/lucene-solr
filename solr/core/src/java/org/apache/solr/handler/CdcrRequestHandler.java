@@ -59,6 +59,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.SolrCore;
@@ -71,7 +72,6 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -423,7 +423,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         }
       }
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error while requesting shard's checkpoints", e);
     } catch (ExecutionException e) {
@@ -531,7 +531,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         logReader.next();
         lastProcessedVersion = Math.min(lastProcessedVersion, logReader.getLastVersion());
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Error while fetching the last processed version", e);
       } catch (IOException e) {
@@ -654,7 +654,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
           try {
             bootstrapFuture.get();
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
           } catch (ExecutionException e) {
             log.error("Bootstrap operation failed", e);
           }
@@ -711,7 +711,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
           rsp.add(RESPONSE_STATUS, FAILED);
         }
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       } catch (ExecutionException e) {
         rsp.add(RESPONSE_STATUS, FAILED);
         rsp.add(RESPONSE, e);

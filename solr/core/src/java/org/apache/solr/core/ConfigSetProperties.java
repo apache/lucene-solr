@@ -71,7 +71,7 @@ public class ConfigSetProperties {
       }
       return new NamedList();
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex, true);
+      ParWork.propagateInterrupt(ex, true);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load reader for ConfigSet properties: " + name, ex);
     }
   }

@@ -16,6 +16,18 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
+
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
@@ -36,20 +48,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
-import java.io.Closeable;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 
 /**
  * A generic processor run in the Overseer, used for handling items added
@@ -160,7 +158,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       // async calls.
       SolrException.log(log, "", e);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       if (e instanceof KeeperException.SessionExpiredException) {
         return;
       }
@@ -180,7 +178,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       try {
         prioritizer.prioritizeOverseerNodes(myId);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         if (e instanceof KeeperException.SessionExpiredException) {
           return;
         }
@@ -267,7 +265,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             }
           } catch (Exception e) {
             if (e instanceof KeeperException.SessionExpiredException || e instanceof InterruptedException) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               log.error("ZooKeeper session has expired");
               return;
             }
@@ -280,7 +278,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         }
 
       } catch (InterruptedException | AlreadyClosedException e) {
-        ParWork.propegateInterrupt(e, true);
+        ParWork.propagateInterrupt(e, true);
         return;
       } catch (KeeperException.SessionExpiredException e) {
         log.warn("Zookeeper expiration");
@@ -481,7 +479,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         taskFutures.remove(this);
         success = true;
       } catch (InterruptedException | AlreadyClosedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         return;
       } catch (Exception e) {
         if (e instanceof KeeperException.SessionExpiredException) {

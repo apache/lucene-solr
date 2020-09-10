@@ -62,7 +62,7 @@ public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpC
     try {
       SolrMetricProducer.super.close();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException("Exception closing.", e);
     }
   }

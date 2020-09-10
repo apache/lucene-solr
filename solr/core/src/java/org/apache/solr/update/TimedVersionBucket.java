@@ -63,7 +63,7 @@ public class TimedVersionBucket extends VersionBucket {
         condition.awaitNanos(nanosTimeout);
       }
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
     }
   }
@@ -72,7 +72,7 @@ public class TimedVersionBucket extends VersionBucket {
     try {
       return lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
     }
   }

@@ -166,7 +166,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
-      ParWork.propegateInterrupt(e2);
+      ParWork.propagateInterrupt(e2);
       SolrException.log(log,"REQUEST FAILED for params: " + args.toQueryString(), e2);
       throw new RuntimeException("Exception during query", e2);
     }

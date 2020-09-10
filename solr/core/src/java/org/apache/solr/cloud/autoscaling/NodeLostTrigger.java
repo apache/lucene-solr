@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,7 +49,6 @@ import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACT
 import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_INACTIVE;
 import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STATE;
 import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
-import static org.apache.solr.common.params.AutoScalingParams.REPLICA_TYPE;
 
 /**
  * Trigger for the {@link TriggerEventType#NODELOST} event
@@ -88,7 +86,7 @@ public class NodeLostTrigger extends TriggerBase {
             return;
           }
         } catch (InterruptedException | IOException | KeeperException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.debug("-- ignoring marker {} state due to error", markerPath, e);
         }
         // don't add nodes that have since came back
@@ -101,7 +99,7 @@ public class NodeLostTrigger extends TriggerBase {
     } catch (NoSuchElementException | AlreadyClosedException e) {
       // ignore
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.warn("Exception retrieving nodeLost markers", e);
     }
   }

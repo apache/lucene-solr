@@ -41,10 +41,10 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -198,7 +198,7 @@ public class ChaosMonkey {
             try {
               stopJetty(jetty);
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               throw new RuntimeException(e);
             }
           }
@@ -500,7 +500,7 @@ public class ChaosMonkey {
           } catch (InterruptedException e) {
             //
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             // TODO Auto-generated catch block
             e.printStackTrace();
           }
@@ -596,7 +596,7 @@ public class ChaosMonkey {
         try {
           jetty.stop();
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("error stopping jetty", e);
           throw new RuntimeException(e);
         }
@@ -618,7 +618,7 @@ public class ChaosMonkey {
         try {
           jetty.start();
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("error starting jetty", e);
           throw new RuntimeException(e);
         }

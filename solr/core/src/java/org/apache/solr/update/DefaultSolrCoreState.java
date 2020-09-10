@@ -16,26 +16,6 @@
  */
 package org.apache.solr.update;
 
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.search.Sort;
-import org.apache.solr.cloud.ActionThrottle;
-import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.index.SortingMergePolicy;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.RefCounted;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Callable;
@@ -49,6 +29,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.search.Sort;
+import org.apache.solr.cloud.ActionThrottle;
+import org.apache.solr.cloud.RecoveryStrategy;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.index.SortingMergePolicy;
+import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class DefaultSolrCoreState extends SolrCoreState implements RecoveryStrategy.RecoveryListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -116,7 +115,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       }
       indexWriter = null;
     } catch (Exception e) {
-      ParWork.propegateInterrupt("Error during close of writer.", e);
+      ParWork.propagateInterrupt("Error during close of writer.", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -223,14 +222,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           log.debug("Closing old IndexWriter... core=" + coreName);
           iw.close();
         } catch (Exception e) {
-          ParWork.propegateInterrupt("Error closing old IndexWriter. core=" + coreName, e);
+          ParWork.propagateInterrupt("Error closing old IndexWriter. core=" + coreName, e);
         }
       } else {
         try {
           log.debug("Rollback old IndexWriter... core=" + coreName);
           iw.rollback();
         } catch (Exception e) {
-          ParWork.propegateInterrupt("Error rolling back old IndexWriter. core=" + coreName, e);
+          ParWork.propagateInterrupt("Error rolling back old IndexWriter. core=" + coreName, e);
         }
       }
     }
@@ -286,7 +285,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       iw = SolrIndexWriter.buildIndexWriter(core, name, core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getLatestSchema(),
               core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec());
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
 
@@ -403,7 +402,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
             log.error("Exception waiting for previous recovery to finish");
           }
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           return;
         }
       }
@@ -447,7 +446,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
               recoveryFuture.get(10,
                   TimeUnit.MINUTES); // nocommit - how long? make configurable too
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
             } catch (ExecutionException e) {
               throw new SolrException(ErrorCode.SERVER_ERROR, e);

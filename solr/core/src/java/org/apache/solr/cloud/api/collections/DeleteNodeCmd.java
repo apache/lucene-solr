@@ -22,8 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
@@ -124,7 +122,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           } catch (KeeperException e) {
             log.warn("Error deleting ", e);
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
           }catch (Exception e) {
             log.warn("Error deleting ", e);
             throw e;

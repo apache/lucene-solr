@@ -146,7 +146,7 @@ class PerSegmentSingleValuedFaceting {
           completionService.submit(pending.removeFirst());
         }
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } catch (ExecutionException e) {
         Throwable cause = e.getCause();

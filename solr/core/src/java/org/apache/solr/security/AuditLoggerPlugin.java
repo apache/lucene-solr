@@ -16,21 +16,6 @@
  */
 package org.apache.solr.security;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.security.AuditEvent.EventType;
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -46,6 +31,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.security.AuditEvent.EventType;
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for Audit logger plugins.
@@ -178,7 +178,7 @@ public abstract class AuditLoggerPlugin extends ParWork.NoLimitsCallable impleme
       try {
         queue.put(event);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
     } else {
       if (!queue.offer(event)) {
@@ -207,7 +207,7 @@ public abstract class AuditLoggerPlugin extends ParWork.NoLimitsCallable impleme
         numLogged.mark();
         totalTime.inc(timer.stop());
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         return null;
       } catch (Exception ex) {
         log.error("Exception when attempting to audit log asynchronously", ex);
@@ -322,7 +322,7 @@ public abstract class AuditLoggerPlugin extends ParWork.NoLimitsCallable impleme
       try {
         executorService.awaitTermination(10, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
     }
     try {
@@ -349,7 +349,7 @@ public abstract class AuditLoggerPlugin extends ParWork.NoLimitsCallable impleme
           }
           timeSlept ++;
         } catch (InterruptedException ignored) {
-          ParWork.propegateInterrupt(ignored);
+          ParWork.propagateInterrupt(ignored);
           break;
         }
       }

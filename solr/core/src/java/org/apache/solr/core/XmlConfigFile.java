@@ -16,6 +16,25 @@
  */
 package org.apache.solr.core;
 
+import javax.xml.namespace.QName;
+import javax.xml.transform.sax.SAXSource;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
 import net.sf.saxon.Configuration;
 import net.sf.saxon.dom.DocumentOverNodeInfo;
 import net.sf.saxon.event.Sender;
@@ -39,25 +58,6 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-
-import javax.xml.namespace.QName;
-import javax.xml.transform.sax.SAXSource;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
 /**
  * Wrapper around an XML DOM object to provide convenient accessors to it.  Intended for XML config files.
@@ -313,7 +313,7 @@ public class XmlConfigFile { // formerly simply "Config"
       } catch (SolrException e) {
         throw (e);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         SolrException.log(log, "Error in xpath", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Error in xpath:" + path + " for " + name, e);
@@ -347,7 +347,7 @@ public class XmlConfigFile { // formerly simply "Config"
       } catch (SolrException e) {
         throw (e);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         SolrException.log(log, "Error in xpath", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Error in xpath:" + xstr + " for " + name, e);

@@ -16,19 +16,30 @@
  */
 package org.apache.solr.client.solrj.beans;
 
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.SuppressForbidden;
-
-import java.lang.reflect.*;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Array;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.*;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.nio.ByteBuffer;
+import java.util.regex.Pattern;
+
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * A class to map objects to and from solr documents.
@@ -69,7 +80,7 @@ public class DocumentObjectBinder {
       }
       return obj;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new BindingException("Could not instantiate object of " + clazz, e);
     }
   }
@@ -192,7 +203,7 @@ public class DocumentObjectBinder {
           try {
             getter = setter.getDeclaringClass().getMethod(gname, (Class[]) null);
           } catch (Exception ex) {
-            ParWork.propegateInterrupt(ex);
+            ParWork.propagateInterrupt(ex);
             // no getter -- don't worry about it...
             if (type == Boolean.class) {
               gname = "is" + setter.getName().substring(3);
@@ -456,7 +467,7 @@ public class DocumentObjectBinder {
         }
       }
       catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new BindingException("Exception while setting value : " + v + " on " + (field != null ? field : setter), e);
       }
     }
@@ -466,7 +477,7 @@ public class DocumentObjectBinder {
         try {
           return field.get(obj);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new BindingException("Exception while getting value: " + field, e);
         }
       } else if (getter == null) {
@@ -476,7 +487,7 @@ public class DocumentObjectBinder {
       try {
         return getter.invoke(obj, (Object[]) null);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new BindingException("Exception while getting value: " + getter, e);
       }
     }

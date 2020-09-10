@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import javax.management.JMException;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
@@ -42,8 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.management.JMException;
-
+import com.google.common.util.concurrent.AtomicLongMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -70,8 +70,6 @@ import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.util.concurrent.AtomicLongMap;
 
 public class ZkTestServer implements Closeable {
 
@@ -370,7 +368,7 @@ public class ZkTestServer implements Closeable {
           }
         }
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e, true);
+        ParWork.propagateInterrupt(e, true);
         return;
       }
     }
@@ -604,7 +602,7 @@ public class ZkTestServer implements Closeable {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -617,13 +615,13 @@ public class ZkTestServer implements Closeable {
         chRootClient.printLayout();
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt("Exception trying to print zk layout to log on shutdown", e);
+      ParWork.propagateInterrupt("Exception trying to print zk layout to log on shutdown", e);
     }
     if (zkMonitoringFile != null && chRootClient != null && zkServer != null) {
       try {
         writeZkMonitorFile();
       } catch (Exception e2) {
-        ParWork.propegateInterrupt("Exception trying to write zk layout to file on shutdown", e2);
+        ParWork.propagateInterrupt("Exception trying to write zk layout to file on shutdown", e2);
       }
     }
 

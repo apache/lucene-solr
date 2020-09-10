@@ -16,35 +16,6 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.rest.RestManager;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.ManagedIndexSchemaFactory;
-import org.apache.solr.schema.SimilarityFactory;
-import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.SystemIdResolver;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -73,6 +44,35 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.rest.RestManager;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.ManagedIndexSchemaFactory;
+import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.SystemIdResolver;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @since solr 1.3
@@ -731,7 +731,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       throw err;
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Error instantiating class: '" + clazz.getName() + "'", e);
     }
@@ -791,7 +791,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
             try {
               aware.inform(core);
             } catch (Exception e) {
-              ParWork.propegateInterrupt("Exception informing for SolrCore", e);
+              ParWork.propagateInterrupt("Exception informing for SolrCore", e);
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception informing for SolrCore", e);
             }
             waitingForCore.remove(aware);
@@ -815,7 +815,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
             try {
               r.inform(loader);
             } catch (Exception e) {
-              ParWork.propegateInterrupt("Exception informing for ResourceLoader", e);
+              ParWork.propagateInterrupt("Exception informing for ResourceLoader", e);
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception informing for ResourceLoader", e);
             }
             waitingForResources.remove(r);
@@ -843,7 +843,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
                 infoRegistry.put(imb.getName(), imb);
                 infoMBeans.remove(imb);
               } catch (Exception e) {
-                ParWork.propegateInterrupt(e);
+                ParWork.propagateInterrupt(e);
                 log.warn("could not register MBean '" + imb.getName() + "'.", e);
               }
           });

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.cloud;
 
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -32,9 +34,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocketFactory;
 
 import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
@@ -200,7 +199,7 @@ public class SocketProxy {
       serverSocket.bind(new InetSocketAddress(proxyUrl.getPort()));
       doOpen();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       if (log.isDebugEnabled()) {
         log.debug("exception on reopen url:{} ", getUrl(), e);
       }
@@ -242,7 +241,7 @@ public class SocketProxy {
     try {
       c.close();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.debug("exception on close of: {}", c, e);
     }
   }
@@ -251,7 +250,7 @@ public class SocketProxy {
     try {
       c.halfClose();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.debug("exception on half close of: {}", c, e);
     }
   }
@@ -388,7 +387,7 @@ public class SocketProxy {
               out.write(buf, 0, len);
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           if (log.isDebugEnabled()) {
             log.debug("read/write failed, reason: {}", e.getLocalizedMessage());
           }
@@ -399,14 +398,14 @@ public class SocketProxy {
               close();
             }
           } catch (Exception ignore) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
           }
         } finally {
           if (in != null) {
             try {
               in.close();
             } catch (Exception exc) {
-              ParWork.propegateInterrupt(exc);
+              ParWork.propagateInterrupt(exc);
               log.debug("Error when closing InputStream on socket: {}", src, exc);
             }
           }
@@ -414,7 +413,7 @@ public class SocketProxy {
             try {
               out.close();
             } catch (Exception exc) {
-              ParWork.propegateInterrupt(exc);
+              ParWork.propagateInterrupt(exc);
               log.debug("{} when closing OutputStream on socket: {}", exc, destination);
             }
           }
@@ -463,7 +462,7 @@ public class SocketProxy {
           } catch (SocketTimeoutException expected) {}
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         if (log.isDebugEnabled()) {
           log.debug("acceptor: finished for reason: {}", e.getLocalizedMessage());
         }

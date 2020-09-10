@@ -21,11 +21,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -123,7 +120,7 @@ public class CollectionProperties {
         try {
           Thread.sleep(50);
         } catch (InterruptedException e1) {
-          ParWork.propegateInterrupt(e1);
+          ParWork.propagateInterrupt(e1);
           return;
         }
         continue;

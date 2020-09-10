@@ -63,7 +63,7 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
         solrCore.getUpdateHandler().getSolrCoreState().doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       if (log.isInfoEnabled()) {
         log.info("Failed to watch term of core {}", coreDescriptor.getName(), e);
       }

@@ -215,7 +215,7 @@ public class V2HttpCall extends HttpSolrCall {
     try {
       zkStateReader.aliasesManager.update();
     } catch (Exception e) {
-      ParWork.propegateInterrupt("Error trying to update state while resolving collection.", e);
+      ParWork.propagateInterrupt("Error trying to update state while resolving collection.", e);
       if (e instanceof KeeperException.SessionExpiredException) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
@@ -342,7 +342,7 @@ public class V2HttpCall extends HttpSolrCall {
     try {
       api.call(this.solrReq, solrResp);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       solrResp.setException(e);
     }
   }
@@ -357,7 +357,7 @@ public class V2HttpCall extends HttpSolrCall {
       try {
         api.call(solrReq, rsp);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         rsp.setException(e);
       }
     }

@@ -32,7 +32,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -166,7 +165,7 @@ public class ExportTool extends SolrCLI.ToolBase {
           try {
             sink.accept(doc);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new RuntimeException(e);
           }
         }
@@ -421,7 +420,7 @@ public class ExportTool extends SolrCLI.ToolBase {
             try {
               coreHandler.exportDocsFromCore();
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               if (output != null) output.println("Error exporting docs from : " + s);
 
             }
@@ -471,7 +470,7 @@ public class ExportTool extends SolrCLI.ToolBase {
           try {
             doc = queue.poll(30, TimeUnit.SECONDS);
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             if (output != null) output.println("Consumer interrupted");
             failed = true;
             break;
@@ -481,7 +480,7 @@ public class ExportTool extends SolrCLI.ToolBase {
             if (docsWritten.get() > limit) continue;
             sink.accept(doc);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             if (output != null) output.println("Failed to write to file " + e.getMessage());
             failed = true;
           }
@@ -518,7 +517,7 @@ public class ExportTool extends SolrCLI.ToolBase {
               queue.offer(doc, 10, TimeUnit.SECONDS);
               receivedDocs.incrementAndGet();
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               failed = true;
               if (output != null) output.println("Failed to write docs from" + e.getMessage());
             }

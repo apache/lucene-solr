@@ -183,7 +183,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
                 taskObject.setRspObject(callInfo.rsp);
               }
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               exceptionCaught = true;
               taskObject.setRspObjectFromException(e);
             } finally {

@@ -89,7 +89,7 @@ public class NodeAddedTrigger extends TriggerBase {
             return;
           }
         } catch (InterruptedException | IOException | KeeperException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.debug("-- ignoring marker {} state due to error{}", markerPath, e);
         }
         // don't add nodes that have since gone away
@@ -102,7 +102,7 @@ public class NodeAddedTrigger extends TriggerBase {
     } catch (NoSuchElementException e) {
       // ignore
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.warn("Exception retrieving nodeLost markers", e);
     }
   }

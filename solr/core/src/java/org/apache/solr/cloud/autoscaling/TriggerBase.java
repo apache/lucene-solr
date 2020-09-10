@@ -16,6 +16,18 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
@@ -30,18 +42,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Base class for {@link org.apache.solr.cloud.autoscaling.AutoScaling.Trigger} implementations.
@@ -119,7 +119,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
         try {
           action = loader.newInstance((String)map.get("class"), TriggerAction.class, "cloud.autoscaling.");
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("", e);
           throw new TriggerValidationException("action", "exception creating action " + map + ": " + e.toString());
         }
@@ -148,7 +148,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyExistsException e) {
       // ignore
     } catch (InterruptedException | KeeperException | IOException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw e;
     }
     for (TriggerAction action : actions) {
@@ -263,7 +263,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
       stateManager.setData(path, data, -1);
       lastState = state;
     } catch (InterruptedException | BadVersionException | IOException | KeeperException e) {
-      ParWork.propegateInterrupt(e, true);
+      ParWork.propagateInterrupt(e, true);
       log.warn("Exception updating trigger state '{}'", path, e);
     }
   }
@@ -281,7 +281,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyClosedException e) {
      
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e, true);
+      ParWork.propagateInterrupt(e, true);
       log.warn("Exception getting trigger state '{}'", path, e);
     }
     if (data != null) {

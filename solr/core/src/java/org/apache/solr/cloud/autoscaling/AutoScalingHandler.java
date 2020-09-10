@@ -174,7 +174,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       }
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       rsp.getValues().add("result", "failure");
       throw e;
     } finally {
@@ -285,7 +285,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     try {
       cp = clusterPolicy.stream().map(Clause::create).collect(Collectors.toList());
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       op.addError(e.getMessage());
       return currentConfig;
     }
@@ -306,7 +306,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     try {
       prefs = preferences.stream().map(Preference::new).collect(Collectors.toList());
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       op.addError(e.getMessage());
       return currentConfig;
     }
@@ -356,7 +356,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       newClauses = Policy.clausesFromMap((Map<String, List<Map<String, Object>>>) op.getCommandData(),
           new ArrayList<>() );
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       op.addError(e.getMessage());
       return currentConfig;
     }
@@ -508,7 +508,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       op.addError("invalid listener configuration: " + e.toString());
       return currentConfig;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.warn("error loading listener class ", e);
       op.addError("Listener not found: " + listenerClass + ". error message:" + e.getMessage());
       return currentConfig;
@@ -578,7 +578,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       try {
         loader.findClass(klass, TriggerAction.class);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.warn("Could not load class : ", e);
         op.addError("Action not found: " + klass + " " + e.getMessage());
         return currentConfig;
@@ -590,7 +590,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     try {
       t = triggerFactory.create(trigger.event, trigger.name, trigger.properties);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("", e);
       op.addError("Error validating trigger config " + trigger.name + ": " + e.toString());
       return currentConfig;

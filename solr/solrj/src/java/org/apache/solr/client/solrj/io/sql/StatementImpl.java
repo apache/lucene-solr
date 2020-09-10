@@ -103,7 +103,7 @@ class StatementImpl implements Statement {
       String url = zkProps.getCoreUrl();
       return new SolrStream(url, params);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }

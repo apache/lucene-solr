@@ -16,6 +16,12 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -27,12 +33,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
 
 /**
  * ResourceLoader that works with ZooKeeper.
@@ -83,7 +83,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
       }
       return new ZkByteArrayInputStream(bytes, stat);
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while opening " + file, e);
     } catch (KeeperException.NoNodeException e) {
       throw new SolrResourceNotFoundException("Can't find resource '" + resource

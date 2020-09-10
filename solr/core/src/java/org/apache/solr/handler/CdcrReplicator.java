@@ -129,7 +129,7 @@ public class CdcrReplicator implements Runnable {
         log.info("Forwarded {} updates to target {}", counter, state.getTargetCollection());
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       // report error and update error stats
       this.handleException(e);
     } finally {

@@ -16,19 +16,6 @@
  */
 package org.apache.solr.util.xslt;
 
-import net.sf.saxon.BasicTransformerFactory;
-import org.apache.commons.io.IOUtils;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.XmlConfigFile;
-import org.apache.solr.util.SystemIdResolver;
-import org.apache.solr.util.TimeOut;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
@@ -37,6 +24,18 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
+
+import net.sf.saxon.BasicTransformerFactory;
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.util.SystemIdResolver;
+import org.apache.solr.util.TimeOut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Singleton that creates a Transformer for the XSLTServletFilter.
  *  For now, only caches the last created Transformer, but
@@ -115,7 +114,7 @@ public class TransformerProvider {
         IOUtils.closeQuietly(src.getInputStream());
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error(getClass().getName(), "newTemplates", e);
       throw new IOException("Unable to initialize Templates '" + filename + "'", e);
     }

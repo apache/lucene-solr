@@ -68,7 +68,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
       snapShooter.validateCreateSnapshot();
       snapShooter.createSnapshot();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Failed to backup core=" + cname + " because " + e, e);
     }

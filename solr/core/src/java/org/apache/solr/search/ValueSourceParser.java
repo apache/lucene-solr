@@ -166,7 +166,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         try {
           Thread.sleep(ms);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new RuntimeException(e);
         }
         return source;

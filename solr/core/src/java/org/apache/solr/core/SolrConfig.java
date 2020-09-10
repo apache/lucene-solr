@@ -48,7 +48,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.collections.map.UnmodifiableOrderedMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
@@ -200,7 +199,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     try {
       return new SolrConfig(loader, name, isConfigsetTrusted, substitutableProperties);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       String resource;
       if (loader instanceof ZkSolrResourceLoader) {
         resource = name;
@@ -469,7 +468,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       Map m = (Map) fromJSON(in);
       return new ConfigOverlay(m, version);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading config overlay", e);
     } finally {
       IOUtils.closeQuietly(isr);
@@ -633,7 +632,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         try {
           return valueOf(s.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Unrecognized value for lastModFrom: {}", s, e);
           return BOGUS;
         }
@@ -667,7 +666,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
               ? Long.valueOf(ttlStr)
               : null;
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Ignoring exception while attempting to extract max-age from cacheControl config: {}"
               , cacheControlHeader, e);
         }

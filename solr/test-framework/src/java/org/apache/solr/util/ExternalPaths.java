@@ -16,10 +16,10 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.common.ParWork;
-
 import java.io.File;
 import java.net.URL;
+
+import org.apache.solr.common.ParWork;
 
 
 /**
@@ -73,7 +73,7 @@ public class ExternalPaths {
           }
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         // If there is no "solr/conf" in the classpath, fall back to searching from the current directory.
         file = new File(System.getProperty("tests.src.home", "."));
       }

@@ -108,7 +108,7 @@ public abstract class ContentStreamBase implements ContentStream
         type = ContentType.APPLICATION_JSON.getMimeType();
       }
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
+      ParWork.propagateInterrupt(ex);
       // This code just eats, the exception and leaves
       // the contentType untouched.
     }

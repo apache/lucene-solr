@@ -120,7 +120,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
           try {
             super.cancelElection();
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             log.error("Exception closing Overseer", e);
           }
         });
@@ -129,7 +129,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
         try {
           overseer.doClose(fromCSUpdateThread);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("Exception closing Overseer", e);
         }
       });
@@ -147,7 +147,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
     try {
       cancelElection(fromCSUpdateThread);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Exception canceling election", e);
     }
     super.close();

@@ -16,26 +16,6 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.base.Strings;
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.logging.LogWatcherConfig;
-import org.apache.solr.metrics.reporters.SolrJmxReporter;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.JmxUtil;
-import org.apache.solr.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
 import javax.management.MBeanServer;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -54,6 +34,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import com.google.common.base.Strings;
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.logging.LogWatcherConfig;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
+import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.JmxUtil;
+import org.apache.solr.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 
 /**
@@ -228,7 +228,7 @@ public class SolrXmlConfig {
     } catch (SolrException exc) {
       throw exc;
     } catch (Exception exc) {
-      ParWork.propegateInterrupt(exc);
+      ParWork.propagateInterrupt(exc);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load SOLR configuration", exc);
     }
@@ -269,7 +269,7 @@ public class SolrXmlConfig {
       log.error("Exception reading config", exc);
       throw exc;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }

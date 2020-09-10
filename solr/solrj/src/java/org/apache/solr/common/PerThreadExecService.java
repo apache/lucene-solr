@@ -1,14 +1,5 @@
 package org.apache.solr.common;
 
-import org.apache.solr.common.util.CloseTracker;
-import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SysStats;
-import org.apache.solr.common.util.TimeOut;
-import org.apache.solr.common.util.TimeSource;
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
@@ -22,6 +13,15 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SysStats;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PerThreadExecService extends AbstractExecutorService {
   private static final Logger log = LoggerFactory
@@ -62,7 +62,7 @@ public class PerThreadExecService extends AbstractExecutorService {
         try {
           runnable = workQueue.poll(Integer.MAX_VALUE, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-           ParWork.propegateInterrupt(e);
+           ParWork.propagateInterrupt(e);
            return;
         }
         if (runnable == null) {
@@ -87,7 +87,7 @@ public class PerThreadExecService extends AbstractExecutorService {
               return;
             }
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             running.decrementAndGet();
             synchronized (awaitTerminate) {
               awaitTerminate.notifyAll();

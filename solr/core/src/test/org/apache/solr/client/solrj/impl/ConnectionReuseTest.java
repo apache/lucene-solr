@@ -16,6 +16,11 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpConnectionMetrics;
 import org.apache.http.HttpException;
@@ -41,11 +46,6 @@ import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @SolrTestCase.SuppressSSL
 @Ignore // nocommit look at this again later
@@ -113,7 +113,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
           try {
             client.add(c.solrDoc);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             e.printStackTrace();
           }
           if (!done && i > 0 && i < cnt2 - 1 && client instanceof ConcurrentUpdateSolrClient
@@ -126,7 +126,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
           try {
             ((ConcurrentUpdateSolrClient) client).blockUntilFinished();
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             e.printStackTrace();
           }
         }

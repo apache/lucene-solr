@@ -127,7 +127,7 @@ public class PolicyHelper {
       try {
         SESSION_WRAPPPER_REF.set(sessionWrapper = getSession(delegatingManager));
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to get autoscaling policy session", e);
 
       }
@@ -367,7 +367,7 @@ public class PolicyHelper {
                   new StringWriter(), true));
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException(e);
       }
     }
@@ -480,7 +480,7 @@ public class PolicyHelper {
             try {
               lockObj.wait(10 * 1000);//wait for a max of 10 seconds
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               log.info("interrupted... ");
             }
             if (log.isDebugEnabled()) {

@@ -438,7 +438,7 @@ public class JDBCStream extends TupleStream implements Expressible {
       try {
         clazz = Class.forName(className, false, getClass().getClassLoader());
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException(e);
       }
       final int scale = metadata.getScale(columnNumber);

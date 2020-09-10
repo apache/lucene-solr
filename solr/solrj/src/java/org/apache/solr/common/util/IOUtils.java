@@ -32,7 +32,7 @@ public class IOUtils {
         closeable.close();
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Error while closing", e);
     }
   }

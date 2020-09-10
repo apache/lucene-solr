@@ -193,7 +193,7 @@ public class SolrSnapshotMetaDataManager {
         try {
           release(name);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           // Suppress so we keep throwing original exception
         }
       }

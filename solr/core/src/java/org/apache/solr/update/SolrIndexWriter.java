@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -120,7 +119,7 @@ public class SolrIndexWriter extends IndexWriter {
       dir = getDir(directoryFactory, path, config);
       iw = new SolrIndexWriter(core, name, directoryFactory, dir, create, schema, config, delPolicy, codec);
     } catch (Throwable e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
 
       if (iw != null) {
@@ -238,7 +237,7 @@ public class SolrIndexWriter extends IndexWriter {
     try {
       dir = directoryFactory.get(path,  DirContext.DEFAULT, config.lockType);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       if (dir != null) try {
         directoryFactory.release(dir);
@@ -367,7 +366,7 @@ public class SolrIndexWriter extends IndexWriter {
     try {
       super.close();
     } catch (Throwable e) {
-      ParWork.propegateInterrupt("Error closing IndexWriter", e);
+      ParWork.propagateInterrupt("Error closing IndexWriter", e);
     } finally {
       cleanup("close");
     }
@@ -383,7 +382,7 @@ public class SolrIndexWriter extends IndexWriter {
     try {
       super.rollback();
     } catch (Throwable e) {
-      ParWork.propegateInterrupt("Exception rolling back IndexWriter", e);
+      ParWork.propagateInterrupt("Exception rolling back IndexWriter", e);
     } finally {
       cleanup("rollback");
     }

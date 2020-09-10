@@ -16,6 +16,24 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.api.Api;
@@ -79,23 +97,6 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -239,7 +240,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                         (ZkSolrResourceLoader) req.getCore()
                             .getResourceLoader()).run();
                   } catch (Exception e) {
-                    ParWork.propegateInterrupt(e);
+                    ParWork.propagateInterrupt(e);
                     if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
                       return;
                     }
@@ -397,7 +398,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           }
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         if (e instanceof  InterruptedException || e instanceof  AlreadyClosedException) {
           return;
         }
@@ -436,7 +437,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               try {
                 val = (Map) entry.getValue();
               } catch (Exception e1) {
-                ParWork.propegateInterrupt(e1);
+                ParWork.propagateInterrupt(e1);
                 op.addError("invalid params for key : " + key);
                 continue;
               }
@@ -645,7 +646,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             req.getCore().createInitInstance(info, expected, clz, "");
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("Error checking plugin : ", e);
           op.addError(e.getMessage());
           return false;
@@ -714,7 +715,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             try {
               val = Boolean.parseBoolean(val.toString());
             } catch (Exception exp) {
-              ParWork.propegateInterrupt(exp);
+              ParWork.propagateInterrupt(exp);
               op.addError(formatString(typeErr, name, typ.getSimpleName()));
               continue;
             }
@@ -722,7 +723,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             try {
               val = Integer.parseInt(val.toString());
             } catch (Exception exp) {
-              ParWork.propegateInterrupt(exp);
+              ParWork.propagateInterrupt(exp);
               op.addError(formatString(typeErr, name, typ.getSimpleName()));
               continue;
             }
@@ -866,7 +867,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 failedList.size(), concurrentTasks.size() + 1, prop, expectedVersion, maxWaitSecs, failedList));
 
     } catch (InterruptedException ie) {
-      ParWork.propegateInterrupt(ie);
+      ParWork.propagateInterrupt(ie);
       return;
     }
 
@@ -965,7 +966,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             }
           } catch (Exception e) {
             if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               break; // stop looping
             } else {
               log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);

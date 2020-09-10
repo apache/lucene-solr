@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.ParWork;
@@ -85,7 +84,7 @@ public class ActionThrottle {
       try {
         timeSource.sleep(sleep);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
     }
   }

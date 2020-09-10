@@ -99,7 +99,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
       log.error(msg, e);
       throw new ZooKeeperException(ErrorCode.SERVER_ERROR, msg, e);
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
     }
     
     return watcher;

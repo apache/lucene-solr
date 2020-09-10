@@ -16,6 +16,17 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
@@ -30,16 +41,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACTIVE;
 import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STATE;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This plan simply removes nodeAdded and nodeLost markers from Zookeeper if their TTL has
@@ -69,7 +70,7 @@ public class InactiveMarkersPlanAction extends TriggerActionBase {
     try {
       cleanupTTL = Integer.parseInt(cleanupStr);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new TriggerValidationException(getName(), TTL_PROP, "invalid value '" + cleanupStr + "': " + e.toString());
     }
     if (cleanupTTL < 0) {
@@ -135,7 +136,7 @@ public class InactiveMarkersPlanAction extends TriggerActionBase {
           log.trace(" -- keep {}, delta={}, ttl={}, active={}", markerPath, delta, cleanupTTL, activeMarker);
         }
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         return;
       } catch (IOException | KeeperException e) {
         log.warn("Could not cleanup marker at {}, skipping... ({}}", markerPath, e.getMessage());

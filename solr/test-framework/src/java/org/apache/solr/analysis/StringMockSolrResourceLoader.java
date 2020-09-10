@@ -36,7 +36,7 @@ class StringMockSolrResourceLoader implements ResourceLoader {
     try {
       return Class.forName(cname).asSubclass(expectedType);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException("Cannot load class: " + cname, e);
     }
   }
@@ -47,7 +47,7 @@ class StringMockSolrResourceLoader implements ResourceLoader {
     try {
       return clazz.getConstructor().newInstance();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException("Cannot create instance: " + cname, e);
     }
   }

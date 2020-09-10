@@ -218,7 +218,7 @@ public class SnapShooter {
       try {
         snapShootDetails = createSnapshot();
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Exception while creating snapshot", e);
         snapShootDetails = new NamedList<>();
         snapShootDetails.add("exception", e.getMessage());
@@ -283,7 +283,7 @@ public class SnapShooter {
         try {
           backupRepo.deleteDirectory(snapshotDirPath);
         } catch (Exception excDuringDelete) {
-          ParWork.propegateInterrupt(excDuringDelete);
+          ParWork.propagateInterrupt(excDuringDelete);
           log.warn("Failed to delete {} after snapshot creation failed due to: {}", snapshotDirPath, excDuringDelete);
         }
       }

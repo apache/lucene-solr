@@ -17,13 +17,10 @@
 
 package org.apache.solr.common.util;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -343,7 +340,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     try {
       map = fromJSON(resource, includeLocation);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error in JSON : " + resourceName, e);
     }

@@ -197,7 +197,7 @@ public class SolrCLI implements CLIO {
       try {
         runImpl(cli);
       } catch (Exception exc) {
-        ParWork.propegateInterrupt(exc);
+        ParWork.propagateInterrupt(exc);
         // since this is a CLI, spare the user the stacktrace
         String excMsg = exc.getMessage();
         if (excMsg != null) {
@@ -559,7 +559,7 @@ public class SolrCLI implements CLIO {
           toolClasses.add((Class<Tool>) theClass);
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       // safe to squelch this as it's just looking for tools to run
       log.debug("Failed to find Tool impl classes in {}, due to: ", packageName, e);
     }
@@ -638,7 +638,7 @@ public class SolrCLI implements CLIO {
       try {
         HttpClientUtil.close(httpClient);
       } catch (Exception exc) {
-        ParWork.propegateInterrupt(exc);
+        ParWork.propagateInterrupt(exc);
         // safe to ignore, we're just shutting things down
       }
     }
@@ -677,7 +677,7 @@ public class SolrCLI implements CLIO {
       try {
         json = getJson(httpClient, getUrl);
       } catch (Exception exc) {
-        ParWork.propegateInterrupt(exc);
+        ParWork.propagateInterrupt(exc);
         if (exceptionIsAuthRelated(exc)) {
           throw exc;
         }
@@ -1045,7 +1045,7 @@ public class SolrCLI implements CLIO {
         try {
           iterations = Integer.parseInt(iterStr);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Invalid option 'i' value, using default 10:", e);
           iterations = 10;
         }
@@ -1198,7 +1198,7 @@ public class SolrCLI implements CLIO {
           try {
             simCloudManager.request(operation);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             CLIO.err("Aborting - error executing suggestion " + suggestion + ": " + e);
             Map<String, Object> error = new HashMap<>();
             error.put("suggestion", suggestion);
@@ -1288,7 +1288,7 @@ public class SolrCLI implements CLIO {
           new JSONWriter(arr, 2).write(getStatus(solrUrl));
           echo(arr.toString());
         } catch (Exception exc) {
-          ParWork.propegateInterrupt(exc);
+          ParWork.propagateInterrupt(exc);
           if (exceptionIsAuthRelated(exc)) {
             throw exc;
           }
@@ -1310,14 +1310,14 @@ public class SolrCLI implements CLIO {
         } catch (SSLPeerUnverifiedException exc) {
           throw exc;
         } catch (Exception exc) {
-          ParWork.propegateInterrupt(exc);
+          ParWork.propagateInterrupt(exc);
           if (exceptionIsAuthRelated(exc)) {
             throw exc;
           }
           try {
             Thread.sleep(2000L);
           } catch (InterruptedException interrupted) {
-            ParWork.propegateInterrupt(interrupted);
+            ParWork.propagateInterrupt(interrupted);
             break;
           }
         }
@@ -1619,7 +1619,7 @@ public class SolrCLI implements CLIO {
       try {
         docCount = qr.getResults().getNumFound();
       } catch (Exception exc) {
-        ParWork.propegateInterrupt(exc);
+        ParWork.propagateInterrupt(exc);
         collErr = String.valueOf(exc);
       }
 
@@ -1633,7 +1633,7 @@ public class SolrCLI implements CLIO {
         try {
           leaderUrl = zkStateReader.getLeaderUrl(collection, shardName, 1000);
         } catch (Exception exc) {
-          ParWork.propegateInterrupt(exc);
+          ParWork.propagateInterrupt(exc);
           log.warn("Failed to get leader for shard {} due to: {}", shardName, exc);
         }
 
@@ -1676,7 +1676,7 @@ public class SolrCLI implements CLIO {
               // if we get here, we can trust the state
               replicaStatus = replicaCoreProps.getState();
             } catch (Exception exc) {
-              ParWork.propegateInterrupt(exc);
+              ParWork.propagateInterrupt(exc);
               log.error("ERROR: {} when trying to reach: {}", exc, coreUrl);
 
               if (checkCommunicationError(exc)) {
@@ -1851,7 +1851,7 @@ public class SolrCLI implements CLIO {
       List<String> collections = (List<String>) existsCheckResult.get("collections");
       exists = collections != null && collections.contains(collection);
     } catch (Exception exc) {
-      ParWork.propegateInterrupt(exc);
+      ParWork.propagateInterrupt(exc);
       // just ignore it since we're only interested in a positive result here
     }
     return exists;
@@ -1881,7 +1881,7 @@ public class SolrCLI implements CLIO {
       }while (wait &&
           System.nanoTime() - startWaitAt < MAX_WAIT_FOR_CORE_LOAD_NANOS);
     } catch (Exception exc) {
-      ParWork.propegateInterrupt(exc);
+      ParWork.propagateInterrupt(exc);
       // just ignore it since we're only interested in a positive result here
     }
     return exists;
@@ -2155,7 +2155,7 @@ public class SolrCLI implements CLIO {
           echo(String.format(Locale.ROOT, "\nCreated new core '%s'", coreName));
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         /* create-core failed, cleanup the copied configset before propagating the error. */
         FileUtils.deleteDirectory(coreInstanceDir);
         throw e;
@@ -2268,7 +2268,7 @@ public class SolrCLI implements CLIO {
 
         zkClient.upConfig(confPath, confName);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Could not complete upconfig operation for reason: {}", e.getMessage());
         throw (e);
       }
@@ -2343,7 +2343,7 @@ public class SolrCLI implements CLIO {
 
         zkClient.downConfig(confName, configSetPath);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Could not complete downconfig operation for reason: {}", e.getMessage());
         throw (e);
       }
@@ -2421,7 +2421,7 @@ public class SolrCLI implements CLIO {
             " recurse: " + Boolean.toString(recurse));
         zkClient.clean(znode);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Could not complete rm operation for reason: {}", e.getMessage());
         throw (e);
       }
@@ -2491,7 +2491,7 @@ public class SolrCLI implements CLIO {
             " recurse: " + Boolean.toString(recurse), cli);
         stdout.print(zkClient.listZnode(znode, recurse));
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Could not complete ls operation for reason: {}", e.getMessage());
         throw (e);
       }
@@ -2552,7 +2552,7 @@ public class SolrCLI implements CLIO {
         echo("Creating Zookeeper path " + znode + " on ZooKeeper at " + zkHost);
         zkClient.mkdir(znode);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Could not complete mkroot operation for reason: {}", e.getMessage());
         throw (e);
       }
@@ -2645,7 +2645,7 @@ public class SolrCLI implements CLIO {
         }
         zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recurse);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Could not complete the zk operation for reason: {}", e.getMessage());
         throw (e);
       }
@@ -2725,7 +2725,7 @@ public class SolrCLI implements CLIO {
         echo("Moving Znode " + source + " to " + dest + " on ZooKeeper at " + zkHost);
         zkClient.moveZnode(source, dest);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Could not complete mv operation for reason: {}", e.getMessage());
         throw (e);
       }
@@ -2874,7 +2874,7 @@ public class SolrCLI implements CLIO {
         try {
           zkStateReader.getZkClient().clean(configZnode);
         } catch (Exception exc) {
-          ParWork.propegateInterrupt(exc);
+          ParWork.propagateInterrupt(exc);
           echo("\nWARNING: Failed to delete configuration directory "+configZnode+" in ZooKeeper due to: "+
               exc.getMessage()+"\nYou'll need to manually delete this znode using the zkcli script.");
         }
@@ -3409,7 +3409,7 @@ public class SolrCLI implements CLIO {
       try {
         configTool.runTool(processCommandLineArgs(joinCommonAndToolOptions(configTool.getOptions()), configArgs));
       } catch (Exception exc) {
-        ParWork.propegateInterrupt(exc);
+        ParWork.propagateInterrupt(exc);
         CLIO.err("Failed to update '"+propName+"' property due to: "+exc);
       }
     }
@@ -3429,7 +3429,7 @@ public class SolrCLI implements CLIO {
           try {
             Thread.sleep(2000);
           } catch (InterruptedException ie) {
-            ParWork.propegateInterrupt(ie);
+            ParWork.propagateInterrupt(ie);
             return;
           }
           liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
@@ -3441,14 +3441,14 @@ public class SolrCLI implements CLIO {
               " seconds! Please check the solr.log for each node to look for errors.\n");
         }
       } catch (Exception exc) {
-        ParWork.propegateInterrupt(exc);
+        ParWork.propagateInterrupt(exc);
         CLIO.err("Failed to see if "+numNodes+" joined the SolrCloud cluster due to: "+exc);
       } finally {
         if (cloudClient != null) {
           try {
             cloudClient.close();
           } catch (Exception ignore) {
-            ParWork.propegateInterrupt(ignore);
+            ParWork.propagateInterrupt(ignore);
           }
         }
       }
@@ -3528,7 +3528,7 @@ public class SolrCLI implements CLIO {
         try {
           handler.waitFor(3000);
         } catch (InterruptedException ie) {
-          ParWork.propegateInterrupt(ie);
+          ParWork.propagateInterrupt(ie);
         }
         if (handler.hasResult() && handler.getExitValue() != 0) {
           throw new Exception("Failed to start Solr using command: "+startCmd+" Exception : "+handler.getException());
@@ -3556,7 +3556,7 @@ public class SolrCLI implements CLIO {
         nodeStatus = (new StatusTool()).getStatus(solrUrl);
       } catch (Exception ignore) {
         /* just trying to determine if this example is already running. */
-        ParWork.propegateInterrupt(ignore);
+        ParWork.propagateInterrupt(ignore);
       }
 
       if (nodeStatus != null) {
@@ -3919,7 +3919,7 @@ public class SolrCLI implements CLIO {
       try {
         toolExitStatus = runAssert(cli);
       } catch (Exception exc) {
-        ParWork.propegateInterrupt(exc);
+        ParWork.propagateInterrupt(exc);
         // since this is a CLI, spare the user the stacktrace
         String excMsg = exc.getMessage();
         if (excMsg != null) {
@@ -3998,7 +3998,7 @@ public class SolrCLI implements CLIO {
       try {
         status.waitToSeeSolrUp(url, timeoutMs.orElse(1000L).intValue() / 1000);
       } catch (Exception se) {
-        ParWork.propegateInterrupt(se);
+        ParWork.propagateInterrupt(se);
         if (exceptionIsAuthRelated(se)) {
           throw se;
         }
@@ -4025,11 +4025,11 @@ public class SolrCLI implements CLIO {
             log.debug("Solr still up. Waiting before trying again to see if it was stopped");
             Thread.sleep(1000L);
           } catch (InterruptedException interrupted) {
-            ParWork.propegateInterrupt(interrupted);
+            ParWork.propagateInterrupt(interrupted);
             timeout = 0; // stop looping
           }
         } catch (Exception se) {
-          ParWork.propegateInterrupt(se);
+          ParWork.propagateInterrupt(se);
           if (exceptionIsAuthRelated(se)) {
             throw se;
           }
@@ -4128,7 +4128,7 @@ public class SolrCLI implements CLIO {
         status.waitToSeeSolrUp(url, timeoutMs.orElse(1000L).intValue() / 1000);
         return true;
       } catch (Exception se) {
-        ParWork.propegateInterrupt(se);
+        ParWork.propagateInterrupt(se);
         if (exceptionIsAuthRelated(se)) {
           throw se;
         }
@@ -4142,7 +4142,7 @@ public class SolrCLI implements CLIO {
         final CollectionAdminResponse response = request.process(client);
         return response != null;
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         if (exceptionIsAuthRelated(e)) {
           throw e;
         }
@@ -4283,7 +4283,7 @@ public class SolrCLI implements CLIO {
             try {
               zkHost = getZkHost(cli);
             } catch (Exception ex) {
-              ParWork.propegateInterrupt(ex);
+              ParWork.propagateInterrupt(ex);
               CLIO.out("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                   + securityJson + "\n");
               zkInaccessible = true;
@@ -4308,7 +4308,7 @@ public class SolrCLI implements CLIO {
                   }
                 }
               } catch (Exception ex) {
-                ParWork.propegateInterrupt(ex);
+                ParWork.propagateInterrupt(ex);
                 if (zkInaccessible == false) {
                   CLIO.out("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                       + securityJson + "\n");
@@ -4325,7 +4325,7 @@ public class SolrCLI implements CLIO {
                 zkClient.start();
                 zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
               } catch (Exception ex) {
-                ParWork.propegateInterrupt(ex);
+                ParWork.propagateInterrupt(ex);
                 if (zkInaccessible == false) {
                   CLIO.out("Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                       + securityJson);
@@ -4414,7 +4414,7 @@ public class SolrCLI implements CLIO {
             try {
               zkHost = getZkHost(cli);
             } catch (Exception ex) {
-              ParWork.propegateInterrupt(ex);
+              ParWork.propagateInterrupt(ex);
               if (cli.hasOption("zkHost")) {
                 CLIO.out("Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zkHost has been passed in.");
               } else {

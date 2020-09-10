@@ -27,15 +27,10 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -82,7 +77,7 @@ public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
               Thread.sleep(LuceneTestCase.random().nextInt(TEST_NIGHTLY ? 1000 : 50));
               invokeBulkCall((String) e.getKey(), errs, value);
             } catch (Exception e1) {
-              ParWork.propegateInterrupt(e1);
+              ParWork.propagateInterrupt(e1);
               return null;
             }
             return null;

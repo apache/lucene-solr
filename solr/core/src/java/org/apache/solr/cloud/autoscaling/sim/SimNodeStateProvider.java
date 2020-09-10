@@ -253,7 +253,7 @@ public class SimNodeStateProvider implements NodeStateProvider, Closeable {
     try {
       stateManager.setData(ZkStateReader.ROLES, Utils.toJSON(roles), -1);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException("Unexpected exception saving roles " + roles, e);
     }
   }

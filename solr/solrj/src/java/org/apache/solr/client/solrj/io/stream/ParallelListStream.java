@@ -148,7 +148,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
         this.streams[streamIndex.getIndex()] = streamIndex.getTupleStream();
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }

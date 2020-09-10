@@ -20,30 +20,16 @@ import javax.xml.xpath.XPathExpressionException;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.Utils;
 
 /**
  * Facilitates testing Solr's REST API via a provided embedded Jetty
@@ -139,7 +125,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
       resp = Http2SolrClient.PUT(getBaseURL() + request, sorlClient, content.getBytes("UTF-8"), "application/json",
           Collections.emptyMap()).asString;
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (ExecutionException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -160,7 +146,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     try {
       return Http2SolrClient.DELETE(getBaseURL() + request, sorlClient).asString;
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (ExecutionException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -182,7 +168,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     try {
       resp = Http2SolrClient.POST(getBaseURL() + request, sorlClient, content.getBytes("UTF-8"), "application/json").asString;
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (ExecutionException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -239,7 +225,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     try {
       return query("/update?stream.body=" + URLEncoder.encode(xml, "UTF-8"));
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
     }
   }

@@ -30,8 +30,8 @@ import java.util.Set;
 import java.util.StringJoiner;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.ParWork;
@@ -127,7 +127,7 @@ public class SystemLogListener extends TriggerListenerBase {
       req.setParam(CollectionAdminParams.COLLECTION, collection);
       cloudManager.request(req);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       if ((e instanceof SolrException) && e.getMessage().contains("Collection not found")) {
         // relatively benign but log this - collection still existed when we started
         log.info("Collection {} missing, skip sending event {}", collection, event);

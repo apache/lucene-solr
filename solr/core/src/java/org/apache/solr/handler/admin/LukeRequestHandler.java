@@ -392,7 +392,7 @@ public class LukeRequestHandler extends RequestHandlerBase
                 fieldMap.add("index", "(unstored field)");
               }
             } catch (Exception ex) {
-              ParWork.propegateInterrupt(ex);
+              ParWork.propagateInterrupt(ex);
               log.warn("error reading field: {}", fieldName);
             }
           }

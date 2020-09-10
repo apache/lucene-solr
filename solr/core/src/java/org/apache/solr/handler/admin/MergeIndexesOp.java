@@ -115,7 +115,7 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
           processorChain.createProcessor(wrappedReq, it.rsp);
       processor.processMergeIndexes(new MergeIndexesCommand(readers, it.req));
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       // log and rethrow so that if the finally fails we don't lose the original problem
       log.error("ERROR executing merge:", e);
       throw e;

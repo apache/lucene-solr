@@ -16,15 +16,6 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.collect.Lists;
-import org.apache.http.annotation.Experimental;
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -35,6 +26,15 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
+import com.google.common.collect.Lists;
+import org.apache.http.annotation.Experimental;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.logging.MDCLoggingContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 class SolrCores implements Closeable {
@@ -129,7 +129,7 @@ class SolrCores implements Closeable {
             core.closeAndWait();
           } catch (Throwable e) {
             log.error("Error closing SolrCore", e);
-            ParWork.propegateInterrupt("Error shutting down core", e);
+            ParWork.propagateInterrupt("Error shutting down core", e);
           } finally {
             MDCLoggingContext.clear();
           }
@@ -386,7 +386,7 @@ class SolrCores implements Closeable {
           try {
             loadingSignal.wait(1000);
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             return;
           }
         }
@@ -407,7 +407,7 @@ class SolrCores implements Closeable {
           try {
             loadingSignal.wait(1000);
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             return;
           }
         }

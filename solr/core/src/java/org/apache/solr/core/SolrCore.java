@@ -79,7 +79,6 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -107,7 +106,6 @@ import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaDa
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -404,7 +402,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       lastNewIndexDir = result;
       return result;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       // See SOLR-11687. It is inadvisable to assume we can do the right thing for any but a small
       // number of exceptions that ware caught and swallowed in getIndexProperty.
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error in getNewIndexDir, exception: ", e);
@@ -413,7 +411,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         try {
           getDirectoryFactory().release(dir);
         } catch (Exception e) {
-          ParWork.propegateInterrupt( "Error releasing directory", e);
+          ParWork.propagateInterrupt( "Error releasing directory", e);
           throw new SolrException(ErrorCode.SERVER_ERROR, "Error releasing directory: ", e);
         }
       }
@@ -551,7 +549,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               getSolrConfig().indexConfig.lockType);
       return new SolrSnapshotMetaDataManager(this, snapshotDir);
     } catch (Throwable e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
 
       try {
         if (snapshotDir != null) {
@@ -822,7 +820,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try (SolrIndexWriter writer = SolrIndexWriter.buildIndexWriter(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(),
               true, getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec)) {
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     }
@@ -873,7 +871,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
 
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
@@ -904,7 +902,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
       if (null != e.getCause() && e.getCause() instanceof SolrException) {
@@ -1107,14 +1105,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // release the latch, otherwise we block trying to do the close. This
       // should be fine, since counting down on a latch of 0 is still fine
       searcherReadyLatch.countDown();
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       try {
         // close down the searcher and any other resources, if it exists, as this
         // is not recoverable
         //onDeckSearchers.set(0);
         close();
       } catch (Throwable t) {
-        ParWork.propegateInterrupt("Error while closing", t);
+        ParWork.propagateInterrupt("Error while closing", t);
       }
 
       String msg;
@@ -1373,7 +1371,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
       } catch (Exception e) {
-        ParWork.propegateInterrupt("Unable to load " + IndexFetcher.INDEX_PROPERTIES, e);
+        ParWork.propagateInterrupt("Unable to load " + IndexFetcher.INDEX_PROPERTIES, e);
       } finally {
         IOUtils.closeQuietly(is);
       }
@@ -1391,7 +1389,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       p.store(os, IndexFetcher.INDEX_PROPERTIES);
       dir.sync(Collections.singleton(tmpFileName));
     } catch (Exception e) {
-      ParWork.propegateInterrupt("Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
+      ParWork.propagateInterrupt("Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
     } finally {
       IOUtils.closeQuietly(os);
@@ -1419,7 +1417,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         try {
           closeAndWait.wait(500);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
       }
     }
@@ -2234,7 +2232,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       return newSearcher;
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error opening new searcher", e);
     } finally {
       openSearcherLock.unlock();
@@ -2319,7 +2317,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           try {
             searcherLock.wait();
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
           }
         }
 
@@ -2361,7 +2359,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           try {
             searcherLock.wait();
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
           }
           continue;  // go back to the top of the loop and retry
         } else if (onDeckSearchers.get() > 1) {
@@ -2428,7 +2426,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             try {
               newSearcher.warm(currSearcher);
             } catch (Throwable e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
             } finally {
               warmupContext.close();
             }
@@ -2478,7 +2476,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
                 registerSearcher(newSearchHolder);
                 registered.set(true);
               } catch (Throwable e) {
-                ParWork.propegateInterrupt(e);
+                ParWork.propagateInterrupt(e);
               } finally {
                 // we are all done with the old searcher we used
                 // for warming...
@@ -2498,7 +2496,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       return returnSearcher ? newSearchHolder : null;
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       if (e instanceof RuntimeException) throw (RuntimeException) e;
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } finally {
@@ -2577,7 +2575,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         } catch (Exception e) {
           // do not allow decref() operations to fail since they are typically called in finally blocks
           // and throwing another exception would be very unexpected.
-          ParWork.propegateInterrupt("Error opening new searcher", e);
+          ParWork.propagateInterrupt("Error opening new searcher", e);
         }
       }
     };
@@ -2634,10 +2632,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
         success = true;
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         newSearcherHolder.decref();
         // an exception in register() shouldn't be fatal.
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       } finally {
         // wake up anyone waiting for a searcher
         // even in the face of errors.
@@ -2832,7 +2830,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       m.put("xlsx",
           (QueryResponseWriter) Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter").getConstructor().newInstance());
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e, true);
+      ParWork.propagateInterrupt(e, true);
       //don't worry; solrcell contrib not in class path
     }
   }
@@ -2925,7 +2923,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         result.put(e.getKey(), (T) o);
       } catch (Exception exp) {
         //should never happen
-        ParWork.propegateInterrupt(exp);
+        ParWork.propagateInterrupt(exp);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to instantiate class", exp);
       }
     }
@@ -3079,7 +3077,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         directoryFactory.remove(getIndexDir());
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         SolrException.log(log, "Failed to flag index dir for removal for core:" + name + " dir:" + getIndexDir());
       }
     }
@@ -3087,7 +3085,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         directoryFactory.remove(getDataDir(), true);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         SolrException.log(log, "Failed to flag data dir for removal for core:" + name + " dir:" + getDataDir());
       }
     }
@@ -3193,7 +3191,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               try {
                 listener.run();
               } catch (Exception e) {
-                ParWork.propegateInterrupt("Error in listener ", e);
+                ParWork.propagateInterrupt("Error in listener ", e);
               }
             });
 
@@ -3232,7 +3230,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     } catch (KeeperException e) {
       log.error("error refreshing solrconfig ", e);
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
     }
     return false;
   }

@@ -121,7 +121,7 @@ public class PackageAPI {
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
             }
           }
 
@@ -242,7 +242,7 @@ public class PackageAPI {
           Http2SolrClient.GET(coreContainer.getZkController().
               zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p, coreContainer.getUpdateShardHandler().getTheSharedHttpClient());
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         } catch (ExecutionException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         } catch (TimeoutException e) {
@@ -398,7 +398,7 @@ public class PackageAPI {
         try {
           Thread.sleep(10);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
         try {
           pkgs = readPkgsFromZk(null, null);
@@ -421,7 +421,7 @@ public class PackageAPI {
             getBaseUrlForNodeName(s).replace("/solr", "/api") +
             "/cluster/package?wt=javabin&omitHeader=true&expectedVersion" + expected, coreContainer.getUpdateShardHandler().getTheSharedHttpClient());
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       } catch (ExecutionException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } catch (TimeoutException e) {

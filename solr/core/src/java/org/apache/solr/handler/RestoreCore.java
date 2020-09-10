@@ -86,7 +86,7 @@ public class RestoreCore implements Callable<Boolean> {
           try {
             checksum = CodecUtil.retrieveChecksum(indexInput);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             log.warn("Could not read checksum from index file: {}", filename, e);
           }
           long length = indexInput.length();
@@ -99,7 +99,7 @@ public class RestoreCore implements Callable<Boolean> {
             restoreIndexDir.copyFrom(indexDir, filename, filename, IOContext.READONCE);
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Exception while restoring the backup index ", e);
           throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
         }
@@ -113,7 +113,7 @@ public class RestoreCore implements Callable<Boolean> {
         success = true;
         log.info("Successfully restored to the backup index");
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         //Rollback to the old index directory. Delete the restore index directory and mark the restore as failed.
         log.warn("Could not switch to restored index. Rolling back to the current index", e);
         Directory dir = null;

@@ -262,7 +262,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
         log.warn("Could not obtain overseer's address, skipping.", e);
         return lastKnownUrl;
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         return lastKnownUrl;
       }
       if (props == null) {

@@ -61,7 +61,7 @@ public abstract class TransientSolrCoreCacheFactory {
       tccf.setCoreContainer(coreContainer);
       return tccf;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       // Many things could cuse this, bad solrconfig, mis-typed class name, whatever. However, this should not
       // keep the enclosing coreContainer from instantiating, so log an error and continue.
       log.error(String.format(Locale.ROOT, "Error instantiating TransientSolrCoreCacheFactory class [%s]: %s",

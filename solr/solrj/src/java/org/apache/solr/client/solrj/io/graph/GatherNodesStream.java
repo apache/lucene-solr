@@ -490,7 +490,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
           edges.add(tuple);
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException(e);
       } finally {
         try {
@@ -604,7 +604,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         traversal.addLevel(level, collection, gather);
         out = traversal.iterator();
       } catch(Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException(e);
       }
     }

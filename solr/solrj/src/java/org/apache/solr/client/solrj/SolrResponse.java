@@ -16,19 +16,19 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SuppressForbidden;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 
 
 /**
@@ -74,7 +74,7 @@ public abstract class SolrResponse implements Serializable, MapWriter {
       outputStream.writeObject(response);
       return byteStream.toByteArray();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -87,7 +87,7 @@ public abstract class SolrResponse implements Serializable, MapWriter {
       ObjectInputStream inputStream = new ObjectInputStream(byteStream);
       return (SolrResponse) inputStream.readObject();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }

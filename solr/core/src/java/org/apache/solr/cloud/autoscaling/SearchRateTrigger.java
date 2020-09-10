@@ -32,9 +32,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.AtomicDouble;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.ParWork;
@@ -158,7 +158,7 @@ public class SearchRateTrigger extends TriggerBase {
     try {
       maxOps = Integer.parseInt(maxOpsStr);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new TriggerValidationException(name, MAX_OPS_PROP, "invalid value '" + maxOpsStr + "': " + e.toString());
     }
 
@@ -170,7 +170,7 @@ public class SearchRateTrigger extends TriggerBase {
           throw new Exception("must be at least 1, or not set to use 'replicationFactor'");
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new TriggerValidationException(name, MIN_REPLICAS_PROP, "invalid value '" + o + "': " + e.toString());
       }
     }
@@ -189,7 +189,7 @@ public class SearchRateTrigger extends TriggerBase {
       try {
         aboveRate = Double.parseDouble(String.valueOf(above));
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new TriggerValidationException(name, ABOVE_RATE_PROP, "Invalid configuration value: '" + above + "': " + e.toString());
       }
     } else {
@@ -199,7 +199,7 @@ public class SearchRateTrigger extends TriggerBase {
       try {
         belowRate = Double.parseDouble(String.valueOf(below));
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new TriggerValidationException(name, BELOW_RATE_PROP, "Invalid configuration value: '" + below + "': " + e.toString());
       }
     } else {
@@ -213,7 +213,7 @@ public class SearchRateTrigger extends TriggerBase {
       try {
         aboveNodeRate = Double.parseDouble(String.valueOf(above));
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new TriggerValidationException(name, ABOVE_NODE_RATE_PROP, "Invalid configuration value: '" + above + "': " + e.toString());
       }
     } else {
@@ -223,7 +223,7 @@ public class SearchRateTrigger extends TriggerBase {
       try {
         belowNodeRate = Double.parseDouble(String.valueOf(below));
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new TriggerValidationException(name, BELOW_NODE_RATE_PROP, "Invalid configuration value: '" + below + "': " + e.toString());
       }
     } else {
@@ -246,7 +246,7 @@ public class SearchRateTrigger extends TriggerBase {
     try {
       aboveNodeOp = CollectionParams.CollectionAction.get(String.valueOf(aboveNodeObj));
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new TriggerValidationException(getName(), ABOVE_NODE_OP_PROP, "unrecognized value: '" + aboveNodeObj + "'");
     }
     if (belowNodeObj != null) {

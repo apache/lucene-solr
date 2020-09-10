@@ -562,7 +562,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         writeKeyValue(json, "warning", e.toString(), false);
         log.warn("Keeper Exception", e);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
 
       if (stat.getNumChildren() > 0) {
@@ -594,7 +594,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           writeError(500, e.toString());
           return false;
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           return false;
         } catch (IllegalArgumentException e) {
           // path doesn't exist (must have been removed)
@@ -768,7 +768,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         writeError(500, e.toString());
         return false;
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         return false;
       }
       return true;

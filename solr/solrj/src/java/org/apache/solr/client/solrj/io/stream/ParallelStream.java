@@ -268,7 +268,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
       assert(solrStreams.size() == workers);
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }
