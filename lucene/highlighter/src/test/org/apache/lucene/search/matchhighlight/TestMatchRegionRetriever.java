@@ -280,6 +280,23 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
   }
 
   @Test
+  public void testIntervalQueryHighlightCrossingMultivalueBoundary() throws IOException {
+    String field = FLD_TEXT_POS;
+    new IndexBuilder(this::toField)
+        .doc(field, "foo", "bar")
+        .build(analyzer, reader -> {
+          assertThat(
+              highlights(reader, new IntervalQuery(field,
+                  Intervals.unordered(
+                      Intervals.term("foo"),
+                      Intervals.term("bar")))),
+              containsInAnyOrder(
+                  fmt("0: (field_text: '>foo< | >bar<')", field)
+              ));
+        });
+  }
+
+  @Test
   public void testIntervalQueries() throws IOException {
     String field = FLD_TEXT_POS_OFFS;
 
