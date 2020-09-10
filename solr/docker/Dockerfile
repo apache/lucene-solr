@@ -39,9 +39,11 @@ COPY --chown=0:0 scripts /opt/docker-solr/scripts
 
 ARG SOLR_VERSION
 
-COPY --from=solr_package "/opt/solr-build/solr-$SOLR_VERSION" "/opt/solr-$SOLR_VERSION"
+COPY --from=solr_package "/opt/solr-$SOLR_VERSION.tgz" "/opt/solr-$SOLR_VERSION.tgz"
 
 RUN set -ex; \
+  tar -C /opt --extract --file "/opt/solr-$SOLR_VERSION.tgz" && \
+  rm "/opt/solr-$SOLR_VERSION.tgz"; \
   (cd /opt; ln -s "solr-$SOLR_VERSION" solr); \
   rm -Rf /opt/solr/docs/ /opt/solr/dist/{solr-solrj-$SOLR_VERSION.jar,solrj-lib,solr-test-framework-$SOLR_VERSION.jar,test-framework}; \
   mkdir -p /opt/solr/server/solr/lib /docker-entrypoint-initdb.d /opt/docker-solr; \

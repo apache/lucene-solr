@@ -70,7 +70,5 @@ RUN set -ex; \
   else \
     echo "Skipping GPG validation due to non-Apache build"; \
   fi; \
-  tar -C /opt/solr-build --extract --file "/opt/solr-$SOLR_VERSION.tgz" && \
-  rm "/opt/solr-$SOLR_VERSION.tgz"; \
   { command -v gpgconf; gpgconf --kill all || :; }; \
   rm -r "$GNUPGHOME";

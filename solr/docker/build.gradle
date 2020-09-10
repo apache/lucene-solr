@@ -22,20 +22,25 @@ plugins {
 
 subprojects {
   apply plugin: 'base'
-  apply plugin: "com.palantir.docker"
+  apply plugin: 'com.palantir.docker'
 }
 
 description = 'Solr Docker image'
 
+def dockerPackage = project(':solr:docker:package')
+
+dependencies {
+  docker dockerPackage
+}
+
 docker {
   name = "apache/solr:${version}"
-  files file('include'), '.dockerignore'
+  files file('include')
   buildArgs(['BASE_IMAGE' : 'openjdk:11-jre-slim', 'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package', 'SOLR_VERSION': "${version}"])
 }
 
-
 // In order to create the solr docker image, the solr package image must be created first.
-tasks.docker.dependsOn(project(':solr:docker:package').tasks.docker)
+tasks.docker.dependsOn(dockerPackage.tasks.docker)
 
 abstract class DockerTestSuite extends DefaultTask {
   private List<String> tests = new ArrayList<>();
@@ -87,7 +92,3 @@ abstract class DockerTestSuite extends DefaultTask {
 task test(type: DockerTestSuite) {
   outputDir = project.file("$buildDir/tmp/tests")
 }
-
-// Create the docker image as a part of the assemble task
-// assemble.dependsOn tasks.docker
-// testing.dependsOn dockerIntegrationTests

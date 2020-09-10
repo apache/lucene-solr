@@ -18,15 +18,19 @@
 description = 'Solr Docker Package image'
 
 // The solr package docker image relies on the output of the solr:packaging project.
-Project solrPackagingProject = project(':solr:packaging')
+Project solrPackaging = project(':solr:packaging')
 
 dependencies {
-  docker solrPackagingProject
+  docker solrPackaging
 }
 
 docker {
   name = 'apache/solr-build:local-package'
   dockerfile file('Dockerfile.local-package')
-  files solrPackagingProject.tasks.toDir.outputs, '.dockerignore'
-  buildArgs(['BASE_IMAGE': 'alpine:3.12', 'SOLR_VERSION': "$version"])
+  files(solrPackaging.tasks.distTar.outputs)
+  getCopySpec().into('releases')
 }
+
+// Only allow the following docker tasks
+def availableDockerTasks = ["docker", "dockerClean", "dockerPrepare", "dockerfileZip"]
+project.tasks.configureEach { t -> t.enabled = t.getGroup() != "Docker" || availableDockerTasks.contains(t.getName()) }
