@@ -2947,7 +2947,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testBasicTextLogitStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 

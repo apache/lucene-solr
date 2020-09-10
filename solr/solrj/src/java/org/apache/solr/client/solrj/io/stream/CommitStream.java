@@ -107,7 +107,10 @@ public class CommitStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     tupleSource.open();
-    clientCache = new SolrClientCache(zkHost);
+    if (clientCache == null) {
+      clientCache = new SolrClientCache(zkHost);
+      closeClientCache = true;
+    }
     docsSinceCommit = 0;
   }
   

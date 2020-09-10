@@ -70,7 +70,6 @@ import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
@@ -2620,10 +2619,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ failing because of straggler updates not getting fully committed
   public void testParallelUpdateStream() throws Exception {
 
-    CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
+    final String collectionId = "parallelUpdateDestCollection";
+    CollectionAdminRequest.createCollection(collectionId, "conf", 2, 1).process(cluster.getSolrClient());
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa", "s_multi", "bbbb", "i_multi", "4", "i_multi", "7")
@@ -2640,18 +2639,18 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new StreamFactory()
       .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-      .withCollectionZkHost("parallelDestinationCollection", cluster.getZkServer().getZkAddress())
+      .withCollectionZkHost(collectionId, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("update", UpdateStream.class)
       .withFunctionName("parallel", ParallelStream.class);
 
     try {
       //Copy all docs to destinationCollection
-      String updateExpression = "update(parallelDestinationCollection, batchSize=2, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\", qt=\"/export\"))";
+      String updateExpression = "update("+collectionId+", batchSize=2, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\", qt=\"/export\"))";
       TupleStream parallelUpdateStream = factory.constructStream("parallel(collection1, " + updateExpression + ", workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"batchNumber asc\")");
       parallelUpdateStream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(parallelUpdateStream);
-      cluster.getSolrClient().commit("parallelDestinationCollection");
+      cluster.getSolrClient().commit(collectionId);
 
       //Ensure that all UpdateStream tuples indicate the correct number of copied/indexed docs
       long count = 0;
@@ -2663,7 +2662,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (count == 5);
 
       //Ensure that destinationCollection actually has the new docs.
-      expression = StreamExpressionParser.parse("search(parallelDestinationCollection, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_i asc\")");
+      expression = StreamExpressionParser.parse("search("+collectionId+", q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_i asc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -2710,7 +2709,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
       stream.close();
     } finally {
-      CollectionAdminRequest.deleteCollection("parallelDestinationCollection").process(cluster.getSolrClient());
+      CollectionAdminRequest.deleteCollection(collectionId).process(cluster.getSolrClient());
     }
   }
 
@@ -2888,7 +2887,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  //@Ignore // nocommit ~ TJP
   public void testParallelTerminatingDaemonUpdateStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -3071,7 +3069,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore
   public void testCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3163,7 +3160,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore
   public void testParallelCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3695,7 +3691,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit can be slow, can hang - perhaps try back to root shared exec and add the per thread execs await method?
   public void testExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).processAndWait( cluster.getSolrClient(), DEFAULT_TIMEOUT);
@@ -3735,14 +3730,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     getTuples(executorStream);
     //Destination collection should now contain all the records in the main corpus.
     cluster.getSolrClient().commit("destination");
-
-    // TODO: the commit doesn't seem to catch all docs, but a second commit works ...
-    // some internal buffering maybe?
-    long numFound = cluster.getSolrClient().query("destination", new SolrQuery("*:*").setRows(0).setFields("id")).getResults().getNumFound();
-    if (numFound < numDocs) {
-      Thread.sleep(100);
-      cluster.getSolrClient().commit("destination");
-    }
 
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", "search(destination, q=\"*:*\", fl=\"id, body_t, field_i\", rows=1000, sort=\"field_i asc\")");
@@ -3808,14 +3795,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     getTuples(executorStream);
     //Destination collection should now contain all the records in the main corpus.
     cluster.getSolrClient().commit("destination1");
-
-    // TODO: the commit doesn't seem to catch all docs, but a second commit works ...
-    // some internal buffering maybe?
-    long numFound = cluster.getSolrClient().query("destination1", new SolrQuery("*:*").setRows(0).setFields("id")).getResults().getNumFound();
-    if (numFound < cnt) {
-      Thread.sleep(100);
-      cluster.getSolrClient().commit("destination1");
-    }
 
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", "search(destination1, q=\"*:*\", fl=\"id, body_t, field_i\", rows=1000, sort=\"field_i asc\")");
