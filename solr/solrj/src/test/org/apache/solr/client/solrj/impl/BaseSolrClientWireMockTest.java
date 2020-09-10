@@ -123,7 +123,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
     qtp.start();
 
     log.info("@BeforeClass: Initializing WireMock ...");
-    mockSolr = new WireMockServer(options().dynamicPort().httpServerFactory(new JettyHttp2ServerFactory()).enableBrowserProxying(false));
+    mockSolr = new WireMockServer(options().bindAddress("127.0.0.1").dynamicPort().httpServerFactory(new JettyHttp2ServerFactory()).enableBrowserProxying(false));
     mockSolr.start();
     log.info("Mock Solr is running at url: {}", mockSolr.baseUrl());
     configureFor("http", "localhost", mockSolr.port());
