@@ -37,36 +37,38 @@ public class DataConfigNode implements ConfigNode {
   final String name;
   final SimpleMap<String> attributes;
   private final Map<String, List<ConfigNode>> kids = new HashMap<>();
-  private String textData;
-  private final Function<String, String> propertySubstitution;
+  private final String textData;
 
-  public DataConfigNode(ConfigNode root, Function<String, String> propertySubstitution) {
-    this.propertySubstitution = propertySubstitution;
+  public DataConfigNode(ConfigNode root) {
     name = root.name();
     attributes = wrap(root.attributes());
     textData = root.textValue();
-    if (textData != null) textData = PropertiesUtil.substitute(textData.trim(), propertySubstitution);
     root.forEachChild(it -> {
       List<ConfigNode> nodes = kids.computeIfAbsent(it.name(),
           k -> new ArrayList<>());
 
-     nodes.add(new DataConfigNode(it,  propertySubstitution));
+     nodes.add(new DataConfigNode(it));
       return Boolean.TRUE;
     });
 
   }
 
+  public String subtituteVal(String s) {
+    Function<String, String> props = SUBSTITUTES.get();
+    if (props == null) return s;
+    return PropertiesUtil.substitute(s, props);
+  }
+
   private SimpleMap<String> wrap(SimpleMap<String> delegate) {
-    return propertySubstitution == null ? delegate :
-        new SimpleMap<>() {
+    return new SimpleMap<>() {
           @Override
           public String get(String key) {
-            return PropertiesUtil.substitute(delegate.get(key), propertySubstitution);
+            return subtituteVal(delegate.get(key));
           }
 
           @Override
           public void forEachEntry(BiConsumer<String, ? super String> fun) {
-            delegate.forEachEntry((k, v) -> fun.accept(k, PropertiesUtil.substitute(v, propertySubstitution)));
+            delegate.forEachEntry((k, v) -> fun.accept(k, subtituteVal(v)));
           }
 
           @Override
@@ -83,7 +85,7 @@ public class DataConfigNode implements ConfigNode {
 
   @Override
   public String textValue() {
-    return textData;
+    return  subtituteVal(textData);
   }
 
   @Override

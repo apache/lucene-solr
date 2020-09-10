@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -109,7 +110,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    * renamed by appending the extension named in {@link #UPGRADED_SCHEMA_EXTENSION}.
    */
   @Override
-  public ManagedIndexSchema create(String resourceName, SolrConfig config) {
+  public ManagedIndexSchema create(String resourceName, SolrConfig config, ConfigSetService configSetService) {
     this.resourceName = resourceName;
     this.config = config;
     this.loader = config.getResourceLoader();
@@ -174,8 +175,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     }
     InputSource inputSource = new InputSource(schemaInputStream);
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(loadedResource));
-    schema = new ManagedIndexSchema(config, loadedResource, inputSource, isMutable,
-                                    managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
+    schema = new ManagedIndexSchema(config, loadedResource, () -> inputSource, isMutable,
+        managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
     if (shouldUpgrade) {
       // Persist the managed schema if it doesn't already exist
       synchronized (schema.getSchemaUpdateLock()) {

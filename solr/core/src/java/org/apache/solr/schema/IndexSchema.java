@@ -64,6 +64,7 @@ import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
@@ -80,7 +81,6 @@ import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -169,6 +169,7 @@ public class IndexSchema {
    * directives that target them.
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
+  private ConfigNode rootNode;
 //  static AtomicLong totalSchemaLoadTime = new AtomicLong();
 
 
@@ -177,17 +178,20 @@ public class IndexSchema {
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrResourceLoader resourceLoader, Properties substitutableProperties) {
+  public IndexSchema(String name, ConfigSetService.ConfigResource schemaResource, Version luceneVersion, SolrResourceLoader resourceLoader, Properties substitutableProperties) {
     this(luceneVersion, resourceLoader, substitutableProperties);
 
     this.resourceName = Objects.requireNonNull(name);
+    ConfigNode.SUBSTITUTES.set(substitutableProperties::getProperty);
     try {
 //      long start = System.currentTimeMillis();
-      readSchema(is);
+      readSchema(schemaResource);
 //      System.out.println("schema-load-time : "+ totalSchemaLoadTime.addAndGet (System.currentTimeMillis() - start));
       loader.inform(loader);
     } catch (IOException e) {
       throw new RuntimeException(e);
+    } finally {
+      ConfigNode.SUBSTITUTES.remove();
     }
   }
 
@@ -478,18 +482,21 @@ public class IndexSchema {
     }
   }
 
-  protected void readSchema(InputSource is) {
+  protected void readSchema(ConfigSetService.ConfigResource is) {
     assert null != is : "schema InputSource should never be null";
     try {
-      // pass the config resource loader to avoid building an empty one for no reason:
-      // in the current case though, the stream is valid so we wont load the resource by name
-      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, null);
+      rootNode = is.getParsed();
+      if(rootNode == null) {
+        // pass the config resource loader to avoid building an empty one for no reason:
+        // in the current case though, the stream is valid so we wont load the resource by name
+        XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is.getSource(), SLASH+SCHEMA+SLASH, null);
 //      Document document = schemaConf.getDocument();
 //      final XPath xpath = schemaConf.getXPath();
 //      String expression = stepsToPath(SCHEMA, AT + NAME);
 //      Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
-      ConfigNode rootNode = new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()),
-          substitutableProperties::getProperty) ;
+        rootNode = new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement())) ;
+        is.storeParsed(rootNode);
+      }
       name = rootNode.attributes().get("name");
       StringBuilder sb = new StringBuilder();
       // Another case where the initialization from the test harness is different than the "real world"

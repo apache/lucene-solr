@@ -28,12 +28,14 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
 
 /**
  * Service class used by the CoreContainer to load ConfigSets for use in SolrCore
@@ -135,14 +137,14 @@ public abstract class ConfigSetService {
         // note: luceneMatchVersion influences the schema
         String cacheKey = configSet + "/" + guessSchemaName + "/" + modVersion + "/" + solrConfig.luceneMatchVersion;
         return schemaCache.get(cacheKey,
-            (key) -> indexSchemaFactory.create(cdSchemaName, solrConfig));
+            (key) -> indexSchemaFactory.create(cdSchemaName, solrConfig, ConfigSetService.this));
       } else {
         log.warn("Unable to get schema modification version, configSet={} schema={}", configSet, guessSchemaName);
         // see explanation above; "guessSchema" is a guess
       }
     }
 
-    return indexSchemaFactory.create(cdSchemaName, solrConfig);
+    return indexSchemaFactory.create(cdSchemaName, solrConfig, this);
   }
 
   /**
@@ -185,6 +187,18 @@ public abstract class ConfigSetService {
    * @return a name for the core's ConfigSet
    */
   public abstract String configSetName(CoreDescriptor cd);
+
+  public interface ConfigResource {
+
+    default String resourceName() {return null;}
+
+    InputSource getSource();
+
+    default ConfigNode getParsed() {return null;}
+
+    default void storeParsed(ConfigNode node){}
+
+  }
 
   /**
    * The Solr standalone version of ConfigSetService.

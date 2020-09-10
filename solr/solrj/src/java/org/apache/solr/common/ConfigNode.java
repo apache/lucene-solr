@@ -29,6 +29,7 @@ import org.apache.solr.cluster.api.SimpleMap;
  * A generic interface that represents a config file, mostly XML
  */
 public interface ConfigNode {
+  ThreadLocal<Function<String,String>> SUBSTITUTES = new ThreadLocal<>();
 
   /**
    * Name of the tag

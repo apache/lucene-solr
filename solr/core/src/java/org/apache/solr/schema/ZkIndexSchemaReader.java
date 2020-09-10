@@ -174,7 +174,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
           InputSource inputSource = new InputSource(new ByteArrayInputStream(data));
           String resourceName = managedIndexSchemaFactory.getManagedSchemaResourceName();
           ManagedIndexSchema newSchema = new ManagedIndexSchema
-              (managedIndexSchemaFactory.getConfig(), resourceName, inputSource, managedIndexSchemaFactory.isMutable(), 
+              (managedIndexSchemaFactory.getConfig(), resourceName, () -> inputSource, managedIndexSchemaFactory.isMutable(),
                   resourceName, stat.getVersion(), oldSchema.getSchemaUpdateLock());
           managedIndexSchemaFactory.setSchema(newSchema);
           long stop = System.nanoTime();
