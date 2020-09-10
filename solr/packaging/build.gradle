@@ -76,6 +76,7 @@ distributions {
           "**/bin/postlogs",
           "**/bin/solr",
           "**/bin/init.d/solr",
+          "**/bin/solr-exporter",
       ]) {
         setMode 0755
       }
