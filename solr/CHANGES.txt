@@ -104,6 +104,8 @@ Bug Fixes
 Other Changes
 ---------------------
 
+* SOLR-14439: Upgrade to Tika 1.24.1 when available (Andras Salamon via Tim Allison)
+
 * SOLR-14592: Upgrade Zookeeper to 3.6.1. NOTE: this required upgrading netty to 4.1.50 (Erick Erickson)
 
 * SOLR-10742: SolrCores.getNamesForCore is quite inefficient and blocks other core operations.
