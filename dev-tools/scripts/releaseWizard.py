@@ -1377,7 +1377,7 @@ def main():
     state.save()
 
     # Smoketester requires JAVA11_HOME to point to Java11
-    os.environ['JAVA11_HOME'] = state.get_java_home()
+    os.environ['JAVA_HOME'] = state.get_java_home()
     os.environ['JAVACMD'] = state.get_java_cmd()
 
     global lucene_news_file
