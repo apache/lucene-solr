@@ -23,7 +23,6 @@ import os
 import sys
 import subprocess
 from subprocess import TimeoutExpired
-from scriptutil import check_ant
 import textwrap
 import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
@@ -287,7 +286,6 @@ def parse_config():
 def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
   if os.system('git --version >/dev/null 2>/dev/null'):
     raise RuntimeError('"git --version" returned a non-zero exit code.')
-  check_ant()
 
 def check_key_in_keys(gpgKeyID, local_keys):
   if gpgKeyID is not None:

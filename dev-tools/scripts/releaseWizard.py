@@ -64,7 +64,7 @@ import scriptutil
 from consolemenu import ConsoleMenu
 from consolemenu.items import FunctionItem, SubmenuItem, ExitItem
 from consolemenu.screen import Screen
-from scriptutil import BranchType, Version, check_ant, download, run
+from scriptutil import BranchType, Version, download, run
 
 # Solr-to-Java version mapping
 java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
@@ -179,8 +179,6 @@ def check_prerequisites(todo=None):
         gpg_ver = run("gpg --version").splitlines()[0]
     except:
         sys.exit("You will need gpg installed")
-    if not check_ant().startswith('1.8'):
-        print("WARNING: This script will work best with ant 1.8. The script buildAndPushRelease.py may have problems with PGP password input under ant 1.10")
     if not 'GPG_TTY' in os.environ:
         print("WARNING: GPG_TTY environment variable is not set, GPG signing may not work correctly (try 'export GPG_TTY=$(tty)'")
     if not 'JAVA8_HOME' in os.environ or not 'JAVA11_HOME' in os.environ:
