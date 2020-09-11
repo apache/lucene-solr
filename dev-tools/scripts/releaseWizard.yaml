@@ -296,8 +296,7 @@ groups:
       You will need these tools:
 
       * Python v3.4 or later, with dependencies listed in requirements.txt
-      * Java 8 in $JAVA8_HOME and Java 11 in $JAVA11_HOME
-      * Apache Ant 1.8 or later. (Known issue with 1.10 and GPG password entry)
+      * Java 11 in $JAVA_HOME
       * gpg
       * git
       * svn

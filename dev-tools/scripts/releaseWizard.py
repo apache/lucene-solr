@@ -181,8 +181,8 @@ def check_prerequisites(todo=None):
         sys.exit("You will need gpg installed")
     if not 'GPG_TTY' in os.environ:
         print("WARNING: GPG_TTY environment variable is not set, GPG signing may not work correctly (try 'export GPG_TTY=$(tty)'")
-    if not 'JAVA8_HOME' in os.environ or not 'JAVA11_HOME' in os.environ:
-        sys.exit("Please set environment variables JAVA8_HOME and JAVA11_HOME")
+    if not 'JAVA_HOME' in os.environ:
+        sys.exit("Please set environment variables JAVA_HOME")
     try:
         asciidoc_ver = run("asciidoctor -V").splitlines()[0]
     except:
