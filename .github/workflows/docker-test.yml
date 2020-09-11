@@ -3,7 +3,13 @@ name: Docker Build & Test
 on: 
   pull_request:
     branches:
-    - 'master'
+      - 'master'
+    paths:
+      - '.github/workflows/docker-test.yml'
+      - 'solr/bin/**'
+      - 'solr/contrib/prometheus-exporter/bin/**'
+      - 'solr/docker/**'
+      - 'solr/packaging/**'
 
 jobs:
   test:
