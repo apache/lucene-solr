@@ -1362,7 +1362,6 @@ def main():
             release_version = get_release_version()
     store_rc(release_root, release_version)
 
-
     check_prerequisites()
 
     try:
@@ -1377,7 +1376,7 @@ def main():
 
     state.save()
 
-    # Smoketester requires JAVA_HOME to point to JAVA8 and JAVA11_HOME to point ot Java11
+    # Smoketester requires JAVA_HOME to point to Java11
     os.environ['JAVA_HOME'] = state.get_java_home()
     os.environ['JAVACMD'] = state.get_java_cmd()
 
@@ -1393,7 +1392,7 @@ def main():
                             subtitle=get_releasing_text,
                             prologue_text="Welcome to the release wizard. From here you can manage the process including creating new RCs. "
                                           "All changes are persisted, so you can exit any time and continue later. Make sure to read the Help section.",
-                            epilogue_text="® 2019 The Lucene/Solr project. Licensed under the Apache License 2.0\nScript version v%s ALPHA)" % getScriptVersion(),
+                            epilogue_text="® 2020 The Lucene/Solr project. Licensed under the Apache License 2.0\nScript version v%s ALPHA)" % getScriptVersion(),
                             screen=MyScreen())
 
     todo_menu = UpdatableConsoleMenu(title=get_releasing_text,
