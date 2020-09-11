@@ -387,8 +387,8 @@ groups:
         cmd: git clone --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr
         logfile: git_clone.log
   - !Todo
-    id: ant_precommit
-    title: Run ant precommit and fix issues
+    id: gradle_precommit
+    title: Run gradle precommit and fix issues
     depends: clean_git_checkout
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
@@ -396,7 +396,7 @@ groups:
         From the base branch {{ base_branch }} we'll run precommit tests.
         Fix any problems that are found by pushing fixes to the branch
         and then running this task again. This task will always do `git pull`
-        before `ant precommit` so it will catch changes to your branch :)
+        before `./gradlew precommit` so it will catch changes to your branch :)
       confirm_each_command: false
       commands:
       - !Command
@@ -411,7 +411,7 @@ groups:
         cmd: git pull
         stdout: true
       - !Command
-        cmd: ant clean precommit
+        cmd: ./gradlew clean check -x test
   - !Todo
     id: create_stable_branch
     title: Create a new stable branch, off from master
@@ -678,22 +678,6 @@ groups:
         cmd: ant javadocs
         cwd: solr
     post_description: Check that both tests pass. If they fail, commit fixes for the failures before proceeding.
-  - !Todo
-    id: clear_ivy_cache
-    title: Clear the ivy cache
-    description: |
-        It is recommended to clean your Ivy cache before building the artifacts.
-        This ensures that all Ivy dependencies are freshly downloaded,
-        so we emulate a user that never used the Lucene build system before.
-    commands: !Commands
-      root_folder: '{{ home }}'
-      remove_files: .ivy2/cache_bak
-      commands_text: These commands will help you rename the folder so you can get it back later if you wish
-      commands:
-      - !Command
-        cmd: "{{ rename_cmd }} cache cache_bak"
-        cwd: .ivy2
-        stdout: true
   - !Todo
     id: build_rc
     title: Build the release candidate
@@ -1544,7 +1528,7 @@ groups:
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ant clean
+        cmd: ./gradlew clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/
         logfile: add-backcompat.log
@@ -1573,7 +1557,7 @@ groups:
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ant clean
+        cmd: ./gradlew clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
         logfile: add-backcompat.log
@@ -1604,7 +1588,7 @@ groups:
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ant clean
+        cmd: ./gradlew clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
         logfile: add-backcompat.log
