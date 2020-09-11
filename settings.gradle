@@ -70,3 +70,5 @@ include "solr:solr-ref-guide"
 include "solr:example"
 
 include "solr:packaging"
+include "solr:docker"
+include "solr:docker:package"
