@@ -678,6 +678,23 @@ groups:
         cwd: solr
     post_description: Check that both tests pass. If they fail, commit fixes for the failures before proceeding.
   - !Todo
+    id: clear_gradle_cache
+    title: Clear the gradle cache
+    description: |
+        It is recommended to clean your Gradle cache before building the artifacts.
+        This ensures that all Gradle dependencies are freshly downloaded,
+        so we emulate a user that never used the Lucene build system before.
+    commands: !Commands
+      root_folder: '{{ home }}'
+      # nocommit does this need $HOME? Or {{ home }}? How do we refer to userdir here?
+      remove_files: .gradle/caches/modules-2/files-2.1_bak
+      commands_text: These commands will help you rename the folder so you can get it back later if you wish
+      commands:
+      - !Command
+        cmd: "{{ rename_cmd }} files-2.1 files-2.1_bak"
+        cwd: .gradle/caches/modules-2
+        stdout: true
+  - !Todo
     id: build_rc
     title: Build the release candidate
     depends: 
