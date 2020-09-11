@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-plugins {
-  id "base"
-  id "com.palantir.docker" version "0.25.0"
-}
+apply plugin: 'base'
+apply plugin: 'com.palantir.docker'
 
 subprojects {
   apply plugin: 'base'
