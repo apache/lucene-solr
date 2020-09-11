@@ -107,8 +107,8 @@ public class SchemaManager {
     String errorMsg = "Unable to persist managed schema. ";
     List errors = Collections.emptyList();
     int latestVersion = -1;
-
-    synchronized (req.getSchema().getSchemaUpdateLock()) {
+    req.getSchema().getSchemaUpdateLock().lockInterruptibly();
+    try {
       while (!timeOut.hasTimedOut()) {
         managedIndexSchema = getFreshManagedSchema(req.getCore());
         for (CommandOperation op : operations) {
@@ -164,6 +164,8 @@ public class SchemaManager {
           break;
         }
       }
+    } finally {
+      req.getSchema().getSchemaUpdateLock().unlock();
     }
     if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
       // Don't block further schema updates while waiting for a pending update to propagate to other replicas.

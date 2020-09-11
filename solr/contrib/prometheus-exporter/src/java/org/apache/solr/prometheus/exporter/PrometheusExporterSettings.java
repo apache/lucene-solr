@@ -19,6 +19,7 @@ package org.apache.solr.prometheus.exporter;
 
 import java.util.List;
 
+import net.sf.saxon.om.NodeInfo;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DOMUtil;
 import org.w3c.dom.Node;
@@ -56,7 +57,7 @@ public class PrometheusExporterSettings {
 
   }
 
-  public static PrometheusExporterSettings from(Node settings) {
+  public static PrometheusExporterSettings from(NodeInfo settings) {
     NamedList config = DOMUtil.childNodesToNamedList(settings);
 
     Builder builder = builder();

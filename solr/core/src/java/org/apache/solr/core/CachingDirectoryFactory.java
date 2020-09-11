@@ -450,7 +450,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           CacheValue newCacheValue = new CacheValue(fullPath, directory);
           byDirectoryCache.put(directory, newCacheValue);
           byPathCache.put(fullPath, newCacheValue);
-          log.info("return new directory for {}", newCacheValue, DEBUG_GET_RELEASE && newCacheValue.path.equals("data/index") ? new RuntimeException() : null );
+          if (log.isDebugEnabled()) log.debug("return new directory for {}", newCacheValue, DEBUG_GET_RELEASE && newCacheValue.path.equals("data/index") ? new RuntimeException() : null );
           success = true;
         } finally {
           if (!success) {

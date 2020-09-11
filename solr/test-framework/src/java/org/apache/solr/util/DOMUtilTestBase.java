@@ -23,6 +23,8 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.tree.tiny.TinyDocumentImpl;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
@@ -32,25 +34,19 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
 public abstract class DOMUtilTestBase extends SolrTestCase {
-  
-  private DocumentBuilder builder;
+
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    builder = FieldTypeXmlAdapter.getDocumentBuilder();
   }
 
-  public Node getNode( String xml, String path ) throws Exception {
-    return getNode( getDocument(xml), path );
+  public NodeInfo getNode( String xml, String path ) throws Exception {
+    return getNode( BaseTestHarness.getTinyDocument(xml, null), path );
   }
   
-  public Node getNode( Document doc, String path ) throws Exception {
+  public NodeInfo getNode( TinyDocumentImpl doc, String path ) throws Exception {
     XPath xpath = XmlConfigFile.getXpath();
-    return (Node)xpath.evaluate(path, doc, XPathConstants.NODE);
-  }
-  
-  public Document getDocument( String xml ) throws Exception {
-    return builder.parse(new InputSource(new StringReader(xml)));
+    return (NodeInfo)xpath.evaluate(path, doc, XPathConstants.NODE);
   }
 }

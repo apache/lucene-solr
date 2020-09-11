@@ -230,8 +230,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected final List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
   protected final List<JettySolrRunner> jettys = Collections.synchronizedList(new ArrayList<>());
   
-  protected volatile String context;
-  protected volatile String[] deadServers;
+  protected final String context;
+  protected final String[] deadServers;
   protected volatile String shards;
   protected volatile AtomicReferenceArray<String> shardsArr;
   protected volatile File testDir;
@@ -339,6 +339,26 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     System.setProperty("configSetBaseDir", getSolrHome());
     StringBuilder sb = new StringBuilder();
+
+    shardsArr = new AtomicReferenceArray<>(numShards);
+    for (int i = 0; i < numShards; i++) {
+      if (sb.length() > 0) sb.append(',');
+      final String shardname = "shard" + i;
+      Path jettyHome = testDir.toPath().resolve(shardname);
+      File jettyHomeFile = jettyHome.toFile();
+      try {
+        seedSolrHome(jettyHomeFile);
+        seedCoreRootDirWithDefaultTestCore(jettyHome.resolve("cores"));
+        JettySolrRunner j = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
+        jettys.add(j);
+
+      } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
+        throw new RuntimeException(e);
+      }
+    }
+
+
     try (ParWork worker = new ParWork(this)) {
       worker.collect("createControlJetty", () -> {
         try {
@@ -349,36 +369,32 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         }
         controlClient = createNewSolrClient(controlJetty.getLocalPort());
       });
-      shardsArr = new AtomicReferenceArray<>(numShards);
+
       for (int i = 0; i < numShards; i++) {
-        int finalI = i;
-        worker.collect("createJetties", () -> {
-          if (sb.length() > 0) sb.append(',');
-          final String shardname = "shard" + finalI;
-          Path jettyHome = testDir.toPath().resolve(shardname);
-          File jettyHomeFile = jettyHome.toFile();
+        int finalI1 = i;
+        worker.collect("startJetties", () -> {
+
           try {
-            seedSolrHome(jettyHomeFile);
-
-            seedCoreRootDirWithDefaultTestCore(jettyHome.resolve("cores"));
-            JettySolrRunner j = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
-            j.start();
-            jettys.add(j);
-            clients.add(createNewSolrClient(j.getLocalPort()));
-            String shardStr = buildUrl(j.getLocalPort());
-
-            if (shardStr.endsWith("/")) shardStr += DEFAULT_TEST_CORENAME;
-            else shardStr += "/" + DEFAULT_TEST_CORENAME;
-
-            shardsArr.set(finalI, shardStr);
-            sb.append(shardStr);
+            jettys.get(finalI1).start();
           } catch (Exception e) {
             ParWork.propagateInterrupt(e);
             throw new RuntimeException(e);
           }
         });
       }
+    }
 
+    for (int i = 0; i < numShards; i++) {
+      int port = jettys.get(i).getLocalPort();
+      clients.add(createNewSolrClient(port));
+
+      String shardStr = buildUrl(port);
+
+      if (shardStr.endsWith("/")) shardStr += DEFAULT_TEST_CORENAME;
+      else shardStr += "/" + DEFAULT_TEST_CORENAME;
+
+      shardsArr.set(i, shardStr);
+      sb.append(shardStr);
     }
 
     shards = sb.toString();

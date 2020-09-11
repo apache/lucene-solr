@@ -42,7 +42,7 @@ import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.OrdinalCalculator;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.BaseTestHarness;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.w3c.dom.Document;
@@ -55,6 +55,7 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
 
   protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
   protected static final HashMap<String,Object> defaults = new HashMap<>();
+  public static final String[] EMPTY_STRINGS = new String[0];
 
   public static enum VAL_TYPE {
     INTEGER("int"),
@@ -95,9 +96,7 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
   }
 
   public static void setResponse(String response) throws ParserConfigurationException, IOException, SAXException {
-    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-    factory.setNamespaceAware(true); // never forget this!
-    DocumentBuilder builder = BaseTestHarness.getXmlDocumentBuilder();
+    DocumentBuilder builder = FieldTypeXmlAdapter.getDocumentBuilder();
     doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8))));
     rawResponse = response;
   }
@@ -231,7 +230,7 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
         strList.add(param[0]);
         strList.add(param[1]);
       }
-      return strList.toArray(new String[0]);
+      return strList.toArray(EMPTY_STRINGS);
     } finally {
       IOUtils.closeWhileHandlingException(file, in);
     }

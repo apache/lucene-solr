@@ -39,6 +39,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   private Http2SolrClient sorlClient;
   
   public RestTestHarness(RESTfulServerProvider serverProvider, Http2SolrClient sorlClient) {
+    super(null);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 5000);
     params.set(HttpClientUtil.PROP_SO_TIMEOUT, 10000);
@@ -74,7 +75,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String validateQuery(String request, String... tests) throws Exception {
 
     String res = query(request);
-    return validateXPath(res, tests);
+    return validateXPathWithEntities(res, loader, tests);
   }
 
 
@@ -91,7 +92,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String validatePut(String request, String content, String... tests) throws Exception {
 
     String res = put(request, content);
-    return validateXPath(res, tests);
+    return validateXPathWithEntities(res, loader, tests);
   }
 
 
@@ -182,7 +183,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String checkResponseStatus(String xml, String code) throws Exception {
     try {
       String response = query(xml);
-      String valid = validateXPath(response, "//int[@name='status']="+code );
+      String valid = validateXPathWithEntities(response, loader,"//int[@name='status']="+code );
       return (null == valid) ? null : response;
     } catch (XPathExpressionException e) {
       throw new RuntimeException("?!? static xpath has bug?", e);
@@ -192,7 +193,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String checkAdminResponseStatus(String xml, String code) throws Exception {
     try {
       String response = adminQuery(xml);
-      String valid = validateXPath(response, "//int[@name='status']="+code );
+      String valid = validateXPathWithEntities(response, loader,"//int[@name='status']="+code );
       return (null == valid) ? null : response;
     } catch (XPathExpressionException e) {
       throw new RuntimeException("?!? static xpath has bug?", e);

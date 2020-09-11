@@ -19,12 +19,14 @@ package org.apache.solr.search;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.saxon.om.NodeInfo;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.MapSerializable;
@@ -82,14 +84,14 @@ public class CacheConfig implements MapSerializable{
   }
 
   public static Map<String, CacheConfig> getMultipleConfigs(SolrConfig solrConfig, String configPath) {
-    NodeList nodes = (NodeList) solrConfig.evaluate(configPath, XPathConstants.NODESET);
-    if (nodes == null || nodes.getLength() == 0) return new LinkedHashMap<>();
-    Map<String, CacheConfig> result = new HashMap<>(nodes.getLength());
-    for (int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
+    ArrayList<NodeInfo> nodes = (ArrayList) solrConfig.evaluate(solrConfig.getTreee(), configPath, XPathConstants.NODESET);
+    if (nodes == null || nodes.size() == 0) return new LinkedHashMap<>();
+    Map<String, CacheConfig> result = new HashMap<>(nodes.size());
+    for (int i = 0; i < nodes.size(); i++) {
+      NodeInfo node = nodes.get(i);
       if ("true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
-        CacheConfig config = getConfig(solrConfig, node.getNodeName(),
-                                       DOMUtil.toMap(node.getAttributes()), configPath);
+        CacheConfig config = getConfig(solrConfig, node.getDisplayName(),
+                                       DOMUtil.toMap(node.attributes()), configPath);
         result.put(config.args.get(NAME), config);
       }
     }
@@ -100,7 +102,7 @@ public class CacheConfig implements MapSerializable{
   @SuppressWarnings({"unchecked"})
   public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
     // nocomit look at precompile
-    Node node = null;
+    NodeInfo node = null;
     try {
       String path = IndexSchema.normalize(xpath, "/config/");
       node = solrConfig.getNode(XmlConfigFile.getXpath().compile(path), path, false);
@@ -113,7 +115,7 @@ public class CacheConfig implements MapSerializable{
       List<String> parts = StrUtils.splitSmart(xpath, '/');
       return getConfig(solrConfig,parts.get(parts.size()-1) , Collections.EMPTY_MAP,xpath);
     }
-    return getConfig(solrConfig, node.getNodeName(),DOMUtil.toMap(node.getAttributes()), xpath);
+    return getConfig(solrConfig, node.getDisplayName(),DOMUtil.toMap(node.attributes()), xpath);
   }
 
 

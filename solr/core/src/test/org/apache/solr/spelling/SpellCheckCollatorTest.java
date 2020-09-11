@@ -613,6 +613,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     req.close();
     NamedList values = rsp.getValues();
     NamedList spellCheck = (NamedList) values.get("spellcheck");
+    assertNotNull(rsp.toString(), spellCheck);
     NamedList collationList = (NamedList) spellCheck.get("collations");
     List<?> collations = (List<?>) collationList.getAll("collation");
     assertTrue(collations.size() == 2);

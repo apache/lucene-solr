@@ -62,6 +62,10 @@ public class CdcrUpdateProcessor extends DistributedZkUpdateProcessor {
 
     boolean result = super.versionAdd(cmd);
 
+    if (vinfo == null) {
+      return false;
+    }
+
     // unset the flag to avoid unintended consequences down the chain
     if (cmd.getReq().getParams().get(CDCR_UPDATE) != null) {
       cmd.setFlags(cmd.getFlags() & ~UpdateCommand.PEER_SYNC);

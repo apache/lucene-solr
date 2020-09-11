@@ -150,11 +150,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  public boolean hasNodes () {
-    return nodes != null && nodes.size() > 0;
-  }
-
-  @Override
   protected Replica.Type computeReplicaType() {
     // can't use cloudDesc since this is called by super class, before the constructor instantiates cloudDesc.
     return req.getCore().getCoreDescriptor().getCloudDescriptor().getReplicaType();
@@ -162,7 +157,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
-    log.info("processCommit - start commit isLeader={} commit_end_point={} replicaType={}", isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
+    if (log.isDebugEnabled()) log.debug("processCommit - start commit isLeader={} commit_end_point={} replicaType={}", isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
 
       try (ParWork worker = new ParWork(this, false, true)) {
         clusterState = zkController.getClusterState();
@@ -181,7 +176,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         zkCheck();
 
         if (req.getParams().get(COMMIT_END_POINT, "").equals("terminal")) {
-          log.info(
+          if (log.isDebugEnabled()) log.debug(
               "processCommit - Do a local commit on single replica directly");
           doLocalCommit(cmd);
           return;
@@ -207,7 +202,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               "Unable to distribute commit operation. No replicas available of types "
                   + Replica.Type.TLOG + " or " + Replica.Type.NRT);
         }
-        log.info(
+        if (log.isDebugEnabled()) log.debug(
             "processCommit - distrib commit isLeader={} commit_end_point={} replicaType={}",
             isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
 
@@ -216,7 +211,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             log.warn("processCommit - Commit not supported on replicas of type "
                 + Replica.Type.PULL);
           } else if (replicaType == Replica.Type.NRT) {
-            log.info(
+            if (log.isDebugEnabled()) log.debug(
                 "processCommit - Do a local commit on NRT endpoint for replica");
             doLocalCommit(cmd);
           }
@@ -228,7 +223,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
           List<SolrCmdDistributor.Node> useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
 
-          log.info(
+          if (log.isDebugEnabled()) log.debug(
               "processCommit - Found the following replicas to send commit to {}",
               useNodes);
 
@@ -241,7 +236,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           });
 
           if (useNodes != null && useNodes.size() > 0) {
-            log.info("processCommit - send commit to replicas nodes={}",
+            if (log.isDebugEnabled()) log.debug("processCommit - send commit to replicas nodes={}",
                 useNodes);
 
             params.set(DISTRIB_FROM, ZkCoreNodeProps
@@ -264,7 +259,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             params.set(COMMIT_END_POINT, "leaders");
 
             if (useNodes != null && useNodes.size() > 0) {
-              log.info("processCommit - send commit to leaders nodes={}",
+              if (log.isDebugEnabled()) log.debug("processCommit - send commit to leaders nodes={}",
                   useNodes);
               params.set(DISTRIB_FROM, ZkCoreNodeProps
                   .getCoreUrl(zkController.getBaseUrl(),
@@ -280,7 +275,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
         }
       }
-      log.info("processCommit(CommitUpdateCommand) - end");
+    if (log.isDebugEnabled()) log.debug("processCommit(CommitUpdateCommand) - end");
   }
 
   @Override
@@ -304,49 +299,45 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
-    log.info("Distribute add cmd {} to {} {}", cmd, nodes, isLeader);
-    if (isLeader && !isSubShardLeader)  {
+    if (log.isDebugEnabled()) log.debug("Distribute add cmd {} to {} {}", cmd, nodes, isLeader);
+    String id = cmd.getHashableId();
+    if (isLeader && !isSubShardLeader && id != null) {
       DocCollection coll = clusterState.getCollection(collection);
-      List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
+      List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getRootIdUsingRouteParam(id), cmd.getSolrInputDocument());
       // the list<node> will actually have only one element for an add request
       if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-            zkController.getBaseUrl(), req.getCore().getName()));
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
         cmdDistrib.distribAdd(cmd, subShardLeaders, params, true);
-        return;
       }
-      final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(clusterState, coll, cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
-      if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
+
+      final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(clusterState, coll, cmd.getRootIdUsingRouteParam(id), cmd.getSolrInputDocument());
+      if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-            zkController.getBaseUrl(), req.getCore().getName()));
+        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_COLLECTION, collection);
         params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
 
         try {
           cmdDistrib.distribAdd(cmd, nodesByRoutingRules, params, true);
         } catch (IOException e) {
+          log.error("", e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
         return;
-
       }
+
     } else {
-      log.info("Not a shard or sub shard leader");
+      if (log.isDebugEnabled()) log.debug("Not a shard or sub shard leader");
     }
-    log.info("Using nodes {}", nodes);
+    if (log.isDebugEnabled()) log.debug("Using nodes {}", nodes);
     if (nodes != null) {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      params.set(DISTRIB_UPDATE_PARAM,
-          (isLeader || isSubShardLeader ?
-              DistribPhase.FROMLEADER.toString() :
-              DistribPhase.TOLEADER.toString()));
-      params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
-          zkController.getBaseUrl(), req.getCore().getName()));
+      params.set(DISTRIB_UPDATE_PARAM, (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString() : DistribPhase.TOLEADER.toString()));
+      params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
 
       if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
         // TODO: Kept for rolling upgrades only. Should be removed in Solr 9
@@ -363,20 +354,18 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         // in the stream, can result in the current update being bottled up behind the previous
         // update in the stream and can lead to degraded performance.
 
-          try {
-            cmdDistrib.distribAdd(cmd, nodes, params, true, rollupReplicationTracker, leaderReplicationTracker);
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
+        try {
+          cmdDistrib.distribAdd(cmd, nodes, params, true, rollupReplicationTracker, leaderReplicationTracker);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
 
       } else {
-//        if (!isLeader && params.get(DISTRIB_UPDATE_PARAM).equals(DistribPhase.FROMLEADER.toString())) {
-//          throw new IllegalStateException();
-//        }
+        //        if (!isLeader && params.get(DISTRIB_UPDATE_PARAM).equals(DistribPhase.FROMLEADER.toString())) {
+        //          throw new IllegalStateException();
+        //        }
         try {
-          cmdDistrib
-              .distribAdd(cmd, nodes, params, false, rollupReplicationTracker,
-                  leaderReplicationTracker);
+          cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
@@ -659,7 +648,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     zkCheck();
     if (cmd instanceof AddUpdateCommand) {
       AddUpdateCommand acmd = (AddUpdateCommand)cmd;
-      nodes = setupRequest(acmd.getRootIdUsingRouteParam(), acmd.getSolrInputDocument());
+      nodes = setupRequest(acmd.getRootIdUsingRouteParam(((AddUpdateCommand) cmd).getHashableId()), acmd.getSolrInputDocument());
     } else if (cmd instanceof DeleteUpdateCommand) {
       DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
       nodes = setupRequest(dcmd.getId(), null);

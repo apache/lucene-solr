@@ -104,7 +104,7 @@ public class AddUpdateCommand extends UpdateCommand {
      final boolean ignoreNestedDocs = false; // throw an exception if found
      SolrInputDocument solrInputDocument = getSolrInputDocument();
      if (!isInPlaceUpdate() && getReq().getSchema().isUsableForChildDocs()) {
-       addRootField(solrInputDocument, getRootIdUsingRouteParam());
+       addRootField(solrInputDocument, getRootIdUsingRouteParam(getHashableId()));
      }
      return DocumentBuilder.toDocument(solrInputDocument, req.getSchema(), isInPlaceUpdate(), ignoreNestedDocs);
    }
@@ -154,12 +154,26 @@ public class AddUpdateCommand extends UpdateCommand {
      return "(null)";
    }
 
+  public boolean hasId() {
+    if (req != null) {
+      IndexSchema schema = req.getSchema();
+      SchemaField sf = schema.getUniqueKeyField();
+      if (solrDoc != null && sf != null) {
+        SolrInputField field = solrDoc.getField(sf.getName());
+        if (field != null) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /**
    *
    * @return value of _route_ param({@link ShardParams#_ROUTE_}), otherwise doc id.
    */
-  public String getRootIdUsingRouteParam() {
-     return req.getParams().get(ShardParams._ROUTE_, getHashableId());
+  public String getRootIdUsingRouteParam(String id) {
+     return req.getParams().get(ShardParams._ROUTE_, id);
    }
 
   /**
@@ -209,7 +223,7 @@ public class AddUpdateCommand extends UpdateCommand {
       return null; // caller should call getLuceneDocument() instead
     }
 
-    final String rootId = getRootIdUsingRouteParam();
+    final String rootId = getRootIdUsingRouteParam(getHashableId());
     final SolrInputField versionSif = solrDoc.get(CommonParams.VERSION_FIELD);
 
     for (SolrInputDocument sdoc : all) {

@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  */
 public class CdcrTransactionLog extends TransactionLog {
 
-  private boolean isReplaying;
+  private volatile boolean isReplaying;
   long startVersion; // (absolute) version of the first element of this transaction log
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -155,7 +155,7 @@ public class CdcrTransactionLog extends TransactionLog {
       }
       lastAddSize = (int)out.size();
 
-      synchronized (this) {
+      synchronized (fosLock) {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         assert pos != 0;
 
@@ -202,7 +202,7 @@ public class CdcrTransactionLog extends TransactionLog {
         codec.writePrimitive(false);
       }
 
-      synchronized (this) {
+      synchronized (fosLock) {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         assert pos != 0;
         out.writeAll(fos);
@@ -236,7 +236,7 @@ public class CdcrTransactionLog extends TransactionLog {
       } else {
         codec.writePrimitive(false);
       }
-      synchronized (this) {
+      synchronized (fosLock) {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         out.writeAll(fos);
         endRecord(pos);
@@ -251,7 +251,7 @@ public class CdcrTransactionLog extends TransactionLog {
   @Override
   public long writeCommit(CommitUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
-    synchronized (this) {
+    synchronized (fosLock) {
       try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
 

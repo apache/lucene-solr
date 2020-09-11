@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.ParWork;
@@ -121,7 +120,6 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
       NamedList<Throwable> exceptions, NamedList<NamedList> shardResponses) {
     Map<String,Throwable> tsExceptions = new ConcurrentHashMap<>();
     Map<String,NamedList> tsResponses = new ConcurrentHashMap<>();
-    final CountDownLatch latch = new CountDownLatch(routes.size());
     for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
       final String url = entry.getKey();
       final LBSolrClient.Req lbRequest = entry.getValue();
@@ -129,13 +127,11 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
       try {
         MDC.put("CloudSolrClient.url", url);
         try {
-          myClient.request(lbRequest.request, null, new UpdateOnComplete(latch, tsResponses, url, tsExceptions));
+          myClient.request(lbRequest.request, null, new UpdateOnComplete(tsResponses, url, tsExceptions));
         } catch (IOException e) {
           tsExceptions.put(url, e);
-          latch.countDown();
         } catch (SolrServerException e) {
           tsExceptions.put(url, e);
-          latch.countDown();
         }
 
       } finally {
@@ -144,15 +140,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     }
 
     // wait until the async requests we fired off above are done
-    // nocommit ~ TJP: can't get this approach to work but CDL works fine,
-    // see CloudHttp2SolrClientWireMockTest#testConcurrentParallelUpdates
-    //myClient.waitForOutstandingRequests();
-    try {
-      latch.await(); // eventually the requests will timeout after the socket read timeout is reached.
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
+    myClient.waitForOutstandingRequests();
 
     exceptions.addAll(tsExceptions);
     shardResponses.addAll(tsResponses);
@@ -318,13 +306,11 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
   private static class UpdateOnComplete implements Http2SolrClient.OnComplete {
 
-    private final CountDownLatch latch;
     private final Map<String,NamedList> tsResponses;
     private final String url;
     private final Map<String,Throwable> tsExceptions;
 
-    public UpdateOnComplete(CountDownLatch latch, Map<String,NamedList> tsResponses, String url, Map<String,Throwable> tsExceptions) {
-      this.latch = latch;
+    public UpdateOnComplete(Map<String,NamedList> tsResponses, String url, Map<String,Throwable> tsExceptions) {
       this.tsResponses = tsResponses;
       this.url = url;
       this.tsExceptions = tsExceptions;
@@ -332,13 +318,11 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
     @Override
     public void onSuccess(NamedList result) {
-      latch.countDown();
       tsResponses.put(url, result);
     }
 
     @Override
     public void onFailure(Throwable t) {
-      latch.countDown();
       tsExceptions.put(url, t);
     }
   }

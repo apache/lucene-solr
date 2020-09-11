@@ -32,7 +32,7 @@ import org.apache.solr.common.SolrException;
  */
 public class TimedVersionBucket extends VersionBucket {
 
-  private final Lock lock = new ReentrantLock(true);
+  protected final Lock lock = new ReentrantLock(true);
   private final Condition condition = lock.newCondition();
 
   /**
@@ -41,16 +41,24 @@ public class TimedVersionBucket extends VersionBucket {
    */
   @Override
   public <T,R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function) throws IOException {
-    if (tryLock(lockTimeoutMs)) {
-      return function.apply();
-    } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unable to get version bucket lock in " + lockTimeoutMs + " ms");
-    }
-  }
+    boolean success = false;
 
-  public void unlock() {
-    lock.unlock();
+    try {
+      success = lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS);
+
+      if (success) {
+        return function.apply();
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to get version bucket lock in " + lockTimeoutMs + " ms");
+      }
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      if (success) {
+        lock.unlock();
+      }
+    }
   }
 
   public void signalAll() {
@@ -62,15 +70,6 @@ public class TimedVersionBucket extends VersionBucket {
       if (nanosTimeout > 0) {
         condition.awaitNanos(nanosTimeout);
       }
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      throw new RuntimeException(e);
-    }
-  }
-
-  protected boolean tryLock(int lockTimeoutMs) {
-    try {
-      return lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);

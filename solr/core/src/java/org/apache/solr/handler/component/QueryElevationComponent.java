@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
+import net.sf.saxon.om.NodeInfo;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -251,7 +252,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             if (log.isInfoEnabled()) {
               log.info("Loading QueryElevation from: {}", fC.getAbsolutePath());
             }
-            XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
+            XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null, null, true);
             elevationProvider = loadElevationProvider(cfg);
           }
           elevationProviderCache.put(null, elevationProvider);
@@ -376,10 +377,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     XmlConfigFile cfg;
     ZkController zkController = core.getCoreContainer().getZkController();
     if (zkController != null) {
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null);
+      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null, null, true);
     } else {
       InputStream is = VersionedFile.getLatestFile(core.getDataDir(), configFileName);
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, new InputSource(is), null);
+      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, new InputSource(is), null, null, true);
     }
     ElevationProvider elevationProvider = loadElevationProvider(cfg);
     assert elevationProvider != null;
@@ -395,27 +396,27 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   protected ElevationProvider loadElevationProvider(XmlConfigFile config) {
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
     XPath xpath = XmlConfigFile.getXpath();
-    NodeList nodes = (NodeList) config.evaluate("elevate/query", XPathConstants.NODESET);
-    for (int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
+    ArrayList<NodeInfo> nodes = (ArrayList) config.evaluate(config.getTreee(), "elevate/query", XPathConstants.NODESET);
+    for (int i = 0; i < nodes.size(); i++) {
+      NodeInfo node = nodes.get(i);
       String queryString = DOMUtil.getAttr(node, "text", "missing query 'text'");
       String matchString = DOMUtil.getAttr(node, "match");
       ElevatingQuery elevatingQuery = new ElevatingQuery(queryString, isSubsetMatchPolicy(matchString));
 
-      NodeList children;
+      ArrayList<NodeInfo> children;
       try {
-        children = (NodeList) xpath.evaluate("doc", node, XPathConstants.NODESET);
+        children = (ArrayList) xpath.evaluate("doc", node, XPathConstants.NODESET);
       } catch (XPathExpressionException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "query requires '<doc .../>' child");
       }
 
-      if (children.getLength() == 0) { // weird
+      if (children.size() == 0) { // weird
         continue;
       }
       ElevationBuilder elevationBuilder = new ElevationBuilder();
-      for (int j = 0; j < children.getLength(); j++) {
-        Node child = children.item(j);
+      for (int j = 0; j < children.size(); j++) {
+        NodeInfo child = children.get(j);
         String id = DOMUtil.getAttr(child, "id", "missing 'id'");
         String e = DOMUtil.getAttr(child, EXCLUDE, null);
         if (e != null) {

@@ -18,6 +18,7 @@
 package org.apache.lucene.analysis.synonym;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
@@ -181,7 +182,11 @@ public class SynonymGraphFilterFactory extends TokenFilterFactory implements Res
     List<String> files = splitFileNames(synonyms);
     for (String file : files) {
       decoder.reset();
-      parser.parse(new InputStreamReader(loader.openResource(file), decoder));
+      try (InputStream is = loader.openResource(file)) {
+        try (InputStreamReader isr = new InputStreamReader(is, decoder)) {
+          parser.parse(isr);
+        }
+      }
     }
     return parser.build();
   }

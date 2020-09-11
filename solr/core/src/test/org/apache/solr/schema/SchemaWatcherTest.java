@@ -39,7 +39,7 @@ public class SchemaWatcherTest {
     SolrTestCaseJ4.assumeWorkingMockito();
     
     mockSchemaReader = mock(ZkIndexSchemaReader.class);
-    schemaWatcher = new SchemaWatcher(mockSchemaReader);
+    schemaWatcher = new SchemaWatcher(mockSchemaReader, null);
   }
 
   @Test

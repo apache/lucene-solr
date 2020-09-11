@@ -562,9 +562,9 @@ public class ZkController implements Closeable {
 
   public void disconnect() {
     try (ParWork closer = new ParWork(this, true)) {
-      if (getZkClient().getConnectionManager().isConnected()) {
-        closer.collect( "replicateFromLeaders", replicateFromLeaders.values());
+      closer.collect( "replicateFromLeaders", replicateFromLeaders);
 
+      if (getZkClient().getConnectionManager().isConnected()) {
         closer.collect("PublishNodeAsDown&RepFromLeadersClose&RemoveEmphem", () -> {
 
           try {
@@ -601,9 +601,9 @@ public class ZkController implements Closeable {
     this.isClosed = true;
 
     try (ParWork closer = new ParWork(this, true)) {
-      closer.collect(replicateFromLeaders.values());
-      closer.collect(electionContexts.values());
-      closer.collect(collectionToTerms.values());
+      closer.collect(replicateFromLeaders);
+      closer.collect(electionContexts);
+      closer.collect(collectionToTerms);
       closer.collect(sysPropsCacher);
       closer.collect(cloudManager);
       closer.collect(cloudSolrClient);
@@ -613,7 +613,7 @@ public class ZkController implements Closeable {
     if (overseer != null) {
       overseer.closeAndDone();
     }
-    ParWork.close(overseerContexts.values());
+    ParWork.close(overseerContexts);
     if (closeZkClient) {
       IOUtils.closeQuietly(zkClient);
     }

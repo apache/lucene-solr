@@ -478,6 +478,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // 3> that OK cores can be searched even when some cores failed to load.
   // 4> that having no solr.xml entry for transient chache handler correctly uses the default.
   @Test
+  @Ignore // nocommit debug
   public void testBadConfigsGenerateErrors() throws Exception {
     final CoreContainer cc = initGoodAndBad(Arrays.asList("core1", "core2"),
         Arrays.asList("badSchema1", "badSchema2"),

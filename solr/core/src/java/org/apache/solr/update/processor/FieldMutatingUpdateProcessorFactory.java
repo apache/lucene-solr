@@ -215,7 +215,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
 
     if (0 < args.size()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unexpected init param(s): '" + args.getName(0) + "'");
+          "Unexpected init param(s): '" + args.getName(0) + "'" + " args: " + args);
     }
 
   }

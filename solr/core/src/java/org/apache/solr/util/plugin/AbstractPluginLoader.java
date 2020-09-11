@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import net.sf.saxon.om.NodeInfo;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -44,7 +45,8 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public abstract class AbstractPluginLoader<T>
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+  public static final String[] EMPTY_STRINGS = {};
+
   private final String type;
   private final boolean preRegister;
   private final boolean requireName;
@@ -72,7 +74,7 @@ public abstract class AbstractPluginLoader<T>
    */
   protected String[] getDefaultPackages()
   {
-    return new String[]{};
+    return EMPTY_STRINGS;
   }
   
   /**
@@ -89,7 +91,12 @@ public abstract class AbstractPluginLoader<T>
    * @param node - the XML node defining this plugin
    */
   @SuppressWarnings("unchecked")
-  protected T create( SolrResourceLoader loader, String name, String className, Node node, XPath xpath) throws Exception
+//  protected T create( SolrResourceLoader loader, String name, String className, Node node, XPath xpath) throws Exception
+//  {
+//    return loader.newInstance(className, pluginClassType, getDefaultPackages());
+//  }
+
+  protected T create( SolrResourceLoader loader, String name, String className, NodeInfo node, XPath xpath) throws Exception
   {
     return loader.newInstance(className, pluginClassType, getDefaultPackages());
   }
@@ -106,7 +113,7 @@ public abstract class AbstractPluginLoader<T>
    * @param plugin - the plugin to initialize
    * @param node - the XML node defining this plugin
    */
-  abstract protected void init( T plugin, Node node ) throws Exception;
+  abstract protected void init( T plugin, NodeInfo node ) throws Exception;
 
   /**
    * Initializes and registers each plugin in the list.
@@ -138,14 +145,14 @@ public abstract class AbstractPluginLoader<T>
    * If a default element is defined, it will be returned from this function.
    * 
    */
-  public T load( SolrResourceLoader loader, NodeList nodes )
+  public T load( SolrResourceLoader loader, ArrayList<NodeInfo> nodes )
   {
     List<PluginInitInfo> info = new ArrayList<>();
     T defaultPlugin = null;
     XPath xpath = XmlConfigFile.getXpath();
     if (nodes !=null ) {
-      for (int i=0; i<nodes.getLength(); i++) {
-        Node node = nodes.item(i);
+      for (int i=0; i<nodes.size(); i++) {
+        NodeInfo node = nodes.get(i);
   
         String name = null;
         try {
@@ -229,7 +236,7 @@ public abstract class AbstractPluginLoader<T>
    * The created class for the plugin will be returned from this function.
    * 
    */
-  public T loadSingle(SolrResourceLoader loader, Node node) {
+  public T loadSingle(SolrResourceLoader loader, NodeInfo node) {
     List<PluginInitInfo> info = new ArrayList<>();
     T plugin = null;
 
@@ -283,11 +290,21 @@ public abstract class AbstractPluginLoader<T>
    */
   private class PluginInitInfo {
     final T plugin;
-    final Node node;
+    final NodeInfo node;
 
-    PluginInitInfo(T plugin, Node node) {
+   // final Node domNode;
+
+
+    PluginInitInfo(T plugin, NodeInfo node) {
       this.plugin = plugin;
-      this.node = node;
+      this.node = node; // nocommit
+   //   this.domNode = null;
     }
+
+//    PluginInitInfo(T plugin, Node node) {
+//      this.plugin = plugin;
+//      this.domNode = node; // nocommit
+//      this. node = null;
+//    }
   }
 }

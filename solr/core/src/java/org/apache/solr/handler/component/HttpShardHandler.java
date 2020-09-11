@@ -177,9 +177,8 @@ public class HttpShardHandler extends ShardHandler {
           String url = urls.get(0);
           srsp.setShardAddress(url);
           assert solrClient != null;
-          try (SolrClient client = new Builder(url).withHttpClient(solrClient).markInternalRequest().build()) {
-            ssr.nl = client.request(req);
-          }
+          req.setBasePath(url);
+          ssr.nl = solrClient.request(req);
         } else {
           LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
           ssr.nl = rsp.getResponse();

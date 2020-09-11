@@ -19,12 +19,10 @@ package org.apache.solr.util;
 import net.sf.saxon.om.AttributeInfo;
 import net.sf.saxon.om.AttributeMap;
 import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.type.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import java.util.ArrayList;
@@ -33,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  *
@@ -41,39 +40,15 @@ public class DOMUtil {
 
   public static final String XML_RESERVED_PREFIX = "xml";
 
-  public static Map<String,String> toMap(NamedNodeMap attrs) {
-    return toMapExcept(attrs);
-  }
-
   public static Map<String,String> toMap(AttributeMap attrs) {
     return toMapExcept(attrs);
   }
 
-  public static Map<String,String> toMapExcept(NamedNodeMap attrs, String... exclusions) {
-    Map<String,String> args = new HashMap<>();
-    outer: for (int j=0; j<attrs.getLength(); j++) {
-      Node attr = attrs.item(j);
-
-      // automatically exclude things in the xml namespace, ie: xml:base
-      if (XML_RESERVED_PREFIX.equals(attr.getPrefix())) continue outer;
-
-      String attrName = attr.getNodeName();
-      for (String ex : exclusions)
-        if (ex.equals(attrName)) continue outer;
-      String val = attr.getNodeValue();
-      args.put(attrName, val);
-    }
-    return args;
-  }
-
   public static Map<String,String> toMapExcept(AttributeMap attrMap, String... exclusions) {
-    Map<String,String> args = new HashMap<>();
+    Map<String,String> args = new HashMap<>(attrMap.size() - exclusions.length);
     List<AttributeInfo> attrs = attrMap.asList();
     outer: for (int j=0; j<attrs.size(); j++) {
       AttributeInfo attr = attrs.get(j);
-
-      // automatically exclude things in the xml namespace, ie: xml:base
-      //if (XML_RESERVED_PREFIX.equals(attr.getPrefix())) continue outer;
 
       String attrName = attr.getNodeName().getDisplayName();
       for (String ex : exclusions)
@@ -84,93 +59,64 @@ public class DOMUtil {
     return args;
   }
 
-  public static Node getChild(Node node, String name) {
-    if (!node.hasChildNodes()) return null;
-    NodeList lst = node.getChildNodes();
-    if (lst == null) return null;
-    for (int i=0; i<lst.getLength(); i++) {
-      Node child = lst.item(i);
-      if (name.equals(child.getNodeName())) return child;
+   public static String getAttr(NodeInfo nd, String name) {
+      return getAttr(nd, name, null);
     }
-    return null;
-  }
 
-  public static String getAttr(NamedNodeMap attrs, String name) {
-    return getAttr(attrs,name,null);
-  }
-
-  public static String getAttr(Node nd, String name) {
-    return getAttr(nd.getAttributes(), name);
-  }
-
-  public static String getAttrOrDefault(Node nd, String name, String def) {
-    String attr = getAttr(nd.getAttributes(), name);
-    return attr == null ? def : attr;
-  }
-
-  public static String getAttr(NamedNodeMap attrs, String name, String missing_err) {
-    Node attr = attrs==null? null : attrs.getNamedItem(name);
+  public static String getAttr(NodeInfo nd, String name, String missing_err) {
+    String attr = nd.getAttributeValue("", name);
     if (attr==null) {
       if (missing_err==null) return null;
       throw new RuntimeException(missing_err + ": missing mandatory attribute '" + name + "'");
     }
-    String val = attr.getNodeValue();
-    return val;
+    return attr;
   }
 
-  public static String getAttr(Node node, String name, String missing_err) {
-    return getAttr(node.getAttributes(), name, missing_err);
+  public static String getAttrOrDefault(NodeInfo nd, String name, String def) {
+    String attr = nd.getAttributeValue("", name);
+    return attr == null ? def : attr;
   }
 
-  //////////////////////////////////////////////////////////
-  // Routines to parse XML in the syntax of the Solr query
-  // response schema.
-  // Should these be moved to Config?  Should all of these things?
-  //////////////////////////////////////////////////////////
-  public static NamedList<Object> childNodesToNamedList(Node nd) {
-    return nodesToNamedList(nd.getChildNodes());
+  public static NamedList<Object> childNodesToNamedList(NodeInfo nd) {
+    return nodesToNamedList(nd.children());
   }
 
-  public static List childNodesToList(Node nd) {
-    return nodesToList(nd.getChildNodes());
+  public static List childNodesToList(NodeInfo nd) {
+    return nodesToList(nd.children());
   }
 
-  public static NamedList<Object> nodesToNamedList(NodeList nlst) {
+  public static NamedList<Object> nodesToNamedList(Iterable<? extends NodeInfo> nlst) {
     NamedList<Object> clst = new NamedList<>();
-    for (int i=0; i<nlst.getLength(); i++) {
-      addToNamedList(nlst.item(i), clst, null);
-    }
+    nlst.forEach(nodeInfo -> {
+      addToNamedList(nodeInfo, clst, null);
+    });
+
     return clst;
   }
 
-  public static List nodesToList(NodeList nlst) {
-    List lst = new ArrayList();
-    for (int i=0; i<nlst.getLength(); i++) {
-      addToNamedList(nlst.item(i), null, lst);
+  public static List nodesToList(ArrayList<NodeInfo> nlst) {
+    List lst = new ArrayList(nlst.size());
+    for (int i=0; i<nlst.size(); i++) {
+      addToNamedList(nlst.get(i), null, lst);
     }
     return lst;
   }
 
-  /**
-   * Examines a Node from the DOM representation of a NamedList and adds the
-   * contents of that node to both the specified NamedList and List passed
-   * as arguments.
-   *
-   * @param nd The Node whose type will be used to determine how to parse the
-   *           text content.  If there is a 'name' attribute it will be used
-   *           when adding to the NamedList
-   * @param nlst A NamedList to add the item to with name if application.
-   *             If this param is null it will be ignored.
-   * @param arr A List to add the item to.
-   *             If this param is null it will be ignored.
-   */
-  @SuppressWarnings("unchecked")
-  public static void addToNamedList(Node nd, NamedList nlst, List arr) {
+  public static List nodesToList(Iterable<? extends NodeInfo> nlst) {
+    List<NodeInfo> lst = new ArrayList();
+    nlst.forEach(o -> {
+      addToNamedList(o, null, lst);
+    });
+    return lst;
+  }
+
+  public static void addToNamedList(NodeInfo nd, NamedList nlst, List arr) {
     // Nodes often include whitespace, etc... so just return if this
     // is not an Element.
-    if (nd.getNodeType() != Node.ELEMENT_NODE) return;
 
-    final String type = nd.getNodeName();
+    if (nd.getNodeKind() != Type.ELEMENT) return;
+
+    final String type = nd.getDisplayName();
 
     final String name = getAttr(nd, NAME);
 
@@ -200,15 +146,24 @@ public class DOMUtil {
         // :TODO: should we generate an error here?
       } catch (NumberFormatException nfe) {
         throw new SolrException
-          (SolrException.ErrorCode.SERVER_ERROR,
-           "Value " + (null != name ? ("of '" +name+ "' ") : "") +
-           "can not be parsed as '" +type+ "': \"" + textValue + "\"",
-           nfe);
+            (SolrException.ErrorCode.SERVER_ERROR,
+                "Value " + (null != name ? ("of '" +name+ "' ") : "") +
+                    "can not be parsed as '" +type+ "': \"" + textValue + "\"",
+                nfe);
       }
     }
 
-    if (nlst != null) nlst.add(name,val);
+    if (nlst != null && name != null) nlst.add(name, val);
     if (arr != null) arr.add(val);
+  }
+
+  private static String getAttribs(NodeInfo nd) {
+    StringBuilder sb = new StringBuilder();
+
+    nd.attributes().forEach(attributeInfo -> {
+      sb.append(attributeInfo.getNodeName() + ":" + attributeInfo.getValue());
+    });
+    return sb.toString();
   }
 
   /**
@@ -221,18 +176,16 @@ public class DOMUtil {
    *
    * @see <a href="http://www.w3.org/TR/DOM-Level-3-Core/core.html#Node3-textContent">DOM Object Model Core</a>
    */
-  public static String getText(Node nd) {
+  public static String getText(NodeInfo nd) {
 
-    short type = nd.getNodeType();
+    int type = nd.getNodeKind();
 
     // for most node types, we can defer to the recursive helper method,
     // but when asked for the text of these types, we must return null
     // (Not the empty string)
     switch (type) {
 
-    case Node.DOCUMENT_NODE: /* fall through */
-    case Node.DOCUMENT_TYPE_NODE: /* fall through */
-    case Node.NOTATION_NODE: /* fall through */
+      case Type.DOCUMENT: /* fall through */
       return null;
     }
 
@@ -241,29 +194,26 @@ public class DOMUtil {
     return sb.toString();
   }
 
-  /** @see #getText(Node) */
-  private static void getText(Node nd, StringBuilder buf) {
+  /** @see #getText(NodeInfo) */
+  private static void getText(NodeInfo nd, StringBuilder buf) {
 
-    short type = nd.getNodeType();
+    int type = nd.getNodeKind();
 
     switch (type) {
 
-    case Node.ELEMENT_NODE: /* fall through */
-    case Node.ENTITY_NODE: /* fall through */
-    case Node.ENTITY_REFERENCE_NODE: /* fall through */
-    case Node.DOCUMENT_FRAGMENT_NODE:
-      NodeList childs = nd.getChildNodes();
-      for (int i = 0; i < childs.getLength(); i++) {
-        Node child = childs.item(i);
-        short childType = child.getNodeType();
-        if (childType != Node.COMMENT_NODE &&
-            childType != Node.PROCESSING_INSTRUCTION_NODE) {
+      case Type.ELEMENT: /* fall through */
+      case Type.NODE: /* fall through */
+      Iterable<? extends NodeInfo> childs = nd.children();
+      childs.forEach(child -> {
+        int childType = child.getNodeKind();
+        if (childType != Type.COMMENT &&
+            childType != Type.PROCESSING_INSTRUCTION) {
           getText(child, buf);
         }
-      }
+      });
       break;
 
-    case Node.ATTRIBUTE_NODE: /* fall through */
+      case Type.ATTRIBUTE: /* fall through */
       /* Putting Attribute nodes in this section does not exactly
          match the definition of how textContent should behave
          according to the DOM Level-3 Core documentation - which
@@ -277,66 +227,19 @@ public class DOMUtil {
          so this approach should work both for strict implementations,
          and implementations actually encountered.
       */
-    case Node.TEXT_NODE: /* fall through */
-    case Node.CDATA_SECTION_NODE: /* fall through */
-    case Node.COMMENT_NODE: /* fall through */
-    case Node.PROCESSING_INSTRUCTION_NODE: /* fall through */
-      buf.append(nd.getNodeValue());
+      case Type.TEXT: /* fall through */
+      case Type.COMMENT: /* fall through */
+      case Type.PROCESSING_INSTRUCTION: /* fall through */
+          buf.append(nd.getStringValue());
       break;
 
-    case Node.DOCUMENT_NODE: /* fall through */
-    case Node.DOCUMENT_TYPE_NODE: /* fall through */
-    case Node.NOTATION_NODE: /* fall through */
+      case Type.DOCUMENT: /* fall through */
     default:
       /* :NOOP: */
 
     }
   }
 
-  /**
-   * Replaces ${system.property[:default value]} references in all attributes
-   * and text nodes of supplied node.  If the system property is not defined and no
-   * default value is provided, a runtime exception is thrown.
-   *
-   * @param node DOM node to walk for substitutions
-   */
-  public static void substituteSystemProperties(Node node) {
-    substituteProperties(node, null);
-  }
-
-  /**
-   * Replaces ${property[:default value]} references in all attributes
-   * and text nodes of supplied node.  If the property is not defined neither in the
-   * given Properties instance nor in System.getProperty and no
-   * default value is provided, a runtime exception is thrown.
-   *
-   * @param node DOM node to walk for substitutions
-   * @param properties the Properties instance from which a value can be looked up
-   */
-  public static void substituteProperties(Node node, Properties properties) {
-    // loop through child nodes
-    Node child;
-    Node next = node.getFirstChild();
-    while ((child = next) != null) {
-
-      // set next before we change anything
-      next = child.getNextSibling();
-
-      // handle child by node type
-      if (child.getNodeType() == Node.TEXT_NODE) {
-        child.setNodeValue(PropertiesUtil.substituteProperty(child.getNodeValue(), properties));
-      } else if (child.getNodeType() == Node.ELEMENT_NODE) {
-        // handle child elements with recursive call
-        NamedNodeMap attributes = child.getAttributes();
-        for (int i = 0; i < attributes.getLength(); i++) {
-          Node attribute = attributes.item(i);
-          attribute.setNodeValue(PropertiesUtil.substituteProperty(attribute.getNodeValue(), properties));
-        }
-        substituteProperties(child, properties);
-      }
-    }
-  }
-  
   public static String substituteProperty(String value, Properties coreProperties) {
     if (value == null || value.indexOf('$') == -1) {
       return value;
@@ -433,6 +336,11 @@ public class DOMUtil {
       }
   }
 
-
-
+  public static long getChildrenCount(NodeInfo node) {
+    if (!node.hasChildNodes()) return 0;
+    Iterable<? extends NodeInfo> it = node.children();
+    LongAdder count = new LongAdder();
+    it.forEach(nodeInfo -> count.increment());
+    return count.sum();
+  }
 }

@@ -947,14 +947,15 @@ public class MiniSolrCloudCluster {
   }
 
   public JettySolrRunner getJettyForShard(String collection, String shard) {
+   return getJettyForShard(collection, shard, 0);
+  }
+
+  public JettySolrRunner getJettyForShard(String collection, String shard, int index) {
 
     DocCollection coll = solrClient.getZkStateReader().getClusterState().getCollection(collection);
     if (coll != null) {
-      for (Replica replica : coll.getSlice(shard).getReplicas()) {
-        System.out.println("check replica:" + replica);
-          return getReplicaJetty(replica);
+      return getReplicaJetty((Replica) coll.getSlice(shard).getReplicas().toArray()[index]);
 
-      }
     }
     throw new IllegalArgumentException("Could not find suitable Replica");
   }

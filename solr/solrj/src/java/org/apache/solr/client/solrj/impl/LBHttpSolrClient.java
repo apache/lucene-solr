@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,7 @@ public class LBHttpSolrClient extends LBSolrClient {
   private final ConcurrentHashMap<String, SolrClient> urlToClient = new ConcurrentHashMap<>(32);
   private final HttpSolrClient.Builder httpSolrClientBuilder;
   private final Http2SolrClient.Builder http2SolrClientBuilder;
+  private final Http2SolrClient solrClient;
 
   private Integer connectionTimeout;
   private volatile Integer soTimeout;
@@ -131,9 +133,22 @@ public class LBHttpSolrClient extends LBSolrClient {
         .withHttpClient(httpClient));
   }
 
+  // nocommit
+  public LBHttpSolrClient(Http2SolrClient solrClient) {
+    super(Collections.emptyList());
+    ObjectReleaseTracker.track(this);
+    this.solrClient = solrClient;
+    this.httpSolrClientBuilder = null;
+    this.http2SolrClientBuilder = null;
+    httpClient = null;
+    clientIsInternal = false;
+    headers = Collections.emptyMap();
+  }
+
   protected LBHttpSolrClient(Builder builder) {
     super(builder.baseSolrUrls);
     ObjectReleaseTracker.track(this);
+    this.solrClient = null;
 
     this.httpSolrClientBuilder = builder.httpSolrClientBuilder;
     this.http2SolrClientBuilder = builder.http2SolrClientBuilder;
@@ -270,11 +285,15 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   @Override
   protected SolrClient getClient(String baseUrl) {
-    SolrClient client = urlToClient.get(baseUrl);
-    if (client == null) {
-      return makeSolrClient(baseUrl);
+    if (solrClient != null) {
+      return solrClient;
     } else {
-      return client;
+      SolrClient client = urlToClient.get(baseUrl);
+      if (client == null) {
+        return makeSolrClient(baseUrl);
+      } else {
+        return client;
+      }
     }
   }
 

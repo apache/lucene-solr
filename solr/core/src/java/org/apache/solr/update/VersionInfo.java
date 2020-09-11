@@ -53,7 +53,10 @@ public class VersionInfo {
   private SchemaField versionField;
   final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
+  final ReadWriteLock buckUpdateLock = new ReentrantReadWriteLock(true);
+
   private int versionBucketLockTimeoutMs;
+  private volatile long highestVersion;
 
   /**
    * Gets and returns the {@link org.apache.solr.common.params.CommonParams#VERSION_FIELD} from the specified
@@ -97,13 +100,13 @@ public class VersionInfo {
     versionBucketLockTimeoutMs = ulog.uhandler.core.getSolrConfig().getInt("updateHandler/versionBucketLockTimeoutMs",
         Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0")));
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
-    for (int i=0; i<buckets.length; i++) {
-      if (versionBucketLockTimeoutMs > 0) {
-        buckets[i] = new TimedVersionBucket();
-      } else {
-        buckets[i] = new VersionBucket();
-      }
-    }
+//    for (int i=0; i<buckets.length; i++) {
+//      if (versionBucketLockTimeoutMs > 0) {
+//        buckets[i] = new TimedVersionBucket();
+//      } else {
+//        buckets[i] = new VersionBucket();
+//      }
+//    }
   }
   
   public int getVersionBucketLockTimeoutMs() {
@@ -195,9 +198,35 @@ public class VersionInfo {
     // Make sure high bits are moved down, since only the low bits will matter.
     // int h = hash + (hash >>> 8) + (hash >>> 16) + (hash >>> 24);
     // Assume good hash codes for now.
+    int slot = hash & (buckets.length - 1);
+    buckUpdateLock.readLock().lock();
+    VersionBucket bucket;
+    try {
+      bucket = buckets[slot];
+    } finally {
+      buckUpdateLock.readLock().unlock();
+    }
 
-    int slot = hash & (buckets.length-1);
-    return buckets[slot];
+    if (bucket == null) {
+      buckUpdateLock.writeLock().lock();
+      try {
+        bucket = buckets[slot];
+        if (bucket == null) {
+
+          if (versionBucketLockTimeoutMs > 0) {
+            bucket= new TimedVersionBucket();
+          } else {
+            bucket= new VersionBucket();
+          }
+          bucket.updateHighest(highestVersion);
+          buckets[slot] = bucket;
+        }
+      } finally {
+        buckUpdateLock.writeLock().unlock();
+      }
+    }
+
+    return bucket;
   }
 
   public Long lookupVersion(BytesRef idBytes) {
@@ -271,12 +300,17 @@ public class VersionInfo {
   }
 
   public void seedBucketsWithHighestVersion(long highestVersion) {
-    for (int i=0; i<buckets.length; i++) {
-      // should not happen, but in case other threads are calling updateHighest on the version bucket
-      synchronized (buckets[i]) {
-        if (buckets[i].highest < highestVersion)
+    this.highestVersion = highestVersion;
+    buckUpdateLock.readLock().lock();
+    try {
+      for (int i = 0; i < buckets.length; i++) {
+        VersionBucket bucket = buckets[i];
+        if (bucket != null) {
           buckets[i].highest = highestVersion;
+        }
       }
+    } finally {
+      buckUpdateLock.readLock().unlock();
     }
   }
 

@@ -67,23 +67,22 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
    */
   public IndexSchema create(String resourceName, SolrConfig config) {
     SolrResourceLoader loader = config.getResourceLoader();
-    InputStream schemaInputStream = null;
 
     if (null == resourceName) {
       resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
     }
 
-    try {
-      schemaInputStream = loader.openResource(resourceName);
+    try (InputStream schemaInputStream = loader.openResource(resourceName)) {
+      InputSource inputSource = new InputSource(schemaInputStream);
+      inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(resourceName));
+      IndexSchema schema = new IndexSchema(resourceName, inputSource, config.luceneMatchVersion, loader, config.getSubstituteProperties());
+      return schema;
     } catch (Exception e) {
       final String msg = "Error loading schema resource " + resourceName;
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     }
-    InputSource inputSource = new InputSource(schemaInputStream);
-    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(resourceName));
-    IndexSchema schema = new IndexSchema(resourceName, inputSource, config.luceneMatchVersion, loader, config.getSubstituteProperties());
-    return schema;
+
   }
 
 }

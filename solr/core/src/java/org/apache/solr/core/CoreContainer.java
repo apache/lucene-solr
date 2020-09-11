@@ -42,9 +42,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
@@ -408,7 +410,7 @@ public class CoreContainer implements Closeable {
   }
 
   @SuppressWarnings({"unchecked"})
-  private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
+  private void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
     authorizationConf = Utils.getDeepCopy(authorizationConf, 4);
     int newVersion = readVersion(authorizationConf);
     //Initialize the Authorization module
@@ -485,7 +487,7 @@ public class CoreContainer implements Closeable {
 
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private synchronized void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
+  private void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
     log.info("Initialize authenitcation plugin ..");
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
     int newVersion = readVersion(authenticationConfig);
@@ -887,8 +889,9 @@ public class CoreContainer implements Closeable {
                 solrCores.markCoreAsNotLoading(cd);
               }
             }
-
-            zkRegFutures.add(zkSys.registerInZk(core, false));
+            if (isZooKeeperAware()) {
+              zkRegFutures.add(zkSys.registerInZk(core, false));
+            }
             return core;
           }));
         }
@@ -1844,9 +1847,22 @@ public class CoreContainer implements Closeable {
     // delete metrics specific to this core
     metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
 
-    core.unloadOnClose(cd, deleteIndexDir, deleteDataDir, deleteInstanceDir);
+    core.unloadOnClose(cd, deleteIndexDir, deleteDataDir);
 
-    core.closeAndWait();
+    try {
+      core.closeAndWait();
+    } catch (TimeoutException e) {
+      log.error("Timeout waiting for SolrCore close on unload", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting for SolrCore close on unload", e);
+    } finally {
+      if (deleteInstanceDir) {
+        try {
+          FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
+        } catch (IOException e) {
+          SolrException.log(log, "Failed to delete instance dir for core:" + cd.getName() + " dir:" + cd.getInstanceDir());
+        }
+      }
+    }
   }
 
   public void rename(String name, String toName) {

@@ -301,18 +301,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       r.setSeed(Long.parseLong(v));
     }
 
-    BlockingQueue<Runnable> blockingQueue = (this.queueSize == -1) ?
-            new SynchronousQueue<Runnable>(this.accessPolicy) :
-            new ArrayBlockingQueue<Runnable>(this.queueSize, this.accessPolicy);
-
-//    this.commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-//            this.corePoolSize,
-//            this.maximumPoolSize,
-//            this.keepAliveTime, TimeUnit.SECONDS,
-//            blockingQueue,
-//            new SolrNamedThreadFactory("httpShardExecutor")
-//    );
-
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 
     ModifiableSolrParams clientParams = getClientParams();
@@ -329,12 +317,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   protected LBHttpSolrClient createLoadbalancer(Http2SolrClient httpClient){
-    LBHttpSolrClient client = new LBHttpSolrClient.Builder()
-            .withHttp2SolrClientBuilder(new Http2SolrClient.Builder().markInternalRequest().withHttpClient(httpClient))
-            .withConnectionTimeout(connectionTimeout)
-            .withSocketTimeout(soTimeout)
-            .markInternalRequest()
-            .build();
+    LBHttpSolrClient client = new LBHttpSolrClient(httpClient);
     return client;
   }
 
@@ -375,18 +358,18 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    * @param urls The list of solr server urls to load balance across
    * @return The response from the request
    */
-  public AsyncLBHttpSolrClient.Rsp makeAsyncLoadBalancedRequest(final QueryRequest req, List<String> urls)
-          throws SolrServerException, IOException {
-    return ((AsyncLBHttpSolrClient)loadbalancer).request(new AsyncLBHttpSolrClient.Req(req, urls));
-  }
-
-  protected AsyncLBHttpSolrClient.Req newAsyncLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
-    int numServersToTry = (int)Math.floor(urls.size() * this.permittedLoadBalancerRequestsMaximumFraction);
-    if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
-      numServersToTry = this.permittedLoadBalancerRequestsMinimumAbsolute;
-    }
-    return new AsyncLBHttpSolrClient.Req(req, urls, numServersToTry);
-  }
+//  public AsyncLBHttpSolrClient.Rsp makeAsyncLoadBalancedRequest(final QueryRequest req, List<String> urls)
+//          throws SolrServerException, IOException {
+//    return ((AsyncLBHttpSolrClient)loadbalancer).request(new AsyncLBHttpSolrClient.Req(req, urls));
+//  }
+//
+//  protected AsyncLBHttpSolrClient.Req newAsyncLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
+//    int numServersToTry = (int)Math.floor(urls.size() * this.permittedLoadBalancerRequestsMaximumFraction);
+//    if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
+//      numServersToTry = this.permittedLoadBalancerRequestsMinimumAbsolute;
+//    }
+//    return new AsyncLBHttpSolrClient.Req(req, urls, numServersToTry);
+//  }
 
   /**
    * Makes a request to one or more of the given urls, using the configured load balancer.
@@ -397,6 +380,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    */
   public LBHttpSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
           throws SolrServerException, IOException {
+    ((LBHttpSolrClient)loadbalancer).addSolrServer(urls);
     return ((LBHttpSolrClient)loadbalancer).request(new LBHttpSolrClient.Req(req, urls));
   }
 

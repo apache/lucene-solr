@@ -346,7 +346,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
    * mappings from the managed JSON in this class during SynonymMap
    * building.
    */
-  private class ManagedSynonymParser extends SynonymMap.Parser {
+  private static class ManagedSynonymParser extends SynonymMap.Parser {
 
     SynonymManager synonymManager;
 
@@ -417,19 +417,7 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
     }
     // create the actual filter factory that pulls the synonym mappings
     // from synonymMappings using a custom parser implementation
-    delegate = new SynonymGraphFilterFactory(filtArgs) {
-      @Override
-      protected SynonymMap loadSynonyms
-          (ResourceLoader loader, String cname, boolean dedup, Analyzer analyzer)
-          throws IOException, ParseException {
-
-        ManagedSynonymParser parser =
-            new ManagedSynonymParser((SynonymManager)res, dedup, analyzer);
-        // null is safe here because there's no actual parsing done against a input Reader
-        parser.parse(null);
-        return parser.build();
-      }
-    };
+    delegate = new MySynonymGraphFilterFactory(filtArgs, res);
     try {
       delegate.inform(res.getResourceLoader());
     } catch (IOException e) {
@@ -444,5 +432,25 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
           " not initialized correctly! The SynonymFilterFactory delegate was not initialized.");
 
     return delegate.create(input);
+  }
+
+  private static class MySynonymGraphFilterFactory extends SynonymGraphFilterFactory {
+    private final ManagedResource res;
+
+    public MySynonymGraphFilterFactory(Map<String,String> filtArgs, ManagedResource res) {
+      super(filtArgs);
+      this.res = res;
+    }
+
+    @Override
+    protected SynonymMap loadSynonyms
+        (ResourceLoader loader, String cname, boolean dedup, Analyzer analyzer)
+        throws IOException, ParseException {
+
+      ManagedSynonymParser parser = new ManagedSynonymParser((SynonymManager) res, dedup, analyzer);
+      // null is safe here because there's no actual parsing done against a input Reader
+      parser.parse(null);
+      return parser.build();
+    }
   }
 }

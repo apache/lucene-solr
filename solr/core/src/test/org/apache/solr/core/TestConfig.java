@@ -20,9 +20,11 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Collections;
 
+import net.sf.saxon.om.NodeInfo;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -94,12 +96,12 @@ public class TestConfig extends SolrTestCaseJ4 {
     s = solrConfig.get("propTest[@attr2='default-from-config']", "default");
     assertEquals("prefix-proptwo-suffix", s);
 
-    NodeList nl = (NodeList) solrConfig.evaluate("propTest", XPathConstants.NODESET);
-    assertEquals(1, nl.getLength());
-    assertEquals("prefix-proptwo-suffix", nl.item(0).getTextContent());
+    ArrayList<NodeInfo> nl = (ArrayList) solrConfig.evaluate(solrConfig.getTreee(), "propTest", XPathConstants.NODESET);
+    assertEquals(1, nl.size());
+    assertEquals("prefix-proptwo-suffix", nl.get(0).getStringValue());
     String path = IndexSchema.normalize("propTest", solrConfig.getPrefix());
-    Node node = solrConfig.getNode(XmlConfigFile.getXpath().compile(path), path, true);
-    assertEquals("prefix-proptwo-suffix", node.getTextContent());
+    NodeInfo node = solrConfig.getNode(XmlConfigFile.getXpath().compile(path), path, true);
+    assertEquals("prefix-proptwo-suffix", node.getStringValue());
   }
 
   // sometime if the config referes to old things, it must be replaced with new stuff

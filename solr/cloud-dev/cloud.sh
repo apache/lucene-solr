@@ -106,7 +106,7 @@ MEMORY=1g        # default
 JVM_ARGS=''      # default
 RECOMPILE=false  # default
 NUM_NODES=0      # need to detect if not specified
-VCS_WORK=${DEFAULT_VCS_WORKSPACE}
+VCS_WORK=/data2/lucene-solr
 ZK_PORT=2181
 
 while getopts ":crm:a:n:w:z:" opt; do

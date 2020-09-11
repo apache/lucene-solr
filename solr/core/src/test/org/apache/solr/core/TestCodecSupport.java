@@ -208,7 +208,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.get("codecFactory/@class"));
     String path = IndexSchema.normalize("codecFactory", config.getPrefix());
     assertNull("Unexpected configuration of codec factory for this test. Expecting empty element", 
-        config.getNode(XmlConfigFile.getXpath().compile(path), path, false).getFirstChild());
+        config.getNode(XmlConfigFile.getXpath().compile(path), path, false).children().iterator().next());
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
 
     CoreContainer coreContainer = h.getCoreContainer();

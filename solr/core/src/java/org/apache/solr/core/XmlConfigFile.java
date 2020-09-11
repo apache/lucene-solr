@@ -39,12 +39,15 @@ import net.sf.saxon.Configuration;
 import net.sf.saxon.dom.DocumentOverNodeInfo;
 import net.sf.saxon.event.Sender;
 import net.sf.saxon.lib.ParseOptions;
+import net.sf.saxon.lib.Validation;
 import net.sf.saxon.om.NamePool;
 import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.om.TreeInfo;
 import net.sf.saxon.trans.XPathException;
 import net.sf.saxon.tree.tiny.TinyDocumentImpl;
 import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -55,9 +58,28 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+
+import javax.xml.namespace.QName;
+import javax.xml.transform.sax.SAXSource;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * Wrapper around an XML DOM object to provide convenient accessors to it.  Intended for XML config files.
@@ -71,20 +93,20 @@ public class XmlConfigFile { // formerly simply "Config"
 
   public static final XPathFactoryImpl xpathFactory = new XPathFactoryImpl();
 
-  public static Configuration conf = null;
 
-  private static NamePool pool = null;
+  public static Configuration conf1 = null;
+ // public static Configuration conf2 = null;
+ // public static NamePool pool = null;
 
   static  {
     try {
-      conf = Configuration.newConfiguration();
-      conf.setValidation(false);
-      conf.setXIncludeAware(true);
-      conf.setExpandAttributeDefaults(true);
-      pool = new NamePool();
-      conf.setNamePool(pool);
+      // nocommit - review security for xml after recent changes
+      conf1 = Configuration.newConfiguration();
+      conf1.setValidation(false);
+      conf1.setXIncludeAware(true);
+      conf1.setExpandAttributeDefaults(true);
 
-      xpathFactory.setConfiguration(conf);
+      xpathFactory.setConfiguration(conf1);
     } catch (Exception e) {
       log.error("", e);
     }
@@ -92,11 +114,10 @@ public class XmlConfigFile { // formerly simply "Config"
 
   protected final String prefix;
   private final String name;
-  private final SolrResourceLoader loader;
+  protected final SolrResourceLoader loader;
 
-  private Document doc;
   private final Properties substituteProperties;
-  private final TinyDocumentImpl tree;
+  protected final TinyDocumentImpl tree;
   private int zkVersion = -1;
 
   public static XPath getXpath() {
@@ -121,7 +142,7 @@ public class XmlConfigFile { // formerly simply "Config"
    */
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix)
       throws IOException {
-    this(loader, name, is, prefix, null);
+    this(loader, name, is, prefix, null, false);
   }
 
   /**
@@ -141,58 +162,70 @@ public class XmlConfigFile { // formerly simply "Config"
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
    * @param substituteProps optional property substitution
    */
-  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps)
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps, boolean expand)
       throws  IOException {
-    if( loader == null ) {
+    if (loader == null) {
       loader = new SolrResourceLoader(SolrPaths.locateSolrHome());
     }
     this.loader = loader;
     this.name = name;
-    this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
+    this.prefix = (prefix != null && !prefix.endsWith("/")) ? prefix + '/' : prefix;
 
-      if (is == null) {
-        if (name == null || name.length() == 0) {
-          throw new IllegalArgumentException("Null or empty name:" + name);
-        }
-        InputStream in = loader.openResource(name);
-        if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-          zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-          log.debug("loaded config {} with version {} ",name,zkVersion);
-        }
-        is = new InputSource(in);
-        is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+    if (is == null) {
+      if (name == null || name.length() == 0) {
+        throw new IllegalArgumentException("Null or empty name:" + name);
       }
-
+      InputStream in = loader.openResource(name);
+      if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+        zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+        log.debug("loaded config {} with version {} ", name, zkVersion);
+      }
+      is = new InputSource(in);
+      is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+    }
+    Configuration conf2;
     try {
       SAXSource source = new SAXSource(is);
-      Configuration conf2 = Configuration.newConfiguration();
+
+      conf2 = Configuration.newConfiguration();
       conf2.setValidation(false);
-      conf2.setXIncludeAware(true);
       conf2.setExpandAttributeDefaults(true);
-      conf2.setNamePool(pool);
-      conf2.setDocumentNumberAllocator(conf.getDocumentNumberAllocator());
+      conf2.setXIncludeAware(true);
 
-      SolrTinyBuilder builder = new SolrTinyBuilder(conf2.makePipelineConfiguration(), substituteProps);
-      builder.setStatistics(conf2.getTreeStatistics().SOURCE_DOCUMENT_STATISTICS);
 
-      ParseOptions parseOptions = new ParseOptions();
+      conf2.setDocumentNumberAllocator(conf1.getDocumentNumberAllocator());
+      conf2.setNamePool(conf1.getNamePool());
+
+      ParseOptions parseOptions = conf2.getParseOptions();
       if (is.getSystemId() != null) {
         parseOptions.setEntityResolver(loader.getSysIdResolver());
       }
-      parseOptions.setXIncludeAware(true);
 
+      parseOptions.setXIncludeAware(true);
+      parseOptions.setExpandAttributeDefaults(true);
       parseOptions.setPleaseCloseAfterUse(true);
+      //        parseOptions.setSchemaValidationMode(Validation.STRIP);
       parseOptions.setSchemaValidationMode(0);
 
-      Sender.send(source, builder, parseOptions);
-      TinyDocumentImpl docTree = (TinyDocumentImpl) builder.getCurrentRoot();
-      builder.reset();
+      TinyDocumentImpl docTree = null;
+      SolrTinyBuilder builder = new SolrTinyBuilder(conf2.makePipelineConfiguration(), substituteProps);
+      try {
+        //builder.setStatistics(conf2.getTreeStatistics().SOURCE_DOCUMENT_STATISTICS);
+
+
+
+        Sender.send(source, builder, parseOptions);
+        docTree = (TinyDocumentImpl) builder.getCurrentRoot();
+      } finally {
+        builder.close();
+        builder.reset();
+        if (conf2 != null) conf2.close();
+      }
 
       this.tree = docTree;
-      doc = (Document) DocumentOverNodeInfo.wrap(docTree);
 
       this.substituteProperties = substituteProps;
-    } catch ( XPathException e) {
+    } catch (XPathException e) {
       throw new RuntimeException(e);
     } finally {
       // some XML parsers are broken and don't close the byte stream (but they should according to spec)
@@ -240,11 +273,7 @@ public class XmlConfigFile { // formerly simply "Config"
       return name;
     }
 
-    public Document getDocument () {
-      return doc;
-    }
-
-  public NodeInfo getTreee () {
+  public TinyDocumentImpl getTreee () {
     return tree;
   }
 
@@ -252,45 +281,58 @@ public class XmlConfigFile { // formerly simply "Config"
       return (prefix == null || path.startsWith("/")) ? path : prefix + path;
     }
 
-    public Object evaluate (String path, QName type){
-      try {
-        String xstr = normalize(path);
+//    public Object evaluate (String path, QName type){
+//      try {
+//        String xstr = normalize(path);
+//
+//        // TODO: instead of prepending /prefix/, we could do the search rooted at /prefix...
+//        Object o = getXpath().evaluate(xstr, doc, type);
+//        return o;
+//
+//      } catch (XPathExpressionException e) {
+//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+//            "Error in xpath:" + path + " for " + name, e);
+//      }
+//    }
 
-        // TODO: instead of prepending /prefix/, we could do the search rooted at /prefix...
-        Object o = getXpath().evaluate(xstr, doc, type);
-        return o;
+  public Object evaluate(TinyDocumentImpl tree, String path, QName type) {
+    try {
+      String xstr = normalize(path);
 
-      } catch (XPathExpressionException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Error in xpath:" + path + " for " + name, e);
-      }
+      // TODO: instead of prepending /prefix/, we could do the search rooted at /prefix...
+      Object o = getXpath().evaluate(xstr, tree, type);
+      return o;
+
+    } catch (XPathExpressionException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in xpath:" + path + " for " + name, e);
     }
+  }
 
     public String getPrefix() {
       return prefix;
     }
 
     // nocommit
-    public Node getNode (String expression, boolean errifMissing){
+    public NodeInfo getNode (String expression, boolean errifMissing){
       String path = normalize(expression);
       try {
-        return getNode(getXpath().compile(path), path, doc, errifMissing);
+        return getNode(getXpath().compile(path), path, tree, errifMissing);
       } catch (XPathExpressionException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
     }
 
-    public Node getNode (XPathExpression expression,  String path, boolean errifMissing){
-      return getNode(expression, path, doc, errifMissing);
+    public NodeInfo getNode (XPathExpression expression,  String path, boolean errifMissing){
+      return getNode(expression, path, tree, errifMissing);
     }
 
-    public Node getNode (XPathExpression expression, String path, Document doc, boolean errIfMissing){
+    public NodeInfo getNode (XPathExpression expression, String path, TinyDocumentImpl doc, boolean errIfMissing){
       //String xstr = normalize(path);
 
       try {
-        NodeList nodes = (NodeList) expression
+        ArrayList<NodeInfo> nodes = (ArrayList) expression
             .evaluate(doc, XPathConstants.NODESET);
-        if (nodes == null || 0 == nodes.getLength()) {
+        if (nodes == null || 0 == nodes.size()) {
           if (errIfMissing) {
             throw new RuntimeException(name + " missing " + path);
           } else {
@@ -298,11 +340,11 @@ public class XmlConfigFile { // formerly simply "Config"
             return null;
           }
         }
-        if (1 < nodes.getLength()) {
+        if (1 < nodes.size()) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               name + " contains more than one value for config path: " + path);
         }
-        Node nd = nodes.item(0);
+        NodeInfo nd = nodes.get(0);
         log.trace("{}:{}={}", name, expression, nd);
         return nd;
 
@@ -321,12 +363,12 @@ public class XmlConfigFile { // formerly simply "Config"
     }
 
     // TODO: more precompiled expressions
-    public NodeList getNodeList (String path, boolean errIfMissing){
+    public List<NodeInfo> getNodeList (String path, boolean errIfMissing){
       String xstr = normalize(path);
 
       try {
-        NodeList nodeList = (NodeList) getXpath()
-            .evaluate(xstr, doc, XPathConstants.NODESET);
+        ArrayList nodeList = (ArrayList) getXpath()
+            .evaluate(xstr, tree, XPathConstants.NODESET);
 
         if (null == nodeList) {
           if (errIfMissing) {
@@ -383,9 +425,9 @@ public class XmlConfigFile { // formerly simply "Config"
     public void complainAboutUnknownAttributes (String elementXpath, String...
     knownAttributes){
       SortedMap<String,SortedSet<String>> problems = new TreeMap<>();
-      NodeList nodeList = getNodeList(elementXpath, false);
-      for (int i = 0; i < nodeList.getLength(); ++i) {
-        Element element = (Element) nodeList.item(i);
+      List<NodeInfo> nodeList = getNodeList(elementXpath, false);
+      for (int i = 0; i < nodeList.size(); ++i) {
+        Element element = (Element) nodeList.get(i);
         Set<String> unknownAttributes = getUnknownAttributes(element,
             knownAttributes);
         if (null != unknownAttributes) {
@@ -420,7 +462,7 @@ public class XmlConfigFile { // formerly simply "Config"
       }
     }
 
-    // nocommit
+    // nocommit expression not precompiled
     public String getVal (String expression, boolean errIfMissing){
       String xstr = normalize(expression);
       try {
@@ -431,7 +473,7 @@ public class XmlConfigFile { // formerly simply "Config"
     }
 
     public String getVal (XPathExpression expression, String path, boolean errIfMissing){
-      Node nd = getNode(expression, path, errIfMissing);
+      NodeInfo nd = getNode(expression, path, errIfMissing);
       if (nd == null) return null;
 
       String txt = DOMUtil.getText(nd);

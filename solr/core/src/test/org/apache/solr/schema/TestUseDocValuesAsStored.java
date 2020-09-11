@@ -26,17 +26,21 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.tree.tiny.TinyDocumentImpl;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
+import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.DOMUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -74,15 +78,15 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     END_RANDOM_EPOCH_MILLIS = LocalDateTime.of(11000, Month.DECEMBER, 31, 23, 59, 59, 999_000_000) // AD, 5 digit year
         .toInstant(ZoneOffset.UTC).toEpochMilli();
     try {
-      DocumentBuilder builder = FieldTypeXmlAdapter.getDocumentBuilder();
+
       InputStream stream = TestUseDocValuesAsStored.class.getResourceAsStream("/solr/collection1/conf/enumsConfig.xml");
-      Document doc = builder.parse(new InputSource(IOUtils.getDecodingReader(stream, StandardCharsets.UTF_8)));
+      TinyDocumentImpl doc = BaseTestHarness.getTinyDocument(IOUtils.toString(stream, StandardCharsets.UTF_8), null);
       XPath xpath = XmlConfigFile.getXpath();
-      NodeList nodes = (NodeList)xpath.evaluate
+      ArrayList<NodeInfo> nodes = (ArrayList)xpath.evaluate
           ("/enumsConfig/enum[@name='severity']/value", doc, XPathConstants.NODESET);
-      SEVERITY = new String[nodes.getLength()];
-      for (int i = 0 ; i < nodes.getLength() ; ++i) {
-        SEVERITY[i] = DOMUtil.getText(nodes.item(i));
+      SEVERITY = new String[nodes.size()];
+      for (int i = 0 ; i < nodes.size() ; ++i) {
+        SEVERITY[i] = DOMUtil.getText(nodes.get(i));
       }
     } catch (Exception e) {
       throw new RuntimeException(e);

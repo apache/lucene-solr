@@ -24,9 +24,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -152,19 +155,28 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         doReturn(new TimedVersionBucket() {
           /**
            * simulate the case: it takes 5 seconds to add the doc
-           * 
            */
           @Override
-          protected boolean tryLock(int lockTimeoutMs) {
-            boolean locked = super.tryLock(versionBucketLockTimeoutMs);
-            if (locked) {
-              try {
+          public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function) throws IOException {
+            boolean locked = false;
+            try {
+              locked = lock.tryLock(versionBucketLockTimeoutMs, TimeUnit.MILLISECONDS);
+              if (locked) {
+
                 Thread.sleep(1000);
-              } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+
+                return function.apply();
+              } else {
+                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "could not get lock");
+              }
+            } catch (InterruptedException e) {
+              ParWork.propagateInterrupt(e);
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+            } finally {
+              if (locked) {
+                lock.unlock();
               }
             }
-            return locked;
           }
         }).when(vinfo).bucket(anyInt());
       }

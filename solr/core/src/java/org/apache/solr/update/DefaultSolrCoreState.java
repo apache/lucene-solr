@@ -395,16 +395,13 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       if (recoveryFuture != null) {
         if (recoveryStrat != null) recoveryStrat.close();
         recoveryFuture.cancel(true);
+
         try {
-          try {
-            recoveryFuture.get();
-          } catch (ExecutionException e) {
-            log.error("Exception waiting for previous recovery to finish");
-          }
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          return;
+          recoveryFuture.get();
+        } catch (Exception e) {
+          log.error("Exception waiting for previous recovery to finish");
         }
+
       }
 
       recoveryFuture = cc.getUpdateShardHandler().getRecoveryExecutor()

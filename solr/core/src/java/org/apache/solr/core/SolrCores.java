@@ -42,20 +42,16 @@ class SolrCores implements Closeable {
 
   private volatile boolean closed;
 
-  private final Map<String, SolrCore> cores = new ConcurrentHashMap<>(64, 0.75f, 12);
+  private final Map<String, SolrCore> cores = new ConcurrentHashMap<>(16, 0.75f, 3);
 
   // These descriptors, once loaded, will _not_ be unloaded, i.e. they are not "transient".
-  private final Map<String, CoreDescriptor> residentDesciptors = new ConcurrentHashMap<>(64, 0.75f, 12);
+  private final Map<String, CoreDescriptor> residentDesciptors = new ConcurrentHashMap<>(16, 0.75f, 3);
 
   private final CoreContainer container;
 
   private final Object loadingSignal = new Object();
   
-  private final Set<String> currentlyLoadingCores = ConcurrentHashMap.newKeySet(64);
-
-  // This map will hold objects that are being currently operated on. The core (value) may be null in the case of
-  // initial load. The rule is, never to any operation on a core that is currently being operated upon.
-  private final Set<String> pendingCoreOps = ConcurrentHashMap.newKeySet(64);
+  private final Set<String> currentlyLoadingCores = ConcurrentHashMap.newKeySet(16);
 
   private volatile TransientSolrCoreCacheFactory transientCoreCache;
 
@@ -337,8 +333,11 @@ class SolrCores implements Closeable {
   public CoreDescriptor getCoreDescriptor(String coreName) {
     if (coreName == null) return null;
 
-    if (residentDesciptors.containsKey(coreName))
-      return residentDesciptors.get(coreName);
+
+    CoreDescriptor cd = residentDesciptors.get(coreName);
+    if (cd != null) {
+      return cd;
+    }
     TransientSolrCoreCache transientHandler = getTransientCacheHandler();
     if (transientHandler != null) {
       return getTransientCacheHandler().getTransientDescriptor(coreName);

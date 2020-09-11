@@ -16,25 +16,30 @@
  */
 package org.apache.solr.rest.schema;
 
+import net.sf.saxon.Configuration;
+import net.sf.saxon.lib.ParseOptions;
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.sapling.SaplingElement;
+import net.sf.saxon.sapling.Saplings;
+import net.sf.saxon.trans.XPathException;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SimilarityFactory;
+import org.apache.xerces.jaxp.DocumentBuilderFactoryImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SimilarityFactory;
-import org.apache.xerces.jaxp.DocumentBuilderFactoryImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 /**
  * Utility class for converting a JSON definition of a FieldType into the
@@ -51,7 +56,7 @@ public class FieldTypeXmlAdapter {
   static {
     dbf = new DocumentBuilderFactoryImpl();
     try {
-   //   dbf.setXIncludeAware(true);
+      dbf.setXIncludeAware(true);
       dbf.setNamespaceAware(true);
       dbf.setValidating(false);
     //  trySetDOMFeature(dbf, XMLConstants.FEATURE_SECURE_PROCESSING, true);
@@ -84,38 +89,54 @@ public class FieldTypeXmlAdapter {
     }
   }
 
-  public static Node toNode(Map<String,?> json) {
-    
-    Document doc = getDocumentBuilder().newDocument();
-    Element fieldType = doc.createElement(IndexSchema.FIELD_TYPE);
-    appendAttrs(fieldType, json);
-    
+  public static NodeInfo toNode(SolrResourceLoader loader, Map<String,?> json) {
+
+    SaplingElement fieldType = Saplings.elem(IndexSchema.FIELD_TYPE);
+    fieldType = appendAttrs(fieldType, json);
+
     // transform the analyzer definitions into XML elements
-    Element analyzer = transformAnalyzer(doc, json, "analyzer", null);
-    if (analyzer != null)
-      fieldType.appendChild(analyzer);
+    SaplingElement analyzer = transformAnalyzer(fieldType, json, "analyzer", null);
+    if (analyzer != null) fieldType = fieldType.withChild(analyzer);
 
-    analyzer = transformAnalyzer(doc, json, "indexAnalyzer", "index");
-    if (analyzer != null)
-      fieldType.appendChild(analyzer);
+    analyzer = transformAnalyzer(fieldType, json, "indexAnalyzer", "index");
+    if (analyzer != null) fieldType = fieldType.withChild(analyzer);
 
-    analyzer = transformAnalyzer(doc, json, "queryAnalyzer", "query");
-    if (analyzer != null)
-      fieldType.appendChild(analyzer);
+    analyzer = transformAnalyzer(fieldType, json, "queryAnalyzer", "query");
+    if (analyzer != null) fieldType = fieldType.withChild(analyzer);
 
-    analyzer = transformAnalyzer(doc, json, "multiTermAnalyzer", "multiterm");
-    if (analyzer != null)
-      fieldType.appendChild(analyzer);
+    analyzer = transformAnalyzer(fieldType, json, "multiTermAnalyzer", "multiterm");
+    if (analyzer != null) fieldType = fieldType.withChild(analyzer);
 
-    Element similarity = transformSimilarity(doc, json, "similarity");
-    if (similarity != null)
-      fieldType.appendChild(similarity);
-        
-    return fieldType;
+    SaplingElement similarity = transformSimilarity(fieldType, json, "similarity");
+    if (similarity != null) fieldType = fieldType.withChild(similarity);
+
+    Configuration conf1 = Configuration.newConfiguration();
+    conf1.setValidation(false);
+    conf1.setXIncludeAware(true);
+    conf1.setExpandAttributeDefaults(true);
+    conf1.setNamePool(XmlConfigFile.conf1.getNamePool());
+    conf1.setDocumentNumberAllocator(XmlConfigFile.conf1.getDocumentNumberAllocator());
+
+
+    ParseOptions parseOptions = conf1.getParseOptions();
+    parseOptions.setPleaseCloseAfterUse(true);
+    parseOptions.setExpandAttributeDefaults(true);
+    parseOptions.setXIncludeAware(true);
+    parseOptions.setSchemaValidationMode(0);
+    parseOptions.setEntityResolver(loader.getSysIdResolver());
+    //conf1.setURIResolver(SystemIdResolver.createSystemIdFromResourceName("json"));
+
+    try {
+      return fieldType.toNodeInfo(conf1);
+    } catch (XPathException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } finally {
+      conf1.close();
+    }
   }
 
   @SuppressWarnings("unchecked")
-  protected static Element transformSimilarity(Document doc, Map<String,?> json, String jsonFieldName) {
+  protected static SaplingElement transformSimilarity(SaplingElement doc, Map<String,?> json, String jsonFieldName) {
     Object jsonField = json.get(jsonFieldName);
     if (jsonField == null)
       return null; // it's ok for this field to not exist in the JSON map
@@ -124,16 +145,16 @@ public class FieldTypeXmlAdapter {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid fieldType definition! Expected JSON object for "+
           jsonFieldName+" not a "+jsonField.getClass().getName());
 
-    Element similarity = doc.createElement("similarity");
+    SaplingElement similarity = Saplings.elem("similarity");
     Map<String,?> config = (Map<String,?>)jsonField;
-    similarity.setAttribute(SimilarityFactory.CLASS_NAME, (String)config.remove(SimilarityFactory.CLASS_NAME));
+    similarity = similarity.withAttr(SimilarityFactory.CLASS_NAME, (String)config.remove(SimilarityFactory.CLASS_NAME));
     for (Map.Entry<String,?> entry : config.entrySet()) {
       Object val = entry.getValue();
       if (val != null) {
-        Element child = doc.createElement(classToXmlTag(val.getClass()));
-        child.setAttribute(CommonParams.NAME, entry.getKey());
-        child.setTextContent(entry.getValue().toString());
-        similarity.appendChild(child);
+        SaplingElement child = Saplings.elem(classToXmlTag(val.getClass()));
+        child = child.withAttr(CommonParams.NAME, entry.getKey());
+        child = child.withText(entry.getValue().toString());
+        similarity = similarity.withChild(child);
       }
     }
     return similarity;
@@ -151,7 +172,7 @@ public class FieldTypeXmlAdapter {
   }
   
   @SuppressWarnings("unchecked")
-  protected static Element transformAnalyzer(Document doc, Map<String,?> json, String jsonFieldName, String analyzerType) {
+  protected static SaplingElement transformAnalyzer(SaplingElement doc, Map<String,?> json, String jsonFieldName, String analyzerType) {
     Object jsonField = json.get(jsonFieldName);
     if (jsonField == null)
       return null; // it's ok for this field to not exist in the JSON map
@@ -164,10 +185,10 @@ public class FieldTypeXmlAdapter {
   }
   
   @SuppressWarnings("unchecked")
-  protected static Element createAnalyzerElement(Document doc, String type, Map<String,?> analyzer) {
-    Element analyzerElem = appendAttrs(doc.createElement("analyzer"), analyzer);
+  protected static SaplingElement createAnalyzerElement(SaplingElement doc, String type, Map<String,?> analyzer) {
+    SaplingElement analyzerElem = appendAttrs(Saplings.elem("analyzer"), analyzer);
     if (type != null)
-      analyzerElem.setAttribute("type", type);
+      analyzerElem = analyzerElem.withAttr("type", type);
 
     List<Map<String,?>> charFilters = (List<Map<String,?>>)analyzer.get("charFilters");
     Map<String,?> tokenizer = (Map<String,?>)analyzer.get("tokenizer");
@@ -175,7 +196,7 @@ public class FieldTypeXmlAdapter {
 
     if (analyzer.get("class") == null) {
       if (charFilters != null)
-        appendFilterElements(doc, analyzerElem, "charFilter", charFilters);
+        analyzerElem = appendFilterElements(doc, analyzerElem, "charFilter", charFilters);
 
       if (tokenizer == null)
         throw new SolrException(ErrorCode.BAD_REQUEST, "Analyzer must define a tokenizer!");
@@ -183,10 +204,10 @@ public class FieldTypeXmlAdapter {
       if (tokenizer.get("class") == null && tokenizer.get("name") == null)
         throw new SolrException(ErrorCode.BAD_REQUEST, "Every tokenizer must define a class or name property!");
 
-      analyzerElem.appendChild(appendAttrs(doc.createElement("tokenizer"), tokenizer));
+      analyzerElem = analyzerElem.withChild(appendAttrs(Saplings.elem(("tokenizer")), tokenizer));
 
       if (filters != null)
-        appendFilterElements(doc, analyzerElem, "filter", filters);
+        analyzerElem = appendFilterElements(doc, analyzerElem, "filter", filters);
 
     } else { // When analyzer class is specified: char filters, tokenizers, and filters are disallowed
       if (charFilters != null)
@@ -205,22 +226,23 @@ public class FieldTypeXmlAdapter {
     return analyzerElem;
   }
   
-  protected static void appendFilterElements(Document doc, Element analyzer, String filterName, List<Map<String,?>> filters) {
+  protected static SaplingElement appendFilterElements(SaplingElement doc, SaplingElement analyzer, String filterName, List<Map<String,?>> filters) {
     for (Map<String,?> next : filters) {
       String filterClass = (String)next.get("class");
       String filterSPIName = (String)next.get("name");
       if (filterClass == null && filterSPIName == null)
         throw new SolrException(ErrorCode.BAD_REQUEST, 
             "Every "+filterName+" must define a class or name property!");
-      analyzer.appendChild(appendAttrs(doc.createElement(filterName), next));
-    }    
+      analyzer = analyzer.withChild(appendAttrs(Saplings.elem(filterName), next));
+    }
+    return analyzer;
   }
   
-  protected static Element appendAttrs(Element elm, Map<String,?> json) {
+  protected static SaplingElement appendAttrs(SaplingElement elm, Map<String,?> json) {
     for (Map.Entry<String,?> entry : json.entrySet()) {
       Object val = entry.getValue();
       if (val != null && !(val instanceof Map))
-        elm.setAttribute(entry.getKey(), val.toString());
+        elm = elm.withAttr(entry.getKey(), val.toString());
     }
     return elm;
   }

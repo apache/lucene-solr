@@ -53,6 +53,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -69,16 +70,17 @@ public abstract class LBSolrClient extends SolrClient {
   private static final Set<Integer> RETRY_CODES = new HashSet<>(Arrays.asList(404, 403, 503, 500));
   private static final int CHECK_INTERVAL = 30 * 1000; //1 minute between checks
   private static final int NONSTANDARD_PING_LIMIT = 5;  // number of times we'll ping dead servers not in the server list
+  public static final ServerWrapper[] EMPTY_SERVER_WRAPPER = new ServerWrapper[0];
 
   // keys to the maps are currently of the form "http://localhost:8983/solr"
   // which should be equivalent to HttpSolrServer.getBaseURL()
   private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<>();
   // access to aliveServers should be synchronized on itself
 
-  private final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>(32);
+  private final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>(4);
 
   // changes to aliveServers are reflected in this array, no need to synchronize
-  private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
+  private volatile ServerWrapper[] aliveServerList = EMPTY_SERVER_WRAPPER;
 
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
@@ -213,7 +215,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   protected void updateAliveList() {
     synchronized (aliveServers) {
-      aliveServerList = aliveServers.values().toArray(new ServerWrapper[0]);
+      aliveServerList = aliveServers.values().toArray(EMPTY_SERVER_WRAPPER);
     }
   }
 
@@ -551,7 +553,6 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
-
   private void addToAlive(ServerWrapper wrapper) {
     synchronized (aliveServers) {
       ServerWrapper prev = aliveServers.put(wrapper.getBaseUrl(), wrapper);
@@ -560,8 +561,28 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
-  public void addSolrServer(String server) throws MalformedURLException {
+  public void addSolrServer(String server) {
     addToAlive(createServerWrapper(server));
+  }
+
+
+
+  public void addSolrServer(List<String> servers) {
+    boolean changed = false;
+    synchronized (aliveServers) {
+
+      for (String server :servers) {
+        ServerWrapper wrapper = createServerWrapper(server);
+        if (!aliveServers.containsKey(wrapper.getBaseUrl())) {
+          ServerWrapper prev = aliveServers.put(wrapper.getBaseUrl(), wrapper);
+          changed = true;
+          // TODO: warn if there was a previous entry?
+        }
+      }
+      if (changed) {
+        updateAliveList();
+      }
+    }
   }
 
   public String removeSolrServer(String server) {
@@ -714,9 +735,7 @@ public abstract class LBSolrClient extends SolrClient {
   @Override
   public void close() {
     this.closed = true;
-
-    if (aliveCheckExecutor != null) aliveCheckExecutor.shutdownNow();
-    ParWork.close(aliveCheckExecutor);
+    ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
     assert ObjectReleaseTracker.release(this);
   }
 }

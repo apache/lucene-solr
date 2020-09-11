@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -224,7 +226,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       Collection<String> valueClasses
           = typeMappingNamedList.removeConfigArgs(VALUE_CLASS_PARAM);
       if (valueClasses.isEmpty()) {
-        throw new SolrException(SERVER_ERROR, 
+        throw new SolrException(SERVER_ERROR,
             "Each '" + TYPE_MAPPING_PARAM + "' <lst/> must contain at least one '" + VALUE_CLASS_PARAM + "' <str>");
       }
 
@@ -282,7 +284,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       typeMappings.add(new TypeMapping(fieldType, valueClasses, isDefault, copyFieldDefs));
       
       if (0 != typeMappingNamedList.size()) {
-        throw new SolrException(SERVER_ERROR, 
+        throw new SolrException(SERVER_ERROR,
             "Unexpected '" + TYPE_MAPPING_PARAM + "' init sub-param(s): '" + typeMappingNamedList.toString() + "'");
       }
       args.remove(TYPE_MAPPING_PARAM);
@@ -446,7 +448,13 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         }
         // Need to hold the lock during the entire attempt to ensure that
         // the schema on the request is the latest
-        synchronized (oldSchema.getSchemaUpdateLock()) {
+        try {
+          oldSchema.getSchemaUpdateLock().lockInterruptibly();
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          throw new AlreadyClosedException();
+        }
+        try {
           try {
             IndexSchema newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
             // Add copyFields
@@ -469,13 +477,27 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             }
           } catch (ManagedIndexSchema.FieldExistsException e) {
             log.error("At least one field to be added already exists in the schema - retrying.");
+            try {
+              Thread.sleep(200);
+            } catch (InterruptedException interruptedException) {
+              ParWork.propagateInterrupt(interruptedException);
+              throw new AlreadyClosedException();
+            }
             oldSchema = core.getLatestSchema();
             cmd.getReq().updateSchemaToLatest();
           } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
-            log.debug("Schema changed while processing request - retrying.");
+            if (log.isDebugEnabled()) log.debug("Schema changed while processing request - retrying.");
+            try {
+              Thread.sleep(200);
+            } catch (InterruptedException interruptedException) {
+              ParWork.propagateInterrupt(interruptedException);
+              throw new AlreadyClosedException();
+            }
             oldSchema = core.getLatestSchema();
             cmd.getReq().updateSchemaToLatest();
           }
+        } finally {
+          oldSchema.getSchemaUpdateLock().unlock();
         }
       }
       super.processAdd(cmd);

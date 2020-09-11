@@ -25,11 +25,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -121,50 +123,20 @@ public class ParWork implements Closeable {
   }
 
     private static class WorkUnit {
-    private final List<ParObject> objects;
+    private final Set<ParObject> objects;
     private final TimeTracker tracker;
 
-    public WorkUnit(List<ParObject> objects, TimeTracker tracker) {
-      objects.remove(null);
-      boolean ok;
-      for (ParObject parobject : objects) {
-        Object object = parobject.object;
-        assert !(object instanceof ParObject);
-        ok  = false;
-        for (Class okobject : OK_CLASSES) {
-          if (object == null || okobject.isAssignableFrom(object.getClass())) {
-            ok = true;
-            break;
-          }
-        }
-        if (!ok) {
-          log.error(" -> I do not know how to close: " + object.getClass().getName());
-          throw new IllegalArgumentException(" -> I do not know how to close: " + object.getClass().getName());
-        }
-      }
-
+    public WorkUnit(Set<ParObject> objects, TimeTracker tracker) {
       this.objects = objects;
       this.tracker = tracker;
 
-      assert checkTypesForTests(objects);
-    }
-
-    private boolean checkTypesForTests(List<ParObject> objects) {
-      for (ParObject object : objects) {
-        assert !(object.object instanceof Collection);
-        assert !(object.object instanceof Map);
-        assert !(object.object.getClass().isArray());
-      }
-
-      return true;
     }
   }
 
   private static final Set<Class> OK_CLASSES;
 
-
   static {
-    Set set = new HashSet<>(8);
+    Set set = new HashSet<>(9);
     set.add(ExecutorService.class);
     set.add(OrderedExecutor.class);
     set.add(Closeable.class);
@@ -173,10 +145,11 @@ public class ParWork implements Closeable {
     set.add(Runnable.class);
     set.add(Timer.class);
     set.add(CloseableHttpClient.class);
+    set.add(Map.class);
     OK_CLASSES = Collections.unmodifiableSet(set);
   }
 
-  private final List<WorkUnit> workUnits = Collections.synchronizedList(new ArrayList<>());
+  private final Queue<WorkUnit> workUnits = new ConcurrentLinkedQueue();
 
   private volatile TimeTracker tracker;
 
@@ -261,20 +234,11 @@ public class ParWork implements Closeable {
     if (object == null) {
       return;
     }
-    ParObject ob = new ParObject();
-    ob.object = object;
-    ob.label = label;
-    collectSet.add(ob);
+    gatherObjects(label, object, collectSet);
   }
 
   public void collect(Object object) {
-    if (object == null) {
-      return;
-    }
-    ParObject ob = new ParObject();
-    ob.object = object;
-    ob.label = object.toString();
-    collectSet.add(ob);
+   collect(object != null ? object.toString() : null, object);
   }
 
   public void collect(Object... objects) {
@@ -288,10 +252,7 @@ public class ParWork implements Closeable {
    *                 used to identify it.
    */
   public void collect(String label, Callable<?> callable) {
-    ParObject ob = new ParObject();
-    ob.object = callable;
-    ob.label = label;
-    collectSet.add(ob);
+    collect(label, (Object) callable);
   }
 
   /**
@@ -299,13 +260,7 @@ public class ParWork implements Closeable {
    *                 used to identify it.
    */
   public void collect(String label, Runnable runnable) {
-    if (runnable == null) {
-      return;
-    }
-    ParObject ob = new ParObject();
-    ob.object = runnable;
-    ob.label = label;
-    collectSet.add(ob);
+    collect(label, (Object) runnable);
   }
 
   public void addCollect() {
@@ -314,48 +269,74 @@ public class ParWork implements Closeable {
       return;
     }
     try {
-      for (ParObject ob : collectSet) {
-        assert (!(ob.object instanceof ParObject));
-        add(ob);
-      }
+      add(collectSet);
     } finally {
       collectSet.clear();
     }
   }
 
-  private void gatherObjects(Object object, List<ParObject> objects) {
-    if (object != null) {
-      if (object instanceof Collection) {
-        for (Object obj : (Collection) object) {
-          gatherObjects(obj, objects);
+  private void gatherObjects(String label, Object submittedObject, Set<ParObject> collectSet) {
+    if (submittedObject != null) {
+      if (submittedObject instanceof Collection) {
+        for (Object obj : (Collection) submittedObject) {
+          ParObject ob = new ParObject();
+          ob.object = obj;
+          ob.label = label;
+          collectSet.add(ob);
         }
+      } else if (submittedObject instanceof Map) {
+        ((Map) submittedObject).forEach((k, v) -> {
+          ParObject ob = new ParObject();
+          ob.object = v;
+          ob.label = label;
+          collectSet.add(ob);
+        });
       } else {
-        if (object instanceof ParObject) {
-          objects.add((ParObject) object);
+        if (submittedObject instanceof ParObject) {
+          collectSet.add((ParObject) submittedObject);
         } else {
           ParObject ob = new ParObject();
-          ob.object = object;
-          ob.label = object.getClass().getSimpleName();
-          objects.add(ob);
+          ob.object = submittedObject;
+          ob.label = label;
+          collectSet.add(ob);
         }
       }
     }
   }
 
-  private void add(ParObject object) {
+  private void add(Set<ParObject> objects) {
     if (log.isDebugEnabled()) {
-      log.debug("add(String label={}, Object object={}) - start", object.label, object);
-    }
-    List<ParObject> objects;
-    if (object.object instanceof  Collection) {
-      objects = new ArrayList<>(((Collection<?>) object.object).size());
-      gatherObjects(object.object, objects);
-    } else {
-      objects = Collections.singletonList(object);
+      log.debug("add(String objects={}, objects");
     }
 
-    WorkUnit workUnit = new WorkUnit(objects, tracker);
+
+
+    Set<ParObject> wuObjects = new HashSet<>(objects.size());
+
+    objects.forEach(parObject -> {
+
+      verifyValidType(parObject);
+      wuObjects.add(parObject);
+    });
+
+    WorkUnit workUnit = new WorkUnit(wuObjects, tracker);
     workUnits.add(workUnit);
+  }
+
+  private void verifyValidType(ParObject parObject) {
+    Object object = parObject.object;
+
+    boolean ok = false;
+    for (Class okobject : OK_CLASSES) {
+      if (okobject.isAssignableFrom(object.getClass())) {
+        ok = true;
+        break;
+      }
+    }
+    if (!ok) {
+      log.error(" -> I do not know how to close: " + object.getClass().getName());
+      throw new IllegalArgumentException(" -> I do not know how to close: " + object.getClass().getName());
+    }
   }
 
   @Override
@@ -385,10 +366,10 @@ public class ParWork implements Closeable {
         TimeTracker workUnitTracker = null;
         assert (workUnitTracker = workUnit.tracker.startSubClose(workUnit)) != null;
         try {
-          List<ParObject> objects = workUnit.objects;
+          Set<ParObject> objects = workUnit.objects;
 
           if (objects.size() == 1) {
-            handleObject(exception, workUnitTracker, objects.get(0));
+            handleObject(exception, workUnitTracker, objects.iterator().next());
           } else {
 
             List<Callable<Object>> closeCalls = new ArrayList<>(objects.size());
@@ -453,7 +434,7 @@ public class ParWork implements Closeable {
                       //  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A task did nor finish" +future.isDone()  + " " + future.isCancelled());
                     }
                   } catch (TimeoutException e) {
-                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, objects.get(i).label, e);
+                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout", e); // TODO: add object info eg ParObject.label
                   } catch (InterruptedException e1) {
                     log.warn(WORK_WAS_INTERRUPTED);
                     // TODO: save interrupted status and reset it at end?
@@ -542,11 +523,6 @@ public class ParWork implements Closeable {
           exception, workUnitTracker, ob.object);
     }
     Object object = ob.object;
-    if (object != null) {
-      assert !(object instanceof Collection);
-      assert !(object instanceof Map);
-      assert !(object.getClass().isArray());
-    }
 
     Object returnObject = null;
     TimeTracker subTracker = null;

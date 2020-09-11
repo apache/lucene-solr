@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import net.sf.saxon.dom.DocumentOverNodeInfo;
+import net.sf.saxon.om.NodeInfo;
 import net.sf.saxon.tree.tiny.TinyElementImpl;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
@@ -134,37 +135,33 @@ public final class FieldTypePluginLoader
   protected FieldType create( SolrResourceLoader loader,
                               String name,
                               String className,
-                              Node node, XPath xpath) throws Exception {
+                              NodeInfo node, XPath xpath) throws Exception {
 
     FieldType ft = loader.newInstance(className, FieldType.class, "schema.");
     ft.setTypeName(name);
 
     TinyElementImpl anode = (TinyElementImpl) analyzerQueryExp.evaluate(node, XPathConstants.NODE);
-    Analyzer queryAnalyzer = readAnalyzer(DocumentOverNodeInfo.wrap(anode));
+    Analyzer queryAnalyzer = readAnalyzer(anode);
 
     anode = (TinyElementImpl)analyzerMultiTermExp.evaluate(node, XPathConstants.NODE);
-    Analyzer multiAnalyzer = readAnalyzer(DocumentOverNodeInfo.wrap(anode));
+    Analyzer multiAnalyzer = readAnalyzer(anode);
 
     // An analyzer without a type specified, or with type="index"
     Analyzer analyzer;
     Object object = analyzerIndexExp
         .evaluate(node, XPathConstants.NODE);
-    if (object instanceof TinyElementImpl) {
-      anode = (TinyElementImpl) object;
-      analyzer = readAnalyzer(DocumentOverNodeInfo.wrap(anode));
-    } else {
-      analyzer = readAnalyzer((ElementImpl) object);
-    }
 
+    anode = (TinyElementImpl) object;
+    analyzer = readAnalyzer(anode);
 
     // a custom similarity[Factory]
     object = similarityExp.evaluate(node, XPathConstants.NODE);
     SimilarityFactory simFactory;
     if (object instanceof TinyElementImpl) {
       anode = (TinyElementImpl) object;
-      simFactory = IndexSchema.readSimilarity(loader, DocumentOverNodeInfo.wrap(anode));
+      simFactory = IndexSchema.readSimilarity(loader, anode);
     } else {
-      simFactory = IndexSchema.readSimilarity(loader, (Node) object);
+      simFactory = IndexSchema.readSimilarity(loader, (NodeInfo) object);
     }
 
 
@@ -218,9 +215,9 @@ public final class FieldTypePluginLoader
   }
 
   @Override
-  protected void init(FieldType plugin, Node node) throws Exception {
+  protected void init(FieldType plugin, NodeInfo node) throws Exception {
 
-    Map<String, String> params = DOMUtil.toMapExcept(node.getAttributes(), NAME);
+    Map<String, String> params = DOMUtil.toMapExcept(node.attributes(), NAME);
     plugin.setArgs(schema, params);
   }
 
@@ -252,7 +249,7 @@ public final class FieldTypePluginLoader
   // <analyzer><tokenizer class="...."/><tokenizer class="...." arg="....">
   //
   //
-  private Analyzer readAnalyzer(Node node) throws XPathExpressionException {
+  private Analyzer readAnalyzer(TinyElementImpl node) throws XPathExpressionException {
 
     final SolrResourceLoader loader = schema.getResourceLoader();
 
@@ -261,16 +258,15 @@ public final class FieldTypePluginLoader
     // Node node = DOMUtil.getChild(fieldtype,"analyzer");
 
     if (node == null) return null;
-    NamedNodeMap attrs = node.getAttributes();
-    String analyzerName = DOMUtil.getAttr(attrs,"class");
+    String analyzerName = node.getAttributeValue("", "class");
 
     // check for all of these up front, so we can error if used in
     // conjunction with an explicit analyzer class.
-    NodeList charFilterNodes = (NodeList)charFilterExp.evaluate
+    ArrayList<NodeInfo> charFilterNodes = (ArrayList)charFilterExp.evaluate
       (node, XPathConstants.NODESET);
-    NodeList tokenizerNodes = (NodeList)tokenizerExp.evaluate
+    ArrayList<NodeInfo> tokenizerNodes = (ArrayList)tokenizerExp.evaluate
       (node, XPathConstants.NODESET);
-    NodeList tokenFilterNodes = (NodeList)filterExp.evaluate
+    ArrayList<NodeInfo> tokenFilterNodes = (ArrayList)filterExp.evaluate
       (node, XPathConstants.NODESET);
 
     if (analyzerName != null) {
@@ -278,9 +274,9 @@ public final class FieldTypePluginLoader
       // explicitly check for child analysis factories instead of
       // just any child nodes, because the user might have their
       // own custom nodes (ie: <description> or something like that)
-      if (0 != charFilterNodes.getLength() ||
-          0 != tokenizerNodes.getLength() ||
-          0 != tokenFilterNodes.getLength()) {
+      if (0 != charFilterNodes.size() ||
+          0 != tokenizerNodes.size() ||
+          0 != tokenFilterNodes.size()) {
         throw new SolrException
         ( SolrException.ErrorCode.SERVER_ERROR,
           "Configuration Error: Analyzer class='" + analyzerName +
@@ -292,7 +288,7 @@ public final class FieldTypePluginLoader
         final Class<? extends Analyzer> clazz = loader.findClass(analyzerName, Analyzer.class);
         Analyzer analyzer = clazz.getConstructor().newInstance();
 
-        final String matchVersionStr = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);
+        final String matchVersionStr = node.getAttributeValue("", LUCENE_MATCH_VERSION_PARAM);
         final Version luceneMatchVersion = (matchVersionStr == null) ?
           schema.getDefaultLuceneMatchVersion() :
           SolrConfig.parseLuceneVersionString(matchVersionStr);
@@ -319,8 +315,8 @@ public final class FieldTypePluginLoader
       ("[schema.xml] analyzer/charFilter", CharFilterFactory.class, false, false) {
 
       @Override
-      protected CharFilterFactory create(SolrResourceLoader loader, String name, String className, Node node, XPath xpath) throws Exception {
-        final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
+      protected CharFilterFactory create(SolrResourceLoader loader, String name, String className, NodeInfo node, XPath xpath) throws Exception {
+        final Map<String,String> params = DOMUtil.toMap(node.attributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, CharFilterFactory.class.getSimpleName()).toString());
         CharFilterFactory factory;
@@ -343,7 +339,7 @@ public final class FieldTypePluginLoader
       }
 
       @Override
-      protected void init(CharFilterFactory plugin, Node node) throws Exception {
+      protected void init(CharFilterFactory plugin, NodeInfo node) throws Exception {
         if( plugin != null ) {
           charFilters.add( plugin );
         }
@@ -369,8 +365,8 @@ public final class FieldTypePluginLoader
       ("[schema.xml] analyzer/tokenizer", TokenizerFactory.class, false, false) {
 
       @Override
-      protected TokenizerFactory create(SolrResourceLoader loader, String name, String className, Node node, XPath xpath) throws Exception {
-        final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
+      protected TokenizerFactory create(SolrResourceLoader loader, String name, String className, NodeInfo node, XPath xpath) throws Exception {
+        final Map<String,String> params = DOMUtil.toMap(node.attributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, TokenizerFactory.class.getSimpleName()).toString());
         TokenizerFactory factory;
@@ -393,7 +389,7 @@ public final class FieldTypePluginLoader
       }
 
       @Override
-      protected void init(TokenizerFactory plugin, Node node) throws Exception {
+      protected void init(TokenizerFactory plugin, NodeInfo node) throws Exception {
         if( !tokenizers.isEmpty() ) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
               "The schema defines multiple tokenizers for: "+node );
@@ -423,8 +419,8 @@ public final class FieldTypePluginLoader
       new AbstractPluginLoader<TokenFilterFactory>("[schema.xml] analyzer/filter", TokenFilterFactory.class, false, false)
     {
       @Override
-      protected TokenFilterFactory create(SolrResourceLoader loader, String name, String className, Node node, XPath xpath) throws Exception {
-        final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
+      protected TokenFilterFactory create(SolrResourceLoader loader, String name, String className, NodeInfo node, XPath xpath) throws Exception {
+        final Map<String,String> params = DOMUtil.toMap(node.attributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, TokenFilterFactory.class.getSimpleName()).toString());
         TokenFilterFactory factory;
@@ -447,7 +443,7 @@ public final class FieldTypePluginLoader
       }
 
       @Override
-      protected void init(TokenFilterFactory plugin, Node node) throws Exception {
+      protected void init(TokenFilterFactory plugin, NodeInfo node) throws Exception {
         if( plugin != null ) {
           filters.add( plugin );
         }

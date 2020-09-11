@@ -22,6 +22,15 @@ import java.util.function.BiConsumer;
 public class ConcurrentNamedList<T> extends NamedList<T> {
 
 
+  public ConcurrentNamedList() {
+    super();
+  }
+
+
+  public ConcurrentNamedList(int sz) {
+    super(sz);
+  }
+
   /**
    * The total number of name/value pairs
    */
@@ -317,7 +326,7 @@ public class ConcurrentNamedList<T> extends NamedList<T> {
    *                       not a Boolean or a String.
    */
   public synchronized Boolean getBooleanArg(final String name) {
-    return getBooleanArg(name);
+    return super.getBooleanArg(name);
   }
 
 

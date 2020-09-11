@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -1432,7 +1433,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       public void preClose(SolrCore core) {
         try {
           restoreFuture.cancel(true);
-          ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
+          try {
+            restoreFuture.get();
+          } catch (InterruptedException e) {
+            ParWork.propagateInterrupt(e);
+          } catch (ExecutionException e) {
+            log.error("", e);
+          }
         } catch (NullPointerException e) {
           // okay
         }

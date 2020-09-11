@@ -168,6 +168,7 @@ public class TestHarness extends BaseTestHarness {
    * @param config the ConfigSolr to use
    */
   public TestHarness(String coreName, NodeConfig config, CoresLocator coresLocator) {
+    super(config.getSolrResourceLoader());
     this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
     container = new CoreContainer(config, coresLocator, false);
     container.load();
@@ -298,7 +299,7 @@ public class TestHarness extends BaseTestHarness {
     throws Exception {
                 
     String res = query(req);
-    return validateXPath(res, tests);
+    return validateXPathWithEntities(res, loader, tests);
   }
             
   /**

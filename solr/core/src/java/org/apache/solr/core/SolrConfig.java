@@ -48,6 +48,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
+import net.sf.saxon.om.NodeInfo;
+import org.apache.commons.collections.map.UnmodifiableOrderedMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
@@ -223,7 +225,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       throws ParserConfigurationException, IOException, SAXException,
       XMLStreamException {
     // insist we have non-null substituteProperties; it might get overlayed
-    super(loader, name, (InputSource) null, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties);
+    super(loader, name, (InputSource) null, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties, true);
     getOverlay();//just in case it is not initialized
     getRequestParams();
     initLibs(loader, isConfigsetTrusted);
@@ -549,9 +551,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public List<PluginInfo> readPluginInfos(String tag, boolean requireName, boolean requireClass) {
     ArrayList<PluginInfo> result = new ArrayList<>();
-    NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
-    for (int i = 0; i < nodes.getLength(); i++) {
-      PluginInfo pluginInfo = new PluginInfo(nodes.item(i), "[solrconfig.xml] " + tag, requireName, requireClass);
+    ArrayList<NodeInfo> nodes = (ArrayList) evaluate(tree, tag, XPathConstants.NODESET);
+    for (int i = 0; i < nodes.size(); i++) {
+      PluginInfo pluginInfo = new PluginInfo(nodes.get(i), "[solrconfig.xml] " + tag, requireName, requireClass);
       if (pluginInfo.isEnabled()) result.add(pluginInfo);
     }
     return result;
@@ -822,16 +824,16 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       }
     }
 
-    NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
-    if (nodes == null || nodes.getLength() == 0) return;
+    ArrayList<NodeInfo> nodes = (ArrayList) evaluate(tree,"lib", XPathConstants.NODESET);
+    if (nodes == null || nodes.size() == 0) return;
     if (!isConfigsetTrusted) {
       throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
           + " and use of <lib> is not available for collections with untrusted configsets. To use this component, re-upload the configset"
           + " after enabling authentication and authorization.");
     }
 
-    for (int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
+    for (int i = 0; i < nodes.size(); i++) {
+      NodeInfo node = nodes.get(i);
       String baseDir = DOMUtil.getAttr(node, "dir");
       String path = DOMUtil.getAttr(node, PATH);
       if (null != baseDir) {

@@ -112,9 +112,7 @@ public class JettySolrRunner implements Closeable {
   volatile FilterHolder debugFilter;
   volatile FilterHolder qosFilter;
 
-  private final CountDownLatch startLatch = new CountDownLatch(1);
-
-  private int jettyPort = -1;
+  private volatile int jettyPort = -1;
 
   private final JettyConfig config;
   private final String solrHome;
@@ -126,7 +124,7 @@ public class JettySolrRunner implements Closeable {
 
   private static final String excludePatterns = "/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+,/tpl/.+";
 
-  private int proxyPort = -1;
+  private volatile int proxyPort = -1;
 
   private final boolean enableProxy;
 
@@ -154,7 +152,7 @@ public class JettySolrRunner implements Closeable {
 
     private final AtomicLong nRequests = new AtomicLong();
 
-    private Set<Delay> delays = ConcurrentHashMap.newKeySet(50);
+    private Set<Delay> delays = ConcurrentHashMap.newKeySet(12);
 
     public long getTotalRequests() {
       return nRequests.get();
@@ -276,6 +274,7 @@ public class JettySolrRunner implements Closeable {
     this.solrHome = solrHome;
     this.config = config;
     this.nodeProperties = nodeProperties;
+    nodeProperties.setProperty("hostContext", config.context);
 
     if (enableProxy || config.enableProxy) {
       try {
@@ -340,8 +339,8 @@ public class JettySolrRunner implements Closeable {
 
           HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
 
-          http2ConnectionFactory.setMaxConcurrentStreams(1500);
-          http2ConnectionFactory.setInputBufferSize(16384);
+          http2ConnectionFactory.setMaxConcurrentStreams(16);
+          http2ConnectionFactory.setInputBufferSize(4096);
 
           ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(
               http2ConnectionFactory.getProtocol(),
@@ -365,7 +364,7 @@ public class JettySolrRunner implements Closeable {
       connector.setPort(port);
       connector.setHost("127.0.0.1");
       server.setConnectors(new Connector[] {connector});
-      server.setSessionIdManager(new NoopSessionManager());
+
     } else {
       HttpConfiguration configuration = new HttpConfiguration();
       configuration.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
@@ -376,76 +375,77 @@ public class JettySolrRunner implements Closeable {
       server.setConnectors(new Connector[] {connector});
     }
 
+    //server.setDumpAfterStart(true);
+   // server.setDumpBeforeStop(true);
+
     HandlerWrapper chain;
     {
-    // Initialize the servlets
-    final ServletContextHandler root = new ServletContextHandler(server, config.context, ServletContextHandler.NO_SESSIONS);
+      // Initialize the servlets
+      final ServletContextHandler root = new ServletContextHandler(server, config.context, ServletContextHandler.NO_SESSIONS);
 
-    server.addLifeCycleListener(new LifeCycle.Listener() {
+      server.addLifeCycleListener(new LifeCycle.Listener() {
 
-      @Override
-      public void lifeCycleStopping(LifeCycle arg0) {
-      }
-
-      @Override
-      public void lifeCycleStopped(LifeCycle arg0) {}
-
-      @Override
-      public void lifeCycleStarting(LifeCycle arg0) {
-
-      }
-
-      @Override
-      public void lifeCycleStarted(LifeCycle arg0) {
-
-        jettyPort = getFirstConnectorPort();
-        int port = jettyPort;
-        if (proxyPort != -1) port = proxyPort;
-        nodeProperties.setProperty("hostPort", Integer.toString(port));
-        nodeProperties.setProperty("hostContext", config.context);
-
-        root.getServletContext().setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
-        root.getServletContext().setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
-
-        log.info("Jetty properties: {}", nodeProperties);
-
-        debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
-        extraFilters = new LinkedList<>();
-        for (Map.Entry<Class<? extends Filter>, String> entry : config.extraFilters.entrySet()) {
-          extraFilters.add(root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
+        @Override
+        public void lifeCycleStopping(LifeCycle arg0) {
         }
 
-        for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
-          root.addServlet(entry.getKey(), entry.getValue());
+        @Override
+        public void lifeCycleStopped(LifeCycle arg0) {
         }
-        dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-        dispatchFilter.setHeldClass(SolrDispatchFilter.class);
-        dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
 
-        qosFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-        qosFilter.setHeldClass(SolrQoSFilter.class);
-        qosFilter.setAsyncSupported(true);
-        root.addFilter(qosFilter, "*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        @Override
+        public void lifeCycleStarting(LifeCycle arg0) {
 
-        root.addServlet(Servlet404.class, "/*");
+        }
 
-        // Map dispatchFilter in same path as in web.xml
-        dispatchFilter.setAsyncSupported(true);
-        root.addFilter(dispatchFilter, "*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        @Override
+        public void lifeCycleStarted(LifeCycle arg0) {
 
-        log.info("Jetty loaded and ready to go");
-        startLatch.countDown();
+          log.info("Jetty loaded and ready to go");
+          root.getServletContext().setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
+          root.getServletContext().setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
+          root.getServletContext().setAttribute(SolrDispatchFilter.INIT_CALL, (Runnable) () -> {
+            jettyPort = getFirstConnectorPort();
+            int port1 = jettyPort;
+            if (proxyPort != -1) port1 = proxyPort;
+            nodeProperties.setProperty("hostPort", String.valueOf(port1));
 
-      }
+          });
 
-      @Override
-      public void lifeCycleFailure(LifeCycle arg0, Throwable arg1) {
-        System.clearProperty("hostPort");
-      }
-    });
-    // Default servlet as a fall-through
-    root.addServlet(Servlet404.class, "/");
-    chain = root;
+          debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST));
+          extraFilters = new LinkedList<>();
+          for (Map.Entry<Class<? extends Filter>,String> entry : config.extraFilters.entrySet()) {
+            extraFilters.add(root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
+          }
+
+          for (Map.Entry<ServletHolder,String> entry : config.extraServlets.entrySet()) {
+            root.addServlet(entry.getKey(), entry.getValue());
+          }
+          dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+          dispatchFilter.setHeldClass(SolrDispatchFilter.class);
+          dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
+
+          qosFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+          qosFilter.setHeldClass(SolrQoSFilter.class);
+          qosFilter.setAsyncSupported(true);
+          root.addFilter(qosFilter, "*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+
+          root.addServlet(Servlet404.class, "/*");
+
+          // Map dispatchFilter in same path as in web.xml
+          dispatchFilter.setAsyncSupported(true);
+          root.addFilter(dispatchFilter, "*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+
+        }
+
+        @Override
+        public void lifeCycleFailure(LifeCycle arg0, Throwable arg1) {
+          System.clearProperty("hostPort");
+        }
+      });
+      // Default servlet as a fall-through
+      root.addServlet(Servlet404.class, "/");
+      chain = root;
     }
 
     chain = injectJettyHandlers(chain);
@@ -554,10 +554,6 @@ public class JettySolrRunner implements Closeable {
           retryOnPortBindFailure(port);
         } else {
           server.start();
-        }
-        success = startLatch.await(15, TimeUnit.SECONDS);
-        if (!success) {
-          throw new RuntimeException("Timeout waiting for Jetty to start");
         }
       }
 
@@ -928,106 +924,6 @@ public class JettySolrRunner implements Closeable {
 
   public SocketProxy getProxy() {
     return proxy;
-  }
-
-  private static final class NoopSessionManager implements SessionIdManager {
-    @Override
-    public void stop() throws Exception {
-    }
-
-    @Override
-    public void start() throws Exception {
-    }
-
-    @Override
-    public void removeLifeCycleListener(Listener listener) {
-    }
-
-    @Override
-    public boolean isStopping() {
-      return false;
-    }
-
-    @Override
-    public boolean isStopped() {
-      return false;
-    }
-
-    @Override
-    public boolean isStarting() {
-      return false;
-    }
-
-    @Override
-    public boolean isStarted() {
-      return false;
-    }
-
-    @Override
-    public boolean isRunning() {
-      return false;
-    }
-
-    @Override
-    public boolean isFailed() {
-      return false;
-    }
-
-    @Override
-    public void addLifeCycleListener(Listener listener) {
-    }
-
-    @Override
-    public void setSessionHouseKeeper(HouseKeeper houseKeeper) {
-    }
-
-    @Override
-    public String renewSessionId(String oldId, String oldExtendedId, HttpServletRequest request) {
-      return null;
-    }
-
-    @Override
-    public String newSessionId(HttpServletRequest request, long created) {
-      return null;
-    }
-
-    @Override
-    public boolean isIdInUse(String id) {
-      return false;
-    }
-
-    @Override
-    public void invalidateAll(String id) {
-    }
-
-    @Override
-    public String getWorkerName() {
-      return null;
-    }
-
-    @Override
-    public HouseKeeper getSessionHouseKeeper() {
-      return null;
-    }
-
-    @Override
-    public Set<SessionHandler> getSessionHandlers() {
-      return null;
-    }
-
-    @Override
-    public String getId(String qualifiedId) {
-      return null;
-    }
-
-    @Override
-    public String getExtendedId(String id, HttpServletRequest request) {
-      return null;
-    }
-
-    @Override
-    public void expireAll(String id) {
-    }
   }
 
   private static class ClusterReadyWatcher implements Watcher {

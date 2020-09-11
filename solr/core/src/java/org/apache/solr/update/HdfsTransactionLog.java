@@ -265,7 +265,7 @@ public class HdfsTransactionLog extends TransactionLog {
   }
 
   private void doCloseOutput() throws IOException {
-    synchronized (this) {
+    synchronized (fosLock) {
       if (fos == null) return;
       if (debug) {
         log.debug("Closing output for {}", tlogFile);

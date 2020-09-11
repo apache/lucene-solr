@@ -1061,7 +1061,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     checkNullField(field);
 
     SchemaField sf;
-    if (field.equals(lastFieldName)) {
+    if (field != null && field.equals(lastFieldName)) {
       // only look up the SchemaField on a field change... this helps with memory allocation of dynamic fields
       // and large queries like foo_i:(1 2 3 4 5 6 7 8 9 10) when we are passed "foo_i" each time.
       sf = lastField;

@@ -77,7 +77,8 @@ public class TransactionLog implements Closeable {
   FileChannel channel;
   OutputStream os;
   FastOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
-  int numRecords;
+  final Object fosLock = new Object();
+  volatile int numRecords;
   boolean isBuffer;
 
   protected volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
@@ -233,14 +234,12 @@ public class TransactionLog implements Closeable {
    * Note: currently returns 0 for reopened existing log files.
    */
   public int numRecords() {
-    synchronized (this) {
-      return this.numRecords;
-    }
+    return this.numRecords;
   }
 
   public boolean endsWithCommit() throws IOException {
     long size;
-    synchronized (this) {
+    synchronized (fosLock) {
       fos.flush();
       size = fos.size();
     }
@@ -327,7 +326,7 @@ public class TransactionLog implements Closeable {
     // rollback() is the only function that can reset to zero, and it blocks updates.
     if (fos.size() != 0) return;
 
-    synchronized (this) {
+    synchronized (fosLock) {
       if (fos.size() != 0) return;  // check again while synchronized
       if (optional != null) {
         addGlobalStrings(optional.getFieldNames());
@@ -391,7 +390,7 @@ public class TransactionLog implements Closeable {
       }
 
 
-      synchronized (this) {
+      synchronized (fosLock) {
         lastAddSize = (int) out.size();
 
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
@@ -431,7 +430,7 @@ public class TransactionLog implements Closeable {
       codec.writeLong(cmd.getVersion());
       codec.writeByteArray(br.bytes, br.offset, br.length);
 
-      synchronized (this) {
+      synchronized (fosLock) {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         assert pos != 0;
         out.writeAll(fos);
@@ -458,7 +457,7 @@ public class TransactionLog implements Closeable {
       codec.writeLong(cmd.getVersion());
       codec.writeStr(cmd.query);
 
-      synchronized (this) {
+      synchronized (fosLock) {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         out.writeAll(fos);
         endRecord(pos);
@@ -474,7 +473,7 @@ public class TransactionLog implements Closeable {
 
   public long writeCommit(CommitUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
-    synchronized (this) {
+    synchronized (fosLock) {
       try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
 
@@ -510,7 +509,7 @@ public class TransactionLog implements Closeable {
 
     try {
       // make sure any unflushed buffer has been flushed
-      synchronized (this) {
+      synchronized (fosLock) {
         // TODO: optimize this by keeping track of what we have flushed up to
         fos.flushBuffer();
         /***
@@ -549,7 +548,7 @@ public class TransactionLog implements Closeable {
 
   /** returns the current position in the log file */
   public long position() {
-    synchronized (this) {
+    synchronized (fosLock) {
       return fos.size();
     }
   }
@@ -562,7 +561,7 @@ public class TransactionLog implements Closeable {
   public void finish(UpdateLog.SyncLevel syncLevel) {
     if (syncLevel == UpdateLog.SyncLevel.NONE) return;
     try {
-      synchronized (this) {
+      synchronized (fosLock) {
         fos.flushBuffer();
       }
 
@@ -584,7 +583,7 @@ public class TransactionLog implements Closeable {
         log.debug("Closing tlog {}", this);
       }
 
-      synchronized (this) {
+      synchronized (fosLock) {
         fos.flush();
         fos.close();
       }
@@ -666,7 +665,7 @@ public class TransactionLog implements Closeable {
      */
     public Object next() throws IOException, InterruptedException {
       long pos;
-      synchronized (TransactionLog.this) {
+      synchronized (fosLock) {
         pos = fis.position();
         if (trace) {
           log.trace("Reading log record.  pos={} currentSize={}", pos, fos.size());
@@ -677,20 +676,19 @@ public class TransactionLog implements Closeable {
         }
 
         fos.flushBuffer();
-      }
 
-      if (pos == 0) {
-        readHeader(fis);
+        if (pos == 0) {
+          readHeader(fis);
 
-        // shouldn't currently happen - header and first record are currently written at the same time
-        synchronized (TransactionLog.this) {
-          if (fis.position() >= fos.size()) {
-            return null;
+          // shouldn't currently happen - header and first record are currently written at the same time
+          synchronized (TransactionLog.this) {
+            if (fis.position() >= fos.size()) {
+              return null;
+            }
+            pos = fis.position();
           }
-          pos = fis.position();
         }
-      }
-      synchronized (TransactionLog.this) {
+
         Object o = codec.readVal(fis);
 
         // skip over record size
@@ -739,34 +737,36 @@ public class TransactionLog implements Closeable {
 
     @Override
     public Object next() throws IOException, InterruptedException {
-      if (versionToPos == null) {
-        versionToPos = new TreeMap<>();
-        Object o;
-        long pos = startingPos;
+      synchronized (fosLock) {
+        if (versionToPos == null) {
+          versionToPos = new TreeMap<>();
+          Object o;
+          long pos = startingPos;
 
-        long lastVersion = Long.MIN_VALUE;
-        while ((o = super.next()) != null) {
-          @SuppressWarnings({"rawtypes"})
-          List entry = (List) o;
-          long version = (Long) entry.get(UpdateLog.VERSION_IDX);
-          version = Math.abs(version);
-          versionToPos.put(version, pos);
-          pos = currentPos();
+          long lastVersion = Long.MIN_VALUE;
+          while ((o = super.next()) != null) {
+            @SuppressWarnings({"rawtypes"}) List entry = (List) o;
+            long version = (Long) entry.get(UpdateLog.VERSION_IDX);
+            version = Math.abs(version);
+            versionToPos.put(version, pos);
+            pos = currentPos();
 
-          if (version < lastVersion) inOrder = false;
-          lastVersion = version;
+            if (version < lastVersion) inOrder = false;
+            lastVersion = version;
+          }
+          fis.seek(startingPos);
+
         }
-        fis.seek(startingPos);
-      }
 
-      if (inOrder) {
-        return super.next();
-      } else {
-        if (iterator == null) iterator = versionToPos.values().iterator();
-        if (!iterator.hasNext()) return null;
-        long pos = iterator.next();
-        if (pos != currentPos()) fis.seek(pos);
-        return super.next();
+        if (inOrder) {
+          return super.next();
+        } else {
+          if (iterator == null) iterator = versionToPos.values().iterator();
+          if (!iterator.hasNext()) return null;
+          long pos = iterator.next();
+          if (pos != currentPos()) fis.seek(pos);
+          return super.next();
+        }
       }
     }
   }
@@ -808,18 +808,18 @@ public class TransactionLog implements Closeable {
       incref();
 
       long sz;
-      synchronized (TransactionLog.this) {
+      synchronized (fosLock) {
         fos.flushBuffer();
         sz = fos.size();
         assert sz == channel.size();
-      }
 
-      fis = new ChannelFastInputStream(channel, 0);
-      if (sz >= 4) {
-        // readHeader(fis);  // should not be needed
-        prevPos = sz - 4;
-        fis.seek(prevPos);
-        nextLength = fis.readInt();
+        fis = new ChannelFastInputStream(channel, 0);
+        if (sz >= 4) {
+          // readHeader(fis);  // should not be needed
+          prevPos = sz - 4;
+          fis.seek(prevPos);
+          nextLength = fis.readInt();
+        }
       }
     }
 
@@ -829,38 +829,40 @@ public class TransactionLog implements Closeable {
      * @throws IOException If there is a low-level I/O error.
      */
     public Object next() throws IOException {
-      if (prevPos <= 0) return null;
+      Object o = null;
+      synchronized (fosLock) {
+        if (prevPos <= 0) return null;
 
-      long endOfThisRecord = prevPos;
+        long endOfThisRecord = prevPos;
 
-      int thisLength = nextLength;
+        int thisLength = nextLength;
 
-      long recordStart = prevPos - thisLength;  // back up to the beginning of the next record
-      prevPos = recordStart - 4;  // back up 4 more to read the length of the next record
+        long recordStart = prevPos - thisLength;  // back up to the beginning of the next record
+        prevPos = recordStart - 4;  // back up 4 more to read the length of the next record
 
-      if (prevPos <= 0) return null;  // this record is the header
+        if (prevPos <= 0) return null;  // this record is the header
 
-      long bufferPos = fis.getBufferPos();
-      if (prevPos >= bufferPos) {
-        // nothing to do... we're within the current buffer
-      } else {
-        // Position buffer so that this record is at the end.
-        // For small records, this will cause subsequent calls to next() to be within the buffer.
-        long seekPos = endOfThisRecord - fis.getBufferSize();
-        seekPos = Math.min(seekPos, prevPos); // seek to the start of the record if it's larger then the block size.
-        seekPos = Math.max(seekPos, 0);
-        fis.seek(seekPos);
-        fis.peek();  // cause buffer to be filled
+        long bufferPos = fis.getBufferPos();
+        if (prevPos >= bufferPos) {
+          // nothing to do... we're within the current buffer
+        } else {
+          // Position buffer so that this record is at the end.
+          // For small records, this will cause subsequent calls to next() to be within the buffer.
+          long seekPos = endOfThisRecord - fis.getBufferSize();
+          seekPos = Math.min(seekPos, prevPos); // seek to the start of the record if it's larger then the block size.
+          seekPos = Math.max(seekPos, 0);
+          fis.seek(seekPos);
+          fis.peek();  // cause buffer to be filled
+        }
+
+        fis.seek(prevPos);
+        nextLength = fis.readInt();     // this is the length of the *next* record (i.e. closer to the beginning)
+
+        // TODO: optionally skip document data
+        o = codec.readVal(fis);
+
+        // assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data (and we currently skip reading SolrInputDocument
       }
-
-      fis.seek(prevPos);
-      nextLength = fis.readInt();     // this is the length of the *next* record (i.e. closer to the beginning)
-
-      // TODO: optionally skip document data
-      Object o = codec.readVal(fis);
-
-      // assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data (and we currently skip reading SolrInputDocument
-
       return o;
     }
 
@@ -875,7 +877,7 @@ public class TransactionLog implements Closeable {
 
     @Override
     public String toString() {
-      synchronized (TransactionLog.this) {
+      synchronized (fosLock) {
         return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + "}";
       }
     }
@@ -883,7 +885,7 @@ public class TransactionLog implements Closeable {
 
   }
 
-  static class ChannelFastInputStream extends FastInputStream {
+  class ChannelFastInputStream extends FastInputStream {
     private FileChannel ch;
 
     public ChannelFastInputStream(FileChannel ch, long chPosition) {
@@ -896,35 +898,45 @@ public class TransactionLog implements Closeable {
     @Override
     public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
       ByteBuffer bb = ByteBuffer.wrap(target, offset, len);
-      int ret = ch.read(bb, readFromStream);
-      return ret;
+      synchronized (fosLock) {
+        int ret = ch.read(bb, readFromStream);
+        return ret;
+      }
     }
 
     public void seek(long position) throws IOException {
-      if (position <= readFromStream && position >= getBufferPos()) {
-        // seek within buffer
-        pos = (int) (position - getBufferPos());
-      } else {
-        // long currSize = ch.size();   // not needed - underlying read should handle (unless read never done)
-        // if (position > currSize) throw new EOFException("Read past EOF: seeking to " + position + " on file of size " + currSize + " file=" + ch);
-        readFromStream = position;
-        end = pos = 0;
+      synchronized (fosLock) {
+        if (position <= readFromStream && position >= getBufferPos()) {
+          // seek within buffer
+          pos = (int) (position - getBufferPos());
+        } else {
+          // long currSize = ch.size();   // not needed - underlying read should handle (unless read never done)
+          // if (position > currSize) throw new EOFException("Read past EOF: seeking to " + position + " on file of size " + currSize + " file=" + ch);
+          readFromStream = position;
+          end = pos = 0;
+        }
+        assert position() == position;
       }
-      assert position() == position;
     }
 
   /** where is the start of the buffer relative to the whole file */
     public long getBufferPos() {
-      return readFromStream - end;
+      synchronized (fosLock) {
+        return readFromStream - end;
+      }
     }
 
     public int getBufferSize() {
-      return buf.length;
+      synchronized (fosLock) {
+        return buf.length;
+      }
     }
 
     @Override
     public void close() throws IOException {
-      ch.close();
+      synchronized (fosLock) {
+        ch.close();
+      }
     }
 
     @Override

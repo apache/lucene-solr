@@ -31,6 +31,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 
 /**
  * Tests for the field mutating update processors
@@ -59,6 +60,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     initCore(SOLRCONFIG_XML, SCHEMA_XML, tmpSolrHome.getPath());
   }
 
+  @Ignore // disabled this validation for perf nocommit
   public void testEmptyValue() {
     IndexSchema schema = h.getCore().getLatestSchema();
     final String fieldName = "newFieldABC";

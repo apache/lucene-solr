@@ -44,7 +44,7 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
       SolrQueryResponse qr = h.queryAndResponse(handler, req);
       NamedList<Object> entries = qr.getToLog();
       String responseLog = (String) entries.get("responseLog");
-      assertNotNull(responseLog);
+      assertNotNull(entries.toString(), responseLog);
       assertTrue(responseLog.matches("\\w+,\\w+"));
     } finally {
       req.close();

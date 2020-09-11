@@ -2141,9 +2141,11 @@ if [ -z "$SOLR_TIMEZONE" ]; then
 fi
 
 if [ -z "$JFR_ON" ]; then
-  JFR_ON=("-XX:+FlightRecorder" "-XX:StartFlightRecording=filename=${HOME}/jfr/jfr_results-${SOLR_PORT}.jfr,dumponexit=true,settings=profile,path-to-gc-roots=true")
+  JFR_ON=("-XX:+FlightRecorder")
+  SOLR_OPTS+=($JFR_ON)
+  JFR_ON=("-XX:StartFlightRecording=filename=${HOME}/jfr/jfr_results-${SOLR_PORT}-$(date +%s).jfr,dumponexit=true,settings=profile,path-to-gc-roots=true")
+  SOLR_OPTS+=($JFR_ON)
 fi
-SOLR_OPTS+=($JFR_ON)
 
 # Launches Solr in foreground/background depending on parameters
 function start_solr() {

@@ -55,6 +55,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -63,6 +64,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.MapMaker;
+import io.netty.util.Timeout;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.codecs.Codec;
@@ -98,6 +100,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
@@ -166,6 +169,7 @@ import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -1082,8 +1086,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         ((SolrMetricProducer) directoryFactory).initializeMetrics(solrMetricsContext, "directoryFactory");
       }
 
-      // seed version buckets with max from index during core initialization ... requires a searcher!
-      seedVersionBuckets();
       if (coreContainer.isZooKeeperAware()) {
         // make sure we see our shard first - these tries to cover a surprising race where we don't find our shard in the clusterstate
         // in the below bufferUpdatesIfConstructing call
@@ -1100,6 +1102,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       resourceLoader.inform(this); // last call before the latch is released.
       searcherReadyLatch.countDown();
+
+      // seed version buckets with max from index during core initialization ... requires a searcher!
+      if (!reload) {
+        seedVersionBuckets();
+      }
     } catch (Throwable e) {
       log.error("Error while creating SolrCore", e);
       // release the latch, otherwise we block trying to do the close. This
@@ -1410,14 +1417,19 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @see #close()
    * @see #isClosed()
    */
-  public void closeAndWait() {
+  public void closeAndWait() throws TimeoutException {
     close();
-    while (!isClosed()) {
-      synchronized (closeAndWait) {
+    int timeouts = 5;
+    TimeOut timeout = new TimeOut(timeouts, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    synchronized (closeAndWait) {
+      while (!isClosed()) {
         try {
           closeAndWait.wait(500);
         } catch (InterruptedException e) {
           ParWork.propagateInterrupt(e);
+        }
+        if (timeout.hasTimedOut()) {
+          throw new TimeoutException("Timeout waiting for SolrCore close timeout=" + timeouts + "s");
         }
       }
     }
@@ -2119,9 +2131,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       synchronized (searcherLock) {
-//        if (isClosed() || (getCoreContainer() != null && getCoreContainer().isShutDown())) { // if we start new searchers after close we won't close them
-//          throw new SolrCoreState.CoreIsClosedException();
-//        }
+        if (isClosed()) { // if we start new searchers after close we won't close them
+          throw new SolrCoreState.CoreIsClosedException();
+        }
 
         newestSearcher = realtimeSearcher;
         if (newestSearcher != null) {
@@ -3072,10 +3084,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return codec;
   }
 
-  public void unloadOnClose(final CoreDescriptor desc, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
+  void unloadOnClose(final CoreDescriptor desc, boolean deleteIndexDir, boolean deleteDataDir) {
     if (deleteIndexDir) {
       try {
-        directoryFactory.remove(getIndexDir());
+        directoryFactory.remove(getIndexDir(), true);
       } catch (Exception e) {
         ParWork.propagateInterrupt(e);
         SolrException.log(log, "Failed to flag index dir for removal for core:" + name + " dir:" + getIndexDir());
@@ -3088,9 +3100,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         ParWork.propagateInterrupt(e);
         SolrException.log(log, "Failed to flag data dir for removal for core:" + name + " dir:" + getDataDir());
       }
-    }
-    if (deleteInstanceDir) {
-      addCloseHook(new SolrCoreDeleteCloseHook(desc));
     }
   }
 
@@ -3322,31 +3331,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public void runAsync(Runnable r) {
     ParWork.getMyPerThreadExecutor().submit(r);
-  }
-
-  private static class SolrCoreDeleteCloseHook extends CloseHook {
-    private final CoreDescriptor desc;
-
-    public SolrCoreDeleteCloseHook(CoreDescriptor desc) {
-      this.desc = desc;
-    }
-
-    @Override
-    public void preClose(SolrCore core) {
-      // empty block
-    }
-
-    @Override
-    public void postClose(SolrCore core) {
-      if (desc != null) {
-        try {
-          FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
-        } catch (IOException e) {
-          SolrException.log(log, "Failed to delete instance dir for core:"
-              + core.getName() + " dir:" + desc.getInstanceDir());
-        }
-      }
-    }
   }
 
   private static class MyCodecFactory extends CodecFactory {

@@ -204,9 +204,10 @@ public class SolrTestCase extends LuceneTestCase {
     //interruptThreadsOnTearDown("nioEventLoopGroup", false);
 
     sslConfig = buildSSLConfig();
-
-    HttpClientUtil.setSocketFactoryRegistryProvider(sslConfig.buildClientSocketFactoryRegistryProvider());
-    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
+    if (sslConfig != null && sslConfig.isSSLMode()) {
+      HttpClientUtil.setSocketFactoryRegistryProvider(sslConfig.buildClientSocketFactoryRegistryProvider());
+      Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
+    }
     // based on randomized SSL config, set SocketFactoryRegistryProvider appropriately
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
@@ -246,7 +247,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("solr.concurrentRequests.max", "15");
       System.setProperty("solr.tests.infostream", "false");
-      System.setProperty("numVersionBuckets", "16384");
+      System.setProperty("numVersionBuckets", "16384"); // TODO: wrong sys prop, also not usually setup in conf to work
 
     //  System.setProperty("solr.per_thread_exec.max_threads", "2");
    //   System.setProperty("solr.per_thread_exec.min_threads", "1");
@@ -280,7 +281,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.http2solrclient.pool.keepalive", "1500");
 
       System.setProperty("solr.disablePublicKeyHandler", "false");
-      System.setProperty("solr.dependentupdate.timeout", "500");
+      System.setProperty("solr.dependentupdate.timeout", "1500");
 
      // System.setProperty("lucene.cms.override_core_count", "3");
      // System.setProperty("lucene.cms.override_spins", "false");

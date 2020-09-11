@@ -36,6 +36,7 @@ import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.OrdinalCalculator;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.AfterClass;
@@ -58,6 +59,7 @@ import javax.xml.xpath.XPathFactory;
 
 public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   protected static final HashMap<String,Object> defaults = new HashMap<>();
+  public static final String[] EMPTY_TS = new String[0];
 
   protected String latestType = "";
 
@@ -79,7 +81,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
 
   protected static void setResponse(String response) throws ParserConfigurationException, IOException, SAXException {
-    DocumentBuilder builder = BaseTestHarness.getXmlDocumentBuilder();
+    DocumentBuilder builder = FieldTypeXmlAdapter.getDocumentBuilder();
     doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8))));
     rawResponse = response;
   }
@@ -167,7 +169,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
       l.add(args[i]);
       l.add(args[i+1]);
     }
-    return l.toArray(new String[0]);
+    return l.toArray(EMPTY_TS);
   }
 
   protected void setLatestType(String latestType) {
@@ -320,7 +322,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
         strList.add(param[0]);
         strList.add(param[1]);
       }
-      return strList.toArray(new String[0]);
+      return strList.toArray(EMPTY_TS);
     } finally {
       IOUtils.closeWhileHandlingException(file, in);
     }

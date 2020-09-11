@@ -38,7 +38,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
+import net.sf.saxon.Configuration;
+import net.sf.saxon.dom.DOMNodeWrapper;
+import net.sf.saxon.dom.DocumentWrapper;
+import net.sf.saxon.om.NodeInfo;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
@@ -53,6 +58,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -69,6 +75,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RTimer;
@@ -77,6 +85,8 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
@@ -92,7 +102,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
   volatile int schemaZkVersion;
   
-  final Object schemaUpdateLock;
+  final ReentrantLock schemaUpdateLock;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -103,7 +113,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    * @see org.apache.solr.core.SolrResourceLoader#openResource
    */
   ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable,
-                     String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
+                     String managedSchemaResourceName, int schemaZkVersion, ReentrantLock schemaUpdateLock) {
     super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader(), solrConfig.getSubstituteProperties());
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
@@ -223,6 +233,9 @@ public final class ManagedIndexSchema extends IndexSchema {
    */
   public static void waitForSchemaZkVersionAgreement(String collection, String localCoreNodeName, int schemaZkVersion, ZkController zkController, int maxWaitSecs, ConnectionManager.IsClosed isClosed)
   {
+    if (zkController.getCoreContainer().isShutDown()) {
+      throw new AlreadyClosedException();
+    }
     RTimer timer = new RTimer();
 
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
@@ -240,21 +253,29 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
     try {
-      List<Future<Integer>> results =
-          ParWork.getRootSharedExecutor().invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
+      List<Future<Integer>> results = new ArrayList<>(concurrentTasks.size());
+      for (GetZkSchemaVersionCallable call : concurrentTasks) {
+        results.add(ParWork.getMyPerThreadExecutor().submit(call));
+      }
 
       // determine whether all replicas have the update
       List<String> failedList = null; // lazily init'd
       for (int f=0; f < results.size(); f++) {
         int vers = -1;
         Future<Integer> next = results.get(f);
-        if (next.isDone() && !next.isCancelled()) {
-          // looks to have finished, but need to check the version value too
-          try {
-            vers = next.get();
-          } catch (ExecutionException e) {
-            // shouldn't happen since we checked isCancelled
+        // looks to have finished, but need to check the version value too
+        if (zkController.getCoreContainer().isShutDown()) {
+          for (int j=0; j < results.size(); j++) {
+            Future<Integer> fut = results.get(j);
+            fut.cancel(true);
           }
+          throw new AlreadyClosedException();
+        }
+        try {
+          vers = next.get();
+        } catch (ExecutionException e) {
+          log.warn("", e);
+          // shouldn't happen since we checked isCancelled
         }
 
         if (vers == -1) {
@@ -275,6 +296,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       log.warn("Core {} was interrupted waiting for schema version {} to propagate to {} replicas for collection {}"
           , localCoreNodeName, schemaZkVersion, concurrentTasks.size(), collection);
       ParWork.propagateInterrupt(ie);
+      throw new AlreadyClosedException();
     }
 
     if (log.isInfoEnabled()) {
@@ -966,7 +988,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     // we shallow copied fieldTypes, but since we're changing them, we need to do a true
     // deep copy before adding the new field types
-    newSchema.fieldTypes = new ConcurrentHashMap<>(fieldTypes);
+    newSchema.fieldTypes = new ConcurrentHashMap<>((HashMap) new HashMap<>(fieldTypes).clone());
 
     // do a first pass to validate the field types don't exist already
     for (FieldType fieldType : fieldTypeList) {    
@@ -1064,9 +1086,9 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       newSchema = shallowCopy(true);
       // clone data structures before modifying them
-      newSchema.fieldTypes = new ConcurrentHashMap<>(fieldTypes);
+      newSchema.fieldTypes =  new ConcurrentHashMap<>((HashMap) new HashMap<>(fieldTypes).clone());
       newSchema.copyFieldsMap = cloneCopyFieldsMap(copyFieldsMap);
-      newSchema.copyFieldTargetCounts = new ConcurrentHashMap<>(copyFieldTargetCounts);
+      newSchema.copyFieldTargetCounts = new ConcurrentHashMap<>((HashMap) new HashMap<>(fieldTypes).clone());
       newSchema.dynamicCopyFields = new DynamicCopy[dynamicCopyFields.length];
       System.arraycopy(dynamicCopyFields, 0, newSchema.dynamicCopyFields, 0, dynamicCopyFields.length);
       newSchema.dynamicFields = new DynamicField[dynamicFields.length];
@@ -1309,7 +1331,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     Map<String,FieldType> newFieldTypes = new HashMap<>(64);
     List<SchemaAware> schemaAwareList = new ArrayList<>(64);
     FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, newFieldTypes, schemaAwareList);
-    typeLoader.loadSingle(loader, FieldTypeXmlAdapter.toNode(options));
+    typeLoader.loadSingle(loader, FieldTypeXmlAdapter.toNode(loader, options));
     FieldType ft = newFieldTypes.get(typeName);
     if (!schemaAwareList.isEmpty())
       schemaAware.addAll(schemaAwareList);
@@ -1362,12 +1384,11 @@ public final class ManagedIndexSchema extends IndexSchema {
           });
         }
       }
-      worker.addCollect();
     }
   }
   
   private ManagedIndexSchema(Version luceneVersion, SolrResourceLoader loader, boolean isMutable,
-                             String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock, Properties substitutableProps) {
+                             String managedSchemaResourceName, int schemaZkVersion, ReentrantLock schemaUpdateLock, Properties substitutableProps) {
     super(luceneVersion, loader, substitutableProps);
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
@@ -1419,7 +1440,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  public Object getSchemaUpdateLock() {
+  public ReentrantLock getSchemaUpdateLock() {
     return schemaUpdateLock;
   }
 }

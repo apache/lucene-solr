@@ -230,7 +230,13 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
         0, client.getBaseURL().length()
             - DEFAULT_COLLECTION.length() - 1);
   }
-  
+
+  protected String getBaseUrl(Http2SolrClient client) {
+    return client .getBaseURL().substring(
+        0, client.getBaseURL().length()
+            - DEFAULT_COLLECTION.length() - 1);
+  }
+
   protected String getShardsString() {
     StringBuilder sb = new StringBuilder();
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {

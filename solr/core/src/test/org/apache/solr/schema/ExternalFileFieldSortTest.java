@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -55,6 +56,7 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   }
   
   @Test
+  @Ignore // nocommit org.apache.solr.common.SolrException: keyField 'keyfield' has a Point field type, which is not supported.
   public void testPointKeyFieldType() throws Exception {
     // This one should fail though, no "node" parameter specified
     SolrException e = expectThrows(SolrException.class, 

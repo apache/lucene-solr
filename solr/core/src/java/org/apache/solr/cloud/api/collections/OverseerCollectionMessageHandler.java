@@ -254,12 +254,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     @SuppressWarnings({"rawtypes"})
     NamedList results = new NamedList();
-    NamedList threadSafeResults = new ConcurrentNamedList();
+   // NamedList threadSafeResults = new ConcurrentNamedList();
     try {
       CollectionAction action = getCollectionAction(operation);
       Cmd command = commandMap.get(action);
       if (command != null) {
-        command.call(overseer.getZkStateReader().getClusterState(), message, threadSafeResults);
+        command.call(overseer.getZkStateReader().getClusterState(), message, results);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);
@@ -284,7 +284,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       nl.add("rspCode", e instanceof SolrException ? ((SolrException)e).code() : -1);
       results.add("exception", nl);
     }
-    results.addAll(threadSafeResults);
+  //  results.addAll(threadSafeResults);
     return new OverseerSolrResponse(results);
   }
 

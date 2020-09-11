@@ -558,8 +558,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
         }
         MultiMapSolrParams.addParam(name, s, map);
       } else {
-        //TODO: we NPE if val is null; yet we support val members above. A bug?
-        MultiMapSolrParams.addParam(name, val.toString(), map);
+        MultiMapSolrParams.addParam(name, (val == null ? null : val.toString()), map);
       }
     }
     // always use MultiMap for easier processing further down the chain

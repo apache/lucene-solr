@@ -72,7 +72,7 @@ public class SolrQoSFilter extends QoSFilter {
         if (cMax > 2) {
           int max = Math.max(2, (int) ((double)cMax * 0.60D));
           log.warn("Our individual load is {}, set max concurrent requests to {}", ourLoad, max);
-          setMaxRequests(max);
+         // setMaxRequests(max);
         }
       } else {
         // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
@@ -82,12 +82,12 @@ public class SolrQoSFilter extends QoSFilter {
           if (cMax > 2) {
             int max = Math.max(2, (int) ((double) cMax * 0.60D));
             log.warn("System load is {}, set max concurrent requests to {}", sLoad, max);
-            setMaxRequests(max);
+          //  setMaxRequests(max);
           }
         } else if (sLoad < PROC_COUNT && _origMaxRequests != getMaxRequests()) {
 
           log.info("set max concurrent requests to orig value {}", _origMaxRequests);
-          setMaxRequests(_origMaxRequests);
+         // setMaxRequests(_origMaxRequests);
         }
       }
 

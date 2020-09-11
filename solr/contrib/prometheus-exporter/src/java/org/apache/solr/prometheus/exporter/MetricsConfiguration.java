@@ -20,6 +20,7 @@ package org.apache.solr.prometheus.exporter;
 import java.util.Collections;
 import java.util.List;
 
+import net.sf.saxon.om.NodeInfo;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.core.XmlConfigFile;
 import org.w3c.dom.Node;
@@ -67,12 +68,12 @@ public class MetricsConfiguration {
   }
 
   public static MetricsConfiguration from(XmlConfigFile config) throws Exception {
-    Node settings = config.getNode("/config/settings", false);
+    NodeInfo settings = config.getNode("/config/settings", false);
 
-    Node pingConfig = config.getNode("/config/rules/ping", false);
-    Node metricsConfig = config.getNode("/config/rules/metrics", false);
-    Node collectionsConfig = config.getNode("/config/rules/collections", false);
-    Node searchConfiguration = config.getNode("/config/rules/search", false);
+    NodeInfo pingConfig = config.getNode("/config/rules/ping", false);
+    NodeInfo metricsConfig = config.getNode("/config/rules/metrics", false);
+    NodeInfo collectionsConfig = config.getNode("/config/rules/collections", false);
+    NodeInfo searchConfiguration = config.getNode("/config/rules/search", false);
 
     return new MetricsConfiguration(
         settings == null ? PrometheusExporterSettings.builder().build() : PrometheusExporterSettings.from(settings),
@@ -83,7 +84,7 @@ public class MetricsConfiguration {
     );
   }
 
-  private static List<MetricsQuery> toMetricQueries(Node node) throws JsonQueryException {
+  private static List<MetricsQuery> toMetricQueries(NodeInfo node) throws JsonQueryException {
     if (node == null) {
       return Collections.emptyList();
     }

@@ -145,6 +145,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   public static final String SOLRHOME_ATTRIBUTE = "solr.solr.home";
 
+  public static final String INIT_CALL = "solr.init.call";
+
   public static final String SOLR_INSTALL_DIR_ATTRIBUTE = "solr.install.dir";
 
   public static final String SOLR_DEFAULT_CONFDIR_ATTRIBUTE = "solr.default.confdir";
@@ -164,6 +166,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (log.isTraceEnabled()) {
       log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
     }
+
+    Properties extraProperties = (Properties) config.getServletContext().getAttribute(PROPERTIES_ATTRIBUTE);
+    if (extraProperties == null)
+      extraProperties = new Properties();
+
+    Runnable initCall = (Runnable) config.getServletContext().getAttribute(INIT_CALL);
+    if (initCall != null) {
+      initCall.run();
+    }
+
     CoreContainer coresInit = null;
     try{
 
@@ -191,9 +203,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     }
     try {
-      Properties extraProperties = (Properties) config.getServletContext().getAttribute(PROPERTIES_ATTRIBUTE);
-      if (extraProperties == null)
-        extraProperties = new Properties();
 
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
       final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
