@@ -224,7 +224,7 @@ I'm confused about the different invocations of solr -- help?
 -------------------------------------------------------------
 
 The different invocations of the Solr docker image can look confusing, because the name of the
-image is "solr" and the Solr command is also "solr", and the image interprets various arguments in
+image is "apache/solr" and the Solr command is also "solr", and the image interprets various arguments in
 special ways. I'll illustrate the various invocations:
 
 
@@ -234,7 +234,7 @@ To run an arbitrary command in the image:
 docker run -it apache/solr date
 ```
 
-here "solr" is the name of the image, and "date" is the command.
+here "apache/solr" is the name of the image, and "date" is the command.
 This does not invoke any solr functionality.
 
 
@@ -244,7 +244,7 @@ To run the Solr server:
 docker run -it apache/solr
 ```
 
-Here "solr" is the name of the image, and there is no specific command,
+Here "apache/solr" is the name of the image, and there is no specific command,
 so the image defaults to run the "solr" command with "-f" to run it in the foreground.
 
 
@@ -254,7 +254,7 @@ To run the Solr server with extra arguments:
 docker run -it apache/solr -h myhostname
 ```
 
-This is is the same as the previous one, but an additional argument is passed.
+This is the same as the previous one, but an additional argument is passed.
 The image will run the "solr" command with "-f -h myhostname"
 
 To run solr as an arbitrary command:
@@ -263,7 +263,7 @@ To run solr as an arbitrary command:
 docker run -it apache/solr solr zk --help
 ```
 
-here the first "solr" is the image name, and the second "solr"
+here the first "apache/solr" is the image name, and the second "solr"
 is the "solr" command. The image runs the command exactly as specified;
 no "-f" is implicitly added. The container will print help text, and exit.
 
