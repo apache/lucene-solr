@@ -181,8 +181,8 @@ def check_prerequisites(todo=None):
         sys.exit("You will need gpg installed")
     if not 'GPG_TTY' in os.environ:
         print("WARNING: GPG_TTY environment variable is not set, GPG signing may not work correctly (try 'export GPG_TTY=$(tty)'")
-    if not 'JAVA_HOME' in os.environ:
-        sys.exit("Please set environment variables JAVA_HOME")
+    if not 'JAVA11_HOME' in os.environ:
+        sys.exit("Please set environment variables JAVA11_HOME")
     try:
         asciidoc_ver = run("asciidoctor -V").splitlines()[0]
     except:
@@ -1376,8 +1376,8 @@ def main():
 
     state.save()
 
-    # Smoketester requires JAVA_HOME to point to Java11
-    os.environ['JAVA_HOME'] = state.get_java_home()
+    # Smoketester requires JAVA11_HOME to point to Java11
+    os.environ['JAVA11_HOME'] = state.get_java_home()
     os.environ['JAVACMD'] = state.get_java_cmd()
 
     global lucene_news_file
