@@ -296,7 +296,7 @@ groups:
       You will need these tools:
 
       * Python v3.4 or later, with dependencies listed in requirements.txt
-      * Java 11 in $JAVA_HOME
+      * Java 11 in $JAVA11_HOME
       * gpg
       * git
       * svn
