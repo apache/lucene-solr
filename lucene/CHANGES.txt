@@ -131,6 +131,8 @@ Improvements
 
 Bug fixes
 
+* LUCENE-6744: Replaced instanceOf with getClass. (Puneeth Bikkumanla)
+
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
