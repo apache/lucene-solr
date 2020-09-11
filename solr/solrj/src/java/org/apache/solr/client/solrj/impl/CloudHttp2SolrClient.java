@@ -150,7 +150,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     try {
       latch.await(); // eventually the requests will timeout after the socket read timeout is reached.
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
