@@ -198,7 +198,7 @@ public class RequestParams implements MapSerializable {
         Map m = (Map) fromJSON (in);
         return new Object[]{m, version};
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
       }
 

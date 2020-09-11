@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -207,7 +206,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     } catch (FileNotFoundException | NoSuchFileException e) {
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Exception deleting file", e);
     }
 

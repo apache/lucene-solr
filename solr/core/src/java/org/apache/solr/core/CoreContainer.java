@@ -55,7 +55,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -81,6 +80,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -125,7 +125,6 @@ import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -438,7 +437,7 @@ public class CoreContainer implements Closeable {
       try {
         old.plugin.close();
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Exception while attempting to close old authorization plugin", e);
       }
     }
@@ -478,7 +477,7 @@ public class CoreContainer implements Closeable {
       try {
         old.plugin.close();
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Exception while attempting to close old auditlogger plugin", e);
       }
     }
@@ -535,7 +534,7 @@ public class CoreContainer implements Closeable {
     try {
       if (old != null) old.plugin.close();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Exception while attempting to close old authentication plugin", e);
     }
 
@@ -620,7 +619,7 @@ public class CoreContainer implements Closeable {
     try {
       cc.load();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       cc.shutdown();
       throw e;
     }
@@ -904,7 +903,7 @@ public class CoreContainer implements Closeable {
           try {
             future.get();
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
           } catch (ExecutionException e) {
             log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
           }
@@ -914,7 +913,7 @@ public class CoreContainer implements Closeable {
             try {
               future.get();
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
             } catch (ExecutionException e) {
               log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
             }
@@ -1041,7 +1040,7 @@ public class CoreContainer implements Closeable {
         cancelCoreRecoveries(false, true);
       } catch (Exception e) {
 
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Exception trying to cancel recoveries on shutdown", e);
       }
     }
@@ -1215,7 +1214,7 @@ public class CoreContainer implements Closeable {
         try {
           zkSys.registerInZk(core, skipRecovery).get();
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         } catch (ExecutionException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -1229,7 +1228,7 @@ public class CoreContainer implements Closeable {
         try {
           zkSys.registerInZk(core, skipRecovery).get();
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         } catch (ExecutionException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -1298,7 +1297,7 @@ public class CoreContainer implements Closeable {
 
       return core;
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
+      ParWork.propagateInterrupt(ex);
       // First clean up any core descriptor, there should never be an existing core.properties file for any core that
       // failed to be created on-the-fly.
       coresLocator.delete(this, cd);
@@ -1306,7 +1305,7 @@ public class CoreContainer implements Closeable {
         try {
           getZkController().unregister(coreName, cd);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           SolrException.log(log, null, e);
         } catch (KeeperException e) {
           SolrException.log(log, null, e);
@@ -1400,7 +1399,7 @@ public class CoreContainer implements Closeable {
 
       return core;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Unable to create SolrCore", e);
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       if (e instanceof ZkController.NotInClusterStateException && !newCollection) {
@@ -1715,13 +1714,13 @@ public class CoreContainer implements Closeable {
         } catch (SolrCoreState.CoreIsClosedException e) {
           throw e;
         } catch (Exception e) {
-          ParWork.propegateInterrupt("Exception reloading SolrCore", e);
+          ParWork.propagateInterrupt("Exception reloading SolrCore", e);
           SolrException exp = new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
           try {
             coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
 
           } catch (Exception e1) {
-            ParWork.propegateInterrupt(e1);
+            ParWork.propagateInterrupt(e1);
             exp.addSuppressed(e1);
           }
           throw exp;
@@ -1829,7 +1828,7 @@ public class CoreContainer implements Closeable {
         try {
           zkSys.getZkController().unregister(name, cd);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");
         } catch (KeeperException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);

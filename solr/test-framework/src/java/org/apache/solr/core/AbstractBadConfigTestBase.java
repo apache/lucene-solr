@@ -16,11 +16,11 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.ParWork;
-
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.ParWork;
 
 public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
 
@@ -62,7 +62,7 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
           return;
       }
     } catch (Throwable e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       if (matches(e, errString))
         return;
       throw e;

@@ -16,6 +16,28 @@
  */
 package org.apache.solr.metrics;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
@@ -38,28 +60,6 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-import java.util.stream.Collectors;
 
 /**
  * This class maintains a repository of named {@link MetricRegistry} instances, and provides several
@@ -1087,7 +1087,7 @@ public class SolrMetricManager {
         throw new Exception("Could not obtain lock to modify reporters registry: " + registry);
       }
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new Exception("Interrupted while trying to obtain lock to modify reporters registry: " + registry);
     }
     try {
@@ -1129,7 +1129,7 @@ public class SolrMetricManager {
         return false;
       }
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return false;
     }
@@ -1227,7 +1227,7 @@ public class SolrMetricManager {
         return Collections.emptyMap();
       }
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return Collections.emptyMap();
     }

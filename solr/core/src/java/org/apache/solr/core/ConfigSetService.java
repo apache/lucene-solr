@@ -16,6 +16,13 @@
  */
 package org.apache.solr.core;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.solr.cloud.CloudConfigSetService;
@@ -28,13 +35,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Service class used by the CoreContainer to load ConfigSets for use in SolrCore
@@ -94,7 +94,7 @@ public abstract class ConfigSetService {
       IndexSchema schema = createIndexSchema(dcore, solrConfig);
       return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, true);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
               ": " + e.getMessage(), e);

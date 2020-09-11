@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -210,7 +208,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
           success = result.isSuccess();
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
         if (isClosed()) {
@@ -255,7 +253,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               searchHolder.decref();
             }
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
         }
@@ -325,11 +323,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
 
         } catch (AlreadyClosedException | InterruptedException e) {
-          ParWork.propegateInterrupt("Already closed or interrupted, bailing..", e);
+          ParWork.propagateInterrupt("Already closed or interrupted, bailing..", e);
           return;
         } catch (Exception e) {
           SolrException.log(log, "There was a problem trying to register as the leader", e);
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           if (isClosed()) {
             return;
           }
@@ -352,7 +350,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                 }
                 rejoinLeaderElection(core);
               } catch (Exception exc) {
-                ParWork.propegateInterrupt(e);
+                ParWork.propagateInterrupt(e);
                 throw new SolrException(ErrorCode.SERVER_ERROR, e);
               }
             }

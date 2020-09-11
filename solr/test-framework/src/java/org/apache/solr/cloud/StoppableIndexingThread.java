@@ -97,7 +97,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
           cloudClient.deleteById(deleteId);
         } catch (Exception e) {
           if (e instanceof InterruptedException) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             return;
           }
           System.err.println("REQUEST FAILED for id=" + deleteId);
@@ -125,7 +125,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
         }
       } catch (Exception e) {
         if (e instanceof InterruptedException) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           return;
         }
         addFailed = true;

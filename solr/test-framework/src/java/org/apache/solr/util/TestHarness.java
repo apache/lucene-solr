@@ -16,6 +16,15 @@
  */
 package org.apache.solr.util;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -47,15 +56,6 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * This class provides a simple harness that may be useful when
  * writing testcases.
@@ -85,7 +85,7 @@ public class TestHarness extends BaseTestHarness {
     try {
       return new SolrConfig(solrHome.resolve(coreName), confFile);
     } catch (Exception xany) {
-      ParWork.propegateInterrupt(xany);
+      ParWork.propagateInterrupt(xany);
       throw new RuntimeException(xany);
     }
   }
@@ -279,7 +279,7 @@ public class TestHarness extends BaseTestHarness {
     } catch (SolrException e) {
       throw (SolrException)e;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }

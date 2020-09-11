@@ -144,7 +144,7 @@ public class CloudUtil {
       log.info("Error fetching key names");
       return Collections.EMPTY_MAP;
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR,"Unable to read crypto keys",e );
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,"Unable to read crypto keys",e );
@@ -176,7 +176,7 @@ public class CloudUtil {
         return predicate.matches(n, c);
       });
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new AssertionError(message + "\n" + "Live Nodes: " + liveNodesLastSeen.get() + "\nLast available state: " + state.get(), e);
     }
   }

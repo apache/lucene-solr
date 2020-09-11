@@ -20,11 +20,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -186,14 +184,14 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
           try {
             bootstrapExecutor.submit(bootstrapStatusRunnable);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             log.error("Unable to submit bootstrap call to executor", e);
           }
         }
       } catch (IOException | SolrServerException | SolrException e) {
         log.warn("Unable to instantiate the log reader for target collection {}", state.getTargetCollection(), e);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
     }
   }
@@ -268,7 +266,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
               targetCollection, shard, leaderCoreUrl);
         }
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
     }
 
@@ -294,7 +292,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
                   BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS), BOOTSTRAP_RETRY_DELAY_MS);
               timeOut.sleep(BOOTSTRAP_RETRY_DELAY_MS);
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
             }
           } else if (status == BootstrapStatus.COMPLETED) {
             log.info("CDCR bootstrap successful in {} seconds", BOOTSTRAP_TIMEOUT_SECONDS - timeOut.timeLeft(TimeUnit.SECONDS));
@@ -345,7 +343,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
           }
         }
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         state.reportError(CdcrReplicatorState.ErrorType.INTERNAL);
         Thread.currentThread().interrupt();
       } catch (IOException | SolrServerException | SolrException e) {
@@ -372,7 +370,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
           String status = response.get(RESPONSE_STATUS).toString();
           return BootstrapStatus.valueOf(status.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("Exception submitting bootstrap request", e);
           return BootstrapStatus.UNKNOWN;
         }
@@ -409,7 +407,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
           }
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Exception during bootstrap status request", e);
         return BootstrapStatus.UNKNOWN;
       }

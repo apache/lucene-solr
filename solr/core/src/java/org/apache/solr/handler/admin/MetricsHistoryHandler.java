@@ -75,6 +75,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -83,7 +84,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.ArcDef;
@@ -267,7 +267,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           }
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         if (logMissingCollection) {
           log.warn("Error getting cluster state, keeping metrics history in memory", e);
         }
@@ -283,7 +283,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         factory.setPersistent(true);
         logMissingCollection = true;
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         if (logMissingCollection) {
           log.info("No {} collection, keeping metrics history in memory.", CollectionAdminParams.SYSTEM_COLL);
         }

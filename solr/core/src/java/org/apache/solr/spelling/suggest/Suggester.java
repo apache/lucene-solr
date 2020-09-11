@@ -195,7 +195,7 @@ public class Suggester extends SolrSpellChecker {
           IOUtils.closeWhileHandlingException(is);
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.info("load failed, need to build Lookup again");
       }
 

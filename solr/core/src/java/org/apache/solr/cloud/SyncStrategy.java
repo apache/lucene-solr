@@ -16,6 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -35,10 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import java.io.Closeable;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SyncStrategy implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -121,7 +122,7 @@ public class SyncStrategy implements Closeable {
           shardId, peerSyncOnlyWithActive);
       success = result.isSuccess();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       SolrException.log(log, "Sync Failed", e);
     }
     try {
@@ -141,7 +142,7 @@ public class SyncStrategy implements Closeable {
       }
       
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       SolrException.log(log, "Sync Failed", e);
     }
     
@@ -211,7 +212,7 @@ public class SyncStrategy implements Closeable {
         requestSync(node.getBaseUrl(), node.getCoreUrl(), zkLeader.getCoreUrl(), node.getCoreName(), nUpdates);
         
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         SolrException.log(log, "Error syncing replica to leader", e);
       }
     }

@@ -75,7 +75,7 @@ public class ImplicitSnitch extends Snitch {
 
       getRemoteInfo(solrNode, requestedTags, ctx);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -184,7 +184,7 @@ public class ImplicitSnitch extends Snitch {
       InetAddress address = InetAddress.getByName(host);
       return address.getHostAddress();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.warn("Failed to get IP address from host [{}], with exception [{}] ", host, e);
       return null;
     }

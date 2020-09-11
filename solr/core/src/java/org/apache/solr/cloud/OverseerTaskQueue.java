@@ -16,6 +16,17 @@
  */
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
+
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -29,18 +40,6 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Predicate;
 
 /**
  * A {@link ZkDistributedQueue} augmented with helper methods specific to the overseer task queues.
@@ -67,7 +66,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       try {
         Thread.sleep(250);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Interrupted while waiting for overseer queue to drain before shutdown!");
       }
     }
@@ -168,7 +167,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         try {
           lock.lockInterruptibly();
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           return;
         }
         try {
@@ -193,7 +192,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           try {
             eventReceived.await(timeoutMs, TimeUnit.MILLISECONDS);
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw e;
           }
         }

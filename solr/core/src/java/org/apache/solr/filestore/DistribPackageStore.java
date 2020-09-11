@@ -170,7 +170,7 @@ public class DistribPackageStore implements PackageStore {
             return true;
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(SERVER_ERROR, "unable to parse metadata json file");
         }
       } else {
@@ -245,7 +245,7 @@ public class DistribPackageStore implements PackageStore {
             if (success) return true;
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           //it's OK for some nodes to fail
         }
       }
@@ -283,7 +283,7 @@ public class DistribPackageStore implements PackageStore {
           try {
             return readMetaData();
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new RuntimeException(e);
           }
         }
@@ -351,7 +351,7 @@ public class DistribPackageStore implements PackageStore {
       coreContainer.getZkController().getZkClient().create(ZK_PACKAGESTORE + info.path, info.getDetails().getMetaData().sha512.getBytes(UTF_8),
           CreateMode.PERSISTENT, true);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
     }
     tmpFiles.put(info.path, info);
@@ -377,7 +377,7 @@ public class DistribPackageStore implements PackageStore {
             try {
               Thread.sleep(2 * 1000);
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
             }
           }
           // trying to avoid the thundering herd problem when there are a very large no:of nodes
@@ -389,7 +389,7 @@ public class DistribPackageStore implements PackageStore {
           //fire and forget
           Http2SolrClient.GET(url, coreContainer.getUpdateShardHandler().getTheSharedHttpClient());
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.info("Node: {} failed to respond for file fetch notification",  node, e);
           //ignore the exception
           // some nodes may be down or not responding
@@ -505,7 +505,7 @@ public class DistribPackageStore implements PackageStore {
         }
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Could not refresh files in {}", path, e);
     }
   }
@@ -540,7 +540,7 @@ public class DistribPackageStore implements PackageStore {
           log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome);
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome, e);
       }
     }

@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -188,7 +187,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         tupleStream = this.streamFactory.constructStream(streamExpression);
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       // Catch exceptions that occur while the stream is being created. This will include streaming expression parse
       // rules.
       SolrException.log(log, e);

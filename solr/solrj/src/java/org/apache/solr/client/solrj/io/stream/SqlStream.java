@@ -206,7 +206,7 @@ public class SqlStream extends TupleStream implements Expressible {
         }
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }

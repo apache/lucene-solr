@@ -16,6 +16,18 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -37,7 +49,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
@@ -56,25 +67,12 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
-import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class may change in future and customisations are not supported between versions in terms of API or back compat
@@ -314,7 +312,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           searchHolder.decref();
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.debug("Error in solrcloud_debug block", e);
       }
     }
@@ -353,12 +351,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
         try {
           doRecovery(core);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e, true);
+          ParWork.propagateInterrupt(e, true);
           return;
         } catch (AlreadyClosedException e) {
           return;
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("", e);
           return;
         }
@@ -445,13 +443,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
           log.info("Replication Recovery was successful.");
           successfulRecovery = true;
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           SolrException.log(log, "Error while trying to recover", e);
           return;
         }
 
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
       } finally {
         if (successfulRecovery) {
@@ -461,7 +459,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           try {
             zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             log.error("Could not publish as ACTIVE after succesful recovery", e);
             successfulRecovery = false;
           }
@@ -494,16 +492,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
             try {
               recoveryFailed(core, zkController, baseUrl, coreZkNodeName, this.coreDescriptor);
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               return;
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               SolrException.log(log, "Could not publish that recovery failed", e);
             }
             break;
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           SolrException.log(log, "An error has occurred during recovery", e);
         }
 
@@ -525,7 +523,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             Thread.sleep(startingRecoveryDelayMilliSeconds);
           }
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Recovery was interrupted.", e);
           close = true;
         }
@@ -556,7 +554,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
       recentVersions = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       SolrException.log(log, "Corrupt tlog - ignoring.", e);
       recentVersions = new ArrayList<>(0);
     }
@@ -589,7 +587,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           }
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);;
+        ParWork.propagateInterrupt(e);;
         SolrException.log(log, "Error getting recent versions.", e);
         recentVersions = new ArrayList<>(0);
       }
@@ -608,7 +606,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           firstTime = false; // skip peersync
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         SolrException.log(log, "Error trying to get ulog starting operation.", e);
         firstTime = false; // skip peersync
       }
@@ -676,7 +674,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         try {
           Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
 
@@ -742,7 +740,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           log.info("Replication Recovery was successful.");
           successfulRecovery = true;
         } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propegateInterrupt(e, true);
+          ParWork.propagateInterrupt(e, true);
           return;
         } catch (Exception e) {
           SolrException.log(log, "Error while trying to recover", e);
@@ -762,7 +760,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             }
             zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             close = true;
           } catch (Exception e) {
             log.error("Could not publish as ACTIVE after succesful recovery", e);
@@ -794,7 +792,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             try {
               recoveryFailed(core, zkController, baseUrl, coreZkNodeName, this.coreDescriptor);
             } catch(InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               return;
             }  catch
             (Exception e) {
@@ -821,7 +819,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             Thread.sleep(startingRecoveryDelayMilliSeconds);
           }
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e, true);
+          ParWork.propagateInterrupt(e, true);
           return;
         }
       }
@@ -886,7 +884,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         // let the recovery throttle handle pauses
         log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         if (e.getCause() instanceof IOException) {
           log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
         } else {
@@ -922,7 +920,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       try {
         report = future.get(10, TimeUnit.MINUTES); // nocommit - how long? make configurable too
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new InterruptedException();
       } catch (TimeoutException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -957,7 +955,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         searchHolder.decref();
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.debug("Error in solrcloud_debug block", e);
     }
   }

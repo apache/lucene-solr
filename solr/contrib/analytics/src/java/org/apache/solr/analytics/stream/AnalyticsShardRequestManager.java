@@ -47,9 +47,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.AnalyticsHandler;
 import org.apache.solr.handler.component.AnalyticsComponent;
 import org.apache.solr.response.AnalyticsShardResponseWriter;
@@ -164,7 +162,7 @@ public class AnalyticsShardRequestManager {
         }
       }
     } catch (InterruptedException e1) {
-      ParWork.propegateInterrupt(e1);
+      ParWork.propagateInterrupt(e1);
       throw new RuntimeException(e1);
     } catch (ExecutionException e1) {
       throw new RuntimeException(e1);

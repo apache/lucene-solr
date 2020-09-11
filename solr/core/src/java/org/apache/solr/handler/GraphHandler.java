@@ -146,7 +146,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     try {
       tupleStream = this.streamFactory.constructStream(params.get("expr"));
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(log, e);
       @SuppressWarnings({"rawtypes"})

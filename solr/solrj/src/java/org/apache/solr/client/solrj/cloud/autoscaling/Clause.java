@@ -397,7 +397,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } catch (IllegalArgumentException iae) {
       throw iae;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throwExp(m, " Invalid tag : {0} "+ e.getMessage(), s);
       return null;
     }

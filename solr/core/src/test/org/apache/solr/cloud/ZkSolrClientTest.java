@@ -17,25 +17,14 @@
 package org.apache.solr.cloud;
 
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
 
 public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
@@ -179,7 +168,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
           zkClient.mkdir("collections/collection4");
           break;
         } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
         Thread.sleep(50 * i);
       }

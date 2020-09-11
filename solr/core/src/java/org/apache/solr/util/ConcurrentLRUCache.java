@@ -15,13 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.util.Cache;
-import org.apache.solr.common.util.TimeSource;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,13 +28,18 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-//import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
-import java.lang.ref.WeakReference;
 import java.util.function.Function;
+
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.util.Cache;
+import org.apache.solr.common.util.TimeSource;
 
 import static org.apache.lucene.util.RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
 import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
@@ -879,7 +879,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           try {
             this.wait(waitTimeMs);
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
           }
         }
         if (stop) break;

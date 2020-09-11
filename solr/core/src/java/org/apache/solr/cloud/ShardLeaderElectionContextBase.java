@@ -20,11 +20,9 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -62,7 +60,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     try {
       super.close();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Exception canceling election", e);
     }
   }
@@ -117,7 +115,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
             }
 
           } catch (InterruptedException | AlreadyClosedException e) {
-            ParWork.propegateInterrupt(e, true);
+            ParWork.propagateInterrupt(e, true);
             return;
           } catch (Exception e) {
             throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
@@ -127,7 +125,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         }
       } catch (Exception e) {
         if (e instanceof InterruptedException) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
         Stat stat = new Stat();
         zkClient.getData(Paths.get(leaderPath).getParent().toString(), null, stat);
@@ -176,7 +174,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       // assert leaderZkNodeParentVersion != null;
 
     } catch (Throwable t) {
-      ParWork.propegateInterrupt(t);
+      ParWork.propagateInterrupt(t);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: " + errors, t);
     }
 

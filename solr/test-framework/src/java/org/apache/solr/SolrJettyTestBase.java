@@ -16,6 +16,16 @@
  */
 package org.apache.solr;
 
+import java.io.File;
+import java.io.OutputStreamWriter;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Properties;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -30,16 +40,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.OutputStreamWriter;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.Properties;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.concurrent.ConcurrentHashMap;
 
 abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 {
@@ -203,7 +203,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
           try {
             writer.close();
           } catch (Exception ignore){
-            ParWork.propegateInterrupt(ignore);
+            ParWork.propagateInterrupt(ignore);
           }
         }
       }

@@ -16,29 +16,24 @@
  */
 package org.apache.solr.util.plugin;
 
+import javax.xml.xpath.XPath;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import net.sf.saxon.dom.DOMNodeList;
-import net.sf.saxon.dom.DocumentOverNodeInfo;
-import net.sf.saxon.om.NodeInfo;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import javax.xml.xpath.XPath;
 
 /**
  * An abstract super class that manages standard solr-style plugin configuration.
@@ -190,7 +185,7 @@ public abstract class AbstractPluginLoader<T>
           }
         }
         catch (Exception ex) {
-          ParWork.propegateInterrupt(ex);
+          ParWork.propagateInterrupt(ex);
           SolrException e = new SolrException
             (ErrorCode.SERVER_ERROR,
              "Plugin init failure for " + type + 
@@ -261,7 +256,7 @@ public abstract class AbstractPluginLoader<T>
       }
 
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
+      ParWork.propagateInterrupt(ex);
       SolrException e = new SolrException
         (ErrorCode.SERVER_ERROR, "Plugin init failure for " + type, ex);
       throw e;
@@ -272,7 +267,7 @@ public abstract class AbstractPluginLoader<T>
       try {
         init(pinfo.plugin, pinfo.node);
       } catch (Exception ex) {
-        ParWork.propegateInterrupt(ex);
+        ParWork.propagateInterrupt(ex);
         SolrException e = new SolrException
           (ErrorCode.SERVER_ERROR, "Plugin init failure for " + type, ex);
         throw e;

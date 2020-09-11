@@ -16,9 +16,9 @@
  */
 package org.apache.solr.common.params;
 
-import org.apache.solr.common.ParWork;
-
 import java.util.Locale;
+
+import org.apache.solr.common.ParWork;
 
 /**
  * ConfigSets API related parameters and actions.
@@ -38,7 +38,7 @@ public interface ConfigSetParams
         try {
           return ConfigSetAction.valueOf( p.toUpperCase(Locale.ROOT) );
         } catch (Exception ex) {
-          ParWork.propegateInterrupt(ex);
+          ParWork.propagateInterrupt(ex);
         }
       }
       return null;

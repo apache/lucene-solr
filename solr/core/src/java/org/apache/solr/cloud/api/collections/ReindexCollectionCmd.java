@@ -411,7 +411,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       try {
         rsp = ocmh.cloudManager.request(new QueryRequest(q));
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to copy documents from " +
             collection + " to " + targetCollection, e);
       }
@@ -499,7 +499,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       reindexingState.put(PHASE, "done");
       removeReindexingState(collection);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.warn("Error during reindexing of {}", extCollection, e);
       exc = e;
       aborted = true;
@@ -557,7 +557,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       QueryResponse rsp = solrClient.query(collection, params);
       return rsp.getResults().getNumFound();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       return 0L;
     }
   }
@@ -673,7 +673,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
             }
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception waiting for daemon " +
               daemonName + " at " + daemonUrl, e);
         }

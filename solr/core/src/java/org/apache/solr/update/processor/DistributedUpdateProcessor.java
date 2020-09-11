@@ -267,7 +267,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             }
 
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           } finally {
             if (vinfo != null) vinfo.unlockForUpdate();
@@ -286,7 +286,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             doDistribAdd(finalCloneCmd);
             if (log.isDebugEnabled()) log.debug("after distrib add collection");
           } catch (Throwable e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
         });

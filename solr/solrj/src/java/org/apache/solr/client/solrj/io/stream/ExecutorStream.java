@@ -141,7 +141,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
     try {
       executorService.awaitTermination(30, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
     }
     stream.close();
   }
@@ -191,7 +191,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
       try {
         tuple = queue.take();
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException(e);
       }
 
@@ -210,13 +210,13 @@ public class ExecutorStream extends TupleStream implements Expressible {
           }
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Executor Error: id={} expr_s={}", id, expr, e);
       } finally {
         try {
           stream.close();
         } catch (Exception e1) {
-          ParWork.propegateInterrupt(e1);
+          ParWork.propagateInterrupt(e1);
           log.error("Executor Error", e1);
         }
       }

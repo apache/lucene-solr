@@ -16,10 +16,10 @@
  */
 package org.apache.solr.update;
 
-import org.apache.solr.common.ParWork;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.common.ParWork;
 
 // TODO: make inner?
 // TODO: store the highest possible in the index on a commit (but how to not block adds?)
@@ -70,7 +70,7 @@ public class VersionBucket {
         wait(millis);
       }
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
     }
   }

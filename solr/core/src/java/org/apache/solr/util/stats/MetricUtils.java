@@ -600,7 +600,7 @@ public class MetricUtils {
           String metricName = MetricRegistry.name(prefix, name);
           consumer.accept(metricName, gauge);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           // didn't work, skip it...
         }
       }

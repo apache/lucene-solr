@@ -34,7 +34,6 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
@@ -70,7 +69,7 @@ public class InactiveShardPlanAction extends TriggerActionBase {
     try {
       cleanupTTL = Integer.parseInt(cleanupStr);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new TriggerValidationException(getName(), TTL_PROP, "invalid value '" + cleanupStr + "': " + e.toString());
     }
     if (cleanupTTL < 0) {
@@ -151,7 +150,7 @@ public class InactiveShardPlanAction extends TriggerActionBase {
             }
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Exception checking for inactive shard split locks in {}", parentPath, e);
         }
       })

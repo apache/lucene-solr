@@ -269,7 +269,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
     try {
       return val == null ? null : Long.valueOf(val);
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
+      ParWork.propagateInterrupt(ex);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex);
     }
   }
@@ -280,7 +280,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
     try {
       return val == null ? def : Long.parseLong(val);
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
+      ParWork.propagateInterrupt(ex);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex);
     }
   }

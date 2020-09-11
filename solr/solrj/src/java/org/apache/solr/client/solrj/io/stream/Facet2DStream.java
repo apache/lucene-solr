@@ -298,7 +298,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
       this.out = tuples.iterator();
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }

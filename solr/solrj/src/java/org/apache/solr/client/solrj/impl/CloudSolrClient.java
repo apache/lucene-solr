@@ -97,7 +97,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
           this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
         } catch (Exception e) {
           cleanupAfterInitError();
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
               + "Solr server(s), "  + builder.solrUrls + ", down?)", e);
         }

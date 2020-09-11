@@ -77,7 +77,7 @@ public class HdfsLockFactory extends LockFactory {
           try {
             Thread.sleep(5000);
           } catch (InterruptedException e1) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             break;
           }
           continue;

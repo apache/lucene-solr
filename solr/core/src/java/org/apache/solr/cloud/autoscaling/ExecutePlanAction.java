@@ -33,9 +33,9 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.ParWork;
@@ -140,7 +140,7 @@ public class ExecutePlanAction extends TriggerActionBase {
                 try {
                   cloudManager.getDistribStateManager().removeData(znode, -1);
                 } catch (Exception e) {
-                  ParWork.propegateInterrupt(e);
+                  ParWork.propagateInterrupt(e);
                   log.warn("Unexpected exception while trying to delete znode: {}", znode, e);
                 }
               }
@@ -160,7 +160,7 @@ public class ExecutePlanAction extends TriggerActionBase {
               try {
                 cloudManager.getDistribStateManager().removeData(znode, -1);
               } catch (Exception e) {
-                ParWork.propegateInterrupt(e);
+                ParWork.propagateInterrupt(e);
                 log.warn("Unexpected exception while trying to delete znode: {}", znode, e);
               }
               throw new IOException("Task " + asyncId + " failed: " + (statusResponse != null ? statusResponse : " timed out. Operation: " + req));
@@ -182,16 +182,16 @@ public class ExecutePlanAction extends TriggerActionBase {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unexpected exception executing operation: " + operation.getParams(), e);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ExecutePlanAction was interrupted", e);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unexpected exception executing operation: " + operation.getParams(), e);
         }
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected exception while processing event: " + event, e);
     }
@@ -217,7 +217,7 @@ public class ExecutePlanAction extends TriggerActionBase {
           return statusResponse;
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         Throwable rootCause = ExceptionUtils.getRootCause(e);
         if (rootCause instanceof IllegalStateException && rootCause.getMessage().contains("Connection pool shut down"))  {
           throw e;

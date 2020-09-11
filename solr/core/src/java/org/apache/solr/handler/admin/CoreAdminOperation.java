@@ -370,7 +370,7 @@ enum CoreAdminOperation implements CoreAdminOp {
     try {
       fun.execute(it);
     } catch (SolrException | InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       // No need to re-wrap; throw as-is.
       throw e;
     } catch (Exception e) {

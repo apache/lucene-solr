@@ -105,7 +105,7 @@ public class ExportHandler extends SearchHandler {
     try {
       super.handleRequestBody(req, rsp);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       rsp.setException(e);
     }
     String wt = req.getParams().get(CommonParams.WT, JSON);

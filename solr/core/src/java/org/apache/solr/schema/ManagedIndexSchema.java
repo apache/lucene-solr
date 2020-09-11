@@ -51,7 +51,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
@@ -275,7 +274,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     } catch (InterruptedException ie) {
       log.warn("Core {} was interrupted waiting for schema version {} to propagate to {} replicas for collection {}"
           , localCoreNodeName, schemaZkVersion, concurrentTasks.size(), collection);
-      ParWork.propegateInterrupt(ie);
+      ParWork.propagateInterrupt(ie);
     }
 
     if (log.isInfoEnabled()) {

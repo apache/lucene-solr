@@ -439,7 +439,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     try {
       cloudSolrClient.request(request);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }
@@ -475,7 +475,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
               }
             }
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new IOException(e);
           }
           break OUTER;
@@ -527,7 +527,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         solrStreams.add(solrStream);
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }

@@ -283,7 +283,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       return baseUrls;
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }

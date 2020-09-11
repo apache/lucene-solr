@@ -16,6 +16,34 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
@@ -70,40 +98,12 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
-import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Phaser;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
@@ -248,7 +248,7 @@ public class Http2SolrClient extends SolrClient {
       if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
       httpClient.start();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       close();
       throw new RuntimeException(e);
     }
@@ -420,7 +420,7 @@ public class Http2SolrClient extends SolrClient {
                 rsp = processErrorsAndResponse(req, result.getResponse(), parser, is, getMediaType(), getEncoding(), isV2ApiRequest(solrRequest));
                 onComplete.onSuccess(rsp);
               } catch (Exception e) {
-                ParWork.propegateInterrupt(e);
+                ParWork.propagateInterrupt(e);
                 onComplete.onFailure(e);
               }
             } finally {
@@ -763,7 +763,7 @@ public class Http2SolrClient extends SolrClient {
       try {
         rsp = processor.processResponse(is, encoding);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new RemoteSolrException(serverBaseUrl, httpStatus, e.getMessage(),
             e);
       }
@@ -794,7 +794,7 @@ public class Http2SolrClient extends SolrClient {
             metadata = (NamedList<String>) err.get("metadata");
           }
         } catch (Exception ex) {
-          ParWork.propegateInterrupt(ex);
+          ParWork.propagateInterrupt(ex);
           log.warn("Unexpected exception", ex);
         }
         if (reason == null) {
@@ -873,7 +873,7 @@ public class Http2SolrClient extends SolrClient {
         try {
           available.acquire();
         } catch (InterruptedException ignored) {
-          ParWork.propegateInterrupt(ignored);
+          ParWork.propagateInterrupt(ignored);
         }
         if (log.isDebugEnabled()) log.debug("Request queued registered: {} arrived: {}", phaser.getRegisteredParties(), phaser.getArrivedParties());
       };
@@ -916,7 +916,7 @@ public class Http2SolrClient extends SolrClient {
       try {
         available.acquire();
       } catch (InterruptedException ignored) {
-        ParWork.propegateInterrupt(ignored);
+        ParWork.propagateInterrupt(ignored);
       }
       phaser.register();
     }

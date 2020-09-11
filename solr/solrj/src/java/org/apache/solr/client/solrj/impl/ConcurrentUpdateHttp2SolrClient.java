@@ -17,6 +17,21 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -36,21 +51,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @lucene.experimental
@@ -275,7 +275,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                     }
                   }
                 } catch (Exception exc) {
-                  ParWork.propegateInterrupt(exc);
+                  ParWork.propagateInterrupt(exc);
                   // don't want to fail to report error if parsing the response fails
                   log.warn("Failed to parse error response from {} due to: ", basePath, exc);
                 } finally {
@@ -294,7 +294,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
               try {
                 consumeFully(rspBody);
               } catch (Exception e) {
-                ParWork.propegateInterrupt(e);
+                ParWork.propagateInterrupt(e);
                 log.error("Error consuming and closing http response stream.", e);
               }
               notifyQueueAndRunnersIfEmptyQueue();
@@ -302,7 +302,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           }
 
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Interrupted on polling from queue", e);
       }
 
@@ -458,7 +458,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       }
     } catch (InterruptedException e) {
 
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
 

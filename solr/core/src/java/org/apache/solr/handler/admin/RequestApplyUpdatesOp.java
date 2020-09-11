@@ -58,7 +58,7 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       it.rsp.add("core", cname);
       it.rsp.add("status", "BUFFER_APPLIED");
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       CoreAdminOperation.log().warn("Recovery was interrupted", e);
     } catch (Exception e) {
       if (e instanceof SolrException)

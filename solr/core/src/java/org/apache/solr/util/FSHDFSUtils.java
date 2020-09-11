@@ -121,7 +121,7 @@ public class FSHDFSUtils {
           }
         }
       } catch (InterruptedException ie) {
-        ParWork.propegateInterrupt(ie);
+        ParWork.propagateInterrupt(ie);
         InterruptedIOException iioe = new InterruptedIOException();
         iioe.initCause(ie);
         throw iioe;

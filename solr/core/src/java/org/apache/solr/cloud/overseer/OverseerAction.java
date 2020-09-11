@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import org.apache.solr.common.ParWork;
-
 import java.util.Locale;
+
+import org.apache.solr.common.ParWork;
 
 /**
  * Enum of actions supported by the overseer only.
@@ -41,7 +41,7 @@ public enum OverseerAction {
       try {
         return OverseerAction.valueOf(p.toUpperCase(Locale.ROOT));
       } catch (Exception ex) {
-        ParWork.propegateInterrupt(ex);
+        ParWork.propagateInterrupt(ex);
       }
     }
     return null;

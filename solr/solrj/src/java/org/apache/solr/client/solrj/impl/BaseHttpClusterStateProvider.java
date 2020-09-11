@@ -43,7 +43,7 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.*;
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 
 public abstract class BaseHttpClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -168,7 +168,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
           liveNodesTimestamp = System.nanoTime();
           return liveNodes;
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
         }
       }

@@ -16,14 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.util.CloseTracker;
-import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.zookeeper.ClientCnxn;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.ZooKeeperExposed;
-
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -33,6 +25,13 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.zookeeper.ClientCnxn;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 
 // we use this class to expose nasty stuff for tests
 @SuppressWarnings({"try"})
@@ -91,7 +90,7 @@ public class SolrZooKeeper extends ZooKeeper {
               }
             }
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new RuntimeException("Closing Zookeeper send channel failed.",
                 e);
           }
@@ -111,7 +110,7 @@ public class SolrZooKeeper extends ZooKeeper {
         try {
           SolrZooKeeper.super.close();
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
       });
 //      closer.collect("keep send thread from sleeping", ()->{

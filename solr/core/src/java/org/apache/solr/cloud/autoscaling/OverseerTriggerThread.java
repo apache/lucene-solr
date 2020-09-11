@@ -17,6 +17,19 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -37,18 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Overseer thread responsible for reading triggers from zookeeper and
@@ -164,7 +165,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         // somebody else has changed the configuration so we must retry
       } catch (InterruptedException e) {
         // Restore the interrupted status
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         return;
       }
       catch (IOException | KeeperException e) {
@@ -186,10 +187,10 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     } catch (IOException e) {
       log.error("IO error: [{}]", e);
     } catch (InterruptedException | AlreadyClosedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       return;
     } catch (Exception e)  {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Unexpected exception", e);
     }
 
@@ -227,7 +228,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           updateLock.unlock();
         }
       } catch (InterruptedException | AlreadyClosedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         return;
       }
      
@@ -251,7 +252,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           log.info("already closed");
           return;
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           if (e instanceof KeeperException.SessionExpiredException || e instanceof InterruptedException) {
             log.error("", e);
             return;
@@ -264,7 +265,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
         deactivateMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
         deactivateMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
       } catch (InterruptedException | AlreadyClosedException e) {
-        ParWork.propegateInterrupt(e, true);
+        ParWork.propagateInterrupt(e, true);
         return;
       } catch (KeeperException e) {
         log.error("", e);
@@ -272,7 +273,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           return;
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error("Exception deactivating markers", e);
       }
 
@@ -312,7 +313,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       } catch (IOException e) {
         log.warn("IO Error: [{}]", e);
       } catch (InterruptedException | AlreadyClosedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       } catch (Exception e)  {
         log.error("Unexpected exception", e);
       }

@@ -328,7 +328,7 @@ public class Policy implements MapWriter {
             return p.compare(r1, r2, false);
           });
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           try {
             Map m = Collections.singletonMap("diagnostics", (MapWriter) ew -> {
               PolicyHelper.writeNodes(ew, matrixCopy);
@@ -569,7 +569,7 @@ public class Policy implements MapWriter {
         state = cloudManager.getClusterStateProvider().getClusterState();
         log.trace("-- session created with cluster state: {}", state);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.trace("-- session created, can't obtain cluster state", e);
       }
       this.znodeVersion = state != null ? state.getZNodeVersion() : -1;

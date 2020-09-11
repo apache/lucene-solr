@@ -16,6 +16,43 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.DistributedLock;
@@ -29,28 +66,8 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.BeforeReconnect;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ConnectionManager;
-import org.apache.solr.common.cloud.DefaultZkACLProvider;
-import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollectionWatcher;
-import org.apache.solr.common.cloud.LiveNodesListener;
-import org.apache.solr.common.cloud.NodesSysPropsCacher;
-import org.apache.solr.common.cloud.OnReconnect;
-import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.Replica.Type;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -98,42 +115,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 /**
  * Handle ZooKeeper interactions.
@@ -371,7 +352,7 @@ public class ZkController implements Closeable {
         zkACLProvider = new DefaultZkACLProvider();
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Exception during ZkController init", e);
       throw e;
     }
@@ -389,7 +370,7 @@ public class ZkController implements Closeable {
       try {
         context.cancelElection();
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (KeeperException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -490,7 +471,7 @@ public class ZkController implements Closeable {
                     parWork.collect(new RegisterCoreAsync(descriptor, true, true));
 
                   } catch (Exception e) {
-                    ParWork.propegateInterrupt(e);
+                    ParWork.propagateInterrupt(e);
                     SolrException.log(log, "Error registering SolrCore", e);
                   }
                 }
@@ -512,7 +493,7 @@ public class ZkController implements Closeable {
               }
             }
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new ZooKeeperException(
                     SolrException.ErrorCode.SERVER_ERROR, "", e);
           } catch (SessionExpiredException e) {
@@ -590,7 +571,7 @@ public class ZkController implements Closeable {
             log.info("Publish this node as DOWN...");
             publishNodeAsDown(getNodeName());
           } catch (Exception e) {
-            ParWork.propegateInterrupt("Error publishing nodes as down. Continuing to close CoreContainer", e);
+            ParWork.propagateInterrupt("Error publishing nodes as down. Continuing to close CoreContainer", e);
           }
           return "PublishDown";
 
@@ -600,7 +581,7 @@ public class ZkController implements Closeable {
           try {
             removeEphemeralLiveNode();
           } catch (Exception e) {
-            ParWork.propegateInterrupt("Error Removing ephemeral live node. Continuing to close CoreContainer", e);
+            ParWork.propagateInterrupt("Error Removing ephemeral live node. Continuing to close CoreContainer", e);
           }
           return "RemoveEphemNode";
 
@@ -686,7 +667,7 @@ public class ZkController implements Closeable {
           props.put(CoreAdminParams.NODE, getNodeName());
           getOverseerCollectionQueue().offer(Utils.toJSON(new ZkNodeProps(props)));
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           // Exceptions are not bubbled up. giveupLeadership is best effort, and is only called in case of some other
           // unrecoverable error happened
           log.error("Met exception on give up leadership for {}", key, e);
@@ -781,7 +762,7 @@ public class ZkController implements Closeable {
             }
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           SolrException.log(log,
               "Error while looking for a better host name than 127.0.0.1", e);
         }
@@ -985,7 +966,7 @@ public class ZkController implements Closeable {
       } catch (KeeperException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
       try {
@@ -1017,7 +998,7 @@ public class ZkController implements Closeable {
             try {
               createClusterZkNodes(zkClient);
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               log.error("Failed creating initial zk layout", e);
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
             }
@@ -1119,7 +1100,7 @@ public class ZkController implements Closeable {
             } catch (KeeperException e) {
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
             } catch (IOException e) {
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -1136,7 +1117,7 @@ public class ZkController implements Closeable {
                 publishAndWaitForDownStates();
               }
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
             } catch (KeeperException e) {
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -1148,7 +1129,7 @@ public class ZkController implements Closeable {
 
         //  publishAndWaitForDownStates();
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                 "", e);
       } catch (KeeperException e) {
@@ -1192,7 +1173,7 @@ public class ZkController implements Closeable {
           try {
             createNodes = zkStateReader.getAutoScalingConfig().hasTriggerForEvents(TriggerEventType.NODELOST);
           } catch (KeeperException | InterruptedException e1) {
-            ParWork.propegateInterrupt(e1);
+            ParWork.propagateInterrupt(e1);
             log.warn("Unable to read autoscaling.json", e1);
           }
           if (createNodes) {
@@ -1205,7 +1186,7 @@ public class ZkController implements Closeable {
               } catch (KeeperException.NodeExistsException e) {
                 // someone else already created this node - ignore
               } catch (KeeperException | InterruptedException e1) {
-                ParWork.propegateInterrupt(e1);
+                ParWork.propagateInterrupt(e1);
                 log.warn("Unable to register nodeLost path for {}", n, e1);
               }
             }
@@ -1251,7 +1232,7 @@ public class ZkController implements Closeable {
                 log.error("Exception on proper shutdown", e);
                 return;
               } catch (InterruptedException e) {
-                ParWork.propegateInterrupt(e);
+                ParWork.propagateInterrupt(e);
                 return;
               }
             }
@@ -1261,7 +1242,7 @@ public class ZkController implements Closeable {
         log.error("Time out waiting to see solr live nodes go down " + children.size());
         return;
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         return;
       }
 
@@ -1270,7 +1251,7 @@ public class ZkController implements Closeable {
         try {
           success = latch.await(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           return;
         }
         if (!success) {
@@ -1415,7 +1396,7 @@ public class ZkController implements Closeable {
         zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -1527,7 +1508,7 @@ public class ZkController implements Closeable {
           startReplicationFromLeader(coreName, false);
         }
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         return null;
       } catch (KeeperException | IOException e) {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
@@ -1649,7 +1630,7 @@ public class ZkController implements Closeable {
       try {
         prev.close();
       } catch (Exception e) {
-        ParWork.propegateInterrupt("Error closing previous replication attempt", e);
+        ParWork.propagateInterrupt("Error closing previous replication attempt", e);
       }
       if (isClosed()) throw new AlreadyClosedException();
       replicateFromLeader.startReplication(switchTransactionLog);
@@ -1684,7 +1665,7 @@ public class ZkController implements Closeable {
       zkStateReader.waitForState(collection, timeoutms * 2, TimeUnit.MILLISECONDS, (n, c) -> checkLeaderUrl(cloudDesc, leaderUrl, collection, shardId, leaderConflictResolveWait));
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error getting leader from zk", e);
     }
     return leaderUrl;
@@ -1699,7 +1680,7 @@ public class ZkController implements Closeable {
 
       // leaderUrl = getLeaderProps(collection, cloudDesc.getShardId(), timeoutms).getCoreUrl();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
     return clusterStateLeaderUrl != null;
@@ -2086,7 +2067,7 @@ public class ZkController implements Closeable {
           return false;
         });
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get shard id for core: " + cd.getName());
       }
     } catch (TimeoutException e1) {
@@ -2152,13 +2133,13 @@ public class ZkController implements Closeable {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     } catch (NotInClusterStateException e) {
       // make the stack trace less verbose
       throw e;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
 
@@ -2341,7 +2322,7 @@ public class ZkController implements Closeable {
     try {
       return asyncIdsMap.putIfAbsent(asyncId, EMPTY_BYTE_ARRAY);
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
     }
   }
@@ -2356,7 +2337,7 @@ public class ZkController implements Closeable {
     try {
       return asyncIdsMap.remove(asyncId);
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
     }
   }
@@ -2424,7 +2405,7 @@ public class ZkController implements Closeable {
             } catch (NoNodeException e) {
               //no problem
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               return;
             } catch (Exception e) {
               log.warn("Old election node exists , could not be removed ", e);
@@ -2440,7 +2421,7 @@ public class ZkController implements Closeable {
                zkClient, overseer), joinAtHead);
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
     }
 
@@ -2477,7 +2458,7 @@ public class ZkController implements Closeable {
       if (prevContext != null) prevContext.close();
       elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP, false));
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
     } finally {
       MDCLoggingContext.clear();
@@ -2502,7 +2483,7 @@ public class ZkController implements Closeable {
     } catch (NoNodeException nne) {
       return;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.warn("could not read the overseer designate ", e);
     }
   }
@@ -2586,7 +2567,7 @@ public class ZkController implements Closeable {
                 log.debug("failed to set data version in zk is {} and expected version is {} ", stat.getVersion(), znodeVersion);
               }
             } catch (Exception e1) {
-              ParWork.propegateInterrupt(e1);
+              ParWork.propagateInterrupt(e1);
               log.warn("could not get stat");
             }
 
@@ -2604,7 +2585,7 @@ public class ZkController implements Closeable {
         Stat stat = zkClient.exists(resourceLocation, null);
         v = stat.getVersion();
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.error(e.getMessage());
 
       }
@@ -2615,7 +2596,7 @@ public class ZkController implements Closeable {
     } catch (ResourceModifiedInZkException e) {
       throw e;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       final String msg = "Error persisting resource at " + resourceLocation;
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
@@ -2628,7 +2609,7 @@ public class ZkController implements Closeable {
     try {
       zkClient.setData(zkLoader.getConfigSetZkPath(), new byte[]{0}, true);
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       final String msg = "Error 'touching' conf location " + zkLoader.getConfigSetZkPath();
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
@@ -2832,7 +2813,7 @@ public class ZkController implements Closeable {
             log.warn("Failed to unregister core:{}", coreName, e);
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Failed to unregister core:{}", coreName, e);
         }
       }

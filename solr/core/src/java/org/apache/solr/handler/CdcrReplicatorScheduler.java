@@ -16,15 +16,19 @@
  */
 package org.apache.solr.handler;
 
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.*;
 
 /**
  * Schedule the execution of the {@link org.apache.solr.handler.CdcrReplicator} threads at
@@ -104,7 +108,7 @@ class CdcrReplicatorScheduler {
       try {
         replicatorsPool.awaitTermination(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       } finally {
         scheduler.shutdownNow();
         isStarted = false;

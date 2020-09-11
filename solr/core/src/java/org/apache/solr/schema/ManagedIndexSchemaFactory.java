@@ -16,6 +16,12 @@
  */
 package org.apache.solr.schema;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.cloud.ZkController;
@@ -39,12 +45,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 
 /** Factory for ManagedIndexSchema */
 public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements SolrCoreAware {
@@ -142,7 +142,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         loadedResource = managedSchemaResourceName;
         warnIfNonManagedSchemaExists();
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (KeeperException.NoNodeException e) {
         log.info("The schema is configured as managed, but managed schema resource {} not found - loading non-managed schema {} instead"
@@ -233,7 +233,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         try {
           exists = zkLoader.getZkController().pathExists(nonManagedSchemaPath);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         } catch (KeeperException e) {
           // log as warning and suppress the exception
           log.warn("Error checking for the existence of the non-managed schema {}", resourceName, e);
@@ -419,7 +419,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         log.error(msg, e);
         throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
     } else {
       this.zkIndexSchemaReader = null;

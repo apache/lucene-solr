@@ -93,7 +93,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         }
 
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         // do nothing... we want to continue with the other requests.
         // the failure should have already been logged.
       } finally {

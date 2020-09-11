@@ -390,7 +390,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         solrStreams.add(solrStream);
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }
@@ -407,7 +407,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         }
       }
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }

@@ -98,7 +98,7 @@ public class TestInjection {
         Method randomMethod = LUCENE_TEST_CASE.getMethod("random");
         return (Random) randomMethod.invoke(null);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new IllegalStateException("Unable to use reflection to invoke LuceneTestCase.random()", e);
       }
     }
@@ -240,7 +240,7 @@ public class TestInjection {
         try {
           Thread.sleep(delay * 1000);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
       }
     }
@@ -274,7 +274,7 @@ public class TestInjection {
                 Random taskRand = random();
                 Thread.sleep(taskRand.nextInt(1000));
               } catch (InterruptedException e) {
-                ParWork.propegateInterrupt(e);
+                ParWork.propagateInterrupt(e);
               }
               
               cthread.interrupt();
@@ -367,7 +367,7 @@ public class TestInjection {
         try {
           Thread.sleep(rndTime);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
       }
     }
@@ -395,7 +395,7 @@ public class TestInjection {
         try {
           Thread.sleep(rndTime);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
       }
     }
@@ -419,7 +419,7 @@ public class TestInjection {
         try {
           notifyPauseForeverDone.await();
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
       } else {
         countPrepRecoveryOpPauseForever.set(0);
@@ -459,7 +459,7 @@ public class TestInjection {
         log.info("Waiting in ReplicaMutator for up to 60s");
         return splitLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
     }
     return true;
@@ -471,7 +471,7 @@ public class TestInjection {
         log.info("Waiting in DirectUpdateHandler2 for up to 60s");
         return directUpdateLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
     }
     return true;
@@ -500,7 +500,7 @@ public class TestInjection {
         log.info("Waiting in ReindexCollectionCmd for up to 60s");
         return reindexLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
     }
     return true;
@@ -526,7 +526,7 @@ public class TestInjection {
         log.info("Pausing IndexFetcher for {}ms", delayBeforeSlaveCommitRefresh);
         Thread.sleep(delayBeforeSlaveCommitRefresh);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
       }
     }
     return true;

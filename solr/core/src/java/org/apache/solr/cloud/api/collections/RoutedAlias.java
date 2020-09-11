@@ -265,7 +265,7 @@ public abstract class RoutedAlias {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -364,7 +364,7 @@ public abstract class RoutedAlias {
         try {
           ensureCollection(targetCollectionDesc.creationCollection, coreContainer);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("Async creation of a collection for routed Alias {} failed!", this.getAliasName(), e);
         }
       }, core);
@@ -409,7 +409,7 @@ public abstract class RoutedAlias {
     } catch (RuntimeException e) {
       throw e;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }

@@ -105,7 +105,7 @@ public final class SolrPaths {
           log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", USER_FILES_DIRECTORY, solrHome);
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.",
             USER_FILES_DIRECTORY, solrHome, e);
       }

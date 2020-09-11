@@ -321,7 +321,7 @@ public class Rule {
         }
 
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new IllegalArgumentException("Invalid condition : " + key + ":" + val, e);
       }
       this.val = expectedVal;

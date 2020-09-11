@@ -17,6 +17,32 @@
 
 package org.apache.solr.cloud.autoscaling.sim;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.lang.invoke.MethodHandles;
+import java.net.URLDecoder;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -57,32 +83,6 @@ import org.apache.solr.util.RedactionUtils;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.io.Reader;
-import java.lang.invoke.MethodHandles;
-import java.net.URLDecoder;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class represents an autoscaling scenario consisting of a series of autoscaling
@@ -250,7 +250,7 @@ public class SimScenario implements AutoCloseable {
         try {
           return SimAction.valueOf(str.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           return null;
         }
       } else {
@@ -477,7 +477,7 @@ public class SimScenario implements AutoCloseable {
               AutoScalingConfig autoscalingConfig = scenario.cluster.getDistribStateManager().getAutoScalingConfig();
               return autoscalingConfig.getZkVersion() == scenario.cluster.getOverseerTriggerThread().getProcessedZnodeVersion();
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               throw new RuntimeException("FAILED", e);
             }
           });
@@ -581,7 +581,7 @@ public class SimScenario implements AutoCloseable {
         try {
           scenario.cluster.request(operation);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("Aborting - error executing suggestion {}", suggestion, e);
           break;
         }
@@ -863,7 +863,7 @@ public class SimScenario implements AutoCloseable {
         try {
           scenario.cluster.getSimClusterStateProvider().simSetShardValue(collection, shard, k, v, delta, divide);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new RuntimeException("Error setting shard value", e);
         }
       });
@@ -898,7 +898,7 @@ public class SimScenario implements AutoCloseable {
         try {
           return Condition.valueOf(p.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           return null;
         }
       }

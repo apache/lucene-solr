@@ -611,7 +611,7 @@ public class SimCloudManager implements SolrCloudManager {
     try {
       simCloudManagerPool.shutdownNow();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       // ignore
     }
     simCloudManagerPool = ParWork.getExecutorService( 10);
@@ -735,7 +735,7 @@ public class SimCloudManager implements SolrCloudManager {
       Future<SolrResponse> rsp = simCloudManagerPool.submit(() -> simHandleSolrRequest(req));
       return rsp.get(120, TimeUnit.SECONDS); // longer then this and something is seriously wrong
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }
@@ -904,7 +904,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simCreateCollection(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -913,7 +913,7 @@ public class SimCloudManager implements SolrCloudManager {
             clusterStateProvider.simDeleteCollection(params.get(CommonParams.NAME),
                 params.get(CommonAdminParams.ASYNC), results);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -924,7 +924,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simAddReplica(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -932,7 +932,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simMoveReplica(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -955,7 +955,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simCreateShard(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -963,7 +963,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simSplitShard(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -971,7 +971,7 @@ public class SimCloudManager implements SolrCloudManager {
           try {
             clusterStateProvider.simDeleteShard(new ZkNodeProps(params.toNamedList().asMap(10)), results);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
           break;
@@ -1045,7 +1045,7 @@ public class SimCloudManager implements SolrCloudManager {
       try {
         return inner.call();
       } catch (InterruptedException ignored) {
-        ParWork.propegateInterrupt(ignored);
+        ParWork.propagateInterrupt(ignored);
         throw ignored;
       } catch (Throwable t) {
         // be forgiving of errors that occured as a result of interuption, even if

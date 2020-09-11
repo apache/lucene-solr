@@ -80,7 +80,7 @@ public class NodesSysPropsCacher implements SolrCloseable {
               .map(r -> r.value)
               .collect(Collectors.toSet());
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.info("Error on parsing shards preference:{}", shardPreferences);
         }
       }
@@ -148,7 +148,7 @@ public class NodesSysPropsCacher implements SolrCloseable {
         cache.put(node, Collections.unmodifiableMap(props));
         break;
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         try {
           // 1, 4, 9
           int backOffTime = 1000 * (i+1);

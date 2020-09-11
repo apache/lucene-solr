@@ -565,7 +565,7 @@ public class FacetStream extends TupleStream implements Expressible  {
 
       index=this.offset;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new IOException(e);
     }
   }

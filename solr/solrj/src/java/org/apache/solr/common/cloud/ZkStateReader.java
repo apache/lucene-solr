@@ -16,33 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.Callable;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrCloseable;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.AutoScalingParams;
-import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.CloseTracker;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.Watcher.Event.EventType;
-import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static java.util.Collections.EMPTY_MAP;
-import static java.util.Collections.emptySortedSet;
-import static org.apache.solr.common.util.Utils.fromJSON;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -71,6 +44,34 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.Callable;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.AutoScalingParams;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.util.Collections.EMPTY_MAP;
+import static java.util.Collections.emptySortedSet;
+import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements SolrCloseable {
   public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
@@ -759,7 +760,7 @@ public class ZkStateReader implements SolrCloseable {
           try {
             exists = zkClient.exists(getCollectionPath(collName), null);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
           if (exists != null && exists.getVersion() == fcachedDocCollection.getZNodeVersion()) {
@@ -1172,7 +1173,7 @@ public class ZkStateReader implements SolrCloseable {
           } catch (KeeperException e) {
             log.error("KeeperException", e);
           } catch (InterruptedException e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
           }
 
         }
@@ -1373,7 +1374,7 @@ public class ZkStateReader implements SolrCloseable {
           log.error("", e);
           return;
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
       }  else if (EventType.NodeDeleted.equals(event.getType())) {
         watchedCollectionProps.put(coll, new VersionedCollectionProps(0, Collections.emptyMap()));
@@ -1383,7 +1384,7 @@ public class ZkStateReader implements SolrCloseable {
           log.error("", e);
           return;
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
         try (ParWork work = new ParWork(this, true)) {
           for (CollectionPropsWatcher observer : collectionPropsObservers.values()) {
@@ -1398,7 +1399,7 @@ public class ZkStateReader implements SolrCloseable {
         } catch (KeeperException e) {
           log.error("", e);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
       }
 
@@ -1520,7 +1521,7 @@ public class ZkStateReader implements SolrCloseable {
     try {
       return zkStateReader.fetchCollectionState(coll, null);
     } catch (KeeperException.SessionExpiredException | InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new AlreadyClosedException("Could not load collection from ZK: " + coll, e);
     } catch (KeeperException e) {
       log.error("getCollectionLive", e);
@@ -2022,7 +2023,7 @@ public class ZkStateReader implements SolrCloseable {
             removeDocCollectionWatcher(collection, watcher);
           }
         } catch (Exception exception) {
-          ParWork.propegateInterrupt(exception);
+          ParWork.propagateInterrupt(exception);
           log.warn("Error on calling watcher", exception);
         }
       }
@@ -2210,7 +2211,7 @@ public class ZkStateReader implements SolrCloseable {
         try {
           Thread.sleep(60000);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           // Executor shutdown will send us an interrupt
           break;
         }

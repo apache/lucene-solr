@@ -28,8 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -195,7 +193,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         try {
           leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR,
               "Exception finding leader for shard " + cloudDesc.getShardId(), e);
 
@@ -490,7 +488,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         try {
           leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + sliceName, e);
         }
 
@@ -576,7 +574,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
       }
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
     }
     if (leaderLogic) {
@@ -622,7 +620,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
       }
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
 
@@ -650,7 +648,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     try {
       return zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId()).getCoreUrl();
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception during fetching from leader.", e);
     }
   }
@@ -794,7 +792,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
 
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
   }
@@ -1043,7 +1041,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                     }
                   }
                 } catch (InterruptedException e) {
-                  ParWork.propegateInterrupt(e);
+                  ParWork.propagateInterrupt(e);
                 }
               }
             }

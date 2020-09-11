@@ -82,7 +82,7 @@ public final class StartupLoggingUtils {
       });
       return true;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       logNotSupported("Could not mute logging to console.");
       return false;
     }
@@ -108,7 +108,7 @@ public final class StartupLoggingUtils {
       ctx.updateLoggers();
       return true;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       logNotSupported("Could not change log level.");
       return false;
     }
@@ -121,7 +121,7 @@ public final class StartupLoggingUtils {
       // Make sure that log4j is really selected as logger in slf4j - we could have LogManager in the bridge class :)
       return binder.getLoggerFactoryClassStr().contains("Log4jLoggerFactory");
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e, true);
+      ParWork.propagateInterrupt(e, true);
       return false;
     }
   }

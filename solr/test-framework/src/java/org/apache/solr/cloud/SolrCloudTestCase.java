@@ -489,7 +489,7 @@ public class SolrCloudTestCase extends SolrTestCase {
       } catch (RuntimeException rte) {
         throw rte;
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException("error executing request", e);
       }
     }

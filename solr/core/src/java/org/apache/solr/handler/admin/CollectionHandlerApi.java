@@ -75,7 +75,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       try {
         clusterProperties.setClusterProperties(commands.get(0).getDataMap());
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }
     });

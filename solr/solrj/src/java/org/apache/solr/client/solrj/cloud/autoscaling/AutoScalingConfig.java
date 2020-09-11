@@ -82,7 +82,7 @@ public class AutoScalingConfig implements MapWriter {
           TriggerEventProcessorStage stage = TriggerEventProcessorStage.valueOf(String.valueOf(stageName).toUpperCase(Locale.ROOT));
           stages.add(stage);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.warn("Invalid stage name '{}' for '{}' in listener config, skipping it in: {}",
               stageName, name, properties);
         }
@@ -174,7 +174,7 @@ public class AutoScalingConfig implements MapWriter {
         try {
           type = TriggerEventType.valueOf(event.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
         if (type == null) {
           this.event = TriggerEventType.INVALID;
@@ -320,7 +320,7 @@ public class AutoScalingConfig implements MapWriter {
       try {
         version = (Integer)jsonMap.get(AutoScalingParams.ZK_VERSION);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         // ignore
       }
     }

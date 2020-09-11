@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,9 +27,7 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -230,7 +227,7 @@ public class StatsStream extends TupleStream implements Expressible  {
         NamedList response = cloudSolrClient.request(request, collection);
         getTuples(response, metrics);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new IOException(e);
       }
     } else {
@@ -248,7 +245,7 @@ public class StatsStream extends TupleStream implements Expressible  {
         NamedList response = client.request(request);
         getTuples(response, metrics);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new IOException(e);
       }
     }

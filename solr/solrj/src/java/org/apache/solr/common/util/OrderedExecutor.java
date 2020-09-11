@@ -17,10 +17,6 @@
 
 package org.apache.solr.common.util;
 
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
-
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorCompletionService;
@@ -28,6 +24,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
+
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 
 public class OrderedExecutor extends ExecutorCompletionService {
   private final ExecutorService delegate;
@@ -57,7 +56,7 @@ public class OrderedExecutor extends ExecutorCompletionService {
     try {
       sparseStripedLock.add(lockId);
     } catch (InterruptedException e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new AlreadyClosedException(e);
     }
 

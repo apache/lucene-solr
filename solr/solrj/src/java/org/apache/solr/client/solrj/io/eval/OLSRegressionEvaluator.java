@@ -19,9 +19,9 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 import org.apache.commons.math3.stat.regression.MultipleLinearRegression;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
@@ -77,7 +77,7 @@ public class OLSRegressionEvaluator extends RecursiveObjectEvaluator implements 
       map.put("regressionParametersStandardErrors", list(multipleLinearRegression.estimateRegressionParametersStandardErrors()));
       map.put("regressionParametersVariance", new Matrix(multipleLinearRegression.estimateRegressionParametersVariance()));
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       //Exception is thrown if the matrix is singular
     }
 

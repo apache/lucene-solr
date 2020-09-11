@@ -27,7 +27,8 @@ import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
 import java.util.Random;
 import java.util.regex.Pattern;
-  
+
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
@@ -45,8 +46,6 @@ import org.apache.solr.common.ParWork;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -238,7 +237,7 @@ public class SSLTestConfig {
           }
           factory.setSslContext(builder.build());
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new RuntimeException("ssl context init failure: " + e.getMessage(), e);
         }
         factory.setNeedClientAuth(isClientAuthMode());
@@ -254,7 +253,7 @@ public class SSLTestConfig {
     try {
       return CertificateUtils.getKeyStore(resource, "JKS", null, password);
     } catch (Exception ex) {
-      ParWork.propegateInterrupt(ex);
+      ParWork.propagateInterrupt(ex);
       throw new IllegalStateException("Unable to build KeyStore from resource: " + resource.getName(), ex);
     }
   }

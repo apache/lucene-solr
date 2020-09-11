@@ -155,7 +155,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       dr = core.getIndexReaderFactory().newReader(dir, core);
       return dr;
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error opening Reader", e);
     } finally {
       if (dir != null) {
@@ -2251,7 +2251,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
         return total;
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         return -1;
       }
     }, true, "indexCommitSize", Category.SEARCHER.toString(), scope);

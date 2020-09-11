@@ -67,7 +67,7 @@ public class ZNodeName implements Comparable<ZNodeName> {
         try {
             return Integer.parseInt(seq);
         } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             LOG.warn("Number format exception for {}", seq, e);
             return null;
         }

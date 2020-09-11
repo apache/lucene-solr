@@ -16,8 +16,6 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.common.ParWork;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -31,6 +29,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.solr.common.ParWork;
 
 
 /**
@@ -74,7 +74,7 @@ public class VersionedFile
 
         is = new FileInputStream(f);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         // swallow exception for now
       }
     }

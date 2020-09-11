@@ -16,16 +16,6 @@
  */
 package org.apache.solr.common;
 
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.OrderedExecutor;
-import org.apache.solr.common.util.SysStats;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
@@ -48,6 +38,16 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.OrderedExecutor;
+import org.apache.solr.common.util.SysStats;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ParWork. A workhorse utility class that tries to use good patterns,
@@ -599,7 +599,7 @@ public class ParWork implements Closeable {
         } else {
           log.error("handleObject(AtomicReference<Throwable>=" + exception + ", CloseTimeTracker=" + workUnitTracker   + ", Label=" + ob.label + ")"
               + ", Object=" + object + ")", t);
-          propegateInterrupt(t);
+          propagateInterrupt(t);
           if (t instanceof Error) {
             throw (Error) t;
           }
@@ -653,11 +653,11 @@ public class ParWork implements Closeable {
     return new ConcurrentHashMap<>(132, 0.75f, 8192);
   }
 
-  public static void propegateInterrupt(Throwable t) {
-    propegateInterrupt(t, false);
+  public static void propagateInterrupt(Throwable t) {
+    propagateInterrupt(t, false);
   }
 
-  public static void propegateInterrupt(Throwable t, boolean infoLogMsg) {
+  public static void propagateInterrupt(Throwable t, boolean infoLogMsg) {
     if (t instanceof InterruptedException) {
       log.info("Interrupted", t.getMessage());
       Thread.currentThread().interrupt();
@@ -674,11 +674,11 @@ public class ParWork implements Closeable {
     }
   }
 
-  public static void propegateInterrupt(String msg, Throwable t) {
-    propegateInterrupt(msg, t, false);
+  public static void propagateInterrupt(String msg, Throwable t) {
+    propagateInterrupt(msg, t, false);
   }
 
-  public static void propegateInterrupt(String msg, Throwable t, boolean infoLogMsg) {
+  public static void propagateInterrupt(String msg, Throwable t, boolean infoLogMsg) {
     if (t instanceof InterruptedException) {
       log.info("Interrupted", t);
       Thread.currentThread().interrupt();
@@ -718,7 +718,7 @@ public class ParWork implements Closeable {
     }
   }
 
-  public static abstract class NoLimitsCallable<V> implements Callable {
+  public static abstract class NoLimitsCallable<V> implements Callable<Object> {
     @Override
     public abstract Object call() throws Exception;
   }

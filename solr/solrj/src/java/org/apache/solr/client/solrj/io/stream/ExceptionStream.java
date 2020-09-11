@@ -52,7 +52,7 @@ public class ExceptionStream extends TupleStream {
     try {
       stream.open();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       this.openException = e;
     }
   }
@@ -67,7 +67,7 @@ public class ExceptionStream extends TupleStream {
     try {
       return stream.read();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       SolrException.log(log, e);
       return Tuple.EXCEPTION(e.getMessage(), true);
     }

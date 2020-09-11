@@ -17,6 +17,35 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -57,7 +86,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -67,38 +95,8 @@ import org.slf4j.MDC;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import static org.apache.solr.common.params.CommonParams.ID;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public abstract class BaseCloudSolrClient extends SolrClient {
 
@@ -263,7 +261,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       try {
         success = threadPool.awaitTermination(3, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e, true);
+        ParWork.propagateInterrupt(e, true);
       }
       if (!success) {
         threadPool.shutdownNow();
@@ -563,7 +561,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           NamedList<Object> rsp = getLbClient().request(lbRequest).getResponse();
           shardResponses.add(url, rsp);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           if(e instanceof SolrException) {
             throw (SolrException) e;
           } else {
@@ -599,7 +597,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         LBSolrClient.Rsp rsp = getLbClient().request(req);
         shardResponses.add(urlList.get(0), rsp.getResponse());
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, urlList.get(0), e);
       }
     }
@@ -967,7 +965,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       }
     } catch (Exception exc) {
-      ParWork.propegateInterrupt(exc);
+      ParWork.propagateInterrupt(exc);
       exc.printStackTrace();
       Throwable rootCause = SolrException.getRootCause(exc);
       // don't do retry support for admin requests
@@ -1108,14 +1106,14 @@ public abstract class BaseCloudSolrClient extends SolrClient {
             return false;
           });
         } catch (TimeoutException | InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       } else if (request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.DELETE.toString())) {
         try {
           getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (c) -> c == null);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
         } catch (TimeoutException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

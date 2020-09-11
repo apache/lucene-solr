@@ -156,7 +156,7 @@ public class ZkContainer implements Closeable {
 
         if (log.isDebugEnabled()) log.debug("done zkController create");
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
             "", e);
       } catch (TimeoutException e) {
@@ -215,12 +215,12 @@ public class ZkContainer implements Closeable {
               zkController.register(core.getName(), cd, skipRecovery);
             }
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
             try {
               zkController.publish(cd, Replica.State.DOWN);
             } catch (Exception e1) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               exp.addSuppressed(e1);
             }
             throw exp;

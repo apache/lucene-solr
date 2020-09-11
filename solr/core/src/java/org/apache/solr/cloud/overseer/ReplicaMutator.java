@@ -455,10 +455,10 @@ public class ReplicaMutator {
                   isLeaderSame = false;
                 }
               } catch (InterruptedException e) {
-                ParWork.propegateInterrupt(e);
+                ParWork.propagateInterrupt(e);
                 throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
               } catch (Exception e) {
-                ParWork.propegateInterrupt(e);
+                ParWork.propagateInterrupt(e);
                 log.warn("Error occurred while checking if parent shard node is still live with the same zk session id. {}"
                         , "We cannot switch shard states at this time.", e);
                 return collection; // we aren't going to make any changes right now
@@ -499,10 +499,10 @@ public class ReplicaMutator {
             try {
               SplitShardCmd.unlockForSplit(cloudManager, collection.getName(), parentSliceName);
             } catch (InterruptedException e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               log.warn("Failed to unlock shard after {} successful split: {} / {}"
                   , (isLeaderSame ? "" : "un"), collection.getName(), parentSliceName);
             }

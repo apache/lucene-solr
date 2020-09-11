@@ -17,6 +17,7 @@
 
 package org.apache.solr;
 
+import java.io.File;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -24,7 +25,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
-import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -38,6 +38,7 @@ import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86Codec;
 import org.apache.lucene.util.Constants;
@@ -73,8 +74,6 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  * All Solr test cases should derive from this class eventually. This is originally a result of async logging, see:
@@ -416,7 +415,7 @@ public class SolrTestCase extends LuceneTestCase {
       try {
         return new File(url.toURI());
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException("Resource was found on classpath, but cannot be resolved to a " +
             "normal file (maybe it is part of a JAR file): " + name);
       }
@@ -537,7 +536,7 @@ public class SolrTestCase extends LuceneTestCase {
         interuptThreadWithNameContains = null;
 
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("", e);
     }
   }
@@ -594,7 +593,7 @@ public class SolrTestCase extends LuceneTestCase {
         try {
           thread.join(250);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
       } else {
         log.info("skipping interrupt due to state:" + thread.getState());

@@ -15,6 +15,13 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
+
+import javax.xml.xpath.XPathExpressionException;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.SortedMap;
+
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -29,12 +36,6 @@ import org.junit.AfterClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
-
-import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.SortedMap;
 
 abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -151,7 +152,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
-      ParWork.propegateInterrupt(e2);
+      ParWork.propagateInterrupt(e2);
       SolrException.log(log, "REQUEST FAILED: " + request, e2);
       throw new RuntimeException("Exception during query", e2);
     }

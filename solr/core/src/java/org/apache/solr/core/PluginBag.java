@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -376,7 +375,7 @@ public class PluginBag<T> implements AutoCloseable {
     try {
       if (inst != null && inst instanceof AutoCloseable) ((AutoCloseable) inst).close();
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.error("Error closing {}", inst , e);
     }
   }
@@ -420,7 +419,7 @@ public class PluginBag<T> implements AutoCloseable {
           try {
             ((AutoCloseable) myInst).close();
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             log.error("Error closing {}", inst , e);
           }
         }
@@ -644,7 +643,7 @@ public class PluginBag<T> implements AutoCloseable {
         try {
           rtl.init(lib);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           log.error("error loading runtime library", e);
         }
         l.add(rtl);
@@ -679,7 +678,7 @@ public class PluginBag<T> implements AutoCloseable {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No key matched signature for jar : " + name + " version: " + version);
         log.info("Jar {} signed with {} successfully verified", name, matchedKey);
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         if (e instanceof SolrException) throw e;
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error verifying key ", e);
       }

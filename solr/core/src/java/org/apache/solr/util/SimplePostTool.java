@@ -23,7 +23,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -65,7 +64,6 @@ import java.util.zip.InflaterInputStream;
 
 import org.apache.solr.common.ParWork;
 import org.apache.solr.core.XmlConfigFile;
-import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -903,7 +901,7 @@ public class SimplePostTool {
     } catch (IOException e) {
       warn("An error occurred getting data from "+url+". Please check that Solr is running.");
     } catch (Exception e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       warn("An error occurred getting data from "+url+". Message: " + e.getMessage());
     }
   }
@@ -943,7 +941,7 @@ public class SimplePostTool {
         fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
         success = false;
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         fatal("POST failed with error " + e.getMessage());
       }
 
@@ -1280,7 +1278,7 @@ public class SimplePostTool {
       } catch (IOException e) {
         warn("IOException opening URL "+url+": "+e.getMessage());
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new RuntimeException(e);
       }
       return l;

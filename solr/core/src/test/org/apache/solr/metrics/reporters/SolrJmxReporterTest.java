@@ -21,7 +21,6 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -217,7 +216,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
               // no longer present
               break;
             } catch (Exception e) {
-              ParWork.propegateInterrupt(e);
+              ParWork.propagateInterrupt(e);
               fail("Unexpected error retrieving attribute: " + e.toString());
             }
           }

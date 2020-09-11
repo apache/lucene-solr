@@ -275,7 +275,7 @@ public class HttpShardHandler extends ShardHandler {
           return rsp;
         }
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new AlreadyClosedException(e);
       } catch (ExecutionException e) {
         // should be impossible... the problem with catching the exception
@@ -457,7 +457,7 @@ public class HttpShardHandler extends ShardHandler {
                     return true;
                   });
                 } catch (InterruptedException e) {
-                  ParWork.propegateInterrupt(e);
+                  ParWork.propagateInterrupt(e);
                   throw new AlreadyClosedException(e);
                 } catch (TimeoutException e) {
                   throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + rb.slices[i]);
@@ -557,7 +557,7 @@ public class HttpShardHandler extends ShardHandler {
         try {
           shardLeader = zkController.getZkStateReader().getLeaderRetry(cloudDescriptor.getCollectionName(), slice.getName());
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + slice.getName() + " in collection "
                   + cloudDescriptor.getCollectionName(), e);
         } catch (SolrException e) {

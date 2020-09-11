@@ -81,7 +81,7 @@ public class HdfsDirectory extends BaseDirectory {
         try {
           Thread.sleep(5000);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           return;
         }
       }

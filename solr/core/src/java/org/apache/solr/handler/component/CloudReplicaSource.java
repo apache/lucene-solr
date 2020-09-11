@@ -189,7 +189,7 @@ class CloudReplicaSource implements ReplicaSource {
         try {
           shardLeader = zkStateReader.getLeaderRetry(collectionName, sliceName);
         } catch (InterruptedException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
               "Exception finding leader for shard " + sliceName + " in collection "
                   + collectionName, e);

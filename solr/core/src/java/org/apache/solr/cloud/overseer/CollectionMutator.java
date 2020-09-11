@@ -110,7 +110,7 @@ public class CollectionMutator {
       } catch (KeeperException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 

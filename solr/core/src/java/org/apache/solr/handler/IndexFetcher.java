@@ -58,7 +58,6 @@ import java.util.zip.Checksum;
 import java.util.zip.InflaterInputStream;
 
 import com.google.common.base.Strings;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
@@ -73,8 +72,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -86,7 +83,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -102,7 +98,6 @@ import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RTimer;
@@ -421,7 +416,7 @@ public class IndexFetcher {
       try {
         response = getLatestVersion();
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         final String errorMsg = e.toString();
         if (!Strings.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
             log.warn("Master at: {} is not available. Index fetch failed by interrupt. Exception: {}", masterUrl, errorMsg);
@@ -702,10 +697,10 @@ public class IndexFetcher {
       } catch (SolrException e) {
         throw e;
       } catch (InterruptedException e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new InterruptedException("Index fetch interrupted");
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       }
     } finally {
@@ -731,7 +726,7 @@ public class IndexFetcher {
           try {
             logReplicationTimeAndConfFiles(null, successfulInstall);
           } catch (Exception e) {
-            ParWork.propegateInterrupt(e);
+            ParWork.propagateInterrupt(e);
             // this can happen on shutdown, a fetch may be running in a thread after DirectoryFactory is closed
             log.warn("Could not log failed replication details", e);
           }
@@ -759,13 +754,13 @@ public class IndexFetcher {
           core.getDirectoryFactory().remove(tmpIndexDir);
         }
       } catch (Exception e) {
-        ParWork.propegateInterrupt(e);
+        ParWork.propagateInterrupt(e);
         SolrException.log(log, e);
       } finally {
         try {
           if (tmpIndexDir != null) core.getDirectoryFactory().release(tmpIndexDir);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           SolrException.log(log, e);
         }
         try {
@@ -773,13 +768,13 @@ public class IndexFetcher {
             core.getDirectoryFactory().release(indexDir);
           }
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           SolrException.log(log, e);
         }
         try {
           if (tmpTlogDir != null) delTree(tmpTlogDir);
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           SolrException.log(log, e);
         }
       }
@@ -881,7 +876,7 @@ public class IndexFetcher {
       
       solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);
     } catch (Throwable e) {
-      ParWork.propegateInterrupt(e);
+      ParWork.propagateInterrupt(e);
       log.warn("Exception while updating statistics", e);
       if (e instanceof  Error) {
         throw e;
@@ -947,7 +942,7 @@ public class IndexFetcher {
         try {
           waitSearcher[0].get();
         } catch (InterruptedException | ExecutionException e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
         }
       }
       commitPoint = searcher.get().getIndexReader().getIndexCommit();

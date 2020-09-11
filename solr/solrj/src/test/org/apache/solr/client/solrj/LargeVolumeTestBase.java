@@ -119,7 +119,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
         resp = client.optimize();
         assertEquals(0, resp.getStatus());
         } catch (Exception e) {
-          ParWork.propegateInterrupt(e);
+          ParWork.propagateInterrupt(e);
           // a commit/optimize can fail with a too many warming searchers exception
           if (log.isInfoEnabled()) {
             log.info("Caught benign exception during commit: {}", e.getMessage());
