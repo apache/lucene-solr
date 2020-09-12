@@ -199,7 +199,7 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
         throw new SolrException(SERVER_ERROR, "Must specify either '" + DEFAULT_FIELD_TYPE_PARAM +
                 "' or declare one typeMapping as default.");
       }
-    } else if (defaultFieldTypeName != null) {
+    } else if (flaggedDefaultType != null) {
       throw new SolrException(SERVER_ERROR, "Must specify either '" + DEFAULT_FIELD_TYPE_PARAM +
               "' or declare one typeMapping as default. Not both!");
     }
@@ -398,8 +398,14 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
     private boolean multiValued;
     private int widenIndex;
 
-    private final String WIDENING_ORDER = "java.lang.Integer java.lang.Long java.lang.Number";
+    private final List<String> WIDENING_ORDER = List.of(
+            "java.lang.Short", "java.lang.Integer", "java.lang.Long",
+            "java.lang.Float", "java.lang.Double", "java.lang.Number");
+
+    private int MAX_WIDEN_INDEX = WIDENING_ORDER.size()-1;
+
     private final String TYPE_STRING = "java.lang.String";
+
 
     public FieldValueTypeInfo(String valueTypeName, boolean multiValued) {
       this.valueTypeName = valueTypeName;
@@ -418,6 +424,7 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
 
       if (widenIndex < 0) {
         // mismatch
+        widenIndex = -1;
         valueTypeName = TYPE_STRING; //because it may have been date or boolean before, not just string
         return;
       }
@@ -425,6 +432,7 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
       int newWidenIndex = WIDENING_ORDER.indexOf(newTypeName);
       if (newWidenIndex < 0) {
         //mismatch the other way
+        widenIndex = -1;
         valueTypeName = TYPE_STRING;
         return;
       }
@@ -436,6 +444,19 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
         widenIndex = newWidenIndex;
       }
       // else we stick with the old one
+    }
+
+    public boolean canWiden() {
+      return widenIndex >=0 && widenIndex < MAX_WIDEN_INDEX;
+    }
+
+    /**
+     * Widen to the next possible type
+     */
+    public void widenType(){
+      assert canWiden();
+      widenIndex++;
+      valueTypeName = WIDENING_ORDER.get(widenIndex);
     }
 
     public String getValueTypeName() {
@@ -467,19 +488,26 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
       final SolrInputDocument doc = cmd.getSolrInputDocument();
       for (String fieldName : doc.getFieldNames()) {
         SolrInputField field = doc.getField(fieldName);
-        int valueCount = field.getValueCount();
-        if (valueCount == 0) {
-          continue;
+
+        //We do a assert and a null check because even after SOLR-12710 is addressed
+        //older SolrJ versions can send null values causing an NPE
+        Collection<Object> allValues = field.getValues();
+        if (allValues == null) {
+          throw new AssertionError("Missing field value.");
         }
 
-        String newTypeName = field.getFirstValue().getClass().getName();
-        boolean newMultiValued = valueCount > 1;
+        // Check ALL values, just in case they are not internally consistent (from SolrJ?)
+        FieldValueTypeInfo typeInfo = fieldValueTypeMap.get(fieldName);
+        boolean multiValued = allValues.size() > 1;
 
-        if (!fieldValueTypeMap.containsKey(fieldName)) {
-          fieldValueTypeMap.put(fieldName, new FieldValueTypeInfo(newTypeName, newMultiValued));
-        } else {
-          FieldValueTypeInfo existingTypeInfo = fieldValueTypeMap.get(fieldName);
-          existingTypeInfo.widen(newTypeName, newMultiValued);
+        for (Object value : allValues) {
+          String typeName = value.getClass().getName();
+          if (typeInfo == null){
+            typeInfo = new FieldValueTypeInfo(typeName, multiValued);
+            fieldValueTypeMap.put(fieldName, typeInfo);
+          } else {
+            typeInfo.widen(typeName, multiValued);
+          }
         }
       }
       // do not process further. risky?
@@ -488,7 +516,8 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
 
     @Override
     public void processCommit(CommitUpdateCommand cmd) throws IOException {
-      if (!cmd.getReq().getParams().getBool(GUESS_SCHEMA_FLAG, false)) {
+//      if (!cmd.getReq().getParams().getBool(GUESS_SCHEMA_FLAG, false)) {
+      if (fieldValueTypeMap.isEmpty()) {
         super.processCommit(cmd);
         return;
       }
@@ -513,7 +542,12 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
           }
 
           FieldValueTypeInfo fieldValueTypeInfo = fieldValueTypeMap.get(fieldName);
-          TypeMapping typeMapping = typeMappingsIndex.get(fieldValueTypeInfo.valueTypeName);
+          TypeMapping typeMapping = typeMappingsIndex.get(fieldValueTypeInfo.getValueTypeName());
+          while (typeMapping == null && fieldValueTypeInfo.canWiden()) {
+            fieldValueTypeInfo.widenType();
+            typeMapping = typeMappingsIndex.get(fieldValueTypeInfo.getValueTypeName());
+          }
+
           String fieldTypeName =
                   (typeMapping != null)
                   ?typeMapping.fieldTypeName
@@ -577,46 +611,7 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
       }
     }
 
-    /**
-     * Maps all given field values' classes to a typeMapping object
-     *
-     * @param fields one or more (same-named) field values from one or more documents
-     */
-    private TypeMapping mapValueClassesToFieldType(List<SolrInputField> fields) {
-      NEXT_TYPE_MAPPING: for (TypeMapping typeMapping : typeMappings) {
-        for (SolrInputField field : fields) {
-          //We do a assert and a null check because even after SOLR-12710 is addressed
-          //older SolrJ versions can send null values causing an NPE
-          assert field.getValues() != null;
-          if (field.getValues() != null) {
-            NEXT_FIELD_VALUE: for (Object fieldValue : field.getValues()) {
-              for (Class<?> valueClass : typeMapping.valueClasses) {
-                if (valueClass.isInstance(fieldValue)) {
-                  continue NEXT_FIELD_VALUE;
-                }
-              }
-              // This fieldValue is not an instance of any of the mapped valueClass-s,
-              // so mapping fails - go try the next type mapping.
-              continue NEXT_TYPE_MAPPING;
-            }
-          }
-        }
-        // Success! Each of this field's values is an instance of a mapped valueClass
-        return typeMapping;
-      }
-      // At least one of this field's values is not an instance of any of the mapped valueClass-s
-      // Return the typeMapping marked as default, if we have one, else return null to use fallback type
-      List<TypeMapping> defaultMappings = typeMappings.stream().filter(TypeMapping::isDefault).collect(Collectors.toList());
-      if (defaultMappings.size() > 1) {
-        throw new SolrException(SERVER_ERROR, "Only one typeMapping can be default");
-      } else if (defaultMappings.size() == 1) {
-        return defaultMappings.get(0);
-      } else {
-        return null;
-      }
-    }
-
-    private FieldNameSelector buildSelector(IndexSchema schema) {
+      private FieldNameSelector buildSelector(IndexSchema schema) {
       FieldNameSelector selector = FieldMutatingUpdateProcessor.createFieldNameSelector
         (solrResourceLoader, schema, inclusions, fieldName -> null == schema.getFieldTypeNoEx(fieldName));
 
