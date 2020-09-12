@@ -153,11 +153,13 @@ public class AttributeFetcherImpl implements AttributeFetcher {
         }
         if (requestedNodeFreeDisk) {
             allSnitchTagsToInsertion.put(SolrClientNodeStateProvider.Variable.FREEDISK.tagName,
-                    (node, value) -> nodeToFreeDisk.put(node, ((Number) value).longValue()));
+                    // Convert from bytes to GB
+                    (node, value) -> nodeToFreeDisk.put(node, ((Number) value).longValue() / 1024 / 1024 / 1024));
         }
         if (requestedNodeTotalDisk) {
             allSnitchTagsToInsertion.put(SolrClientNodeStateProvider.Variable.TOTALDISK.tagName,
-                    (node, value) -> nodeToTotalDisk.put(node, ((Number) value).longValue()));
+                    // Convert from bytes to GB
+                    (node, value) -> nodeToTotalDisk.put(node, ((Number) value).longValue() / 1024 / 1024 / 1024));
         }
         if (requestedNodeHeapUsage) {
             allSnitchTagsToInsertion.put(ImplicitSnitch.HEAPUSAGE,

@@ -73,8 +73,20 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
   }
 
   @Override
+  public String getStringConfig(String configName, String defaultValue) {
+    String retval = stringConfigs.get(configName);
+    return retval != null ? retval : defaultValue;
+  }
+
+  @Override
   public Boolean getBooleanConfig(String configName) {
     return boolConfigs.get(configName);
+  }
+
+  @Override
+  public Boolean getBooleanConfig(String configName, boolean defaultValue) {
+    Boolean retval = boolConfigs.get(configName);
+    return retval != null ? retval : defaultValue;
   }
 
   @Override
@@ -83,8 +95,20 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
   }
 
   @Override
+  public Integer getIntegerConfig(String configName, int defaultValue) {
+    Integer retval = intConfigs.get(configName);
+    return retval != null ? retval : defaultValue;
+  }
+
+  @Override
   public Long getLongConfig(String configName) {
     return longConfigs.get(configName);
+  }
+
+  @Override
+  public Long getLongConfig(String configName, long defaultValue) {
+    Long  retval = longConfigs.get(configName);
+    return retval != null ? retval : defaultValue;
   }
 
   @Override
@@ -93,8 +117,20 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
   }
 
   @Override
+  public Float getFloatConfig(String configName, float defaultValue) {
+    Float retval = floatConfigs.get(configName);
+    return retval != null ? retval : defaultValue;
+  }
+
+  @Override
   public Double getDoubleConfig(String configName) {
     return doubleConfigs.get(configName);
+  }
+
+  @Override
+  public Double getDoubleConfig(String configName, double defaultValue) {
+    Double retval = doubleConfigs.get(configName);
+    return retval != null ? retval : defaultValue;
   }
 
   /**

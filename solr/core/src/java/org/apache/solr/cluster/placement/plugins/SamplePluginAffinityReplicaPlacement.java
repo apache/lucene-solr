@@ -75,7 +75,21 @@ import java.util.stream.Collectors;
  * make it relatively easy to adapt it to (somewhat) different assumptions. Configuration options could be introduced
  * to allow configuration base option selection as well...</p>
  *
- * TODO: disclaimer: code not tested and never really run
+ * <p>In order to configure this plugin to be used for placement decisions, the following {@code curl} command (or something
+ * equivalent, because the command below doesn't work) has to be executed once the cluster is already running in order to set
+ * the appropriate Zookeeper stored configuration. Replace {@code localhost:8983} by one of your servers' IP address and port.</p>
+ *
+ * <pre>
+ *
+ * curl -X POST -H 'Content-type:application/json' --data-binary '
+ * {
+ *   "set-placement-plugin": {
+ *      "class": "org.apache.solr.cluster.placement.plugins.SamplePluginAffinityReplicaPlacement$Factory",
+ *      "minimalFreeDiskGB" : 10,
+ *      "deprioritizedFreeDiskGB" : 50
+ *   }
+ * }' http://localhost:8983/api/cluster/plugins
+ * </pre>
  */
 public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -97,9 +111,8 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
 
     @Override
     public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
-      // TODO configuration not yet implemented, so hard coding config for this plugin
-      final long minimalFreeDiskGB = 5L;
-      final long deprioritizedFreeDiskGB = 50L;
+      final long minimalFreeDiskGB = config.getLongConfig("minimalFreeDiskGB", 5L);
+      final long deprioritizedFreeDiskGB = config.getLongConfig("deprioritizedFreeDiskGB", 50L);
       return new SamplePluginAffinityReplicaPlacement(minimalFreeDiskGB, deprioritizedFreeDiskGB);
     }
   }
@@ -147,7 +160,6 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
     this.minimalFreeDiskGB = minimalFreeDiskGB;
     this.deprioritizedFreeDiskGB = deprioritizedFreeDiskGB;
   }
-
 
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
   public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,

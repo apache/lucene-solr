@@ -23,38 +23,69 @@ package org.apache.solr.cluster.placement;
  */
 public interface PlacementPluginConfig {
   /**
-   * @return the configured {@link String} value corresponding to {@code configName} (a {@code str} in {@code solr.xml})
-   * if one exists (could be the empty string) and {@code null} otherwise.
+   * @return the configured {@link String} value corresponding to {@code configName} if one exists (could be the empty
+   * string) and {@code null} otherwise.
    */
   String getStringConfig(String configName);
 
   /**
-   * @return the configured {@link Boolean} value corresponding to {@code configName} (a {@code bool} in {@code solr.xml})
-   * if one exists, {@code null} otherwise.
+   * @return the configured {@link String} value corresponding to {@code configName} if one exists (could be the empty
+   * string) and {@code defaultValue} otherwise.
+   */
+  String getStringConfig(String configName, String defaultValue);
+
+  /**
+   * @return the configured {@link Boolean} value corresponding to {@code configName} if one exists, {@code null} otherwise.
    */
   Boolean getBooleanConfig(String configName);
 
   /**
-   * @return the configured {@link Integer} value corresponding to {@code configName} (an {@code int} in {@code solr.xml})
-   * if one exists, {@code null} otherwise.
+   * @return the configured {@link Boolean} value corresponding to {@code configName} if one exists, a boxed {@code defaultValue}
+   * otherwise (this method never returns {@code null}.
+   */
+  Boolean getBooleanConfig(String configName, boolean defaultValue);
+
+  /**
+   * @return the configured {@link Integer} value corresponding to {@code configName} if one exists, {@code null} otherwise.
    */
   Integer getIntegerConfig(String configName);
 
   /**
-   * @return the configured {@link Long} value corresponding to {@code configName} (a {@code long} in {@code solr.xml})
-   * if one exists, {@code null} otherwise.
+   * @return the configured {@link Integer} value corresponding to {@code configName} if one exists, a boxed {@code defaultValue}
+   * otherwise (this method never returns {@code null}.
+   */
+  Integer getIntegerConfig(String configName, int defaultValue);
+
+  /**
+   * @return the configured {@link Long} value corresponding to {@code configName} if one exists, {@code null} otherwise.
    */
   Long getLongConfig(String configName);
 
   /**
-   * @return the configured {@link Float} value corresponding to {@code configName} (a {@code float} in {@code solr.xml})
-   * if one exists, {@code null} otherwise.
+   * @return the configured {@link Long} value corresponding to {@code configName} if one exists, a boxed {@code defaultValue}
+   * otherwise (this method never returns {@code null}.
+   */
+  Long getLongConfig(String configName, long defaultValue);
+
+  /**
+   * @return the configured {@link Float} value corresponding to {@code configName} if one exists, {@code null} otherwise.
    */
   Float getFloatConfig(String configName);
 
   /**
-   * @return the configured {@link Double} value corresponding to {@code configName} (a {@code double} in {@code solr.xml})
-   * if one exists, {@code null} otherwise.
+   * @return the configured {@link Float} value corresponding to {@code configName} if one exists, a boxed {@code defaultValue}
+   * otherwise (this method never returns {@code null}.
+   */
+  Float getFloatConfig(String configName, float defaultValue);
+
+  /**
+   * @return the configured {@link Double} value corresponding to {@code configName} if one exists, {@code null} otherwise.
    */
   Double getDoubleConfig(String configName);
+
+  /**
+   * @return the configured {@link Double} value corresponding to {@code configName} if one exists, a boxed {@code defaultValue}
+   * otherwise (this method never returns {@code null}.
+   */
+  Double getDoubleConfig(String configName, double defaultValue);
 }
