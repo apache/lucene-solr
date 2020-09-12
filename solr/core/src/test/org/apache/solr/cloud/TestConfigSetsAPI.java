@@ -85,6 +85,7 @@ import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
+import org.apache.solr.security.MockAuthorizationPlugin;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
@@ -358,15 +359,17 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   @Test
-  public void testOverride() throws Exception {
+  public void testOverwrite() throws Exception {
     String configsetName = "regular";
-    String configsetSuffix = "testOverride-1";
+    String configsetSuffix = "testOverwrite-1";
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
             AbstractZkTestCase.TIMEOUT, 45000, null)) {
       int solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
-      assertEquals("Can't override an existing configset unless the override parameter is set",
+      ignoreException("The configuration regulartestOverwrite-1 already exists in zookeeper");
+      assertEquals("Can't overwrite an existing configset unless the overwrite parameter is set",
               400, uploadConfigSet(configsetName, configsetSuffix, null, zkClient, false));
+      unIgnoreException("The configuration regulartestOverwrite-1 already exists in zookeeper");
       assertEquals("Expecting version to remain equal",
               solrconfigZkVersion, getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
       assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, null, zkClient, true));
@@ -374,8 +377,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               solrconfigZkVersion < getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
       // Fake a trusted configset
       zkClient.setData(String.format(Locale.ROOT, "/configs/%s%s", configsetName, configsetSuffix), "{\"trusted\": true}".getBytes(UTF_8), true);
+      solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
+      ignoreException("Trying to make an unstrusted ConfigSet update on a trusted configSet");
       assertEquals("Can't upload a trusted configset with an untrusted request",
               400, uploadConfigSet(configsetName, configsetSuffix, null, zkClient, true));
+      unIgnoreException("Trying to make an unstrusted ConfigSet update on a trusted configSet");
       assertEquals("Expecting version to remain equal",
               solrconfigZkVersion, getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
     }
@@ -494,7 +500,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private long uploadConfigSet(String configSetName, String suffix, String username,
-      SolrZkClient zkClient, boolean override) throws IOException {
+      SolrZkClient zkClient, boolean overwrite) throws IOException {
     // Read zipped sample config
     ByteBuffer sampleZippedConfig = TestSolrConfigHandler
         .getFileContent(
@@ -502,7 +508,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     @SuppressWarnings({"rawtypes"})
     Map map = postDataAndGetResponse(cluster.getSolrClient(),
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix + (override? "&override=true" : ""),
+        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix + (overwrite? "&overwrite=true" : ""),
         sampleZippedConfig, username);
     assertNotNull(map);
     long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));

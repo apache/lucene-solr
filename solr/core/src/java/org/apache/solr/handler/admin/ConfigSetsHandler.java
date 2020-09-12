@@ -154,9 +154,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     String configPathInZk = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName;
 
-    boolean overridesExisting = zkClient.exists(configPathInZk, true);
+    boolean overwritesExisting = zkClient.exists(configPathInZk, true);
 
-    if (overridesExisting && !req.getParams().getBool(ConfigSetParams.OVERRIDE, false)) {
+    if (overwritesExisting && !req.getParams().getBool(ConfigSetParams.OVERWRITE, false)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "The configuration " + configSetName + " already exists in zookeeper");
     }
@@ -172,9 +172,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     // Create a node for the configuration in zookeeper
     boolean trusted = getTrusted(req);
-    if (overridesExisting) {
+    if (overwritesExisting) {
       if (!trusted) {
-        ensureOverridingUntrustedConfigSet(zkClient, configPathInZk);
+        ensureOverwritingUntrustedConfigSet(zkClient, configPathInZk);
       }
     } else {
       zkClient.makePath(configPathInZk, ("{\"trusted\": " + Boolean.toString(trusted) + "}").
@@ -198,7 +198,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   /*
    * Fail if an untrusted request tries to update a trusted ConfigSet
    */
-  private void ensureOverridingUntrustedConfigSet(SolrZkClient zkClient, String configSetZkPath) {
+  private void ensureOverwritingUntrustedConfigSet(SolrZkClient zkClient, String configSetZkPath) {
     byte[] configSetNodeContent;
     try {
       configSetNodeContent = zkClient.getData(configSetZkPath, null, null, true);

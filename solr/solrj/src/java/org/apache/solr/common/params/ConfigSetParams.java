@@ -24,7 +24,7 @@ import java.util.Locale;
 public interface ConfigSetParams
 {
   public final static String ACTION = "action";
-  public final static String OVERRIDE = "override";
+  public final static String OVERWRITE = "overwrite";
 
   public enum ConfigSetAction {
     CREATE,
