@@ -43,25 +43,25 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">pints</str>
+        <str name="fieldType">pint</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Float</str>
-        <str name="fieldType">pfloats</str>
+        <str name="fieldType">pfloat</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.util.Date</str>
-        <str name="fieldType">pdates</str>
+        <str name="fieldType">pdate</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
-        <str name="fieldType">plongs</str>
+        <str name="fieldType">plong</str>
       </lst>
       <lst name="typeMapping">
         <arr name="valueClass">
           <str>java.lang.Double</str>
         </arr>
-        <str name="fieldType">pdoubles</str>
+        <str name="fieldType">pdouble</str>
       </lst>
     </processor>
   </updateRequestProcessorChain>
@@ -81,23 +81,23 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">pints</str>
+        <str name="fieldType">pint</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Float</str>
-        <str name="fieldType">pfloats</str>
+        <str name="fieldType">pfloat</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.util.Date</str>
-        <str name="fieldType">pdates</str>
+        <str name="fieldType">pdate</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
-        <str name="fieldType">plongs</str>
+        <str name="fieldType">plong</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Number</str>
-        <str name="fieldType">pdoubles</str>
+        <str name="fieldType">pdouble</str>
       </lst>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
@@ -144,23 +144,23 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">pints</str>
+        <str name="fieldType">pint</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Float</str>
-        <str name="fieldType">pfloats</str>
+        <str name="fieldType">pfloat</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.util.Date</str>
-        <str name="fieldType">pdates</str>
+        <str name="fieldType">pdate</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
-        <str name="fieldType">plongs</str>
+        <str name="fieldType">plong</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Number</str>
-        <str name="fieldType">pdoubles</str>
+        <str name="fieldType">pdouble</str>
       </lst>
     </processor>
     <processor class="solr.LogUpdateProcessorFactory" />
@@ -194,23 +194,23 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">pints</str>
+        <str name="fieldType">pint</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Float</str>
-        <str name="fieldType">pfloats</str>
+        <str name="fieldType">pfloat</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.util.Date</str>
-        <str name="fieldType">pdates</str>
+        <str name="fieldType">pdate</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
-        <str name="fieldType">plongs</str>
+        <str name="fieldType">plong</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Number</str>
-        <str name="fieldType">pdoubles</str>
+        <str name="fieldType">pdouble</str>
       </lst>
     </processor>
     <processor class="solr.LogUpdateProcessorFactory" />

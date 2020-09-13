@@ -62,6 +62,8 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     initCore(SOLRCONFIG_XML, SCHEMA_XML, tmpSolrHome.getPath());
   }
 
+  //TODO: Explicitly test for multiValue detection, not just with XPATH
+
   public void testEmptyValue() {
     IndexSchema schema = h.getCore().getLatestSchema();
     final String fieldName = "newFieldABC";
@@ -88,7 +90,7 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     processCommit(chain);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
-    assertEquals("pdates", schema.getFieldType(fieldName).getTypeName());
+    assertEquals("pdate", schema.getFieldType(fieldName).getTypeName());
   }
 
   public void testSingleFieldRoundTrip() throws Exception {
@@ -105,19 +107,19 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
 
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
-    assertEquals("pfloats", schema.getFieldType(fieldName).getTypeName());
+    assertEquals("pfloat", schema.getFieldType(fieldName).getTypeName());
 
-    //now actual index it
+    //now actually index it
     SolrInputDocument e = processAdd(chain, doc(f("id", "2"), f(fieldName, floatValue)));
     assertNotNull(e);
+    assertU(commit());
 
     // just in case, retest the schema this once
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
-    assertEquals("pfloats", schema.getFieldType(fieldName).getTypeName());
+    assertEquals("pfloat", schema.getFieldType(fieldName).getTypeName());
 
-    assertU(commit());
-    assertQ(req("id:2"), "//arr[@name='" + fieldName + "']/float[.='" + floatValue.toString() + "']");
+    assertQ(req("id:2"), "//float[@name='" + fieldName + "' and .='" + floatValue.toString() + "']");
   }
 
   public void testSingleFieldMixedFieldTypesRoundTrip() throws Exception {
@@ -134,7 +136,7 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
 
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
-    assertEquals("pdoubles", schema.getFieldType(fieldName).getTypeName());
+    assertEquals("pdouble", schema.getFieldType(fieldName).getTypeName());
 
     SolrInputDocument e = processAdd
         (chain, doc(f("id", "3"), f(fieldName, fieldValue1, fieldValue2)));
@@ -222,8 +224,8 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName1));
     assertNotNull(schema.getFieldOrNull(fieldName2));
-    assertEquals("pdoubles", schema.getFieldType(fieldName1).getTypeName());
-    assertEquals("plongs", schema.getFieldType(fieldName2).getTypeName());
+    assertEquals("pdouble", schema.getFieldType(fieldName1).getTypeName());
+    assertEquals("plong", schema.getFieldType(fieldName2).getTypeName());
 
     SolrInputDocument e = processAdd
             (chain, doc(f("id", "5"),
@@ -283,10 +285,10 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     assertNotNull(schema.getFieldOrNull(fieldName2));
     assertNotNull(schema.getFieldOrNull(fieldName3));
     assertNotNull(schema.getFieldOrNull(fieldName4));
-    assertEquals("pdoubles", schema.getFieldType(fieldName1).getTypeName());
-    assertEquals("plongs", schema.getFieldType(fieldName2).getTypeName());
+    assertEquals("pdouble", schema.getFieldType(fieldName1).getTypeName());
+    assertEquals("plong", schema.getFieldType(fieldName2).getTypeName());
     assertEquals("text", schema.getFieldType(fieldName3).getTypeName());
-    assertEquals("pdates", schema.getFieldType(fieldName4).getTypeName());
+    assertEquals("pdate", schema.getFieldType(fieldName4).getTypeName());
 
     SolrInputDocument e = processAdd
             (chain, doc(f("id", "6"), f(fieldName1, field1String1, field1String2, field1String3),
@@ -303,7 +305,7 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
         ,"//arr[@name='" + fieldName2 + "']/long[.='" + field2Value2.toString() + "']"
         ,"//arr[@name='" + fieldName3 + "']/str[.='" + field3String1 + "']"
         ,"//arr[@name='" + fieldName3 + "']/str[.='" + field3String2 + "']"
-        ,"//arr[@name='" + fieldName4 + "']/date[.='" + field4Value1String + "']");
+        ,"//date[@name='" + fieldName4 + "' and .='" + field4Value1String + "']");
   }
 
   public void testStringWithCopyField() throws Exception {
