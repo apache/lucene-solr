@@ -44,20 +44,25 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * one or more fields that don't match any field or dynamic field in the schema.
  * </p>
  * <p>
- * By default, this processor selects all fields that don't match a schema field or
- * dynamic field.  The "fieldName" and "fieldRegex" selectors may be specified to further
- * restrict the selected fields, but the other selectors ("typeName", "typeClass", and
- * "fieldNameMatchesSchemaField") may not be specified.
+ * It works together with other Update Request Processors that try to identify special types and parse them in advance.
+ * This means that this chain needs to be consistently used (of default)
+ * if you are relying on parsing custom formats, such as dates.
+ * At the same time, you want to be explicit on when you are modifying your schema,
+ * therefore you need to pass a <em>guess-schema</em> parameter when you are doing guessing.
+ * </p>
+ * <p>
+ * You can provide any number of documents of any type, they are not actually added,
+ * but are used to fine-tune the best possible field type. The schema is updated on commit, so you can even run multiple
+ * import operations, as long as no commit is called until the very end.
+ * </p>
+ * <p>
+ * This processor is best used on a learning schema to quickly import existing data for analysis. In a production schema,
+ * it can interplay in unusual ways with common production settings, such as autoCommits, SolrCloud routing and so on.
+ * You may also want to configure parameters other than type and multiValued settings when you go to production.
  * </p>
  * <p>
  * This processor is configured to map from each field's values' class(es) to the schema
- * field type that will be used when adding the new field to the schema.  All new fields
- * are then added to the schema in a single batch.  If schema addition fails for any
- * field, addition is re-attempted only for those that don’t match any schema
- * field.  This process is repeated, either until all new fields are successfully added,
- * or until there are no new fields (presumably because the fields that were new when
- * this processor started its work were subsequently added by a different update
- * request, possibly on a different node).
+ * field type that will be used when adding the new field to the schema.
  * </p>
  * <p>
  * This processor takes as configuration a sequence of zero or more "typeMapping"-s from
@@ -68,12 +73,11 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * <p>
  * If more than one "valueClass" is specified in a "typeMapping", field values with any
  * of the specified "valueClass"-s will be mapped to the specified target "fieldType".
- * The "typeMapping"-s are attempted in the specified order; if a field value's class
- * is not specified in a "valueClass", the next "typeMapping" is attempted. If no
- * "typeMapping" succeeds, then either the "typeMapping" configured with 
- * <code>&lt;bool name="default"&gt;true&lt;/bool&gt;</code> is used, or if none is so
- * configured, the <code>lt;str name="defaultFieldType"&gt;...&lt;/str&gt;</code> is
- * used.
+ * If data contains values of multiple compatible types (e.g. integers and longs, or longs and doubles),
+ * the most general type (valueClass) will be used when generating the schema.
+ * There is no need to repeat possible valueClass names, just use the most general one you want to map.
+ * If the values for the same field are not compatible (e.g. number and string, or date and double),
+ * the mapping for java.lang.String is used.
  * </p>
  * <p>
  * Zero or more "copyField" directives may be included with each "typeMapping", using a
@@ -81,6 +85,10 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  * name; "dest" must specify the destination field or dynamic field in a
  * <code>&lt;str&gt;</code>; and "maxChars" may optionally be specified in an
  * <code>&lt;int&gt;</code>.
+ * </p>
+ * <p>
+ * The destination types can be single-valued, as the guessing process will look for multiple values
+ * and mark the field definitions appropriately.
  * </p>
  * <p>
  * Example configuration:
@@ -95,28 +103,25 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *       &lt;str name="dest"&gt;*_str&lt;/str&gt;
  *       &lt;int name="maxChars"&gt;256&lt;/int&gt;
  *     &lt;/lst&gt;
- *     &lt;!-- Use as default mapping instead of defaultFieldType --&gt;
- *     &lt;bool name="default"&gt;true&lt;/bool&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="typeMapping"&gt;
  *     &lt;str name="valueClass"&gt;java.lang.Boolean&lt;/str&gt;
- *     &lt;str name="fieldType"&gt;booleans&lt;/str&gt;
+ *     &lt;str name="fieldType"&gt;boolean&lt;/str&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="typeMapping"&gt;
  *     &lt;str name="valueClass"&gt;java.util.Date&lt;/str&gt;
- *     &lt;str name="fieldType"&gt;pdates&lt;/str&gt;
+ *     &lt;str name="fieldType"&gt;pdate&lt;/str&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="typeMapping"&gt;
  *     &lt;str name="valueClass"&gt;java.lang.Long&lt;/str&gt;
- *     &lt;str name="valueClass"&gt;java.lang.Integer&lt;/str&gt;
- *     &lt;str name="fieldType"&gt;plongs&lt;/str&gt;
+ *     &lt;str name="fieldType"&gt;plong&lt;/str&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="typeMapping"&gt;
  *     &lt;str name="valueClass"&gt;java.lang.Number&lt;/str&gt;
- *     &lt;str name="fieldType"&gt;pdoubles&lt;/str&gt;
+ *     &lt;str name="fieldType"&gt;pdouble&lt;/str&gt;
  *   &lt;/lst&gt;
  * &lt;/updateProcessor&gt;</pre>
- * @since 4.4.0
+ * @since 9.0
  */
 public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements UpdateRequestProcessorFactory.RunAlways {
