@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.plugins.SamplePluginAffinityReplicaPlacement;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 
@@ -38,32 +39,26 @@ import org.apache.solr.common.util.Utils;
  */
 public class PlacementPluginConfigImpl implements PlacementPluginConfig {
   /**
-   * The key in {@code clusterprops.json} under which the plugin factory (and the plugin itself) configuration lives.
+   * The key in {@code clusterprops.json} under which the plugin factory and the plugin configuration are defined.
    */
   final public static String PLACEMENT_PLUGIN_CONFIG_KEY = "placement-plugin";
+  /** Name of the property containing the factory class */
   final public static String CONFIG_CLASS = "class";
-  final public static String CONFIG_VERSION = "version";
 
   // Separating configs into typed maps based on the element names in solr.xml
   private final Map<String, String> stringConfigs;
-  private final Map<String, Integer> intConfigs;
   private final Map<String, Long> longConfigs;
   private final Map<String, Boolean> boolConfigs;
-  private final Map<String, Float> floatConfigs;
   private final Map<String, Double> doubleConfigs;
 
 
   private PlacementPluginConfigImpl(Map<String, String> stringConfigs,
-                                    Map<String, Integer> intConfigs,
                                     Map<String, Long> longConfigs,
                                     Map<String, Boolean> boolConfigs,
-                                    Map<String, Float> floatConfigs,
                                     Map<String, Double> doubleConfigs) {
     this.stringConfigs = stringConfigs;
-    this.intConfigs = intConfigs;
     this.longConfigs = longConfigs;
     this.boolConfigs = boolConfigs;
-    this.floatConfigs = floatConfigs;
     this.doubleConfigs = doubleConfigs;
   }
 
@@ -90,17 +85,6 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
   }
 
   @Override
-  public Integer getIntegerConfig(String configName) {
-    return intConfigs.get(configName);
-  }
-
-  @Override
-  public Integer getIntegerConfig(String configName, int defaultValue) {
-    Integer retval = intConfigs.get(configName);
-    return retval != null ? retval : defaultValue;
-  }
-
-  @Override
   public Long getLongConfig(String configName) {
     return longConfigs.get(configName);
   }
@@ -108,17 +92,6 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
   @Override
   public Long getLongConfig(String configName, long defaultValue) {
     Long  retval = longConfigs.get(configName);
-    return retval != null ? retval : defaultValue;
-  }
-
-  @Override
-  public Float getFloatConfig(String configName) {
-    return floatConfigs.get(configName);
-  }
-
-  @Override
-  public Float getFloatConfig(String configName, float defaultValue) {
-    Float retval = floatConfigs.get(configName);
     return retval != null ? retval : defaultValue;
   }
 
@@ -140,41 +113,20 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
    * configuration consumable by the plugin (and that will not change as Solr changes internally how and where it stores
    * configuration).</p>
    *
-   * <p>A way to create the corresponding configuration in {@code clusterprops.json} is by executing something along the following
-   * while SolrCloud is running (see SOLR-14404 and {@link org.apache.solr.handler.admin.ContainerPluginsApi}):</p>
+   * <p>Configuration properties {@code class} and {@code name} are reserved: for defining the plugin factory class and
+   * a human readable plugin name. All other properties are plugin specific.</p>
    *
-   * <pre>
-   * curl -X POST -H 'Content-type:application/json' --data-binary '
-   * {
-   *   "set-placement-plugin": {
-   *      "class": "plugin.factory.full.ClassName$innerClass",
-   *      "key1" : "val1"
-   *   }
-   * }' http://localhost:8983/api/cluster/plugins
-   * </pre>
-   *
-   * In order to remove this configuration, do instead:
-   *
-   * <pre>
-   * curl -X POST -H 'Content-type:application/json' --data-binary '
-   * {
-   *    "set-placement-plugin":  null
-   * }' http://localhost:8983/api/cluster/plugins
-   * </pre>
+   * <p>See configuration example and how-to in {@link SamplePluginAffinityReplicaPlacement}.</p>
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   static PlacementPluginConfig createConfigFromProperties(Map<String, Object> pluginConfig) {
     final Map<String, String> stringConfigs = new HashMap<>();
-    final Map<String, Integer> intConfigs = new HashMap<>();
     final Map<String, Long> longConfigs = new HashMap<>();
     final Map<String, Boolean> boolConfigs = new HashMap<>();
-    final Map<String, Float> floatConfigs = new HashMap<>();
     final Map<String, Double> doubleConfigs = new HashMap<>();
 
     for (Map.Entry<String, Object> e : pluginConfig.entrySet()) {
       String key = e.getKey();
-      if (CONFIG_CLASS.equals(key) || CONFIG_VERSION.equals(key)) {
-        // These are reserved configuration names, see getPlacementPlugin() below
+      if (CONFIG_CLASS.equals(key)) {
         continue;
       }
 
@@ -190,14 +142,10 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
 
       if (value instanceof String) {
         stringConfigs.put(key, (String) value);
-      } else if (value instanceof Integer) {
-        intConfigs.put(key, (Integer) value);
       } else if (value instanceof Long) {
         longConfigs.put(key, (Long) value);
       } else if (value instanceof Boolean) {
         boolConfigs.put(key, (Boolean) value);
-      } else if (value instanceof Float) {
-        floatConfigs.put(key, (Float) value);
       } else if (value instanceof Double) {
         doubleConfigs.put(key, (Double) value);
       } else {
@@ -206,7 +154,7 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
       }
     }
 
-    return new PlacementPluginConfigImpl(stringConfigs, intConfigs, longConfigs, boolConfigs, floatConfigs, doubleConfigs);
+    return new PlacementPluginConfigImpl(stringConfigs, longConfigs, boolConfigs, doubleConfigs);
   }
 
   /**
@@ -244,14 +192,13 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
 
       placementPluginFactory = factoryClazz.getConstructor().newInstance(); // no args constructor - that's why we introduced a factory...
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unable to instantiate placement-plugin factory: " + Utils.toJSONString(pluginConfigMap), e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unable to instantiate placement-plugin factory: " +
+              Utils.toJSONString(pluginConfigMap) + " please review /clusterprops.json config for " + PLACEMENT_PLUGIN_CONFIG_KEY, e);
     }
 
     // Translate the config from the properties where they are defined into the abstraction seen by the plugin
     PlacementPluginConfig pluginConfig = createConfigFromProperties(pluginConfigMap);
 
-    PlacementPlugin placementPlugin = placementPluginFactory.createPluginInstance(pluginConfig);
-
-    return placementPlugin;
+    return placementPluginFactory.createPluginInstance(pluginConfig);
   }
 }

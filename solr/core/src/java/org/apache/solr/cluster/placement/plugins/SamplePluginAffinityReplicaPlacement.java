@@ -76,19 +76,38 @@ import java.util.stream.Collectors;
  * to allow configuration base option selection as well...</p>
  *
  * <p>In order to configure this plugin to be used for placement decisions, the following {@code curl} command (or something
- * equivalent, because the command below doesn't work) has to be executed once the cluster is already running in order to set
+ * equivalent) has to be executed once the cluster is already running in order to set
  * the appropriate Zookeeper stored configuration. Replace {@code localhost:8983} by one of your servers' IP address and port.</p>
  *
  * <pre>
  *
- * curl -X POST -H 'Content-type:application/json' --data-binary '
- * {
+ * curl -X POST -H 'Content-type:application/json' -d '{
  *   "set-placement-plugin": {
- *      "class": "org.apache.solr.cluster.placement.plugins.SamplePluginAffinityReplicaPlacement$Factory",
- *      "minimalFreeDiskGB" : 10,
- *      "deprioritizedFreeDiskGB" : 50
+ *     "class": "org.apache.solr.cluster.placement.plugins.SamplePluginAffinityReplicaPlacement$Factory",
+ *     "minimalFreeDiskGB": 10,
+ *     "deprioritizedFreeDiskGB": 50
  *   }
- * }' http://localhost:8983/api/cluster/plugins
+ * }' http://localhost:8983/api/cluster
+ * </pre>
+ *
+ * <p>The consequence will be the creation of an element in the Zookeeper file {@code /clusterprops.json} as follows:</p>
+ *
+ * <pre>
+ *
+ * "placement-plugin":{
+ *     "class":"org.apache.solr.cluster.placement.plugins.SamplePluginAffinityReplicaPlacement$Factory",
+ *     "minimalFreeDiskGB":10,
+ *     "deprioritizedFreeDiskGB":50}
+ * </pre>
+ *
+ * <p>In order to delete the placement-plugin section from {@code /clusterprops.json} (and to fallback to either Legacy
+ * or rule based placement if configured for a collection), execute:</p>
+ *
+ * <pre>
+ *
+ * curl -X POST -H 'Content-type:application/json' -d '{
+ *   "unset-placement-plugin" : null
+ * }' http://localhost:8983/api/cluster
  * </pre>
  */
 public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
@@ -111,8 +130,8 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
 
     @Override
     public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
-      final long minimalFreeDiskGB = config.getLongConfig("minimalFreeDiskGB", 5L);
-      final long deprioritizedFreeDiskGB = config.getLongConfig("deprioritizedFreeDiskGB", 50L);
+      final long minimalFreeDiskGB = config.getLongConfig("minimalFreeDiskGB", 20L);
+      final long deprioritizedFreeDiskGB = config.getLongConfig("deprioritizedFreeDiskGB", 100L);
       return new SamplePluginAffinityReplicaPlacement(minimalFreeDiskGB, deprioritizedFreeDiskGB);
     }
   }
@@ -220,12 +239,8 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
    */
   private String getNodeAZ(Node n, final AttributeValues attrValues) {
     Optional<String> nodeAz = attrValues.getSystemProperty(n, AVAILABILITY_ZONE_SYSPROP);
-    if (nodeAz.isPresent()) {
-      return nodeAz.get();
-    } else {
-      // All nodes with undefined AZ will be considered part of the same AZ. This also works for deployments that do not care about AZ's
-      return UNDEFINED_AVAILABILITY_ZONE;
-    }
+    // All nodes with undefined AZ will be considered part of the same AZ. This also works for deployments that do not care about AZ's
+    return nodeAz.orElse(UNDEFINED_AVAILABILITY_ZONE);
   }
 
   /**
@@ -246,17 +261,6 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
       // Once the list is sorted to an order we're happy with, this flag is set to true to avoid sorting multiple times
       // unnecessarily.
       this.hasBeenSorted = false;
-    }
-  }
-
-  private void placeReplicas(ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
-                             PlacementPlanFactory placementPlanFactory, Set<ReplicaPlacement> replicaPlacements,
-                             String shardName, int countReplicas, Replica.ReplicaType replicaType) {
-    for (int replica = 0; replica < countReplicas; replica++) {
-      final Map.Entry<Integer, Node> entry = nodeEntriesToAssign.remove(0);
-      final Node node = entry.getValue();
-
-      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(shardName, node, replicaType));
     }
   }
 
@@ -383,11 +387,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
     Map<String, List<Node>> nodesPerAz = Maps.newHashMap();
     for (Node node : candidateNodes) {
       String nodeAz = getNodeAZ(node, attrValues);
-      List<Node> nodesForAz = nodesPerAz.get(nodeAz);
-      if (nodesForAz == null) {
-        nodesForAz = new ArrayList<>();
-        nodesPerAz.put(nodeAz, nodesForAz);
-      }
+      List<Node> nodesForAz = nodesPerAz.computeIfAbsent(nodeAz, k -> new ArrayList<>());
       nodesForAz.add(node);
     }
 
@@ -446,7 +446,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
         Collections.shuffle(nodes, new Random());
 
         // Sort by increasing number of cores but pushing nodes with low free disk space to the end of the list
-        Collections.sort(nodes, coresAndDiskComparator);
+        nodes.sort(coresAndDiskComparator);
 
         azWithNodes.hasBeenSorted = true;
       }
