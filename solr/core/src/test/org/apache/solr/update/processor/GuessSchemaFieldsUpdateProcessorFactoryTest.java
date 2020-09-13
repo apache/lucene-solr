@@ -160,7 +160,7 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertEquals("text", schema.getFieldType(fieldName).getTypeName());
-    assertEquals(0, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
+    assertEquals(1, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
 
     SolrInputDocument e = processAdd
             (chain, doc(f("id", "4"), f(fieldName, fieldValue1, fieldValue2, fieldValue3)));
@@ -180,13 +180,19 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     Float fieldValue1 = -13258.0f;
     Double fieldValue2 = 8.4828800808E10;
     String fieldValue3 = "blah blah";
+    String chain = "add-fields-default-mapping";
     SolrInputDocument d = processAdd
-        ("add-fields-default-mapping", doc(f("id", "4"), f(fieldName, fieldValue1, fieldValue2, fieldValue3)));
+        (chain, PARAMS_GUESS_SCHEMA, doc(f("id", "4"), f(fieldName, fieldValue1, fieldValue2, fieldValue3)));
     assertNotNull(d);
+    processCommit(chain);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertEquals("text", schema.getFieldType(fieldName).getTypeName());
     assertEquals(1, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
+
+    SolrInputDocument e = processAdd
+            (chain, doc(f("id", "4"), f(fieldName, fieldValue1, fieldValue2, fieldValue3)));
+    assertNotNull(e);
     assertU(commit());
     assertQ(req("id:4")
         ,"//arr[@name='" + fieldName + "']/str[.='" + fieldValue1.toString() + "']"
@@ -206,15 +212,24 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     Long field1Value3 = 999L;
     Integer field2Value1 = 55123;
     Long field2Value2 = 1234567890123456789L;
+    String chain = "add-fields";
     SolrInputDocument d = processAdd
-        ("add-fields", doc(f("id", "5"), f(fieldName1, field1Value1, field1Value2, field1Value3),
-                                         f(fieldName2, field2Value1, field2Value2)));
+        (chain, PARAMS_GUESS_SCHEMA, doc(f("id", "5"),
+                f(fieldName1, field1Value1, field1Value2, field1Value3),
+                f(fieldName2, field2Value1, field2Value2)));
     assertNotNull(d);
+    processCommit(chain);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName1));
     assertNotNull(schema.getFieldOrNull(fieldName2));
     assertEquals("pdoubles", schema.getFieldType(fieldName1).getTypeName());
     assertEquals("plongs", schema.getFieldType(fieldName2).getTypeName());
+
+    SolrInputDocument e = processAdd
+            (chain, doc(f("id", "5"),
+                    f(fieldName1, field1Value1, field1Value2, field1Value3),
+                    f(fieldName2, field2Value1, field2Value2)));
+    assertNotNull(e);
     assertU(commit());
     assertQ(req("id:5")
         ,"//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1.toString() + "']"
@@ -254,13 +269,15 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     Date field4Value1 = Date.from(dateTime.atZone(ZoneOffset.UTC).toInstant());
     DateTimeFormatter dateTimeFormatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT).withZone(ZoneOffset.UTC);
     String field4Value1String = dateTime.format(dateTimeFormatter2) + "Z";
-    
+
+    String chain = "parse-and-add-fields";
     SolrInputDocument d = processAdd
-        ("parse-and-add-fields", doc(f("id", "6"), f(fieldName1, field1String1, field1String2, field1String3),
+        (chain, PARAMS_GUESS_SCHEMA, doc(f("id", "6"), f(fieldName1, field1String1, field1String2, field1String3),
                                                    f(fieldName2, field2String1, field2String2),
                                                    f(fieldName3, field3String1, field3String2),
                                                    f(fieldName4, field4String1)));
     assertNotNull(d);
+    processCommit(chain);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName1));
     assertNotNull(schema.getFieldOrNull(fieldName2));
@@ -270,6 +287,13 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     assertEquals("plongs", schema.getFieldType(fieldName2).getTypeName());
     assertEquals("text", schema.getFieldType(fieldName3).getTypeName());
     assertEquals("pdates", schema.getFieldType(fieldName4).getTypeName());
+
+    SolrInputDocument e = processAdd
+            (chain, doc(f("id", "6"), f(fieldName1, field1String1, field1String2, field1String3),
+                    f(fieldName2, field2String1, field2String2),
+                    f(fieldName3, field3String1, field3String2),
+                    f(fieldName4, field4String1)));
+    assertNotNull(e);
     assertU(commit());
     assertQ(req("id:6")
         ,"//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1.toString() + "']"
@@ -288,8 +312,10 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     final String strFieldName = fieldName+"_str";
     assertNull(schema.getFieldOrNull(fieldName));
     String content = "This is a text that should be copied to a string field but not be cutoff";
-    SolrInputDocument d = processAdd("add-fields", doc(f("id", "1"), f(fieldName, content)));
+    String chain = "add-fields";
+    SolrInputDocument d = processAdd(chain, PARAMS_GUESS_SCHEMA, doc(f("id", "1"), f(fieldName, content)));
     assertNotNull(d);
+    processCommit(chain);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertNotNull(schema.getFieldOrNull(strFieldName));
@@ -303,8 +329,10 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
     final String strFieldName = fieldName+"_str";
     assertNull(schema.getFieldOrNull(fieldName));
     String content = "This is a text that should be copied to a string field and cutoff at 10 characters";
-    SolrInputDocument d = processAdd("add-fields-maxchars", doc(f("id", "1"), f(fieldName, content)));
+    String chain = "add-fields-maxchars";
+    SolrInputDocument d = processAdd(chain, PARAMS_GUESS_SCHEMA, doc(f("id", "1"), f(fieldName, content)));
     assertNotNull(d);
+    processCommit(chain);
     System.out.println("Document is "+d);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
@@ -325,7 +353,13 @@ public class GuessSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessor
   
   public void testCopyFieldByIndexing() throws Exception {
     String content = "This is a text that should be copied to a string field and cutoff at 10 characters";
-    SolrInputDocument d = processAdd("add-fields-default-mapping", doc(f("id", "1"), f("mynewfield", content)));
+    String chain = "add-fields-default-mapping";
+    SolrInputDocument d = processAdd(chain, PARAMS_GUESS_SCHEMA,
+            doc(f("id", "1"), f("mynewfield", content)));
+    processCommit(chain);
+
+    SolrInputDocument e = processAdd(chain,
+            doc(f("id", "1"), f("mynewfield", content)));
     assertU(commit());
 
     ModifiableSolrParams params = new ModifiableSolrParams();

@@ -20,8 +20,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -29,20 +27,15 @@ import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
-import org.apache.solr.update.processor.FieldMutatingUpdateProcessorFactory.SelectorParams;
-import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
 
 
 /**
@@ -126,25 +119,18 @@ import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
  * @since 4.4.0
  */
 public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcessorFactory
-    implements SolrCoreAware, UpdateRequestProcessorFactory.RunAlways {
+    implements UpdateRequestProcessorFactory.RunAlways {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String TYPE_MAPPING_PARAM = "typeMapping";
   private static final String VALUE_CLASS_PARAM = "valueClass";
   private static final String FIELD_TYPE_PARAM = "fieldType";
-  private static final String DEFAULT_FIELD_TYPE_PARAM = "defaultFieldType";
   private static final String COPY_FIELD_PARAM = "copyField";
   private static final String DEST_PARAM = "dest";
   private static final String MAX_CHARS_PARAM = "maxChars";
-  private static final String IS_DEFAULT_PARAM = "default";
 
   private List<TypeMapping> typeMappings = Collections.emptyList();
   private TreeMap<String, TypeMapping> typeMappingsIndex = new TreeMap<>();
-
-  private SelectorParams inclusions = new SelectorParams();
-  private Collection<SelectorParams> exclusions = new ArrayList<>();
-  private SolrResourceLoader solrResourceLoader = null;
-  private String defaultFieldTypeName;
 
   private static final Map<String, String> OPTION_MULTIVALUED = Collections.singletonMap("multiValued", "true");
 
@@ -159,24 +145,8 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
 
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    inclusions = FieldMutatingUpdateProcessorFactory.parseSelectorParams(args);
-    validateSelectorParams(inclusions);
-    inclusions.fieldNameMatchesSchemaField = false;  // Explicitly (non-configurably) require unknown field names
-    exclusions = FieldMutatingUpdateProcessorFactory.parseSelectorExclusionParams(args);
-    for (SelectorParams exclusion : exclusions) {
-      validateSelectorParams(exclusion);
-    }
-    Object defaultFieldTypeParam = args.remove(DEFAULT_FIELD_TYPE_PARAM);
-    if (null != defaultFieldTypeParam) {
-      if (!(defaultFieldTypeParam instanceof CharSequence)) {
-        throw new SolrException(SERVER_ERROR, "Init param '" + DEFAULT_FIELD_TYPE_PARAM + "' must be a <str>");
-      }
-      defaultFieldTypeName = defaultFieldTypeParam.toString();
-    }
-
-    TypeMapping flaggedDefaultType = null;
-
     typeMappings = parseTypeMappings(args);
+
     for (TypeMapping typeMapping : typeMappings) {
       for (String valueClassName : typeMapping.valueClassNames) {
         if (typeMappingsIndex.containsKey(valueClassName)) {
@@ -185,35 +155,10 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
           }
         } else {
           typeMappingsIndex.put(valueClassName, typeMapping);
-          if (typeMapping.isDefault()) {
-            flaggedDefaultType = typeMapping;
-          }
         }
       }
     }
-
-    if (defaultFieldTypeName == null) {
-      if (flaggedDefaultType != null) {
-        defaultFieldTypeName = flaggedDefaultType.fieldTypeName;
-      } else {
-        throw new SolrException(SERVER_ERROR, "Must specify either '" + DEFAULT_FIELD_TYPE_PARAM +
-                "' or declare one typeMapping as default.");
-      }
-    } else if (flaggedDefaultType != null) {
-      throw new SolrException(SERVER_ERROR, "Must specify either '" + DEFAULT_FIELD_TYPE_PARAM +
-              "' or declare one typeMapping as default. Not both!");
-    }
-
     super.init(args);
-  }
-
-  @Override
-  public void inform(SolrCore core) {
-    solrResourceLoader = core.getResourceLoader();
-
-    for (TypeMapping typeMapping : typeMappings) {
-      typeMapping.populateValueClasses(core);
-    }
   }
 
   private static List<TypeMapping> parseTypeMappings(@SuppressWarnings({"rawtypes"})NamedList args) {
@@ -252,21 +197,7 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
             "Each '" + TYPE_MAPPING_PARAM + "' <lst/> must contain at least one '" + VALUE_CLASS_PARAM + "' <str>");
       }
 
-      // isDefault (optional)
-      Boolean isDefault = false;
-      Object isDefaultObj = typeMappingNamedList.remove(IS_DEFAULT_PARAM);
-      if (null != isDefaultObj) {
-        if ( ! (isDefaultObj instanceof Boolean)) {
-          throw new SolrException(SERVER_ERROR, "'" + IS_DEFAULT_PARAM + "' init param must be a <bool>");
-        }
-        if (null != typeMappingNamedList.get(IS_DEFAULT_PARAM)) {
-          throw new SolrException(SERVER_ERROR,
-              "Each '" + COPY_FIELD_PARAM + "' <lst/> may contain only one '" + IS_DEFAULT_PARAM + "' <bool>");
-        }
-        isDefault = Boolean.parseBoolean(isDefaultObj.toString());
-      }
-      
-      Collection<CopyFieldDef> copyFieldDefs = new ArrayList<>(); 
+      Collection<CopyFieldDef> copyFieldDefs = new ArrayList<>();
       while (typeMappingNamedList.get(COPY_FIELD_PARAM) != null) {
         Object copyFieldObj = typeMappingNamedList.remove(COPY_FIELD_PARAM);
         if ( ! (copyFieldObj instanceof NamedList)) {
@@ -303,7 +234,7 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
         }
         copyFieldDefs.add(new CopyFieldDef(dest, maxChars));
       }
-      typeMappings.add(new TypeMapping(fieldType, valueClasses, isDefault, copyFieldDefs));
+      typeMappings.add(new TypeMapping(fieldType, valueClasses, copyFieldDefs));
       
       if (0 != typeMappingNamedList.size()) {
         throw new SolrException(SERVER_ERROR, 
@@ -314,53 +245,15 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
     return typeMappings;
   }
 
-  private void validateSelectorParams(SelectorParams params) {
-    if ( ! params.typeName.isEmpty()) {
-      throw new SolrException(SERVER_ERROR, "'typeName' init param is not allowed in this processor");
-    }
-    if ( ! params.typeClass.isEmpty()) {
-      throw new SolrException(SERVER_ERROR, "'typeClass' init param is not allowed in this processor");
-    }
-    if (null != params.fieldNameMatchesSchemaField) {
-      throw new SolrException(SERVER_ERROR, "'fieldNameMatchesSchemaField' init param is not allowed in this processor");
-    }
-  }
-
   private static class TypeMapping {
     public String fieldTypeName;
     public Collection<String> valueClassNames;
     public Collection<CopyFieldDef> copyFieldDefs;
-    public Set<Class<?>> valueClasses;
-    public Boolean isDefault;
 
-    public TypeMapping(String fieldTypeName, Collection<String> valueClassNames, boolean isDefault,
-                       Collection<CopyFieldDef> copyFieldDefs) {
+    public TypeMapping(String fieldTypeName, Collection<String> valueClassNames, Collection<CopyFieldDef> copyFieldDefs) {
       this.fieldTypeName = fieldTypeName;
       this.valueClassNames = valueClassNames;
-      this.isDefault = isDefault;
       this.copyFieldDefs = copyFieldDefs;
-      // this.valueClasses population is delayed until the schema is available
-    }
-
-    public void populateValueClasses(SolrCore core) {
-      IndexSchema schema = core.getLatestSchema();
-      ClassLoader loader = core.getResourceLoader().getClassLoader();
-      if (null == schema.getFieldTypeByName(fieldTypeName)) {
-        throw new SolrException(SERVER_ERROR, "fieldType '" + fieldTypeName + "' not found in the schema");
-      }
-      valueClasses = new HashSet<>();
-      for (String valueClassName : valueClassNames) {
-        try {
-          valueClasses.add(loader.loadClass(valueClassName));
-        } catch (ClassNotFoundException e) {
-          throw new SolrException(SERVER_ERROR,
-              "valueClass '" + valueClassName + "' not found for fieldType '" + fieldTypeName + "'");
-        }
-      }
-    }
-
-    public boolean isDefault() {
-      return isDefault;
     }
   }
 
@@ -398,14 +291,13 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
     private boolean multiValued;
     private int widenIndex;
 
-    private final List<String> WIDENING_ORDER = List.of(
-            "java.lang.Short", "java.lang.Integer", "java.lang.Long",
-            "java.lang.Float", "java.lang.Double", "java.lang.Number");
-
-    private int MAX_WIDEN_INDEX = WIDENING_ORDER.size()-1;
-
     private final String TYPE_STRING = "java.lang.String";
 
+    private final List<String> WIDENING_ORDER = List.of(
+            "java.lang.Short", "java.lang.Integer", "java.lang.Long",
+            "java.lang.Float", "java.lang.Double", "java.lang.Number", TYPE_STRING);
+
+    private int MAX_WIDEN_INDEX = WIDENING_ORDER.size()-1;
 
     public FieldValueTypeInfo(String valueTypeName, boolean multiValued) {
       this.valueTypeName = valueTypeName;
@@ -502,7 +394,7 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
 
         for (Object value : allValues) {
           String typeName = value.getClass().getName();
-          if (typeInfo == null){
+          if (typeInfo == null) {
             typeInfo = new FieldValueTypeInfo(typeName, multiValued);
             fieldValueTypeMap.put(fieldName, typeInfo);
           } else {
@@ -516,21 +408,22 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
 
     @Override
     public void processCommit(CommitUpdateCommand cmd) throws IOException {
-//      if (!cmd.getReq().getParams().getBool(GUESS_SCHEMA_FLAG, false)) {
       if (fieldValueTypeMap.isEmpty()) {
         super.processCommit(cmd);
         return;
       }
 
       IndexSchema currentSchema = cmd.getReq().getSchema();
-      if ( ! currentSchema.isMutable()) {
+      if (!currentSchema.isMutable()) {
         final String message = "Adding new Schema fields requires mutable schema. This one is not (or locked).";
         throw new SolrException(BAD_REQUEST, message);
       }
 
       //Skip the elaborated field matches using selectors for now. Just do plain there/not there
+      int fieldsAdded = 0;
+      int copyFieldsAdded = 0;
 
-      synchronized(currentSchema.getSchemaUpdateLock()) {
+      synchronized (currentSchema.getSchemaUpdateLock()) {
         IndexSchema newSchema = currentSchema; //start the iterations
 
         for (String fieldName : fieldValueTypeMap.keySet()) {
@@ -548,10 +441,11 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
             typeMapping = typeMappingsIndex.get(fieldValueTypeInfo.getValueTypeName());
           }
 
-          String fieldTypeName =
-                  (typeMapping != null)
-                  ?typeMapping.fieldTypeName
-                  :defaultFieldTypeName;
+          if (typeMapping == null) {
+            throw new SolrException(BAD_REQUEST, "Schema Guessing is impossible for the field: " + fieldName);
+          }
+
+          String fieldTypeName = typeMapping.fieldTypeName;
 
           SchemaField newField = currentSchema.newField(
                   fieldName, fieldTypeName,
@@ -560,73 +454,32 @@ public class GuessSchemaFieldsUpdateProcessorFactory extends UpdateRequestProces
             log.debug("Adding new schema field: {}", newField);
           }
           newSchema = newSchema.addField(newField, false);
+          fieldsAdded++;
 
           if (typeMapping != null && typeMapping.copyFieldDefs != null) {
             for (CopyFieldDef copyFieldDef : typeMapping.copyFieldDefs) {
               newSchema = newSchema.addCopyFields(
                       fieldName,
                       Collections.singleton(copyFieldDef.getDest(fieldName)),
-                      copyFieldDef.getMaxChars()
-                      );
+                      copyFieldDef.getMaxChars());
+              copyFieldsAdded++;
             }
           }
         }
 
         //finished with all definitions
-        ((ManagedIndexSchema)newSchema).persistManagedSchema(false);
-        cmd.getReq().getCore().setLatestSchema(newSchema);
-        cmd.getReq().updateSchemaToLatest();
-        if (log.isDebugEnabled()) {
-          log.debug("Successfully added field(s) and copyField(s) to the schema.");
+        if (fieldsAdded > 0 || copyFieldsAdded > 0) {
+          ((ManagedIndexSchema) newSchema).persistManagedSchema(false);
+          cmd.getReq().getCore().setLatestSchema(newSchema);
+          cmd.getReq().updateSchemaToLatest();
+          if (log.isDebugEnabled()) {
+            log.debug("Successfully added field(s) and copyField(s) to the schema.");
+          }
+        } else if (log.isDebugEnabled()) {
+          log.debug("No new fields/copyFields were found to add to Schema. All existed before.");
         }
       } //end synchronized
       super.processCommit(cmd);
-    }
-
-    /**
-     * Recursively find unknown fields in the given doc and its child documents, if any.
-     */
-    private void getUnknownFields
-    (FieldNameSelector selector, SolrInputDocument doc, Map<String,List<SolrInputField>> unknownFields) {
-      for (final String fieldName : doc.getFieldNames()) {
-        //We do a assert and a null check because even after SOLR-12710 is addressed
-        //older SolrJ versions can send null values causing an NPE
-        assert fieldName != null;
-        if (fieldName != null) {
-          if (selector.shouldMutate(fieldName)) { // returns false if the field already exists in the current schema
-            List<SolrInputField> solrInputFields = unknownFields.get(fieldName);
-            if (null == solrInputFields) {
-              solrInputFields = new ArrayList<>();
-              unknownFields.put(fieldName, solrInputFields);
-            }
-            solrInputFields.add(doc.getField(fieldName));
-          }
-        }
-      }
-      List<SolrInputDocument> childDocs = doc.getChildDocuments();
-      if (null != childDocs) {
-        for (SolrInputDocument childDoc : childDocs) {
-          getUnknownFields(selector, childDoc, unknownFields);
-        }
-      }
-    }
-
-      private FieldNameSelector buildSelector(IndexSchema schema) {
-      FieldNameSelector selector = FieldMutatingUpdateProcessor.createFieldNameSelector
-        (solrResourceLoader, schema, inclusions, fieldName -> null == schema.getFieldTypeNoEx(fieldName));
-
-      for (SelectorParams exc : exclusions) {
-        selector = FieldMutatingUpdateProcessor.wrap(selector, FieldMutatingUpdateProcessor.createFieldNameSelector
-          (solrResourceLoader, schema, exc, FieldMutatingUpdateProcessor.SELECT_NO_FIELDS));
-      }
-      return selector;
-    }
-
-    private boolean isImmutableConfigSet(SolrCore core) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList args = core.getConfigSetProperties();
-      Object immutable = args != null ? args.get(IMMUTABLE_CONFIGSET_ARG) : null;
-      return immutable != null ? Boolean.parseBoolean(immutable.toString()) : false;
     }
   }
 }

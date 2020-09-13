@@ -31,9 +31,12 @@
     <str name="managedSchemaResourceName">managed-schema</str>
   </schemaFactory>
 
-  <updateRequestProcessorChain name="add-fields-no-run-processor">
+   <updateRequestProcessorChain name="add-fields-no-run-processor">
     <processor class="solr.GuessSchemaFieldsUpdateProcessorFactory">
-      <str name="defaultFieldType">text</str>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.String</str>
+        <str name="fieldType">text</str>
+      </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Boolean</str>
         <str name="fieldType">boolean</str>
@@ -52,13 +55,11 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
-        <str name="valueClass">java.lang.Integer</str>
         <str name="fieldType">plongs</str>
       </lst>
       <lst name="typeMapping">
         <arr name="valueClass">
           <str>java.lang.Double</str>
-          <str>java.lang.Float</str>
         </arr>
         <str name="fieldType">pdoubles</str>
       </lst>
@@ -67,7 +68,6 @@
 
   <updateRequestProcessorChain name="add-fields">
     <processor class="solr.GuessSchemaFieldsUpdateProcessorFactory">
-      <str name="defaultFieldType">text</str>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.String</str>
         <str name="fieldType">text</str>
@@ -93,7 +93,6 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
-        <str name="valueClass">java.lang.Integer</str>
         <str name="fieldType">plongs</str>
       </lst>
       <lst name="typeMapping">
@@ -105,8 +104,7 @@
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="add-fields-maxchars">
-    <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
-      <str name="defaultFieldType">text</str>
+    <processor class="solr.GuessSchemaFieldsUpdateProcessorFactory">
       <lst name="typeMapping">
         <str name="valueClass">java.lang.String</str>
         <str name="fieldType">text</str>
@@ -131,7 +129,7 @@
   
   <!-- This chain has one of the typeMappings set as default=true, instead of falling back to the defaultFieldType -->
   <updateRequestProcessorChain name="add-fields-default-mapping">
-    <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+    <processor class="solr.GuessSchemaFieldsUpdateProcessorFactory">
       <lst name="typeMapping">
         <str name="valueClass">java.lang.String</str>
         <str name="fieldType">text</str>
@@ -139,8 +137,6 @@
           <str name="dest">*_str</str>
           <int name="maxChars">10</int>
         </lst>
-        <!-- Use as default mapping instead of defaultFieldType -->
-        <bool name="default">true</bool>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Boolean</str>
@@ -160,7 +156,6 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
-        <str name="valueClass">java.lang.Integer</str>
         <str name="fieldType">plongs</str>
       </lst>
       <lst name="typeMapping">
@@ -188,8 +183,11 @@
         <str>EEE MMM ppd HH:mm:ss [z ]yyyy</str>
       </arr>
     </processor>
-    <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
-      <str name="defaultFieldType">text</str>
+    <processor class="solr.GuessSchemaFieldsUpdateProcessorFactory">
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.String</str>
+        <str name="fieldType">text</str>
+      </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Boolean</str>
         <str name="fieldType">boolean</str>
@@ -208,7 +206,6 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
-        <str name="valueClass">java.lang.Integer</str>
         <str name="fieldType">plongs</str>
       </lst>
       <lst name="typeMapping">
