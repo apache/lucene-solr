@@ -16,13 +16,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The following table lists the field types that are available in Solr. The `org.apache.solr.schema` package includes all the classes listed in this table.
+The following table lists the field types that are available in Solr. The {solr-javadocs}/solr-core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table.
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
 [cols="25,75",options="header"]
 |===
 |Class |Description
+|BBoxField | Indexes a single rectangle (bounding box) per document field and supports searching via a bounding box. See the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
+
 |BinaryField |Binary data.
 
 |BoolField |Contains either true or false. Values of `1`, `t`, or `T` in the first character are interpreted as `true`. Any other values in the first character are interpreted as `false`.
@@ -57,6 +59,8 @@ The following table lists the field types that are available in Solr. The `org.a
 
 |LongPointField |Long field (64-bit signed integer). This class encodes foo values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
+|NestPathField | Specialized field type storing ehanced information, when <<indexing-nested-documents.adoc#schema-configuration,working with nested documents>>.
+
 |PointType |A single-valued n-dimensional point. It's both for sorting spatial data that is _not_ lat-lon, and for some more rare use-cases. (NOTE: this is _not_ related to the "Point" based numeric fields). See <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
 
 |PreAnalyzedField |Provides a way to send to Solr serialized token streams, optionally with independent stored values of a field, and have this information stored and indexed without any additional text processing.
@@ -65,11 +69,15 @@ Configuration and usage of PreAnalyzedField is documented in the section  <<work
 
 |RandomSortField |Does not contain a value. Queries that sort on this field type will return results in random order. Use a dynamic field to use this feature.
 
+|RankField |Can be used to store scoring factors to improve document ranking. To be used in combination with <<other-parsers.adoc#ranking-query-parser,RankQParserPlugin>>
+
+|RptWithGeometrySpatialField |A derivative of `SpatialRecursivePrefixTreeFieldType` that also stores the original geometry. See <<spatial-search.adoc#spatial-search,Spatial Search>> for more information and usage with geospatial results transformer.
+
+|SortableTextField |A specialized version of TextField that allows (and defaults to) `docValues="true"` for sorting on the first 1024 characters of the original string prior to analysis. The number of characters used for sorting can be overridden with the `maxCharsForDocValues` attribute.
+
 |SpatialRecursivePrefixTreeFieldType |(RPT for short) Accepts latitude comma longitude strings or other shapes in WKT format. See <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
 
 |StrField |String (UTF-8 encoded string or Unicode). Strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K.
-
-|SortableTextField |A specialized version of TextField that allows (and defaults to) `docValues="true"` for sorting on the first 1024 characters of the original string prior to analysis. The number of characters used for sorting can be overridden with the `maxCharsForDocValues` attribute.
 
 |TextField |Text, usually multiple words or tokens.
 
