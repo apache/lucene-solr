@@ -40,12 +40,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -58,6 +60,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -446,147 +449,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     return findClass(cname, expectedType, empty);
   }
 
-  private static final Map<String,String> TRANS_MAP;
+  public static final ImmutableMap<String,String> SHORT_NAMES;
   static {
-    Map<String,String> map = new HashMap<>(128);
-    map.put("solr.WordDelimiterGraphFilterFactory","org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilterFactory");
-    map.put("solr.LowerCaseFilterFactory", "org.apache.lucene.analysis.core.LowerCaseFilterFactory");
-    map.put("solr.FlattenGraphFilterFactory", "org.apache.lucene.analysis.core.FlattenGraphFilterFactory");
-    map.put("solr.StopFilterFactory", "org.apache.lucene.analysis.core.StopFilterFactory");
-    map.put("solr.SynonymGraphFilterFactory", "org.apache.lucene.analysis.synonym.SynonymGraphFilterFactory");
-    map.put("solr.KeywordMarkerFilterFactory", "org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilterFactory");
-    map.put("solr.PorterStemFilterFactory", "org.apache.lucene.analysis.en.PorterStemFilterFactory");
-    map.put("solr.DelimitedBoostTokenFilterFactory", "org.apache.lucene.analysis.boost.DelimitedBoostTokenFilterFactory");
-    map.put("solr.LetterTokenizerFactory", "org.apache.lucene.analysis.core.LetterTokenizerFactory");
-    map.put("solr.StandardTokenizerFactory", "org.apache.lucene.analysis.standard.StandardTokenizerFactory");
-    map.put("solr.HTMLStripCharFilterFactory", "org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory");
-    map.put("solr.MappingCharFilterFactory", "org.apache.lucene.analysis.charfilter.MappingCharFilterFactory");
-    map.put("solr.PatternReplaceFilterFactory", "org.apache.lucene.analysis.pattern.PatternReplaceFilterFactory");
-    map.put("solr.LengthFilterFactory", "org.apache.lucene.analysis.miscellaneous.LengthFilterFactory");
-    map.put("solr.RemoveDuplicatesTokenFilterFactory", "org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilterFactory");
-    map.put("solr.WhitespaceTokenizerFactory", "org.apache.lucene.analysis.core.WhitespaceTokenizerFactory");
-    map.put("solr.ShingleFilterFactory", "org.apache.lucene.analysis.shingle.ShingleFilterFactory");
-    map.put("solr.WordDelimiterFilterFactory", "org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory");
-    map.put("solr.PatternTokenizerFactory", "org.apache.lucene.analysis.pattern.PatternTokenizerFactory");
-    map.put("solr.KeywordTokenizerFactory", "org.apache.lucene.analysis.core.KeywordTokenizerFactory");
-    map.put("solr.PathHierarchyTokenizerFactory", "org.apache.lucene.analysis.path.PathHierarchyTokenizerFactory");
-    map.put("solr.DelimitedPayloadTokenFilterFactory", "org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilterFactory");
-    map.put("solr.EnglishMinimalStemFilterFactory", "org.apache.lucene.analysis.en.EnglishMinimalStemFilterFactory");
-    map.put("solr.TrimFilterFactory", "org.apache.lucene.analysis.miscellaneous.TrimFilterFactory");
-    map.put("solr.LimitTokenCountFilterFactory", "org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilterFactory");
-    map.put("solr.ICUTokenizerFactory", "org.apache.lucene.analysis.icu.segmentation.ICUTokenizerFactory");
-    map.put("solr.ICUFoldingFilterFactory", "org.apache.lucene.analysis.icu.ICUFoldingFilterFactory");
-    map.put("solr.ProtectedTermFilterFactory", "org.apache.lucene.analysis.miscellaneous.ProtectedTermFilterFactory");
-    map.put("solr.ReversedWildcardFilterFactory", "org.apache.solr.analysis.ReversedWildcardFilterFactory");
-    map.put("solr.ASCIIFoldingFilterFactory", "org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory");
-    map.put("solr.EnglishPossessiveFilterFactory", "org.apache.lucene.analysis.en.EnglishPossessiveFilterFactory");
-    map.put("solr.NGramTokenizerFactory", "org.apache.lucene.analysis.ngram.NGramTokenizerFactory");
-    map.put("solr.ManagedStopFilterFactory", "org.apache.solr.rest.schema.analysis.ManagedStopFilterFactory");
-    map.put("solr.ManagedSynonymFilterFactory", "org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory");
-    map.put("solr.ManagedSynonymGraphFilterFactory", "org.apache.solr.rest.schema.analysis.ManagedSynonymGraphFilterFactory");
-    map.put("solr.OpenNLPTokenizerFactory", "org.apache.lucene.analysis.opennlp.OpenNLPTokenizerFactory");
-    map.put("solr.ICUNormalizer2FilterFactory", "org.apache.lucene.analysis.icu.ICUNormalizer2FilterFactory");
-    map.put("solr.DoubleMetaphoneFilterFactory", "org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilterFactory");
-    map.put("solr.ClassicTokenizerFactory", "org.apache.lucene.analysis.standard.ClassicTokenizerFactory");
-    map.put("solr.GreekLowerCaseFilterFactory", "org.apache.lucene.analysis.el.GreekLowerCaseFilterFactory");
-    map.put("solr.ConcatenateGraphFilterFactory", "org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilterFactory");
-    map.put("solr.JapaneseTokenizerFactory", "org.apache.lucene.analysis.ja.JapaneseTokenizerFactory");
-    map.put("solr.CJKWidthFilterFactory", "org.apache.lucene.analysis.cjk.CJKWidthFilterFactory");
-    map.put("solr.JapaneseReadingFormFilterFactory", "org.apache.lucene.analysis.ja.JapaneseReadingFormFilterFactory");
-    map.put("solr.TurkishLowerCaseFilterFactory", "org.apache.lucene.analysis.tr.TurkishLowerCaseFilterFactory");
-    map.put("solr.PersianNormalizationFilterFactory", "org.apache.lucene.analysis.fa.PersianNormalizationFilterFactory");
-    map.put("solr.ArabicNormalizationFilterFactory", "org.apache.lucene.analysis.ar.ArabicNormalizationFilterFactory");
-    map.put("solr.IndicNormalizationFilterFactory", "org.apache.lucene.analysis.in.IndicNormalizationFilterFactory");
-    map.put("solr.HindiNormalizationFilterFactory", "org.apache.lucene.analysis.hi.HindiNormalizationFilterFactory");
-    map.put("solr.GermanNormalizationFilterFactory", "org.apache.lucene.analysis.de.GermanNormalizationFilterFactory");
-    map.put("solr.ElisionFilterFactory", "org.apache.lucene.analysis.util.ElisionFilterFactory");
-    map.put("solr.FrenchLightStemFilterFactory", "org.apache.lucene.analysis.fr.FrenchLightStemFilterFactory");
-    map.put("solr.ICUTransformFilterFactory", "org.apache.lucene.analysis.icu.ICUTransformFilterFactory");
-    map.put("solr.PatternReplaceCharFilterFactory", "org.apache.lucene.analysis.pattern.PatternReplaceCharFilterFactory");
-    map.put("solr.ClassicFilterFactory", "org.apache.lucene.analysis.standard.ClassicFilterFactory");
-    map.put("solr.KStemFilterFactory", "org.apache.lucene.analysis.en.KStemFilterFactory");
-    map.put("solr.CaffeineCache", "org.apache.solr.search.CaffeineCache");
-    map.put("ClassicIndexSchemaFactory", "org.apache.solr.schema.ClassicIndexSchemaFactory");
-    map.put("solr.FloatPointField", "org.apache.solr.schema.FloatPointField");
-    map.put("solr.IntPointField", "org.apache.solr.schema.IntPointField");
-    map.put("solr.LongPointField", "org.apache.solr.schema.LongPointField");
-    map.put("solr.DoublePointField", "org.apache.solr.schema.DoublePointField");
-    map.put("solr.DatePointField", "org.apache.solr.schema.DatePointField");
-    map.put("solr.TextField", "org.apache.solr.schema.TextField");
-    map.put("solr.MockTokenizerFactory", "org.apache.solr.analysis.MockTokenizerFactory");
-    map.put("solr.BoolField", "org.apache.solr.schema.BoolField");
-    map.put("solr.StrField", "org.apache.solr.schema.StrField");
-    map.put("solr.DateRangeField", "org.apache.solr.schema.DateRangeField");
-    map.put("solr.SpatialRecursivePrefixTreeFieldType", "org.apache.solr.schema.SpatialRecursivePrefixTreeFieldType");
-    map.put("solr.UUIDField", "org.apache.solr.schema.UUIDField");
-    map.put("solr.PointType", "org.apache.solr.schema.PointType");
-    map.put("solr.GeoHashField", "org.apache.solr.schema.GeoHashField");
-    map.put("solr.LatLonType", "org.apache.solr.schema.LatLonType");
-    map.put("solr.CurrencyField", "org.apache.solr.schema.CurrencyField");
-    map.put("solr.CurrencyFieldType", "org.apache.solr.schema.CurrencyFieldType");
-    map.put("solr.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
-    map.put("solr.BinaryField", "org.apache.solr.schema.BinaryField");
-    map.put("solr.CollationField", "org.apache.solr.schema.CollationField");
-    map.put("solr.ExternalFileField", "org.apache.solr.schema.ExternalFileField");
-    map.put("solr.ICUCollationField", "org.apache.solr.schema.ICUCollationField");
-    map.put("solr.LatLonPointSpatialField", "org.apache.solr.schema.LatLonPointSpatialField");
-    map.put("solr.RandomSortField", "org.apache.solr.schema.RandomSortField");
-    map.put("solr.SortableTextField", "org.apache.solr.schema.SortableTextField");
-    map.put("solr.NestPathField", "org.apache.solr.schema.NestPathField");
-    map.put("solr.FileExchangeRateProvider", "org.apache.solr.schema.FileExchangeRateProvider");
-    map.put("solr.MockExchangeRateProvider", "org.apache.solr.schema.MockExchangeRateProvider");
-    map.put("solr.OpenExchangeRatesOrgProvider", "org.apache.solr.schema.OpenExchangeRatesOrgProvider");
-    map.put("solr.CustomSimilarityFactory", "org.apache.solr.search.similarities.CustomSimilarityFactory");
-    map.put("solr.XMLResponseWriter", "org.apache.solr.response.XMLResponseWriter");
-    map.put("FooQParserPlugin", "org.apache.solr.search.FooQParserPlugin");
-    map.put("solr.RunUpdateProcessorFactory", "org.apache.solr.update.processor.RunUpdateProcessorFactory");
-    map.put("solr.RegexReplaceProcessorFactory", "org.apache.solr.update.processor.RegexReplaceProcessorFactory");
-    map.put("solr.DistributedUpdateProcessorFactory", "org.apache.solr.update.processor.DistributedUpdateProcessorFactory");
-    map.put("solr.DirectUpdateHandler2", "org.apache.solr.update.DirectUpdateHandler2");
-    map.put("solr.SearchHandler", "org.apache.solr.handler.component.SearchHandler");
-    map.put("solr.SchemaHandler", "org.apache.solr.handler.SchemaHandler");
-    map.put("solr.UpdateRequestHandlerApi", "org.apache.solr.handler.UpdateRequestHandlerApi");
-    map.put("solr.PropertiesRequestHandler", "org.apache.solr.handler.admin.PropertiesRequestHandler");
-    map.put("solr.LukeRequestHandler", "org.apache.solr.handler.admin.LukeRequestHandler");
-    map.put("solr.MoreLikeThisHandler", "org.apache.solr.handler.MoreLikeThisHandler");
-    map.put("solr.StreamHandler", "org.apache.solr.handler.StreamHandler");
-    map.put("solr.GraphHandler", "org.apache.solr.handler.GraphHandler");
-    map.put("solr.ExportHandler", "org.apache.solr.handler.ExportHandler");
-    map.put("solr.ShowFileRequestHandler", "org.apache.solr.handler.admin.ShowFileRequestHandler");
-    map.put("solr.HealthCheckHandler", "org.apache.solr.handler.admin.HealthCheckHandler");
-    map.put("solr.LoggingHandler", "org.apache.solr.handler.admin.LoggingHandler");
-    map.put("solr.ThreadDumpHandler", "org.apache.solr.handler.admin.ThreadDumpHandler");
-    map.put("solr.PluginInfoHandler", "org.apache.solr.handler.admin.PluginInfoHandler");
-    map.put("solr.SolrInfoMBeanHandler", "org.apache.solr.handler.admin.SolrInfoMBeanHandler");
-    map.put("solr.SystemInfoHandler", "org.apache.solr.handler.admin.SystemInfoHandler");
-    map.put("solr.SegmentsInfoRequestHandler", "org.apache.solr.handler.admin.SegmentsInfoRequestHandler");
-    map.put("solr.PingRequestHandler", "org.apache.solr.handler.PingRequestHandler");
-    map.put("solr.RealTimeGetHandler", "org.apache.solr.handler.RealTimeGetHandler");
-    map.put("solr.ReplicationHandler", "org.apache.solr.handler.ReplicationHandler");
-    map.put("solr.SolrConfigHandler", "org.apache.solr.handler.SolrConfigHandler");
-    map.put("solr.UpdateRequestHandler", "org.apache.solr.handler.UpdateRequestHandler");
-    map.put("solr.DumpRequestHandler", "org.apache.solr.handler.DumpRequestHandler");
-    map.put("solr.SQLHandler", "org.apache.solr.handler.SQLHandler");
-    map.put("solr.HighlightComponent", "org.apache.solr.handler.component.HighlightComponent");
-    map.put("DirectSolrSpellChecker", "org.apache.solr.spelling.DirectSolrSpellChecker");
-    map.put("solr.WordBreakSolrSpellChecker", "org.apache.solr.spelling.WordBreakSolrSpellChecker");
-    map.put("solr.FileBasedSpellChecker", "org.apache.solr.spelling.FileBasedSpellChecker");
-    map.put("solr.FileBasedSpellChecker", "org.apache.solr.spelling.FileBasedSpellChecker");
-    map.put("solr.CSVRequestHandler", "org.apache.solr.handler.CSVRequestHandler");
-    map.put("solr.highlight.GapFragmenter", "org.apache.solr.highlight.GapFragmenter");
-    map.put("solr.highlight.RegexFragmenter", "org.apache.solr.highlight.RegexFragmenter");
-    map.put("solr.highlight.HtmlFormatter", "org.apache.solr.highlight.HtmlFormatter");
-    map.put("solr.highlight.HtmlEncoder", "org.apache.solr.highlight.HtmlEncoder");
-    map.put("solr.highlight.SimpleFragListBuilder", "org.apache.solr.highlight.SimpleFragListBuilder");
-    map.put("solr.highlight.SimpleFragmentsBuilder", "org.apache.solr.highlight.SimpleFragmentsBuilder");
-    map.put("solr.highlight.SimpleBoundaryScanner", "org.apache.solr.highlight.SimpleBoundaryScanner");
-    map.put("solr.highlight.SolrBoundaryScanner", "org.apache.solr.highlight.SolrBoundaryScanner");
-    map.put("solr.highlight.DefaultEncoder", "org.apache.solr.highlight.DefaultEncoder");
-    map.put("solr.highlight.SingleFragListBuilder", "org.apache.solr.highlight.SingleFragListBuilder");
-    map.put("solr.highlight.WeightedFragListBuilder", "org.apache.solr.highlight.WeightedFragListBuilder");
-    map.put("solr.highlight.ScoreOrderFragmentsBuilder", "org.apache.solr.highlight.ScoreOrderFragmentsBuilder");
-
-    TRANS_MAP = Collections.unmodifiableMap(map);
+    try (InputStream stream = Utils.class.getClassLoader().getResource("ShortClassNames.properties").openStream()) {
+      Properties prop = new Properties();
+      prop.load(stream);
+      ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
+      for (Map.Entry<Object, Object> e : prop.entrySet()) builder.put(e.getKey().toString(), e.getValue().toString());
+      SHORT_NAMES = builder.build();
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Resource error: " + e.getMessage(), e);
+    }
   }
 
   /**
@@ -602,6 +476,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType, String... subpackages) {
     if (!cname.startsWith("solr.") && cname.contains(".")) {
+      //this is the fully qualified class name
       try {
         return Class.forName(cname, true, classLoader).asSubclass(expectedType);
       } catch (ClassNotFoundException e) {
@@ -610,8 +485,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       }
     }
 
-    String trans = TRANS_MAP.get(cname);
+    String trans = SHORT_NAMES.get(cname);
     if (trans != null) {
+      //A short name is provided
       try {
         return Class.forName(trans, true, classLoader).asSubclass(expectedType);
       } catch (ClassNotFoundException e) {
