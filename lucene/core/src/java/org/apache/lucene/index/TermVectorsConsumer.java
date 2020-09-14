@@ -21,24 +21,30 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.RamUsageEstimator;
 
 class TermVectorsConsumer extends TermsHash {
+  protected final Directory directory;
+  protected final SegmentInfo info;
+  protected final Codec codec;
   TermVectorsWriter writer;
 
   /** Scratch term used by TermVectorsConsumerPerField.finishDocument. */
   final BytesRef flushTerm = new BytesRef();
 
-  final DocumentsWriterPerThread docWriter;
 
   /** Used by TermVectorsConsumerPerField when serializing
    *  the term vectors. */
@@ -53,9 +59,11 @@ class TermVectorsConsumer extends TermsHash {
   // it's cleaner than checking if the writer is null all over the place
   Accountable accountable = Accountable.NULL_ACCOUNTABLE;
 
-  TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
-    super(docWriter, Counter.newCounter(), null);
-    this.docWriter = docWriter;
+  TermVectorsConsumer(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Directory directory, SegmentInfo info, Codec codec) {
+    super(intBlockAllocator, byteBlockAllocator, Counter.newCounter(), null);
+    this.directory = directory;
+    this.info = info;
+    this.codec = codec;
   }
 
   @Override
@@ -86,8 +94,8 @@ class TermVectorsConsumer extends TermsHash {
 
   void initTermVectorsWriter() throws IOException {
     if (writer == null) {
-      IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.ramBytesUsed()));
-      writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegmentInfo(), context);
+      IOContext context = new IOContext(new FlushInfo(lastDocID, bytesUsed.get()));
+      writer = codec.termVectorsFormat().vectorsWriter(directory, info, context);
       lastDocID = 0;
       accountable = writer;
     }

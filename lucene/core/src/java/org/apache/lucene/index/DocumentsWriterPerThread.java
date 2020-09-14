@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
@@ -38,55 +39,44 @@ import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ByteBlockPool.Allocator;
-import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
-import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
-
 final class DocumentsWriterPerThread implements Accountable {
 
-  LiveIndexWriterConfig getIndexWriterConfig() {
-    return indexWriterConfig;
-  }
-
   /**
-   * The IndexingChain must define the {@link #getChain(DocumentsWriterPerThread)} method
+   * The IndexingChain must define the {@link #getChain(int, SegmentInfo, Directory, FieldInfos.Builder, LiveIndexWriterConfig, Consumer)} method
    * which returns the DocConsumer that the DocumentsWriter calls to process the
    * documents.
    */
   abstract static class IndexingChain {
-    abstract DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread) throws IOException;
+    abstract DocConsumer getChain(int indexCreatedVersionMajor, SegmentInfo segmentInfo, Directory directory,
+                                  FieldInfos.Builder fieldInfos, LiveIndexWriterConfig indexWriterConfig,
+                                  Consumer<Throwable> abortingExceptionConsumer);
   }
 
   private Throwable abortingException;
 
-  final void onAbortingException(Throwable throwable) {
+  private void onAbortingException(Throwable throwable) {
+    assert throwable != null : "aborting exception must not be null";
     assert abortingException == null: "aborting exception has already been set";
     abortingException = throwable;
-  }
-
-  final boolean hasHitAbortingException() {
-    return abortingException != null;
   }
 
   final boolean isAborted() {
     return aborted;
   }
-  
 
   static final IndexingChain defaultIndexingChain = new IndexingChain() {
 
     @Override
-    DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread) {
-      return new DefaultIndexingChain(documentsWriterPerThread);
+    DocConsumer getChain(int indexCreatedVersionMajor, SegmentInfo segmentInfo, Directory directory,
+                         FieldInfos.Builder fieldInfos, LiveIndexWriterConfig indexWriterConfig,
+                         Consumer<Throwable> abortingExceptionConsumer) {
+      return new DefaultIndexingChain(indexCreatedVersionMajor, segmentInfo, directory, fieldInfos, indexWriterConfig, abortingExceptionConsumer);
     }
   };
 
@@ -135,8 +125,7 @@ final class DocumentsWriterPerThread implements Accountable {
   final Codec codec;
   final TrackingDirectoryWrapper directory;
   private final DocConsumer consumer;
-  private final Counter bytesUsed;
-  
+
   // Updates for our still-in-RAM (to be flushed next) segment
   private final BufferedUpdates pendingUpdates;
   private final SegmentInfo segmentInfo;     // Current segment we are working on
@@ -151,29 +140,23 @@ final class DocumentsWriterPerThread implements Accountable {
   final DocumentsWriterDeleteQueue deleteQueue;
   private final DeleteSlice deleteSlice;
   private final NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
-  final Allocator byteBlockAllocator;
-  final IntBlockPool.Allocator intBlockAllocator;
   private final AtomicLong pendingNumDocs;
   private final LiveIndexWriterConfig indexWriterConfig;
   private final boolean enableTestPoints;
-  private final int indexVersionCreated;
   private final ReentrantLock lock = new ReentrantLock();
   private int[] deleteDocIDs = new int[0];
   private int numDeletedDocIds = 0;
 
-
-  DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory, LiveIndexWriterConfig indexWriterConfig, DocumentsWriterDeleteQueue deleteQueue,
-                                  FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) throws IOException {
+  DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory,
+                           LiveIndexWriterConfig indexWriterConfig, DocumentsWriterDeleteQueue deleteQueue,
+                           FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) {
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
     this.indexWriterConfig = indexWriterConfig;
     this.infoStream = indexWriterConfig.getInfoStream();
     this.codec = indexWriterConfig.getCodec();
     this.pendingNumDocs = pendingNumDocs;
-    bytesUsed = Counter.newCounter();
-    byteBlockAllocator = new DirectTrackingAllocator(bytesUsed);
     pendingUpdates = new BufferedUpdates(segmentName);
-    intBlockAllocator = new IntBlockAllocator(bytesUsed);
     this.deleteQueue = Objects.requireNonNull(deleteQueue);
     assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
     deleteSlice = deleteQueue.newSlice();
@@ -184,20 +167,9 @@ final class DocumentsWriterPerThread implements Accountable {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentName + " delQueue=" + deleteQueue);  
     }
     this.enableTestPoints = enableTestPoints;
-    this.indexVersionCreated = indexVersionCreated;
-    // this should be the last call in the ctor
-    // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
-    consumer = indexWriterConfig.getIndexingChain().getChain(this);
+    consumer = indexWriterConfig.getIndexingChain().getChain(indexVersionCreated, segmentInfo, this.directory, fieldInfos, indexWriterConfig, this::onAbortingException);
   }
   
-  FieldInfos.Builder getFieldInfosBuilder() {
-    return fieldInfos;
-  }
-
-  int getIndexCreatedVersionMajor() {
-    return indexVersionCreated;
-  }
-
   final void testPoint(String message) {
     if (enableTestPoints) {
       assert infoStream.isEnabled("TP"); // don't enable unless you need them.
@@ -218,7 +190,7 @@ final class DocumentsWriterPerThread implements Accountable {
   long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, DocumentsWriterDeleteQueue.Node<?> deleteNode, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     try {
       testPoint("DocumentsWriterPerThread addDocuments start");
-      assert hasHitAbortingException() == false: "DWPT has hit aborting exception but is still indexing";
+      assert abortingException == null: "DWPT has hit aborting exception but is still indexing";
       if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + deleteNode + " docID=" + numDocsInRAM + " seg=" + segmentInfo.name);
       }
@@ -290,12 +262,10 @@ final class DocumentsWriterPerThread implements Accountable {
   private void deleteLastDocs(int docCount) {
     int from = numDocsInRAM-docCount;
     int to = numDocsInRAM;
-    int size = deleteDocIDs.length;
     deleteDocIDs = ArrayUtil.grow(deleteDocIDs, numDeletedDocIds + (to-from));
     for (int docId = from; docId < to; docId++) {
       deleteDocIDs[numDeletedDocIds++] = docId;
     }
-    bytesUsed.addAndGet((deleteDocIDs.length - size) * Integer.BYTES);
     // NOTE: we do not trigger flush here.  This is
     // potentially a RAM leak, if you have an app that tries
     // to add docs but every single doc always hits a
@@ -354,9 +324,7 @@ final class DocumentsWriterPerThread implements Accountable {
         flushState.liveDocs.clear(deleteDocIDs[i]);
       }
       flushState.delCountOnFlush = numDeletedDocIds;
-      bytesUsed.addAndGet(-(deleteDocIDs.length * Integer.BYTES));
-      deleteDocIDs = null;
-
+      deleteDocIDs = new int[0];
     }
 
     if (aborted) {
@@ -374,8 +342,8 @@ final class DocumentsWriterPerThread implements Accountable {
     final Sorter.DocMap sortMap;
     try {
       DocIdSetIterator softDeletedDocs;
-      if (getIndexWriterConfig().getSoftDeletesField() != null) {
-        softDeletedDocs = consumer.getHasDocValues(getIndexWriterConfig().getSoftDeletesField());
+      if (indexWriterConfig.getSoftDeletesField() != null) {
+        softDeletedDocs = consumer.getHasDocValues(indexWriterConfig.getSoftDeletesField());
       } else {
         softDeletedDocs = null;
       }
@@ -439,7 +407,7 @@ final class DocumentsWriterPerThread implements Accountable {
   }
 
   private void maybeAbort(String location, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
-    if (hasHitAbortingException() && aborted == false) {
+    if (abortingException != null && aborted == false) {
       // if we are already aborted don't do anything here
       try {
         abort();
@@ -483,7 +451,7 @@ final class DocumentsWriterPerThread implements Accountable {
     boolean success = false;
     try {
       
-      if (getIndexWriterConfig().getUseCompoundFile()) {
+      if (indexWriterConfig.getUseCompoundFile()) {
         Set<String> originalFiles = newSegment.info.files();
         // TODO: like addIndexes, we are relying on createCompoundFile to successfully cleanup...
         IndexWriter.createCompoundFile(infoStream, new TrackingDirectoryWrapper(directory), newSegment.info, context, flushNotifications::deleteUnusedFiles);
@@ -550,7 +518,7 @@ final class DocumentsWriterPerThread implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return bytesUsed.get() + pendingUpdates.ramBytesUsed() + consumer.ramBytesUsed();
+    return (deleteDocIDs.length  * Integer.BYTES)+ pendingUpdates.ramBytesUsed() + consumer.ramBytesUsed();
   }
 
   @Override
@@ -558,38 +526,6 @@ final class DocumentsWriterPerThread implements Accountable {
     return List.of(pendingUpdates, consumer);
   }
 
-  /* Initial chunks size of the shared byte[] blocks used to
-       store postings data */
-  final static int BYTE_BLOCK_NOT_MASK = ~BYTE_BLOCK_MASK;
-
-  /* if you increase this, you must fix field cache impl for
-   * getTerms/getTermsIndex requires <= 32768 */
-  final static int MAX_TERM_LENGTH_UTF8 = BYTE_BLOCK_SIZE-2;
-
-
-  private static class IntBlockAllocator extends IntBlockPool.Allocator {
-    private final Counter bytesUsed;
-    
-    public IntBlockAllocator(Counter bytesUsed) {
-      super(IntBlockPool.INT_BLOCK_SIZE);
-      this.bytesUsed = bytesUsed;
-    }
-    
-    /* Allocate another int[] from the shared pool */
-    @Override
-    public int[] getIntBlock() {
-      int[] b = new int[IntBlockPool.INT_BLOCK_SIZE];
-      bytesUsed.addAndGet(IntBlockPool.INT_BLOCK_SIZE * Integer.BYTES);
-      return b;
-    }
-    
-    @Override
-    public void recycleIntBlocks(int[][] blocks, int offset, int length) {
-      bytesUsed.addAndGet(-(length * (IntBlockPool.INT_BLOCK_SIZE * Integer.BYTES)));
-    }
-    
-  }
-  
   @Override
   public String toString() {
     return "DocumentsWriterPerThread [pendingDeletes=" + pendingUpdates

@@ -21,20 +21,24 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntBlockPool;
 
 final class SortingTermVectorsConsumer extends TermVectorsConsumer {
   TrackingTmpOutputDirectoryWrapper tmpDirectory;
 
-  SortingTermVectorsConsumer(DocumentsWriterPerThread docWriter) {
-    super(docWriter);
+  SortingTermVectorsConsumer(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Directory directory, SegmentInfo info, Codec codec) {
+    super(intBlockAllocator, byteBlockAllocator, directory, info, codec);
   }
 
   @Override
@@ -48,10 +52,10 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
         }
         return;
       }
-      TermVectorsReader reader = docWriter.codec.termVectorsFormat()
+      TermVectorsReader reader = codec.termVectorsFormat()
           .vectorsReader(tmpDirectory, state.segmentInfo, state.fieldInfos, IOContext.DEFAULT);
       TermVectorsReader mergeReader = reader.getMergeInstance();
-      TermVectorsWriter writer = docWriter.codec.termVectorsFormat()
+      TermVectorsWriter writer = codec.termVectorsFormat()
           .vectorsWriter(state.directory, state.segmentInfo, IOContext.DEFAULT);
       try {
         reader.checkIntegrity();
@@ -71,9 +75,9 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
   @Override
   void initTermVectorsWriter() throws IOException {
     if (writer == null) {
-      IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.ramBytesUsed()));
-      tmpDirectory = new TrackingTmpOutputDirectoryWrapper(docWriter.directory);
-      writer = docWriter.codec.termVectorsFormat().vectorsWriter(tmpDirectory, docWriter.getSegmentInfo(), context);
+      IOContext context = new IOContext(new FlushInfo(lastDocID, bytesUsed.get()));
+      tmpDirectory = new TrackingTmpOutputDirectoryWrapper(directory);
+      writer = codec.termVectorsFormat().vectorsWriter(tmpDirectory, info, context);
       lastDocID = 0;
     }
   }
