@@ -2140,10 +2140,14 @@ if [ -z "$SOLR_TIMEZONE" ]; then
   SOLR_TIMEZONE='UTC'
 fi
 
-if [ -z "$JFR_ON" ]; then
+if [ -n "$JFR_ON" ]; then
+  if [ -v ${JFR_DIR+x} ]; then
+    JFR_DIR="/tmp/jfr"
+    mkdir -p "$JFR_DIR"
+  fi
   JFR_ON=("-XX:+FlightRecorder")
   SOLR_OPTS+=($JFR_ON)
-  JFR_ON=("-XX:StartFlightRecording=filename=${HOME}/jfr/jfr_results-${SOLR_PORT}-$(date +%s).jfr,dumponexit=true,settings=profile,path-to-gc-roots=true")
+  JFR_ON=("-XX:StartFlightRecording=filename=${JFR_DIR}/jfr_results-${SOLR_PORT}-$(date +%s).jfr,dumponexit=true,settings=profile,path-to-gc-roots=true")
   SOLR_OPTS+=($JFR_ON)
 fi
 
