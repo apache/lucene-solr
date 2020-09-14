@@ -1592,7 +1592,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public boolean watched(String collection) {
-    return collectionWatches.contains(collection);
+    return collectionWatches.containsKey(collection);
   }
 
   /**
