@@ -110,8 +110,13 @@ public class ZkStateReader implements SolrCloseable {
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String ALIASES = "/aliases.json";
-  public static final String CLUSTER_STATE = "/clusterstate.json";
   public static final String STATE_JSON = "/state.json";
+  /**
+   * This ZooKeeper file is no longer used starting with Solr 9 but keeping the name around to check if it
+   * is still present and non empty (in case of upgrade from previous Solr version). It used to contain collection
+   * state for all collections in the cluster.
+   */
+  public static final String UNSUPPORTED_CLUSTER_STATE = "/clusterstate.json";
   public static final String CLUSTER_PROPS = "/clusterprops.json";
   public static final String COLLECTION_PROPS_ZKNODE = "collectionprops.json";
   public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";
@@ -138,7 +143,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String CONFIGS_ZKNODE = "/configs";
   public final static String CONFIGNAME_PROP = "configName";
 
-  public static final String LEGACY_CLOUD = "legacyCloud";
   public static final String SAMPLE_PERCENTAGE = "samplePercentage";
 
   public static final String CREATE_NODE_SET_EMPTY = "EMPTY";
@@ -159,9 +163,9 @@ public class ZkStateReader implements SolrCloseable {
   private CloseTracker closeTracker;
 
   /**
-   * A view of the current state of all collections; combines all the different state sources into a single view.
+   * A view of the current state of all collections.
    */
-  protected volatile ClusterState clusterState = new ClusterState(Collections.emptySet(), Collections.emptyMap(), -1);
+  protected volatile ClusterState clusterState = new ClusterState(Collections.emptySet(), Collections.emptyMap());
 
   private final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "1000"));
 
@@ -173,12 +177,12 @@ public class ZkStateReader implements SolrCloseable {
   private final ReentrantLock updateLock = new ReentrantLock(true);
 
   /**
-   * Collections with format2 state.json, "interesting" and actively watched.
+   * "Interesting" and actively watched Collections.
    */
   private final ConcurrentHashMap<String, DocCollection> watchedCollectionStates = new ConcurrentHashMap<>();
 
   /**
-   * Collections with format2 state.json, not "interesting" and not actively watched.
+   * "Interesting" but not actively watched Collections.
    */
   private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates = new ConcurrentHashMap<>();
 
@@ -188,7 +192,7 @@ public class ZkStateReader implements SolrCloseable {
   private final ConcurrentHashMap<String, VersionedCollectionProps> watchedCollectionProps = new ConcurrentHashMap<>();
 
   /**
-   * Collection properties being actively watched
+   * Watchers of Collection properties
    */
   private final ConcurrentHashMap<String, PropsWatcher> collectionPropsWatchers = new ConcurrentHashMap<>();
 
@@ -264,7 +268,6 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public static final Set<String> KNOWN_CLUSTER_PROPS = Set.of(
-      LEGACY_CLOUD,
       URL_SCHEME,
       AUTO_ADD_REPLICAS,
       CoreAdminParams.BACKUP_LOCATION,
@@ -506,7 +509,6 @@ public class ZkStateReader implements SolrCloseable {
       // on reconnect of SolrZkClient force refresh and re-add watches.
       loadClusterProperties();
       refreshLiveNodes(new LiveNodeWatcher());
-      refreshStateFormat2Collections();
       refreshCollectionList(new CollectionsChildWatcher());
 
       refreshAliases(aliasesManager);
@@ -600,13 +602,11 @@ public class ZkStateReader implements SolrCloseable {
 
     Set<String> liveNodes = this.liveNodes; // volatile read
 
-    // Legacy clusterstate is authoritative, for backwards compatibility.
-    // To move a collection's state to format2, first create the new state2 format node, then remove legacy entry.
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>();
 
-    // Add state format2 collections, but don't override legacy collection states.
+    // Add collections
     for (Map.Entry<String, DocCollection> entry : watchedCollectionStates.entrySet()) {
-      result.putIfAbsent(entry.getKey(), new ClusterState.CollectionRef(entry.getValue()));
+      result.put(entry.getKey(), new ClusterState.CollectionRef(entry.getValue()));
     }
 
     // Finally, add any lazy collections that aren't already accounted for.
@@ -641,9 +641,9 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   /**
-   * Refresh state format2 collections.
+   * Refresh collections.
    */
-  private void refreshStateFormat2Collections() {
+  private void refreshCollections() {
     for (String coll : collectionWatches.keySet()) {
       new StateWatcher(coll).refreshAndWatch();
     }
@@ -653,17 +653,7 @@ public class ZkStateReader implements SolrCloseable {
   private final Object refreshCollectionListLock = new Object();
 
   /**
-   * Search for any lazy-loadable state format2 collections.
-   * <p>
-   * A stateFormat=1 collection which is not interesting to us can also
-   * be put into the {@link #lazyCollectionStates} map here. But that is okay
-   * because {@link #constructState(Set)} will give priority to collections in the
-   * shared collection state over this map.
-   * In fact this is a clever way to avoid doing a ZK exists check on
-   * the /collections/collection_name/state.json znode
-   * Such an exists check is done in {@link ClusterState#hasCollection(String)} and
-   * {@link ClusterState#getCollectionsMap()} methods
-   * have a safeguard against exposing wrong collection names to the users
+   * Search for any lazy-loadable collections.
    */
   private void refreshCollectionList(Watcher watcher) throws KeeperException, InterruptedException {
     synchronized (refreshCollectionListLock) {
@@ -1351,7 +1341,6 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-
   /**
    * Watches collection properties
    */
@@ -1566,8 +1555,7 @@ public class ZkStateReader implements SolrCloseable {
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat);
-        ClusterState state = ClusterState.load(stat.getVersion(), data,
-            Collections.<String>emptySet(), collectionPath);
+        ClusterState state = ClusterState.createFromJson(stat.getVersion(), data, Collections.emptySet());
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
       } catch (KeeperException.NoNodeException e) {

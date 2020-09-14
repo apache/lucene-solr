@@ -51,6 +51,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -840,7 +842,7 @@ public class ZkTestServer implements Closeable {
   // static to share with distrib test
   public void buildZooKeeper(File solrhome, String config, String schema) throws Exception {
     // this workaround is acceptable until we remove legacyCloud because we just init a single core here
-    String defaultClusterProps = "{\"" + ZkStateReader.LEGACY_CLOUD + "\":\"false\"}";
+    String defaultClusterProps = "{}";
     chRootClient.makePath("/solr" + ZkStateReader.CLUSTER_PROPS, defaultClusterProps.getBytes(StandardCharsets.UTF_8),
             CreateMode.PERSISTENT, false);
   }

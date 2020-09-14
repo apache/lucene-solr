@@ -101,7 +101,6 @@ public class ColStatus {
         continue;
       }
       SimpleOrderedMap<Object> colMap = new SimpleOrderedMap<>();
-      colMap.add("stateFormat", coll.getStateFormat());
       colMap.add("znodeVersion", coll.getZNodeVersion());
       Map<String, Object> props = new TreeMap<>(coll.getProperties());
       props.remove("shards");

@@ -207,20 +207,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @Test
   @Ignore // nocommit: investigate
   public void deleteReplicaFromClusterState() throws Exception {
-    deleteReplicaFromClusterState("false");
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
-  }
-  
-  @Test
-  @Ignore // nocommit: investigate
-  public void deleteReplicaFromClusterStateLegacy() throws Exception {
-    deleteReplicaFromClusterState("true"); 
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
-  }
-
-  private void deleteReplicaFromClusterState(String legacyCloud) throws Exception {
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, legacyCloud).process(cluster.getSolrClient());
-    final String collectionName = "deleteFromClusterState_"+legacyCloud;
+    final String collectionName = "deleteFromClusterStateCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
         .process(cluster.getSolrClient());
     
@@ -230,7 +217,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     Slice shard = getCollectionState(collectionName).getSlice("shard1");
 
-    // don't choose the leader to shutdown, it just complicates things unneccessarily
+    // don't choose the leader to shutdown, it just complicates things unnecessarily
     Replica replica = getRandomReplica(shard, (r) ->
                                        ( r.getState() == Replica.State.ACTIVE &&
                                          ! r.equals(shard.getLeader())));
@@ -277,24 +264,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @Ignore // nocommit: investigate
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
-    raceConditionOnDeleteAndRegisterReplica("false");
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
-  }
-  
-  @Test
-  @Slow
-  @Ignore // nocommit: investigate
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
-  public void raceConditionOnDeleteAndRegisterReplicaLegacy() throws Exception {
-    raceConditionOnDeleteAndRegisterReplica("true");
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
-  }
-
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
-  public void raceConditionOnDeleteAndRegisterReplica(String legacyCloud) throws Exception {
-    
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, legacyCloud).process(cluster.getSolrClient());
-    final String collectionName = "raceDeleteReplica_"+legacyCloud;
+    final String collectionName = "raceDeleteReplicaCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .process(cluster.getSolrClient());
 

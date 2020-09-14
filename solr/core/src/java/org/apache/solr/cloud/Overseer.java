@@ -36,7 +36,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
@@ -470,7 +470,7 @@ public class Overseer implements SolrCloseable {
           newSlicesMap.put(slice.getName(), new Slice(slice.getName(), existingReplicas, slice.getProperties(), docCollection.getName()));
         }
         collStates.put(docCollection.getName(), new ClusterState.CollectionRef(
-            new DocCollection(docCollection.getName(), newSlicesMap, docCollection.getProperties(), docCollection.getRouter(), docCollection.getZNodeVersion(), docCollection.getZNode())));
+            new DocCollection(docCollection.getName(), newSlicesMap, docCollection.getProperties(), docCollection.getRouter(), docCollection.getZNodeVersion())));
 
       }
       prevState = new ClusterState(state.getLiveNodes(), collStates, state.getZNodeVersion());
@@ -540,8 +540,6 @@ public class Overseer implements SolrCloseable {
             CollectionsHandler.verifyRuleParams(zkController.getCoreContainer(), message.getProperties());
             ZkWriteCommand zkwrite = new CollectionMutator(getSolrCloudManager()).modifyCollection(clusterState, message);
             return Collections.singletonList(zkwrite);
-          case MIGRATESTATEFORMAT:
-            return Collections.singletonList(new ClusterStateMutator(getSolrCloudManager()).migrateStateFormat(clusterState, message));
           default:
             throw new RuntimeException("unknown operation:" + operation
                     + " contents:" + message.getProperties());
@@ -1131,16 +1129,6 @@ public class Overseer implements SolrCloseable {
     return getCollectionQueue(zkClient, zkStats);
   }
   
-  public static boolean isLegacy(ZkStateReader stateReader) {
-    String legacyProperty = stateReader.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false");
-    return "true".equals(legacyProperty);
-  }
-
-  public static boolean isLegacy(ClusterStateProvider clusterStateProvider) {
-    String legacyProperty = clusterStateProvider.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false");
-    return "true".equals(legacyProperty);
-  }
-
   public ZkStateReader getZkStateReader() {
     return reader;
   }

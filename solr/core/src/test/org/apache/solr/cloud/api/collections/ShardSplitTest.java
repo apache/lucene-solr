@@ -104,11 +104,6 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   @Nightly
   public void test() throws Exception {
 
-    if (TEST_NIGHTLY && usually()) {
-      log.info("Using legacyCloud=false for cluster");
-      CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
-              .process(cloudClient);
-    }
     incompleteOrOverlappingCustomRangeTest();
     splitByUniqueKeyTest();
     splitByRouteFieldTest();
@@ -412,10 +407,6 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   @Nightly
   public void testSplitWithChaosMonkey() throws Exception {
 
-    log.info("Using legacyCloud=false for cluster");
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
-            .process(cloudClient);
-
     List<StoppableIndexingThread> indexers = new ArrayList<>();
     try {
       for (int i = 0; i < 1; i++) {
@@ -632,12 +623,6 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   }
 
   private void doSplitShardWithRule(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
-    if (TEST_NIGHTLY && usually()) {
-      log.info("Using legacyCloud=false for cluster");
-      CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
-              .process(cloudClient);
-    }
-
     log.info("Starting testSplitShardWithRule");
     String collectionName = "shardSplitWithRule_" + splitMethod.toLower();
     CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName, "_default", 1, 2)

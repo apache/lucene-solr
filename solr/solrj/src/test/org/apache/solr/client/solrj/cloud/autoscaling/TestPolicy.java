@@ -83,7 +83,6 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.TestPolicy2.loadFro
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
-import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_STATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
@@ -143,9 +142,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
 
   public void testWithCollection() {
-    ClusterState clusterState = ClusterState.load(1,
+    ClusterState clusterState = ClusterState.createFromCollectionMap(1,
         (Map) loadFromResource("testWithCollection.json"),
-        ImmutableSet.of("node1", "node2", "node3", "node4", "node5"), CLUSTER_STATE);
+        ImmutableSet.of("node1", "node2", "node3", "node4", "node5"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
       public ClusterState getClusterState() throws IOException {
@@ -235,9 +234,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   public void testWithCollectionSuggestions() {
     ClusterState clusterState =
-        ClusterState.load(1,
+        ClusterState.createFromCollectionMap(1,
             (Map) loadFromResource("testWithCollectionSuggestions.json"),
-            ImmutableSet.of("node1", "node2", "node3", "node4", "node5"), CLUSTER_STATE);
+            ImmutableSet.of("node1", "node2", "node3", "node4", "node5"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
       public ClusterState getClusterState() throws IOException {
@@ -326,11 +325,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testWithCollectionMoveVsAddSuggestions() throws IOException {
-    ClusterState clusterState = ClusterState.load(1,
+    ClusterState clusterState = ClusterState.createFromCollectionMap(1,
         (Map) loadFromResource("testWithCollectionMoveVsAddSuggestions.json"),
-        ImmutableSet.of("node1", "node2", "node3", "node4", "node5", "node6"),
-        CLUSTER_STATE
-    );
+        ImmutableSet.of("node1", "node2", "node3", "node4", "node5", "node6"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
       public ClusterState getClusterState() {
@@ -434,9 +431,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testWithCollectionMoveReplica() {
-    ClusterState clusterState = ClusterState.load(1,
+    ClusterState clusterState = ClusterState.createFromCollectionMap(1,
         (Map) loadFromResource("testWithCollectionMoveReplica.json"),
-        ImmutableSet.of("node2", "node3", "node4", "node5"), CLUSTER_STATE);
+        ImmutableSet.of("node2", "node3", "node4", "node5"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
       public ClusterState getClusterState() throws IOException {
@@ -810,7 +807,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}";
 
 
-    ClusterState clusterState = ClusterState.load(1, clusterStateStr.getBytes(UTF_8),
+    ClusterState clusterState = ClusterState.createFromJson(1, clusterStateStr.getBytes(UTF_8),
         ImmutableSet.of("node1", "node2", "node3", "node4", "node5"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
@@ -1192,7 +1189,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return new DelegatingClusterStateProvider(null) {
           @Override
           public ClusterState getClusterState() throws IOException {
-            return ClusterState.load(0, new HashMap<>(), getLiveNodes(), CLUSTER_STATE);
+            return ClusterState.createFromCollectionMap(0, new HashMap<>(), getLiveNodes());
           }
 
           @Override
@@ -2939,8 +2936,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
-          public ClusterState getClusterState() throws IOException {
-            return ClusterState.load(0, clusterState, getLiveNodes(), ZkStateReader.getCollectionPath("c1"));
+          public ClusterState getClusterState() {
+            return ClusterState.createFromCollectionMap(0, clusterState, getLiveNodes());
           }
 
           @Override
@@ -2990,7 +2987,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Map clusterStateMap = (Map) m.remove("clusterstate");
     Map replicaInfoMap = (Map) m.remove("replicaInfo");
 
-    ClusterState clusterState = ClusterState.load(1, clusterStateMap, ImmutableSet.of("node1", "node2"), CLUSTER_STATE);
+    ClusterState clusterState = ClusterState.createFromCollectionMap(1, clusterStateMap, ImmutableSet.of("node1", "node2"));
 
     List<String> shards = Arrays.asList("shard1", "shard2", "shard3");
 

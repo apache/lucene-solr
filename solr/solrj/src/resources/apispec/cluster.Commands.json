@@ -75,9 +75,6 @@
       "documentation": "https://lucene.apache.org/solr/guide/cluster-node-management.html#clusterprop",
       "description": "Add, edit, or delete a cluster-wide property.",
       "properties": {
-        "legacyCloud": {
-          "type": "boolean"
-        },
         "urlScheme": {
           "type": "string"
         },

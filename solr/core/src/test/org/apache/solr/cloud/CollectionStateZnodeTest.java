@@ -26,7 +26,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @Ignore // debug
-public class CollectionStateFormat2Test extends SolrCloudTestCase {
+public class CollectionStateZnodeTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -56,12 +56,11 @@ public class CollectionStateFormat2Test extends SolrCloudTestCase {
     DocCollection c = getCollectionState(collectionName);
 
     assertEquals("DocCollection version should equal the znode version", stat.getVersion(), c.getZNodeVersion() );
-    assertTrue("DocCollection#getStateFormat() must be > 1", c.getStateFormat() > 1);
 
     // remove collection
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
 
-    assertFalse("collection state should not exist externally",
+    assertFalse("collection state should not exist",
         zkClient().exists(ZkStateReader.getCollectionPath(collectionName)));
 
   }

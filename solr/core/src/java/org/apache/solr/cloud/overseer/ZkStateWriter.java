@@ -80,7 +80,7 @@ public class ZkStateWriter {
    * <p>
    * The modified state may be buffered or flushed to ZooKeeper depending on the internal buffering
    * logic of this class. The {@link #hasPendingUpdates()} method may be used to determine if the
-   * last enqueue operation resulted in buffered state. The method {@link #writePendingUpdates(ClusterState)} can
+   * last enqueue operation resulted in buffered state. The method writePendingUpdates(ClusterState) can
    * be used to force an immediate flush of pending cluster state changes.
    *
    * @param state the cluster state information on which the given <code>cmd</code> is applied
@@ -164,7 +164,7 @@ public class ZkStateWriter {
             log.debug("enqueueUpdate() - going to create_collection {}", path);
           }
           //   assert c.getStateFormat() > 1;
-          DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
+          DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0);
 
           LinkedHashMap<String,ClusterState.CollectionRef> collStates = new LinkedHashMap<>(prevState.getCollectionStates());
           collStates.put(name, new ClusterState.CollectionRef(newCollection));
