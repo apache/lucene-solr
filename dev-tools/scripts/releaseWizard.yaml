@@ -407,7 +407,7 @@ groups:
         logfile: git_clean.log
         tee: true
       - !Command
-        cmd: git pull
+        cmd: git pull --ff-only
         stdout: true
       - !Command
         cmd: "{{ gradle_cmd }} localSettings"
@@ -428,7 +428,7 @@ groups:
         cmd: git checkout master
         tee: true
       - !Command
-        cmd: git pull
+        cmd: git pull --ff-only
         tee: true
       - !Command
         cmd: git ls-remote --exit-code --heads origin {{ stable_branch }}
@@ -457,7 +457,7 @@ groups:
         cmd: git checkout {{ stable_branch }}
         tee: true
       - !Command
-        cmd: git pull
+        cmd: git pull --ff-only
         tee: true
       - !Command
         cmd: git ls-remote --exit-code --heads origin {{ release_branch }}
@@ -725,7 +725,7 @@ groups:
         logfile: git_clean.log
         tee: true
       - !Command
-        cmd: git pull
+        cmd: git pull --ff-only
         tee: true
       - !Command
         cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg_key | default("<gpg_key_id>", True) }}
@@ -1236,7 +1236,7 @@ groups:
       root_folder: '{{ git_website_folder }}'
       commands:
         - !Command
-          cmd: git checkout production && git pull
+          cmd: git checkout production && git pull --ff-only
           stdout: true
         - !Command
           cmd: git merge master
@@ -1270,7 +1270,7 @@ groups:
       commands_text: Edit DOAP files
       commands:
       - !Command
-        cmd: git checkout master && git pull
+        cmd: git checkout master && git pull --ff-only
         stdout: true
         comment: Goto master branch
       - !Command
@@ -1291,7 +1291,7 @@ groups:
         stdout: true
         comment: Push the master branch
       - !Command
-        cmd: "git checkout {{ stable_branch }} && git pull"
+        cmd: "git checkout {{ stable_branch }} && git pull --ff-only"
         stdout: true
         comment: Checkout the stable branch
       - !Command
@@ -1309,7 +1309,7 @@ groups:
         stdout: true
         comment: Push the stable branch
       - !Command
-        cmd: "git checkout {{ release_branch }} && git pull"
+        cmd: "git checkout {{ release_branch }} && git pull --ff-only"
         stdout: true
         comment: Checkout the release branch
       - !Command
@@ -1403,7 +1403,7 @@ groups:
       confirm_each_command: true
       commands:
       - !Command
-        cmd: git checkout master && git pull && git clean -df && git checkout -- .
+        cmd: git checkout master && git pull --ff-only && git clean -df && git checkout -- .
         comment: Go to master branch
         logfile: checkout-master.log
       - !Command
@@ -1417,7 +1417,7 @@ groups:
         cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
         logfile: commit-master.log
       - !Command
-        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
+        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
         logfile: checkout-stable.log
         comment: Now the same for the stable branch
       - !Command
@@ -1456,7 +1456,7 @@ groups:
         tee: true
         comment: Find version regexes
       - !Command
-        cmd: git checkout master && git pull && git clean -df && git checkout -- .
+        cmd: git checkout master && git pull --ff-only && git clean -df && git checkout -- .
         comment: Go to master branch
         logfile: checkout-master.log
       - !Command
@@ -1471,7 +1471,7 @@ groups:
         cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
         logfile: commit-master.log
       - !Command
-        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
+        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
         comment: Go to stable branch
         logfile: checkout-stable.log
       - !Command
@@ -1537,7 +1537,7 @@ groups:
       commands_text: Run these commands to add back-compat indices to release branch
       commands:
       - !Command
-        cmd: git checkout {{ release_branch }} && git pull && git clean -df && git checkout -- .
+        cmd: git checkout {{ release_branch }} && git pull --ff-only && git clean -df && git checkout -- .
         tee: true
         logfile: checkout.log
       - !Command
@@ -1566,7 +1566,7 @@ groups:
       commands_text: Run these commands to add back-compat indices to {{ stable_branch }}
       commands:
       - !Command
-        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
+        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
         tee: true
         logfile: checkout.log
       - !Command
@@ -1597,7 +1597,7 @@ groups:
       commands_text: Run these commands to add back-compat indices to master
       commands:
       - !Command
-        cmd: git checkout master && git pull && git clean -df && git checkout -- .
+        cmd: git checkout master && git pull --ff-only && git clean -df && git checkout -- .
         tee: true
         logfile: checkout.log
       - !Command
