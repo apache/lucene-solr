@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
@@ -65,6 +67,8 @@ final class DefaultIndexingChain extends DocConsumer {
   final TermsHash termsHash;
   // Writes stored fields
   final StoredFieldsConsumer storedFieldsConsumer;
+  final TermVectorsConsumer termVectorsWriter;
+
 
   // NOTE: I tried using Hash Map<String,PerField>
   // but it was ~2% slower on Wiki and Geonames with Java
@@ -95,7 +99,6 @@ final class DefaultIndexingChain extends DocConsumer {
     this.infoStream = indexWriterConfig.getInfoStream();
     this.abortingExceptionConsumer = abortingExceptionConsumer;
 
-    final TermsHash termVectorsWriter;
     if (segmentInfo.getIndexSort() == null) {
       storedFieldsConsumer = new StoredFieldsConsumer(indexWriterConfig.getCodec(), directory, segmentInfo);
       termVectorsWriter = new TermVectorsConsumer(intBlockAllocator, byteBlockAllocator, directory, segmentInfo, indexWriterConfig.getCodec());
@@ -795,7 +798,13 @@ final class DefaultIndexingChain extends DocConsumer {
 
   @Override
   public long ramBytesUsed() {
-    return bytesUsed.get() + storedFieldsConsumer.ramBytesUsed();
+    return bytesUsed.get() + storedFieldsConsumer.accountable.ramBytesUsed()
+        + termVectorsWriter.accountable.ramBytesUsed();
+  }
+
+  @Override
+  public Collection<Accountable> getChildResources() {
+    return Arrays.asList(storedFieldsConsumer.accountable, termVectorsWriter.accountable);
   }
 
   /** NOTE: not static: accesses at least docState, termsHash. */
