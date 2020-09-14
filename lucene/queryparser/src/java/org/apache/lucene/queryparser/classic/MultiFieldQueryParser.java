@@ -261,16 +261,16 @@ public class MultiFieldQueryParser extends QueryParser
   
 
   @Override
-  protected Query getRegexpQuery(String field, String termStr)
+  protected Query getRegexpQuery(String field, String termStr, boolean caseSensitive)
       throws ParseException {
     if (field == null) {
       List<Query> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
-        clauses.add(getRegexpQuery(fields[i], termStr));
+        clauses.add(getRegexpQuery(fields[i], termStr, caseSensitive));
       }
       return getMultiFieldQuery(clauses);
     }
-    return super.getRegexpQuery(field, termStr);
+    return super.getRegexpQuery(field, termStr, caseSensitive);
   }
   
   /** Creates a multifield query */

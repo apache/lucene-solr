@@ -30,6 +30,7 @@ public class RegexpQueryNode extends QueryNodeImpl  implements TextableQueryNode
 FieldableNode {
   private CharSequence text;
   private CharSequence field;
+  private boolean caseSensitive;
   /**
    * @param field
    *          - field name
@@ -39,11 +40,14 @@ FieldableNode {
    *          - position in the query string
    * @param end
    *          - position in the query string
+   * @param caseSensitive
+   *          - true if the text matching should be case sensitive
    */
   public RegexpQueryNode(CharSequence field, CharSequence text, int begin,
-      int end) {
+      int end, boolean caseSensitive) {
     this.field = field;
     this.text = text.subSequence(begin, end);
+    this.caseSensitive = caseSensitive;
   }
 
   public BytesRef textToBytesRef() {
@@ -52,7 +56,7 @@ FieldableNode {
 
   @Override
   public String toString() {
-    return "<regexp field='" + this.field + "' term='" + this.text + "'/>";
+    return "<regexp field='" + this.field + "' term='" + this.text + "' caseSensitive=" + this.caseSensitive + " />";
   }
 
   @Override
@@ -60,6 +64,7 @@ FieldableNode {
     RegexpQueryNode clone = (RegexpQueryNode) super.cloneTree();
     clone.field = this.field;
     clone.text = this.text;
+    clone.caseSensitive = this.caseSensitive;
     return clone;
   }
 
@@ -67,6 +72,10 @@ FieldableNode {
   public CharSequence getText() {
     return text;
   }
+  
+  public boolean getCaseSensitive() {
+    return caseSensitive;
+  }  
 
   @Override
   public void setText(CharSequence text) {

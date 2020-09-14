@@ -572,10 +572,12 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   /**
    * Builds a new RegexpQuery instance
    * @param regexp Regexp term
+   * @param caseSensitive if the term matching should be case sensitive
    * @return new RegexpQuery instance
    */
-  protected Query newRegexpQuery(Term regexp) {
-    RegexpQuery query = new RegexpQuery(regexp, RegExp.ALL,
+  protected Query newRegexpQuery(Term regexp, boolean caseSensitive) {
+    int matchFlags = caseSensitive ? 0 : RegExp.ASCII_CASE_INSENSITIVE;
+    RegexpQuery query = new RegexpQuery(regexp, RegExp.ALL, matchFlags,
       maxDeterminizedStates);
     query.setRewriteMethod(multiTermRewriteMethod);
     return query;
@@ -746,18 +748,19 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    *
    * @param field Name of the field query will use.
    * @param termStr Term token that contains a regular expression
+   * @param caseSensitive if token matching should be case sensitive
    *
    * @return Resulting {@link org.apache.lucene.search.Query} built for the term
    * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
-  protected Query getRegexpQuery(String field, String termStr) throws ParseException
+  protected Query getRegexpQuery(String field, String termStr, boolean caseSensitive) throws ParseException
   {
     // We need to pass the whole string to #normalize, which will not work with
     // custom attribute factories for the binary term impl, and may not work
     // with some analyzers
     BytesRef term = getAnalyzer().normalize(field, termStr);
     Term t = new Term(field, term);
-    return newRegexpQuery(t);
+    return newRegexpQuery(t, caseSensitive);
   }
 
   /**
@@ -823,7 +826,9 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
           discardEscapeChar(term.image.substring
               (0, term.image.length()-1)));
     } else if (regexp) {
-      q = getRegexpQuery(qfield, term.image.substring(1, term.image.length()-1));
+      boolean caseSensitive = !term.image.endsWith("i");
+      int lastSlash = term.image.lastIndexOf("/");
+      q = getRegexpQuery(qfield, term.image.substring(1, lastSlash), caseSensitive);
     } else if (fuzzy) {
       q = handleBareFuzzy(qfield, fuzzySlop, termImage);
     } else {

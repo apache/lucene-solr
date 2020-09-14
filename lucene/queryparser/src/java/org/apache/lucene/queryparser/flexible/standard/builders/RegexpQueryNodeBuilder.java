@@ -23,6 +23,8 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.processors.MultiTermRewriteMethodProcessor;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.RegexpQuery;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.RegExp;
 
 /**
  * Builds a {@link RegexpQuery} object from a {@link RegexpQueryNode} object.
@@ -36,10 +38,11 @@ public class RegexpQueryNodeBuilder implements StandardQueryBuilder {
   @Override
   public RegexpQuery build(QueryNode queryNode) throws QueryNodeException {
     RegexpQueryNode regexpNode = (RegexpQueryNode) queryNode;
+    int matchFlags = regexpNode.getCaseSensitive() ? 0 : RegExp.ASCII_CASE_INSENSITIVE;
 
     // TODO: make the maxStates configurable w/ a reasonable default (QueryParserBase uses 10000)
     RegexpQuery q = new RegexpQuery(new Term(regexpNode.getFieldAsString(),
-        regexpNode.textToBytesRef()));
+        regexpNode.textToBytesRef()),  RegExp.ALL, matchFlags, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
 
     MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod) queryNode
         .getTag(MultiTermRewriteMethodProcessor.TAG_ID);

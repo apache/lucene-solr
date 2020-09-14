@@ -192,6 +192,9 @@
  * syntax is documented in the {@link org.apache.lucene.util.automaton.RegExp RegExp} class. For example to find documents containing "moat" or "boat":
  * 
  * <pre class="code">/[mb]oat/</pre>
+ * <p>Searches against indexed terms can be made case insensitive by adding an `i` to the regex as in this example:
+ * 
+ * <pre class="code">/.*MiXeDcAsE/i</pre>
  * <a id="N1009B"></a><a id="Fuzzy_Searches"></a>
  * <h3 class="boxed">Fuzzy Searches</h3>
  * <p>Lucene supports fuzzy searches based on Damerau-Levenshtein Distance. To do a fuzzy search use the tilde, "~", symbol at the end of a Single word Term. For example to search for a term similar in spelling to "roam" use the fuzzy search: 
