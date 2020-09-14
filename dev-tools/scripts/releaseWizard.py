@@ -576,9 +576,9 @@ class ReleaseState:
 
     def get_next_version(self):
         if self.release_type == 'major':
-            return "%s.0" % (self.release_version_major + 1)
+            return "%s.0.0" % (self.release_version_major + 1)
         if self.release_type == 'minor':
-            return "%s.%s" % (self.release_version_major, self.release_version_minor + 1)
+            return "%s.%s.0" % (self.release_version_major, self.release_version_minor + 1)
         if self.release_type == 'bugfix':
             return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix + 1)
 
