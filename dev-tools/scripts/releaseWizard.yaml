@@ -410,9 +410,9 @@ groups:
         cmd: git pull
         stdout: true
       - !Command
-        cmd: {{ gradle_cmd }} localSettings
+        cmd: "{{ gradle_cmd }} localSettings"
       - !Command
-        cmd: {{ gradle_cmd }} clean check -x test
+        cmd: "{{ gradle_cmd }} clean check -x test"
   - !Todo
     id: create_stable_branch
     title: Create a new stable branch, off from master
@@ -1545,7 +1545,7 @@ groups:
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: {{ gradle_cmd }} clean
+        cmd: "{{ gradle_cmd }} clean"
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/
         logfile: add-backcompat.log
@@ -1574,7 +1574,7 @@ groups:
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: {{ gradle_cmd }} clean
+        cmd: "{{ gradle_cmd }} clean"
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
         logfile: add-backcompat.log
@@ -1605,7 +1605,7 @@ groups:
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: {{ gradle_cmd }} clean
+        cmd: "{{ gradle_cmd }} clean"
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
         logfile: add-backcompat.log
