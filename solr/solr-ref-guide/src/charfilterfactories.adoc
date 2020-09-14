@@ -65,9 +65,7 @@ Mapping file syntax:
 * The source string must contain at least one character, but the target string may be empty.
 * The following character escape sequences are recognized within source and target strings:
 +
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-+
-[cols="20,30,20,30",options="header"]
+[%autowidth.spread,options="header"]
 |===
 |Escape Sequence |Resulting Character (http://www.ecma-international.org/publications/standards/Ecma-048.htm[ECMA-48] alias) |Unicode Character |Example Mapping Line
 |`\\` |`\` |U+005C |`"\\" \=> "/"`
@@ -234,9 +232,7 @@ You can configure this filter in `schema.xml` like this:
 
 The table below presents examples of regex-based pattern replacement:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,20,10,20,30",options="header"]
+[%autowidth.spread,options="header"]
 |===
 |Input |Pattern |Replacement |Output |Description
 |see-ing looking |`(\w+)(ing)` |`$1` |see-ing look |Removes "ing" from the end of word.
