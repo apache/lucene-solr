@@ -250,7 +250,7 @@ abstract class ShapeQuery extends Query {
       }
     }
 
-    /** Scorer used for INTERSECTS **/
+    /** Scorer used for INTERSECTS when the number of points <= 4 * number of docs **/
     private Scorer getSparseScorer(final LeafReader reader, final Weight weight, final float boost, final ScoreMode scoreMode) throws IOException {
       if (values.getDocCount() == reader.maxDoc()
           && values.getDocCount() == values.size()
@@ -393,10 +393,12 @@ abstract class ShapeQuery extends Query {
 
       @Override
       public void visit(int docID, byte[] t) {
-        if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
-          visit(docID);
-        } else {
-          excluded.set(docID);
+        if (excluded.get(docID) == false) {
+          if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
+            visit(docID);
+          } else {
+            excluded.set(docID);
+          }
         }
       }
 
@@ -432,12 +434,14 @@ abstract class ShapeQuery extends Query {
 
       @Override
       public void visit(int docID, byte[] t) {
-        Component2D.WithinRelation within = query.queryWithin(t, scratchTriangle);
-        if (within == Component2D.WithinRelation.CANDIDATE) {
-          cost[0]++;
-          result.set(docID);
-        } else if (within == Component2D.WithinRelation.NOTWITHIN) {
-          excluded.set(docID);
+        if (excluded.get(docID) == false) {
+          Component2D.WithinRelation within = query.queryWithin(t, scratchTriangle);
+          if (within == Component2D.WithinRelation.CANDIDATE) {
+            cost[0]++;
+            result.set(docID);
+          } else if (within == Component2D.WithinRelation.NOTWITHIN) {
+            excluded.set(docID);
+          }
         }
       }
 
@@ -475,8 +479,10 @@ abstract class ShapeQuery extends Query {
 
       @Override
       public void visit(int docID, byte[] packedTriangle) {
-        if (query.queryMatches(packedTriangle, scratchTriangle, query.getQueryRelation()) == false) {
-          visit(docID);
+        if (result.get(docID)) {
+          if (query.queryMatches(packedTriangle, scratchTriangle, query.getQueryRelation()) == false) {
+            visit(docID);
+          }
         }
       }
 
