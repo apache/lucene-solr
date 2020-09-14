@@ -374,7 +374,7 @@ groups:
   todos:
   - !Todo
     id: clean_git_checkout
-    title: Do a clean git clone to do the release from.
+    title: Do a clean git clone to do the release from
     description: This eliminates the risk of a dirty checkout
     commands: !Commands
       root_folder: '{{ release_folder }}'
@@ -688,7 +688,6 @@ groups:
         so we emulate a user that never used the Lucene build system before.
     commands: !Commands
       root_folder: '{{ home }}'
-      # nocommit does this need $HOME? Or {{ home }}? How do we refer to userdir here?
       remove_files: .gradle/caches/modules-2/files-2.1_bak
       commands_text: These commands will help you rename the folder so you can get it back later if you wish
       commands:

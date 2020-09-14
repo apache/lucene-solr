@@ -107,16 +107,16 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   print('  Check DOAP files')
   checkDOAPfiles(version)
 
-  print('  ant -Dtests.badapples=false clean validate documentation-lint test')
-  run('ant -Dtests.badapples=false clean validate documentation-lint test')
+  print('  ./gradlew -Dtests.badapples=false clean check')
+  run('./gradlew -Dtests.badapples=false clean check')
 
   open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
   print('  lucene prepare-release')
   os.chdir('lucene')
-  cmd = 'ant -Dversion=%s' % version
+  cmd = './gradlew -Dversion=%s' % version
   if gpgKeyID is not None:
-    cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
+    cmd += ' -Psigning.keyId=%s prepare-release' % gpgKeyID
   else:
     cmd += ' prepare-release-no-sign'
 
@@ -127,9 +127,9 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   
   print('  solr prepare-release')
   os.chdir('../solr')
-  cmd = 'ant -Dversion=%s' % version
+  cmd = './gradlew -Dversion=%s' % version
   if gpgKeyID is not None:
-    cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
+    cmd += ' -Dsigning.keyId=%s prepare-release' % gpgKeyID
   else:
     cmd += ' prepare-release-no-sign'
 
