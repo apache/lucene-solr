@@ -1067,6 +1067,17 @@ For easy filter construction to drill down in faceting, the <<Term Query Parser,
 
 For full analysis on all fields, including text fields, you may want to use the <<Field Query Parser,FieldQParserPlugin>>.
 
+== Ranking Query Parser
+
+The `RankQParserPlugin` is a faster implementation of ranking-related features of `FunctionQParser` and can work together with specialized field of {solr-javadocs}/solr-core/org/apache/solr/schema/RankField.html[`RankFields`] type.
+
+It allows queries like:
+
+[source,text]
+----
+http://localhost:8983/solr/techproducts?q=memory _query_:{!rank f='pagerank', function='log' scalingFactor='1.2'}
+----
+
 == Re-Ranking Query Parser
 
 The `ReRankQParserPlugin` is a special purpose parser for Re-Ranking the top results of a simple query using a more complex ranking query.
