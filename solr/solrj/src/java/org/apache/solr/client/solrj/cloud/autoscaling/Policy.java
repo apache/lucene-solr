@@ -552,7 +552,6 @@ public class Policy implements MapWriter {
     final SolrCloudManager cloudManager;
     final List<Row> matrix;
     final NodeStateProvider nodeStateProvider;
-    final int znodeVersion;
     Set<String> collections = new HashSet<>();
     final Policy policy;
     List<Clause> expandedClauses;
@@ -572,7 +571,6 @@ public class Policy implements MapWriter {
         ParWork.propegateInterrupt(e);
         log.trace("-- session created, can't obtain cluster state", e);
       }
-      this.znodeVersion = state != null ? state.getZNodeVersion() : -1;
       this.nodes = new ArrayList<>(cloudManager.getClusterStateProvider().getLiveNodes());
       this.cloudManager = cloudManager;
       for (String node : nodes) {
@@ -611,7 +609,7 @@ public class Policy implements MapWriter {
     }
 
     private Session(List<String> nodes, SolrCloudManager cloudManager,
-                   List<Row> matrix, List<Clause> expandedClauses, int znodeVersion,
+                   List<Row> matrix, List<Clause> expandedClauses,
                    NodeStateProvider nodeStateProvider, Policy policy, Transaction transaction) {
       this.transaction = transaction;
       this.policy = policy;
@@ -619,7 +617,6 @@ public class Policy implements MapWriter {
       this.cloudManager = cloudManager;
       this.matrix = matrix;
       this.expandedClauses = expandedClauses;
-      this.znodeVersion = znodeVersion;
       this.nodeStateProvider = nodeStateProvider;
       for (Row row : matrix) row.session = this;
     }
@@ -641,7 +638,7 @@ public class Policy implements MapWriter {
     }
 
     Session copy() {
-      return new Session(nodes, cloudManager, getMatrixCopy(), expandedClauses, znodeVersion, nodeStateProvider, policy, transaction);
+      return new Session(nodes, cloudManager, getMatrixCopy(), expandedClauses, nodeStateProvider, policy, transaction);
     }
 
     public Row getNode(String node) {
@@ -690,7 +687,6 @@ public class Policy implements MapWriter {
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-      ew.put("znodeVersion", znodeVersion);
       for (Row row : matrix) {
         ew.put(row.node, row);
       }

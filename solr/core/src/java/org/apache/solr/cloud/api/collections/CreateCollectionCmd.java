@@ -159,8 +159,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       final String async = message.getStr(ASYNC);
 
-      boolean isLegacyCloud = Overseer.isLegacy(zkStateReader);
-
       Map<String,String> collectionParams = new HashMap<>();
       Map<String,Object> collectionProps = message.getProperties();
       for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
@@ -171,7 +169,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
       createCollectionZkNode(stateManager, collectionName, collectionParams, configName);
 
-      OverseerCollectionMessageHandler.createConfNode(stateManager, configName, collectionName, isLegacyCloud);
+      OverseerCollectionMessageHandler.createConfNode(stateManager, configName, collectionName);
 
       // nocommit
       for (String shardName : shardNames) {
@@ -264,31 +262,28 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
 
         String baseUrl = zkStateReader.getBaseUrlForNodeName(nodeName);
-        //in the new mode, create the replica in clusterstate prior to creating the core.
+        // create the replica in the collection's state.json in ZK prior to creating the core.
         // Otherwise the core creation fails
 
         log.info("Base url for replica={}", baseUrl);
 
-        if (!isLegacyCloud) {
-
-          ZkNodeProps props = new ZkNodeProps();
-          props.getProperties().putAll(message.getProperties());
-          ZkNodeProps addReplicaProps = new ZkNodeProps(
-                  Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),
-                  ZkStateReader.COLLECTION_PROP, collectionName,
-                  ZkStateReader.SHARD_ID_PROP, replicaPosition.shard,
-                  ZkStateReader.CORE_NAME_PROP, coreName,
-                  ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
-                  ZkStateReader.BASE_URL_PROP, baseUrl,
-                  ZkStateReader.NODE_NAME_PROP, nodeName,
-                  ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
-                  ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP),
-                      "shards", message.getStr("shards"),
-                  CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
-          props.getProperties().putAll(addReplicaProps.getProperties());
-          if (log.isDebugEnabled()) log.debug("Sending state update to populate clusterstate with new replica {}", props);
-          ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
-        }
+        ZkNodeProps props = new ZkNodeProps();
+        props.getProperties().putAll(message.getProperties());
+        ZkNodeProps addReplicaProps = new ZkNodeProps(
+                Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),
+                ZkStateReader.COLLECTION_PROP, collectionName,
+                ZkStateReader.SHARD_ID_PROP, replicaPosition.shard,
+                ZkStateReader.CORE_NAME_PROP, coreName,
+                ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
+                ZkStateReader.BASE_URL_PROP, baseUrl,
+                ZkStateReader.NODE_NAME_PROP, nodeName,
+                ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
+                ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP),
+                    "shards", message.getStr("shards"),
+                CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
+        props.getProperties().putAll(addReplicaProps.getProperties());
+        if (log.isDebugEnabled()) log.debug("Sending state update to populate clusterstate with new replica {}", props);
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
 
         // Need to create new params for each request
         ModifiableSolrParams params = new ModifiableSolrParams();
@@ -317,39 +312,32 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         sreq.actualShards = sreq.shards;
         sreq.params = params;
 
-        if (isLegacyCloud) {
-          log.info("Submit request to shard for legacyCloud for replica={}", baseUrl);
-          shardHandler.submit(sreq, sreq.shards[0], sreq.params);
-        } else {
-          coresToCreate.put(coreName, sreq);
-        }
+        coresToCreate.put(coreName, sreq);
       }
 
-      if(!isLegacyCloud) {
-        // wait for all replica entries to be created
-        Map<String,Replica> replicas = new HashMap<>();
-        zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (n, c) -> c != null && c.getSlices().size() == shardNames.size());
-        zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, expectedReplicas(coresToCreate.size(), replicas)); // nocommit - timeout - keep this below containing timeouts - need central timeout stuff
-        // TODO what if replicas comes back wrong?
-        if (replicas.size() > 0) {
-          for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
-            ShardRequest sreq = e.getValue();
-            for (Replica rep : replicas.values()) {
-              if (rep.getCoreName().equals(sreq.params.get(CoreAdminParams.NAME)) && rep.getBaseUrl().equals(sreq.shards[0])) {
-                sreq.params.set(CoreAdminParams.CORE_NODE_NAME, rep.getName());
-              }
+      // wait for all replica entries to be created
+      Map<String,Replica> replicas = new HashMap<>();
+      zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (n, c) -> c != null && c.getSlices().size() == shardNames.size());
+      zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, expectedReplicas(coresToCreate.size(), replicas)); // nocommit - timeout - keep this below containing timeouts - need central timeout stuff
+      // TODO what if replicas comes back wrong?
+      if (replicas.size() > 0) {
+        for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
+          ShardRequest sreq = e.getValue();
+          for (Replica rep : replicas.values()) {
+            if (rep.getCoreName().equals(sreq.params.get(CoreAdminParams.NAME)) && rep.getBaseUrl().equals(sreq.shards[0])) {
+              sreq.params.set(CoreAdminParams.CORE_NODE_NAME, rep.getName());
             }
-            Replica replica = replicas.get(e.getKey());
-
-            if (replica != null) {
-              String coreNodeName = replica.getName();
-              sreq.params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
-              log.info("Set the {} for replica {} to {}", CoreAdminParams.CORE_NODE_NAME, replica, coreNodeName);
-            }
-           
-            log.info("Submit request to shard for for replica={}", sreq.actualShards != null ? Arrays.asList(sreq.actualShards) : "null");
-            shardHandler.submit(sreq, sreq.shards[0], sreq.params);
           }
+          Replica replica = replicas.get(e.getKey());
+
+          if (replica != null) {
+            String coreNodeName = replica.getName();
+            sreq.params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
+            log.info("Set the {} for replica {} to {}", CoreAdminParams.CORE_NODE_NAME, replica, coreNodeName);
+          }
+           
+          log.info("Submit request to shard for for replica={}", sreq.actualShards != null ? Arrays.asList(sreq.actualShards) : "null");
+          shardHandler.submit(sreq, sreq.shards[0], sreq.params);
         }
       }
 
@@ -573,12 +561,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
     }
 
-    // TODO default to 2; but need to debug why BasicDistributedZk2Test fails early on
-    String znode = message.getInt(DocCollection.STATE_FORMAT, 1) == 1 ? ZkStateReader.CLUSTER_STATE
-            : ZkStateReader.getCollectionPath(cName);
-
     DocCollection newCollection = new DocCollection(cName,
-            slices, collectionProps, router, -1, znode);
+            slices, collectionProps, router, -1);
 
     return newCollection;
   }

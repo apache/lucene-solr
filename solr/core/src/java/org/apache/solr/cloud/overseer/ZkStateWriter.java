@@ -51,6 +51,20 @@ import java.util.concurrent.TimeoutException;
 
 
 // nocommit - need to allow for a configurable flush interval again
+/**
+ * ZkStateWriter is responsible for writing updates to the cluster state stored in ZooKeeper for collections
+ * each of which gets their own individual state.json in ZK.
+ *
+ * Updates to the cluster state are specified using the
+ * {@link #enqueueUpdate(ClusterState, List, ZkWriteCallback)} method. The class buffers updates
+ * to reduce the number of writes to ZK. The buffered updates are flushed during <code>enqueueUpdate</code>
+ * automatically if necessary. The writePendingUpdates(ClusterState) can be used to force flush any pending updates.
+ *
+ * If either enqueueUpdate(ClusterState, List, ZkWriteCallback) or writePendingUpdates(ClusterState))
+ * throws a {@link org.apache.zookeeper.KeeperException.BadVersionException} then the internal buffered state of the
+ * class is suspect and the current instance of the class should be discarded and a new instance should be created
+ * and used for any future updates.
+ */
 public class ZkStateWriter {
   // pleeeease leeeeeeeeeeets not - THERE HAS TO BE  BETTER WAY
   // private static final long MAX_FLUSH_INTERVAL = TimeUnit.NANOSECONDS.convert(Overseer.STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
@@ -89,7 +103,7 @@ public class ZkStateWriter {
    * <p>
    * The modified state may be buffered or flushed to ZooKeeper depending on the internal buffering
    * logic of this class. The {@link #hasPendingUpdates()} method may be used to determine if the
-   * last enqueue operation resulted in buffered state. The method {@link #writePendingUpdates(ClusterState)} can
+   * last enqueue operation resulted in buffered state. The method writePendingUpdates(ClusterState) can
    * be used to force an immediate flush of pending cluster state changes.
    *
    * @param state the cluster state information on which the given <code>cmd</code> is applied
@@ -212,8 +226,7 @@ public class ZkStateWriter {
             }
 
             DocCollection newCollection = new DocCollection(name, newSliceMap,
-                c.getProperties(), c.getRouter(), prevVersion,
-                path);
+                c.getProperties(), c.getRouter(), prevVersion);
 
             if (log.isDebugEnabled()) {
               log.debug("The new collection {}", newCollection);
@@ -231,7 +244,7 @@ public class ZkStateWriter {
             }
             //   assert c.getStateFormat() > 1;
             DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(),
-                0, path);
+                0);
 
             LinkedHashMap collStates = new LinkedHashMap<>(prevState.getCollectionStates());
             collStates.put(name, new ClusterState.CollectionRef(newCollection));

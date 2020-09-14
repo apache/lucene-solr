@@ -177,7 +177,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
   static SolrCloudManager createCloudManager(Map m, Map meta) {
     Map nodeVals = (Map) meta.get("nodeValues");
     List<Map> replicaVals = (List<Map>) meta.get("replicaValues");
-    ClusterState clusterState = ClusterState.load(0, m, Collections.emptySet(), null);
+    ClusterState clusterState = ClusterState.createFromCollectionMap(0, m, Collections.emptySet());
     Map<String, AtomicInteger> coreCount = new LinkedHashMap<>();
     Set<String> nodes = new HashSet<>(nodeVals.keySet());
     clusterState.getCollectionStates().forEach((s, collectionRef) -> collectionRef.get()
@@ -307,7 +307,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
         if (clusterState == null) {
           Map map = (Map) getObjectByPath(m, false, "cluster/collections");
           if (map == null) map = new HashMap<>();
-          clusterState = ClusterState.load(0, map, liveNodes, "/clusterstate.json");
+          clusterState = ClusterState.createFromCollectionMap(0, map, liveNodes);
         }
 
         return new DelegatingClusterStateProvider(null) {

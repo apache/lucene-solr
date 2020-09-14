@@ -1,6 +1,6 @@
 {
   "documentation": "https://lucene.apache.org/solr/guide/shard-management.html#deleteshard",
-  "description": "Deletes a shard by unloading all replicas of the shard, removing it from clusterstate.json, and by default deleting the instanceDir and dataDir. Only inactive shards or those which have no range for custom sharding will be deleted.",
+  "description": "Deletes a shard by unloading all replicas of the shard, removing it from the collection's state.json, and by default deleting the instanceDir and dataDir. Only inactive shards or those which have no range for custom sharding will be deleted.",
   "methods": [
     "DELETE"
   ],
