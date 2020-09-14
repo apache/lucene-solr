@@ -265,7 +265,7 @@ abstract class ShapeQuery extends Query {
         final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
         return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       }
-      if (values.getDocCount() * 4 < values.size()) {
+      if (values.getDocCount() << 2 < values.size()) {
         // we use a dense structure so we can skip already visited documents
         final FixedBitSet result = new FixedBitSet(reader.maxDoc());
         final long[] cost = new long[]{reader.maxDoc()};
