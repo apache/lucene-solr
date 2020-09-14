@@ -1534,7 +1534,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, new StringSplitAnalyzer());
 
-    char[] chars = new char[DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8];
+    char[] chars = new char[IndexWriter.MAX_TERM_LENGTH];
     Arrays.fill(chars, 'x');
     Document hugeDoc = new Document();
     final String bigTerm = new String(chars);
@@ -3718,8 +3718,6 @@ public class TestIndexWriter extends LuceneTestCase {
           states.add(state::unlock);
           state.deleteQueue.getNextSequenceNumber();
         }
-      } catch (IOException e) {
-        throw new AssertionError(e);
       } finally {
         IOUtils.closeWhileHandlingException(states);
       }
