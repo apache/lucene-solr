@@ -20,7 +20,7 @@ should be used instead, such as autoscaling policy or rules-based placement.
 
 New Features
 ---------------------
-* SOLR-14789: Migrate docker image creation from docker-solr repo to solr/docker. (Houston Putman, Tim Potter, David Smiley, janhoy, Mike Drob)
+* SOLR-14789: Migrate docker image creation from docker-solr repo to solr/docker. (Houston Putman, Martijn Koster, Tim Potter, David Smiley, janhoy, Mike Drob)
 
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 

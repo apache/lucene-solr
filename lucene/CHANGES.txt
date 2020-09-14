@@ -215,9 +215,15 @@ Improvements
 * LUCENE-9446: In BooleanQuery rewrite, always remove MatchAllDocsQuery filter clauses
   when possible. (Julie Tibshirani)
 
-* LUCENE-9501: Improve how Asserting* test classes handle singleton doc values.
+* LUCENE-9501: Improve coverage for Asserting* test classes: make sure to handle singleton doc
+  values, and sometimes exercise Weight#scorer instead of Weight#bulkScorer for top-level
+  queries. (Julie Tibshirani)
 
 * LUCENE-9511: Include StoredFieldsWriter in DWPT accounting to ensure that it's 
+  heap consumption is taken into account when IndexWriter stalls or should flush
+  DWPTs. (Simon Willnauer)
+
+* LUCENE-9514: Include TermVectorsWriter in DWPT accounting to ensure that it's 
   heap consumption is taken into account when IndexWriter stalls or should flush
   DWPTs. (Simon Willnauer)
 
