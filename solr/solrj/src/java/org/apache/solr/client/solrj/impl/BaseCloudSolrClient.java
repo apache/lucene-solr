@@ -991,15 +991,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           // and we could not get any information from the server
           //it is probably not worth trying again and again because
           // the state would not have been updated
-          log.info("Request to collection {} failed due to ({}) {}, retry={} commError={} errorCode={} - retrying",
-              inputCollections, errorCode, rootCause, retryCount, wasCommError, errorCode);
+          log.info("Request to collection {} failed due to ({}) {}, retry={} maxRetries={} commError={} errorCode={} - retrying",
+              inputCollections, errorCode, rootCause, retryCount, MAX_STALE_RETRIES, wasCommError, errorCode);
           return requestWithRetryOnStaleState(request, retryCount + 1, inputCollections);
         }
       } else {
         log.info("request was not communication error it seems");
       }
-      log.error("Request to collection {} failed due to ({}) {}, retry={} commError={} errorCode={} ",
-          inputCollections, errorCode, rootCause, retryCount, wasCommError, errorCode);
+      log.error("Request to collection {} failed due to ({}) {}, retry={} maxRetries={} commError={} errorCode={} ",
+          inputCollections, errorCode, rootCause, retryCount, MAX_STALE_RETRIES, wasCommError, errorCode);
 
       boolean stateWasStale = false;
       if (retryCount < MAX_STALE_RETRIES  &&
