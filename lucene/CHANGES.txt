@@ -239,6 +239,9 @@ Bug Fixes
   already exists instead of opening an IndexInput on the file which might throw a AccessDeniedException
   in some Directory implementations. (Simon Willnauer)
 
+* LUCENE-9501: Fix a bug in IndexSortSortedNumericDocValuesRangeQuery where it could violate the
+  DocIdSetIterator contract. (Julie Tibshirani)
+
 Documentation
 ---------------------
 
@@ -250,6 +253,10 @@ Other
 
 * LUCENE-9292: Refactor BKD point configuration into its own class. (Ignacio Vera)
 
+* LUCENE-9470: Make TestXYMultiPolygonShapeQueries more resilient for CONTAINS queries. (Ignacio Vera)
+
+* LUCENE-9512: Move LockFactory stress test to be a unit/integration
+  test. (Uwe Schindler, Dawid Weiss, Robert Muir)
 
 ======================= Lucene 8.6.2 =======================
 

@@ -265,10 +265,10 @@ public class CoreContainer {
    *                       If not specified, a default implementation is used.
    * @return a new instance of {@linkplain BackupRepository}.
    */
-  public BackupRepository newBackupRepository(Optional<String> repositoryName) {
+  public BackupRepository newBackupRepository(String repositoryName) {
     BackupRepository repository;
-    if (repositoryName.isPresent()) {
-      repository = backupRepoFactory.newInstance(getResourceLoader(), repositoryName.get());
+    if (repositoryName != null) {
+      repository = backupRepoFactory.newInstance(getResourceLoader(), repositoryName);
     } else {
       repository = backupRepoFactory.newInstance(getResourceLoader());
     }

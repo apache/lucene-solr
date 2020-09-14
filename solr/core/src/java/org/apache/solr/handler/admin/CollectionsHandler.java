@@ -96,7 +96,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -1062,7 +1061,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       CoreContainer cc = h.coreContainer;
       String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-      BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+      BackupRepository repository = cc.newBackupRepository(repo);
 
       String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {
@@ -1114,7 +1113,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       final CoreContainer cc = h.coreContainer;
       final String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-      final BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+      final BackupRepository repository = cc.newBackupRepository(repo);
 
       String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {

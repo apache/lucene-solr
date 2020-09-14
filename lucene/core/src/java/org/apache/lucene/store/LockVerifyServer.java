@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.SuppressForbidden;
@@ -38,20 +39,12 @@ import org.apache.lucene.util.SuppressForbidden;
  * @see LockStressTest
  */
 
+@SuppressForbidden(reason = "System.out required: command line tool")
 public class LockVerifyServer {
+  public static final int START_GUN_SIGNAL = 43;
 
-  @SuppressForbidden(reason = "System.out required: command line tool")
-  public static void main(String[] args) throws Exception {
-
-    if (args.length != 2) {
-      System.out.println("Usage: java org.apache.lucene.store.LockVerifyServer bindToIp clients\n");
-      System.exit(1);
-    }
-
-    int arg = 0;
-    final String hostname = args[arg++];
-    final int maxClients = Integer.parseInt(args[arg++]);
-
+  // method pkg-private for tests
+  static void run(String hostname, int maxClients, Consumer<InetSocketAddress> startClients) throws Exception {
     try (final ServerSocket s = new ServerSocket()) {
       s.setReuseAddress(true);
       s.setSoTimeout(30000); // initially 30 secs to give clients enough time to startup
@@ -59,8 +52,8 @@ public class LockVerifyServer {
       final InetSocketAddress localAddr = (InetSocketAddress) s.getLocalSocketAddress();
       System.out.println("Listening on " + localAddr + "...");
       
-      // we set the port as a sysprop, so the ANT task can read it. For that to work, this server must run in-process:
-      System.setProperty("lockverifyserver.port", Integer.toString(localAddr.getPort()));
+      // callback only for the test to start the clients:
+      startClients.accept(localAddr);
       
       final Object localLock = new Object();
       final int[] lockedID = new int[1];
@@ -80,22 +73,22 @@ public class LockVerifyServer {
               }
               
               startingGun.await();
-              os.write(43);
+              os.write(START_GUN_SIGNAL);
               os.flush();
               
-              while(true) {
+              while (true) {
                 final int command = in.read();
                 if (command < 0) {
                   return; // closed
                 }
                 
-                synchronized(localLock) {
+                synchronized (localLock) {
                   final int currentLock = lockedID[0];
                   if (currentLock == -2) {
                     return; // another thread got error, so we exit, too!
                   }
                   switch (command) {
-                    case 1:
+                    case VerifyingLockFactory.MSG_LOCK_ACQUIRED:
                       // Locked
                       if (currentLock != -1) {
                         lockedID[0] = -2;
@@ -103,7 +96,7 @@ public class LockVerifyServer {
                       }
                       lockedID[0] = id;
                       break;
-                    case 0:
+                    case VerifyingLockFactory.MSG_LOCK_RELEASED:
                       // Unlocked
                       if (currentLock != id) {
                         lockedID[0] = -2;
@@ -138,11 +131,18 @@ public class LockVerifyServer {
       for (Thread t : threads) {
         t.join();
       }
-      
-      // cleanup sysprop
-      System.clearProperty("lockverifyserver.port");
 
       System.out.println("Server terminated.");
     }
   }
+
+  public static void main(String[] args) throws Exception {
+    if (args.length != 2) {
+      System.out.println("Usage: java org.apache.lucene.store.LockVerifyServer bindToIp clients\n");
+      System.exit(1);
+    }
+
+    run(args[0], Integer.parseInt(args[1]), addr -> {});
+  }
+  
 }
