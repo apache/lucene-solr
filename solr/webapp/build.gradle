@@ -27,17 +27,7 @@ configurations {
 }
 
 dependencies {
-  implementation(project(":solr:core"), {
-    exclude module: "server"
-
-    // Exclude additional deps from core and logging deps to sync up with ant.
-    // This is suspicious that we have to do it though.
-    exclude group: "org.apache.kerby", module: "kerby-config"
-    exclude group: "org.apache.kerby", module: "kerby-util"
-    exclude group: "org.apache.kerby", module: "kerb-crypto"
-    exclude group: "org.slf4j"
-    exclude group: "org.apache.logging.log4j"
-  })
+  // empty by design as Solr's core libs go into lib/ext instead of WEB-INF/lib
 }
 
 war {
