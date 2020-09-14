@@ -74,8 +74,6 @@ public class TestDocumentsWriterPerThreadPool extends LuceneTestCase {
           fail();
         } catch (AlreadyClosedException e) {
           // fine
-        } catch (IOException e) {
-          throw new AssertionError(e);
         }
       });
       t.start();

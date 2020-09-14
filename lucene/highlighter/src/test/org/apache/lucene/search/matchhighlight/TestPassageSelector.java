@@ -27,6 +27,7 @@ import java.util.Objects;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9521")
 public class TestPassageSelector extends LuceneTestCase {
   @Test
   public void checkEmptyExtra() {
