@@ -20,9 +20,12 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -38,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
@@ -172,9 +176,13 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     // Create a node for the configuration in zookeeper
     boolean trusted = getTrusted(req);
+    Set<String> filesToDelete = Collections.emptySet();
     if (overwritesExisting) {
       if (!trusted) {
         ensureOverwritingUntrustedConfigSet(zkClient, configPathInZk);
+      }
+      if (req.getParams().getBool(ConfigSetParams.CLEANUP, false)) {
+        filesToDelete = getAllConfigsetFiles(zkClient, configPathInZk);
       }
     } else {
       zkClient.makePath(configPathInZk, ("{\"trusted\": " + Boolean.toString(trusted) + "}").
@@ -185,6 +193,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     ZipEntry zipEntry = null;
     while ((zipEntry = zis.getNextEntry()) != null) {
       String filePathInZk = configPathInZk + "/" + zipEntry.getName();
+      if (filePathInZk.endsWith("/")) {
+        filesToDelete.remove(filePathInZk.substring(0, filePathInZk.length() -1));
+      } else {
+        filesToDelete.remove(filePathInZk);
+      }
       if (zipEntry.isDirectory()) {
         zkClient.makePath(filePathInZk, false,  true);
       } else {
@@ -193,6 +206,37 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       }
     }
     zis.close();
+    deleteUnusedFiles(zkClient, filesToDelete);
+  }
+
+  private void deleteUnusedFiles(SolrZkClient zkClient, Set<String> filesToDelete) throws InterruptedException, KeeperException {
+    if (!filesToDelete.isEmpty()) {
+      log.info("Cleaning up {} unused files", filesToDelete.size());
+      if (log.isDebugEnabled()) {
+        log.info("Cleaning up unused files: {}", filesToDelete);
+      }
+      for (String f:filesToDelete) {
+        try {
+          zkClient.delete(f, -1, true);
+        } catch (KeeperException.NoNodeException nne) {
+        }
+      }
+    }
+  }
+
+  private Set<String> getAllConfigsetFiles(SolrZkClient zkClient, String configPathInZk) throws KeeperException, InterruptedException {
+    final Set<String> files = new HashSet<>();
+    if (!configPathInZk.startsWith(ZkConfigManager.CONFIGS_ZKNODE + "/")) {
+      throw new IllegalArgumentException("\"" + configPathInZk + "\" not recognized as a configset path");
+    }
+    ZkMaintenanceUtils.traverseZkTree(zkClient, configPathInZk, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, new ZkMaintenanceUtils.ZkVisitor() {
+      @Override
+      public void visit(String path) throws InterruptedException, KeeperException {
+        files.add(path);
+      }
+    });
+    files.remove(configPathInZk);
+    return files;
   }
 
   /*
