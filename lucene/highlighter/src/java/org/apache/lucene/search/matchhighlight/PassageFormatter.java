@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.RandomAccess;
 import java.util.function.Function;
 
@@ -55,6 +56,7 @@ public class PassageFormatter {
   public List<String> format(CharSequence value, List<Passage> passages, List<OffsetRange> ranges) {
     assert PassageSelector.sortedAndNonOverlapping(passages);
     assert PassageSelector.sortedAndNonOverlapping(ranges);
+    assert withinRange(new OffsetRange(0, value.length()), passages);
     assert ranges instanceof RandomAccess;
 
     if (ranges.isEmpty()) {
@@ -91,6 +93,17 @@ public class PassageFormatter {
     return result;
   }
 
+  private boolean withinRange(OffsetRange limits, List<? extends OffsetRange> contained) {
+    contained.forEach(r -> {
+      if (r.from < limits.from || r.to > limits.to) {
+        throw new AssertionError(String.format(Locale.ROOT,
+            "Range outside of the permitted limit (limit = %s): %s",
+            limits, r));
+      }
+    });
+    return true;
+  }
+
   public StringBuilder format(StringBuilder buf, CharSequence value, final Passage passage) {
     switch (passage.markers.size()) {
       case 0:
@@ -118,7 +131,9 @@ public class PassageFormatter {
     return buf;
   }
 
-  /** Handle multiple markers, possibly overlapping or nested. */
+  /**
+   * Handle multiple markers, possibly overlapping or nested.
+   */
   private void multipleMarkers(
       CharSequence value, final Passage p, StringBuilder b, ArrayList<OffsetRange> markerStack) {
     int at = p.from;
