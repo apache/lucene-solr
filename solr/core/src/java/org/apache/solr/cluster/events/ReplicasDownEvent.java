@@ -16,22 +16,19 @@
  */
 package org.apache.solr.cluster.events;
 
+import org.apache.solr.common.cloud.Replica;
+
+import java.util.Collection;
+
 /**
  *
  */
-public interface ReplicaDownEvent extends ClusterEvent {
+public interface ReplicasDownEvent extends ClusterEvent {
 
   @Override
   default EventType getType() {
-    return EventType.REPLICA_DOWN;
+    return EventType.REPLICAS_DOWN;
   }
 
-  String getNodeName();
-
-  String getCollectionName();
-
-  String getShardName();
-
-  // so called coreNodeName
-  String getReplicaName();
+  Collection<Replica> getReplicas();
 }

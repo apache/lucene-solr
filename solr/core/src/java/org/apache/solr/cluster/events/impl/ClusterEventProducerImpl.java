@@ -20,18 +20,25 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cluster.events.ClusterConfigChangedEvent;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cloud.ClusterSingleton;
-import org.apache.solr.cluster.events.NodeDownEvent;
-import org.apache.solr.cluster.events.NodeUpEvent;
+import org.apache.solr.cluster.events.CollectionsAddedEvent;
+import org.apache.solr.cluster.events.CollectionsRemovedEvent;
+import org.apache.solr.cluster.events.NodesDownEvent;
+import org.apache.solr.cluster.events.NodesUpEvent;
+import org.apache.solr.common.cloud.CloudCollectionsListener;
+import org.apache.solr.common.cloud.ClusterPropertiesListener;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
@@ -50,14 +57,20 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
   private final Map<ClusterEvent.EventType, Set<ClusterEventListener>> listeners = new HashMap<>();
   private final CoreContainer cc;
   private LiveNodesListener liveNodesListener;
+  private CloudCollectionsListener cloudCollectionsListener;
+  private ClusterPropertiesListener clusterPropertiesListener;
+  private Map<String, Object> lastClusterProperties;
   private ZkController zkController;
   private boolean running;
 
   private final Set<ClusterEvent.EventType> supportedEvents =
-      new HashSet<>() {{
-        add(ClusterEvent.EventType.NODE_DOWN);
-        add(ClusterEvent.EventType.NODE_UP);
-      }};
+      new HashSet<>(Arrays.asList(
+          ClusterEvent.EventType.NODES_DOWN,
+          ClusterEvent.EventType.NODES_UP,
+          ClusterEvent.EventType.COLLECTIONS_ADDED,
+          ClusterEvent.EventType.COLLECTIONS_REMOVED,
+          ClusterEvent.EventType.CLUSTER_CONFIG_CHANGED
+      ));
 
   private volatile boolean isClosed = false;
 
@@ -71,6 +84,8 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
     this.zkController = this.cc.getZkController();
     if (zkController == null) {
       liveNodesListener = null;
+      cloudCollectionsListener = null;
+      clusterPropertiesListener = null;
       return;
     }
 
@@ -88,39 +103,103 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
       if (oldNodes.equals(newNodes)) {
         return false;
       }
-      oldNodes.forEach(oldNode -> {
-        if (!newNodes.contains(oldNode)) {
-          fireEvent(new NodeDownEvent() {
-            final Instant timestamp = Instant.now();
-            @Override
-            public Instant getTimestamp() {
-              return timestamp;
-            }
+      final Instant now = Instant.now();
+      final Set<String> downNodes = new HashSet<>(oldNodes);
+      downNodes.removeAll(newNodes);
+      if (!downNodes.isEmpty()) {
+        fireEvent(new NodesDownEvent() {
+          @Override
+          public Collection<String> getNodeNames() {
+            return downNodes;
+          }
 
-            @Override
-            public String getNodeName() {
-              return oldNode;
-            }
-          });
-        }
-      });
-      newNodes.forEach(newNode -> {
-        if (!oldNodes.contains(newNode)) {
-          fireEvent(new NodeUpEvent() {
-            final Instant timestamp = Instant.now();
-            @Override
-            public Instant getTimestamp() {
-              return timestamp;
-            }
-            @Override
-            public String getNodeName() {
-              return newNode;
-            }
-          });
-        }
-      });
+          @Override
+          public Instant getTimestamp() {
+            return now;
+          }
+        });
+      }
+      final Set<String> upNodes = new HashSet<>(newNodes);
+      upNodes.removeAll(oldNodes);
+      if (!upNodes.isEmpty()) {
+        fireEvent(new NodesUpEvent() {
+          @Override
+          public Collection<String> getNodeNames() {
+            return upNodes;
+          }
+
+          @Override
+          public Instant getTimestamp() {
+            return now;
+          }
+        });
+      }
       return false;
     };
+
+    cloudCollectionsListener = ((oldCollections, newCollections) -> {
+      if (oldCollections.equals(newCollections)) {
+        return;
+      }
+      final Instant now = Instant.now();
+      final Set<String> removed = new HashSet<>(oldCollections);
+      removed.removeAll(newCollections);
+      if (!removed.isEmpty()) {
+        fireEvent(new CollectionsRemovedEvent() {
+          @Override
+          public Collection<String> getCollectionNames() {
+            return removed;
+          }
+
+          @Override
+          public Instant getTimestamp() {
+            return now;
+          }
+        });
+      }
+      final Set<String> added = new HashSet<>(newCollections);
+      added.removeAll(oldCollections);
+      if (!added.isEmpty()) {
+        fireEvent(new CollectionsAddedEvent() {
+          @Override
+          public Collection<String> getCollectionNames() {
+            return added;
+          }
+
+          @Override
+          public Instant getTimestamp() {
+            return now;
+          }
+        });
+      }
+    });
+    zkController.zkStateReader.registerCloudCollectionsListener(cloudCollectionsListener);
+
+    lastClusterProperties = zkController.zkStateReader.getClusterProperties();
+    clusterPropertiesListener = (newProperties) -> {
+      if (newProperties.equals(lastClusterProperties)) {
+        return false;
+      }
+      fireEvent(new ClusterConfigChangedEvent() {
+        @Override
+        public Map<String, Object> getOldClusterConfig() {
+          return lastClusterProperties;
+        }
+
+        @Override
+        public Map<String, Object> getNewClusterConfig() {
+          return newProperties;
+        }
+
+        @Override
+        public Instant getTimestamp() {
+          return Instant.now();
+        }
+      });
+      lastClusterProperties = newProperties;
+      return false;
+    };
+    zkController.zkStateReader.registerClusterPropertiesListener(clusterPropertiesListener);
 
     // XXX register collection state listener?
     // XXX not sure how to efficiently monitor for REPLICA_DOWN events
@@ -141,7 +220,15 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
     if (liveNodesListener != null) {
       zkController.zkStateReader.removeLiveNodesListener(liveNodesListener);
     }
+    if (cloudCollectionsListener != null) {
+      zkController.zkStateReader.removeCloudCollectionsListener(cloudCollectionsListener);
+    }
+    if (clusterPropertiesListener != null) {
+      zkController.zkStateReader.removeClusterPropertiesListener(clusterPropertiesListener);
+    }
     liveNodesListener = null;
+    cloudCollectionsListener = null;
+    clusterPropertiesListener = null;
   }
 
   private void ensureRunning() {

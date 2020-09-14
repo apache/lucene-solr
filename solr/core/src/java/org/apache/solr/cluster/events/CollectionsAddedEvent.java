@@ -16,27 +16,17 @@
  */
 package org.apache.solr.cluster.events;
 
-import java.time.Instant;
+import java.util.Collection;
 
 /**
  *
  */
-public interface ClusterEvent {
+public interface CollectionsAddedEvent extends ClusterEvent {
 
-  enum EventType {
-    NODES_DOWN,
-    NODES_UP,
-    COLLECTIONS_ADDED,
-    COLLECTIONS_REMOVED,
-    REPLICAS_DOWN,
-    CLUSTER_CONFIG_CHANGED,
-    // other types? eg. Overseer leader change, shard leader change,
-    // node overload (eg. CPU / MEM circuit breakers tripped)?
+  @Override
+  default EventType getType() {
+    return EventType.COLLECTIONS_ADDED;
   }
 
-  /** Get event type. */
-  EventType getType();
-
-  /** Get event timestamp. */
-  Instant getTimestamp();
+  Collection<String> getCollectionNames();
 }

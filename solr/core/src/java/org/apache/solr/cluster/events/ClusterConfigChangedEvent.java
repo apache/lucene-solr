@@ -16,27 +16,20 @@
  */
 package org.apache.solr.cluster.events;
 
-import java.time.Instant;
+import java.util.Map;
 
 /**
  *
  */
-public interface ClusterEvent {
+public interface ClusterConfigChangedEvent extends ClusterEvent {
 
-  enum EventType {
-    NODES_DOWN,
-    NODES_UP,
-    COLLECTIONS_ADDED,
-    COLLECTIONS_REMOVED,
-    REPLICAS_DOWN,
-    CLUSTER_CONFIG_CHANGED,
-    // other types? eg. Overseer leader change, shard leader change,
-    // node overload (eg. CPU / MEM circuit breakers tripped)?
+  @Override
+  default EventType getType() {
+    return EventType.CLUSTER_CONFIG_CHANGED;
   }
 
-  /** Get event type. */
-  EventType getType();
+  Map<String, Object> getOldClusterConfig();
 
-  /** Get event timestamp. */
-  Instant getTimestamp();
+  Map<String, Object> getNewClusterConfig();
+
 }

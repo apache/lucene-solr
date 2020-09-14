@@ -16,15 +16,17 @@
  */
 package org.apache.solr.cluster.events;
 
+import java.util.Collection;
+
 /**
  *
  */
-public interface NodeDownEvent extends ClusterEvent {
+public interface NodesDownEvent extends ClusterEvent {
 
   @Override
   default EventType getType() {
-    return EventType.NODE_DOWN;
+    return EventType.NODES_DOWN;
   }
 
-  String getNodeName();
+  Collection<String> getNodeNames();
 }

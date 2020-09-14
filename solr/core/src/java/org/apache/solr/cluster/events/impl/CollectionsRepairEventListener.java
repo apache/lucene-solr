@@ -25,6 +25,8 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cloud.ClusterSingleton;
+import org.apache.solr.cluster.events.NodesDownEvent;
+import org.apache.solr.cluster.events.ReplicasDownEvent;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,13 +36,13 @@ import org.slf4j.LoggerFactory;
  * This is an (incomplete) illustration how to re-implement the combination of 8x
  * NodeLostTrigger and AutoAddReplicasPlanAction to maintain the collection's replication factor.
  */
-public class AutoAddReplicasEventListener implements ClusterSingleton, ClusterEventListener {
+public class CollectionsRepairEventListener implements ClusterSingleton, ClusterEventListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Set<ClusterEvent.EventType> EVENT_TYPES = new HashSet<>(
       Arrays.asList(
-          ClusterEvent.EventType.NODE_DOWN,
-          ClusterEvent.EventType.REPLICA_DOWN
+          ClusterEvent.EventType.NODES_DOWN,
+          ClusterEvent.EventType.REPLICAS_DOWN
       ));
 
   private final CoreContainer cc;
@@ -48,7 +50,7 @@ public class AutoAddReplicasEventListener implements ClusterSingleton, ClusterEv
 
   private boolean running = false;
 
-  public AutoAddReplicasEventListener(CoreContainer cc) {
+  public CollectionsRepairEventListener(CoreContainer cc) {
     this.cc = cc;
     this.solrClientCache = cc.getSolrClientCache();
   }
@@ -65,25 +67,25 @@ public class AutoAddReplicasEventListener implements ClusterSingleton, ClusterEv
       return;
     }
     switch (event.getType()) {
-      case NODE_DOWN:
-        handleNodeDown(event);
+      case NODES_DOWN:
+        handleNodesDown((NodesDownEvent) event);
         break;
-      case NODE_UP:
+      case NODES_UP:
         // ignore? rebalance replicas?
         break;
-      case REPLICA_DOWN:
-        handleReplicaDown(event);
+      case REPLICAS_DOWN:
+        handleReplicasDown((ReplicasDownEvent) event);
         break;
       default:
         log.warn("Unsupported event {}, ignoring...", event);
     }
   }
 
-  private void handleNodeDown(ClusterEvent event) {
+  private void handleNodesDown(NodesDownEvent event) {
     // send MOVEREPLICA admin requests for all replicas from that node
   }
 
-  private void handleReplicaDown(ClusterEvent event) {
+  private void handleReplicasDown(ReplicasDownEvent event) {
     // send ADDREPLICA admin request
   }
 

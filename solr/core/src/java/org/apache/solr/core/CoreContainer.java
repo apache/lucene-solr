@@ -177,7 +177,7 @@ public class CoreContainer {
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
 
   private final CustomContainerPlugins customContainerPlugins =  new CustomContainerPlugins(this, containerHandlers.getApiBag());
-  private final Map<String, ClusterSingleton> containerSingletons = new HashMap<>();
+  private final Map<String, ClusterSingleton> clusterSingletons = new ConcurrentHashMap<>();
 
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
@@ -899,11 +899,11 @@ public class CoreContainer {
       containerHandlers.keySet().forEach(handlerName -> {
         SolrRequestHandler handler = containerHandlers.get(handlerName);
         if (handler instanceof ClusterSingleton) {
-          containerSingletons.put(handlerName, (ClusterSingleton) handler);
+          clusterSingletons.put(handlerName, (ClusterSingleton) handler);
         }
       });
       // our default clusterEventProducer is also a ClusterSingleton
-      containerSingletons.put("clusterEventProducer", (ClusterSingleton) clusterEventProducer);
+      clusterSingletons.put("clusterEventProducer", (ClusterSingleton) clusterEventProducer);
       zkSys.getZkController().checkOverseerDesignate();
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
@@ -2107,8 +2107,8 @@ public class CoreContainer {
     return customContainerPlugins;
   }
 
-  public Map<String, ClusterSingleton> getContainerSingletons() {
-    return Collections.unmodifiableMap(containerSingletons);
+  public Map<String, ClusterSingleton> getClusterSingletons() {
+    return clusterSingletons;
   }
 
   public ClusterEventProducer getClusterEventProducer() {
