@@ -67,17 +67,18 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
 
     URI uri = URI.create(client.getBaseURL() + "/withHeaders?q=*:*");
     HttpGet httpGet = new HttpGet(uri);
-   // HttpResponse response = httpClient.execute(httpGet);
- //   Header[] headers = response.getAllHeaders();
+    // HttpResponse response = httpClient.execute(httpGet);
+    //   Header[] headers = response.getAllHeaders();
     boolean containsWarningHeader = false;
-//    for (Header header:headers) {
-//      if ("Warning".equals(header.getName())) {
-//        containsWarningHeader = true;
-//        assertEquals("This is a test warning", header.getValue());
-//        break;
-//      }
-//    }
+    //    for (Header header:headers) {
+    //      if ("Warning".equals(header.getName())) {
+    //        containsWarningHeader = true;
+    //        assertEquals("This is a test warning", header.getValue());
+    //        break;
+    //      }
+    //    }
     assertTrue("Expected header not found", containsWarningHeader);
+
   }
   
   public static class ComponentThatAddsHeader extends SearchComponent {

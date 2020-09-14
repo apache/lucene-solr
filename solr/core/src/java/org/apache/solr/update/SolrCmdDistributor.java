@@ -68,6 +68,7 @@ public class SolrCmdDistributor implements Closeable {
   private final Http2SolrClient solrClient;
 
   private final Phaser phaser = new RequestPhaser();
+  Http2SolrClient.AsyncTracker tracker = new Http2SolrClient.AsyncTracker();
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
@@ -77,11 +78,12 @@ public class SolrCmdDistributor implements Closeable {
   public void finish() {
     assert !finished : "lifecycle sanity check";
 
-    solrClient.waitForOutstandingRequests();
+    tracker.waitForComplete();
     finished = true;
   }
   
   public void close() {
+    tracker.close();
     IOUtils.closeQuietly(solrClient);
     assert ObjectReleaseTracker.release(this);
   }
@@ -202,10 +204,7 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   public void blockAndDoRetries() {
-    if (phaser.getUnarrivedParties() <= 1) {
-      return;
-    }
-    phaser.arriveAndAwaitAdvance();
+    tracker.waitForComplete();
   }
   
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
@@ -217,51 +216,45 @@ public class SolrCmdDistributor implements Closeable {
   private void submit(final Req req) {
 
     if (log.isDebugEnabled()) {
-      log.debug("sending update to "
-          + req.node.getUrl() + " retry:"
-          + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
+      log.debug("sending update to " + req.node.getUrl() + " retry:" + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
     }
-    try {
-      req.uReq.setBasePath(req.node.getUrl());
 
-      if (req.synchronous) {
-        blockAndDoRetries();
+    req.uReq.setBasePath(req.node.getUrl());
 
-        try {
-          req.uReq.setBasePath(req.node.getUrl());
-          solrClient.request(req.uReq);
-        } catch (Exception e) {
-          log.error("Exception sending synchronous dist update", e);
-          Error error = new Error();
-          error.t = e;
-          error.req = req;
-          if (e instanceof SolrException) {
-            error.statusCode = ((SolrException) e).code();
-          }
-          allErrors.add(error);
+    if (req.synchronous) {
+      blockAndDoRetries();
+
+      try {
+        req.uReq.setBasePath(req.node.getUrl());
+        solrClient.request(req.uReq);
+      } catch (Exception e) {
+        log.error("Exception sending synchronous dist update", e);
+        Error error = new Error();
+        error.t = e;
+        error.req = req;
+        if (e instanceof SolrException) {
+          error.statusCode = ((SolrException) e).code();
         }
-
-        return;
+        allErrors.add(error);
       }
 
-      if (req.cmd instanceof CommitUpdateCommand) {
-        // commit
-      } else {
-        phaser.register();
-      }
+      return;
+    }
 
+    tracker.register();
+    try {
       solrClient.request(req.uReq, null, new Http2SolrClient.OnComplete() {
 
         @Override
         public void onSuccess(NamedList result) {
           if (log.isDebugEnabled()) log.debug("Success for distrib update {}", result);
-          arrive(req);
+          tracker.arrive();
         }
 
         @Override
         public void onFailure(Throwable t) {
           log.error("Exception sending dist update", t);
-          arrive(req);
+          tracker.arrive();
 
           Error error = new Error();
           error.t = t;
@@ -277,10 +270,11 @@ public class SolrCmdDistributor implements Closeable {
             allErrors.add(error);
           }
 
-        }});
+        }
+      });
     } catch (Exception e) {
       log.error("Exception sending dist update", e);
-      arrive(req);
+      tracker.arrive();
       Error error = new Error();
       error.t = e;
       error.req = req;
@@ -292,14 +286,6 @@ public class SolrCmdDistributor implements Closeable {
       } else {
         allErrors.add(error);
       }
-    }
-  }
-
-  private void arrive(Req req) {
-    if (req.cmd instanceof  CommitUpdateCommand) {
-      // commit or delete by query
-    } else {
-      phaser.arriveAndDeregister();
     }
   }
 

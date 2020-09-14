@@ -32,7 +32,6 @@ public class SolrExampleXMLHttp2Test extends SolrExampleTests {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
-  @Override
   public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     try {
       String url = jetty.getBaseUrl() + "/collection1";

@@ -47,7 +47,6 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    client = null;
     if (restTestHarness != null) {
       restTestHarness.close();
     }

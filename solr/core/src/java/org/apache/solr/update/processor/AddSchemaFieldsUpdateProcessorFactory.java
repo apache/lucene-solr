@@ -483,7 +483,6 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
               ParWork.propagateInterrupt(interruptedException);
               throw new AlreadyClosedException();
             }
-            oldSchema = core.getLatestSchema();
             cmd.getReq().updateSchemaToLatest();
           } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
             if (log.isDebugEnabled()) log.debug("Schema changed while processing request - retrying.");

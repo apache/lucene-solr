@@ -63,17 +63,11 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     jetty = createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
 
-  @AfterClass
-  public static void afterTest() throws Exception {
-
-  }
-
   @Before
   public void doBefore() throws IOException, SolrServerException {
     //add document and commit, and ensure it's there
-    SolrClient client = getSolrClient(jetty);
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "1234" );
+    doc.addField("id", "1234");
     client.add(doc);
     client.commit();
     assertTrue(searchFindsIt());
@@ -87,13 +81,14 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @Test
   public void testStreamUrl() throws Exception {
-    Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
-    String streamUrl = client.getBaseURL()+"/select?q=*:*&fl=id&wt=csv";
 
-    String getUrl = client.getBaseURL()+"/debug/dump?wt=xml&stream.url="+URLEncoder.encode(streamUrl,"UTF-8");
+    String streamUrl = ((Http2SolrClient) client).getBaseURL() + "/select?q=*:*&fl=id&wt=csv";
+
+    String getUrl = ((Http2SolrClient) client).getBaseURL() + "/debug/dump?wt=xml&stream.url=" + URLEncoder.encode(streamUrl, "UTF-8");
     String content = getUrlForString(getUrl);
     assertTrue(content.contains("1234"));
     //System.out.println(content);
+
   }
 
   private String getUrlForString(String getUrl) throws IOException {
@@ -115,9 +110,10 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   @Test
   public void testNoUrlAccess() throws Exception {
     SolrQuery query = new SolrQuery();
-    query.setQuery( "*:*" );//for anything
-    query.add("stream.url",makeDeleteAllUrl());
-    SolrException se = expectThrows(SolrException.class, () -> getSolrClient(jetty).query(query));
+    query.setQuery("*:*");//for anything
+    query.add("stream.url", makeDeleteAllUrl());
+    SolrClient client = getSolrClient(jetty);
+    SolrException se = expectThrows(SolrException.class, () -> client.query(query));
     assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
   }
   
@@ -125,13 +121,14 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
     Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     String deleteQuery = "<delete><query>*:*</query></delete>";
-    return client.getBaseURL()+"/update?commit=true&stream.body="+ URLEncoder.encode(deleteQuery, "UTF-8");
+    return client.getBaseURL() + "/update?commit=true&stream.body=" + URLEncoder.encode(deleteQuery, "UTF-8");
   }
 
   private boolean searchFindsIt() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
-    query.setQuery( "id:1234" );
-    QueryResponse rsp = getSolrClient(jetty).query(query);
+    query.setQuery("id:1234");
+    SolrClient client = getSolrClient(jetty);
+    QueryResponse rsp = client.query(query);
     return rsp.getResults().getNumFound() != 0;
   }
 }

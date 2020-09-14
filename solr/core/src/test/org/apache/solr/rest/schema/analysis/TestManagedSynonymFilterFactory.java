@@ -27,10 +27,14 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.restlet.ext.servlet.ServerServlet;
 
@@ -40,11 +44,8 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
   
   private static File tmpSolrHome;
 
-  /**
-   * Setup to make the schema mutable
-   */
-  @Before
-  public void before() throws Exception {
+  @BeforeClass
+  public static void beforeTest() throws Exception {
     tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
@@ -56,22 +57,31 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
-                          "/solr", true, extraServlets);
+        "/solr", true, extraServlets);
   }
 
-  @After
-  private void after() throws Exception {
+  @AfterClass
+  public static void afterTest() throws Exception {
+
+  }
+
+
+  /**
+   * Setup to make the schema mutable
+   */
+  @Before
+  public void before() throws Exception {
+
+  }
+
+  @AfterClass
+  private static void afterTestManagedSynonymFilterFactory() throws Exception {
     if (null != tmpSolrHome) {
       FileUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
-    
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
   
   @Test

@@ -29,8 +29,7 @@ import org.junit.BeforeClass;
  */
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleXMLTest extends SolrExampleTests {
-  
-  @Override
+
   public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     try {
       String url = jetty.getBaseUrl().toString() + "/collection1";

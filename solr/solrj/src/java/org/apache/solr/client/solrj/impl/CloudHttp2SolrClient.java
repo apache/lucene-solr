@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -143,7 +144,11 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     myClient.waitForOutstandingRequests();
 
     exceptions.addAll(tsExceptions);
-    shardResponses.addAll(tsResponses);
+
+    Set<Map.Entry<String,NamedList>> entries = tsResponses.entrySet();
+    for (Map.Entry<String,NamedList> entry : entries) {
+      shardResponses.add(entry.getKey(), entry.getValue());
+    }
 
     if (tsExceptions.isEmpty() && tsResponses.size() < routes.size()) {
       log.warn("Sent {} requests but only got {} responses", routes.size(), tsResponses.size());

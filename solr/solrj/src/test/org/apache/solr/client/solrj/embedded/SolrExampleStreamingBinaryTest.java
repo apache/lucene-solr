@@ -36,9 +36,8 @@ import org.junit.Test;
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 
-  @Override
   public SolrClient createNewSolrClient(JettySolrRunner jetty) {
-    ConcurrentUpdateSolrClient client = (ConcurrentUpdateSolrClient)super.createNewSolrClient(jetty);
+    ConcurrentUpdateSolrClient client = (ConcurrentUpdateSolrClient) super.createNewSolrClient(jetty);
     client.setParser(new BinaryResponseParser());
     client.setRequestWriter(new BinaryRequestWriter());
     return client;

@@ -347,7 +347,6 @@ public class XMLLoader extends ContentStreamLoader {
                                     msg);
           }
           processor.processDelete(deleteCmd);
-          deleteCmd.clear();
           break;
 
           // Add everything to the text

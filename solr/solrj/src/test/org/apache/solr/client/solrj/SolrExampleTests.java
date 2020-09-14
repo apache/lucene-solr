@@ -100,7 +100,6 @@ import static org.hamcrest.core.StringContains.containsString;
 abstract public class SolrExampleTests extends SolrExampleTestsBase
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected static JettySolrRunner jetty;
 
   static {
     ignoreException("uniqueKey");
@@ -109,7 +108,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Before

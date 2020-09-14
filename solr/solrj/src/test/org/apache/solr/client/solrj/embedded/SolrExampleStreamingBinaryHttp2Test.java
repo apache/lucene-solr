@@ -41,7 +41,6 @@ import org.junit.Test;
 @Ignore // nocommit - mrm: some fails to look deeper at here
 public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHttp2Test {
 
-  @Override
   public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     // setup the server...
     String url = jetty.getBaseUrl().toString() + "/collection1";

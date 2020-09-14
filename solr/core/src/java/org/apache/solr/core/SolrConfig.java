@@ -49,7 +49,6 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
 import net.sf.saxon.om.NodeInfo;
-import org.apache.commons.collections.map.UnmodifiableOrderedMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
@@ -467,7 +466,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.debug("Config overlay loaded. version : {} ", version);
       }
-      Map m = (Map) fromJSON(in);
+      isr = new InputStreamReader(in, "utf-8");
+      Map m = (Map) fromJSON(isr);
       return new ConfigOverlay(m, version);
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
@@ -1010,9 +1010,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return result;
   }
 
-  private ConfigOverlay overlay;
+  private volatile ConfigOverlay overlay;
 
-  public ConfigOverlay getOverlay() {
+  public synchronized ConfigOverlay getOverlay() {
     if (overlay == null) {
       overlay = getConfigOverlay(getResourceLoader());
     }

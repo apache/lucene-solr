@@ -29,9 +29,13 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
@@ -40,15 +44,18 @@ import org.junit.BeforeClass;
  */
 public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
-  private static JettySolrRunner jetty;
-
   @BeforeClass
   public static void beforeTest() throws Exception {
-    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(legacyExampleCollection1SolrHome());
+  }
+
+  @After
+  public void after() throws Exception {
+
   }
 
   public void test404ViaHttp() throws Exception {
-    SolrClient client = getSolrClient(jetty);
+
     QueryRequest request = new QueryRequest(params("file",
             "does-not-exist-404.txt"));
     request.setPath("/admin/file");
@@ -75,7 +82,6 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testDirList() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient(jetty);
     //assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
     QueryRequest request = new QueryRequest();
     request.setPath("/admin/file");
@@ -85,7 +91,6 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testGetRawFile() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient(jetty);
     //assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
     QueryRequest request = new QueryRequest(params("file", "managed-schema"));
     request.setPath("/admin/file");

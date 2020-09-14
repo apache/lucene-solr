@@ -344,4 +344,44 @@ public class ConcurrentNamedList<T> extends NamedList<T> {
     return super.equals(obj);
   }
 
+
+
+  public static class ConcurrentSimpleOrderedMap<T> extends NamedList<T> {
+    /** Creates an empty instance */
+    public ConcurrentSimpleOrderedMap() {
+      super();
+    }
+
+    public ConcurrentSimpleOrderedMap(int sz) {
+      super(sz);
+    }
+
+    /**
+     * Creates an instance backed by an explicitly specified list of
+     * pairwise names/values.
+     *
+     * <p>
+     * TODO: this method was formerly public, now that it's not we can change the impl details of
+     * this class to be based on a Map.Entry[]
+     * </p>
+     *
+     * @param nameValuePairs underlying List which should be used to implement a SimpleOrderedMap; modifying this List will affect the SimpleOrderedMap.
+     * @lucene.internal
+     */
+    private ConcurrentSimpleOrderedMap(List<Object> nameValuePairs) {
+      super(nameValuePairs);
+    }
+
+    public ConcurrentSimpleOrderedMap(Map.Entry<String, T>[] nameValuePairs) {
+      super(nameValuePairs);
+    }
+
+    @Override
+    public synchronized ConcurrentSimpleOrderedMap<T> clone() {
+      ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
+      newList.addAll(nvPairs);
+      return new ConcurrentSimpleOrderedMap<T>(newList);
+    }
+  }
+
 }

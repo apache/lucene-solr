@@ -201,7 +201,6 @@ public class JavabinLoader extends ContentStreamLoader {
           }
         }
         processor.processDelete(delcmd);
-        delcmd.clear();
       }
     }
     

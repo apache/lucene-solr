@@ -128,7 +128,6 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
 
 
-  @Override
   public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     try {
       // setup the server...

@@ -20,19 +20,24 @@ import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -40,11 +45,25 @@ import org.xml.sax.SAXException;
 abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static volatile RestTestHarness restTestHarness;
+  public static Set<SolrClient> clients = ConcurrentHashMap.newKeySet();
+
+  @Before
+  public void beforeRestTestBase() throws Exception {
+
+  }
 
   @AfterClass
   public synchronized static void cleanUpHarness() throws IOException {
     ParWork.close(restTestHarness, true);
+    for (SolrClient client : clients) {
+      IOUtils.closeQuietly(client);
+    }
+    clients.clear();
     restTestHarness = null;
+  }
+
+  public synchronized SolrClient getSolrClient(JettySolrRunner jetty) {
+    return client;
   }
 
   public synchronized static JettySolrRunner createJettyAndHarness
@@ -55,9 +74,10 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     if (restTestHarness != null) {
       restTestHarness.close();
     }
-    restTestHarness = new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME,
-        getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME,
-            (Http2SolrClient) client));
+    Http2SolrClient client =  getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
+    clients.add(client);
+    restTestHarness = new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME, client);
+    jettys.add(jetty);
     return jetty;
   }
 

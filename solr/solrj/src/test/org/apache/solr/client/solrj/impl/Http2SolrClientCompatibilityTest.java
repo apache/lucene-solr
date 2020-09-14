@@ -28,6 +28,7 @@ import org.apache.solr.util.LogLevel;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.BeforeClass;
 
 @LogLevel("org.eclipse.jetty.client=DEBUG;org.eclipse.jetty.util=DEBUG")
 @SolrTestCaseJ4.SuppressSSL

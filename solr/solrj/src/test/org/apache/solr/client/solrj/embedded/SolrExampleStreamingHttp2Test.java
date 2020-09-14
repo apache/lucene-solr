@@ -33,7 +33,6 @@ import org.apache.solr.common.SolrInputDocument;
 
 public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
-  @Override
   public SolrClient createNewSolrClient(JettySolrRunner jetty)
   {
     // setup the server...

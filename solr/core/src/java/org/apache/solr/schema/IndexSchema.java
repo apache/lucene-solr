@@ -26,6 +26,7 @@ import net.sf.saxon.tree.tiny.TinyElementImpl;
 import net.sf.saxon.tree.tiny.TinyTextualElement;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
@@ -478,8 +479,8 @@ public class IndexSchema {
    * @since solr 1.3
    */
   public void refreshAnalyzers() {
-    indexAnalyzer = new SolrIndexAnalyzer();
-    queryAnalyzer = new SolrQueryAnalyzer();
+    indexAnalyzer = new SolrIndexAnalyzer(fields.values(), dynamicFields);
+    queryAnalyzer = new SolrQueryAnalyzer(fields.values(), dynamicFields);
   }
 
   /** @see UninvertingReader */
@@ -525,17 +526,22 @@ public class IndexSchema {
     return false;
   }
 
-  private class SolrIndexAnalyzer extends DelegatingAnalyzerWrapper {
+  private static class SolrIndexAnalyzer extends DelegatingAnalyzerWrapper {
     protected final Map<String, Analyzer> analyzers;
+    protected final Collection<SchemaField> fields;
 
-    SolrIndexAnalyzer() {
+    protected volatile DynamicField[] dynamicFields;
+
+    SolrIndexAnalyzer(Collection<SchemaField> fields, DynamicField[] dynamicFields) {
       super(PER_FIELD_REUSE_STRATEGY);
+      this.fields = fields;
+      this.dynamicFields = dynamicFields;
       analyzers = analyzerCache();
     }
 
     protected Map<String, Analyzer> analyzerCache() {
       Map<String, Analyzer> cache = new ConcurrentHashMap<>();
-      for (SchemaField f : getFields().values()) {
+      for (SchemaField f : fields) {
         Analyzer analyzer = f.getType().getIndexAnalyzer();
         cache.put(f.getName(), analyzer);
       }
@@ -548,15 +554,24 @@ public class IndexSchema {
       return analyzer != null ? analyzer : getDynamicFieldType(fieldName).getIndexAnalyzer();
     }
 
+    public FieldType getDynamicFieldType(String fieldName) {
+      for (DynamicField df : dynamicFields) {
+        if (df.matches(fieldName)) return df.prototype.getType();
+      }
+      throw new SolrException(ErrorCode.BAD_REQUEST,"undefined field "+fieldName);
+    }
+
   }
 
-  private class SolrQueryAnalyzer extends SolrIndexAnalyzer {
-    SolrQueryAnalyzer() {}
+  private static class SolrQueryAnalyzer extends SolrIndexAnalyzer {
+    SolrQueryAnalyzer(Collection<SchemaField> fields, DynamicField[] dynamicFields) {
+      super(fields, dynamicFields);
+    }
 
     @Override
     protected Map<String, Analyzer> analyzerCache() {
       Map<String, Analyzer> cache = new ConcurrentHashMap<>();
-       for (SchemaField f : getFields().values()) {
+       for (SchemaField f : fields) {
         Analyzer analyzer = f.getType().getQueryAnalyzer();
         cache.put(f.getName(), analyzer);
       }

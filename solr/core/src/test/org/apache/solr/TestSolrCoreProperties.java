@@ -124,7 +124,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
    * otherwise an embedded implementation will be created.
    * Subclasses should override for other options.
    */
-  public SolrClient createNewSolrClient(JettySolrRunner jetty) {
+  public  SolrClient createNewSolrClient(JettySolrRunner jetty) {
     // setup the client...
     final String url = jetty.getBaseUrl().toString() + "/" + "collection1";
     try {

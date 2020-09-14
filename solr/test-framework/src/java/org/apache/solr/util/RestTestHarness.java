@@ -233,7 +233,6 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
 
   @Override
   public void close() throws IOException {
-    sorlClient.close();
     assert ObjectReleaseTracker.release(this);
   }
 }

@@ -33,10 +33,12 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,15 +47,34 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+
   @BeforeClass
   public static void beforeSolrJettyTestBase() throws Exception {
 
   }
 
+
+
   public static Set<JettySolrRunner> jettys = ConcurrentHashMap.newKeySet();
+  public static Set<SolrClient> clients = ConcurrentHashMap.newKeySet();
+
+  protected volatile SolrClient client;
+  protected volatile JettySolrRunner jetty;
+
   public static int port;
-  public static SolrClient client = null;
   public static String context;
+
+  @Before
+  public void beforeJettyTestBaseTest() throws Exception {
+    if (jettys.size() > 0) {
+      jetty = jettys.iterator().next();
+    }
+    if (jetty != null) {
+      SolrClient newClient = createNewSolrClient(jetty);
+      clients.add(newClient);
+      client = newClient;
+    }
+  }
 
   public static JettySolrRunner createAndStartJetty(String solrHome, String configFile, String schemaFile, String context,
                                             boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets)
@@ -117,23 +138,22 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     jetty.start();
     port = jetty.getLocalPort();
     log.info("Jetty Assigned Port#{}", port);
+
     jettys.add(jetty);
+
     return jetty;
   }
 
   @After
-  public synchronized void afterClass() throws Exception {
-
+  public void afterJettyTestBaseTest() throws Exception {
+    for (SolrClient client : clients) {
+      IOUtils.closeQuietly(client);
+    }
+    clients.clear();
   }
 
   @AfterClass
   public static void afterSolrJettyTestBase() throws Exception {
-    try {
-      client.close();
-      client = null;
-    } catch (NullPointerException e) {
-      // okay
-    }
 
     for (JettySolrRunner jetty : jettys) {
       jetty.stop();
@@ -142,10 +162,8 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
   public synchronized SolrClient getSolrClient(JettySolrRunner jetty) {
-    if (client == null) {
-      client = createNewSolrClient(jetty);
-    }
-    return client;
+
+   return client;
   }
 
   /**

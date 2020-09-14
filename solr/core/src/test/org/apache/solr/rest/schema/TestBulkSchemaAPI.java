@@ -34,6 +34,7 @@ import org.apache.lucene.search.similarities.DFISimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -979,21 +980,10 @@ public class TestBulkSchemaAPI extends RestTestBase {
   public void testSortableTextFieldWithAnalyzer() throws Exception {
     String fieldTypeName = "sort_text_type";
     String fieldName = "sort_text";
-    String payload = "{\n" +
-        "  'add-field-type' : {" +
-        "    'name' : '" + fieldTypeName + "',\n" +
-        "    'stored':true,\n" +
-        "    'indexed':true\n" +
-        "    'maxCharsForDocValues':6\n" +
-        "    'class':'solr.SortableTextField',\n" +
-        "    'analyzer' : {'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'}},\n" +
-        "  },\n"+
-        "  'add-field' : {\n" +
-        "    'name':'" + fieldName + "',\n" +
-        "    'type': '"+fieldTypeName+"',\n" +
-        "  }\n" +
-        "}\n";
-
+    String payload = "{\n" + "  'add-field-type' : {" + "    'name' : '" + fieldTypeName + "',\n" + "    'stored':true,\n" + "    'indexed':true\n" + "    'maxCharsForDocValues':6\n"
+        + "    'class':'solr.SortableTextField',\n" + "    'analyzer' : {'tokenizer':{'class':'solr.WhitespaceTokenizerFactory'}},\n" + "  },\n" + "  'add-field' : {\n" + "    'name':'" + fieldName
+        + "',\n" + "    'type': '" + fieldTypeName + "',\n" + "  }\n" + "}\n";
+    SolrClient client = getSolrClient(jetty);
     String response = restTestHarness.post("/schema", json(payload));
 
     Map map = (Map) fromJSONString(response);
@@ -1002,16 +992,12 @@ public class TestBulkSchemaAPI extends RestTestBase {
     Map fields = getObj(restTestHarness, fieldName, "fields");
     assertNotNull("field " + fieldName + " not created", fields);
 
-    assertEquals(0,
-                 getSolrClient(jetty).add(Arrays.asList(sdoc("id","1",fieldName,"xxx aaa"),
-                                                   sdoc("id","2",fieldName,"xxx bbb aaa"),
-                                                   sdoc("id","3",fieldName,"xxx bbb zzz"))).getStatus());
-                                                   
-    assertEquals(0, getSolrClient(jetty).commit().getStatus());
+    assertEquals(0, client.add(Arrays.asList(sdoc("id", "1", fieldName, "xxx aaa"), sdoc("id", "2", fieldName, "xxx bbb aaa"), sdoc("id", "3", fieldName, "xxx bbb zzz"))).getStatus());
+
+    assertEquals(0, client.commit().getStatus());
     {
-      SolrDocumentList docs = getSolrClient(jetty).query
-        (params("q",fieldName+":xxx","sort", fieldName + " asc, id desc")).getResults();
-         
+      SolrDocumentList docs = client.query(params("q", fieldName + ":xxx", "sort", fieldName + " asc, id desc")).getResults();
+
       assertEquals(3L, docs.getNumFound());
       assertEquals(3L, docs.size());
       assertEquals("1", docs.get(0).getFieldValue("id"));
@@ -1019,33 +1005,31 @@ public class TestBulkSchemaAPI extends RestTestBase {
       assertEquals("2", docs.get(2).getFieldValue("id"));
     }
     {
-      SolrDocumentList docs = getSolrClient(jetty).query
-        (params("q",fieldName+":xxx", "sort", fieldName + " desc, id asc")).getResults();
-                                                           
+      SolrDocumentList docs = client.query(params("q", fieldName + ":xxx", "sort", fieldName + " desc, id asc")).getResults();
+
       assertEquals(3L, docs.getNumFound());
       assertEquals(3L, docs.size());
       assertEquals("2", docs.get(0).getFieldValue("id"));
       assertEquals("3", docs.get(1).getFieldValue("id"));
       assertEquals("1", docs.get(2).getFieldValue("id"));
     }
-    
   }
 
   @Test
   public void testAddNewFieldAndQuery() throws Exception {
-    getSolrClient(jetty).add(Arrays.asList(
-        sdoc("id", "1", "term_s", "tux")));
+    SolrClient client = getSolrClient(jetty);
+    client.add(Arrays.asList(sdoc("id", "1", "term_s", "tux")));
 
-    getSolrClient(jetty).commit(true, true);
+    client.commit(true, true);
     Map<String,Object> attrs = new HashMap<>();
     attrs.put("name", "newstringtestfield");
     attrs.put("type", "string");
 
-    new SchemaRequest.AddField(attrs).process(getSolrClient(jetty));
+    new SchemaRequest.AddField(attrs).process(client);
 
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetField("newstringtestfield");
-    int size = getSolrClient(jetty).query(query).getResults().size();
+    int size = client.query(query).getResults().size();
     assertEquals(1, size);
   }
 

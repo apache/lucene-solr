@@ -28,10 +28,14 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.restlet.ext.servlet.ServerServlet;
 
@@ -62,17 +66,14 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
   }
 
   @After
-  private void after() throws Exception {
+  public void tearDown() throws Exception {
+    super.tearDown();
     if (null != tmpSolrHome) {
       FileUtils.deleteDirectory(tmpSolrHome);
     }
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
 
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
   @Test

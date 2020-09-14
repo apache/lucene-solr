@@ -3032,7 +3032,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertEquals(tuples.get(2).getString("field_1"), "8");
     assertEquals(tuples.get(2).getString("field_2"), "9");
     assertNull(tuples.get(2).get("field_3"));
-    solrStream.close();
+    // no cache, so will be closed
+    // solrStream.close();
   }
 
 
@@ -3065,7 +3066,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertEquals(tuples.get(2).getString("field_1"), "8");
     assertNull(tuples.get(2).get("field_2"));
     assertEquals(tuples.get(2).getString("field_3"), "9");
-    solrStream.close();
+    // no cache, so will be closed
+    // solrStream.close();
   }
 
   @Test
@@ -3639,7 +3641,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertTrue(tuple1.getLong("test").equals(2L));
     assertTrue(tuple1.getLong("test1").equals(4L));
     assertTrue(tuple1.getLong("test2").equals(9L));
-    solrStream.close();
+    // no cache, so will be closed
+    // solrStream.close();
   }
   
   @Test
@@ -3663,7 +3666,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 0);
-    solrStream.close();
+    // no cache, so will be closed
+    // solrStream.close();
   }
 
   @Test
@@ -3687,7 +3691,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    solrStream.close();
+    // no cache, so will be closed
+    // solrStream.close();
   }
 
   @Test
@@ -3751,7 +3756,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteCollection("workQueue").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteCollection("mainCorpus").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteCollection("destination").process(cluster.getSolrClient());
-    solrStream.close();
+
+    // no cache, so will be closed
+    // solrStream.close();
   }
 
   @Test

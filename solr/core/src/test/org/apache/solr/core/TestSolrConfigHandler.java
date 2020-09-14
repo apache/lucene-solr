@@ -95,11 +95,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    client = null;
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
+
   }
 
   @Ignore //nocommit debug

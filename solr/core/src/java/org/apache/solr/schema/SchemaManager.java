@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import org.apache.solr.client.solrj.cloud.DistributedLock;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -108,7 +109,17 @@ public class SchemaManager {
     List errors = Collections.emptyList();
     int latestVersion = -1;
     req.getSchema().getSchemaUpdateLock().lockInterruptibly();
+    DistributedLock lock = null;
     try {
+      if (core.getCoreContainer().isZooKeeperAware()) {
+        SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
+        String lockPath = "/collections/" + core.getCoreDescriptor().getCollectionName() + "/schema_lock";
+        lock = new DistributedLock(zkClient, lockPath, zkClient.getZkACLProvider().getACLsToAdd(lockPath));
+        if (log.isDebugEnabled()) log.debug("get cluster lock");
+        while (!lock.lock()) {
+          Thread.sleep(250);
+        }
+      }
       while (!timeOut.hasTimedOut()) {
         managedIndexSchema = getFreshManagedSchema(req.getCore());
         for (CommandOperation op : operations) {
@@ -133,9 +144,8 @@ public class SchemaManager {
           }
 
           try {
-            latestVersion = ZkController.persistConfigResourceToZooKeeper
-                (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
-                 sw.toString().getBytes(StandardCharsets.UTF_8), true);
+            latestVersion = ZkController
+                .persistConfigResourceToZooKeeper(zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(), sw.toString().getBytes(StandardCharsets.UTF_8), true);
 
             if (isClosed.isClosed()) {
               return Collections.singletonList("Already Closed");
@@ -166,6 +176,9 @@ public class SchemaManager {
       }
     } finally {
       req.getSchema().getSchemaUpdateLock().unlock();
+      if (core.getCoreContainer().isZooKeeperAware()) {
+        if (lock != null) lock.unlock();
+      }
     }
     if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
       // Don't block further schema updates while waiting for a pending update to propagate to other replicas.

@@ -27,6 +27,7 @@ import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.restlet.ext.servlet.ServerServlet;
 
@@ -42,8 +43,8 @@ public class TestManagedStopFilterFactory extends RestTestBase {
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
-  @Before
-  public void before() throws Exception {
+  @BeforeClass
+  public static void beforeTestManagedStopFilterFactory() throws Exception {
     tmpSolrHome = createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
@@ -64,11 +65,6 @@ public class TestManagedStopFilterFactory extends RestTestBase {
   private void after() throws Exception {
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
-    
-    if (restTestHarness != null) {
-      restTestHarness.close();
-    }
-    restTestHarness = null;
   }
 
 

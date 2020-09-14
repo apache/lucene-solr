@@ -31,7 +31,6 @@ import org.junit.BeforeClass;
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleBinaryTest extends SolrExampleTests {
 
-  @Override
   public SolrClient createNewSolrClient(JettySolrRunner jetty)
   {
     try {

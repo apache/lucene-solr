@@ -710,7 +710,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       collectionProps.remove(ZkStateReader.NUM_SHARDS_PROP); // we don't put numShards in the collections properties
 
-      // nocommit make efficient
+      // TODO - fix, no makePath (ensure every path part exists), async, single node
 
       try {
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
@@ -733,6 +733,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
               ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
       stateManager.makePath(ZkStateReader.getCollectionPropsPath(collection),
               ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
+      stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/schema_lock", null, CreateMode.PERSISTENT, false);
 
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);

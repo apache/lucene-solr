@@ -46,7 +46,6 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
-  @Override
   public SolrClient createNewSolrClient(JettySolrRunner jetty)
   {
     try {

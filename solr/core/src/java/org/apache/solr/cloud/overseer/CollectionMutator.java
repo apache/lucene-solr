@@ -88,7 +88,7 @@ public class CollectionMutator {
       collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
 
 
-      // nocommit - fix makePath, async, single node
+      // TODO - fix, no makePath (ensure every path part exists), async, single node
       try {
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName
             + "/leader_elect/" + shardId);
@@ -98,11 +98,11 @@ public class CollectionMutator {
             + ZkStateReader.SHARD_LEADERS_ZKNODE);
 
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/" +  shardId, null, CreateMode.PERSISTENT, false);
-        // stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect", null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" +  shardId, null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" +  shardId + "/election", null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leaders/" +  shardId, null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/terms/" +  shardId, ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
+        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/schema_lock", null, CreateMode.PERSISTENT, false);
       } catch (AlreadyExistsException e) {
         throw new AlreadyClosedException();
       } catch (IOException e) {

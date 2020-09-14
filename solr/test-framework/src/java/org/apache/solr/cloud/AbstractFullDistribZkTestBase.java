@@ -2327,7 +2327,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected void setupRestTestHarnesses() {
     for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL(),
+      RestTestHarness harness = new RestTestHarness(() -> ((Http2SolrClient) client).getBaseURL(),
           (Http2SolrClient) client);
       restTestHarnesses.add(harness);
     }

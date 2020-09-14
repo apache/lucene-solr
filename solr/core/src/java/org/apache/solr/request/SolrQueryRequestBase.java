@@ -56,10 +56,10 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   protected final SolrCore core;
   protected final SolrParams origParams;
   protected volatile IndexSchema schema;
-  protected SolrParams params;
-  protected Map<Object,Object> context;
-  protected Iterable<ContentStream> streams;
-  protected Map<String,Object> json;
+  protected volatile SolrParams params;
+  protected volatile Map<Object,Object> context;
+  protected volatile Iterable<ContentStream> streams;
+  protected volatile Map<String,Object> json;
 
   private final RTimerTree requestTimer;
   protected final long startTime;

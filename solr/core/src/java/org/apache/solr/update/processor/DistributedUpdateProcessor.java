@@ -135,12 +135,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   @VisibleForTesting
   VersionInfo vinfo;
   private final boolean versionsStored;
-  private volatile boolean returnVersions;
+  private final boolean returnVersions;
 
-  private NamedList<Object> addsResponse = null;
-  private NamedList<Object> deleteResponse = null;
-  private NamedList<Object> deleteByQueryResponse = null;
-  private CharsRefBuilder scratch;
+  private volatile NamedList<Object> addsResponse = null;
+  private volatile NamedList<Object> deleteResponse = null;
+  private volatile NamedList<Object> deleteByQueryResponse = null;
+  private volatile CharsRefBuilder scratch;
 
   private final SchemaField idField;
 

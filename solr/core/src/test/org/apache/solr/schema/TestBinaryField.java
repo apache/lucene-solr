@@ -124,7 +124,6 @@ public class TestBinaryField extends SolrJettyTestBase {
           assertEquals((byte) (i + 4), b);
         }
 
-
       } else if (id == 3) {
         assertEquals(10, data.length);
         for (int i = 0; i < data.length; i++) {
@@ -152,7 +151,6 @@ public class TestBinaryField extends SolrJettyTestBase {
           assertEquals((byte) (i + 4), b);
         }
 
-
       } else if (id == 3) {
         assertEquals(10, data.length);
         for (int i = 0; i < data.length; i++) {
@@ -161,7 +159,6 @@ public class TestBinaryField extends SolrJettyTestBase {
         }
 
       }
-
     }
   }
 
