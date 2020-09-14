@@ -100,6 +100,7 @@ def expand_jinja(text, vars=None):
         'release_version_refguide': state.get_refguide_release() ,
         'state': state,
         'gpg_key' : state.get_gpg_key(),
+        'gradle_cmd' : 'gradlew.bat' if is_windows() else './gradlew',
         'epoch': unix_time_millis(datetime.utcnow()),
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
@@ -570,7 +571,7 @@ class ReleaseState:
             raise Exception("Cannot find latest version")
 
     def get_stable_branch_name(self):
-        v = Version.parse(self.get_latest_version())
+        v = Version.parse(self.get_next_version())
         return "branch_%sx" % v.major
 
     def get_next_version(self):

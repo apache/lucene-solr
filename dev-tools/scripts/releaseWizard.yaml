@@ -395,7 +395,7 @@ groups:
         From the base branch {{ base_branch }} we'll run precommit tests.
         Fix any problems that are found by pushing fixes to the branch
         and then running this task again. This task will always do `git pull`
-        before `./gradlew precommit` so it will catch changes to your branch :)
+        before `{{ gradle_cmd }} precommit` so it will catch changes to your branch :)
       confirm_each_command: false
       commands:
       - !Command
@@ -410,9 +410,9 @@ groups:
         cmd: git pull
         stdout: true
       - !Command
-        cmd: ./gradlew localSettings
+        cmd: {{ gradle_cmd }} localSettings
       - !Command
-        cmd: ./gradlew clean check -x test
+        cmd: {{ gradle_cmd }} clean check -x test
   - !Todo
     id: create_stable_branch
     title: Create a new stable branch, off from master
@@ -1545,7 +1545,7 @@ groups:
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ./gradlew clean
+        cmd: {{ gradle_cmd }} clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/
         logfile: add-backcompat.log
@@ -1574,7 +1574,7 @@ groups:
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ./gradlew clean
+        cmd: {{ gradle_cmd }} clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
         logfile: add-backcompat.log
@@ -1605,7 +1605,7 @@ groups:
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ./gradlew clean
+        cmd: {{ gradle_cmd }} clean
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
         logfile: add-backcompat.log
