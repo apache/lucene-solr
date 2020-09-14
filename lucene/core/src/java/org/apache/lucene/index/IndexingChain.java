@@ -43,6 +43,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
@@ -55,8 +56,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /** Default general purpose indexing chain, which handles
  *  indexing all types of fields. */
-final class DefaultIndexingChain extends DocConsumer {
-
+final class IndexingChain implements Accountable {
 
   final Counter bytesUsed = Counter.newCounter();
   final FieldInfos.Builder fieldInfos;
@@ -84,8 +84,8 @@ final class DefaultIndexingChain extends DocConsumer {
   private final Consumer<Throwable> abortingExceptionConsumer;
   private boolean hasHitAbortingException;
 
-  DefaultIndexingChain(int indexCreatedVersionMajor, SegmentInfo segmentInfo, Directory directory, FieldInfos.Builder fieldInfos, LiveIndexWriterConfig indexWriterConfig,
-                       Consumer<Throwable> abortingExceptionConsumer) {
+  IndexingChain(int indexCreatedVersionMajor, SegmentInfo segmentInfo, Directory directory, FieldInfos.Builder fieldInfos, LiveIndexWriterConfig indexWriterConfig,
+                Consumer<Throwable> abortingExceptionConsumer) {
     this.indexCreatedVersionMajor = indexCreatedVersionMajor;
     byteBlockAllocator = new ByteBlockPool.DirectTrackingAllocator(bytesUsed);
     IntBlockPool.Allocator intBlockAllocator = new IntBlockAllocator(bytesUsed);
@@ -204,8 +204,7 @@ final class DefaultIndexingChain extends DocConsumer {
     return sorter.sort(state.segmentInfo.maxDoc(), comparators.toArray(IndexSorter.DocComparator[]::new));
   }
 
-  @Override
-  public Sorter.DocMap flush(SegmentWriteState state) throws IOException {
+  Sorter.DocMap flush(SegmentWriteState state) throws IOException {
 
     // NOTE: caller (DocumentsWriterPerThread) handles
     // aborting on any exception from this method
@@ -405,9 +404,8 @@ final class DefaultIndexingChain extends DocConsumer {
     }
   }
 
-  @Override
   @SuppressWarnings("try")
-  public void abort() throws IOException{
+  void abort() throws IOException{
     // finalizer will e.g. close any open files in the term vectors writer:
     try (Closeable finalizer = termsHash::abort){
       storedFieldsConsumer.abort();
@@ -461,8 +459,7 @@ final class DefaultIndexingChain extends DocConsumer {
     }
   }
 
-  @Override
-  public void processDocument(int docID, Iterable<? extends IndexableField> document) throws IOException {
+  void processDocument(int docID, Iterable<? extends IndexableField> document) throws IOException {
 
     // How many indexed field names we've seen (collapses
     // multiple field instances by the same name):
@@ -999,7 +996,6 @@ final class DefaultIndexingChain extends DocConsumer {
     }
   }
 
-  @Override
   DocIdSetIterator getHasDocValues(String field) {
     PerField perField = getPerField(field);
     if (perField != null) {
