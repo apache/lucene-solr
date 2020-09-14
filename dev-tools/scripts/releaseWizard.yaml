@@ -410,6 +410,8 @@ groups:
         cmd: git pull
         stdout: true
       - !Command
+        cmd: ./gradlew localSettings
+      - !Command
         cmd: ./gradlew clean check -x test
   - !Todo
     id: create_stable_branch
