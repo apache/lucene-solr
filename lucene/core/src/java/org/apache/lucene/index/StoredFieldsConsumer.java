@@ -31,6 +31,8 @@ class StoredFieldsConsumer {
   final Directory directory;
   final SegmentInfo info;
   StoredFieldsWriter writer;
+  // this accountable either holds the writer or one that returns null.
+  // it's cleaner than checking if the writer is null all over the place
   Accountable accountable = Accountable.NULL_ACCOUNTABLE;
   private int lastDoc;
 

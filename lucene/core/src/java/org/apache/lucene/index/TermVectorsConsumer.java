@@ -49,6 +49,8 @@ class TermVectorsConsumer extends TermsHash {
   private int numVectorFields;
   int lastDocID;
   private TermVectorsConsumerPerField[] perFields = new TermVectorsConsumerPerField[1];
+  // this accountable either holds the writer or one that returns null.
+  // it's cleaner than checking if the writer is null all over the place
   Accountable accountable = Accountable.NULL_ACCOUNTABLE;
 
   TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
