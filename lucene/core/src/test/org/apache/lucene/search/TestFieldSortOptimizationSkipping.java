@@ -17,20 +17,25 @@
 package org.apache.lucene.search;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
+import static org.apache.lucene.search.SortField.FIELD_DOC;
 import static org.apache.lucene.search.SortField.FIELD_SCORE;
 
 public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
@@ -95,6 +100,14 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
       }
       assertTrue(collector.isEarlyTerminated());
       assertTrue(topDocs.totalHits.value < numDocs);
+    }
+
+    { // test that if numeric field is a secondary sort, no optimization is run
+      final TopFieldCollector collector = TopFieldCollector.create(new Sort(FIELD_SCORE, sortField), numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      assertEquals(topDocs.totalHits.value, numDocs); // assert that all documents were collected => optimization was not run
     }
 
     writer.close();
@@ -290,5 +303,138 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     dir.close();
   }
 
+  public void testDocSortOptimizationWithAfter() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(150);
+    for (int i = 0; i < numDocs; ++i) {
+      final Document doc = new Document();
+      writer.addDocument(doc);
+      if ((i > 0) && (i % 50 == 0)) {
+        writer.commit();
+      }
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = new IndexSearcher(reader);
+    final int numHits = 3;
+    final int totalHitsThreshold = 3;
+    final int[] searchAfters = {10, 140, numDocs - 4};
+    for (int searchAfter : searchAfters) {
+      // sort by _doc with search after should trigger optimization
+      {
+        final Sort sort = new Sort(FIELD_DOC);
+        FieldDoc after = new FieldDoc(searchAfter, Float.NaN, new Integer[]{searchAfter});
+        final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
+        searcher.search(new MatchAllDocsQuery(), collector);
+        TopDocs topDocs = collector.topDocs();
+        assertEquals(numHits, topDocs.scoreDocs.length);
+        for (int i = 0; i < numHits; i++) {
+          int expectedDocID = searchAfter + 1 + i;
+          assertEquals(expectedDocID, topDocs.scoreDocs[i].doc);
+        }
+        assertTrue(collector.isEarlyTerminated());
+        // check that very few docs were collected
+        assertTrue(topDocs.totalHits.value < 10);
+      }
+
+      // sort by _doc + _score with search after should trigger optimization
+      {
+        final Sort sort = new Sort(FIELD_DOC, FIELD_SCORE);
+        FieldDoc after = new FieldDoc(searchAfter, Float.NaN, new Object[]{searchAfter, 1.0f});
+        final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
+        searcher.search(new MatchAllDocsQuery(), collector);
+        TopDocs topDocs = collector.topDocs();
+        assertEquals(numHits, topDocs.scoreDocs.length);
+        for (int i = 0; i < numHits; i++) {
+          int expectedDocID = searchAfter + 1 + i;
+          assertEquals(expectedDocID, topDocs.scoreDocs[i].doc);
+        }
+        assertTrue(collector.isEarlyTerminated());
+        // assert that very few docs were collected
+        assertTrue(topDocs.totalHits.value < 10);
+      }
+
+      // sort by _doc desc should not trigger optimization
+      {
+        final Sort sort = new Sort(new SortField(null, SortField.Type.DOC, true));
+        FieldDoc after = new FieldDoc(searchAfter, Float.NaN, new Integer[]{searchAfter});
+        final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
+        searcher.search(new MatchAllDocsQuery(), collector);
+        TopDocs topDocs = collector.topDocs();
+        assertEquals(numHits, topDocs.scoreDocs.length);
+        for (int i = 0; i < numHits; i++) {
+          int expectedDocID = searchAfter - 1 - i;
+          assertEquals(expectedDocID, topDocs.scoreDocs[i].doc);
+        }
+        // assert that all documents were collected
+        assertEquals(numDocs, topDocs.totalHits.value);
+      }
+    }
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
+
+  public void testDocSortOptimization() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(100);
+    int seg = 1;
+    for (int i = 0; i < numDocs; ++i) {
+      final Document doc = new Document();
+      doc.add(new LongPoint("lf", i));
+      doc.add(new StoredField("slf", i));
+      doc.add(new StringField("tf", "seg" + seg, Field.Store.YES));
+      writer.addDocument(doc);
+      if ((i > 0) && (i % 50 == 0)) {
+        writer.commit();
+        seg++;
+      }
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = new IndexSearcher(reader);
+    final int numHits = 3;
+    final int totalHitsThreshold = 3;
+    final Sort sort = new Sort(FIELD_DOC);
+
+    // sort by _doc should skip all non-competitive documents
+    {
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(numHits, topDocs.scoreDocs.length);
+      for (int i = 0; i < numHits; i++) {
+        assertEquals(i, topDocs.scoreDocs[i].doc);
+      }
+      assertTrue(collector.isEarlyTerminated());
+      assertTrue(topDocs.totalHits.value < 10); // assert that very few docs were collected
+    }
+
+    // sort by _doc with a bool query should skip all non-competitive documents
+    {
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+      int lowerRange = 40;
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
+      bq.add(LongPoint.newRangeQuery("lf", lowerRange, Long.MAX_VALUE), BooleanClause.Occur.MUST);
+      bq.add(new TermQuery(new Term("tf", "seg1")), BooleanClause.Occur.MUST);
+      searcher.search(bq.build(), collector);
+
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(numHits, topDocs.scoreDocs.length);
+      for (int i = 0; i < numHits; i++) {
+        Document d = searcher.doc(topDocs.scoreDocs[i].doc);
+        assertEquals(Integer.toString(i + lowerRange), d.get("slf"));
+        assertEquals("seg1", d.get("tf"));
+      }
+      assertTrue(collector.isEarlyTerminated());
+      assertTrue(topDocs.totalHits.value < 10); // assert that very few docs were collected
+    }
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
 
 }

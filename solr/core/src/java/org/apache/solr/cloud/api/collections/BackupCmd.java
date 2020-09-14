@@ -81,7 +81,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     Instant startTime = Instant.now();
 
     CoreContainer cc = ocmh.overseer.getCoreContainer();
-    BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+    BackupRepository repository = cc.newBackupRepository(repo);
     BackupManager backupMgr = new BackupManager(repository, ocmh.zkStateReader);
 
     // Backup location
