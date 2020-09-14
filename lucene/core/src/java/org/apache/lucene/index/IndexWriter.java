@@ -273,8 +273,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * and a message is printed to infoStream, if set (see {@link
    * IndexWriterConfig#setInfoStream(InfoStream)}).
    */
-  // if you increase this, you must fix field cache impl for
-  // getTerms/getTermsIndex requires <= 32768
   public final static int MAX_TERM_LENGTH =  BYTE_BLOCK_SIZE-2;
 
   /**

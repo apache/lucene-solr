@@ -182,6 +182,10 @@ API Changes
   is now public, making it easier for applications to decode facet
   ordinals into their corresponding labels (Ankur)
 
+* LUCENE-9515: IndexingChain now accepts individual primitives rather than a
+  DocumentsWriterPerThread instance in order to create a new DocConsumer.
+  (Simon Willnauer)
+
 New Features
 ---------------------
 
