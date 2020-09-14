@@ -232,7 +232,7 @@ You can configure this filter in `schema.xml` like this:
 
 The table below presents examples of regex-based pattern replacement:
 
-[%autowidth.spread,options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Input |Pattern |Replacement |Output |Description
 |see-ing looking |`(\w+)(ing)` |`$1` |see-ing look |Removes "ing" from the end of word.
