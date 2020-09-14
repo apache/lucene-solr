@@ -17,7 +17,6 @@
 package org.apache.lucene.index;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,9 +26,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -49,12 +48,12 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
 
   private final Set<DocumentsWriterPerThread> dwpts = Collections.newSetFromMap(new IdentityHashMap<>());
   private final Deque<DocumentsWriterPerThread> freeList = new ArrayDeque<>();
-  private final IOSupplier<DocumentsWriterPerThread> dwptFactory;
+  private final Supplier<DocumentsWriterPerThread> dwptFactory;
   private int takenWriterPermits = 0;
   private boolean closed;
 
 
-  DocumentsWriterPerThreadPool(IOSupplier<DocumentsWriterPerThread> dwptFactory) {
+  DocumentsWriterPerThreadPool(Supplier<DocumentsWriterPerThread> dwptFactory) {
     this.dwptFactory = dwptFactory;
   }
 
@@ -86,7 +85,7 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
    *
    * @return a new {@link DocumentsWriterPerThread}
    */
-  private synchronized DocumentsWriterPerThread newWriter() throws IOException {
+  private synchronized DocumentsWriterPerThread newWriter() {
     assert takenWriterPermits >= 0;
     while (takenWriterPermits > 0) {
       // we can't create new DWPTs while not all permits are available
@@ -110,7 +109,7 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
   // of items (docs, deletes, DV updates) to most take advantage of concurrency while flushing
 
   /** This method is used by DocumentsWriter/FlushControl to obtain a DWPT to do an indexing operation (add/updateDocument). */
-  DocumentsWriterPerThread getAndLock() throws IOException {
+  DocumentsWriterPerThread getAndLock() {
     synchronized (this) {
       ensureOpen();
       // Important that we are LIFO here! This way if number of concurrent indexing threads was once high,

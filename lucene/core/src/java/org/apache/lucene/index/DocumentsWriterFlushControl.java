@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -440,7 +439,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     flushDeletes.set(true);
   }
   
-  DocumentsWriterPerThread obtainAndLock() throws IOException {
+  DocumentsWriterPerThread obtainAndLock() {
     while (closed == false) {
       final DocumentsWriterPerThread perThread = perThreadPool.getAndLock();
       if (perThread.deleteQueue == documentsWriter.deleteQueue) {
