@@ -24,9 +24,11 @@ import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -34,16 +36,15 @@ import org.apache.lucene.util.IOUtils;
 final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
   TrackingTmpOutputDirectoryWrapper tmpDirectory;
 
-  SortingStoredFieldsConsumer(DocumentsWriterPerThread docWriter) {
-    super(docWriter);
+  SortingStoredFieldsConsumer(Codec codec, Directory directory, SegmentInfo info) {
+    super(codec, directory, info);
   }
 
   @Override
   protected void initStoredFieldsWriter() throws IOException {
     if (writer == null) {
-      this.tmpDirectory = new TrackingTmpOutputDirectoryWrapper(docWriter.directory);
-      this.writer = docWriter.codec.storedFieldsFormat().fieldsWriter(tmpDirectory, docWriter.getSegmentInfo(),
-          IOContext.DEFAULT);
+      this.tmpDirectory = new TrackingTmpOutputDirectoryWrapper(directory);
+      this.writer = codec.storedFieldsFormat().fieldsWriter(tmpDirectory, info, IOContext.DEFAULT);
     }
   }
 
@@ -57,17 +58,18 @@ final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
       }
       return;
     }
-    StoredFieldsReader reader = docWriter.codec.storedFieldsFormat()
+    StoredFieldsReader reader = codec.storedFieldsFormat()
         .fieldsReader(tmpDirectory, state.segmentInfo, state.fieldInfos, IOContext.DEFAULT);
-    StoredFieldsReader mergeReader = reader.getMergeInstance();
-    StoredFieldsWriter sortWriter = docWriter.codec.storedFieldsFormat()
+    // Don't pull a merge instance, since merge instances optimize for
+    // sequential access while we consume stored fields in random order here.
+    StoredFieldsWriter sortWriter = codec.storedFieldsFormat()
         .fieldsWriter(state.directory, state.segmentInfo, IOContext.DEFAULT);
     try {
       reader.checkIntegrity();
       CopyVisitor visitor = new CopyVisitor(sortWriter);
       for (int docID = 0; docID < state.segmentInfo.maxDoc(); docID++) {
         sortWriter.startDocument();
-        mergeReader.visitDocument(sortMap.newToOld(docID), visitor);
+        reader.visitDocument(sortMap.newToOld(docID), visitor);
         sortWriter.finishDocument();
       }
       sortWriter.finish(state.fieldInfos, state.segmentInfo.maxDoc());

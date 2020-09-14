@@ -157,11 +157,13 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
 
     private final int dictLength, blockLength;
     final Deflater compressor;
+    final BugfixDeflater_JDK8252739 deflaterBugfix;
     byte[] compressed;
     boolean closed;
 
     DeflateWithPresetDictCompressor(int level, int dictLength, int blockLength) {
-      compressor = BugfixDeflater_JDK8252739.createDeflaterInstance(level, true, dictLength);
+      compressor = new Deflater(level, true);
+      deflaterBugfix = BugfixDeflater_JDK8252739.createBugfix(compressor, dictLength);
       compressed = new byte[64];
       this.dictLength = dictLength;
       this.blockLength = blockLength;
@@ -208,7 +210,7 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
       // And then sub blocks
       for (int start = off + dictLength; start < end; start += blockLength) {
         compressor.reset();
-        compressor.setDictionary(bytes, off, dictLength);
+        deflaterBugfix.setDictionary(bytes, off, dictLength);
         doCompress(bytes, start, Math.min(blockLength, off + len - start), out);
       }
     }

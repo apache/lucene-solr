@@ -194,7 +194,7 @@ public final class LZ4 {
     abstract void initDictionary(int dictLen);
 
     /**
-     * Advance the cursor to {@off} and return an index that stored the same
+     * Advance the cursor to {@code off} and return an index that stored the same
      * 4 bytes as {@code b[o:o+4)}. This may only be called on strictly
      * increasing sequences of offsets. A return value of {@code -1} indicates
      * that no other index could be found. */

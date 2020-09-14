@@ -225,7 +225,7 @@ final class IndexedDISI extends DocIdSetIterator {
     buffer.set(DocIdSetIterator.NO_MORE_DOCS & 0xFFFF);
     flush(DocIdSetIterator.NO_MORE_DOCS >>> 16, buffer, 1, denseRankPower, out);
     // offset+index jump-table stored at the end
-    return flushBlockJumps(jumps, lastBlock+1, out, origo);
+    return flushBlockJumps(jumps, lastBlock+1, out);
   }
 
   // Adds entries to the offset & index jump-table for blocks
@@ -241,7 +241,7 @@ final class IndexedDISI extends DocIdSetIterator {
 
   // Flushes the offset & index jump-table for blocks. This should be the last data written to out
   // This method returns the blockCount for the blocks reachable for the jump_table or -1 for no jump-table
-  private static short flushBlockJumps(int[] jumps, int blockCount, IndexOutput out, long origo) throws IOException {
+  private static short flushBlockJumps(int[] jumps, int blockCount, IndexOutput out) throws IOException {
     if (blockCount == 2) { // Jumps with a single real entry + NO_MORE_DOCS is just wasted space so we ignore that
       blockCount = 0;
     }

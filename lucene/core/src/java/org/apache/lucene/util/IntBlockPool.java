@@ -33,7 +33,7 @@ public final class IntBlockPool {
   public abstract static class Allocator {
     protected final int blockSize;
 
-    public Allocator(int blockSize) {
+    protected Allocator(int blockSize) {
       this.blockSize = blockSize;
     }
 

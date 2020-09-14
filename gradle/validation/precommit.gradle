@@ -26,7 +26,6 @@ configure(rootProject) {
     dependsOn ":verifyLocks"
     dependsOn ":versionsPropsAreSorted"
     dependsOn ":checkWorkingCopyClean"
-    dependsOn ":validateSourcePatterns"
 
     // Solr validation tasks.
     dependsOn ":solr:validateConfigFileSanity"
@@ -40,8 +39,8 @@ configure(rootProject) {
           "javadoc",
           "rat",
           "ecjLint",
-          "checkMissingDocs",
-          "validateLogCalls"
+          "validateLogCalls",
+          "validateSourcePatterns",
       ]}
     }
   }

@@ -122,6 +122,13 @@ Improvements
 
 * LUCENE-9313: Add SerbianAnalyzer based on the snowball stemmer. (Dragan Ivanovic)
 
+* LUCENE-9449: Enhance DocComparator to provide an iterator over competitive
+  documents when searching with "after". This iterator can quickly position
+  on the desired "after" document skipping all documents and segments before
+  "after". Also redesign numeric comparators to provide skipping functionality
+  by default. (Mayya Sharipova, Jim Ferenczi)
+
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -164,6 +171,8 @@ Other
 
 * LUCENE-9215: Replace checkJavaDocs.py with doclet (Robert Muir, Dawid Weiss, Uwe Schindler)
 
+* LUCENE-9497: Integrate Error Prone, a static analysis tool during compilation (Dawid Weiss, Varun Thacker)
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes
@@ -172,6 +181,10 @@ API Changes
 * LUCENE-9437: Lucene's facet module's DocValuesOrdinalsReader.decode method
   is now public, making it easier for applications to decode facet
   ordinals into their corresponding labels (Ankur)
+
+* LUCENE-9515: IndexingChain now accepts individual primitives rather than a
+  DocumentsWriterPerThread instance in order to create a new DocConsumer.
+  (Simon Willnauer)
 
 New Features
 ---------------------
@@ -202,7 +215,17 @@ Improvements
 * LUCENE-9446: In BooleanQuery rewrite, always remove MatchAllDocsQuery filter clauses
   when possible. (Julie Tibshirani)
 
-* LUCENE-9501: Improve how Asserting* test classes handle singleton doc values.
+* LUCENE-9501: Improve coverage for Asserting* test classes: make sure to handle singleton doc
+  values, and sometimes exercise Weight#scorer instead of Weight#bulkScorer for top-level
+  queries. (Julie Tibshirani)
+
+* LUCENE-9511: Include StoredFieldsWriter in DWPT accounting to ensure that it's 
+  heap consumption is taken into account when IndexWriter stalls or should flush
+  DWPTs. (Simon Willnauer)
+
+* LUCENE-9514: Include TermVectorsWriter in DWPT accounting to ensure that it's 
+  heap consumption is taken into account when IndexWriter stalls or should flush
+  DWPTs. (Simon Willnauer)
 
 Optimizations
 ---------------------
@@ -226,6 +249,9 @@ Bug Fixes
   already exists instead of opening an IndexInput on the file which might throw a AccessDeniedException
   in some Directory implementations. (Simon Willnauer)
 
+* LUCENE-9501: Fix a bug in IndexSortSortedNumericDocValuesRangeQuery where it could violate the
+  DocIdSetIterator contract. (Julie Tibshirani)
+
 Documentation
 ---------------------
 
@@ -234,7 +260,13 @@ Documentation
 
 Other
 ---------------------
-(No changes)
+
+* LUCENE-9292: Refactor BKD point configuration into its own class. (Ignacio Vera)
+
+* LUCENE-9470: Make TestXYMultiPolygonShapeQueries more resilient for CONTAINS queries. (Ignacio Vera)
+
+* LUCENE-9512: Move LockFactory stress test to be a unit/integration
+  test. (Uwe Schindler, Dawid Weiss, Robert Muir)
 
 ======================= Lucene 8.6.2 =======================
 

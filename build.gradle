@@ -24,6 +24,8 @@ plugins {
   id "org.owasp.dependencycheck" version "5.3.0"
   id 'de.thetaphi.forbiddenapis' version '3.0.1' apply false
   id "de.undercouch.download" version "4.0.2" apply false
+  id "net.ltgt.errorprone" version "1.2.1" apply false
+  id "com.palantir.docker" version "0.25.0" apply false
 }
 
 apply from: file('gradle/defaults.gradle')
@@ -127,6 +129,7 @@ apply from: file('gradle/ide/intellij-idea.gradle')
 apply from: file('gradle/ide/eclipse.gradle')
 
 // Validation tasks
+apply from: file('gradle/validation/error-prone.gradle')
 apply from: file('gradle/validation/precommit.gradle')
 apply from: file('gradle/validation/forbidden-apis.gradle')
 apply from: file('gradle/validation/jar-checks.gradle')
@@ -171,6 +174,7 @@ apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 
+apply from: file('gradle/hacks/gradle-archives.gradle')
 apply from: file('gradle/hacks/findbugs.gradle')
 apply from: file('gradle/hacks/gradle.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
