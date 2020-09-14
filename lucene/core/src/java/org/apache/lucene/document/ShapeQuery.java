@@ -265,10 +265,23 @@ abstract class ShapeQuery extends Query {
         final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
         return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       }
-      final DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(reader.maxDoc(), values, query.getField());
-      values.intersect(getSparseVisitor(query, docIdSetBuilder));
-      final DocIdSetIterator iterator = docIdSetBuilder.build().iterator();
-      return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+      if (values.getDocCount() * 4 < values.size()) {
+        // we use a dense structure so we can skip already visited documents
+        final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+        final long[] cost = new long[]{reader.maxDoc()};
+        values.intersect(getIntersectsDenseVisitor(query, result, cost));
+        assert cost[0] > 0 || result.cardinality() == 0;
+        if (cost[0] == 0) {
+          return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
+        }
+        final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+      } else {
+        final DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(reader.maxDoc(), values, query.getField());
+        values.intersect(getSparseVisitor(query, docIdSetBuilder));
+        final DocIdSetIterator iterator = docIdSetBuilder.build().iterator();
+        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+      }
     }
 
     /** Scorer used for WITHIN and DISJOINT **/
@@ -293,7 +306,10 @@ abstract class ShapeQuery extends Query {
         // process still reads the leaf nodes.
         values.intersect(getShallowInverseDenseVisitor(query, result));
       }
-      assert cost[0] > 0;
+      assert cost[0] > 0 || result.cardinality() == 0;
+      if (cost[0] == 0) {
+        return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
+      }
       final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
@@ -305,6 +321,10 @@ abstract class ShapeQuery extends Query {
       final FixedBitSet excluded = new FixedBitSet(reader.maxDoc());
       values.intersect(getContainsDenseVisitor(query, result, excluded, cost));
       result.andNot(excluded);
+      assert cost[0] > 0 || result.cardinality() == 0;
+      if (cost[0] == 0) {
+        return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
+      }
       final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
@@ -369,6 +389,43 @@ abstract class ShapeQuery extends Query {
           int docID;
           while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             visit(docID);
+          }
+        }
+      }
+
+      @Override
+      public Relation compare(byte[] minTriangle, byte[] maxTriangle) {
+        return query.relateRangeToQuery(minTriangle, maxTriangle, query.getQueryRelation());
+      }
+    };
+  }
+
+  /** Scorer used for INTERSECTS when the number of points > 4 * number of docs **/
+  private static IntersectVisitor getIntersectsDenseVisitor(final ShapeQuery query, final FixedBitSet result, final long[] cost) {
+    return new IntersectVisitor() {
+      final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+
+      @Override
+      public void visit(int docID) {
+        result.set(docID);
+        cost[0]++;
+      }
+
+      @Override
+      public void visit(int docID, byte[] t) {
+        if (result.get(docID) == false) {
+          if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
+            visit(docID);
+          }
+        }
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+        if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
+          int docID;
+          while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              visit(docID);
           }
         }
       }
