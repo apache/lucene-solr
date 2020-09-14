@@ -21,20 +21,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.solr.cluster.placement.Node;
-import org.apache.solr.cluster.placement.Replica;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.common.cloud.ReplicaPosition;
 
 class ReplicaPlacementImpl implements ReplicaPlacement {
+  private final SolrCollection solrCollection;
   private final String shardName;
   private final Node node;
   private final Replica.ReplicaType replicaType;
 
-  ReplicaPlacementImpl(String shardName, Node node, Replica.ReplicaType replicaType) {
+  ReplicaPlacementImpl(SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType) {
+    this.solrCollection = solrCollection;
     this.shardName = shardName;
     this.node = node;
     this.replicaType = replicaType;
+  }
+
+  @Override
+  public SolrCollection getCollection() {
+    return solrCollection;
   }
 
   @Override

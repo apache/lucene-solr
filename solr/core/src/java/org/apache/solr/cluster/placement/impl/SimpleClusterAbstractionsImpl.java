@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.cluster.placement.*;
+import org.apache.solr.cluster.*;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
@@ -32,7 +32,8 @@ import org.apache.solr.common.util.Pair;
 import javax.annotation.Nonnull;
 
 /**
- * <p>The implementation of the cluster abstractions as static inner classes of this one are a very straightforward approach
+ * <p>The implementation of the cluster abstractions from {@link org.apache.solr.cluster} as static inner classes of this
+ * one are a very straightforward approach
  * for an initial implementation of the placement plugins, but are likely not the right implementations for the long term.</p>
  *
  * <p>Indeed there's a delay between the moment the Collection API computes a placement for a given command and when
@@ -64,20 +65,19 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
-    public Optional<SolrCollection> getCollection(String collectionName) {
+    public SolrCollection getCollection(String collectionName) {
       return SolrCollectionImpl.createCollectionFacade(clusterState, collectionName);
     }
 
-    /**
-     * <p>Returns the set of names of all collections in the cluster. This is a costly method as it potentially builds a
-     * large set in memory. Usage is discouraged.
-     *
-     * <p>Eventually, a similar method allowing efficiently filtering the set of returned collections is desirable. Efficiently
-     * implies filter does not have to be applied to each collection but a regular expression or similar is passed in,
-     * allowing direct access to qualifying collections.
-     */
-    public Set<String> getAllCollectionNames() {
-      return clusterState.getCollectionsMap().values().stream().map(DocCollection::getName).collect(Collectors.toSet());
+    @Override
+    @Nonnull
+    public Iterator<SolrCollection> iterator() {
+      return clusterState.getCollectionsMap().values().stream().map(SolrCollectionImpl::fromDocCollection).collect(Collectors.toSet()).iterator();
+    }
+
+    @Override
+    public Iterable<SolrCollection> collections() {
+      return ClusterImpl.this::iterator;
     }
   }
 
@@ -131,14 +131,12 @@ class SimpleClusterAbstractionsImpl {
     private final Map<String, Shard> shards;
     private final DocCollection docCollection;
 
-    static Optional<SolrCollection> createCollectionFacade(ClusterState clusterState, String collectionName) {
-      DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+    static SolrCollection createCollectionFacade(ClusterState clusterState, String collectionName) {
+      return fromDocCollection(clusterState.getCollectionOrNull(collectionName));
+    }
 
-      if (docCollection == null) {
-        return Optional.empty();
-      } else {
-        return Optional.of(new SolrCollectionImpl(docCollection));
-      }
+    static SolrCollection fromDocCollection(DocCollection docCollection) {
+      return docCollection == null ? null : new SolrCollectionImpl(docCollection);
     }
 
     SolrCollectionImpl(DocCollection docCollection) {
@@ -171,24 +169,6 @@ class SimpleClusterAbstractionsImpl {
     @Override
     public String getCustomProperty(String customPropertyName) {
       return docCollection.getStr(customPropertyName);
-    }
-
-    /**
-     * Multiple instances of this class can be created for the same underlying actual collection. OTOH if the underlying
-     * collection does change between the calls, resulting {@link SolrCollection} instances will not be equal. Unsure we
-     * need to redefine these methods here anyway, so maybe TODO remove?
-     */
-    public boolean equals(Object obj) {
-      if (obj == null) { return false; }
-      if (obj == this) { return true; }
-      if (obj.getClass() != getClass()) { return false; }
-      SolrCollectionImpl other = (SolrCollectionImpl) obj;
-      return Objects.equals(this.collectionName, other.collectionName)
-              && Objects.equals(this.shards, other.shards);
-    }
-
-    public int hashCode() {
-      return Objects.hashCode(collectionName);
     }
   }
 

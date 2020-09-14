@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.Assign;
-import org.apache.solr.cluster.placement.Cluster;
+import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPlan;

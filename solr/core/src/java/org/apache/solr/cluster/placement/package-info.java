@@ -16,17 +16,15 @@
  */
 
 /**
- * <p>This package contains interfaces visible by plugins implementing cluster elasticity, placement and scalability,
- * as well as a few examples on how plugins can be implemented.
+ * <p>This package contains interfaces visible by plugins (i.e. contributed code) implementing cluster elasticity,
+ * placement and scalability, as well as a few examples on how plugins can be implemented.
  *
  * <p>Initially, only placement related plugins are supported.
  *
  * <p>The entry point is the {@link org.apache.solr.cluster.placement.PlacementPluginFactory} building instances
  * of the {@link org.apache.solr.cluster.placement.PlacementPlugin} interface where the placement computation is implemented.
  *
- * <p>From there, one will find the family of interfaces that allow navigating the cluster structure: {@link org.apache.solr.cluster.placement.Cluster},
- * {@link org.apache.solr.cluster.placement.Node}, {@link org.apache.solr.cluster.placement.SolrCollection}, {@link org.apache.solr.cluster.placement.Shard} and
- * {@link org.apache.solr.cluster.placement.Replica}.
+ * <p>From there, one will access the interfaces that allow navigating the cluster topology, see {@link org.apache.solr.cluster}.
  *
  * <p>Plugin code:
  * <ul>
@@ -34,7 +32,7 @@
  *   <li>Can obtain more info using {@link org.apache.solr.cluster.placement.AttributeFetcher} and building an
  *   {@link org.apache.solr.cluster.placement.AttributeValues}</li>
  *   <li>Uses the values from {@link org.apache.solr.cluster.placement.AttributeValues} as well as cluster state and
- *   {@link org.apache.solr.cluster.placement.SolrCollection#getCustomProperty} and other data to compute placement,</li>
+ *   {@link org.apache.solr.cluster.SolrCollection#getCustomProperty} and other data to compute placement,</li>
  *   <li>Placement decisions are returned to Solr using an instance of {@link org.apache.solr.cluster.placement.PlacementPlan}
  *   built using the {@link org.apache.solr.cluster.placement.PlacementPlanFactory}</li>
  * </ul>

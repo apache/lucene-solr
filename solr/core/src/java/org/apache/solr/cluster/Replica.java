@@ -15,11 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster;
 
 /**
- * Representation of a SolrCloud node or server in the SolrCloud cluster.
+ * An instantiation (or one of the copies) of a given {@link Shard} of a given {@link SolrCollection}.
  */
-public interface Node {
-  String getName();
+public interface Replica {
+  Shard getShard();
+
+  ReplicaType getType();
+  ReplicaState getState();
+
+  String getReplicaName();
+
+  /**
+   * The core name on disk
+   */
+  String getCoreName();
+
+  /**
+   * {@link Node} on which this {@link Replica} is located.
+   */
+  Node getNode();
+
+  /**
+   * The order of this enum is important from the most to least "important" replica type.
+   */
+  enum ReplicaType {
+    NRT, TLOG, PULL
+  }
+
+  enum ReplicaState {
+    ACTIVE, DOWN, RECOVERING, RECOVERY_FAILED
+  }
 }

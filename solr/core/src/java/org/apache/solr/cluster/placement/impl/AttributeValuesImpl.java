@@ -19,7 +19,7 @@ package org.apache.solr.cluster.placement.impl;
 
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
-import org.apache.solr.cluster.placement.Node;
+import org.apache.solr.cluster.Node;
 
 import java.util.Map;
 import java.util.Optional;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster;
 
 import java.util.Iterator;
 
@@ -25,11 +25,14 @@ import java.util.Iterator;
 public interface Shard {
   String getShardName();
 
+  /**
+   * @return the collection this shard is part of
+   */
   SolrCollection getCollection();
 
   /**
    * Returns the {@link Replica} of the given name for that shard, if such a replica exists.
-   * @return {@code null} if the replica does not or does not yet exist for the shard.
+   * @return {@code null} if the replica does not (or does not yet) exist for the shard.
    */
   Replica getReplica(String name);
 
@@ -44,7 +47,7 @@ public interface Shard {
   Iterable<Replica> replicas();
 
   /**
-   * The current leader {@link Replica} of this {@link Shard}. Note that by the time this method returns the leader might
+   * @return the current leader {@link Replica} for this {@link Shard}. Note that by the time this method returns the leader might
    * have changed. Also, if there's no leader for any reason (don't shoot the messenger), this method will return {@code null}.
    */
   Replica getLeader();

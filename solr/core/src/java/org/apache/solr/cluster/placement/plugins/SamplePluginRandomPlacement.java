@@ -23,12 +23,16 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.solr.cluster.Cluster;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
 
 /**
  * Implements random placement for new collection creation while preventing two replicas of same shard from being placed on same node.
  *
- * TODO: code not tested and never run, there are no implementation yet for used interfaces
+ * <p>Warning: not really tested. See {@link SamplePluginAffinityReplicaPlacement} for a more realistic example.</p>
  */
 public class SamplePluginRandomPlacement implements PlacementPlugin {
 
@@ -47,8 +51,10 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
 
   public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
                                         PlacementPlanFactory placementPlanFactory) throws PlacementException {
-    final int totalReplicasPerShard = request.getCountNrtReplicas() +
-        request.getCountTlogReplicas() + request.getCountPullReplicas();
+    int totalReplicasPerShard = 0;
+    for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
+      totalReplicasPerShard += request.getCountReplicasToCreate(rt);
+    }
 
     if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
       throw new PlacementException("Cluster size too small for number of replicas per shard");
@@ -62,24 +68,21 @@ public class SamplePluginRandomPlacement implements PlacementPlugin {
       ArrayList<Node> nodesToAssign = new ArrayList<>(cluster.getLiveNodes());
       Collections.shuffle(nodesToAssign, new Random());
 
-      placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
-          shardName, request.getCountNrtReplicas(), Replica.ReplicaType.NRT);
-      placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
-          shardName, request.getCountTlogReplicas(), Replica.ReplicaType.TLOG);
-      placeForReplicaType(nodesToAssign, placementPlanFactory, replicaPlacements,
-          shardName, request.getCountPullReplicas(), Replica.ReplicaType.PULL);
+      for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
+        placeForReplicaType(request.getCollection(), nodesToAssign, placementPlanFactory, replicaPlacements, shardName, request, rt);
+      }
     }
 
     return placementPlanFactory.createPlacementPlan(request, replicaPlacements);
   }
 
-  private void placeForReplicaType(ArrayList<Node> nodesToAssign, PlacementPlanFactory placementPlanFactory,
+  private void placeForReplicaType(SolrCollection solrCollection, ArrayList<Node> nodesToAssign, PlacementPlanFactory placementPlanFactory,
                                    Set<ReplicaPlacement> replicaPlacements,
-                                   String shardName, int countReplicas, Replica.ReplicaType replicaType) {
-    for (int replica = 0; replica < countReplicas; replica++) {
+                                   String shardName, PlacementRequest request, Replica.ReplicaType replicaType) {
+    for (int replica = 0; replica < request.getCountReplicasToCreate(replicaType); replica++) {
       Node node = nodesToAssign.remove(0);
 
-      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(shardName, node, replicaType));
+      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(solrCollection, shardName, node, replicaType));
     }
   }
 }

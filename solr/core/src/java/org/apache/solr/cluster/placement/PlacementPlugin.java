@@ -17,6 +17,8 @@
 
 package org.apache.solr.cluster.placement;
 
+import org.apache.solr.cluster.Cluster;
+
 /**
  * <p>Implemented by external plugins to control replica placement and movement on the search cluster (as well as other things
  * such as cluster elasticity?) when cluster changes are required (initiated elsewhere, most likely following a Collection

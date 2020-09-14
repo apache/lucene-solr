@@ -17,6 +17,8 @@
 
 package org.apache.solr.cluster.placement;
 
+import org.apache.solr.cluster.Node;
+
 import java.util.Optional;
 
 public interface AttributeValues {

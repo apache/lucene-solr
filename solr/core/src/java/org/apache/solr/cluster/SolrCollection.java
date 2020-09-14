@@ -15,7 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement;
+package org.apache.solr.cluster;
+
+import org.apache.solr.cluster.placement.AttributeFetcher;
+import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PlacementRequest;
 
 import java.util.Iterator;
 
@@ -29,18 +34,18 @@ public interface SolrCollection {
   String getName();
 
   /**
-   * Returns the {@link Shard} of the given name for that collection, if such a shard exists. Note that when a request
-   * for adding replicas for a collection is received, it is possible that replicas need to be added for non existing
-   * shards (see {@link PlacementRequest#getShardNames()}. Non existing shards will not be returned by this
-   * method. Only shards already existing will be returned.
+   * <p>Returns the {@link Shard} of the given name for that collection, if such a shard exists.</p>
+   *
+   * <p>Note that when a request for adding replicas for a collection is received by a {@link PlacementPlugin}, it is
+   * possible that replicas need to be added to non existing shards (see {@link PlacementRequest#getShardNames()}.
+   * Non existing shards <b>will not</b> be returned by this method. Only shards already existing will be returned.</p>
+   *
    * @return {@code null} if the shard does not or does not yet exist for the collection.
    */
   Shard getShard(String name);
 
   /**
-   * @return an iterator over {@link Shard}s already existing for this {@link SolrCollection}. When a collection is being
-   * created, replicas have to be added to shards that do not already exist for the collection and that will not be returned
-   * by this iterator nor will be fetchable using {@link #getShard(String)}.
+   * @return an iterator over {@link Shard}s of this {@link SolrCollection}.
    */
   Iterator<Shard> iterator();
 
@@ -51,10 +56,10 @@ public interface SolrCollection {
 
   /**
    * <p>Returns the value of a custom property name set on the {@link SolrCollection} or {@code null} when no such
-   * property was set.
+   * property was set. Properties are set through the Collection API. See for example {@code COLLECTIONPROP} in the Solr reference guide.
    *
-   * <p>Properties are set through the Collection API. See for example {@code COLLECTIONPROP} in the Solr reference guide.
-   * Using custom properties in conjunction with plugin code understanding them allows the Solr client to customize placement
+   * <p><b>{@link PlacementPlugin} related note:</b></p>
+   * <p>Using custom properties in conjunction with ad hoc {@link PlacementPlugin} code allows customizing placement
    * decisions per collection.
    *
    * <p>For example if a collection is to be placed only on nodes using SSD storage and not rotating disks, it can be
@@ -62,20 +67,12 @@ public interface SolrCollection {
    * value "ssd" in that case), and the placement plugin (implementing {@link PlacementPlugin}) would then
    * {@link AttributeFetcher#requestNodeSystemProperty(String)} for that property from all nodes and only place replicas
    * of this collection on {@link Node}'s for which
-   * {@link AttributeValues#getDiskType(Node)} is non empty and equal to {@link AttributeFetcher.DiskHardwareType#SSD}.
+   * {@link AttributeValues#getDiskType(Node)} is non empty and equal to {@link org.apache.solr.cluster.placement.AttributeFetcher.DiskHardwareType#SSD}.
    */
   String getCustomProperty(String customPropertyName);
 
   /*
    * There might be missing pieces here (and in other classes in this package) and these would have to be added when
-   * starting to use these interfaces to code real world placement and balancing code (plugins) as well as when the Solr
-   * side implementation of these interfaces is done.
-   *
-   * For example, attributes that are associated to a collection internally but that are (currently) not believed to be
-   * of interest to placement plugin code:
-   * - Routing hash range per shard (or the router used in a collection)
-   * -
-   *
-   * This comment should be removed eventually.
+   * starting to use these interfaces to code real world placement and balancing code (plugins).
    */
 }

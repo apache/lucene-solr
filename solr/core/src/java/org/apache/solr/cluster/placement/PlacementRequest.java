@@ -17,6 +17,8 @@
 
 package org.apache.solr.cluster.placement;
 
+import org.apache.solr.cluster.*;
+
 import java.util.Set;
 
 /**
@@ -56,15 +58,7 @@ public interface PlacementRequest {
     Set<Node> getTargetNodes();
 
     /**
-     * Returns the number of replica to create that is returned by the corresponding method {@link #getCountNrtReplicas()},
-     * {@link #getCountTlogReplicas()} or  {@link #getCountPullReplicas()}. Might delete the other three.
+     * Returns the number of replica to create for the given replica type.
      */
     int getCountReplicasToCreate(Replica.ReplicaType replicaType);
-
-    /** Number of NRT replicas to create. */
-    int getCountNrtReplicas();
-    /** Number of TLOG replicas to create. */
-    int getCountTlogReplicas();
-    /** Number of PULL replicas to create. */
-    int getCountPullReplicas();
 }

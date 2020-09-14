@@ -22,7 +22,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
-import org.apache.solr.cluster.placement.Node;
+import org.apache.solr.cluster.Node;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.core.SolrInfoBean;

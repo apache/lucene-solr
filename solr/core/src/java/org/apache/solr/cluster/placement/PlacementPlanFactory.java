@@ -17,6 +17,10 @@
 
 package org.apache.solr.cluster.placement;
 
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.SolrCollection;
+
 import java.util.Set;
 
 /**
@@ -43,5 +47,5 @@ public interface PlacementPlanFactory {
    * <p>Note the plugin can also build its own instances implementing {@link ReplicaPlacement} instead of using this call
    * (but using this method makes it easier).
    */
-  ReplicaPlacement createReplicaPlacement(String shardName, Node node, Replica.ReplicaType replicaType);
+  ReplicaPlacement createReplicaPlacement(SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType);
 }

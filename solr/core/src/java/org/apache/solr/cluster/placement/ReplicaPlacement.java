@@ -17,19 +17,30 @@
 
 package org.apache.solr.cluster.placement;
 
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.Shard;
+import org.apache.solr.cluster.SolrCollection;
+
 /**
  * <p>Placement decision for a single {@link Replica}. Note this placement decision is used as part of a {@link PlacementPlan},
  * it does not directly lead to the plugin code getting a corresponding {@link Replica} instance, nor does it require the
  * plugin to provide a {@link Shard} instance (the plugin code gets such instances for existing replicas and shards in the
  * cluster but does not create them directly for adding new replicas for new or existing shards).
  *
- * <p>Captures the {@link Shard} (via the shard name), {@link Node} and {@link Replica.ReplicaType} of a Replica to be created.
- *
- * <p>TODO: discuss (before merge) if this interface really needs to allow access to the data captured in an instance or if calling {@link PlacementPlanFactory#createReplicaPlacement(String, Node, Replica.ReplicaType)} is sufficient for plugin code.
+ * <p>Captures the {@link SolrCollection}, {@link Shard} (via the shard name), {@link Node} and {@link org.apache.solr.cluster.Replica.ReplicaType}
+ * of a Replica to be created.
  */
 public interface ReplicaPlacement {
+
   /**
-   * @return the name of the {@link Shard} for which the replica should be created
+   * @return the {@link SolrCollection} for which the replica should be created
+   */
+  SolrCollection getCollection();
+
+  /**
+   * @return the name of the {@link Shard} for which the replica should be created. Note that only the name of the shard
+   * is returned and not a {@link Shard} instance because the shard might not yet exist when the placement request is made.
    */
   String getShardName();
 

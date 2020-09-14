@@ -26,14 +26,18 @@ import java.util.Map;
 
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
+import org.apache.solr.cluster.Cluster;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * Implements placing replicas to minimize number of cores per {@link Node}, while not placing two replicas of the same
- * shard on the same node.
+ * <p>Implements placing replicas to minimize number of cores per {@link Node}, while not placing two replicas of the same
+ * shard on the same node.</p>
  *
- * TODO: code not tested and never run, there are no implementation yet for used interfaces
+ * <p>Warning: not really tested. See {@link SamplePluginAffinityReplicaPlacement} for a more realistic example.</p>
  */
 public class SamplePluginMinimizeCores implements PlacementPlugin {
 
@@ -61,8 +65,10 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
   public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
                                         PlacementPlanFactory placementPlanFactory) throws PlacementException {
-    final int totalReplicasPerShard = request.getCountNrtReplicas() +
-        request.getCountTlogReplicas() + request.getCountPullReplicas();
+    int totalReplicasPerShard = 0;
+    for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
+      totalReplicasPerShard += request.getCountReplicasToCreate(rt);
+    }
 
     if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
       throw new PlacementException("Cluster size too small for number of replicas per shard");
@@ -111,22 +117,22 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
         nodesByCores.put(coreCount + 1, node);
       }
 
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountNrtReplicas(), Replica.ReplicaType.NRT);
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountTlogReplicas(), Replica.ReplicaType.TLOG);
-      placeReplicas(nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request.getCountPullReplicas(), Replica.ReplicaType.PULL);
+      for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
+        placeReplicas(request.getCollection(), nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request, replicaType);
+      }
     }
 
     return placementPlanFactory.createPlacementPlan(request, replicaPlacements);
   }
 
-  private void placeReplicas(ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
+  private void placeReplicas(SolrCollection solrCollection, ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
                              PlacementPlanFactory placementPlanFactory, Set<ReplicaPlacement> replicaPlacements,
-                             String shardName, int countReplicas, Replica.ReplicaType replicaType) {
-    for (int replica = 0; replica < countReplicas; replica++) {
+                             String shardName, PlacementRequest request, Replica.ReplicaType replicaType) {
+    for (int replica = 0; replica < request.getCountReplicasToCreate(replicaType); replica++) {
       final Map.Entry<Integer, Node> entry = nodeEntriesToAssign.remove(0);
       final Node node = entry.getValue();
 
-      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(shardName, node, replicaType));
+      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(solrCollection, shardName, node, replicaType));
     }
   }
 }

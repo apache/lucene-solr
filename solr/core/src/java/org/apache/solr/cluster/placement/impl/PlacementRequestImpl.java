@@ -22,6 +22,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.solr.cloud.api.collections.Assign;
+import org.apache.solr.cluster.Cluster;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.cloud.DocCollection;
 
@@ -62,21 +66,6 @@ public class PlacementRequestImpl implements PlacementRequest {
   public int getCountReplicasToCreate(Replica.ReplicaType replicaType) {
     return countReplicas.get(replicaType);
 
-  }
-
-  @Override
-  public int getCountNrtReplicas() {
-    return getCountReplicasToCreate(Replica.ReplicaType.NRT);
-  }
-
-  @Override
-  public int getCountTlogReplicas() {
-    return getCountReplicasToCreate(Replica.ReplicaType.TLOG);
-  }
-
-  @Override
-  public int getCountPullReplicas() {
-    return getCountReplicasToCreate(Replica.ReplicaType.PULL);
   }
 
   /**

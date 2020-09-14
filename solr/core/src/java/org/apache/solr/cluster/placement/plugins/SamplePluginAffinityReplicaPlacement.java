@@ -18,7 +18,9 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import com.google.common.collect.*;
+import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.*;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,10 +47,7 @@ import java.util.stream.Collectors;
  *     For each shard on which placing replicas is required and then for each replica type to place (starting with NRT, then TLOG then PULL): <ul>
  *         <li>The set of candidates nodes corresponding to the replica type is used and from that set are removed nodes
  *         that already have a replica (of any type) for that shard</li>
- *         <li>If there are not enough nodes, either an error is thrown or the replica(s) in excess are not added. Likely something
- *         to be governed by per replica type configuration (i.e. throw error if NRT can't be created but
- *         skip "silently" if PULL can't be created? TODO Do we need a soft error reporting mechanism?)<br>
- *         This check likely happens in the following steps but called out separately here.</li>
+ *         <li>If there are not enough nodes, an error is thrown (this is checked further down during processing).</li>
  *         <li>The number of (already existing) replicas of the current type on each Availability Zone is collected.</li>
  *         <li>Separate the set of available nodes to as many subsets (possibly some are empty) as there are Availability Zones
  *         defined for the candidate nodes</li>
@@ -81,13 +80,13 @@ import java.util.stream.Collectors;
  *
  * <pre>
  *
- * curl -X POST -H 'Content-type:application/json' -d '{
- *   "set-placement-plugin": {
- *     "class": "org.apache.solr.cluster.placement.plugins.SamplePluginAffinityReplicaPlacement$Factory",
- *     "minimalFreeDiskGB": 10,
- *     "deprioritizedFreeDiskGB": 50
- *   }
- * }' http://localhost:8983/api/cluster
+  curl -X POST -H 'Content-type:application/json' -d '{
+    "set-placement-plugin": {
+      "class": "org.apache.solr.cluster.placement.plugins.SamplePluginAffinityReplicaPlacement$Factory",
+      "minimalFreeDiskGB": 10,
+      "deprioritizedFreeDiskGB": 50
+    }
+  }' http://localhost:8983/api/cluster
  * </pre>
  *
  * <p>The consequence will be the creation of an element in the Zookeeper file {@code /clusterprops.json} as follows:</p>
@@ -105,9 +104,9 @@ import java.util.stream.Collectors;
  *
  * <pre>
  *
- * curl -X POST -H 'Content-type:application/json' -d '{
- *   "unset-placement-plugin" : null
- * }' http://localhost:8983/api/cluster
+  curl -X POST -H 'Content-type:application/json' -d '{
+    "unset-placement-plugin" : null
+  }' http://localhost:8983/api/cluster
  * </pre>
  */
 public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
@@ -151,7 +150,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
   /**
    * <p>Name of the system property on a node indicating the type of replicas allowed on that node.
    * The value of that system property is a comma separated list or a single string of value names of
-   * {@link org.apache.solr.cluster.placement.Replica.ReplicaType} (case insensitive). If that property is not defined, that node is
+   * {@link org.apache.solr.cluster.Replica.ReplicaType} (case insensitive). If that property is not defined, that node is
    * considered accepting all replica types (i.e. undefined is equivalent to {@code "NRT,Pull,tlog"}).
    *
    * <p>See {@link #getNodesPerReplicaType}.
@@ -194,11 +193,12 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
 
     // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap if nodes accept multiple replica types)
     // These subsets sets are actually maps, because we capture the number of cores (of any replica type) present on each node.
-    // The EnumMap below maps a replica type to a map of nodes -> number of cores on the node
-    // (note: we do keep track of the number of cores per node as we do assignments but not of the free disk space because
-    // we don't know the size each new created replica will contribute to a node. The node free disk size thresholds should
-    // be set in such a way to protect from issues or bad placement decisions related to disk space).
-    EnumMap<Replica.ReplicaType, Map<Node, Integer>> replicaTypeToNodesAndCounts = getNodesPerReplicaType(nodes, attrValues);
+    // Also get the number of currently existing cores per node, so we can keep update as we place new cores to not end up
+    // always selecting the same node(s).
+    Pair<EnumMap<Replica.ReplicaType, Set<Node>>, Map<Node, Integer>> p = getNodesPerReplicaType(nodes, attrValues);
+
+    EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes = p.first();
+    Map<Node, Integer> coresOnNodes = p.second();
 
     // All available zones of live nodes. Due to some nodes not being candidates for placement, and some existing replicas
     // being one availability zones that might be offline (i.e. their nodes are not live), this set might contain zones
@@ -216,7 +216,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
       // failure. Current code does fail if placement is impossible (constraint is at most one replica of a shard on any node).
       for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
         makePlacementDecisions(solrCollection, shardName, availabilityZones, replicaType, request.getCountReplicasToCreate(replicaType),
-                attrValues, replicaTypeToNodesAndCounts, placementPlanFactory, replicaPlacements);
+                attrValues, replicaTypeToNodes, coresOnNodes, placementPlanFactory, replicaPlacements);
       }
     }
 
@@ -244,11 +244,12 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
   }
 
   /**
-   * This class captures an availability zone and the nodes that are legitimate targets for replica placement and that
-   * are in the Availability Zone. Instances are used as values in a {@link TreeMap} in which the total number of already
-   * existing replicas in the AZ is the key, this allows picking easily the set of nodes from which to select a node for
-   * placement in order to balance the number of replicas per AZ. Picking one of the nodes from the set will be done using
-   * different criteria. See TODO
+   * This class captures an availability zone and the nodes that are legitimate targets for replica placement in that
+   * Availability Zone. Instances are used as values in a {@link TreeMap} in which the total number of already
+   * existing replicas in the AZ is the key. This allows easily picking the set of nodes from which to select a node for
+   * placement in order to balance the number of replicas per AZ. Picking one of the nodes from the set is done using
+   * different criteria unrelated to the Availability Zone (picking the node is based on the {@link CoresAndDiskComparator}
+   * ordering).
    */
   private static class AzWithNodes {
     final String azName;
@@ -265,19 +266,22 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
   }
 
   /**
-   * Given the set of all nodes on which to do placement and fetched attributes, builds the maps representing
-   * candidate nodes for placement of replicas of each replica type. The map values are the number of cores on these nodes.
-   * These maps are packaged and returned in an EnumMap keyed by replica type.
+   * Given the set of all nodes on which to do placement and fetched attributes, builds the sets representing
+   * candidate nodes for placement of replicas of each replica type.
+   * These sets are packaged and returned in an EnumMap keyed by replica type (1st member of the Pair).
+   * Also builds the number of existing cores on each node present in the returned EnumMap (2nd member of the returned Pair).
    * Nodes for which the number of cores is not available for whatever reason are excluded from acceptable candidate nodes
    * as it would not be possible to make any meaningful placement decisions.
    * @param nodes all nodes on which this plugin should compute placement
    * @param attrValues attributes fetched for the nodes. This method uses system property {@link #REPLICA_TYPE_SYSPROP} as
    *                   well as the number of cores on each node.
    */
-  private EnumMap<Replica.ReplicaType, Map<Node, Integer>> getNodesPerReplicaType(Set<Node> nodes, final AttributeValues attrValues) {
-    EnumMap<Replica.ReplicaType, Map<Node, Integer>> replicaTypeToNodesAndCounts = new EnumMap<>(Replica.ReplicaType.class);
+  private Pair<EnumMap<Replica.ReplicaType, Set<Node>>, Map<Node, Integer>> getNodesPerReplicaType(Set<Node> nodes, final AttributeValues attrValues) {
+    EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes = new EnumMap<>(Replica.ReplicaType.class);
+    Map<Node, Integer> coresOnNodes = Maps.newHashMap();
+
     for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
-      replicaTypeToNodesAndCounts.put(replicaType, Maps.newHashMap());
+      replicaTypeToNodes.put(replicaType, new HashSet<>());
     }
 
     for (Node node : nodes) {
@@ -304,23 +308,24 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
       }
 
       Integer coresCount = attrValues.getCoresCount(node).get();
+      coresOnNodes.put(node, coresCount);
 
       String supportedReplicaTypes = attrValues.getSystemProperty(node, REPLICA_TYPE_SYSPROP).isPresent() ? attrValues.getSystemProperty(node, REPLICA_TYPE_SYSPROP).get() : null;
       // If property not defined or is only whitespace on a node, assuming node can take any replica type
       if (supportedReplicaTypes == null || supportedReplicaTypes.isBlank()) {
         for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
-          replicaTypeToNodesAndCounts.get(rt).put(node, coresCount);
+          replicaTypeToNodes.get(rt).add(node);
         }
       } else {
         Set<String> acceptedTypes = Arrays.stream(supportedReplicaTypes.split(",")).map(String::trim).map(s -> s.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
         for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
           if (acceptedTypes.contains(rt.name().toLowerCase(Locale.ROOT))) {
-            replicaTypeToNodesAndCounts.get(rt).put(node, coresCount);
+            replicaTypeToNodes.get(rt).add(node);
           }
         }
       }
     }
-    return replicaTypeToNodesAndCounts;
+    return new Pair<>(replicaTypeToNodes, coresOnNodes);
   }
 
   /**
@@ -329,7 +334,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
    * <p>The criteria used in this method are, in this order:
    * <ol>
    *     <li>No more than one replica of a given shard on a given node (strictly enforced)</li>
-   *     <li>Balance as much as possible the number of replicas of the given {@link org.apache.solr.cluster.placement.Replica.ReplicaType} over available AZ's.
+   *     <li>Balance as much as possible the number of replicas of the given {@link org.apache.solr.cluster.Replica.ReplicaType} over available AZ's.
    *     This balancing takes into account existing replicas <b>of the corresponding replica type</b>, if any.</li>
    *     <li>Place replicas is possible on nodes having more than a certain amount of free disk space (note that nodes with a too small
    *     amount of free disk space were eliminated as placement targets earlier, in {@link #getNodesPerReplicaType}). There's
@@ -342,10 +347,10 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
   @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
   private void makePlacementDecisions(SolrCollection solrCollection, String shardName, ImmutableSet<String> availabilityZones,
                                       Replica.ReplicaType replicaType, int numReplicas, final AttributeValues attrValues,
-                                      EnumMap<Replica.ReplicaType, Map<Node, Integer>> replicaTypeToNodesAndCounts,
+                                      EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes, Map<Node, Integer> coresOnNodes,
                                       PlacementPlanFactory placementPlanFactory, Set<ReplicaPlacement> replicaPlacements) throws PlacementException {
     // Build the set of candidate nodes, i.e. nodes not having (yet) a replica of the given shard
-    Set<Node> candidateNodes = new HashSet<>(replicaTypeToNodesAndCounts.get(replicaType).keySet());
+    Set<Node> candidateNodes = new HashSet<>(replicaTypeToNodes.get(replicaType));
 
     // Count existing replicas per AZ. We count only instances the type of replica for which we need to do placement. This
     // can be changed in the loop below if we want to count all replicas for the shard.
@@ -399,7 +404,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
       azByExistingReplicas.put(azToNumReplicas.get(e.getKey()), new AzWithNodes(e.getKey(), e.getValue()));
     }
 
-    CoresAndDiskComparator coresAndDiskComparator = new CoresAndDiskComparator(attrValues, deprioritizedFreeDiskGB);
+    CoresAndDiskComparator coresAndDiskComparator = new CoresAndDiskComparator(attrValues, coresOnNodes, deprioritizedFreeDiskGB);
 
     // Now we have for each AZ on which we might have a chance of placing a replica, the list of candidate nodes for replicas
     // (candidate: does not already have a replica of this shard and is in the corresponding AZ).
@@ -417,7 +422,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
         if (!entry.getValue().availableNodesForPlacement.isEmpty()) {
           azWithNodesEntry = entry;
           // Remove this entry. Will add it back after a node has been removed from the list of available nodes and the number
-          // of replicas on the AZ has been increased by one.
+          // of replicas on the AZ has been increased by one (search for "azByExistingReplicas.put" below).
           it.remove();
           break;
         } else {
@@ -427,7 +432,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
 
       if (azWithNodesEntry == null) {
         // This can happen because not enough nodes for the placement request or already too many nodes with replicas of
-        // the shard that can't accept new replicas.
+        // the shard that can't accept new replicas or not enough nodes with enough free disk space.
         throw new PlacementException("Not enough nodes to place " + numReplicas + " replica(s) of type " + replicaType +
                 " for shard " + shardName + " of collection " + solrCollection.getName());
       }
@@ -440,7 +445,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
         // likely is not the case since after having added a replica to a node its number of cores increases for the next
         // placement decision, but let's be defensive here, given that multiple concurrent placement decisions might see
         // the same initial cluster state, and we want placement to be reasonable even in that case without creating an
-        // unncessary imbalance).
+        // unnecessary imbalance).
         // For example, if all nodes have 0 cores and same amount of free disk space, ideally we want to pick a random node
         // for placement, not always the same one due to some internal ordering.
         Collections.shuffle(nodes, new Random());
@@ -457,10 +462,11 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
       // (the remaining candidate node list might be empty, in which case it will be cleaned up on the next iteration).
       azByExistingReplicas.put(azWithNodesEntry.getKey() + 1, azWithNodes);
 
-      // Track that now the node has one more core TODO: issue: we rely on attrValues for this, can't update it there.
+      // Track that the node has one more core. These values are only used during the current run of the plugin.
+      coresOnNodes.merge(assignTarget, 1, Integer::sum);
 
       // Register the replica assignment just decided
-      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(shardName, assignTarget, replicaType));
+      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(solrCollection, shardName, assignTarget, replicaType));
     }
   }
 
@@ -470,20 +476,26 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
    */
   static class CoresAndDiskComparator implements Comparator<Node> {
     private final AttributeValues attrValues;
+    private final Map<Node, Integer> coresOnNodes;
     private final long deprioritizedFreeDiskGB;
 
 
     /**
      * The data we sort on is not part of the {@link Node} instances but has to be retrieved from the attributes and configuration.
+     * The number of cores per node is passed in a map whereas the free disk is fetched from the attributes due to the
+     * fact that we update the number of cores per node as we do allocations, but we do not update the free disk. The
+     * attrValues correpsonding to the number of cores per node are the initial values, but we want to comapre the actual
+     * value taking into account placement decisions already made during the current execution of the placement plugin.
      */
-    CoresAndDiskComparator(AttributeValues attrValues, long deprioritizedFreeDiskGB) {
+    CoresAndDiskComparator(AttributeValues attrValues, Map<Node, Integer> coresOnNodes, long deprioritizedFreeDiskGB) {
       this.attrValues = attrValues;
+      this.coresOnNodes = coresOnNodes;
       this.deprioritizedFreeDiskGB = deprioritizedFreeDiskGB;
     }
 
     @Override
     public int compare(Node a, Node b) {
-      // Note all nodes do have free disk and number of cores defined. This has been verified earlier.
+      // Note all nodes do have free disk defined. This has been verified earlier.
       boolean aHasLowFreeSpace = attrValues.getFreeDisk(a).get() < deprioritizedFreeDiskGB;
       boolean bHasLowFreeSpace = attrValues.getFreeDisk(b).get() < deprioritizedFreeDiskGB;
       if (aHasLowFreeSpace != bHasLowFreeSpace) {
@@ -491,7 +503,7 @@ public class SamplePluginAffinityReplicaPlacement implements PlacementPlugin {
         return Boolean.compare(aHasLowFreeSpace, bHasLowFreeSpace);
       }
       // The ordering on the number of cores is the natural order.
-      return Integer.compare(attrValues.getCoresCount(a).get(), attrValues.getCoresCount(a).get());
+      return Integer.compare(coresOnNodes.get(a), coresOnNodes.get(b));
     }
   }
 }
