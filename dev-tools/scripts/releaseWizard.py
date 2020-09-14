@@ -571,7 +571,10 @@ class ReleaseState:
             raise Exception("Cannot find latest version")
 
     def get_stable_branch_name(self):
-        v = Version.parse(self.get_next_version())
+        if self.release_type == 'major':
+            v = Version.parse(self.get_master_version())
+        else:
+            v = Version.parse(self.get_latest_version())
         return "branch_%sx" % v.major
 
     def get_next_version(self):
