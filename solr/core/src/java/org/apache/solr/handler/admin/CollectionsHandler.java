@@ -96,7 +96,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -517,10 +516,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           ColStatus.RAW_SIZE_DETAILS_PROP,
           ColStatus.RAW_SIZE_SAMPLING_PERCENT_PROP,
           ColStatus.SIZE_INFO_PROP);
-      // make sure we can get the name if there's "name" but not "collection"
-      if (props.containsKey(CoreAdminParams.NAME) && !props.containsKey(COLLECTION_PROP)) {
-        props.put(COLLECTION_PROP, props.get(CoreAdminParams.NAME));
-      }
+
       new ColStatus(h.coreContainer.getSolrClientCache(),
           h.coreContainer.getZkController().getZkStateReader().getClusterState(), new ZkNodeProps(props))
           .getColStatus(rsp.getValues());
@@ -1065,7 +1061,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       CoreContainer cc = h.coreContainer;
       String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-      BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+      BackupRepository repository = cc.newBackupRepository(repo);
 
       String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {
@@ -1117,7 +1113,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       final CoreContainer cc = h.coreContainer;
       final String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-      final BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+      final BackupRepository repository = cc.newBackupRepository(repo);
 
       String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {

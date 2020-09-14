@@ -46,7 +46,7 @@ public class RangeFacetsExample implements Closeable {
 
   private final Directory indexDir = new ByteBuffersDirectory();
   private IndexSearcher searcher;
-  private final long nowSec = System.currentTimeMillis();
+  private final long nowSec = System.currentTimeMillis()/1000L;
 
   final LongRange PAST_HOUR = new LongRange("Past hour", nowSec-3600, true, nowSec, true);
   final LongRange PAST_SIX_HOURS = new LongRange("Past six hours", nowSec-6*3600, true, nowSec, true);

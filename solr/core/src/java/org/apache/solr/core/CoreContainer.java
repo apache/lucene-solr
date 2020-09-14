@@ -271,10 +271,10 @@ public class CoreContainer {
    *                       If not specified, a default implementation is used.
    * @return a new instance of {@linkplain BackupRepository}.
    */
-  public BackupRepository newBackupRepository(Optional<String> repositoryName) {
+  public BackupRepository newBackupRepository(String repositoryName) {
     BackupRepository repository;
-    if (repositoryName.isPresent()) {
-      repository = backupRepoFactory.newInstance(getResourceLoader(), repositoryName.get());
+    if (repositoryName != null) {
+      repository = backupRepoFactory.newInstance(getResourceLoader(), repositoryName);
     } else {
       repository = backupRepoFactory.newInstance(getResourceLoader());
     }
@@ -1601,6 +1601,13 @@ public class CoreContainer {
   public void reload(String name) {
     reload(name, null);
   }
+  public void reload(String name, UUID coreId, boolean async) {
+    if(async) {
+      runAsync(() -> reload(name, coreId));
+    } else {
+      reload(name, coreId);
+    }
+  }
   /**
    * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to
@@ -1615,13 +1622,8 @@ public class CoreContainer {
       throw new AlreadyClosedException();
     }
     SolrCore newCore = null;
-    SolrCore core = solrCores.getCoreFromAnyList(name, false);
+    SolrCore core = solrCores.getCoreFromAnyList(name, false, coreId);
     if (core != null) {
-      if(coreId != null && core.uniqueId != coreId) {
-        //trying to reload an already unloaded core
-        return;
-      }
-
       // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
       // CoreDescriptor and we need to reload it from the disk files
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
@@ -1851,6 +1853,9 @@ public class CoreContainer {
     return cfg.getCoreRootDirectory();
   }
 
+  public SolrCore getCore(String name) {
+    return getCore(name, null);
+  }
   /**
    * Gets a core by name and increase its refcount.
    *
@@ -1859,10 +1864,10 @@ public class CoreContainer {
    * @throws SolrCoreInitializationException if a SolrCore with this name failed to be initialized
    * @see SolrCore#close()
    */
-  public SolrCore getCore(String name) {
+  public SolrCore getCore(String name, UUID id) {
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
-    SolrCore core = solrCores.getCoreFromAnyList(name, true);
+    SolrCore core = solrCores.getCoreFromAnyList(name, true, id);
 
     // If a core is loaded, we're done just return it.
     if (core != null) {

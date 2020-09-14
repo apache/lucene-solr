@@ -185,14 +185,14 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     Counter counter = Counter.newCounter();
     DocValuesUpdate.BinaryDocValuesUpdate randomUpdate = getRandomBinaryUpdate();
     updates.add(randomUpdate);
-    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(counter, randomUpdate, randomUpdate.docIDUpto);
+    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(counter, randomUpdate, randomUpdate.docIDUpTo);
     for (int i = 0; i < numUpdates; i++) {
       randomUpdate = getRandomBinaryUpdate();
       updates.add(randomUpdate);
       if (randomUpdate.hasValue) {
-        buffer.addUpdate(randomUpdate.term, randomUpdate.getValue(), randomUpdate.docIDUpto);
+        buffer.addUpdate(randomUpdate.term, randomUpdate.getValue(), randomUpdate.docIDUpTo);
       } else {
-        buffer.addNoValue(randomUpdate.term, randomUpdate.docIDUpto);
+        buffer.addNoValue(randomUpdate.term, randomUpdate.docIDUpTo);
       }
     }
     buffer.finish();
@@ -210,7 +210,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
       } else {
         assertNull(value.binaryValue);
       }
-      assertEquals(randomUpdate.docIDUpto, value.docUpTo);
+      assertEquals(randomUpdate.docIDUpTo, value.docUpTo);
     }
     assertEquals(count, updates.size());
   }
@@ -221,14 +221,14 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     Counter counter = Counter.newCounter();
     DocValuesUpdate.NumericDocValuesUpdate randomUpdate = getRandomNumericUpdate();
     updates.add(randomUpdate);
-    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(counter, randomUpdate, randomUpdate.docIDUpto);
+    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(counter, randomUpdate, randomUpdate.docIDUpTo);
     for (int i = 0; i < numUpdates; i++) {
       randomUpdate = getRandomNumericUpdate();
       updates.add(randomUpdate);
       if (randomUpdate.hasValue) {
-        buffer.addUpdate(randomUpdate.term, randomUpdate.getValue(), randomUpdate.docIDUpto);
+        buffer.addUpdate(randomUpdate.term, randomUpdate.getValue(), randomUpdate.docIDUpTo);
       } else {
-        buffer.addNoValue(randomUpdate.term, randomUpdate.docIDUpto);
+        buffer.addNoValue(randomUpdate.term, randomUpdate.docIDUpTo);
       }
     }
     buffer.finish();
@@ -242,7 +242,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
   public void testNoNumericValue() {
     DocValuesUpdate.NumericDocValuesUpdate update =
         new DocValuesUpdate.NumericDocValuesUpdate(new Term("id", "1"), "age", null);
-    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(Counter.newCounter(), update, update.docIDUpto);
+    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(Counter.newCounter(), update, update.docIDUpTo);
     assertEquals(0, buffer.getMinNumeric());
     assertEquals(0, buffer.getMaxNumeric());
   }
@@ -257,13 +257,13 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
         new Term(termField, Integer.toString(random().nextInt(1000))), "numeric", docValue);
     randomUpdate = randomUpdate.prepareForApply(randomDocUpTo());
     updates.add(randomUpdate);
-    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(counter, randomUpdate, randomUpdate.docIDUpto);
+    FieldUpdatesBuffer buffer = new FieldUpdatesBuffer(counter, randomUpdate, randomUpdate.docIDUpTo);
     for (int i = 0; i < numUpdates; i++) {
       randomUpdate = new DocValuesUpdate.NumericDocValuesUpdate(
           new Term(termField, Integer.toString(random().nextInt(1000))), "numeric", docValue);
       randomUpdate = randomUpdate.prepareForApply(randomDocUpTo());
       updates.add(randomUpdate);
-      buffer.addUpdate(randomUpdate.term, randomUpdate.getValue(), randomUpdate.docIDUpto);
+      buffer.addUpdate(randomUpdate.term, randomUpdate.getValue(), randomUpdate.docIDUpTo);
     }
     buffer.finish();
     assertBufferUpdates(buffer, updates, true);
@@ -276,7 +276,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
       updates.sort(Comparator.comparing(u -> u.term.bytes));
       SortedMap<BytesRef, DocValuesUpdate.NumericDocValuesUpdate> byTerms = new TreeMap<>();
       for (DocValuesUpdate.NumericDocValuesUpdate update : updates) {
-        byTerms.compute(update.term.bytes, (k, v) -> v != null && v.docIDUpto >= update.docIDUpto ? v : update);
+        byTerms.compute(update.term.bytes, (k, v) -> v != null && v.docIDUpTo >= update.docIDUpTo ? v : update);
       }
       updates = new ArrayList<>(byTerms.values());
     }
@@ -304,7 +304,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
         assertEquals(0, value.numericValue);
         assertEquals(0, v);
       }
-      assertEquals(expectedUpdate.docIDUpto, value.docUpTo);
+      assertEquals(expectedUpdate.docIDUpTo, value.docUpTo);
     }
     if (hasAtLeastOneValue) {
       assertEquals(max, buffer.getMaxNumeric());

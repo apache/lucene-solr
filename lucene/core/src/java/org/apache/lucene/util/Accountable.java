@@ -41,4 +41,8 @@ public interface Accountable {
     return Collections.emptyList();
   }
 
+  /**
+   * An accountable that always returns 0
+   */
+  Accountable NULL_ACCOUNTABLE = () -> 0;
 }

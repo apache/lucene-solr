@@ -94,7 +94,7 @@ public abstract class Analyzer implements Closeable {
    * Create a new Analyzer, reusing the same set of components per-thread
    * across calls to {@link #tokenStream(String, Reader)}. 
    */
-  public Analyzer() {
+  protected Analyzer() {
     this(GLOBAL_REUSE_STRATEGY);
   }
 
@@ -104,9 +104,9 @@ public abstract class Analyzer implements Closeable {
    * NOTE: if you just want to reuse on a per-field basis, it's easier to
    * use a subclass of {@link AnalyzerWrapper} such as 
    * <a href="{@docRoot}/../analysis/common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">
-   * PerFieldAnalyerWrapper</a> instead.
+   * PerFieldAnalyzerWrapper</a> instead.
    */
-  public Analyzer(ReuseStrategy reuseStrategy) {
+  protected Analyzer(ReuseStrategy reuseStrategy) {
     this.reuseStrategy = reuseStrategy;
   }
 
@@ -440,9 +440,9 @@ public abstract class Analyzer implements Closeable {
    * {@link Analyzer#tokenStream(String, java.io.Reader)}.
    */
   public static abstract class ReuseStrategy {
-
     /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
-    public ReuseStrategy() {}
+    // Explicitly declared so that we have non-empty javadoc
+    protected ReuseStrategy() {}
 
     /**
      * Gets the reusable TokenStreamComponents for the field with the given name.

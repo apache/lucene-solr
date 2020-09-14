@@ -38,6 +38,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.bkd.BKDConfig;
 import org.apache.lucene.util.bkd.BKDReader;
 import org.apache.lucene.util.bkd.BKDWriter;
 
@@ -82,7 +83,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   /** Uses the defaults values for {@code maxPointsInLeafNode} (1024) and {@code maxMBSortInHeap} (16.0) */
   public Lucene60PointsWriter(SegmentWriteState writeState) throws IOException {
-    this(writeState, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
+    this(writeState, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
   }
 
   @Override
@@ -90,13 +91,15 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
     PointValues values = reader.getValues(fieldInfo.name);
 
+    BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
+                                     fieldInfo.getPointIndexDimensionCount(),
+                                     fieldInfo.getPointNumBytes(),
+                                     maxPointsInLeafNode);
+
     try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
                                           writeState.directory,
                                           writeState.segmentInfo.name,
-                                          fieldInfo.getPointDimensionCount(),
-                                          fieldInfo.getPointIndexDimensionCount(),
-                                          fieldInfo.getPointNumBytes(),
-                                          maxPointsInLeafNode,
+                                          config,
                                           maxMBSortInHeap,
                                           values.size())) {
 
@@ -173,6 +176,11 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
             }
           }
 
+          BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
+                                           fieldInfo.getPointIndexDimensionCount(),
+                                           fieldInfo.getPointNumBytes(),
+                                           maxPointsInLeafNode);
+
           //System.out.println("MERGE: field=" + fieldInfo.name);
           // Optimize the 1D case to use BKDWriter.merge, which does a single merge sort of the
           // already sorted incoming segments, instead of trying to sort all points again as if
@@ -180,10 +188,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
           try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
                                                 writeState.directory,
                                                 writeState.segmentInfo.name,
-                                                fieldInfo.getPointDimensionCount(),
-                                                fieldInfo.getPointIndexDimensionCount(),
-                                                fieldInfo.getPointNumBytes(),
-                                                maxPointsInLeafNode,
+                                                config,
                                                 maxMBSortInHeap,
                                                 totMaxSize)) {
             List<BKDReader> bkdReaders = new ArrayList<>();

@@ -604,7 +604,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
           assert ent.isTerm: "i=" + i;
 
           PendingTerm term = (PendingTerm) ent;
-          assert StringHelper.startsWith(term.termBytes, prefix): "term.term=" + term.termBytes + " prefix=" + prefix;
+          assert StringHelper.startsWith(term.termBytes, prefix): term + " prefix=" + prefix;
           BlockTermState state = term.state;
           final int suffix = term.termBytes.length - prefixLength;
           /*
@@ -640,7 +640,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
           PendingEntry ent = pending.get(i);
           if (ent.isTerm) {
             PendingTerm term = (PendingTerm) ent;
-            assert StringHelper.startsWith(term.termBytes, prefix): "term.term=" + term.termBytes + " prefix=" + prefix;
+            assert StringHelper.startsWith(term.termBytes, prefix): term + " prefix=" + prefix;
             BlockTermState state = term.state;
             final int suffix = term.termBytes.length - prefixLength;
             /*

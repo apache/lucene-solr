@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -282,15 +283,19 @@ class SolrCores {
       return ret;
     }
   }
+  SolrCore  getCoreFromAnyList(String name, boolean incRefCount) {
+    return getCoreFromAnyList(name, incRefCount, null);
+  }
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
-  SolrCore  getCoreFromAnyList(String name, boolean incRefCount) {
+  SolrCore  getCoreFromAnyList(String name, boolean incRefCount, UUID coreId) {
     synchronized (modifyLock) {
       SolrCore core = cores.get(name);
 
       if (core == null && getTransientCacheHandler() != null) {
         core = getTransientCacheHandler().getCore(name);
       }
+      if(core != null && coreId != null && coreId != core.uniqueId) return null;
 
       if (core != null && incRefCount) {
         core.open();

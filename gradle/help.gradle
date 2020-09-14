@@ -46,10 +46,13 @@ configure(rootProject) {
       println ""
       println "This is an experimental Lucene/Solr gradle build. See some"
       println "guidelines, ant-equivalent commands etc. under help/*; or type:"
+      println ""
       helpFiles.each { section, path, sectionInfo ->
         println String.format(Locale.ROOT,
             "  gradlew :help%-16s # %s", section, sectionInfo)
       }
+      println ""
+      println "For the impatient, build the project with 'gradlew assemble' or 'gradlew dev' "
     }
   }
 

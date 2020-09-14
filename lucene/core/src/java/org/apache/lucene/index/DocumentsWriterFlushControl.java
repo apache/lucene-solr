@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -180,7 +179,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
         } else {
           flushPolicy.onInsert(this, perThread);
         }
-        if (!perThread.isFlushPending() && perThread.bytesUsed() > hardMaxBytesPerDWPT) {
+        if (!perThread.isFlushPending() && perThread.ramBytesUsed() > hardMaxBytesPerDWPT) {
           // Safety check to prevent a single DWPT exceeding its RAM limit. This
           // is super important since we can not address more than 2048 MB per DWPT
           setFlushPending(perThread);
@@ -440,7 +439,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     flushDeletes.set(true);
   }
   
-  DocumentsWriterPerThread obtainAndLock() throws IOException {
+  DocumentsWriterPerThread obtainAndLock() {
     while (closed == false) {
       final DocumentsWriterPerThread perThread = perThreadPool.getAndLock();
       if (perThread.deleteQueue == documentsWriter.deleteQueue) {
@@ -674,7 +673,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     int count = 0;
     for (DocumentsWriterPerThread next : perThreadPool) {
       if (next.isFlushPending() == false && next.getNumDocsInRAM() > 0) {
-        final long nextRam = next.bytesUsed();
+        final long nextRam = next.ramBytesUsed();
         if (infoStream.isEnabled("FP")) {
           infoStream.message("FP", "thread state has " + nextRam + " bytes; docInRAM=" + next.getNumDocsInRAM());
         }

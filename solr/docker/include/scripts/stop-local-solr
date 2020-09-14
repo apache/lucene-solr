@@ -1,0 +1,11 @@
+#!/bin/bash
+# stop the background Solr, and restore the normal configuration
+
+set -e
+
+if [[ "$VERBOSE" == "yes" ]]; then
+    set -x
+fi
+
+echo "Shutting down the background Solr"
+solr stop
