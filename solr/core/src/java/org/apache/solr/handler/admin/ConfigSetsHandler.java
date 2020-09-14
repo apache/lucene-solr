@@ -211,9 +211,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   private void deleteUnusedFiles(SolrZkClient zkClient, Set<String> filesToDelete) throws InterruptedException, KeeperException {
     if (!filesToDelete.isEmpty()) {
-      log.info("Cleaning up {} unused files", filesToDelete.size());
+      if (log.isInfoEnabled()) {
+        log.info("Cleaning up {} unused files", filesToDelete.size());
+      }
       if (log.isDebugEnabled()) {
-        log.info("Cleaning up unused files: {}", filesToDelete);
+        log.debug("Cleaning up unused files: {}", filesToDelete);
       }
       for (String f:filesToDelete) {
         try {
