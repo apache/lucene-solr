@@ -271,10 +271,7 @@ abstract class ShapeQuery extends Query {
         final long[] cost = new long[]{reader.maxDoc()};
         values.intersect(getIntersectsDenseVisitor(query, result, cost));
         assert cost[0] > 0 || result.cardinality() == 0;
-        if (cost[0] == 0) {
-          return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
-        }
-        final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+        final DocIdSetIterator iterator = cost[0] == 0 ? DocIdSetIterator.empty() : new BitSetIterator(result, cost[0]);
         return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       } else {
         final DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(reader.maxDoc(), values, query.getField());
@@ -307,10 +304,7 @@ abstract class ShapeQuery extends Query {
         values.intersect(getShallowInverseDenseVisitor(query, result));
       }
       assert cost[0] > 0 || result.cardinality() == 0;
-      if (cost[0] == 0) {
-        return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
-      }
-      final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+      final DocIdSetIterator iterator = cost[0] == 0 ? DocIdSetIterator.empty() : new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
 
@@ -322,10 +316,7 @@ abstract class ShapeQuery extends Query {
       values.intersect(getContainsDenseVisitor(query, result, excluded, cost));
       result.andNot(excluded);
       assert cost[0] > 0 || result.cardinality() == 0;
-      if (cost[0] == 0) {
-        return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
-      }
-      final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+      final DocIdSetIterator iterator = cost[0] == 0 ? DocIdSetIterator.empty() : new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
 
