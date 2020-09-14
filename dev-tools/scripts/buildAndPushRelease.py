@@ -112,32 +112,21 @@ def prepare(root, version, gpgKeyID, gpgPassword):
 
   open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
-  print('  lucene prepare-release')
-  os.chdir('lucene')
-  cmd = './gradlew -Dversion=%s' % version
+  print('  prepare-release')
+  cmd = './gradlew -Dversion=%s clean' % version
+  # TODO cd lucene ; ant dist-all?
+  # TODO cd solr ; ant package?
   if gpgKeyID is not None:
-    cmd += ' -Psigning.keyId=%s prepare-release' % gpgKeyID
-  else:
-    cmd += ' prepare-release-no-sign'
+    # TODO sign
+    # cmd += ' -Psigning.keyId=%s publishSignedPublicationToMavenLocal' % gpgKeyID
+    pass
+  cmd += ' mavenLocal'
 
   if gpgPassword is not None:
     runAndSendGPGPassword(cmd, gpgPassword)
   else:
     run(cmd)
   
-  print('  solr prepare-release')
-  os.chdir('../solr')
-  cmd = './gradlew -Dversion=%s' % version
-  if gpgKeyID is not None:
-    cmd += ' -Dsigning.keyId=%s prepare-release' % gpgKeyID
-  else:
-    cmd += ' prepare-release-no-sign'
-
-  if gpgPassword is not None:
-    runAndSendGPGPassword(cmd, gpgPassword)
-  else:
-    run(cmd)
-    
   print('  done!')
   print()
   return rev
