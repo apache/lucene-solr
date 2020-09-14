@@ -410,8 +410,6 @@ public class Http2SolrClient extends SolrClient {
 
           @Override
           public void onComplete(Result result) {
-            asyncTracker.completeListener.onComplete(result);
-
             if (result.isFailed()) {
               onComplete.onFailure(result.getFailure());
               return;
@@ -425,6 +423,8 @@ public class Http2SolrClient extends SolrClient {
             } catch (Exception e) {
               ParWork.propagateInterrupt(e);
               onComplete.onFailure(e);
+            } finally {
+              asyncTracker.completeListener.onComplete(result);
             }
 
           }

@@ -43,7 +43,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
-@Ignore // nocommit: random fails due to url
+@Ignore // nocommit can get a bad url, perhaps the random solr context that is generated is not compat
 public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest {
 
   @Test
@@ -124,7 +124,6 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
-  @Ignore // nocommit parallel updates does not populate route responses
   public void testParallelUpdates() throws Exception {
     // expect update requests go to both shards
     stubFor(post(urlPathEqualTo(SHARD1_PATH+"/update"))
