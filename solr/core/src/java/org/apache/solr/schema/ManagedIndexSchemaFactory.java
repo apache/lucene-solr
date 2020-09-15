@@ -199,7 +199,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         try{
           upgradeToManagedSchema();
         } finally {
-          schema.getSchemaUpdateLock().unlock();
+          if (schema.getSchemaUpdateLock().isHeldByCurrentThread()) {
+            schema.getSchemaUpdateLock().unlock();
+          }
         }
       }
     } finally {

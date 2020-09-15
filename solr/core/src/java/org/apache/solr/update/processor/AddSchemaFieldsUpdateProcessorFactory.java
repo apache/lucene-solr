@@ -496,7 +496,9 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             cmd.getReq().updateSchemaToLatest();
           }
         } finally {
-          oldSchema.getSchemaUpdateLock().unlock();
+          if ( oldSchema.getSchemaUpdateLock().isHeldByCurrentThread()) {
+            oldSchema.getSchemaUpdateLock().unlock();
+          }
         }
       }
       super.processAdd(cmd);

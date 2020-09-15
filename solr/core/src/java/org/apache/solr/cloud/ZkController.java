@@ -2700,7 +2700,7 @@ public class ZkController implements Closeable {
       try {
         stat = zkClient.exists(zkDir, null);
       } catch (KeeperException e) {
-        //ignore , it is not a big deal
+        log.info(e.getMessage(), e);
       } catch (InterruptedException e) {
         log.info("WatcherImpl Interrupted");
         return;
@@ -2710,17 +2710,13 @@ public class ZkController implements Closeable {
       try {
         resetWatcher = fireEventListeners(zkDir);
       } finally {
-        if (Event.EventType.None.equals(event.getType())) {
-          log.debug("A node got unwatched for {}", zkDir);
-        } else {
-          if (!isClosed() && !cc.isShutDown()) {
-            if (resetWatcher) {
-              setConfWatcher(zkDir, this, stat);
-            } else {
-              log.debug("A node got unwatched for {}", zkDir);
-            }
-          }
 
+        if (!isClosed() && !cc.isShutDown()) {
+          if (resetWatcher) {
+            setConfWatcher(zkDir, this, stat);
+          } else {
+            log.debug("A node got unwatched for {}", zkDir);
+          }
         }
       }
     }

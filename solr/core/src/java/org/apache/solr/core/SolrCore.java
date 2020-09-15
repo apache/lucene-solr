@@ -1086,12 +1086,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         ((SolrMetricProducer) directoryFactory).initializeMetrics(solrMetricsContext, "directoryFactory");
       }
 
-      if (coreContainer.isZooKeeperAware()) {
+      if (coreContainer.isZooKeeperAware() && coreContainer.getZkController().getZkClient().isConnected()) {
         // make sure we see our shard first - these tries to cover a surprising race where we don't find our shard in the clusterstate
         // in the below bufferUpdatesIfConstructing call
 
         coreContainer.getZkController().getZkStateReader().waitForState(coreDescriptor.getCollectionName(),
-            5, TimeUnit.SECONDS, (l,c) -> c != null && c.getSlice(coreDescriptor.getCloudDescriptor().getShardId()) != null);
+            10, TimeUnit.SECONDS, (l,c) -> c != null && c.getSlice(coreDescriptor.getCloudDescriptor().getShardId()) != null);
       }
       bufferUpdatesIfConstructing(coreDescriptor);
 

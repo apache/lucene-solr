@@ -175,7 +175,9 @@ public class SchemaManager {
         }
       }
     } finally {
-      req.getSchema().getSchemaUpdateLock().unlock();
+      if (req.getSchema().getSchemaUpdateLock().isHeldByCurrentThread()) {
+        req.getSchema().getSchemaUpdateLock().unlock();
+      }
       if (core.getCoreContainer().isZooKeeperAware()) {
         if (lock != null) lock.unlock();
       }

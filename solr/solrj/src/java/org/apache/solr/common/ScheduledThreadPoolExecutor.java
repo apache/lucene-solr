@@ -535,8 +535,9 @@ public class ScheduledThreadPoolExecutor extends ParWorkExecutor implements
         if (this.leader == null && this.queue[0] != null) {
           this.available.signal();
         }
-
-        lock.unlock();
+        if (lock.isHeldByCurrentThread()) {
+          lock.unlock();
+        }
       }
     }
 
@@ -591,8 +592,9 @@ public class ScheduledThreadPoolExecutor extends ParWorkExecutor implements
         if (this.leader == null && this.queue[0] != null) {
           this.available.signal();
         }
-
-        lock.unlock();
+        if (lock.isHeldByCurrentThread()) {
+          lock.unlock();
+        }
       }
     }
 

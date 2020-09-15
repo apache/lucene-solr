@@ -228,7 +228,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 6);
     assertOrder(tuples, 0, 5, 1, 2, 3, 4);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -256,7 +257,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assertTrue(tuples.size() == 1);
     assertTrue(tuples.get(0).getLong("nullCount") == 6);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -291,7 +293,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
 
     assertEquals(nullCount, 6L);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -374,7 +377,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     assert (tuples.size() == 4);
     assertOrder(tuples, 0, 2, 1, 4);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -448,7 +452,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     assert (tuples.size() == 4);
     assertOrder(tuples, 2, 1, 3, 4);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -529,7 +534,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     t2 = tuples.get(2);
     maps2 = t2.getMaps("group");
     assertMaps(maps2, 4, 6);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -575,7 +581,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assert(tuples.size() == 1);
     Tuple t = tuples.get(0);
     assertTrue(t.getString("id").equals("9"));
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     stream = factory.constructStream("having(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), and(eq(a_i, 9),lt(a_i, 10)))");
     context = new StreamContext();
@@ -586,7 +593,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assert(tuples.size() == 1);
     t = tuples.get(0);
     assertTrue(t.getString("id").equals("9"));
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     stream = factory.constructStream("having(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), or(eq(a_i, 9),eq(a_i, 8)))");
     context = new StreamContext();
@@ -601,7 +609,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     t = tuples.get(1);
     assertTrue(t.getString("id").equals("9"));
 
-    stream.close();
+    // closed by cache
+    // stream.close();
     stream = factory.constructStream("having(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), and(eq(a_i, 9),not(eq(a_i, 9))))");
     context = new StreamContext();
     context.setSolrClientCache(solrClientCache);
@@ -635,7 +644,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assert(tuples.size() == 1);
     t = tuples.get(0);
     assertTrue(t.getDouble("a_f") == 10.0D);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -683,7 +693,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assert(tuples.size() == 1);
     Tuple t = tuples.get(0);
     assertTrue(t.getString("id").equals("9"));
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     stream = factory.constructStream("parallel(" + COLLECTIONORALIAS + ", workers=2, sort=\"a_f asc\", having(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=id, qt=\"/export\"), and(eq(a_i, 9),lt(a_i, 10))))");
     context = new StreamContext();
@@ -694,7 +705,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assert(tuples.size() == 1);
     t = tuples.get(0);
     assertTrue(t.getString("id").equals("9"));
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     stream = factory.constructStream("parallel(" + COLLECTIONORALIAS + ", workers=2, sort=\"a_f asc\",having(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=id, qt=\"/export\"), or(eq(a_i, 9),eq(a_i, 8))))");
     context = new StreamContext();
@@ -717,7 +729,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
 
     assert(tuples.size() == 0);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     stream = factory.constructStream("parallel(" + COLLECTIONORALIAS + ", workers=2, sort=\"a_f asc\",having(search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=id, qt=\"/export\"), and(lteq(a_i, 9), gteq(a_i, 8))))");
     context = new StreamContext();
@@ -732,7 +745,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     t = tuples.get(1);
     assertTrue(t.getString("id").equals("9"));
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     stream = factory.constructStream("parallel("+COLLECTIONORALIAS+", workers=2, sort=\"a_f asc\", having(rollup(over=a_f, sum(a_i), search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=a_f, qt=\"/export\")), and(eq(sum(a_i), 9),eq(sum(a_i),9))))");
     context = new StreamContext();
@@ -744,7 +758,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     t = tuples.get(0);
     assertTrue(t.getDouble("a_f") == 10.0D);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -798,7 +813,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertTrue("blah blah blah 8".equals(t.getString("subject")));
     t = tuples.get(9);
     assertTrue("blah blah blah 9".equals(t.getString("subject")));
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     //Change the batch size
     stream = factory.constructStream("fetch(" + COLLECTIONORALIAS + ",  search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), on=\"id=a_i\", batchSize=\"3\", fl=\"subject\")");
@@ -844,7 +860,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertEquals(1, tuples.size());
     t = tuples.get(0);
     assertTrue("blah blah blah 99".equals(t.getString("subject")));
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -924,7 +941,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertTrue("blah blah blah 8".equals(t.getString("subject")));
     t = tuples.get(9);
     assertTrue("blah blah blah 9".equals(t.getString("subject")));
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -1197,7 +1215,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertTrue(avgi.doubleValue() == 7.5D);
     assertTrue(avgf.doubleValue() == 5.5D);
     assertTrue(count.doubleValue() == 2);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -1324,7 +1343,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertTrue(avgf.doubleValue() == 6.5D);
     assertTrue(count.doubleValue() == 4);
 
-    stream.close();
+    // no cache, wll be closed
+    //stream.close();
   }
 
   @Test
@@ -1360,7 +1380,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     Map<String, Tuple> eofTuples = pstream.getEofTuples();
     assert (eofTuples.size() == 2); //There should be an EOF tuple for each worker.
-    pstream.close();
+    // closed by cache
+    // pstream.close();
   }
 
   @Test
@@ -1445,7 +1466,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     Map<String, Tuple> eofTuples = pstream.getEofTuples();
     assert (eofTuples.size() == 2); //There should be an EOF tuple for each worker.
     assert (pstream.toExpression(streamFactory).toString().contains("shuffle"));
-    pstream.close();
+    // closed by cache
+    // pstream.close();
   }
 
   @Test
@@ -1496,7 +1518,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     Tuple t2 = tuples.get(2);
     List<Map> maps2 = t2.getMaps("group");
     assertMaps(maps2, 4, 6);
-    pstream.close();
+    // closed by cache
+    // pstream.close();
 
     pstream = (ParallelStream) streamFactory.constructStream("parallel(" + COLLECTIONORALIAS + ", " +
         "reduce(" +
@@ -1523,7 +1546,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     t2 = tuples.get(2);
     maps2 = t2.getMaps("group");
     assertMaps(maps2, 9, 2, 1, 0);
-    pstream.close();
+    // closed by cache
+    // pstream.close();
   }
 
   @Test
@@ -1561,7 +1585,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     assert (tuples.size() == 10);
     assertOrder(tuples, 10, 9, 8, 7, 6, 5, 4, 3, 2, 0);
-    pstream.close();
+    // closed by cache
+    // pstream.close();
   }
 
   @Test
@@ -1605,7 +1630,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     assert (tuples.size() == 8);
     assertOrder(tuples, 9, 8, 6, 4, 3, 2, 1, 0);
-    pstream.close();
+    // closed by cache
+    // pstream.close();
   }
 
   @Test
@@ -1735,7 +1761,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertTrue(avgf.doubleValue() == 5.5D);
     assertTrue(count.doubleValue() == 2);
 
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -1868,7 +1895,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertTrue(avgf.doubleValue() == 6.5D);
     assertTrue(count.doubleValue() == 4);
 
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -1912,7 +1940,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 8);
     assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Basic desc
     expression = StreamExpressionParser.parse("innerJoin("
@@ -1924,7 +1953,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 8);
     assertOrder(tuples, 7, 3, 4, 5, 1, 1, 15, 15);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Results in both searches, no join matches
     expression = StreamExpressionParser.parse("innerJoin("
@@ -1935,7 +1965,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(streamContext);
     tuples = getTuples(stream);
     assert (tuples.size() == 0);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Differing field names
     expression = StreamExpressionParser.parse("innerJoin("
@@ -1949,7 +1980,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assert (tuples.size() == 8);
     assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
 
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -1993,7 +2025,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 10);
     assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Basic desc
     expression = StreamExpressionParser.parse("leftOuterJoin("
@@ -2005,7 +2038,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 10);
     assertOrder(tuples, 7, 6, 3, 4, 5, 1, 1, 15, 15, 2);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Results in both searches, no join matches
     expression = StreamExpressionParser.parse("leftOuterJoin("
@@ -2017,7 +2051,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 8);
     assertOrder(tuples, 1, 15, 2, 3, 4, 5, 6, 7);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Differing field names
     expression = StreamExpressionParser.parse("leftOuterJoin("
@@ -2029,7 +2064,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 10);
     assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -2072,7 +2108,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 8);
     assertOrder(tuples, 1, 1, 15, 15, 3, 4, 5, 7);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Basic desc
     expression = StreamExpressionParser.parse("hashJoin("
@@ -2084,7 +2121,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 8);
     assertOrder(tuples, 7, 3, 4, 5, 1, 1, 15, 15);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Results in both searches, no join matches
     expression = StreamExpressionParser.parse("hashJoin("
@@ -2095,7 +2133,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(streamContext);
     tuples = getTuples(stream);
     assert (tuples.size() == 0);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Basic test with "on" mapping
     expression = StreamExpressionParser.parse("hashJoin("
@@ -2109,7 +2148,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     //Does a lexical sort
     assertOrder(tuples, 1, 1, 15, 15, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
   
   @Test
@@ -2139,7 +2179,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
 
     assertEquals(0, tuples.size());
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -2170,7 +2211,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     assertEquals(1, tuples.size());
     assertFalse(tuples.get(0).getFields().containsKey("extra_s"));
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -2213,7 +2255,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 10);
     assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Basic desc
     expression = StreamExpressionParser.parse("outerHashJoin("
@@ -2225,7 +2268,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 10);
     assertOrder(tuples, 7, 6, 3, 4, 5, 1, 1, 15, 15, 2);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Results in both searches, no join matches
     expression = StreamExpressionParser.parse("outerHashJoin("
@@ -2237,7 +2281,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 8);
     assertOrder(tuples, 1, 15, 2, 3, 4, 5, 6, 7);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Basic test
     expression = StreamExpressionParser.parse("outerHashJoin("
@@ -2249,7 +2294,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assert (tuples.size() == 10);
     assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -2301,7 +2347,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assertFields(tuples, "id", "join1", "join2", "identity");
     assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Basic with replacements test
     clause = "select("
@@ -2319,7 +2366,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertLong(tuples.get(2), "join1", 12);
     assertLong(tuples.get(7), "join1", 12);
     assertString(tuples.get(6), "join1", "d");
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Basic with replacements and concat test
     clause = "select("
@@ -2343,7 +2391,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertString(tuples.get(7), "newIdentity", "left_7-12");
     assertString(tuples.get(6), "join1", "d");
     assertString(tuples.get(6), "newIdentity", "left_6-d");
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Inner stream test
     clause = "innerJoin("
@@ -2361,7 +2410,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     stream.setStreamContext(streamContext);
     tuples = getTuples(stream);
     assertFields(tuples, "id", "left.join1", "left.join2", "left.ident", "right.join1", "right.join2", "right.ident");
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // Wrapped select test
     clause = "select("
@@ -2383,7 +2433,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     assertFields(tuples, "id", "left.ident", "right.ident");
     assertNotFields(tuples, "left.join1", "left.join2", "right.join1", "right.join2");
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -2427,7 +2478,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     assertEquals(tuples.size(), 4);
     assertOrder(tuples, 5, 6, 7, 8);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     expression = StreamExpressionParser.parse("priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
         "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
@@ -2453,7 +2505,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     //Both queus are empty.
     assertEquals(tuples.size(), 0);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -2498,7 +2551,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     assertEquals(tuples.size(), 4);
     assertOrder(tuples, 5, 6, 7, 8);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
         "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
@@ -2512,7 +2566,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     //The Tuples from the second topic (Low priority) should be returned.
     assertEquals(tuples.size(), 6);
     assertOrder(tuples, 0, 1, 2, 3, 4, 9);
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
         "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
@@ -2524,7 +2579,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     //Both queus are empty.
     assertEquals(tuples.size(), 0);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -2564,7 +2620,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       t = tuples.get(0);
       assert (t.EOF == false);
       assertEquals(5, t.get("batchIndexed"));
-      stream.close();
+      // closed by cache
+      // stream.close();
 
       //Ensure that destinationCollection actually has the new docs.
       expression = StreamExpressionParser.parse("search(destinationCollection, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_i asc\")");
@@ -2612,7 +2669,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuple.getDouble("a_f") == 4.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
-      stream.close();
+      // closed by cache
+      // stream.close();
     } finally {
       CollectionAdminRequest.deleteCollection("destinationCollection").process(cluster.getSolrClient());
     }
@@ -2707,7 +2765,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuple.getDouble("a_f") == 4.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
-      stream.close();
+      // closed by cache
+      // stream.close();
     } finally {
       CollectionAdminRequest.deleteCollection(collectionId).process(cluster.getSolrClient());
     }
@@ -2880,7 +2939,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuple.getDouble("a_f") == 4.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
-      stream.close();
+      // closed by cache
+      // stream.close();
     } finally {
       CollectionAdminRequest.deleteCollection("parallelDestinationCollection1").process(cluster.getSolrClient());
     }
@@ -2996,7 +3056,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuple.getDouble("a_f") == 4.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
-      stream.close();
+      // closed by cache
+      // stream.close();
     } finally {
       CollectionAdminRequest.deleteCollection("parallelDestinationCollection1").process(cluster.getSolrClient());
     }
@@ -3249,7 +3310,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuple.getDouble("a_f") == 4.0);
       assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
       assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
-      stream.close();
+      // closed by cache
+      // stream.close();
     } finally {
       IOUtils.closeQuietly(stream);
       CollectionAdminRequest.deleteCollection("parallelDestinationCollection").process(cluster.getSolrClient());
@@ -3460,7 +3522,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     assert (tuples.size() == 5);
     assertOrder(tuples, 0, 7, 3, 4, 8);
-    stream.close();
+
+    // cache will closea
+    // stream.close();
   }
 
   @Test
@@ -3696,6 +3760,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly
   public void testExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).processAndWait( cluster.getSolrClient(), DEFAULT_TIMEOUT);
@@ -3740,7 +3805,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     paramsLoc.set("expr", "search(destination, q=\"*:*\", fl=\"id, body_t, field_i\", rows=1000, sort=\"field_i asc\")");
     paramsLoc.set("qt","/stream");
 
-    executorStream.close();
+    // closed by cache
+    //executorStream.close();
 
     SolrStream solrStream = new SolrStream(url, paramsLoc);
     List<Tuple> tuples = getTuples(solrStream);
@@ -3873,7 +3939,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     assert (tuples.size() == 5);
     assertOrder(tuples, 0, 7, 3, 4, 8);
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -3914,7 +3981,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assert (tuples.size() == 1);
     assertOrder(tuples, 2);
 
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -3949,7 +4017,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertEquals("a", tuples.get(5).get("a_ss"));
     assertEquals("c", tuples.get(7).get("a_ss"));
 
-    stream.close();
+    // closed by cache
+    // stream.close();
     // single selection, sort
     stream = factory.constructStream("cartesian("
         + "search(collection1, q=*:*, fl=\"id,a_ss\", sort=\"id asc\"),"
@@ -3966,7 +4035,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertEquals("e", tuples.get(5).get("a_ss"));
     assertEquals("c", tuples.get(7).get("a_ss"));
 
-    stream.close();
+    // closed by cache
+    // stream.close();
     // multi selection, sort
     stream = factory.constructStream("cartesian("
         + "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
@@ -3993,7 +4063,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertEquals("b", tuples.get(5).get("a_ss"));
     assertEquals(3L, tuples.get(5).get("b_ls"));
 
-    stream.close();
+    // closed by cache
+    // stream.close();
     // multi selection, sort
     stream = factory.constructStream("cartesian("
         + "search(collection1, q=*:*, fl=\"id,a_ss,b_ls\", sort=\"id asc\"),"
@@ -4019,7 +4090,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertEquals(2L, tuples.get(4).get("b_ls"));
     assertEquals("b", tuples.get(5).get("a_ss"));
     assertEquals(1L, tuples.get(5).get("b_ls"));
-    stream.close();
+    // closed by cache
+    // stream.close();
 
     // multi selection, sort
     stream = factory.constructStream("cartesian("
@@ -4054,7 +4126,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertEquals(2L, tuples.get(8).get("b_ls"));
     assertEquals("e", tuples.get(9).get("a_ss"));
     assertEquals(2L, tuples.get(9).get("b_ls"));
-    stream.close();
+    // closed by cache
+    // stream.close();
   }
 
   @Test
@@ -4093,7 +4166,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     final List<Tuple> tuples = getTuples(stream);
     assert (tuples.size() == 1);
     assertOrder(tuples, 2);
-    stream.close();
+
+    // will be closed
+    // stream.close();
   }
 
   @Nightly // slower

@@ -158,7 +158,9 @@ public class ZkDistributedQueue implements DistributedQueue {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }finally {
-      updateLock.unlock();
+      if (updateLock.isHeldByCurrentThread()) {
+        updateLock.unlock();
+      }
     }
   }
 
@@ -222,7 +224,9 @@ public class ZkDistributedQueue implements DistributedQueue {
       }
       return null;
     } finally {
-      updateLock.unlock();
+      if (updateLock.isHeldByCurrentThread()) {
+        updateLock.unlock();
+      }
       time.stop();
     }
   }
@@ -313,7 +317,9 @@ public class ZkDistributedQueue implements DistributedQueue {
         }
       }
     } finally {
-      updateLock.unlock();
+      if (updateLock.isHeldByCurrentThread()) {
+        updateLock.unlock();
+      }
       timer.stop();
     }
   }
@@ -410,7 +416,9 @@ public class ZkDistributedQueue implements DistributedQueue {
 
       return remove ? knownChildren.pollFirst() : knownChildren.first();
     } finally {
-      updateLock.unlock();
+      if (updateLock.isHeldByCurrentThread()) {
+        updateLock.unlock();
+      }
     }
   }
 
@@ -479,7 +487,9 @@ public class ZkDistributedQueue implements DistributedQueue {
           }
         }
       } finally {
-        updateLock.unlock();
+        if (updateLock.isHeldByCurrentThread()) {
+          updateLock.unlock();
+        }
       }
 
       if (!foundChildren.isEmpty()) {

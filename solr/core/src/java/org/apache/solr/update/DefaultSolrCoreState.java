@@ -380,7 +380,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         } catch (InterruptedException e) {
           log.info("Recovery thread interrupted");
         } finally {
-          if (locked) recoveryLock.unlock();
+          if (recoveryLock.isHeldByCurrentThread()) recoveryLock.unlock();
         }
       } finally {
         MDCLoggingContext.clear();

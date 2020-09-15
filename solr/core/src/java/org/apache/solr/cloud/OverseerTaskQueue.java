@@ -133,7 +133,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   static final class LatchWatcher implements Watcher {
 
-    private final Lock lock;
+    private final ReentrantLock lock;
     private final Condition eventReceived;
     private final SolrZkClient zkClient;
     private volatile WatchedEvent event;
@@ -175,7 +175,9 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           triggered = true;
           eventReceived.signalAll();
         } finally {
-          lock.unlock();
+          if (lock.isHeldByCurrentThread()) {
+            lock.unlock();
+          }
         }
       }
     }
@@ -197,7 +199,9 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           }
         }
       } finally {
-        lock.unlock();
+        if (lock.isHeldByCurrentThread()) {
+          lock.unlock();
+        }
       }
     }
 
@@ -307,7 +311,9 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     try {
        orderedChildren = new TreeSet<>(knownChildren);
     } finally {
-      updateLock.unlock();
+      if (updateLock.isHeldByCurrentThread()) {
+        updateLock.unlock();
+      }
     }
     for (String headNode : orderedChildren.descendingSet())
       if (headNode != null) {
