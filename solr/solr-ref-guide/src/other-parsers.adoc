@@ -237,7 +237,7 @@ Comma separated list of tags for excluding queries from parameters above. See ex
 {!bool filter=foo should=bar}
 ----
 
-Parameters might also be multivalue references. The former example above is equivlent to
+Parameters might also be multivalue references. The former example above is equivalent to
 
 [source,text]
 ----
