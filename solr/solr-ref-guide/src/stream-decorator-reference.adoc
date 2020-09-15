@@ -603,7 +603,7 @@ This is similar to the `<<#update,update()>>` function described below.
 === delete Parameters
 
 * `destinationCollection`: (Mandatory) The collection where the tuples will deleted.
-* `batchSize`: (Mandatory) The indexing batch size.
+* `batchSize`: (Optional, defaults to `250`) The delete batch size.
 * `pruneVersionField`: (Optional, defaults to `false`) Whether to prune `\_version_` values from tuples
 * `StreamExpression`: (Mandatory)
 
@@ -1316,8 +1316,8 @@ The `update` function wraps another functions and sends the tuples to a SolrClou
 === update Parameters
 
 * `destinationCollection`: (Mandatory) The collection where the tuples will indexed.
-* `batchSize`: (Mandatory) The indexing batch size.
-* `pruneVersionField`: (Optional, defaults to `true`) Wether to prune `\_version_` values from tuples
+* `batchSize`: (Optional, defaults to `250`) The indexing batch size.
+* `pruneVersionField`: (Optional, defaults to `true`) Whether to prune `\_version_` values from tuples
 * `StreamExpression`: (Mandatory)
 
 === update Syntax

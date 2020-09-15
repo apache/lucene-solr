@@ -438,9 +438,9 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryEquals("field=a", null, "a");
     assertQueryEquals("\"term germ\"~2", null, "\"term germ\"~2");
     assertQueryEquals("term term term", null, "term term term");
-    assertQueryEquals("t�rm term term", new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
-        "t�rm term term");
-    assertQueryEquals("�mlaut", new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), "�mlaut");
+    assertQueryEquals("türm term term", new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
+        "türm term term");
+    assertQueryEquals("ümlaut", new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false), "ümlaut");
 
     // FIXME: change MockAnalyzer to not extend CharTokenizer for this test
     //assertQueryEquals("\"\"", new KeywordAnalyzer(), "");
@@ -523,7 +523,7 @@ public class TestQPHelper extends LuceneTestCase {
   }
 
   public void testNumber() throws Exception {
-    // The numbers go away because SimpleAnalzyer ignores them
+    // The numbers go away because SimpleAnalyzer ignores them
     assertMatchNoDocsQuery("3", null);
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");

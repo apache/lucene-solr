@@ -67,7 +67,7 @@
 #ZK_HOST=""
 
 # Set the ZooKeeper client timeout (for SolrCloud mode)
-#ZK_CLIENT_TIMEOUT="15000"
+#ZK_CLIENT_TIMEOUT="30000"
 
 # By default the start script uses "localhost"; override the hostname here
 # for production SolrCloud environments to control the hostname exposed to cluster state
