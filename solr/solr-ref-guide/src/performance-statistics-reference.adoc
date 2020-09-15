@@ -50,9 +50,7 @@ To get request times, specifically, you can send an API request such as:
 * `\http://localhost:8983/solr/admin/metrics?group=core&prefix=UPDATE./update.requestTimes`
 *  `\http://localhost:8983/solr/admin/metrics?group=core&prefix=QUERY./select.requestTimes`
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="25,75",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Attribute |Description
 |15minRate |Requests per second received over the past 15 minutes.
@@ -118,9 +116,7 @@ You can get all update handler statistics shown in the table below with an API r
 
 The following describes the specific statistics you can get:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="40,60",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Attribute |Description
 |`UPDATE.updateHandler.adds` |Total number of “add” requests since last commit.
@@ -191,9 +187,7 @@ You can get the statistics shown in the table below with an API request such as 
 
 The following statistics are available for each of the caches mentioned above:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="25,75",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Attribute |Description
 |cumulative_evictions |Number of cache evictions across all caches since this node has been running.

@@ -45,9 +45,7 @@ In the case of primitive fields, or SortableTextFields, that are `multiValued="t
 
 The table below explains how Solr responds to various settings of the `sort` parameter.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Example |Result
 | |If the sort parameter is omitted, sorting is performed as though the parameter were set to `score desc`.
@@ -117,9 +115,7 @@ The field list can be specified as a space-separated or comma-separated list of 
 
 This table shows some basic examples of how to use `fl`:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Field List |Result
 |id name price |Return only the id, name, and price fields.

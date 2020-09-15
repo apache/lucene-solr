@@ -27,9 +27,7 @@ A Ranking query can be specified using the `rq` request parameter. The `rq` para
 
 Three rank queries are currently included in the Solr distribution. You can also configure a custom {solr-javadocs}/solr-core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] you have written, but most users can just use a parser provided with Solr.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Parser |QParserPlugin class
 |rerank |{solr-javadocs}/solr-core/org/apache/solr/search/ReRankQParserPlugin.html[ReRankQParserPlugin]

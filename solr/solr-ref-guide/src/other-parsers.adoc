@@ -237,7 +237,7 @@ Comma separated list of tags for excluding queries from parameters above. See ex
 {!bool filter=foo should=bar}
 ----
 
-Parameters might also be multivalue references. The former example above is equivlent to 
+Parameters might also be multivalue references. The former example above is equivlent to
 
 [source,text]
 ----
@@ -251,7 +251,7 @@ Referred queries might be excuded via tags. Overall the idea is similar to <<fac
 q={!bool must=$ref excludeTags=t2}&ref={!tag=t1}foo&ref={!tag=t2}bar
 ----
 
-Since the later query is excluded via `t2`, the resulting query is equivalent to 
+Since the later query is excluded via `t2`, the resulting query is equivalent to
 
 [source,text]
 ----
@@ -1082,8 +1082,6 @@ This parser takes the following parameters:
 q.operators::
 Comma-separated list of names of parsing operators to enable. By default, all operations are enabled, and this parameter can be used to effectively disable specific operators as needed, by excluding them from the list. Passing an empty string with this parameter disables all operators.
 +
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-+
 [cols="15,20,50,15",options="header"]
 |===
 |Name |Operator |Description |Example query
@@ -1262,9 +1260,7 @@ An optional parameter used to determine which of several query implementations s
 
 The {solr-javadocs}/solr-core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-javadocs}/solr-core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML. Example:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Parameter |Value
 |defType |`xmlparser`
@@ -1294,9 +1290,7 @@ The {solr-javadocs}/solr-core/org/apache/solr/search/XmlQParserPlugin.html[XmlQP
 
 The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class. XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[width="100%",cols="30,70",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |XML element |QueryBuilder class
 |<BooleanQuery> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/BooleanQueryBuilder.html[BooleanQueryBuilder]
