@@ -65,6 +65,7 @@
 
     <AsyncLogger name="org.eclipse.jetty.servlets" level="DEBUG"/>
     <AsyncLogger name="org.eclipse.jetty" level="warn"/>
+    <AsyncLogger name="org.eclipse.jetty.server.Server" level="INFO"/>
     <AsyncLogger name="org.apache.hadoop" level="warn"/>
     <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
     <AsyncLogger name="org.apache.zookeeper" level="warn"/>
