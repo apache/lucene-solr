@@ -23,8 +23,10 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.codecs.compressing.CompressingTermVectorsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -35,6 +37,9 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntBlockPool;
 
 final class SortingTermVectorsConsumer extends TermVectorsConsumer {
+
+  private static final TermVectorsFormat TEMP_TERM_VECTORS_FORMAT = new CompressingTermVectorsFormat(
+      "TempTermVectors", "", SortingStoredFieldsConsumer.NO_COMPRESSION, 8*1024, 10);
   TrackingTmpOutputDirectoryWrapper tmpDirectory;
 
   SortingTermVectorsConsumer(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Directory directory, SegmentInfo info, Codec codec) {
@@ -45,22 +50,17 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
   void flush(Map<String, TermsHashPerField> fieldsToFlush, final SegmentWriteState state, Sorter.DocMap sortMap, NormsProducer norms) throws IOException {
     super.flush(fieldsToFlush, state, sortMap, norms);
     if (tmpDirectory != null) {
-      if (sortMap == null) {
-        // we're lucky the index is already sorted, just rename the temporary file and return
-        for (Map.Entry<String, String> entry : tmpDirectory.getTemporaryFiles().entrySet()) {
-          tmpDirectory.rename(entry.getValue(), entry.getKey());
-        }
-        return;
-      }
-      TermVectorsReader reader = codec.termVectorsFormat()
+      TermVectorsReader reader = TEMP_TERM_VECTORS_FORMAT
           .vectorsReader(tmpDirectory, state.segmentInfo, state.fieldInfos, IOContext.DEFAULT);
-      TermVectorsReader mergeReader = reader.getMergeInstance();
+      // Don't pull a merge instance, since merge instances optimize for
+      // sequential access while term vectors will likely be accessed in random
+      // order here.
       TermVectorsWriter writer = codec.termVectorsFormat()
           .vectorsWriter(state.directory, state.segmentInfo, IOContext.DEFAULT);
       try {
         reader.checkIntegrity();
         for (int docID = 0; docID < state.segmentInfo.maxDoc(); docID++) {
-          Fields vectors = mergeReader.get(sortMap.newToOld(docID));
+          Fields vectors = reader.get(sortMap == null ? docID : sortMap.newToOld(docID));
           writeTermVectors(writer, vectors, state.fieldInfos);
         }
         writer.finish(state.fieldInfos, state.segmentInfo.maxDoc());
@@ -77,7 +77,7 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
     if (writer == null) {
       IOContext context = new IOContext(new FlushInfo(lastDocID, bytesUsed.get()));
       tmpDirectory = new TrackingTmpOutputDirectoryWrapper(directory);
-      writer = codec.termVectorsFormat().vectorsWriter(tmpDirectory, info, context);
+      writer = TEMP_TERM_VECTORS_FORMAT.vectorsWriter(tmpDirectory, info, context);
       lastDocID = 0;
     }
   }
