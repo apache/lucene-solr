@@ -90,7 +90,7 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
     final String shard1Route = mockSolr.baseUrl()+SHARD1_PATH+"/";
     final String shard2Route = mockSolr.baseUrl()+SHARD2_PATH+"/";
 
-    UpdateRequest ur = buildUpdateRequest(10);
+    UpdateRequest ur = buildUpdateRequest(15);
     Map<String,List<String>> urlMap = testClient.buildUrlMap(mockDocCollection, new ShufflingReplicaListTransformer(random()));
     assertEquals(2, urlMap.size());
     List<String> shard1 = urlMap.get("shard1");
@@ -110,7 +110,7 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
 
     final String threadName = Thread.currentThread().getName();
     ur = new UpdateRequest();
-    for (int i=0; i < 10; i++) {
+    for (int i=0; i < 15; i++) {
       ur.deleteById(threadName+1000+i);
     }
     routes = ur.getRoutesToCollection(mockDocCollection.getRouter(), mockDocCollection, urlMap, ur.getParams(), "id");
