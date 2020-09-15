@@ -61,6 +61,10 @@ API Changes
 * LUCENE-9462: Fields without positions should still return MatchIterator.
   (Alan Woodward, Dawid Weiss)
 
+* LUCENE-9516: Removed the ability to replace the IndexingChain / DocConsumer
+  in Lucenes IndexWriter. The interface is not sufficient to efficiently
+  replace the functionality with reasonable efforts. (Simon Willnauer)
+
 Improvements
 
 * LUCENE-9463: Query match region retrieval component, passage scoring and formatting
