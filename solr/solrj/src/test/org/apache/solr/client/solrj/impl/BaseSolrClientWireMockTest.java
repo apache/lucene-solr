@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -78,6 +79,23 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 })
 public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
 
+  // since Solr's test framework randomizes the Locale, need to override WireMockServer baseUrl() method
+  // to use the Locale.US for formatting the URL
+  static class USLocaleWireMockServer extends WireMockServer {
+    USLocaleWireMockServer(Options options) {
+      super(options);
+    }
+
+    @Override
+    public String baseUrl() {
+      boolean https = options.httpsSettings().enabled();
+      String protocol = https ? "https" : "http";
+      int port = https ? httpsPort() : port();
+
+      return String.format(Locale.US, "%s://localhost:%d", protocol, port);
+    }
+  }
+
   static class JettyHttp2ServerFactory implements HttpServerFactory {
     @Override
     public HttpServer buildHttpServer(Options options, AdminRequestHandler adminRequestHandler, StubRequestHandler stubRequestHandler) {
@@ -96,7 +114,9 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
       // h2c is the protocol for un-encrypted HTTP/2
       HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(httpConfig);
       HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
-      return createServerConnector(bindAddress, jettySettings, port, listener, http, h2c);
+      ServerConnector connector = createServerConnector(bindAddress, jettySettings, port, listener, http, h2c);
+      connector.setReuseAddress(true);
+      return connector;
     }
   }
 
@@ -122,9 +142,10 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
     qtp = getQtp();
     qtp.start();
 
-    log.info("@BeforeClass: Initializing WireMock ...");
-    mockSolr = new WireMockServer(options().bindAddress("127.0.0.1").dynamicPort().httpServerFactory(new JettyHttp2ServerFactory()).enableBrowserProxying(false));
+    mockSolr = new USLocaleWireMockServer(options().jettyAcceptors(1).bindAddress("127.0.0.1").dynamicPort()
+        .httpServerFactory(new JettyHttp2ServerFactory()));
     mockSolr.start();
+
     log.info("Mock Solr is running at url: {}", mockSolr.baseUrl());
     configureFor("http", "localhost", mockSolr.port());
 
@@ -198,7 +219,6 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
   @Before
   public void createTestClient() throws TimeoutException, InterruptedException, IOException {
     final String baseUrl = mockSolr.baseUrl();
-
     Map<String, ClusterState.CollectionRef> collectionStates =
         Collections.singletonMap(BUILT_IN_MOCK_COLLECTION, new ClusterState.CollectionRef(mockDocCollection));
     ClusterState clusterState = new ClusterState(Collections.singleton(baseUrl), collectionStates, 1);

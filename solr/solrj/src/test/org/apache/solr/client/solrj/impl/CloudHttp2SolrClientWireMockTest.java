@@ -43,7 +43,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
-@Ignore // nocommit can get a bad url, perhaps the random solr context that is generated is not compat
 public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest {
 
   @Test
