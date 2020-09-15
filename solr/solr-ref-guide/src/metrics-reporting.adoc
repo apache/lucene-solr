@@ -544,7 +544,7 @@ Basic metrics:
   ...
   <indexConfig>
     <metrics>
-      <majorMergeDocs>524288</majorMergeDocs>
+      <long name="majorMergeDocs">524288</long>
       <bool name="merge">true</bool>
     </metrics>
     ...
@@ -561,7 +561,7 @@ Detailed metrics:
   ...
   <indexConfig>
     <metrics>
-      <majorMergeDocs>524288</majorMergeDocs>
+      <long name="majorMergeDocs">524288</long>
       <bool name="mergeDetails">true</bool>
     </metrics>
     ...
