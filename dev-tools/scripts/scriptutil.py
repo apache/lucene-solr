@@ -109,17 +109,6 @@ def update_file(filename, line_re, edit):
   return True
 
 
-def check_ant():
-  antVersion = os.popen('ant -version').read().strip()
-  if (antVersion.startswith('Apache Ant(TM) version 1.8')):
-    return antVersion.split(" ")[3]
-  if (antVersion.startswith('Apache Ant(TM) version 1.9')):
-    return antVersion.split(" ")[3]
-  if (antVersion.startswith('Apache Ant(TM) version 1.10')):
-    return antVersion.split(" ")[3]
-  raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
-
-
 # branch types are "release", "stable" and "unstable"
 class BranchType(Enum):
   unstable = 1
