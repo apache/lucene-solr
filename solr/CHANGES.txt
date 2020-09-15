@@ -249,6 +249,9 @@ Other Changes
 * SOLR-14579: Comment SolrJ 'Utils' generic map functions 
   (Megan Carey and a lot of education from Uwe Schindler via Erick Erickson)
 
+* SOLR-10471: Update default Zookeeper session timeout to 30s in bin/solr and bin/solr.cmd
+  (Michael Braun, Markus Jelsma via Munendra S N)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
