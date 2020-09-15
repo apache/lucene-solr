@@ -258,7 +258,7 @@ public class Http2SolrClient extends SolrClient {
 
   public void close() {
     closeTracker.close();
-    asyncTracker.phaser.forceTermination();
+    asyncTracker.close();
     if (closeClient) {
       try {
         httpClient.stop();
@@ -410,13 +410,13 @@ public class Http2SolrClient extends SolrClient {
 
           @Override
           public void onComplete(Result result) {
-            if (result.isFailed()) {
-              onComplete.onFailure(result.getFailure());
-              return;
-            }
-
             NamedList<Object> rsp;
             try {
+              if (result.isFailed()) {
+                onComplete.onFailure(result.getFailure());
+                return;
+              }
+
               InputStream is = getContentAsInputStream();
               rsp = processErrorsAndResponse(req, result.getResponse(), parser, is, getMediaType(), getEncoding(), isV2ApiRequest(solrRequest));
               onComplete.onSuccess(rsp);
@@ -424,7 +424,7 @@ public class Http2SolrClient extends SolrClient {
               ParWork.propagateInterrupt(e);
               onComplete.onFailure(e);
             } finally {
-              asyncTracker.completeListener.onComplete(result);
+              asyncTracker.arrive();
             }
 
           }
@@ -432,6 +432,7 @@ public class Http2SolrClient extends SolrClient {
         return null;
       } catch (Exception e) {
         onComplete.onFailure(e);
+        asyncTracker.arrive();
         throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
       }
     } else {
@@ -865,16 +866,9 @@ public class Http2SolrClient extends SolrClient {
     private final Phaser phaser = new ThePhaser(1);
     // maximum outstanding requests left
 
-    private final Response.CompleteListener completeListener;
-
     public AsyncTracker() {
      // available = new Semaphore(MAX_OUTSTANDING_REQUESTS, true);
 
-      completeListener = result -> {
-        phaser.arriveAndDeregister();
-     //   available.release();
-        if (log.isDebugEnabled()) log.debug("Request complete registered: {} arrived: {} {} {}", phaser.getRegisteredParties(), phaser.getArrivedParties(), phaser.getUnarrivedParties(), phaser);
-      };
     }
 
     int getMaxRequestsQueuedPerDestination() {
@@ -882,7 +876,7 @@ public class Http2SolrClient extends SolrClient {
       return MAX_OUTSTANDING_REQUESTS * 10;
     }
 
-    public void waitForComplete() {
+    public synchronized void waitForComplete() {
       if (log.isDebugEnabled()) log.debug("Before wait for outstanding requests registered: {} arrived: {}, {} {}", phaser.getRegisteredParties(), phaser.getArrivedParties(), phaser.getUnarrivedParties(), phaser);
 
       phaser.arriveAndAwaitAdvance();

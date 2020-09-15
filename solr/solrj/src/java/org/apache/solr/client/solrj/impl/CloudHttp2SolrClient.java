@@ -323,6 +323,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
     @Override
     public void onSuccess(NamedList result) {
+      log.error("Add response to list");
       tsResponses.put(url, result);
     }
 

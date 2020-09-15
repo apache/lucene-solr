@@ -32,8 +32,8 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.routing.ShufflingReplicaListTransformer;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -172,7 +172,6 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
-  @Ignore // nocommit parallel updates does not populate route responses
   public void testConcurrentParallelUpdates() throws Exception {
     // expect update requests go to both shards
     stubFor(post(urlPathEqualTo(SHARD1_PATH+"/update"))
@@ -202,8 +201,7 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
       });
       list.add(responseFuture);
     }
-    executorService.shutdown();
-    executorService.awaitTermination(3, TimeUnit.SECONDS);
+    ExecutorUtil.shutdownAndAwaitTermination(executorService);
 
     List<ServeEvent> events = mockSolr.getAllServeEvents();
     // code should have sent 10 requests to each shard leader
