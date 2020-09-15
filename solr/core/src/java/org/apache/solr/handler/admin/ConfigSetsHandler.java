@@ -231,12 +231,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     if (!configPathInZk.startsWith(ZkConfigManager.CONFIGS_ZKNODE + "/")) {
       throw new IllegalArgumentException("\"" + configPathInZk + "\" not recognized as a configset path");
     }
-    ZkMaintenanceUtils.traverseZkTree(zkClient, configPathInZk, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, new ZkMaintenanceUtils.ZkVisitor() {
-      @Override
-      public void visit(String path) throws InterruptedException, KeeperException {
-        files.add(path);
-      }
-    });
+    ZkMaintenanceUtils.traverseZkTree(zkClient, configPathInZk, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, files::add);
     files.remove(configPathInZk);
     return files;
   }
@@ -256,8 +251,8 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
     @SuppressWarnings("unchecked")
     Map<Object, Object> contentMap = (Map<Object, Object>) Utils.fromJSON(configSetNodeContent);
-    Boolean isCurrentlyTrusted = (Boolean) contentMap.get("trusted");
-    if (isCurrentlyTrusted == null || isCurrentlyTrusted.booleanValue()) {
+    boolean isCurrentlyTrusted = (boolean) contentMap.getOrDefault("trusted", true);
+    if (isCurrentlyTrusted) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Trying to make an unstrusted ConfigSet update on a trusted configSet");
     }
   }
