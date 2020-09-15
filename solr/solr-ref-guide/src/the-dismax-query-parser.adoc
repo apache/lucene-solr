@@ -64,8 +64,7 @@ When processing queries, Lucene/Solr recognizes three types of clauses: mandator
 
 The table below explains the various ways that mm values can be specified.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
+// Keep manual column formatting
 [cols="30,10,60",options="header"]
 |===
 |Syntax |Example |Description
