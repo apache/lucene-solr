@@ -119,8 +119,8 @@ public class MacroExpander {
     int start = 0;  // start of the unprocessed part of the string
     StringBuilder sb = null;
     for (;;) {
+      assert idx >= start;
       idx = val.indexOf(macroStart, idx);
-      int matchedStart = idx;
 
       // check if escaped
       if (idx > 0) {
@@ -136,11 +136,12 @@ public class MacroExpander {
       }
       else if (idx < 0) {
         if (sb == null) return val;
-        sb.append(val.substring(start));
+        sb.append(val, start, val.length());
         return sb.toString();
       }
 
       // found unescaped "${"
+      int matchedStart = idx;
       idx += macroStart.length();
 
       int rbrace = val.indexOf('}', idx);
@@ -154,14 +155,14 @@ public class MacroExpander {
       }
 
       if (matchedStart > 0) {
-        sb.append(val.substring(start, matchedStart));
+        sb.append(val, start, matchedStart);
       }
 
       // update "start" to be at the end of ${...}
-      start = rbrace + 1;
+      idx = start = rbrace + 1;
 
-      // String inbetween = val.substring(idx, rbrace);
-      StrParser parser = new StrParser(val, idx, rbrace);
+      // String in-between = val.substring(idx, rbrace);
+      StrParser parser = new StrParser(val, matchedStart + macroStart.length(), rbrace);
       try {
         String paramName = parser.getId();
         String defVal = null;
@@ -188,7 +189,7 @@ public class MacroExpander {
 
       } catch (SyntaxError syntaxError) {
         // append the part we would have skipped
-        sb.append( val.substring(matchedStart, start) );
+        sb.append(val, matchedStart, start);
         continue;
       }
 

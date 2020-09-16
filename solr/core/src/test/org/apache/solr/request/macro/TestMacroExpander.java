@@ -16,6 +16,7 @@
  */
 package org.apache.solr.request.macro;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -23,7 +24,7 @@ import java.util.HashMap;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-/*
+/**
  * Tests for the MacroExpander
  */
 public class TestMacroExpander extends SolrTestCase {
@@ -121,14 +122,13 @@ public class TestMacroExpander extends SolrTestCase {
     request.put("expr", new String[] {"${one_ref}"}); // expr is for streaming expressions, no replacement by default
     request.put("one_ref",new String[] {"one"});
     request.put("three_ref",new String[] {"three"});
-    @SuppressWarnings({"rawtypes"})
-    Map expanded = MacroExpander.expand(request);
-    assertEquals("zero", ((String[])expanded.get("fq"))[0]);
-    assertEquals("one", ((String[])expanded.get("fq"))[1]);
-    assertEquals("two", ((String[]) expanded.get("fq"))[2]);
-    assertEquals("three", ((String[]) expanded.get("fq"))[3]);
+    Map<String, String[]> expanded = MacroExpander.expand(request);
+    assertEquals("zero", expanded.get("fq")[0]);
+    assertEquals("one", expanded.get("fq")[1]);
+    assertEquals("two", expanded.get("fq")[2]);
+    assertEquals("three", expanded.get("fq")[3]);
 
-    assertEquals("${one_ref}", ((String[])expanded.get("expr"))[0]);
+    assertEquals("${one_ref}", expanded.get("expr")[0]);
   }
 
   @Test
@@ -143,15 +143,27 @@ public class TestMacroExpander extends SolrTestCase {
     String oldVal = System.getProperty("StreamingExpressionMacros","false");
     System.setProperty("StreamingExpressionMacros", "true");
     try {
-      @SuppressWarnings({"rawtypes"})
-      Map expanded = MacroExpander.expand(request);
-      assertEquals("zero", ((String[])expanded.get("fq"))[0]);
-      assertEquals("one", ((String[])expanded.get("fq"))[1]);
-      assertEquals("two", ((String[]) expanded.get("fq"))[2]);
-      assertEquals("three", ((String[]) expanded.get("fq"))[3]);
-      assertEquals("one", ((String[])expanded.get("expr"))[0]);
+      Map<String, String[]> expanded = MacroExpander.expand(request);
+      assertEquals("zero", expanded.get("fq")[0]);
+      assertEquals("one", expanded.get("fq")[1]);
+      assertEquals("two", expanded.get("fq")[2]);
+      assertEquals("three", expanded.get("fq")[3]);
+      assertEquals("one", expanded.get("expr")[0]);
     } finally {
       System.setProperty("StreamingExpressionMacros", oldVal);
     }
+  }
+
+  @Test
+  public void testUnbalanced() { // SOLR-13181
+    Map<String, String[]> map = Collections.singletonMap("p", new String[]{
+        "preamble ${exp${bad}", // unbalanced
+        "${${b}}" // embedded
+    });
+    Map<String, String[]> expanded = MacroExpander.expand(map);
+    assertArrayEquals(new String[]{
+            "preamble ", // gone
+            "${${b}}" // left alone
+        }, expanded.get("p"));
   }
 }
