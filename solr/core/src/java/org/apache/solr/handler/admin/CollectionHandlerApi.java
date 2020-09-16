@@ -56,56 +56,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
         }
       }
     }
-    //The following APIs have only V2 implementations
-//    addApi(result, Meta.GET_NODES, params -> params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes()));
-/*    addApi(result, Meta.SET_CLUSTER_PROPERTY_OBJ, params -> {
-      List<CommandOperation> commands = params.req.getCommands(true);
-      if (commands == null || commands.isEmpty()) throw new RuntimeException("Empty commands");
-      ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
 
-      try {
-        clusterProperties.setClusterProperties(commands.get(0).getDataMap());
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
-      }
-    });*/
-
-    /*for (Meta meta : Meta.values()) {
-      if (result.get(meta) == null) {
-        log.error("ERROR_INIT. No corresponding API implementation for : {}", meta.commandName);
-      }
-    }
-*/
     return result.values();
   }
-
-/*  private static void addApi(Map<Meta, ApiCommand> result, Meta metaInfo, Callable<ApiParams> fun) {
-    result.put(metaInfo, new ApiCommand() {
-      @Override
-      public CommandMeta meta() {
-        return metaInfo;
-      }
-
-      @Override
-      public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
-        fun.call(new ApiParams(req, rsp, apiHandler));
-      }
-    });
-  }*/
-/*
-
-  static class ApiParams {
-    final SolrQueryRequest req;
-    final SolrQueryResponse rsp;
-    final BaseHandlerApiSupport apiHandler;
-
-    ApiParams(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) {
-      this.req = req;
-      this.rsp = rsp;
-      this.apiHandler = apiHandler;
-    }
-  }
-*/
 
   public CollectionHandlerApi(CollectionsHandler handler) {
     this.handler = handler;
