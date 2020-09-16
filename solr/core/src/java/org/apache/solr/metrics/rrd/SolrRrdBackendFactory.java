@@ -102,7 +102,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
    * @param timeSource time source
    */
   public SolrRrdBackendFactory(SolrClient solrClient, String collection, int syncPeriod, TimeSource timeSource) {
-    assert ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.track(this);
     this.solrClient = solrClient;
     this.timeSource = timeSource;
     this.collection = collection;

@@ -879,8 +879,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
             rstats2 = zkStateReader.getZkClient().exists(asyncPathToWaitOn, this);
           } catch (KeeperException e) {
             log.error("ZooKeeper exception", e);
+            return;
           } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
+            log.info("interrupted");
             return;
           }
           if (rstats2 != null) {
@@ -987,7 +988,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     } catch (NullPointerException e) {
       // okay
     }
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   @Override

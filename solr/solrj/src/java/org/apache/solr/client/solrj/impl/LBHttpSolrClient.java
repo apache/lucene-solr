@@ -313,7 +313,7 @@ public class LBHttpSolrClient extends LBSolrClient {
       closer.collect(urlToClient.values());
     }
     urlToClient.clear();
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   /**

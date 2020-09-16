@@ -813,7 +813,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
     super.close();
     numDocsPending.reset();
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   // IndexWriterCloser interface method - called from solrCoreState.decref(this)

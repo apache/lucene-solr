@@ -715,10 +715,9 @@ public class Overseer implements SolrCloseable {
       log.warn("ZooKeeper session expired");
       return;
     } catch (InterruptedException | AlreadyClosedException e) {
-      ParWork.propagateInterrupt(e);
+      log.info("Already closed");
       return;
     } catch (Exception e) {
-      ParWork.propagateInterrupt(e);
       log.error("Unexpected error in Overseer state update loop", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }

@@ -1127,11 +1127,8 @@ public class ZkStateReader implements SolrCloseable {
         }
     } catch (KeeperException e) {
       log.error("Error reading cluster properties from zookeeper", SolrZkClient.checkInterrupted(e));
-      if (e instanceof KeeperException.SessionExpiredException) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
     } catch (InterruptedException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted", e);
+      log.info("interrupted");
     }
   }
 
@@ -1472,7 +1469,12 @@ public class ZkStateReader implements SolrCloseable {
         return;
       }
       log.debug("A collections change: [{}], has occurred - updating...", event);
-      refreshAndWatch();
+      try {
+        refreshAndWatch();
+      } catch (Exception e) {
+        log.error("An error has occurred", e);
+        return;
+      }
       synchronized (getUpdateLock()) {
         constructState(Collections.emptySet());
       }
@@ -1517,10 +1519,7 @@ public class ZkStateReader implements SolrCloseable {
         refreshLiveNodes(this);
       } catch (KeeperException e) {
         log.error("A ZK error has occurred", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
       } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
         log.warn("Interrupted", e);
       }
     }

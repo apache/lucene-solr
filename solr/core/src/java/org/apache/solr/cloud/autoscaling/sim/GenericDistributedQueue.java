@@ -98,7 +98,7 @@ public class GenericDistributedQueue implements DistributedQueue {
    */
   private final Condition changed = updateLock.newCondition();
 
-  private boolean isDirty = true;
+  private volatile boolean isDirty = true;
 
   private int watcherCount = 0;
 

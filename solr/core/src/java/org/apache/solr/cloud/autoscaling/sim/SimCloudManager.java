@@ -1011,7 +1011,7 @@ public class SimCloudManager implements SolrCloudManager {
       closer.collect(simCloudManagerPool);
     }
 
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   /**

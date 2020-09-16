@@ -338,15 +338,14 @@ public  class LeaderElector {
         try {
           zkClient.delete(myNode, -1);
         } catch (AlreadyClosedException | InterruptedException e) {
-          ParWork.propagateInterrupt(e);
           log.info("Already shutting down");
           return;
         } catch (KeeperException.NoNodeException nne) {
           log.info("No znode found to delete at {}", myNode);
           // expected . don't do anything
         } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception canceling election", e);
+          log.error("Exception canceling election", e);
+          return;
         }
         return;
       }
@@ -356,8 +355,9 @@ public  class LeaderElector {
       } catch (AlreadyClosedException | InterruptedException e) {
         log.info("Already shutting down");
         return;
-      }  catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception canceling election", e);
+      } catch (Exception e) {
+        log.error("Exception canceling election", e);
+        return;
       }
     }
   }

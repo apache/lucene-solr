@@ -121,7 +121,7 @@ public class PackageAPI {
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
             } catch (InterruptedException e) {
-              ParWork.propagateInterrupt(e);
+              log.info("interrupted");
             }
           }
 

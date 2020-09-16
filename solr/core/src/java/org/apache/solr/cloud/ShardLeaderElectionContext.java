@@ -87,7 +87,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     super.close();
     IOUtils.closeQuietly(syncStrategy);
     this.isClosed = true;
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   @Override

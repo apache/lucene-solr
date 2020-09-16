@@ -101,7 +101,7 @@ UpdateHandler implements SolrInfoBean, Closeable {
   public void close() throws IOException {
     this.closed = true;
     if (ulog != null) ulog.close();
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   protected void callPostCommitCallbacks() {
@@ -165,7 +165,7 @@ UpdateHandler implements SolrInfoBean, Closeable {
       }
     } catch (Throwable e) {
       IOUtils.closeQuietly(ourUpdateLog);
-      ObjectReleaseTracker.release(this);
+      assert ObjectReleaseTracker.release(this);
       if (e instanceof Error) {
         throw e;
       }

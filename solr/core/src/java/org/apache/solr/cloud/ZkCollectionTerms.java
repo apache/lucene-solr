@@ -78,7 +78,7 @@ class ZkCollectionTerms implements AutoCloseable {
       this.closed = true;
       terms.values().forEach(ZkShardTerms::close);
     }
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
 }

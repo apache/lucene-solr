@@ -339,7 +339,7 @@ public class JettySolrRunner implements Closeable {
 
           HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
 
-          http2ConnectionFactory.setMaxConcurrentStreams(64);
+          http2ConnectionFactory.setMaxConcurrentStreams(256);
           http2ConnectionFactory.setInputBufferSize(4096);
 
           ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(
@@ -951,8 +951,10 @@ public class JettySolrRunner implements Closeable {
           }
         } catch (KeeperException e) {
           SolrException.log(log, e);
+          return;
         } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
+          log.info("interrupted");
+          return;
         }
       }
     }

@@ -403,7 +403,7 @@ public class ZkTestServer implements Closeable {
           });
         }
       } finally {
-        ObjectReleaseTracker.release(this);
+        assert ObjectReleaseTracker.release(this);
       }
     }
 
@@ -633,7 +633,7 @@ public class ZkTestServer implements Closeable {
 
     startupWait = new CountDownLatch(1);
     if (zooThread != null) {
-      ObjectReleaseTracker.release(zooThread);
+      assert ObjectReleaseTracker.release(zooThread);
     }
    // zooThread.interrupt();
     zooThread.join(10000);
@@ -641,7 +641,7 @@ public class ZkTestServer implements Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Zookeeper thread still running");
     }
     zooThread = null;
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
 
 
 //    if (cleaupDir) {

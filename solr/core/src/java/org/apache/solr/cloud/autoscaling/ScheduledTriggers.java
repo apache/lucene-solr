@@ -551,7 +551,7 @@ public class ScheduledTriggers implements Closeable {
 
     if (log.isDebugEnabled()) log.debug("ScheduledTriggers closed completely");
 
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   /**

@@ -51,6 +51,6 @@ public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
     if (this.clientIsInternal) {
       ParWork.close(httpClient);
     }
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 }

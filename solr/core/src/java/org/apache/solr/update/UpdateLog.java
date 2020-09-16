@@ -377,7 +377,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       throw new AlreadyClosedException();
     }
     if (dataDir != null) {
-      ObjectReleaseTracker.release(this);
+      assert ObjectReleaseTracker.release(this);
     }
     assert ObjectReleaseTracker.track(this);
     try {
@@ -459,7 +459,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
     } catch (Throwable e) {
       ParWork.propagateInterrupt(e);
-      ObjectReleaseTracker.release(this);
+      assert ObjectReleaseTracker.release(this);
       if (e instanceof Error) {
         throw e;
       }
@@ -1522,7 +1522,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     }
 
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
 

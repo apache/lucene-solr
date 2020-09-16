@@ -115,7 +115,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     activeTriggers.clear();
 
     if (log.isDebugEnabled()) log.debug("OverseerTriggerThread has been closed explicitly");
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   /**
@@ -313,7 +313,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
       } catch (IOException e) {
         log.warn("IO Error: [{}]", e);
       } catch (InterruptedException | AlreadyClosedException e) {
-        ParWork.propagateInterrupt(e);
+        log.info("interrupted");
       } catch (Exception e)  {
         log.error("Unexpected exception", e);
       }

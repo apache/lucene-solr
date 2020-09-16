@@ -150,6 +150,6 @@ public class ReplicateFromLeader implements Closeable {
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
     }
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 }

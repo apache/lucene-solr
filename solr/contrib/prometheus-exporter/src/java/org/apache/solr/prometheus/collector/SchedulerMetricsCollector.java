@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import io.prometheus.client.Collector;
@@ -49,7 +50,7 @@ public class SchedulerMetricsCollector implements Closeable {
   private final int duration;
   private final TimeUnit timeUnit;
 
-  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(
+  private final ScheduledThreadPoolExecutor scheduler = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(
       1,
       new SolrNamedThreadFactory("scheduled-metrics-collector"));
 
@@ -71,6 +72,8 @@ public class SchedulerMetricsCollector implements Closeable {
     this.metricCollectors = metricCollectors;
     this.duration = duration;
     this.timeUnit = timeUnit;
+    scheduler.setRemoveOnCancelPolicy(true);
+    scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
   }
 
   public void start() {

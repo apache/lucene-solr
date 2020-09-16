@@ -167,7 +167,6 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         try {
           lock.lockInterruptibly();
         } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
           return;
         }
         try {

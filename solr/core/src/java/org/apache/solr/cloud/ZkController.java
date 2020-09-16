@@ -964,17 +964,19 @@ public class ZkController implements Closeable {
         });
 
       } catch (KeeperException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        log.error("Zk Exception", e);
+        return;
       } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        log.info("interrupted");
+        return;
       }
       try {
         zkClient.mkdirs("/cluster/cluster_lock");
       } catch (KeeperException.NodeExistsException e) {
         // okay
       } catch (KeeperException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        log.error("Zk Exception", e);
+        return;
       }
       boolean createdClusterNodes = false;
       try {
@@ -1000,7 +1002,7 @@ public class ZkController implements Closeable {
             } catch (Exception e) {
               ParWork.propagateInterrupt(e);
               log.error("Failed creating initial zk layout", e);
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+              return;
             }
             createdClusterNodes = true;
           } else {
@@ -1520,11 +1522,11 @@ public class ZkController implements Closeable {
         throw new AlreadyClosedException();
       }
 
-      getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (n,c) -> c != null && c.getLeader(shardId) != null && c.getLeader(shardId).getState().equals(
+      getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (n,c) -> c != null && c.getLeader(shardId) != null && c.getLeader(shardId).getState().equals(
           Replica.State.ACTIVE));
 
       //  there should be no stale leader state at this point, dont hit zk directly
-      String leaderUrl = zkStateReader.getLeaderUrl(collection, shardId, 5000);
+      String leaderUrl = zkStateReader.getLeaderUrl(collection, shardId, 15000);
 
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
       log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
@@ -2682,7 +2684,8 @@ public class ZkController implements Closeable {
 
   private final Map<String, Set<Runnable>> confDirectoryListeners = new HashMap<>();
 
-  private class WatcherImpl implements Watcher {
+  private class
+  WatcherImpl implements Watcher {
     private final String zkDir;
 
     private WatcherImpl(String dir) {

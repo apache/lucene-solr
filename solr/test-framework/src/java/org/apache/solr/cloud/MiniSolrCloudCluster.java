@@ -719,7 +719,7 @@ public class MiniSolrCloudCluster {
 
     } finally {
       System.clearProperty("zkHost");
-      ObjectReleaseTracker.release(this);
+      assert ObjectReleaseTracker.release(this);
     }
 
   }

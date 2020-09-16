@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -63,8 +64,7 @@ public final class CommitTracker implements Runnable, Closeable {
 
   // note: can't use ExecutorsUtil because it doesn't have a *scheduled* ExecutorService.
   //  Not a big deal but it means we must take care of MDC logging here.
-  private final ScheduledExecutorService scheduler =
-      Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("commitScheduler"));
+  private final ScheduledThreadPoolExecutor scheduler = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("commitScheduler"));
   @SuppressWarnings({"rawtypes"})
   private volatile ScheduledFuture pending;
   
@@ -94,6 +94,8 @@ public final class CommitTracker implements Runnable, Closeable {
     this.softCommit = softCommit;
     this.openSearcher = openSearcher;
 
+    scheduler.setRemoveOnCancelPolicy(true);
+    scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     log.info("{} AutoCommit: {}", name, this);
     assert ObjectReleaseTracker.track(this);
   }
@@ -110,9 +112,8 @@ public final class CommitTracker implements Runnable, Closeable {
       // okay
     }
     pending = null;
-    scheduler.shutdownNow();
     ParWork.close(scheduler);
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
   
   /** schedule individual commits */

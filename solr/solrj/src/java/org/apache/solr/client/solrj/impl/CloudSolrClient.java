@@ -197,7 +197,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     }
 
     super.close();
-    ObjectReleaseTracker.release(this);
+    assert ObjectReleaseTracker.release(this);
   }
 
   public LBHttpSolrClient getLbClient() {
