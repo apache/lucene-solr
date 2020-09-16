@@ -41,12 +41,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.CONFIG_COMMANDS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.CONFIG_DEL;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.LIST_CONFIG;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_ALIASES;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD_STATUS;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD_STATUS_DELETE;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_NODES;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS_COMMANDS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTION_STATE;
@@ -66,10 +61,6 @@ public class CollectionApiMapping {
 
   public enum Meta implements CommandMeta {
     GET_COLLECTIONS(COLLECTIONS, GET, LIST),
-    GET_CLUSTER(CLUSTER, GET, LIST, "/cluster", null),
-    GET_CLUSTER_OVERSEER(CLUSTER, GET, OVERSEERSTATUS, "/cluster/overseer", null),
-    GET_CLUSTER_STATUS_CMD(CLUSTER_CMD_STATUS, GET, REQUESTSTATUS),
-    DELETE_CLUSTER_STATUS(CLUSTER_CMD_STATUS_DELETE, DELETE, DELETESTATUS),
     GET_A_COLLECTION(COLLECTION_STATE, GET, CLUSTERSTATUS),
     LIST_ALIASES(CLUSTER_ALIASES, GET, LISTALIASES),
     CREATE_COLLECTION(COLLECTIONS_COMMANDS,
@@ -190,23 +181,23 @@ public class CollectionApiMapping {
             NAME, "collection",
             "propertyName", "name",
             "propertyValue", "value")),
-    ADD_ROLE(CLUSTER_CMD,
+/*    ADD_ROLE(CLUSTER_CMD,
         POST,
         ADDROLE,
-        "add-role",null),
-    REMOVE_ROLE(CLUSTER_CMD,
+        "add-role",null),*/
+/*    REMOVE_ROLE(CLUSTER_CMD,
         POST,
         REMOVEROLE,
-        "remove-role",null),
+        "remove-role",null),*/
 
-    SET_CLUSTER_PROPERTY(CLUSTER_CMD,
+  /*  SET_CLUSTER_PROPERTY(CLUSTER_CMD,
         POST,
         CLUSTERPROP,
-        "set-property",null),
-    SET_CLUSTER_PROPERTY_OBJ(CLUSTER_CMD,
+        "set-property",null),*/
+   /* SET_CLUSTER_PROPERTY_OBJ(CLUSTER_CMD,
         POST,
         null,
-        "set-obj-property", null),
+        "set-obj-property", null),*/
     BACKUP_COLLECTION(COLLECTIONS_COMMANDS,
         POST,
         BACKUP,
@@ -218,7 +209,6 @@ public class CollectionApiMapping {
         "restore-collection",
         null
     ),
-    GET_NODES(CLUSTER_NODES, GET, null),
     FORCE_LEADER(PER_COLLECTION_PER_SHARD_COMMANDS, POST, CollectionAction.FORCELEADER, "force-leader", null),
     BALANCE_SHARD_UNIQUE(PER_COLLECTION, POST, BALANCESHARDUNIQUE,"balance-shard-unique" , null)
     ;
@@ -342,12 +332,12 @@ public class CollectionApiMapping {
   }
 
   public enum EndPoint implements V2EndPoint {
-    CLUSTER("cluster"),
+//    CLUSTER("cluster"),
     CLUSTER_ALIASES("cluster.aliases"),
-    CLUSTER_CMD("cluster.Commands"),
-    CLUSTER_NODES("cluster.nodes"),
-    CLUSTER_CMD_STATUS("cluster.commandstatus"),
-    CLUSTER_CMD_STATUS_DELETE("cluster.commandstatus.delete"),
+//    CLUSTER_CMD("cluster.Commands"),
+//    CLUSTER_NODES("cluster.nodes"),
+//    CLUSTER_CMD_STATUS("cluster.commandstatus"),
+//    CLUSTER_CMD_STATUS_DELETE("cluster.commandstatus.delete"),
     COLLECTIONS_COMMANDS("collections.Commands"),
     COLLECTIONS("collections"),
     COLLECTION_STATE("collections.collection"),

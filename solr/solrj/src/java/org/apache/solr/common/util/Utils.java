@@ -871,7 +871,7 @@ public class Utils {
               l.add((ew, inst) -> ew.put(fname, (float) mh.invoke(inst)));
             } else {
               MethodHandle mh = lookup.findGetter(c, field.getName(), field.getType());
-              l.add((ew, inst) -> ew.put(fname, mh.invoke(inst)));
+              l.add((ew, inst) -> ew.putIfNotNull(fname, mh.invoke(inst)));
             }
           } catch (NoSuchFieldException e) {
             //this is unlikely

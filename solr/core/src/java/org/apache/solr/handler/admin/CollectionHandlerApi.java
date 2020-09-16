@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -28,18 +27,11 @@ import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
-import org.apache.solr.common.Callable;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.handler.admin.CollectionsHandler.CollectionOperation;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CollectionHandlerApi extends BaseHandlerApiSupport {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final CollectionsHandler handler;
   static Collection<ApiCommand> apiCommands = createCollMapping();
@@ -65,8 +57,8 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       }
     }
     //The following APIs have only V2 implementations
-    addApi(result, Meta.GET_NODES, params -> params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes()));
-    addApi(result, Meta.SET_CLUSTER_PROPERTY_OBJ, params -> {
+//    addApi(result, Meta.GET_NODES, params -> params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes()));
+/*    addApi(result, Meta.SET_CLUSTER_PROPERTY_OBJ, params -> {
       List<CommandOperation> commands = params.req.getCommands(true);
       if (commands == null || commands.isEmpty()) throw new RuntimeException("Empty commands");
       ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
@@ -76,18 +68,18 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }
-    });
+    });*/
 
-    for (Meta meta : Meta.values()) {
+    /*for (Meta meta : Meta.values()) {
       if (result.get(meta) == null) {
         log.error("ERROR_INIT. No corresponding API implementation for : {}", meta.commandName);
       }
     }
-
+*/
     return result.values();
   }
 
-  private static void addApi(Map<Meta, ApiCommand> result, Meta metaInfo, Callable<ApiParams> fun) {
+/*  private static void addApi(Map<Meta, ApiCommand> result, Meta metaInfo, Callable<ApiParams> fun) {
     result.put(metaInfo, new ApiCommand() {
       @Override
       public CommandMeta meta() {
@@ -99,7 +91,8 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
         fun.call(new ApiParams(req, rsp, apiHandler));
       }
     });
-  }
+  }*/
+/*
 
   static class ApiParams {
     final SolrQueryRequest req;
@@ -112,6 +105,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       this.apiHandler = apiHandler;
     }
   }
+*/
 
   public CollectionHandlerApi(CollectionsHandler handler) {
     this.handler = handler;
