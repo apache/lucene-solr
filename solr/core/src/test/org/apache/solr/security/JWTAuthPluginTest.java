@@ -93,7 +93,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     claims.unsetClaim("iss");
     claims.unsetClaim("aud");
     claims.unsetClaim("exp");
-    claims.setSubject(null);
     jws.setPayload(claims.toJson());
     String slimJwt = jws.getCompactSerialization();
     slimHeader = "Bearer" + " " + slimJwt;
@@ -128,7 +127,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
     testConfig = new HashMap<>();
     testConfig.put("class", "org.apache.solr.security.JWTAuthPlugin");
-    testConfig.put("principalClaim", "customPrincipal");
     testConfig.put("jwk", testJwk);
     plugin.init(testConfig);
     
@@ -218,25 +216,11 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void authenticateOk() {
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertTrue(resp.isAuthenticated());
-    assertEquals("custom", resp.getPrincipal().getName()); // principalClaim = customPrincipal, not sub here
+    assertEquals("solruser", resp.getPrincipal().getName());
   }
 
   @Test
   public void authFailedMissingSubject() {
-    minimalConfig.put("principalClaim","sub");  // minimalConfig has no subject specified
-    plugin.init(minimalConfig);
-    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
-    assertFalse(resp.isAuthenticated());
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
-
-    testConfig.put("principalClaim","sub");  // testConfig has subject = solruser
-    plugin.init(testConfig);
-    resp = plugin.authenticate(testHeader);
-    assertTrue(resp.isAuthenticated());
-  }
-
-  @Test
-  public void authFailedMissingIssuer() {
     testConfig.put("iss", "NA");
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
