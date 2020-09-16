@@ -35,12 +35,30 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ObjectReleaseTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static Map<Object,String> OBJECTS = new ConcurrentHashMap<>(256, 0.75f, 32);
-  
+
+
+  protected final static ThreadLocal<StringBuilder> THREAD_LOCAL_SB = new ThreadLocal<>();
+
+  public static StringBuilder getThreadLocalStringBuilder() {
+    StringBuilder sw = THREAD_LOCAL_SB.get();
+    if (sw == null) {
+      sw = new StringBuilder(1024);
+      THREAD_LOCAL_SB.set(sw);
+    }
+    return sw;
+  }
+
   public static boolean track(Object object) {
-    StringBuilderWriter sw = new StringBuilderWriter(4096);
+    StringBuilder sb = getThreadLocalStringBuilder();
+    sb.setLength(0);
+    StringBuilderWriter sw = new StringBuilderWriter(sb);
     PrintWriter pw = new PrintWriter(sw);
     new ObjectTrackerException(object.getClass().getName()).printStackTrace(pw);
-    OBJECTS.put(object, sw.toString());
+    String stack = sw.toString();
+    OBJECTS.put(object, stack);
+//    if (stack.length() > 8600) {
+//      throw new IllegalStateException("found size:" + stack.length());
+//    }
     return true;
   }
   

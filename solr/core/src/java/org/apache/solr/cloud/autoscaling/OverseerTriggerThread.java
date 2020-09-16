@@ -92,7 +92,7 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
     this.cloudManager = cloudManager;
     scheduledTriggers = new ScheduledTriggers(loader, cloudManager);
     triggerFactory = new AutoScaling.TriggerFactoryImpl(loader, cloudManager);
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   @Override

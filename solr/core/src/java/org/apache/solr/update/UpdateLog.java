@@ -379,7 +379,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     if (dataDir != null) {
       ObjectReleaseTracker.release(this);
     }
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     try {
       dataDir = core.getUlogDir();
 

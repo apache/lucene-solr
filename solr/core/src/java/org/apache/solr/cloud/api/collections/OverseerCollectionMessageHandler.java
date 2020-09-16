@@ -194,7 +194,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
                                         Stats stats,
                                         Overseer overseer,
                                         OverseerNodePrioritizer overseerPrioritizer) {
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     this.zkStateReader = zkStateReader;
     this.shardHandlerFactory = shardHandlerFactory;
     this.adminPath = adminPath;

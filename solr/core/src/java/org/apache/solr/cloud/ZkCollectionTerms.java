@@ -38,7 +38,7 @@ class ZkCollectionTerms implements AutoCloseable {
     this.collection = collection;
     this.terms = new HashMap<>();
     this.zkClient = client;
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
 

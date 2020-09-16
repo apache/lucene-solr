@@ -339,7 +339,7 @@ public class JettySolrRunner implements Closeable {
 
           HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
 
-          http2ConnectionFactory.setMaxConcurrentStreams(16);
+          http2ConnectionFactory.setMaxConcurrentStreams(64);
           http2ConnectionFactory.setInputBufferSize(4096);
 
           ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(

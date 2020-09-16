@@ -53,6 +53,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -256,8 +257,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           EntityTemplate template = new EntityTemplate(new ContentProducer() {
             
             @Override
-            public void writeTo(OutputStream out) throws IOException {
-
+            public void writeTo(OutputStream outputStream) throws IOException {
+              FastOutputStream out = FastOutputStream.wrap(outputStream);
               if (isXml) {
                 out.write("<stream>".getBytes(StandardCharsets.UTF_8)); // can be anything
               }

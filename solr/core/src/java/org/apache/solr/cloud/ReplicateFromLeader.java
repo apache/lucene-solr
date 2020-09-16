@@ -50,7 +50,7 @@ public class ReplicateFromLeader implements Closeable {
   private volatile long lastVersion = 0;
 
   public ReplicateFromLeader(CoreContainer cc, String coreName) {
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.coreName = coreName;
   }

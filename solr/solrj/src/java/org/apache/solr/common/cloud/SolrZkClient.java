@@ -141,7 +141,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout, final OnReconnect onReconnect, BeforeReconnect beforeReconnect, ZkACLProvider zkACLProvider, IsClosed higherLevelIsClosed) {
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     log.info("Creating new {} instance {}", SolrZkClient.class.getSimpleName(), this);
     closeTracker = new CloseTracker();
     this.zkServerAddress = zkServerAddress;

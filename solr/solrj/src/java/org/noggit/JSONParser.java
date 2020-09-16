@@ -193,11 +193,11 @@ public class JSONParser {
   }
 
   // temporary output buffer
-  private final CharArr out = new CharArr(64);
+  private final CharArr out = new CharArr(32);
 
   // We need to keep some state in order to (at a minimum) know if
   // we should skip ',' or ':'.
-  private byte[] stack = new byte[16];
+  private byte[] stack = new byte[32];
   private int ptr = 0;     // pointer into the stack of parser states
   private byte state = 0;  // current parser state
 

@@ -104,7 +104,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     }
     this.myClient = (builder.httpClient == null) ? new Http2SolrClient.Builder().withHeaders(builder.headers).build() : builder.httpClient;
     this.lbClient = new LBHttp2SolrClient(myClient);
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   // called to clean-up objects created by super if there are errors during initialization

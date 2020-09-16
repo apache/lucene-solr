@@ -30,7 +30,7 @@ public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
   private final boolean clientIsInternal;
 
   public HttpClusterStateProvider(List<String> solrUrls, HttpClient httpClient) throws Exception {
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     if (httpClient == null) {
       this.clientIsInternal = true;
       this.httpClient = HttpClientUtil.createClient(null);

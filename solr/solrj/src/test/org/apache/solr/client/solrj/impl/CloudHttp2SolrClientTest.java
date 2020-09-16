@@ -71,6 +71,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -98,7 +99,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private static final int TIMEOUT = 30;
   private static final int NODE_COUNT = 3;
 
-  private CloudHttp2SolrClient zkBasedCloudSolrClient = null;
+  private static CloudHttp2SolrClient zkBasedCloudSolrClient = null;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -106,16 +107,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     configureCluster(NODE_COUNT)
         .addConfig(TEST_CONFIGSET_NAME, getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
-  }
-
-  @Before
-  public void initTestClients() {
     zkBasedCloudSolrClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty()).build();
     zkBasedCloudSolrClient.connect();
   }
-  
-  @After 
-  public void tearDown() throws Exception {
+
+  @AfterClass
+  public static void afterCloudHttp2SolrClientTest() throws Exception {
     if (zkBasedCloudSolrClient != null) {
       try {
         zkBasedCloudSolrClient.close();
@@ -125,7 +122,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         zkBasedCloudSolrClient = null;
       }
     }
-    super.tearDown();
   }
 
   private void createTestCollection(String collection) throws IOException, SolrServerException {

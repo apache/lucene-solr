@@ -332,7 +332,7 @@ public class ZkTestServer implements Closeable {
      *           If there is a low-level I/O error.
      */
     public void runFromConfig(ServerConfig config) throws IOException {
-      ObjectReleaseTracker.track(this);
+      assert ObjectReleaseTracker.track(this);
       try {
         // ZooKeeper maintains a static collection of AuthenticationProviders, so
         // we make sure the SASL provider is loaded so that it can be used in
@@ -453,7 +453,7 @@ public class ZkTestServer implements Closeable {
     if (zkMonFile != null) {
       zkMonitoringFile = Paths.get(System.getProperty("solr.tests.zkmonfile"));
     }
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   private void init(boolean solrFormat) throws Exception {
@@ -579,7 +579,7 @@ public class ZkTestServer implements Closeable {
         }
       };
 
-      ObjectReleaseTracker.track(zooThread);
+      assert ObjectReleaseTracker.track(zooThread);
 
       zooThread.start();
 
