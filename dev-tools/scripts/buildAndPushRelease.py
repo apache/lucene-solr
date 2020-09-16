@@ -27,6 +27,8 @@ import textwrap
 import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
 
+import scriptutil
+
 LOG = '/tmp/release.log'
 
 def log(msg):
@@ -220,8 +222,7 @@ def pushLocal(version, root, rev, rcNum, localDir):
   return 'file://%s/%s' % (os.path.abspath(localDir), dir)
 
 def read_version(path):
-  version_props_file = os.path.join(path, 'lucene', 'version.properties')
-  return re.search(r'version\.base=(.*)', open(version_props_file).read()).group(1)
+  return scriptutil.find_current_version()
 
 def parse_config():
   epilogue = textwrap.dedent('''
