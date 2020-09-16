@@ -28,7 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.params.DefaultSolrParams;
-import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -49,11 +49,13 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PER
 
 public class ClusterAPI {
   private final CoreContainer coreContainer;
+  private final CollectionsHandler collectionsHandler;
 
   public  final Commands commands = new Commands();
 
-  public ClusterAPI(CoreContainer coreContainer) {
-    this.coreContainer = coreContainer;
+  public ClusterAPI(CollectionsHandler ch) {
+    this.collectionsHandler = ch;
+    this.coreContainer = ch.getCoreContainer();
   }
 
 
@@ -87,7 +89,12 @@ public class ClusterAPI {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   public static SolrQueryRequest wrapParams(SolrQueryRequest req, Map m) {
-    DefaultSolrParams dsp = new DefaultSolrParams(req.getParams(), new MapSolrParams(m));
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    m.forEach((k, v) -> {
+      if(v == null) return;
+      solrParams.add(k.toString(), String.valueOf(v));
+    });
+    DefaultSolrParams dsp = new DefaultSolrParams(req.getParams(),solrParams);
     req.setParams(dsp);
     return req;
   }
@@ -96,7 +103,7 @@ public class ClusterAPI {
       path = "/cluster/command-status",
       permission = COLL_READ_PERM)
   public void getCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    CollectionsHandler.CollectionOperation.REQUESTSTATUS_OP.execute(req, rsp, coreContainer.getCollectionsHandler());
+    CollectionsHandler.CollectionOperation.REQUESTSTATUS_OP.execute(req, rsp, collectionsHandler);
   }
 
   @EndPoint(method = GET,
@@ -118,7 +125,7 @@ public class ClusterAPI {
       RoleInfo info = obj.get();
       Map m = info.toMap(new HashMap<>());
       m.put("action", ADDROLE.toString());
-      coreContainer.getCollectionsHandler().handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
+      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 
     @Command(name = "remove-role")
@@ -127,7 +134,7 @@ public class ClusterAPI {
       RoleInfo info = obj.get();
       Map m = info.toMap(new HashMap<>());
       m.put("action", REMOVEROLE.toString());
-      coreContainer.getCollectionsHandler().handleRequestBody(wrapParams(obj.getRequest(), info.toMap(new HashMap<>())), obj.getResponse());
+      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(),m), obj.getResponse());
 
     }
 
@@ -150,7 +157,7 @@ public class ClusterAPI {
     public void setProperty(PayloadObj<Map<String,String>> obj) throws Exception {
       Map m =  obj.get();
       m.put("action", CLUSTERPROP.toString());
-      coreContainer.getCollectionsHandler().handleRequestBody(wrapParams(obj.getRequest(),m ), obj.getResponse());
+      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(),m ), obj.getResponse());
 
     }
 
