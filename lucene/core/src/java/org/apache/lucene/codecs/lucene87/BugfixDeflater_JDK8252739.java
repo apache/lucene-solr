@@ -21,6 +21,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.SuppressForbidden;
 
 /**
@@ -39,16 +40,14 @@ interface BugfixDeflater_JDK8252739 {
    * on a {@code Deflater}.
    * */
   @SuppressForbidden(reason = "Works around bug, so it must call forbidden method")
-  public static BugfixDeflater_JDK8252739 createBugfix(Deflater deflater, int dictLength) {
-    if (dictLength < 0) {
-      throw new IllegalArgumentException("dictLength must be >= 0");
-    }
+  public static BugfixDeflater_JDK8252739 createBugfix(Deflater deflater) {
     if (IS_BUGGY_JDK) {
-      final byte[] dictBytesScratch = new byte[dictLength];
+      final BytesRefBuilder dictBytesScratch = new BytesRefBuilder();
       return (dictBytes, off, len) -> {
         if (off > 0) {
-          System.arraycopy(dictBytes, off, dictBytesScratch, 0, len);
-          deflater.setDictionary(dictBytesScratch, 0, len);
+          dictBytesScratch.grow(len);
+          System.arraycopy(dictBytes, off, dictBytesScratch.bytes(), 0, len);
+          deflater.setDictionary(dictBytesScratch.bytes(), 0, len);
         } else {
           deflater.setDictionary(dictBytes, off, len);
         }
