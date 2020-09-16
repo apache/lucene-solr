@@ -16,8 +16,12 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.annotations.VisibleForTesting;
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -30,14 +34,25 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -46,6 +61,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
@@ -61,7 +77,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader {
+public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader, SolrCoreAware  {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String base = "org.apache.solr";
@@ -76,6 +92,30 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
+  private String coreName;
+  private UUID coreId;
+  private SolrConfig config;
+  private CoreContainer coreContainer;
+  private PackageListeningClassLoader schemaLoader ;
+
+  private PackageListeningClassLoader createSchemaLoader() {
+    CoreContainer cc = getCoreContainer();
+    if (cc == null) {
+      //corecontainer not available . can't load from packages
+      return null;
+    }
+    return new PackageListeningClassLoader(cc, this, pkg -> {
+      if (getSolrConfig() == null) return null;
+      return getSolrConfig().maxPackageVersion(pkg);
+    }, () -> {
+      if(getCoreContainer() == null || config == null || coreName == null || coreId==null) return;
+      try (SolrCore c = getCoreContainer().getCore(coreName, coreId)) {
+        if (c != null) {
+          c.fetchLatestSchema();
+        }
+      }
+    });
+  }
 
 
 
@@ -99,6 +139,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       managedResourceRegistry = new RestManager.Registry();
     }
     return managedResourceRegistry;
+  }
+
+  public SolrClassLoader getSchemaLoader() {
+    if (schemaLoader == null) {
+      schemaLoader = createSchemaLoader();
+    }
+    return schemaLoader;
   }
 
   public SolrResourceLoader() {
@@ -607,6 +654,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * Tell all {@link SolrCoreAware} instances about the SolrCore
    */
   public void inform(SolrCore core) {
+    this.coreName = core.getName();
+    this.config = core.getSolrConfig();
+    this.coreId = core.uniqueId;
+    this.coreContainer = core.getCoreContainer();
+    if(getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
+
     // make a copy to avoid potential deadlock of a callback calling newInstance and trying to
     // add something to waitingForCore.
     SolrCoreAware[] arr;
@@ -745,6 +798,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, builder.toString());
   }
 
+  public CoreContainer getCoreContainer(){
+    return coreContainer;
+  }
+
+  public SolrConfig getSolrConfig() {
+    return config;
+
+  }
   @Override
   public void close() throws IOException {
     IOUtils.close(classLoader);
