@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -75,7 +74,6 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit harden
   public void testSolrJAPICalls() throws Exception {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();

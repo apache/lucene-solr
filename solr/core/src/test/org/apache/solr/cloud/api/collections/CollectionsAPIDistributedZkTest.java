@@ -289,7 +289,6 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
   public void testDeleteNonExistentCollection() throws Exception {
 
     expectThrows(Exception.class, () -> {

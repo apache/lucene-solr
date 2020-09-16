@@ -281,14 +281,23 @@ public class ZkStateReader implements SolrCloseable {
 
     String configName = null;
 
+    DocCollection docCollection = watchedCollectionStates.get(collection);
+    if (docCollection != null) {
+      configName = docCollection.getStr(CONFIGNAME_PROP);
+      if (configName != null) {
+        return configName;
+      }
+    }
+
     String path = COLLECTIONS_ZKNODE + "/" + collection;
     log.debug("Loading collection config from: [{}]", path);
 
     try {
+
       byte[] data = zkClient.getData(path, null, null);
       if (data == null) {
         log.warn("No config data found at path {}.", path);
-        throw new KeeperException.NoNodeException("No config data found at path: " + path);
+        throw new KeeperException.NoNodeException(path);
       }
 
       ZkNodeProps props = ZkNodeProps.load(data);

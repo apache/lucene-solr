@@ -70,6 +70,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -118,7 +119,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit look at this again
   public void deleteCollectionOnlyInZk() throws Exception {
     final String collectionName = "onlyinzk";
 
@@ -137,21 +137,23 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - fix fast fail
+  @SuppressWarnings("rawtypes")
   public void testTooManyReplicas() {
     CollectionAdminRequest req = CollectionAdminRequest.createCollection("collection", "conf", 2, 10);
-
     try {
       cluster.getSolrClient().request(req);
-      fail("Expected excetpion");
+      fail("Expected exception");
     } catch (Exception e) {
-      // expected
+      assertTrue(e instanceof BaseHttpSolrClient.RemoteSolrException);
+      BaseHttpSolrClient.RemoteSolrException rse = (BaseHttpSolrClient.RemoteSolrException)e;
+      assertEquals(400,rse.code());
+      assertTrue(rse.getMessage().contains("maxShardsPerNode"));
     }
 
   }
 
   @Test
-  @Ignore // nocommit we can speed this up
+  @Ignore // nocommit we can speed this up, TJP ~ WIP: fails
   public void testCreateShouldFailOnExistingCore() throws Exception {
     assertEquals(0, CollectionAdminRequest.createCollection("halfcollectionblocker", "conf", 1, 1)
         .setCreateNodeSet("")
@@ -200,7 +202,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit slow
   public void testSpecificConfigsets() throws Exception {
     CollectionAdminRequest.createCollection("withconfigset2", "conf2", 1, 1).process(cluster.getSolrClient());
     byte[] data = zkClient().getData(ZkStateReader.COLLECTIONS_ZKNODE + "/" + "withconfigset2", null, null);
@@ -211,7 +212,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - fix fast fail
   public void testMaxNodesPerShard() {
     int numLiveNodes = cluster.getJettySolrRunners().size();
     int numShards = (numLiveNodes/2) + 1;
@@ -224,10 +224,19 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug seems to random fail
   public void testCreateNodeSet() throws Exception {
-    JettySolrRunner jetty1 = cluster.getRandomJetty(random());
-    JettySolrRunner jetty2 = cluster.getRandomJetty(random());
+    JettySolrRunner jetty1 = null;
+    JettySolrRunner jetty2 = null;
+    final List<JettySolrRunner> runners = cluster.getJettySolrRunners();
+    if (runners.size() == 2) {
+      jetty1 = runners.get(0);
+      jetty2 = runners.get(1);
+    } else if (runners.size() > 2) {
+      jetty1 = cluster.getRandomJetty(random());
+      jetty2 = cluster.getRandomJetty(random(), jetty1);
+    } else {
+      fail("This test requires at least 2 Jetty runners!");
+    }
 
     List<String> baseUrls = ImmutableList.of(jetty1.getCoreContainer().getZkController().getNodeName(), jetty2.getCoreContainer().getZkController().getNodeName());
 
@@ -446,7 +455,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - this is flakey on colection delete - add replica prob has to wait for itself better
   public void addReplicaTest() throws Exception {
     String collectionName = "addReplicaColl";
 

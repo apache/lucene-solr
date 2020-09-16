@@ -84,32 +84,16 @@ public abstract class ManagedResourceStorage {
    * Creates a new StorageIO instance for a Solr core, taking into account
    * whether the core is running in cloud mode as well as initArgs. 
    */
-  public static StorageIO newStorageIO(String collection, SolrResourceLoader resourceLoader, NamedList<String> initArgs) {
+  public static StorageIO newStorageIO(String collection, String configSet, SolrResourceLoader resourceLoader, NamedList<String> initArgs) {
     StorageIO storageIO;
 
-    SolrZkClient zkClient = null;
-    String zkConfigName = null;
-    if (resourceLoader instanceof ZkSolrResourceLoader) {
-      zkClient = ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkClient();
-      try {
-        zkConfigName = ((ZkSolrResourceLoader)resourceLoader).getZkController().
-            getZkStateReader().readConfigName(collection);
-      } catch (Exception e) {
-        log.error("Failed to get config name due to", e);
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Failed to load config name for collection:" + collection  + " due to: ", e);
-      }
-      if (zkConfigName == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, 
-            "Could not find config name for collection:" + collection);
-      }
-    }
-    
     if (initArgs.get(STORAGE_IO_CLASS_INIT_ARG) != null) {
       storageIO = resourceLoader.newInstance(initArgs.get(STORAGE_IO_CLASS_INIT_ARG), StorageIO.class); 
     } else {
+      SolrZkClient zkClient = (resourceLoader instanceof ZkSolrResourceLoader) ?
+        ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkClient() : null;
       if (zkClient != null) {
-        String znodeBase = "/configs/"+zkConfigName;
+        String znodeBase = "/configs/"+configSet;
         log.debug("Setting up ZooKeeper-based storage for the RestManager with znodeBase: {}", znodeBase);
         storageIO = new ManagedResourceStorage.ZooKeeperStorageIO(zkClient, znodeBase);
       } else {

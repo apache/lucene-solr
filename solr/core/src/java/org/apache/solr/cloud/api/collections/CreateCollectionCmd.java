@@ -142,7 +142,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
 
     String configName = getConfigName(collectionName, message);
-    log.info("configName={} colleciton={}", configName, collectionName);
+    log.info("configName={} collection={}", configName, collectionName);
     if (configName == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No config set found to associate with the collection.");
     }
@@ -171,6 +171,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           collectionParams.put(propName.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), (String) entry.getValue());
         }
       }
+
+      if (zkStateReader.getClusterState().getCollectionOrNull(collectionName) != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection '"+collectionName+"' already exists!");
+      }
+
       createCollectionZkNode(stateManager, collectionName, collectionParams, configName);
 
       OverseerCollectionMessageHandler.createConfNode(stateManager, configName, collectionName, isLegacyCloud);

@@ -3040,7 +3040,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     String collection = cd.getCollectionName();
     StorageIO storageIO =
-        ManagedResourceStorage.newStorageIO(collection, resourceLoader, initArgs);
+        ManagedResourceStorage.newStorageIO(collection, cd.getConfigSet(), resourceLoader, initArgs);
     mgr.init(resourceLoader, initArgs, storageIO);
 
     return mgr;
