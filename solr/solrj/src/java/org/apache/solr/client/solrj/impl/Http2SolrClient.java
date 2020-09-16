@@ -859,17 +859,16 @@ public class Http2SolrClient extends SolrClient {
 
   public static class AsyncTracker {
 
-    // nocommit - look at outstanding max again
-    private static final int MAX_OUTSTANDING_REQUESTS = 30;
+    private static final int MAX_OUTSTANDING_REQUESTS = 100;
 
-    //private final Semaphore available;
+    private final Semaphore available;
 
     // wait for async requests
     private final Phaser phaser = new ThePhaser(1);
     // maximum outstanding requests left
 
     public AsyncTracker() {
-     // available = new Semaphore(MAX_OUTSTANDING_REQUESTS, true);
+      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, true);
 
     }
 
@@ -895,32 +894,32 @@ public class Http2SolrClient extends SolrClient {
         log.debug("Registered new party {}", phaser);
       }
       phaser.register();
-//      try {
-//        available.acquire();
-//      } catch (InterruptedException e) {
-//        log.warn("interrupted", e);
-//      }
+      try {
+        available.acquire();
+      } catch (InterruptedException e) {
+        log.warn("interrupted", e);
+      }
     }
 
     public void arrive() {
-//      try {
-//        available.release();
-//      } finally {
+      try {
+        available.release();
+      } finally {
         phaser.arriveAndDeregister();
-    //  }
+      }
       if (log.isDebugEnabled()) log.debug("Request complete {}", phaser);
     }
+  }
 
-    private static class ThePhaser extends Phaser {
+  public static class ThePhaser extends Phaser {
 
-      ThePhaser(int start) {
-        super(start);
-      }
+    ThePhaser(int start) {
+      super(start);
+    }
 
-      @Override
-      protected boolean onAdvance(int phase, int parties) {
-        return false;
-      }
+    @Override
+    protected boolean onAdvance(int phase, int parties) {
+      return false;
     }
   }
 
