@@ -101,7 +101,6 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     }
 
   @Test
-  @Ignore // nocommit keep looking at processAndWait
   public void testAsyncRequests() throws Exception {
     boolean legacy = random().nextBoolean();
     if (legacy) {

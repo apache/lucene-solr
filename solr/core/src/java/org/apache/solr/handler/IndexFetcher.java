@@ -1904,7 +1904,7 @@ public class IndexFetcher {
         QueryRequest req = new QueryRequest(params);
         req.setBasePath(masterUrl);
         req.setMethod(SolrRequest.METHOD.POST);
-        req.setResponseParser(new InputStreamResponseParser("json"));
+        req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         response = solrClient.request(req);
         is = (InputStream) response.get("stream");
         if (is == null) {
