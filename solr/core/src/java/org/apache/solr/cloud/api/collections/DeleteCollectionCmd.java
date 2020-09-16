@@ -129,6 +129,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       Set<String> okayExceptions = new HashSet<>(1);
       okayExceptions.add(NonExistentCoreException.class.getName());
+      okayExceptions.add(SolrException.class.getName()); // could not find collection
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
       @SuppressWarnings({"unchecked"})
