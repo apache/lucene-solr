@@ -85,6 +85,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -94,7 +95,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RTimer;
@@ -909,7 +909,7 @@ public class IndexFetcher {
     final CountDownLatch latch = new CountDownLatch(1);
     new Thread(() -> {
       try {
-        solrCore.getCoreContainer().reload(solrCore.getName());
+        solrCore.getCoreContainer().reload(solrCore.getName(), solrCore.uniqueId);
       } catch (Exception e) {
         log.error("Could not reload core ", e);
       } finally {
