@@ -78,7 +78,7 @@ public class ClusterAPI {
     CollectionsHandler.CollectionOperation.DELETESTATUS_OP.execute(req, rsp, coreContainer.getCollectionsHandler());
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings({"rawtypes"})
   public static SolrQueryRequest wrapParams(SolrQueryRequest req, Object... def) {
     Map m = Utils.makeMap(def);
     return wrapParams(req, m);
