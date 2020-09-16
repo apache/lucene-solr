@@ -128,7 +128,7 @@ UpdateHandler implements SolrInfoBean, Closeable {
   
   public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
     UpdateLog ourUpdateLog = null;
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     try {
       this.core = core;
       CoreDescriptor cd = core.getCoreDescriptor();

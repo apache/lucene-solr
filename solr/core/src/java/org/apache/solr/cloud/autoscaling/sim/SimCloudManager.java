@@ -177,7 +177,7 @@ public class SimCloudManager implements SolrCloudManager {
   }
 
   SimCloudManager(TimeSource timeSource, SimDistribStateManager distribStateManager) throws Exception {
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     this.loader = new SolrResourceLoader();
     if (distribStateManager == null) {
       this.stateManager =  new SimDistribStateManager(SimDistribStateManager.createNewRootNode());
@@ -272,7 +272,7 @@ public class SimCloudManager implements SolrCloudManager {
     triggerThread = new Overseer.OverseerThread(triggerThreadGroup, trigger, "Simulated OverseerAutoScalingTriggerThread");
     triggerThread.start();
 
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   // ---------- simulator setup methods -----------

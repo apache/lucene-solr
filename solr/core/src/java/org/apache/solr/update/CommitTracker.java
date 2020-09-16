@@ -95,7 +95,7 @@ public final class CommitTracker implements Runnable, Closeable {
     this.openSearcher = openSearcher;
 
     log.info("{} AutoCommit: {}", name, this);
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   public boolean getOpenSearcher() {

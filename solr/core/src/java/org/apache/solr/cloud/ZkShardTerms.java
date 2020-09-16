@@ -105,7 +105,7 @@ public class ZkShardTerms implements AutoCloseable{
     this.shard = shard;
     this.zkClient = zkClient;
     registerWatcher();
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   /**

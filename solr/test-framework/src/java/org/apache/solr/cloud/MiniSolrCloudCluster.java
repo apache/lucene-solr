@@ -272,7 +272,7 @@ public class MiniSolrCloudCluster {
    */
    MiniSolrCloudCluster(int numServers, Path baseDir, String solrXml, JettyConfig jettyConfig,
       ZkTestServer zkTestServer, Optional<String> securityJson, boolean trackJettyMetrics, boolean formatZk) throws Exception {
-     ObjectReleaseTracker.track(this);
+     assert ObjectReleaseTracker.track(this);
     try {
       Objects.requireNonNull(securityJson);
       this.baseDir = Objects.requireNonNull(baseDir);

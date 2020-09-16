@@ -141,7 +141,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       commitWithinSoftCommit = false;
       commitTracker.setOpenSearcher(true);
     }
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
   
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {

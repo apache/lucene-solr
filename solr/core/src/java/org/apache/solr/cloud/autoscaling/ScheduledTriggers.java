@@ -153,7 +153,7 @@ public class ScheduledTriggers implements Closeable {
     listeners = new TriggerListeners();
     // initialize cooldown timer
     cooldownStart.set(cloudManager.getTimeSource().getTimeNs() - cooldownPeriod.get());
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   /**

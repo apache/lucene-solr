@@ -73,7 +73,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                     + "/leader_elect/" + shardId,  ZkStateReader.getShardLeadersPath(
             collection, shardId), props,
             zkController.getZkClient());
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.syncStrategy = new SyncStrategy(cc);
     this.shardId = shardId;

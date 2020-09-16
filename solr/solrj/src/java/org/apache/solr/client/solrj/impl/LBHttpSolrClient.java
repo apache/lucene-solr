@@ -136,7 +136,7 @@ public class LBHttpSolrClient extends LBSolrClient {
   // nocommit
   public LBHttpSolrClient(Http2SolrClient solrClient) {
     super(Collections.emptyList());
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     this.solrClient = solrClient;
     this.httpSolrClientBuilder = null;
     this.http2SolrClientBuilder = null;
@@ -147,7 +147,7 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   protected LBHttpSolrClient(Builder builder) {
     super(builder.baseSolrUrls);
-    ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
     this.solrClient = null;
 
     this.httpSolrClientBuilder = builder.httpSolrClientBuilder;

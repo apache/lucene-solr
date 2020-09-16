@@ -240,10 +240,10 @@ public class IndexSchema {
   protected final SolrResourceLoader loader;
   protected final Properties substitutableProperties;
 
-  // some code will add fields after construction, needs to be thread safe
-  protected volatile Map<String,SchemaField> fields = new ConcurrentHashMap<>(16);
+  // some code will add fields after construction, needs to be thread safe (unless we get the schema lock fully correct)
+  protected volatile Map<String,SchemaField> fields = new ConcurrentHashMap<>(32);
 
-  protected volatile Map<String,FieldType> fieldTypes = new ConcurrentHashMap<>(64);
+  protected volatile Map<String,FieldType> fieldTypes = new ConcurrentHashMap<>(32);
 
   protected volatile Set<SchemaField> fieldsWithDefaultValue = ConcurrentHashMap.newKeySet(16);
   protected volatile Collection<SchemaField> requiredFields = ConcurrentHashMap.newKeySet(16);

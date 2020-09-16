@@ -448,7 +448,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
       return defaults;
     if (defaults == null)
       return params;
-    return new DefaultSolrParams(params,defaults);
+    return new DefaultSolrParams(params, defaults);
   }
 
   public static SolrParams wrapAppended(SolrParams params, SolrParams defaults) {

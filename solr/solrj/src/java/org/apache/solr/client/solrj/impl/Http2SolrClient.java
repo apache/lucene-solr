@@ -199,11 +199,13 @@ public class Http2SolrClient extends SolrClient {
   private HttpClient createHttpClient(Builder builder) {
     HttpClient httpClient;
 
-    SslContextFactory.Client sslContextFactory;
-    boolean ssl;
+    SslContextFactory.Client sslContextFactory = null;
+    boolean ssl = false;
     if (builder.sslConfig == null) {
-      sslContextFactory = getDefaultSslContextFactory();
-      ssl = sslContextFactory.getTrustStore() != null || sslContextFactory.getTrustStorePath() != null;
+      if (System.getProperty("javax.net.ssl.trustStore") != null || System.getProperty("javax.net.ssl.keyStore") != null) {
+        sslContextFactory = getDefaultSslContextFactory();
+        ssl = sslContextFactory.getTrustStore() != null || sslContextFactory.getTrustStorePath() != null;
+      }
     } else {
       sslContextFactory = builder.sslConfig.createClientContextFactory();
       ssl = true;

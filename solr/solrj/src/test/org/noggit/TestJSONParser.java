@@ -505,7 +505,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
     t = "1910151821265210155" + "0";
     parse("["+t+","+"-"+t+"]", new Object[]{a,bn(t),bn("-"+t),A,e});
 
-    for (int i=0; i<1000000; i++) {
+    for (int i=0; i<(TEST_NIGHTLY ? 1000000 : 100); i++) {
       long val = random().nextLong();
       String sval = Long.toString(val);
       JSONParser parser = getParser("["+val+"]");
