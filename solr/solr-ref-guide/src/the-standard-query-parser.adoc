@@ -111,8 +111,9 @@ Solr supports a variety of term modifiers that add flexibility or precision, as 
 
 Solr's standard query parser supports single and multiple character wildcard searches within single terms. Wildcard characters can be applied to single terms, but not to search phrases.
 
-[%autowidth.spread,width="100%",options="header"]
+
 |===
+
 |Wildcard Search Type |Special Character |Example
 |Single character (matches a single character) |? |The search string `te?t` would match both test and text.
 |Multiple characters (matches zero or more sequential characters) |* |The wildcard search: `tes*` would match test, testing, and tester. You can also use wildcard characters in the middle of a term. For example: `te*t` would match test and text. `*est` would match pest and test.
@@ -238,9 +239,9 @@ The field is only valid for the term that it directly precedes, so the query `ti
 
 Boolean operators allow you to apply Boolean logic to queries, requiring the presence or absence of specific terms or conditions in fields in order to match documents. The table below summarizes the Boolean operators supported by the standard query parser.
 
-[%autowidth.spread,width="100%",options="header"]
 |===
 |Boolean Operator |Alternative Symbol |Description
+
 |AND |`&&` |Requires both terms on either side of the Boolean operator to be present for a match.
 |NOT |`!` |Requires that the following term not be present.
 |OR |`\|\|` |Requires that either term (or both terms) be present for a match.
