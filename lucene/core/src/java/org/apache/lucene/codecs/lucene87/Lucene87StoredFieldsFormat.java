@@ -157,7 +157,7 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
   /** Compression mode for {@link Mode#BEST_COMPRESSION} */
   public static final CompressionMode BEST_COMPRESSION_MODE = new DeflateWithPresetDictCompressionMode();
 
-  // Shoot for 10 sub blocks of 60kB each and 4kB of dictionary.
+  // Shoot for 10 sub blocks of 60kB each.
   private static final int BEST_SPEED_BLOCK_LENGTH = 10 * 60 * 1024;
 
   /** Compression mode for {@link Mode#BEST_SPEED} */
