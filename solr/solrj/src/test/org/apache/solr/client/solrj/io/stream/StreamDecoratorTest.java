@@ -118,8 +118,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void closeClientCache() {
     if (solrClientCache != null) {
       solrClientCache.close();
+      solrClientCache = null;
     }
-    if (streamContext != null) IOUtils.closeQuietly(streamContext.getSolrClientCache());
+    streamContext = null;
   }
 
   @Before

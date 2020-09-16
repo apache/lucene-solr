@@ -47,12 +47,14 @@ import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.PerThreadExecService;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SysStats;
@@ -439,19 +441,24 @@ public class SolrTestCase extends LuceneTestCase {
       ParWork.closeMyPerThreadExecutor(true);
       ParWork.shutdownRootSharedExec();
 
-      if (!failed && suiteFailureMarker.wasSuccessful() ) {
-        String object = null;
-        // if the tests passed, make sure everything was closed / released
-        if (RandomizedTest.getContext().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
-          SuppressObjectReleaseTracker sor = RandomizedTest.getContext().getTargetClass()
-              .getAnnotation(SuppressObjectReleaseTracker.class);
-           object = sor.object();
-        }
-
-        String orr = ObjectReleaseTracker.checkEmpty(object);
-        ObjectReleaseTracker.clear();
-        assertNull(orr, orr);
+      AlreadyClosedException lastAlreadyClosedExp = CloseTracker.lastAlreadyClosedEx;
+      if (lastAlreadyClosedExp != null) {
+        CloseTracker.lastAlreadyClosedEx = null;
+        throw lastAlreadyClosedExp;
       }
+
+
+      String object = null;
+      // if the tests passed, make sure everything was closed / released
+      if (RandomizedTest.getContext().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
+        SuppressObjectReleaseTracker sor = RandomizedTest.getContext().getTargetClass().getAnnotation(SuppressObjectReleaseTracker.class);
+        object = sor.object();
+      }
+
+      String orr = ObjectReleaseTracker.checkEmpty(object);
+      ObjectReleaseTracker.clear();
+      assertNull(orr, orr);
+
     } finally {
       ObjectReleaseTracker.clear();
       TestInjection.reset();

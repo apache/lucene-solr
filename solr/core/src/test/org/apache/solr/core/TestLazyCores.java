@@ -180,28 +180,22 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   @Test
   public void testLazySearch() throws Exception {
     CoreContainer cc = init();
-    try {
-      // Make sure Lazy4 isn't loaded. Should be loaded on the get
-      checkNotInCores(cc, Arrays.asList("collection4"));
-      SolrCore core4 = cc.getCore("collection4");
 
-      checkSearch(core4);
+    // Make sure Lazy4 isn't loaded. Should be loaded on the get
+    checkNotInCores(cc, Arrays.asList("collection4"));
+    SolrCore core4 = cc.getCore("collection4");
 
-      // Now just insure that the normal searching on "collection1" finds _0_ on the same query that found _2_ above.
-      // Use of makeReq above and req below is tricky, very tricky.
-      SolrCore collection1 = cc.getCore("collection1");
-      assertQ("test raw query",
-          makeReq(collection1, "q", "{!raw f=v_t}hello", "wt", "xml")
-          , "//result[@numFound='0']"
-      );
+    checkSearch(core4);
 
-      checkInCores(cc, "collection1", "collection2", "collection4", "collection5");
+    // Now just insure that the normal searching on "collection1" finds _0_ on the same query that found _2_ above.
+    // Use of makeReq above and req below is tricky, very tricky.
+    SolrCore collection1 = cc.getCore("collection1");
+    assertQ("test raw query", makeReq(collection1, "q", "{!raw f=v_t}hello", "wt", "xml"), "//result[@numFound='0']");
 
-      core4.close();
-      collection1.close();
-    } finally {
-      cc.shutdown();
-    }
+    checkInCores(cc, "collection1", "collection2", "collection4", "collection5");
+
+    core4.close();
+    collection1.close();
   }
 
   @Test

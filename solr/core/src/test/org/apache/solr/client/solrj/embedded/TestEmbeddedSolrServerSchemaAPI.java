@@ -63,10 +63,6 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void destroyClass() throws IOException {
-    if (null != server) {
-      server.close(); 
-      server = null;
-    }
     System.clearProperty("managed.schema.mutable");
   }
 

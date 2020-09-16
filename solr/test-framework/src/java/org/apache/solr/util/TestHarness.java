@@ -70,7 +70,7 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
  */
 public class TestHarness extends BaseTestHarness {
   public volatile String coreName;
-  protected final CoreContainer container;
+  protected volatile CoreContainer container;
   public UpdateRequestHandler updater;
  
   /**
@@ -370,7 +370,11 @@ public class TestHarness extends BaseTestHarness {
    */
   public void close() {
     if (container != null) {
-      container.shutdown();
+      try {
+        container.shutdown();
+      } finally {
+        container = null;
+      }
     }
   }
 

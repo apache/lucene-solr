@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -81,7 +80,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     this.ulog = uhandler.getUpdateLog();
     Http2SolrClient httpClient = core
         .getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient();
-    this.clientToLeader = new Http2SolrClient.Builder(leaderUrl).withHttpClient(httpClient).markInternalRequest().build();
+    this.clientToLeader = core.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient();
 
     this.updater = new PeerSync.Updater(msg(), core);
 
@@ -115,7 +114,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   }
 
   public void close() {
-    IOUtils.closeQuietly(clientToLeader);
+
   }
 
   /**
@@ -333,7 +332,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private NamedList<Object> request(ModifiableSolrParams params, String onFail) {
     try {
-      QueryResponse rsp = new QueryRequest(params, SolrRequest.METHOD.POST).process(clientToLeader);
+      QueryRequest qr = new QueryRequest(params, SolrRequest.METHOD.POST);
+      qr.setBasePath(leaderUrl);
+      QueryResponse rsp = qr.process(clientToLeader);
       Exception exception = rsp.getException();
       if (exception != null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail, exception);

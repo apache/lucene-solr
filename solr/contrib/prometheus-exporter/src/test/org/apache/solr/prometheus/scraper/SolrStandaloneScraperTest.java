@@ -84,7 +84,6 @@ public class SolrStandaloneScraperTest extends RestTestBase {
   @AfterClass
   public static void cleanUp() throws Exception {
     IOUtils.closeQuietly(solrScraper);
-    IOUtils.closeQuietly(solrClient);
     if (null != executor) {
       executor = null;
     }

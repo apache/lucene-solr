@@ -53,71 +53,70 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   @Test
   public void testCommitWithinOnAdd() throws Exception {
     // make sure it is empty...
-    try (SolrClient client = getSolrClient(jetty)) {
-      client.deleteByQuery("*:*");// delete everything!
-      client.commit();
-      QueryResponse rsp = client.query(new SolrQuery("*:*"));
-      Assert.assertEquals(0, rsp.getResults().getNumFound());
+    SolrClient client = getSolrClient(jetty);
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    QueryResponse rsp = client.query(new SolrQuery("*:*"));
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
-      // Now try a timed commit...
-      SolrInputDocument doc3 = new SolrInputDocument();
-      doc3.addField("id", "id3");
-      doc3.addField("name", "doc3");
-      doc3.addField("price", 10);
-      UpdateRequest up = new UpdateRequest();
-      up.add(doc3);
-      up.setCommitWithin(10);
-      up.process(client);
+    // Now try a timed commit...
+    SolrInputDocument doc3 = new SolrInputDocument();
+    doc3.addField("id", "id3");
+    doc3.addField("name", "doc3");
+    doc3.addField("price", 10);
+    UpdateRequest up = new UpdateRequest();
+    up.add(doc3);
+    up.setCommitWithin(10);
+    up.process(client);
 
-      // terrible, flakey way to test and we test commitWithin like this a lot already
-      //    rsp = client.query(new SolrQuery("*:*"));
-      //    Assert.assertEquals(0, rsp.getResults().getNumFound());
+    // terrible, flakey way to test and we test commitWithin like this a lot already
+    //    rsp = client.query(new SolrQuery("*:*"));
+    //    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
-      // now check that it comes out...
+    // now check that it comes out...
+    rsp = client.query(new SolrQuery("id:id3"));
+
+    int cnt = 0;
+    while (rsp.getResults().getNumFound() == 0) {
+      // wait and try again for slower/busier machines
+      // and/or parallel test effects.
+
+      if (cnt++ == 20) {
+        break;
+      }
+
+      Thread.sleep(10);
+
       rsp = client.query(new SolrQuery("id:id3"));
-
-      int cnt = 0;
-      while (rsp.getResults().getNumFound() == 0) {
-        // wait and try again for slower/busier machines
-        // and/or parallel test effects.
-
-        if (cnt++ == 20) {
-          break;
-        }
-
-        Thread.sleep(10);
-
-        rsp = client.query(new SolrQuery("id:id3"));
-      }
-
-      Assert.assertEquals(1, rsp.getResults().getNumFound());
-
-      // Now test the new convenience parameter on the add() for commitWithin
-      SolrInputDocument doc4 = new SolrInputDocument();
-      doc4.addField("id", "id4");
-      doc4.addField("name", "doc4");
-      doc4.addField("price", 10);
-      client.add(doc4, 10);
-
-      // now check that it comes out...
-      rsp = client.query(new SolrQuery("id:id4"));
-
-      cnt = 0;
-      while (rsp.getResults().getNumFound() == 0) {
-        // wait and try again for slower/busier machines
-        // and/or parallel test effects.
-
-        if (cnt++ == 10) {
-          break;
-        }
-
-        Thread.sleep(10);
-
-        rsp = client.query(new SolrQuery("id:id3"));
-      }
-
-      Assert.assertEquals(1, rsp.getResults().getNumFound());
     }
+
+    Assert.assertEquals(1, rsp.getResults().getNumFound());
+
+    // Now test the new convenience parameter on the add() for commitWithin
+    SolrInputDocument doc4 = new SolrInputDocument();
+    doc4.addField("id", "id4");
+    doc4.addField("name", "doc4");
+    doc4.addField("price", 10);
+    client.add(doc4, 10);
+
+    // now check that it comes out...
+    rsp = client.query(new SolrQuery("id:id4"));
+
+    cnt = 0;
+    while (rsp.getResults().getNumFound() == 0) {
+      // wait and try again for slower/busier machines
+      // and/or parallel test effects.
+
+      if (cnt++ == 10) {
+        break;
+      }
+
+      Thread.sleep(10);
+
+      rsp = client.query(new SolrQuery("id:id3"));
+    }
+
+    Assert.assertEquals(1, rsp.getResults().getNumFound());
   }
   
   @Test
@@ -219,51 +218,51 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   
   @Test
   public void testStreamingRequest() throws Exception {
-    try (SolrClient client = getSolrClient(jetty)) {
-      // Empty the database...
-      client.deleteByQuery("*:*");// delete everything!
-      client.commit();
-      assertNumFound("*:*", 0); // make sure it got in
+    SolrClient client = getSolrClient(jetty);
+    // Empty the database...
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    assertNumFound("*:*", 0); // make sure it got in
 
-      // Add some docs to the index
-      UpdateRequest req = new UpdateRequest();
-      for (int i = 0; i < 10; i++) {
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField("id", "" + i);
-        doc.addField("cat", "foocat");
-        req.add(doc);
-      }
-      req.setAction(ACTION.COMMIT, true, true);
-      req.process(client);
-
-      // Make sure it ran OK
-      SolrQuery query = new SolrQuery("*:*");
-      query.set(CommonParams.FL, "id,score,_docid_");
-      QueryResponse response = client.query(query);
-      assertEquals(0, response.getStatus());
-      assertEquals(10, response.getResults().getNumFound());
-
-      // Now make sure each document gets output
-      final AtomicInteger cnt = new AtomicInteger(0);
-      client.queryAndStreamResponse(query, new StreamingResponseCallback() {
-
-        @Override
-        public void streamDocListInfo(long numFound, long start, Float maxScore) {
-          assertEquals(10, numFound);
-        }
-
-        @Override
-        public void streamSolrDocument(SolrDocument doc) {
-          cnt.incrementAndGet();
-
-          // Make sure the transformer works for streaming
-          Float score = (Float) doc.get("score");
-          assertEquals("should have score", Float.valueOf(1.0f), score);
-        }
-
-      });
-      assertEquals(10, cnt.get());
+    // Add some docs to the index
+    UpdateRequest req = new UpdateRequest();
+    for (int i = 0; i < 10; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "" + i);
+      doc.addField("cat", "foocat");
+      req.add(doc);
     }
+    req.setAction(ACTION.COMMIT, true, true);
+    req.process(client);
+
+    // Make sure it ran OK
+    SolrQuery query = new SolrQuery("*:*");
+    query.set(CommonParams.FL, "id,score,_docid_");
+    QueryResponse response = client.query(query);
+    assertEquals(0, response.getStatus());
+    assertEquals(10, response.getResults().getNumFound());
+
+    // Now make sure each document gets output
+    final AtomicInteger cnt = new AtomicInteger(0);
+    client.queryAndStreamResponse(query, new StreamingResponseCallback() {
+
+      @Override
+      public void streamDocListInfo(long numFound, long start, Float maxScore) {
+        assertEquals(10, numFound);
+      }
+
+      @Override
+      public void streamSolrDocument(SolrDocument doc) {
+        cnt.incrementAndGet();
+
+        // Make sure the transformer works for streaming
+        Float score = (Float) doc.get("score");
+        assertEquals("should have score", Float.valueOf(1.0f), score);
+      }
+
+    });
+    assertEquals(10, cnt.get());
+
   }
   
   protected QueryResponse assertNumFound(String query, int num)

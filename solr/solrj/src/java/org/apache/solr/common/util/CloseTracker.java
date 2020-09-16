@@ -7,6 +7,9 @@ import java.io.Closeable;
 import java.io.PrintWriter;
 
 public class CloseTracker implements Closeable {
+
+    public static  volatile AlreadyClosedException lastAlreadyClosedEx;
+
     private volatile boolean closed = false;
     private volatile String closeStack = "";
     private volatile boolean closeLock;
@@ -21,7 +24,10 @@ public class CloseTracker implements Closeable {
             PrintWriter pw = new PrintWriter(sw);
             new ObjectReleaseTracker.ObjectTrackerException(this.getClass().getName()).printStackTrace(pw);
             String fcloseStack = sw.toString();
-            throw new AlreadyClosedException(fcloseStack + "\nalready closed by:\n");
+            AlreadyClosedException ex = new AlreadyClosedException(fcloseStack + "\nalready closed by:\n" + closeStack);
+            lastAlreadyClosedEx = ex;
+            throw ex;
+
         }
 
         StringBuilderWriter sw = new StringBuilderWriter(4096);

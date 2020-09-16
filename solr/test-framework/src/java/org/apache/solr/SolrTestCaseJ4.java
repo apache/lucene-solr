@@ -511,7 +511,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * For use in test methods as needed.
    * </p>
    */
-  public static TestHarness h;
+  public static volatile TestHarness h;
 
   /**
    * LocalRequestFactory initialized by create[Default]Core[Container] using sensible
@@ -670,38 +670,42 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Shuts down the test harness and nulls out the values setup by {@link #initCore}
    */
   public static void deleteCore() {
-    if (h != null) {
-      log.info("###deleteCore" );
-      // If the test case set up Zk, it should still have it as available,
-      // otherwise the core close will just be unnecessarily delayed.
-      CoreContainer cc = h.getCoreContainer();
-      if (! cc.getCores().isEmpty() && cc.isZooKeeperAware()) {
-        try {
-          cc.getZkController().getZkClient().exists("/");
-        } catch (KeeperException e) {
-          log.error("Testing connectivity to ZK by checking for root path failed", e);
-          fail("Trying to tear down a ZK aware core container with ZK not reachable");
-        } catch (InterruptedException ignored) {}
+    try {
+      if (h != null) {
+        log.info("###deleteCore");
+        // If the test case set up Zk, it should still have it as available,
+        // otherwise the core close will just be unnecessarily delayed.
+        CoreContainer cc = h.getCoreContainer();
+        if (!cc.getCores().isEmpty() && cc.isZooKeeperAware()) {
+          try {
+            cc.getZkController().getZkClient().exists("/");
+          } catch (KeeperException e) {
+            log.error("Testing connectivity to ZK by checking for root path failed", e);
+            fail("Trying to tear down a ZK aware core container with ZK not reachable");
+          } catch (InterruptedException ignored) {
+          }
+        }
+
+        h.close();
       }
 
-      h.close();
-    }
+      if (factoryProp == null) {
+        System.clearProperty("solr.directoryFactory");
+      }
 
-    if (factoryProp == null) {
-      System.clearProperty("solr.directoryFactory");
-    }
+      if (System.getProperty(UPDATELOG_SYSPROP) != null) {
+        // clears the updatelog sysprop at the end of the test run
+        System.clearProperty(UPDATELOG_SYSPROP);
+      }
+    } finally {
+      solrConfig = null;
+      h = null;
+      lrf = null;
 
-    if (System.getProperty(UPDATELOG_SYSPROP) != null) {
-      // clears the updatelog sysprop at the end of the test run
-      System.clearProperty(UPDATELOG_SYSPROP);
+      configString = schemaString = null;
+      initCoreDataDir = null;
+      hdfsDataDir = null;
     }
-    
-    solrConfig = null;
-    h = null;
-    lrf = null;
-    configString = schemaString = null;
-    initCoreDataDir = null;
-    hdfsDataDir = null;
   }
 
   /** Validates an update XML String is successful
