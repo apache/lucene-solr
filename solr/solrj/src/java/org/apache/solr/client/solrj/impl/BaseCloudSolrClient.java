@@ -998,7 +998,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       } else {
         log.info("request was not communication error it seems");
       }
-      log.error("Request to collection {} failed due to ({}) {}, retry={} maxRetries={} commError={} errorCode={} ",
+      log.info("Request to collection {} failed due to ({}) {}, retry={} maxRetries={} commError={} errorCode={} ",
           inputCollections, errorCode, rootCause, retryCount, MAX_STALE_RETRIES, wasCommError, errorCode);
 
       boolean stateWasStale = false;
