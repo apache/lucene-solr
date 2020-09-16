@@ -307,16 +307,14 @@ public class Overseer implements SolrCloseable {
 //            } else {
 //              wait = 0;
 //            }
-            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> true));
-          } catch (InterruptedException | AlreadyClosedException e) {
-            ParWork.propagateInterrupt(e, true);
+            queue = new LinkedList<>(stateUpdateQueue.peekElements(10000, wait, (x) -> true));
+          } catch (AlreadyClosedException e) {
             return;
           } catch (KeeperException.SessionExpiredException e) {
-            log.error("run()", e);
-
             log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
             return;
           } catch (Exception e) {
+            ParWork.propagateInterrupt("Unexpected error in Overseer state update loop", e, true);
             log.error("Unexpected error in Overseer state update loop", e);
             if (!isClosed()) {
               continue;
@@ -326,11 +324,13 @@ public class Overseer implements SolrCloseable {
           }
           try {
             Set<String> processedNodes = new HashSet<>();
+            int loopCnt = 0;
             while (queue != null && !queue.isEmpty()) {
-              if (Thread.currentThread().isInterrupted() || isClosed) {
+              if (isClosed()) {
                 log.info("Closing");
                 return;
               }
+
               for (Pair<String, byte[]> head : queue) {
                 byte[] data = head.second();
                 final ZkNodeProps message = ZkNodeProps.load(data);
@@ -352,7 +352,11 @@ public class Overseer implements SolrCloseable {
 //              } else {
 //                wait = 0;
 //              }
-              queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, node -> !processedNodes.contains(node)));
+              queue = new LinkedList<>(stateUpdateQueue.peekElements(100, wait, node -> !processedNodes.contains(node)));
+              if (loopCnt >= 1) {
+                break;
+              }
+              loopCnt++;
             }
             fallbackQueueSize = processedNodes.size();
             // we should force write all pending updates because the next iteration might sleep until there
@@ -920,7 +924,7 @@ public class Overseer implements SolrCloseable {
 
   @Override
   public boolean isClosed() {
-    return closed || zkController.getCoreContainer().isShutDown();
+    return closed;
   }
 
   void doClose() {

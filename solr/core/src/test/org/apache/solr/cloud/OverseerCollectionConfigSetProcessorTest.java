@@ -446,8 +446,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
               stateUpdateQueueMock.offer(invocation.getArgument(0));
             } catch (KeeperException e) {
               throw new RuntimeException(e);
-            } catch (InterruptedException e) {
-              throw new RuntimeException(e);
             }
             return null;
           }}).when(overseerMock).offerStateUpdate(any());
