@@ -265,10 +265,10 @@ abstract class ShapeQuery extends Query {
         final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
         return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       }
-      if (values.getDocCount() << 2 < values.size()) {
+      if (values.getDocCount() < (values.size() >>> 2)) {
         // we use a dense structure so we can skip already visited documents
         final FixedBitSet result = new FixedBitSet(reader.maxDoc());
-        final long[] cost = new long[]{reader.maxDoc()};
+        final long[] cost = new long[]{0};
         values.intersect(getIntersectsDenseVisitor(query, result, cost));
         assert cost[0] > 0 || result.cardinality() == 0;
         final DocIdSetIterator iterator = cost[0] == 0 ? DocIdSetIterator.empty() : new BitSetIterator(result, cost[0]);
@@ -352,7 +352,7 @@ abstract class ShapeQuery extends Query {
   }
 
   /** create a visitor that adds documents that match the query using a sparse bitset. (Used by INTERSECT
-   * when the number of points <= 4 * number of docs ) */
+   * when the number of docs <= 4 * number of points ) */
   private static IntersectVisitor getSparseVisitor(final ShapeQuery query, final DocIdSetBuilder result) {
     return new IntersectVisitor() {
       final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
