@@ -16,6 +16,14 @@
  */
 package org.apache.solr.core;
 
+import com.google.common.collect.Lists;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,14 +38,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.collect.Lists;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 class SolrCores {
