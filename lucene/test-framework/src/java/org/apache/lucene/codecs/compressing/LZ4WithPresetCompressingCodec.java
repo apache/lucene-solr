@@ -25,7 +25,7 @@ public class LZ4WithPresetCompressingCodec extends CompressingCodec {
   public LZ4WithPresetCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
     super("LZ4WithPresetCompressingStoredFieldsData", 
           withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
-          new LZ4WithPresetDictCompressionMode(chunkSize/10, chunkSize/3+1), chunkSize, maxDocsPerChunk, blockSize);
+          new LZ4WithPresetDictCompressionMode(), chunkSize, maxDocsPerChunk, blockSize);
   }
 
   /** No-arg constructor. */
