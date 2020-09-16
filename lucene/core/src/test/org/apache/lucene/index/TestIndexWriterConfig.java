@@ -22,13 +22,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
@@ -41,17 +39,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   private static final class MySimilarity extends ClassicSimilarity {
     // Does not implement anything - used only for type checking on IndexWriterConfig.
-  }
-
-  private static final class MyIndexingChain extends IndexingChain {
-    @Override
-    DocConsumer getChain(int indexCreatedVersionMajor, SegmentInfo segmentInfo, Directory directory,
-                         FieldInfos.Builder fieldInfos, LiveIndexWriterConfig indexWriterConfig,
-                         Consumer<Throwable> abortingExceptionConsumer) {
-      return null;
-    }
-    // Does not implement anything - used only for type checking on IndexWriterConfig.
-
   }
 
   @Test
@@ -67,7 +54,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, conf.getRAMBufferSizeMB(), 0.0);
     assertEquals(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS, conf.getMaxBufferedDocs());
     assertEquals(IndexWriterConfig.DEFAULT_READER_POOLING, conf.getReaderPooling());
-    assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
     assertNull(conf.getMergedSegmentWarmer());
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     assertEquals(FlushByRamOrCountsPolicy.class, conf.getFlushPolicy().getClass());
@@ -231,9 +217,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     expectThrows(IllegalArgumentException.class, () -> {
       conf.setSimilarity(null);
     });
-
-    // Test IndexingChain
-    assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
 
     expectThrows(IllegalArgumentException.class, () -> {
       conf.setMaxBufferedDocs(1);

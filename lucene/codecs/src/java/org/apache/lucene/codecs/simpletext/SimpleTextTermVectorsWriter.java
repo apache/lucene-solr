@@ -56,8 +56,6 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
 
   static final String VECTORS_EXTENSION = "vec";
   
-  private final Directory directory;
-  private final String segment;
   private IndexOutput out;
   private int numDocsWritten = 0;
   private final BytesRefBuilder scratch = new BytesRefBuilder();
@@ -66,8 +64,6 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   private boolean payloads;
 
   public SimpleTextTermVectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
-    this.directory = directory;
-    this.segment = segment;
     boolean success = false;
     try {
       out = directory.createOutput(IndexFileNames.segmentFileName(segment, "", VECTORS_EXTENSION), context);
@@ -192,5 +188,10 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   
   private void newLine() throws IOException {
     SimpleTextUtil.writeNewline(out);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return scratch.get().bytes.length;
   }
 }
