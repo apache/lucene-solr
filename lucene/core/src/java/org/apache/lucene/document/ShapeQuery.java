@@ -250,7 +250,7 @@ abstract class ShapeQuery extends Query {
       }
     }
 
-    /** Scorer used for INTERSECTS when the number of points <= 4 * number of docs **/
+    /** Scorer used for INTERSECTS **/
     private Scorer getSparseScorer(final LeafReader reader, final Weight weight, final float boost, final ScoreMode scoreMode) throws IOException {
       if (values.getDocCount() == reader.maxDoc()
           && values.getDocCount() == values.size()
@@ -351,7 +351,8 @@ abstract class ShapeQuery extends Query {
     };
   }
 
-  /** create a visitor that adds documents that match the query using a sparse bitset. (Used by INTERSECT) */
+  /** create a visitor that adds documents that match the query using a sparse bitset. (Used by INTERSECT
+   * when the number of points <= 4 * number of docs ) */
   private static IntersectVisitor getSparseVisitor(final ShapeQuery query, final DocIdSetBuilder result) {
     return new IntersectVisitor() {
       final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
