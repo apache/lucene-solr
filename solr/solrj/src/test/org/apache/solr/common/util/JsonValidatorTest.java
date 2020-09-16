@@ -40,7 +40,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     checkSchema("core.config.Commands");
     checkSchema("core.SchemaEdit");
     checkSchema("cluster.configs.Commands");
-    checkSchema("cluster.Commands");
+//    checkSchema("cluster.Commands");
   }
 
 

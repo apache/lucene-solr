@@ -60,7 +60,8 @@ final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
     }
     StoredFieldsReader reader = codec.storedFieldsFormat()
         .fieldsReader(tmpDirectory, state.segmentInfo, state.fieldInfos, IOContext.DEFAULT);
-    StoredFieldsReader mergeReader = reader.getMergeInstance();
+    // Don't pull a merge instance, since merge instances optimize for
+    // sequential access while we consume stored fields in random order here.
     StoredFieldsWriter sortWriter = codec.storedFieldsFormat()
         .fieldsWriter(state.directory, state.segmentInfo, IOContext.DEFAULT);
     try {
@@ -68,7 +69,7 @@ final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
       CopyVisitor visitor = new CopyVisitor(sortWriter);
       for (int docID = 0; docID < state.segmentInfo.maxDoc(); docID++) {
         sortWriter.startDocument();
-        mergeReader.visitDocument(sortMap.newToOld(docID), visitor);
+        reader.visitDocument(sortMap.newToOld(docID), visitor);
         sortWriter.finishDocument();
       }
       sortWriter.finish(state.fieldInfos, state.segmentInfo.maxDoc());

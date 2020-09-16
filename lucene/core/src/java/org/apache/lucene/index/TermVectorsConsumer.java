@@ -27,6 +27,7 @@ import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
@@ -54,6 +55,9 @@ class TermVectorsConsumer extends TermsHash {
   private int numVectorFields;
   int lastDocID;
   private TermVectorsConsumerPerField[] perFields = new TermVectorsConsumerPerField[1];
+  // this accountable either holds the writer or one that returns null.
+  // it's cleaner than checking if the writer is null all over the place
+  Accountable accountable = Accountable.NULL_ACCOUNTABLE;
 
   TermVectorsConsumer(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Directory directory, SegmentInfo info, Codec codec) {
     super(intBlockAllocator, byteBlockAllocator, Counter.newCounter(), null);
@@ -74,9 +78,6 @@ class TermVectorsConsumer extends TermsHash {
         writer.finish(state.fieldInfos, numDocs);
       } finally {
         IOUtils.close(writer);
-        writer = null;
-        lastDocID = 0;
-        hasVectors = false;
       }
     }
   }
@@ -96,6 +97,7 @@ class TermVectorsConsumer extends TermsHash {
       IOContext context = new IOContext(new FlushInfo(lastDocID, bytesUsed.get()));
       writer = codec.termVectorsFormat().vectorsWriter(directory, info, context);
       lastDocID = 0;
+      accountable = writer;
     }
   }
 
@@ -130,13 +132,10 @@ class TermVectorsConsumer extends TermsHash {
 
   @Override
   public void abort() {
-    hasVectors = false;
     try {
       super.abort();
     } finally {
       IOUtils.closeWhileHandlingException(writer);
-      writer = null;
-      lastDocID = 0;
       reset();
     }
   }
@@ -167,4 +166,5 @@ class TermVectorsConsumer extends TermsHash {
     resetFields();
     numVectorFields = 0;
   }
+
 }

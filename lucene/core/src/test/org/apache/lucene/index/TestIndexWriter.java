@@ -3385,7 +3385,7 @@ public class TestIndexWriter extends LuceneTestCase {
     try (Directory dir = new FilterDirectory(newDirectory()) {
       @Override
       public IndexOutput createOutput(String name, IOContext context) throws IOException {
-        if (callStackContains(DefaultIndexingChain.class, "flush")) {
+        if (callStackContains(IndexingChain.class, "flush")) {
           try {
             inFlush.countDown();
             latch.await();

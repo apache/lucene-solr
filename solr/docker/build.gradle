@@ -87,6 +87,6 @@ abstract class DockerTestSuite extends DefaultTask {
   }
 }
 
-task test(type: DockerTestSuite) {
+task testDocker(type: DockerTestSuite) {
   outputDir = project.file("$buildDir/tmp/tests")
 }
