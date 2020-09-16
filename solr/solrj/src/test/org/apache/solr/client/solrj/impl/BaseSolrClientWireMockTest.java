@@ -292,7 +292,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
     UpdateRequest req = new UpdateRequest();
     for (int i = 0; i < numDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", threadName+1000+i);
+      doc.addField("id", threadName+(1000+i));
       req.add(doc);
     }
     return req;

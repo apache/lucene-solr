@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -90,7 +89,8 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
     final String shard1Route = mockSolr.baseUrl()+SHARD1_PATH+"/";
     final String shard2Route = mockSolr.baseUrl()+SHARD2_PATH+"/";
 
-    UpdateRequest ur = buildUpdateRequest(15);
+    final int numDocs = 20;
+    UpdateRequest ur = buildUpdateRequest(numDocs);
     Map<String,List<String>> urlMap = testClient.buildUrlMap(mockDocCollection, new ShufflingReplicaListTransformer(random()));
     assertEquals(2, urlMap.size());
     List<String> shard1 = urlMap.get("shard1");
@@ -110,8 +110,8 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
 
     final String threadName = Thread.currentThread().getName();
     ur = new UpdateRequest();
-    for (int i=0; i < 15; i++) {
-      ur.deleteById(threadName+1000+i);
+    for (int i=0; i < numDocs; i++) {
+      ur.deleteById(threadName+(1000+i));
     }
     routes = ur.getRoutesToCollection(mockDocCollection.getRouter(), mockDocCollection, urlMap, ur.getParams(), "id");
     assertEquals(2, routes.size());
