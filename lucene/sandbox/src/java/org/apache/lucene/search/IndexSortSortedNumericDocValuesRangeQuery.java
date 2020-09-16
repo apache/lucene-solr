@@ -287,10 +287,10 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
       int result = delegate.advance(target);
       if (result < lastDoc) {
         docID = result;
-        return docID;
       } else {
-        return NO_MORE_DOCS;
+        docID = NO_MORE_DOCS;
       }
+      return docID;
     }
 
     @Override

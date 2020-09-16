@@ -21,10 +21,12 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -40,26 +42,32 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash.MaxBytesLengthExceededException;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /** Default general purpose indexing chain, which handles
  *  indexing all types of fields. */
-final class DefaultIndexingChain extends DocConsumer {
+final class IndexingChain implements Accountable {
+
   final Counter bytesUsed = Counter.newCounter();
-  final DocumentsWriterPerThread docWriter;
   final FieldInfos.Builder fieldInfos;
 
   // Writes postings and term vectors:
   final TermsHash termsHash;
   // Writes stored fields
   final StoredFieldsConsumer storedFieldsConsumer;
+  final TermVectorsConsumer termVectorsWriter;
+
 
   // NOTE: I tried using Hash Map<String,PerField>
   // but it was ~2% slower on Wiki and Geonames with Java
@@ -73,21 +81,37 @@ final class DefaultIndexingChain extends DocConsumer {
   // Holds fields seen in each document
   private PerField[] fields = new PerField[1];
   private final InfoStream infoStream;
+  private final ByteBlockPool.Allocator byteBlockAllocator;
+  private final LiveIndexWriterConfig indexWriterConfig;
+  private final int indexCreatedVersionMajor;
+  private final Consumer<Throwable> abortingExceptionConsumer;
+  private boolean hasHitAbortingException;
 
-  DefaultIndexingChain(DocumentsWriterPerThread docWriter) {
-    this.docWriter = docWriter;
-    this.fieldInfos = docWriter.getFieldInfosBuilder();
-    this.infoStream = docWriter.getIndexWriterConfig().getInfoStream();
+  IndexingChain(int indexCreatedVersionMajor, SegmentInfo segmentInfo, Directory directory, FieldInfos.Builder fieldInfos, LiveIndexWriterConfig indexWriterConfig,
+                Consumer<Throwable> abortingExceptionConsumer) {
+    this.indexCreatedVersionMajor = indexCreatedVersionMajor;
+    byteBlockAllocator = new ByteBlockPool.DirectTrackingAllocator(bytesUsed);
+    IntBlockPool.Allocator intBlockAllocator = new IntBlockAllocator(bytesUsed);
+    this.indexWriterConfig = indexWriterConfig;
+    assert segmentInfo.getIndexSort() == indexWriterConfig.getIndexSort();
+    this.fieldInfos = fieldInfos;
+    this.infoStream = indexWriterConfig.getInfoStream();
+    this.abortingExceptionConsumer = abortingExceptionConsumer;
 
-    final TermsHash termVectorsWriter;
-    if (docWriter.getSegmentInfo().getIndexSort() == null) {
-      storedFieldsConsumer = new StoredFieldsConsumer(docWriter.codec, docWriter.directory, docWriter.getSegmentInfo());
-      termVectorsWriter = new TermVectorsConsumer(docWriter);
+    if (segmentInfo.getIndexSort() == null) {
+      storedFieldsConsumer = new StoredFieldsConsumer(indexWriterConfig.getCodec(), directory, segmentInfo);
+      termVectorsWriter = new TermVectorsConsumer(intBlockAllocator, byteBlockAllocator, directory, segmentInfo, indexWriterConfig.getCodec());
     } else {
-      storedFieldsConsumer = new SortingStoredFieldsConsumer(docWriter.codec, docWriter.directory, docWriter.getSegmentInfo());
-      termVectorsWriter = new SortingTermVectorsConsumer(docWriter);
+      storedFieldsConsumer = new SortingStoredFieldsConsumer(indexWriterConfig.getCodec(), directory, segmentInfo);
+      termVectorsWriter = new SortingTermVectorsConsumer(intBlockAllocator, byteBlockAllocator, directory, segmentInfo, indexWriterConfig.getCodec());
     }
-    termsHash = new FreqProxTermsWriter(docWriter, bytesUsed, termVectorsWriter);
+    termsHash = new FreqProxTermsWriter(intBlockAllocator, byteBlockAllocator, bytesUsed, termVectorsWriter);
+  }
+
+  private void onAbortingException(Throwable th) {
+    assert th != null;
+    this.hasHitAbortingException = true;
+    abortingExceptionConsumer.accept(th);
   }
 
   private LeafReader getDocValuesLeafReader() {
@@ -182,8 +206,7 @@ final class DefaultIndexingChain extends DocConsumer {
     return sorter.sort(state.segmentInfo.maxDoc(), comparators.toArray(IndexSorter.DocComparator[]::new));
   }
 
-  @Override
-  public Sorter.DocMap flush(SegmentWriteState state) throws IOException {
+  Sorter.DocMap flush(SegmentWriteState state) throws IOException {
 
     // NOTE: caller (DocumentsWriterPerThread) handles
     // aborting on any exception from this method
@@ -247,7 +270,7 @@ final class DefaultIndexingChain extends DocConsumer {
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
     t0 = System.nanoTime();
-    docWriter.codec.fieldInfosFormat().write(state.directory, state.segmentInfo, "", state.fieldInfos, IOContext.DEFAULT);
+    indexWriterConfig.getCodec().fieldInfosFormat().write(state.directory, state.segmentInfo, "", state.fieldInfos, IOContext.DEFAULT);
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write fieldInfos");
     }
@@ -383,9 +406,8 @@ final class DefaultIndexingChain extends DocConsumer {
     }
   }
 
-  @Override
   @SuppressWarnings("try")
-  public void abort() throws IOException{
+  void abort() throws IOException{
     // finalizer will e.g. close any open files in the term vectors writer:
     try (Closeable finalizer = termsHash::abort){
       storedFieldsConsumer.abort();
@@ -423,7 +445,7 @@ final class DefaultIndexingChain extends DocConsumer {
     try {
       storedFieldsConsumer.startDocument(docID);
     } catch (Throwable th) {
-      docWriter.onAbortingException(th);
+      onAbortingException(th);
       throw th;
     }
   }
@@ -434,13 +456,12 @@ final class DefaultIndexingChain extends DocConsumer {
     try {
       storedFieldsConsumer.finishDocument();
     } catch (Throwable th) {
-      docWriter.onAbortingException(th);
+      onAbortingException(th);
       throw th;
     }
   }
 
-  @Override
-  public void processDocument(int docID, Iterable<? extends IndexableField> document) throws IOException {
+  void processDocument(int docID, Iterable<? extends IndexableField> document) throws IOException {
 
     // How many indexed field names we've seen (collapses
     // multiple field instances by the same name):
@@ -463,7 +484,7 @@ final class DefaultIndexingChain extends DocConsumer {
         fieldCount = processField(docID, field, fieldGen, fieldCount);
       }
     } finally {
-      if (docWriter.hasHitAbortingException() == false) {
+      if (hasHitAbortingException == false) {
         // Finish each indexed field name seen in the document:
         for (int i=0;i<fieldCount;i++) {
           fields[i].finish(docID);
@@ -477,7 +498,7 @@ final class DefaultIndexingChain extends DocConsumer {
     } catch (Throwable th) {
       // Must abort, on the possibility that on-disk term
       // vectors are now corrupt:
-      docWriter.onAbortingException(th);
+      abortingExceptionConsumer.accept(th);
       throw th;
     }
   }
@@ -519,7 +540,7 @@ final class DefaultIndexingChain extends DocConsumer {
         try {
           storedFieldsConsumer.writeField(fp.fieldInfo, field);
         } catch (Throwable th) {
-          docWriter.onAbortingException(th);
+          onAbortingException(th);
           throw th;
         }
       }
@@ -580,7 +601,7 @@ final class DefaultIndexingChain extends DocConsumer {
     fp.fieldInfo.setPointDimensions(pointDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
 
     if (fp.pointValuesWriter == null) {
-      fp.pointValuesWriter = new PointValuesWriter(docWriter.byteBlockAllocator, bytesUsed, fp.fieldInfo);
+      fp.pointValuesWriter = new PointValuesWriter(byteBlockAllocator, bytesUsed, fp.fieldInfo);
     }
     fp.pointValuesWriter.addPackedValue(docID, field.binaryValue());
   }
@@ -647,8 +668,8 @@ final class DefaultIndexingChain extends DocConsumer {
       // This is the first time we are seeing this field indexed with doc values, so we
       // now record the DV type so that any future attempt to (illegally) change
       // the DV type of this field, will throw an IllegalArgExc:
-      if (docWriter.getSegmentInfo().getIndexSort() != null) {
-        final Sort indexSort = docWriter.getSegmentInfo().getIndexSort();
+      if (indexWriterConfig.getIndexSort() != null) {
+        final Sort indexSort = indexWriterConfig.getIndexSort();
         validateIndexSortDVType(indexSort, fp.fieldInfo.name, dvType);
       }
       fieldInfos.globalFieldNumbers.setDocValuesType(fp.fieldInfo.number, fp.fieldInfo.name, dvType);
@@ -735,8 +756,7 @@ final class DefaultIndexingChain extends DocConsumer {
         attributes.forEach((k, v) -> fi.putAttribute(k, v));
       }
 
-      LiveIndexWriterConfig indexWriterConfig = docWriter.getIndexWriterConfig();
-      fp = new PerField(docWriter.getIndexCreatedVersionMajor(), fi, invert,
+      fp = new PerField(indexCreatedVersionMajor, fi, invert,
           indexWriterConfig.getSimilarity(), indexWriterConfig.getInfoStream(), indexWriterConfig.getAnalyzer());
       fp.next = fieldHash[hashPos];
       fieldHash[hashPos] = fp;
@@ -774,7 +794,13 @@ final class DefaultIndexingChain extends DocConsumer {
 
   @Override
   public long ramBytesUsed() {
-    return bytesUsed.get() + storedFieldsConsumer.ramBytesUsed();
+    return bytesUsed.get() + storedFieldsConsumer.accountable.ramBytesUsed()
+        + termVectorsWriter.accountable.ramBytesUsed();
+  }
+
+  @Override
+  public Collection<Accountable> getChildResources() {
+    return List.of(storedFieldsConsumer.accountable, termVectorsWriter.accountable);
   }
 
   /** NOTE: not static: accesses at least docState, termsHash. */
@@ -943,14 +969,14 @@ final class DefaultIndexingChain extends DocConsumer {
             byte[] prefix = new byte[30];
             BytesRef bigTerm = invertState.termAttribute.getBytesRef();
             System.arraycopy(bigTerm.bytes, bigTerm.offset, prefix, 0, 30);
-            String msg = "Document contains at least one immense term in field=\"" + fieldInfo.name + "\" (whose UTF8 encoding is longer than the max length " + DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + Arrays.toString(prefix) + "...', original message: " + e.getMessage();
+            String msg = "Document contains at least one immense term in field=\"" + fieldInfo.name + "\" (whose UTF8 encoding is longer than the max length " + IndexWriter.MAX_TERM_LENGTH + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + Arrays.toString(prefix) + "...', original message: " + e.getMessage();
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "ERROR: " + msg);
             }
             // Document will be deleted above:
             throw new IllegalArgumentException(msg, e);
           } catch (Throwable th) {
-            docWriter.onAbortingException(th);
+            onAbortingException(th);
             throw th;
           }
         }
@@ -978,7 +1004,6 @@ final class DefaultIndexingChain extends DocConsumer {
     }
   }
 
-  @Override
   DocIdSetIterator getHasDocValues(String field) {
     PerField perField = getPerField(field);
     if (perField != null) {
@@ -992,4 +1017,28 @@ final class DefaultIndexingChain extends DocConsumer {
     }
     return null;
   }
+
+  private static class IntBlockAllocator extends IntBlockPool.Allocator {
+    private final Counter bytesUsed;
+
+    IntBlockAllocator(Counter bytesUsed) {
+      super(IntBlockPool.INT_BLOCK_SIZE);
+      this.bytesUsed = bytesUsed;
+    }
+
+    /* Allocate another int[] from the shared pool */
+    @Override
+    public int[] getIntBlock() {
+      int[] b = new int[IntBlockPool.INT_BLOCK_SIZE];
+      bytesUsed.addAndGet(IntBlockPool.INT_BLOCK_SIZE * Integer.BYTES);
+      return b;
+    }
+
+    @Override
+    public void recycleIntBlocks(int[][] blocks, int offset, int length) {
+      bytesUsed.addAndGet(-(length * (IntBlockPool.INT_BLOCK_SIZE * Integer.BYTES)));
+    }
+
+  }
+
 }

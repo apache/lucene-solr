@@ -30,18 +30,20 @@ import org.apache.lucene.store.ByteBuffersDataInput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 final class FreqProxTermsWriter extends TermsHash {
 
-  FreqProxTermsWriter(DocumentsWriterPerThread docWriter, Counter bytesUsed, TermsHash termVectors) {
-    super(docWriter, bytesUsed, termVectors);
+  FreqProxTermsWriter(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Counter bytesUsed, TermsHash termVectors) {
+    super(intBlockAllocator, byteBlockAllocator, bytesUsed, termVectors);
   }
 
   private void applyDeletes(SegmentWriteState state, Fields fields) throws IOException {

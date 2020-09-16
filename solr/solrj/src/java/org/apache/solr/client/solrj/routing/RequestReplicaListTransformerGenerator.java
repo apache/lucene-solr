@@ -20,7 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Random;
 
 import org.apache.solr.common.SolrException;
@@ -64,9 +64,9 @@ public class RequestReplicaListTransformerGenerator {
   }
 
   public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory, ReplicaListTransformerFactory stableRltFactory, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
-    this.defaultRltFactory = Optional.ofNullable(defaultRltFactory).orElse(RANDOM_RLTF);
-    this.stableRltFactory = Optional.ofNullable(stableRltFactory).orElseGet(AffinityReplicaListTransformerFactory::new);
-    this.defaultShardPreferences = Optional.ofNullable(defaultShardPreferences).orElse("");
+    this.defaultRltFactory = Objects.requireNonNullElse(defaultRltFactory, RANDOM_RLTF);
+    this.stableRltFactory = Objects.requireNonNullElseGet(stableRltFactory, AffinityReplicaListTransformerFactory::new);
+    this.defaultShardPreferences = Objects.requireNonNullElse(defaultShardPreferences, "");
     this.nodeName = nodeName;
     this.localHostAddress = localHostAddress;
     this.sysPropsCacher = sysPropsCacher;
@@ -83,7 +83,7 @@ public class RequestReplicaListTransformerGenerator {
   public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
     @SuppressWarnings("deprecation")
     final boolean preferLocalShards = requestParams.getBool(CommonParams.PREFER_LOCAL_SHARDS, false);
-    defaultShardPreferences = Optional.ofNullable(defaultShardPreferences).orElse(this.defaultShardPreferences);
+    defaultShardPreferences = Objects.requireNonNullElse(defaultShardPreferences, this.defaultShardPreferences);
     final String shardsPreferenceSpec = requestParams.get(ShardParams.SHARDS_PREFERENCE, defaultShardPreferences);
 
     if (preferLocalShards || !shardsPreferenceSpec.isEmpty()) {
@@ -102,9 +102,9 @@ public class RequestReplicaListTransformerGenerator {
           new NodePreferenceRulesComparator(
               preferenceRules,
               requestParams,
-              Optional.ofNullable(nodeName).orElse(this.nodeName),
-              Optional.ofNullable(localHostAddress).orElse(this.localHostAddress),
-              Optional.ofNullable(sysPropsCacher).orElse(this.sysPropsCacher),
+              nodeName != null ? nodeName : this.nodeName, // could be still null
+              localHostAddress != null ? localHostAddress : this.localHostAddress, // could still be null
+              sysPropsCacher != null ? sysPropsCacher : this.sysPropsCacher, // could still be null
               defaultRltFactory,
               stableRltFactory);
       ReplicaListTransformer baseReplicaListTransformer = replicaComp.getBaseReplicaListTransformer();
