@@ -48,6 +48,8 @@ Improvements
 
 * SOLR-14722: Track timeAllowed from earlier in the request lifecycle. (David Smiley)
 
+* SOLR-14799: JWT authentication plugin only requires "sub" claim when principalClaim=sub. (Erik Hatcher)
+
 Optimizations
 ---------------------
 
