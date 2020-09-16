@@ -260,7 +260,7 @@ private QueryNode ModClause(CharSequence field) : {
  *          | (FieldName (':' | '='))? (Term | GroupingExpr)
  * }</pre>
  */
-public QueryNode Clause(CharSequence field) : {
+private QueryNode Clause(CharSequence field) : {
   QueryNode q;
 }
 {

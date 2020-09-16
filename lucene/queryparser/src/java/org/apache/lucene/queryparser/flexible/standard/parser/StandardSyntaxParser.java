@@ -217,7 +217,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     throw new Error("Missing return statement in function");
   }
 
-  final public QueryNode Clause(CharSequence field) throws ParseException {
+  final private QueryNode Clause(CharSequence field) throws ParseException {
   QueryNode q;
     if (jj_2_2(2)) {
       q = FieldRangeExpr(field);
