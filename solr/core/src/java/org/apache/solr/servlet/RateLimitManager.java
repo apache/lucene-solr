@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.annotation.SolrThreadSafe;
+import org.apache.solr.common.cloud.ClusterPropertiesListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,7 @@ import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM
  * rate limiting is being done for a specific request type.
  */
 @SolrThreadSafe
-public class RateLimitManager {
+public class RateLimitManager implements ClusterPropertiesListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public final static int DEFAULT_CONCURRENT_REQUESTS= (Runtime.getRuntime().availableProcessors()) * 3;
@@ -54,6 +55,19 @@ public class RateLimitManager {
   public RateLimitManager() {
     this.requestRateLimiterMap = new HashMap<>();
     this.activeRequestsMap = new ConcurrentHashMap<>();
+  }
+
+  @Override
+  public boolean onChange(Map<String, Object> properties) {
+
+    // Hack: We only support query rate limiting for now
+    QueryRateLimiter queryRateLimiter = (QueryRateLimiter) requestRateLimiterMap.get(SolrRequest.SolrRequestType.QUERY);
+
+    if (queryRateLimiter != null) {
+      queryRateLimiter.processConfigChange(properties);
+    }
+
+    return false;
   }
 
   // Handles an incoming request. The main orchestration code path, this method will

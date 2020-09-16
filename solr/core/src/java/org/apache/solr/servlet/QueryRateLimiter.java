@@ -19,6 +19,8 @@ package org.apache.solr.servlet;
 
 import javax.servlet.FilterConfig;
 
+import java.util.Map;
+
 import org.apache.solr.client.solrj.SolrRequest;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
@@ -38,8 +40,32 @@ public class QueryRateLimiter extends RequestRateLimiter {
     super(constructQueryRateLimiterConfig(filterConfig));
   }
 
-  protected static RequestRateLimiter.RateLimiterConfig constructQueryRateLimiterConfig(FilterConfig filterConfig) {
-    RequestRateLimiter.RateLimiterConfig queryRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig();
+  public void processConfigChange(Map<String, Object> properties) {
+    RateLimiterConfig rateLimiterConfig = getRateLimiterConfig();
+
+    if (properties.get(RateLimiterConfig.RL_ALLOWED_REQUESTS) != null) {
+      rateLimiterConfig.allowedRequests = Integer.parseInt(properties.get(RateLimiterConfig.RL_ALLOWED_REQUESTS).toString());
+    }
+
+    if (properties.get(RateLimiterConfig.RL_ENABLED) != null) {
+      rateLimiterConfig.isEnabled = Boolean.parseBoolean(properties.get(RateLimiterConfig.RL_ENABLED).toString());
+    }
+
+    if (properties.get(RateLimiterConfig.RL_GUARANTEED_SLOTS) != null) {
+      rateLimiterConfig.guaranteedSlotsThreshold = Integer.parseInt(properties.get(RateLimiterConfig.RL_GUARANTEED_SLOTS).toString());
+    }
+
+    if (properties.get(RateLimiterConfig.RL_SLOT_BORROWING_ENABLED) != null) {
+      rateLimiterConfig.isSlotBorrowingEnabled = Boolean.parseBoolean(properties.get(RateLimiterConfig.RL_SLOT_BORROWING_ENABLED).toString());
+    }
+
+    if (properties.get(RateLimiterConfig.RL_TIME_SLOT_ACQUISITION) != null) {
+      rateLimiterConfig.waitForSlotAcquisition = Long.parseLong(properties.get(RateLimiterConfig.RL_TIME_SLOT_ACQUISITION).toString());
+    }
+  }
+
+  protected static RateLimiterConfig constructQueryRateLimiterConfig(FilterConfig filterConfig) {
+    RateLimiterConfig queryRateLimiterConfig = new RateLimiterConfig();
 
     queryRateLimiterConfig.requestType = SolrRequest.SolrRequestType.QUERY;
     queryRateLimiterConfig.isEnabled = getParamAndParseBoolean(filterConfig, IS_QUERY_RATE_LIMITER_ENABLED, false);

@@ -21,7 +21,6 @@ import javax.servlet.FilterConfig;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.annotation.SolrThreadSafe;
 
 /**
@@ -123,28 +122,6 @@ public class RequestRateLimiter {
     }
 
     return defaultValue;
-  }
-
-  /* Rate limiter config for a specific request rate limiter instance */
-  static class RateLimiterConfig {
-    public SolrRequest.SolrRequestType requestType;
-    public boolean isEnabled;
-    public long waitForSlotAcquisition;
-    public int allowedRequests;
-    public boolean isSlotBorrowingEnabled;
-    public int guaranteedSlotsThreshold;
-
-    public RateLimiterConfig() { }
-
-    public RateLimiterConfig(SolrRequest.SolrRequestType requestType, boolean isEnabled, int guaranteedSlotsThreshold,
-                             long waitForSlotAcquisition, int allowedRequests, boolean isSlotBorrowingEnabled) {
-      this.requestType = requestType;
-      this.isEnabled = isEnabled;
-      this.guaranteedSlotsThreshold = guaranteedSlotsThreshold;
-      this.waitForSlotAcquisition = waitForSlotAcquisition;
-      this.allowedRequests = allowedRequests;
-      this.isSlotBorrowingEnabled = isSlotBorrowingEnabled;
-    }
   }
 
   // Represents the metadata for a slot
