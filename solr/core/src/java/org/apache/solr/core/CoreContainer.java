@@ -1838,6 +1838,9 @@ public class CoreContainer {
     return cfg.getCoreRootDirectory();
   }
 
+  public SolrCore getCore(String name) {
+    return getCore(name, null);
+  }
   /**
    * Gets a core by name and increase its refcount.
    *
@@ -1846,10 +1849,10 @@ public class CoreContainer {
    * @throws SolrCoreInitializationException if a SolrCore with this name failed to be initialized
    * @see SolrCore#close()
    */
-  public SolrCore getCore(String name) {
+  public SolrCore getCore(String name, UUID id) {
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
-    SolrCore core = solrCores.getCoreFromAnyList(name, true);
+    SolrCore core = solrCores.getCoreFromAnyList(name, true, id);
 
     // If a core is loaded, we're done just return it.
     if (core != null) {
