@@ -194,11 +194,6 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       if (timerContext != null) {
         timerContext.close();
       }
-      try {
-        clientToLeader.close();
-      } catch (Exception e) {
-        log.warn("{} unable to close client to leader", msg(), e);
-      }
     }
   }
 
