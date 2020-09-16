@@ -1586,6 +1586,13 @@ public class CoreContainer {
   public void reload(String name) {
     reload(name, null);
   }
+  public void reload(String name, UUID coreId, boolean async) {
+    if(async) {
+      runAsync(() -> reload(name, coreId));
+    } else {
+      reload(name, coreId);
+    }
+  }
   /**
    * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to
@@ -1600,13 +1607,8 @@ public class CoreContainer {
       throw new AlreadyClosedException();
     }
     SolrCore newCore = null;
-    SolrCore core = solrCores.getCoreFromAnyList(name, false);
+    SolrCore core = solrCores.getCoreFromAnyList(name, false, coreId);
     if (core != null) {
-      if(coreId != null && core.uniqueId != coreId) {
-        //trying to reload an already unloaded core
-        return;
-      }
-
       // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
       // CoreDescriptor and we need to reload it from the disk files
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
