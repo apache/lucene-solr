@@ -96,6 +96,7 @@ public final class CommitTracker implements Runnable, Closeable {
 
     scheduler.setRemoveOnCancelPolicy(true);
     scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    scheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     log.info("{} AutoCommit: {}", name, this);
     assert ObjectReleaseTracker.track(this);
   }

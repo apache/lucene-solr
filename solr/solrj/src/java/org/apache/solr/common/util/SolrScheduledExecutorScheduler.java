@@ -93,6 +93,8 @@ public class SolrScheduledExecutorScheduler extends AbstractLifeCycle implements
       return thread;
     });
     scheduler.setRemoveOnCancelPolicy(true);
+    scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    scheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     super.doStart();
   }
 

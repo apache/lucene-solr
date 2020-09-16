@@ -226,6 +226,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           new SolrNamedThreadFactory("MetricsHistoryHandler", true));
       collectService.setRemoveOnCancelPolicy(true);
       collectService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+      collectService.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
       scheduledFuture = collectService.scheduleWithFixedDelay(() -> collectMetrics(),
           timeSource.convertDelay(TimeUnit.SECONDS, collectPeriod, TimeUnit.MILLISECONDS),
           timeSource.convertDelay(TimeUnit.SECONDS, collectPeriod, TimeUnit.MILLISECONDS),

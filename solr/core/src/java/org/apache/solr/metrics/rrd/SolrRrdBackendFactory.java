@@ -115,6 +115,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
         new SolrNamedThreadFactory("SolrRrdBackendFactory", true));
     syncService.setRemoveOnCancelPolicy(true);
     syncService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    syncService.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     scheduledFuture = syncService.scheduleWithFixedDelay(() -> maybeSyncBackends(),
         timeSource.convertDelay(TimeUnit.SECONDS, syncPeriod, TimeUnit.MILLISECONDS),
         timeSource.convertDelay(TimeUnit.SECONDS, syncPeriod, TimeUnit.MILLISECONDS),

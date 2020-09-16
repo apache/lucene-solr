@@ -145,6 +145,7 @@ public class ScheduledTriggers implements Closeable {
         new SolrNamedThreadFactory("ScheduledTrigger"));
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    scheduledThreadPoolExecutor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     actionExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("AutoscalingActionExecutor"));
     this.cloudManager = cloudManager;
     this.stateManager = cloudManager.getDistribStateManager();

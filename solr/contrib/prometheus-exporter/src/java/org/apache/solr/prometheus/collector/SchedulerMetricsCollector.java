@@ -74,6 +74,7 @@ public class SchedulerMetricsCollector implements Closeable {
     this.timeUnit = timeUnit;
     scheduler.setRemoveOnCancelPolicy(true);
     scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    scheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
   }
 
   public void start() {
