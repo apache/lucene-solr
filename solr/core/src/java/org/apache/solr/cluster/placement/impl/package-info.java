@@ -14,23 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
 
-import org.apache.lucene.codecs.lucene87.LZ4WithPresetDictCompressionMode;
-
-/** CompressionCodec that uses {@link LZ4WithPresetDictCompressionMode}. */
-public class LZ4WithPresetCompressingCodec extends CompressingCodec {
-
-  /** Constructor that allows to configure the chunk size. */
-  public LZ4WithPresetCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
-    super("LZ4WithPresetCompressingStoredFieldsData", 
-          withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
-          new LZ4WithPresetDictCompressionMode(), chunkSize, maxDocsPerChunk, blockSize);
-  }
-
-  /** No-arg constructor. */
-  public LZ4WithPresetCompressingCodec() {
-    this(1<<18, 512, false, 10);
-  }
-
-}
+/**
+ * Implementation classes (not visible to plugins, subject to change at any time) for the interfaces in {@link org.apache.solr.cluster.placement}
+ * and to make them work with the rest of Solr.
+ */
+package org.apache.solr.cluster.placement.impl;

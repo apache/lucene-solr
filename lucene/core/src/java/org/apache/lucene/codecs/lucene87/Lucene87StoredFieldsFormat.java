@@ -151,35 +151,16 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
     }
   }
 
-  // 8kB seems to be a good trade-off between higher compression rates by not
-  // having to fully bootstrap a dictionary, and indexing rate by not spending
-  // too much CPU initializing data-structures to find strings in this preset
-  // dictionary.
-  private static final int BEST_COMPRESSION_DICT_LENGTH = 8 * 1024;
-  // 48kB seems like a nice trade-off because it's small enough to keep
-  // retrieval fast, yet sub blocks can find strings in a window of 26kB of
-  // data on average (the window grows from 8kB to 32kB in the first 24kB, and
-  // then DEFLATE can use 32kB for the last 24kB) which is close enough to the
-  // maximum window length of DEFLATE of 32kB.
-  private static final int BEST_COMPRESSION_SUB_BLOCK_LENGTH = 48 * 1024;
-  // We shoot for 10 sub blocks per block, which should hopefully amortize the
-  // space overhead of having the first 8kB compressed without any preset dict,
-  // and then remove 8kB in order to avoid creating a tiny 11th sub block if
-  // documents are small.
-  private static final int BEST_COMPRESSION_BLOCK_LENGTH = BEST_COMPRESSION_DICT_LENGTH + 10 * BEST_COMPRESSION_SUB_BLOCK_LENGTH - 8 * 1024;
+  // Shoot for 10 sub blocks of 48kB each.
+  private static final int BEST_COMPRESSION_BLOCK_LENGTH = 10 * 48 * 1024;
 
   /** Compression mode for {@link Mode#BEST_COMPRESSION} */
-  public static final CompressionMode BEST_COMPRESSION_MODE = new DeflateWithPresetDictCompressionMode(BEST_COMPRESSION_DICT_LENGTH, BEST_COMPRESSION_SUB_BLOCK_LENGTH);
+  public static final CompressionMode BEST_COMPRESSION_MODE = new DeflateWithPresetDictCompressionMode();
 
-  // We need to re-initialize the hash table for every sub block with the
-  // content of the dictionary, so we keep it small to not hurt indexing.
-  private static final int BEST_SPEED_DICT_LENGTH = 4 * 1024;
-  // 60kB so that dict_length + block_length == max window size
-  private static final int BEST_SPEED_SUB_BLOCK_LENGTH = 60 * 1024;
-  // shoot for 10 sub blocks in addition to the dictionary
-  private static final int BEST_SPEED_BLOCK_LENGTH = BEST_SPEED_DICT_LENGTH + 10 * BEST_SPEED_SUB_BLOCK_LENGTH - 8 * 1024;
+  // Shoot for 10 sub blocks of 60kB each.
+  private static final int BEST_SPEED_BLOCK_LENGTH = 10 * 60 * 1024;
 
   /** Compression mode for {@link Mode#BEST_SPEED} */
-  public static final CompressionMode BEST_SPEED_MODE = new LZ4WithPresetDictCompressionMode(BEST_SPEED_DICT_LENGTH, BEST_SPEED_SUB_BLOCK_LENGTH);
+  public static final CompressionMode BEST_SPEED_MODE = new LZ4WithPresetDictCompressionMode();
 
 }

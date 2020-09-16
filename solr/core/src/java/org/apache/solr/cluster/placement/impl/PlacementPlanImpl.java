@@ -14,23 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
 
-import org.apache.lucene.codecs.lucene87.LZ4WithPresetDictCompressionMode;
+package org.apache.solr.cluster.placement.impl;
 
-/** CompressionCodec that uses {@link LZ4WithPresetDictCompressionMode}. */
-public class LZ4WithPresetCompressingCodec extends CompressingCodec {
+import java.util.Set;
 
-  /** Constructor that allows to configure the chunk size. */
-  public LZ4WithPresetCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
-    super("LZ4WithPresetCompressingStoredFieldsData", 
-          withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
-          new LZ4WithPresetDictCompressionMode(), chunkSize, maxDocsPerChunk, blockSize);
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
+
+class PlacementPlanImpl implements PlacementPlan {
+
+  final PlacementRequest request;
+  final Set<ReplicaPlacement> replicaPlacements;
+
+  PlacementPlanImpl(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
+    this.request = request;
+    this.replicaPlacements = replicaPlacements;
   }
 
-  /** No-arg constructor. */
-  public LZ4WithPresetCompressingCodec() {
-    this(1<<18, 512, false, 10);
+  @Override
+  public PlacementRequest getRequest() {
+    return request;
   }
 
+  @Override
+  public Set<ReplicaPlacement> getReplicaPlacements() {
+    return replicaPlacements;
+  }
 }

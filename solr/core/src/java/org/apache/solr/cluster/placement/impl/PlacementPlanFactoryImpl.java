@@ -14,23 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
 
-import org.apache.lucene.codecs.lucene87.LZ4WithPresetDictCompressionMode;
+package org.apache.solr.cluster.placement.impl;
 
-/** CompressionCodec that uses {@link LZ4WithPresetDictCompressionMode}. */
-public class LZ4WithPresetCompressingCodec extends CompressingCodec {
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.SolrCollection;
+import org.apache.solr.cluster.placement.*;
 
-  /** Constructor that allows to configure the chunk size. */
-  public LZ4WithPresetCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
-    super("LZ4WithPresetCompressingStoredFieldsData", 
-          withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
-          new LZ4WithPresetDictCompressionMode(), chunkSize, maxDocsPerChunk, blockSize);
-  }
+import java.util.Set;
 
-  /** No-arg constructor. */
-  public LZ4WithPresetCompressingCodec() {
-    this(1<<18, 512, false, 10);
-  }
+class PlacementPlanFactoryImpl implements PlacementPlanFactory {
+    @Override
+    public PlacementPlan createPlacementPlan(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
+        return new PlacementPlanImpl(request, replicaPlacements);
+    }
 
+    @Override
+    public ReplicaPlacement createReplicaPlacement(SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType) {
+        return new ReplicaPlacementImpl(solrCollection, shardName, node, replicaType);
+    }
 }

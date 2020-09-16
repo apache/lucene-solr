@@ -14,23 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
 
-import org.apache.lucene.codecs.lucene87.LZ4WithPresetDictCompressionMode;
+package org.apache.solr.cluster;
 
-/** CompressionCodec that uses {@link LZ4WithPresetDictCompressionMode}. */
-public class LZ4WithPresetCompressingCodec extends CompressingCodec {
+/**
+ * An instantiation (or one of the copies) of a given {@link Shard} of a given {@link SolrCollection}.
+ */
+public interface Replica {
+  Shard getShard();
 
-  /** Constructor that allows to configure the chunk size. */
-  public LZ4WithPresetCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
-    super("LZ4WithPresetCompressingStoredFieldsData", 
-          withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
-          new LZ4WithPresetDictCompressionMode(), chunkSize, maxDocsPerChunk, blockSize);
+  ReplicaType getType();
+  ReplicaState getState();
+
+  String getReplicaName();
+
+  /**
+   * The core name on disk
+   */
+  String getCoreName();
+
+  /**
+   * {@link Node} on which this {@link Replica} is located.
+   */
+  Node getNode();
+
+  /**
+   * The order of this enum is important from the most to least "important" replica type.
+   */
+  enum ReplicaType {
+    NRT, TLOG, PULL
   }
 
-  /** No-arg constructor. */
-  public LZ4WithPresetCompressingCodec() {
-    this(1<<18, 512, false, 10);
+  enum ReplicaState {
+    ACTIVE, DOWN, RECOVERING, RECOVERY_FAILED
   }
-
 }
