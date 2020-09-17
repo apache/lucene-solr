@@ -264,9 +264,8 @@ public abstract class AbstractAnalysisFactory {
     List<String> files = splitFileNames(wordFiles);
     CharArraySet words = null;
     if (files.size() > 0) {
-      // default stopwords list has 35 or so words, but maybe don't make it that
-      // big to start
-      words = new CharArraySet(files.size() * 10, ignoreCase);
+      // default stopwords list has 35 or so words
+      words = new CharArraySet(files.size() * 35, ignoreCase);
       for (String file : files) {
         List<String> wlist = getLines(loader, file.trim());
         words.addAll(StopFilter.makeStopSet(wlist, ignoreCase));

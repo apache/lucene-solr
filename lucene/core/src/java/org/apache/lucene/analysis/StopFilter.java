@@ -92,7 +92,7 @@ public class StopFilter extends FilteringTokenFilter {
    * @return A Set ({@link CharArraySet}) containing the words
    */
   public static CharArraySet makeStopSet(List<?> stopWords, boolean ignoreCase){
-    CharArraySet stopSet = new CharArraySet(stopWords.size(), ignoreCase);
+    CharArraySet stopSet = new CharArraySet(stopWords, ignoreCase);
     stopSet.addAll(stopWords);
     return stopSet;
   }

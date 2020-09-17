@@ -51,8 +51,8 @@ public class SolrQoSFilter extends QoSFilter {
     super.init(filterConfig);
     _origMaxRequests = Integer.getInteger("solr.concurrentRequests.max", 1000);
     super.setMaxRequests(_origMaxRequests);
-    super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 15000));
-    super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 2000));
+    super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 60000));
+    super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 1000));
   }
 
   @Override
@@ -63,31 +63,34 @@ public class SolrQoSFilter extends QoSFilter {
     HttpServletRequest req = (HttpServletRequest) request;
     String source = req.getHeader(QoSParams.REQUEST_SOURCE);
     boolean imagePath = req.getPathInfo() != null && req.getPathInfo().startsWith("/img/");
-    if (!imagePath && (source == null || !source.equals(QoSParams.INTERNAL))) {
+    boolean externalRequest = !imagePath && (source == null || !source.equals(QoSParams.INTERNAL));
+    log.info("SolrQoSFilter {} {} {}", sysStats.getSystemLoad(), sysStats.getTotalUsage(), externalRequest);
+
+    if (externalRequest) {
       if (log.isDebugEnabled()) log.debug("external request"); //nocommit: remove when testing is done
       double ourLoad = sysStats.getTotalUsage();
       if (log.isDebugEnabled()) log.debug("Our individual load is {}", ourLoad);
       if (ourLoad > SysStats.OUR_LOAD_HIGH) {
         int cMax = getMaxRequests();
         if (cMax > 2) {
-          int max = Math.max(2, (int) ((double)cMax * 0.60D));
+          int max = Math.max(4, (int) ((double)cMax * 0.60D));
           log.warn("Our individual load is {}, set max concurrent requests to {}", ourLoad, max);
-         // setMaxRequests(max);
+          setMaxRequests(max);
         }
       } else {
         // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
         double sLoad = sysStats.getSystemLoad();
-        if (sLoad > PROC_COUNT) {
+        if (sLoad > 1) {
           int cMax = getMaxRequests();
           if (cMax > 2) {
-            int max = Math.max(2, (int) ((double) cMax * 0.60D));
+            int max = Math.max(4, (int) ((double) cMax * 0.60D));
             log.warn("System load is {}, set max concurrent requests to {}", sLoad, max);
-          //  setMaxRequests(max);
+            setMaxRequests(max);
           }
-        } else if (sLoad < PROC_COUNT && _origMaxRequests != getMaxRequests()) {
+        } else if (sLoad < 0.95 && _origMaxRequests != getMaxRequests()) {
 
           log.info("set max concurrent requests to orig value {}", _origMaxRequests);
-         // setMaxRequests(_origMaxRequests);
+          setMaxRequests(_origMaxRequests);
         }
       }
 

@@ -891,6 +891,7 @@ public class Http2SolrClient extends SolrClient {
 
     public void close() {
       phaser.forceTermination();
+      available.release(available.getQueueLength() + 5);
     }
 
     public void register() {

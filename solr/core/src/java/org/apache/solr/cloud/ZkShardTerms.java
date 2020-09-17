@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -334,10 +335,12 @@ public class ZkShardTerms implements AutoCloseable{
       Stat stat = new Stat();
       byte[] data = zkClient.getData(znodePath, watcher, stat);
       newTerms = new ShardTerms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
-    } catch (KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
     } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
+      // dont propegate interrupt
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
+    } catch (KeeperException.NoNodeException e) {
+      newTerms = new ShardTerms(Collections.emptyMap(), -1);
+    } catch (KeeperException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
     }
 

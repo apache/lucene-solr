@@ -62,9 +62,6 @@ class SolrCores implements Closeable {
   }
   
   protected void addCoreDescriptor(CoreDescriptor p) {
-    if (isClosed()) {
-      throw new AlreadyClosedException();
-    }
     if (p.isTransient()) {
       if (getTransientCacheHandler() != null) {
         getTransientCacheHandler().addTransientDescriptor(p.getName(), p);

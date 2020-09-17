@@ -332,10 +332,12 @@ public class PerThreadExecService extends AbstractExecutorService {
 
     double ourLoad = ParWork.getSysStats().getTotalUsage();
     if (ourLoad > SysStats.OUR_LOAD_HIGH) {
+      if (log.isDebugEnabled()) log.debug("Our cpu usage is too high, run in caller thread {}", ourLoad);
       return false;
     } else {
       double sLoad = sysStats.getSystemLoad();
-      if (sLoad > ParWork.PROC_COUNT) {
+      if (sLoad > 1) {
+        if (log.isDebugEnabled()) log.debug("System load is too high, run in caller thread {}", sLoad);
         return false;
       }
     }

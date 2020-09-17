@@ -348,7 +348,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           }
 
           recoveryWaiting.incrementAndGet();
-          cancelRecovery(true, false);
 
           recoveryLock.lock();
           // don't use recoveryLock.getQueueLength() for this
@@ -386,16 +385,23 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // already queued up - the recovery execution itself is run
       // in another thread on another 'recovery' executor.
       //
-      if (recoveryFuture != null) {
-        if (recoveryStrat != null) recoveryStrat.close();
-        recoveryFuture.cancel(true);
 
-        try {
-          recoveryFuture.get();
-        } catch (Exception e) {
-          log.error("Exception waiting for previous recovery to finish");
+      try {
+        if (recoveryStrat != null) {
+          recoveryStrat.close();
         }
 
+        if (recoveryFuture != null) {
+          recoveryFuture.cancel(true);
+
+          try {
+            recoveryFuture.get();
+          } catch (Exception e) {
+            log.error("Exception waiting for previous recovery to finish");
+          }
+        }
+      } catch (NullPointerException e) {
+        // okay
       }
 
       recoveryFuture = cc.getUpdateShardHandler().getRecoveryExecutor()
@@ -417,20 +423,28 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
 
     if (recoveryStrat != null) {
-
       try {
         recoveryStrat.close();
+      } catch (NullPointerException e) {
+        // okay
+      }
+    }
+
+    if (recoveryFuture != null) {
+      try {
         recoveryFuture.cancel(true);
       } catch (NullPointerException e) {
         // okay
       }
-
       try {
         recoveryFuture.get(10, TimeUnit.MINUTES); // nocommit - how long? make configurable too
       } catch (CancellationException e) {
         // okay
       } catch (InterruptedException e) {
         ParWork.propagateInterrupt(e);
+        throw new AlreadyClosedException();
+      } catch (NullPointerException e) {
+        // okay
       } catch (Exception e) {
         log.warn("Exception canceling recovery", e);
       }

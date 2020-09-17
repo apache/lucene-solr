@@ -20,7 +20,7 @@ public class SysStats extends Thread {
     private static final Logger log = LoggerFactory
         .getLogger(MethodHandles.lookup().lookupClass());
 
-    public static final int OUR_LOAD_HIGH = 1;
+    public static final double OUR_LOAD_HIGH = 1.2;
     public static final long REFRESH_INTERVAL = TimeUnit.NANOSECONDS.convert(5000, TimeUnit.MILLISECONDS);
     static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
     private final long refreshIntervalMs;
@@ -28,7 +28,7 @@ public class SysStats extends Thread {
     private long refreshInterval;
     private  volatile boolean stopped;
 
-    private volatile Map<Long, ThreadTime> threadTimeMap = new ConcurrentHashMap<>(512);
+    private volatile Map<Long, ThreadTime> threadTimeMap = new HashMap<>(512);
     private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
     private OperatingSystemMXBean opBean = ManagementFactory.getOperatingSystemMXBean();
 
@@ -165,19 +165,19 @@ public class SysStats extends Thread {
         return getTotalUsage() / ParWork.PROC_COUNT;
     }
 
-    public double getUsageByThread(Thread t) {
-        ThreadTime info;
-
-        info = threadTimeMap.get(t.getId());
-
-        double usage = 0D;
-        if(info != null) {
-            synchronized (info) {
-                usage = (info.getCurrent() - info.getLast()) / (TimeUnit.MILLISECONDS.toNanos(refreshInterval * 2));
-            }
-        }
-        return usage;
-    }
+//    public double getUsageByThread(Thread t) {
+//        ThreadTime info;
+//
+//        info = threadTimeMap.get(t.getId());
+//
+//        double usage = 0D;
+//        if(info != null) {
+//            synchronized (info) {
+//                usage = (info.getCurrent() - info.getLast()) / (TimeUnit.MILLISECONDS.toNanos(refreshInterval * 2));
+//            }
+//        }
+//        return usage;
+//    }
 
     static class ThreadTime {
 

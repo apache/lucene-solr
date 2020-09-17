@@ -190,7 +190,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   protected volatile TransactionLog bufferTlog;
   protected volatile TransactionLog tlog;
-  protected final byte[] buffer = new byte[65536];
 
   protected TransactionLog prevTlog;
   protected TransactionLog prevTlogOnPrecommit;
@@ -198,7 +197,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected final LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
   protected int numOldRecords;  // number of records in the recent logs
 
-  protected Map<BytesRef,LogPtr> map = new HashMap<>(128);
+  protected Map<BytesRef,LogPtr> map = new HashMap<>(32);
   protected Map<BytesRef,LogPtr> prevMap;  // used while committing/reopening is happening
   protected Map<BytesRef,LogPtr> prevMap2;  // used while committing/reopening is happening
   protected TransactionLog prevMapLog;  // the transaction log used to look up entries found in prevMap
@@ -359,7 +358,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
     maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
-    numVersionBuckets = objToInt(info.initArgs.get("numVersionBuckets"), 65536);
+    numVersionBuckets = objToInt(info.initArgs.get("numVersionBuckets"), 32768);
     if (numVersionBuckets <= 0)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Number of version buckets must be greater than 0!");

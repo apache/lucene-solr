@@ -67,24 +67,22 @@ public class SolrCmdDistributor implements Closeable {
   
   private final Http2SolrClient solrClient;
 
-  private final Phaser phaser = new RequestPhaser();
   Http2SolrClient.AsyncTracker tracker = new Http2SolrClient.AsyncTracker();
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
-    this.solrClient = new Http2SolrClient.Builder().markInternalRequest().withHttpClient(updateShardHandler.getTheSharedHttpClient()).idleTimeout(60000).build();
+    this.solrClient = updateShardHandler.getTheSharedHttpClient();
   }
 
   public void finish() {
     assert !finished : "lifecycle sanity check";
-
+  //  nonCommitTracker.waitForComplete();
     tracker.waitForComplete();
     finished = true;
   }
   
   public void close() {
     tracker.close();
-    IOUtils.closeQuietly(solrClient);
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -144,7 +142,9 @@ public class SolrCmdDistributor implements Closeable {
   public void distribDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean sync,
                             RollupRequestReplicationTracker rollupTracker,
                             LeaderRequestReplicationTracker leaderTracker) throws IOException {
-
+    if (!cmd.isDeleteById()) {
+      blockAndDoRetries();
+    }
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
       uReq.setParams(params);
@@ -152,11 +152,9 @@ public class SolrCmdDistributor implements Closeable {
       if (cmd.isDeleteById()) {
         uReq.deleteById(cmd.getId(), cmd.getRoute(), cmd.getVersion());
       } else {
-        solrClient.waitForOutstandingRequests();
-
         uReq.deleteByQuery(cmd.query);
       }
-      submit(new Req(cmd, node, uReq, sync, rollupTracker, leaderTracker));
+      submit(new Req(cmd, node, uReq, sync, rollupTracker, leaderTracker), true);
     }
   }
   
@@ -180,15 +178,13 @@ public class SolrCmdDistributor implements Closeable {
       if (cmd.isInPlaceUpdate()) {
         params.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
       }
-      submit(new Req(cmd, node, uReq, synchronous, rollupTracker, leaderTracker));
+      submit(new Req(cmd, node, uReq, synchronous, rollupTracker, leaderTracker), true);
     }
     
   }
 
   public void distribCommit(CommitUpdateCommand cmd, List<Node> nodes,
       ModifiableSolrParams params) {
-    Set<CountDownLatch> latches = new HashSet<>(nodes.size());
-
     // we need to do any retries before commit...
     blockAndDoRetries();
     if (log.isDebugEnabled()) log.debug("Distrib commit to: {} params: {}", nodes, params);
@@ -198,9 +194,8 @@ public class SolrCmdDistributor implements Closeable {
       uReq.setParams(params);
 
       addCommit(uReq, cmd);
-      submit(new Req(cmd, node, uReq, false));
+      submit(new Req(cmd, node, uReq, false), true);
     }
-
   }
 
   public void blockAndDoRetries() {
@@ -213,7 +208,7 @@ public class SolrCmdDistributor implements Closeable {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes, cmd.openSearcher);
   }
 
-  private void submit(final Req req) {
+  private void submit(final Req req, boolean register) {
 
     if (log.isDebugEnabled()) {
       log.debug("sending update to " + req.node.getUrl() + " retry:" + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
@@ -225,7 +220,6 @@ public class SolrCmdDistributor implements Closeable {
       blockAndDoRetries();
 
       try {
-        req.uReq.setBasePath(req.node.getUrl());
         solrClient.request(req.uReq);
       } catch (Exception e) {
         log.error("Exception sending synchronous dist update", e);
@@ -241,20 +235,21 @@ public class SolrCmdDistributor implements Closeable {
       return;
     }
 
-    tracker.register();
+    if (register) {
+      tracker.register();
+    }
     try {
       solrClient.request(req.uReq, null, new Http2SolrClient.OnComplete() {
 
         @Override
         public void onSuccess(NamedList result) {
-          if (log.isDebugEnabled()) log.debug("Success for distrib update {}", result);
+          log.info("Success for distrib update {}", result);
           tracker.arrive();
         }
 
         @Override
         public void onFailure(Throwable t) {
           log.error("Exception sending dist update", t);
-          tracker.arrive();
 
           Error error = new Error();
           error.t = t;
@@ -263,13 +258,19 @@ public class SolrCmdDistributor implements Closeable {
             error.statusCode = ((SolrException) t).code();
           }
 
+          boolean retry = false;
           if (checkRetry(error)) {
+            retry = true;
+          }
+
+          if (retry) {
             log.info("Retrying distrib update on error: {}", t.getMessage());
-            submit(req);
+            submit(req, false);
+            return;
           } else {
             allErrors.add(error);
           }
-
+          tracker.arrive();
         }
       });
     } catch (Exception e) {
@@ -282,7 +283,7 @@ public class SolrCmdDistributor implements Closeable {
         error.statusCode = ((SolrException) e).code();
       }
       if (checkRetry(error)) {
-        submit(req);
+        submit(req, true);
       } else {
         allErrors.add(error);
       }

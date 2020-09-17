@@ -1483,11 +1483,13 @@ public class ZkController implements Closeable {
       // the watcher is added to a set so multiple calls of this method will left only one watcher
       getZkStateReader().registerCore(cloudDesc.getCollectionName());
       // the watcher is added to a set so multiple calls of this method will left only one watcher
-      registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), cloudDesc.getCoreNodeName(), desc.getName());
+
+      // nocommit
+      //registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), cloudDesc.getCoreNodeName(), desc.getName());
 
       // check replica's existence in clusterstate first
       try {
-        zkStateReader.waitForState(collection, Overseer.isLegacy(zkStateReader) ? 10000 : 10000,
+        zkStateReader.waitForState(collection, 30000,
             TimeUnit.MILLISECONDS, (collectionState) -> getReplicaOrNull(collectionState, shardId, coreZkNodeName) != null);
       } catch (TimeoutException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, timeout waiting for replica present in clusterstate");

@@ -1657,19 +1657,19 @@ public class CoreContainer implements Closeable {
 
         // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
         // CoreDescriptor and we need to reload it from the disk files
-        CoreDescriptor cd;
-        if (core.getDirectoryFactory().isPersistent()) {
-          cd = reloadCoreDescriptor(core.getCoreDescriptor());
-        } else {
-          cd = core.getCoreDescriptor();
-        }
-        solrCores.addCoreDescriptor(cd);
+        CoreDescriptor cd = core.getCoreDescriptor();
+//        if (core.getDirectoryFactory().isPersistent()) {
+//          cd = reloadCoreDescriptor(core.getCoreDescriptor());
+//        } else {
+//          cd = core.getCoreDescriptor();
+//        }
+//        solrCores.addCoreDescriptor(cd);
         Closeable oldCore = null;
         boolean success = false;
         try {
-          solrCores.waitForLoadingCoreToFinish(cd.getName(), 15000);
+          solrCores.waitForLoadingCoreToFinish(name, 15000);
           ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
-          log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
+          log.info("Reloading SolrCore '{}' using configuration from {}", name, coreConfig.getName());
           newCore = core.reload(coreConfig);
 
           DocCollection docCollection = null;
@@ -1795,18 +1795,18 @@ public class CoreContainer implements Closeable {
       }
     }
 
-    if (cd == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
-    }
-
     if (isZooKeeperAware()) {
       getZkController().closeLeaderContext(cd);
-      getZkController().stopReplicationFromLeader(cd.getName());
+      getZkController().stopReplicationFromLeader(name);
     }
 
     SolrCore core = null;
     try {
-       core = solrCores.remove(name);
+      core = solrCores.remove(name);
+
+      if (cd == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
+      }
 
       solrCores.removeCoreDescriptor(cd);
       coresLocator.delete(this, cd);
@@ -1821,8 +1821,7 @@ public class CoreContainer implements Closeable {
         if (core != null) {
           core.getSolrCoreState().cancelRecovery(true, true);
         }
-        if (cd.getCloudDescriptor().getReplicaType() == Replica.Type.PULL
-                || cd.getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
+        if (cd.getCloudDescriptor().getReplicaType() == Replica.Type.PULL || cd.getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
           // Stop replication if this is part of a pull/tlog replica before closing the core
           zkSys.getZkController().stopReplicationFromLeader(name);
 
