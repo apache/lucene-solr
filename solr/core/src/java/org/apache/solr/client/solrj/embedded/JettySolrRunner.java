@@ -318,6 +318,7 @@ public class JettySolrRunner implements Closeable {
       final SslContextFactory.Server sslcontext = SSLConfig.createContextFactory(config.sslConfig);
 
       HttpConfiguration configuration = new HttpConfiguration();
+      configuration.setOutputBufferSize(64 * 1024);
       configuration.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
       ServerConnector connector;
       if (sslcontext != null) {
@@ -340,7 +341,7 @@ public class JettySolrRunner implements Closeable {
           HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
 
           http2ConnectionFactory.setMaxConcurrentStreams(256);
-          http2ConnectionFactory.setInputBufferSize(4096);
+          http2ConnectionFactory.setInputBufferSize(16384);
 
           ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(
               http2ConnectionFactory.getProtocol(),

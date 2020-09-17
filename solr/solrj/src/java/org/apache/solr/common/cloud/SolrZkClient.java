@@ -93,7 +93,7 @@ public class SolrZkClient implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final int zkClientConnectTimeout;
-  private final CloseTracker closeTracker;
+  private CloseTracker closeTracker;
 
   private final ConnectionManager connManager;
 
@@ -119,7 +119,7 @@ public class SolrZkClient implements Closeable {
 
   // expert: for tests
   public SolrZkClient() {
-    closeTracker = new CloseTracker();
+    assert (closeTracker = new CloseTracker()) != null;
     zkClientConnectTimeout = 0;
     connManager = null;
   }
@@ -143,7 +143,7 @@ public class SolrZkClient implements Closeable {
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout, final OnReconnect onReconnect, BeforeReconnect beforeReconnect, ZkACLProvider zkACLProvider, IsClosed higherLevelIsClosed) {
     assert ObjectReleaseTracker.track(this);
     log.info("Creating new {} instance {}", SolrZkClient.class.getSimpleName(), this);
-    closeTracker = new CloseTracker();
+    assert (closeTracker = new CloseTracker()) != null;
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
 
@@ -344,11 +344,15 @@ public class SolrZkClient implements Closeable {
 
 
   public void enableCloseLock() {
-    closeTracker.enableCloseLock();
+    if (closeTracker != null) {
+      closeTracker.enableCloseLock();
+    }
   }
 
   public void disableCloseLock() {
-    closeTracker.disableCloseLock();
+    if (closeTracker != null) {
+      closeTracker.disableCloseLock();
+    }
   }
 
 
@@ -888,10 +892,8 @@ public class SolrZkClient implements Closeable {
 
     isClosed = true;
     connManager.close();
-  //  ExecutorUtil.shutdownAndAwaitTermination(zkConnManagerCallbackExecutor);
-   //
 
-    closeTracker.close();
+    assert closeTracker.close();
     assert ObjectReleaseTracker.release(this);
   }
 

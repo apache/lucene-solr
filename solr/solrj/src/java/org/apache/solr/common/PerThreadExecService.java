@@ -44,7 +44,7 @@ public class PerThreadExecService extends AbstractExecutorService {
   private volatile Worker worker;
   private volatile Future<?> workerFuture;
 
-  private CloseTracker closeTracker = new CloseTracker();
+  private CloseTracker closeTracker;
 
   private SysStats sysStats = ParWork.getSysStats();
   private volatile boolean closeLock;
@@ -118,6 +118,7 @@ public class PerThreadExecService extends AbstractExecutorService {
   
   public PerThreadExecService(ExecutorService service, int maxSize, boolean noCallerRuns) {
     assert service != null;
+    assert (closeTracker = new CloseTracker()) != null;
     this.noCallerRuns = noCallerRuns; 
     //assert ObjectReleaseTracker.track(this);
     if (maxSize == -1) {

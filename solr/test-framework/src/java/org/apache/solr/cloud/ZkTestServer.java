@@ -534,7 +534,7 @@ public class ZkTestServer implements Closeable {
     if (closeTracker != null) {
       throw new AlreadyClosedException();
     }
-    closeTracker = new CloseTracker();
+    assert (closeTracker = new CloseTracker()) != null;
 
     try {
       // we don't call super.distribSetUp
@@ -609,7 +609,7 @@ public class ZkTestServer implements Closeable {
 
   public synchronized void shutdown() throws IOException, InterruptedException {
     log.info("Shutting down ZkTestServer.");
-  //  closeTracker.close();
+    assert closeTracker.close();
     try {
       if (chRootClient != null) {
         chRootClient.printLayout();

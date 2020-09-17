@@ -448,6 +448,13 @@ public class SolrTestCase extends LuceneTestCase {
       }
 
 
+      IllegalCallerException lastIllegalCallerEx = CloseTracker.lastIllegalCallerEx;
+      if (lastIllegalCallerEx != null) {
+        CloseTracker.lastIllegalCallerEx = null;
+        throw lastIllegalCallerEx;
+      }
+
+
       String object = null;
       // if the tests passed, make sure everything was closed / released
       if (RandomizedTest.getContext().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {

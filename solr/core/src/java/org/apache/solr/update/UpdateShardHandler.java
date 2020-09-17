@@ -21,9 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.client.HttpClient;
@@ -32,11 +30,9 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CloseTracker;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
@@ -59,7 +55,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloseTracker closeTracker;
+  private CloseTracker closeTracker;
 
   private final Http2SolrClient updateOnlyClient;
 
@@ -82,7 +78,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
     assert ObjectReleaseTracker.track(this);
-    closeTracker = new CloseTracker();
+    assert (closeTracker = new CloseTracker()) != null;
     defaultConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null ) {
@@ -210,7 +206,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   public void close() {
-  //  closeTracker.close();
+    assert closeTracker.close();
     if (updateOnlyClient != null) updateOnlyClient.disableCloseLock();
     try (ParWork closer = new ParWork(this, true)) {
       closer.collect("", () -> {

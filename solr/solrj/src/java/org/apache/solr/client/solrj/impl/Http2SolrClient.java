@@ -135,7 +135,7 @@ public class Http2SolrClient extends SolrClient {
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
   private final Map<String, String> headers;
 
-  private final CloseTracker closeTracker;
+  private CloseTracker closeTracker;
 
   private volatile HttpClient httpClient;
   private volatile Set<String> queryParams = Collections.emptySet();
@@ -152,7 +152,7 @@ public class Http2SolrClient extends SolrClient {
   private volatile SolrQueuedThreadPool httpClientExecutor;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
-    closeTracker = new CloseTracker();
+    assert (closeTracker = new CloseTracker()) != null;
     assert ObjectReleaseTracker.track(this);
     if (serverBaseUrl != null)  {
       if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
@@ -259,7 +259,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   public void close() {
-    closeTracker.close();
+    assert closeTracker.close();
     asyncTracker.close();
     if (closeClient) {
       try {
@@ -832,11 +832,15 @@ public class Http2SolrClient extends SolrClient {
   }
 
   public void enableCloseLock() {
-    closeTracker.enableCloseLock();
+    if (closeTracker != null) {
+      closeTracker.enableCloseLock();
+    }
   }
 
   public void disableCloseLock() {
-    closeTracker.disableCloseLock();
+    if (closeTracker != null) {
+      closeTracker.disableCloseLock();
+    }
   }
 
   public void setRequestWriter(RequestWriter requestWriter) {

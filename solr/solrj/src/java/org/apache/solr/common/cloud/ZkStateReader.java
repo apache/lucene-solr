@@ -155,7 +155,7 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final String REPLICA_TYPE = "type";
   public static final byte[] EMPTY_ARRAY = new byte[0];
-  private final CloseTracker closeTracker;
+  private CloseTracker closeTracker;
 
   /**
    * A view of the current state of all collections; combines all the different state sources into a single view.
@@ -330,7 +330,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public ZkStateReader(SolrZkClient zkClient, Runnable securityNodeListener) {
-    closeTracker = new CloseTracker();
+    assert (closeTracker = new CloseTracker()) != null;
     this.zkClient = zkClient;
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = false;
@@ -340,8 +340,7 @@ public class ZkStateReader implements SolrCloseable {
 
 
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
-    closeTracker = new CloseTracker();
-
+    assert (closeTracker = new CloseTracker()) != null;
     this.zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
             // on reconnect, reload cloud info
             new OnReconnect() {
@@ -886,7 +885,7 @@ public class ZkStateReader implements SolrCloseable {
 
   public void close() {
     log.info("Closing ZkStateReader");
-    //closeTracker.close();
+    assert closeTracker.close();
     this.closed = true;
     try {
       if (closeClient) {

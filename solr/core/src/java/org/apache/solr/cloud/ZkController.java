@@ -138,7 +138,7 @@ public class ZkController implements Closeable {
   private final int zkClientConnectTimeout;
   private final Supplier<List<CoreDescriptor>> descriptorsSupplier;
   private final ZkACLProvider zkACLProvider;
-  private final CloseTracker closeTracker;
+  private CloseTracker closeTracker;
   private boolean closeZkClient = false;
 
   private volatile ZkDistributedQueue overseerJobQueue;
@@ -310,7 +310,7 @@ public class ZkController implements Closeable {
    */
   public ZkController(final CoreContainer cc, SolrZkClient zkClient, CloudConfig cloudConfig, final Supplier<List<CoreDescriptor>> descriptorsSupplier)
       throws InterruptedException, TimeoutException, IOException {
-    closeTracker = new CloseTracker();
+    assert (closeTracker = new CloseTracker()) != null;
     if (cc == null) log.error("null corecontainer");
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     try {
@@ -590,7 +590,7 @@ public class ZkController implements Closeable {
    */
   public synchronized void close() {
     log.info("Closing ZkController");
-    closeTracker.close();
+    assert closeTracker.close();
     this.shudownCalled = true;
 
     this.isClosed = true;

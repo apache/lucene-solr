@@ -97,7 +97,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     public SolrQueuedThreadPool(String name) {
         this(Integer.MAX_VALUE, 12,
-                60000, -1, // no reserved executor threads - we can process requests after shutdown or some race - we try to limit without threadpool limits no anyway
+                30000, -1, // no reserved executor threads - we can process requests after shutdown or some race - we try to limit without threadpool limits no anyway
                 null, null,
                 new  SolrNamedThreadFactory(name));
         this.name = name;

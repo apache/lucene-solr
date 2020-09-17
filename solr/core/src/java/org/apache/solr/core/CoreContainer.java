@@ -188,7 +188,7 @@ public class CoreContainer implements Closeable {
 
   protected volatile Properties containerProperties;
 
-  private final CloseTracker closeTracker;
+  private CloseTracker closeTracker;
 
   private volatile ConfigSetService coreConfigService;
 
@@ -331,7 +331,7 @@ public class CoreContainer implements Closeable {
   }
   public CoreContainer(SolrZkClient zkClient, NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
     assert ObjectReleaseTracker.track(this);
-    closeTracker = new CloseTracker();
+    assert (closeTracker = new CloseTracker()) != null;
     this.containerProperties = new Properties(config.getSolrProperties());
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
@@ -591,7 +591,7 @@ public class CoreContainer implements Closeable {
    * @lucene.experimental
    */
   protected CoreContainer(Object testConstructor) {
-    closeTracker = new CloseTracker();
+    assert (closeTracker = new CloseTracker()) != null;
     solrHome = null;
     loader = null;
     coresLocator = null;
@@ -1027,7 +1027,7 @@ public class CoreContainer implements Closeable {
 
   @Override
   public void close() throws IOException {
-    closeTracker.close();
+    assert closeTracker.close();
     log.info("Closing CoreContainer");
     isShutDown = true;
 

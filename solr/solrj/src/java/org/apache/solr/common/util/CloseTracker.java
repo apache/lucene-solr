@@ -6,18 +6,20 @@ import org.apache.solr.common.AlreadyClosedException;
 import java.io.Closeable;
 import java.io.PrintWriter;
 
-public class CloseTracker implements Closeable {
+public class CloseTracker {
 
-    public static  volatile AlreadyClosedException lastAlreadyClosedEx;
+    public static volatile AlreadyClosedException lastAlreadyClosedEx;
+    public static volatile IllegalCallerException lastIllegalCallerEx;
 
     private volatile boolean closed = false;
     private volatile String closeStack = "";
     private volatile boolean closeLock;
 
-    @Override
-    public void close() {
+    public boolean close() {
         if (closeLock) {
-            throw new IllegalCallerException("Attempt to close an object that is not owned");
+            IllegalCallerException ex = new IllegalCallerException("Attempt to close an object that is not owned");
+            lastIllegalCallerEx = ex;
+            throw ex;
         }
         if (closed) {
             StringBuilderWriter sw = new StringBuilderWriter(4096);
@@ -35,6 +37,7 @@ public class CloseTracker implements Closeable {
         new ObjectReleaseTracker.ObjectTrackerException(this.getClass().getName()).printStackTrace(pw);
         closeStack = sw.toString();
         closed = true;
+        return true;
     }
 
     public boolean isClosed() {

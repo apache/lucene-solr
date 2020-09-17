@@ -37,7 +37,7 @@ import org.apache.zookeeper.ZooKeeper;
 @SuppressWarnings({"try"})
 public class SolrZooKeeper extends ZooKeeper {
   final Set<Thread> spawnedThreads = ConcurrentHashMap.newKeySet();
-  private final CloseTracker closeTracker;
+  private CloseTracker closeTracker;
 
   // for test debug
   //static Map<SolrZooKeeper,Exception> clients = new ConcurrentHashMap<SolrZooKeeper,Exception>();
@@ -45,7 +45,7 @@ public class SolrZooKeeper extends ZooKeeper {
   public SolrZooKeeper(String connectString, int sessionTimeout,
       Watcher watcher) throws IOException {
     super(connectString, sessionTimeout, watcher);
-    closeTracker = new CloseTracker();
+    assert (closeTracker = new CloseTracker()) != null;
     //clients.put(this, new RuntimeException());
   }
 
@@ -104,7 +104,7 @@ public class SolrZooKeeper extends ZooKeeper {
 
   @Override
   public void close() {
-    closeTracker.close();
+    assert closeTracker.close();
     try (ParWork closer = new ParWork(this)) {
       closer.collect("zookeeper", ()->{
         try {
