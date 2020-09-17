@@ -347,10 +347,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           }
 
           recoveryWaiting.incrementAndGet();
-          cancelRecovery();
+          cancelRecovery(true, false);
 
-          recoveryLock.lockInterruptibly();
-          locked = true;
+          recoveryLock.lock();
           // don't use recoveryLock.getQueueLength() for this
           if (recoveryWaiting.decrementAndGet() > 0) {
             // another recovery waiting behind us, let it run now instead of after we finish
@@ -360,10 +359,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           // to be air tight we must also check after lock
           if (prepForClose || closed || cc.isShutDown()) {
             log.info("Skipping recovery due to being closed");
-            return;
-          }
-
-          if (prepForClose || cc.isShutDown() || closed) {
             return;
           }
 
@@ -377,8 +372,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           log.info("Running recovery");
           recoveryStrat.run();
 
-        } catch (InterruptedException e) {
-          log.info("Recovery thread interrupted");
         } finally {
           if (recoveryLock.isHeldByCurrentThread()) recoveryLock.unlock();
         }
@@ -425,13 +418,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       if (recoveryStrat != null) {
         closer.collect("recoveryStrat", (() -> {
           try {
+            recoveryStrat.close();
             recoveryFuture.cancel(true);
-            recoveryStrat.close();
-          } catch (NullPointerException e) {
-            // okay
-          }
-          try {
-            recoveryStrat.close();
           } catch (NullPointerException e) {
             // okay
           }

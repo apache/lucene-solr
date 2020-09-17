@@ -471,7 +471,6 @@ public class ZkController implements Closeable {
                     parWork.collect(new RegisterCoreAsync(descriptor, true, true));
 
                   } catch (Exception e) {
-                    ParWork.propagateInterrupt(e);
                     SolrException.log(log, "Error registering SolrCore", e);
                   }
                 }
@@ -493,9 +492,7 @@ public class ZkController implements Closeable {
               }
             }
           } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
-            throw new ZooKeeperException(
-                    SolrException.ErrorCode.SERVER_ERROR, "", e);
+            log.warn("interrupted");
           } catch (SessionExpiredException e) {
             throw e;
           } catch (AlreadyClosedException e) {
@@ -503,8 +500,6 @@ public class ZkController implements Closeable {
             return;
           } catch (Exception e) {
             SolrException.log(log, "", e);
-            throw new ZooKeeperException(
-                    SolrException.ErrorCode.SERVER_ERROR, "", e);
           }
         }
       }
