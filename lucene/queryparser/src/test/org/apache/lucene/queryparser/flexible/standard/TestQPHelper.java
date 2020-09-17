@@ -17,6 +17,7 @@
 package org.apache.lucene.queryparser.flexible.standard;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -53,6 +54,9 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.parser.FastCharStream;
+import org.apache.lucene.queryparser.flexible.standard.parser.ParseException;
+import org.apache.lucene.queryparser.flexible.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -494,7 +498,12 @@ public class TestQPHelper extends LuceneTestCase {
         "+(apple \"steve jobs\") -(foo bar baz)");
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
         "+(title:dog title:cat) -author:\"bob dole\"");
+  }
 
+  public void testParse() throws ParseException {
+    StandardSyntaxParser p = new StandardSyntaxParser(new FastCharStream(new StringReader("")));
+    p.ReInit(new FastCharStream(new StringReader("title:(dog OR cat)")));
+    System.out.println(p.TopLevelQuery("_fld_"));
   }
 
   public void testPunct() throws Exception {
