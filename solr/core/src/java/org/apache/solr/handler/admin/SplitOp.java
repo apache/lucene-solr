@@ -145,11 +145,13 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         for (String newCoreName : newCoreNames) {
           SolrCore newcore = it.handler.coreContainer.getCore(newCoreName);
           if (newcore != null) {
-            newCoresMap.put(newcore, newcore.getCoreDescriptor());
+            CoreDescriptor ncd = newcore.getCoreDescriptor();
+            newCoresMap.put(newcore, ncd);
+            newCores.add(newcore);
             if (it.handler.coreContainer.isZooKeeperAware()) {
               // this core must be the only replica in its shard otherwise
               // we cannot guarantee consistency between replicas because when we add data to this replica
-              CloudDescriptor cd = newcore.getCoreDescriptor().getCloudDescriptor();
+              CloudDescriptor cd = ncd.getCloudDescriptor();
               ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
               if (clusterState.getCollection(cd.getCollectionName()).getSlice(cd.getShardId()).getReplicas().size() != 1) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,

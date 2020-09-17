@@ -1438,16 +1438,30 @@ public class ZkController implements Closeable {
    * @return the shardId for the SolrCore
    */
   public String register(String coreName, final CoreDescriptor desc, boolean skipRecovery) throws Exception {
-    return register(coreName, desc, false, false, skipRecovery);
+    try (SolrCore core = cc.getCore(coreName)) {
+      return register(core, desc, false, false, skipRecovery);
+    }
   }
 
+  public String register(SolrCore core, final CoreDescriptor desc, boolean skipRecovery) throws Exception {
+    return register(core, desc, false, false, skipRecovery);
+  }
+
+
+  public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores,
+      boolean afterExpiration, boolean skipRecovery) throws Exception {
+    try (SolrCore core = cc.getCore(coreName)) {
+     return register(core, desc, recoverReloadedCores, afterExpiration, skipRecovery);
+    }
+
+  }
 
   /**
    * Register shard with ZooKeeper.
    *
    * @return the shardId for the SolrCore
    */
-  public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores,
+  public String register(SolrCore core, final CoreDescriptor desc, boolean recoverReloadedCores,
                          boolean afterExpiration, boolean skipRecovery) throws Exception {
     MDCLoggingContext.setCoreDescriptor(cc, desc);
     try {
@@ -1455,6 +1469,7 @@ public class ZkController implements Closeable {
         throw new AlreadyClosedException();
       }
       // pre register has published our down state
+      String coreName = core.getName();
       final String baseUrl = getBaseUrl();
       final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
       final String collection = cloudDesc.getCollectionName();
@@ -1528,17 +1543,13 @@ public class ZkController implements Closeable {
       boolean isLeader = leaderUrl.equals(ourUrl);
       assert !(isLeader && replica.getType() == Type.PULL) : "Pull replica became leader!";
 
-      try (SolrCore core = cc.getCore(desc.getName())) {
+      try {
 
         // recover from local transaction log and wait for it to complete before
         // going active
         // TODO: should this be moved to another thread? To recoveryStrat?
         // TODO: should this actually be done earlier, before (or as part of)
         // leader election perhaps?
-
-        if (core == null) {
-          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCore is no longer available to register");
-        }
 
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
         boolean isTlogReplicaAndNotLeader = replica.getType() == Replica.Type.TLOG && !isLeader;
@@ -1585,7 +1596,7 @@ public class ZkController implements Closeable {
           // the watcher is added to a set so multiple calls of this method will left only one watcher
           shardTerms.addListener(new RecoveringCoreTermWatcher(core.getCoreDescriptor(), getCoreContainer()));
         }
-        core.getCoreDescriptor().getCloudDescriptor().setHasRegistered(true);
+        desc.getCloudDescriptor().setHasRegistered(true);
       } catch (Exception e) {
         SolrZkClient.checkInterrupted(e);
         unregister(coreName, desc, false);

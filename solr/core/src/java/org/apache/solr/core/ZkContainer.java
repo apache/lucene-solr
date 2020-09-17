@@ -218,7 +218,9 @@ public class ZkContainer implements Closeable {
             ParWork.propagateInterrupt(e);
             SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
             try {
-              zkController.publish(cd, Replica.State.DOWN);
+              if (zkController.isConnected()) {
+                zkController.publish(cd, Replica.State.DOWN);
+              }
             } catch (Exception e1) {
               ParWork.propagateInterrupt(e);
               exp.addSuppressed(e1);
