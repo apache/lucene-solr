@@ -10,7 +10,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-14859: DateRangeField now throws errors when invalid field/fieldType options specified; no longer silently accepts incompatible option values
+  (Jason Gerlowski, Chris Hostetter, Munendra S N)
 
 ==================  8.6.2 ==================
 
