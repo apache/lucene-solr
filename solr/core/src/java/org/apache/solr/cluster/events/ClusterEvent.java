@@ -19,17 +19,23 @@ package org.apache.solr.cluster.events;
 import java.time.Instant;
 
 /**
- *
+ * Cluster-level event.
  */
 public interface ClusterEvent {
 
   enum EventType {
+    /** One or more nodes went down. */
     NODES_DOWN,
+    /** One or more nodes went up. */
     NODES_UP,
+    /** One or more collections have been added. */
     COLLECTIONS_ADDED,
+    /** One or more collections have been removed. */
     COLLECTIONS_REMOVED,
+    /** One or more replicas went down. */
     REPLICAS_DOWN,
-    CLUSTER_CONFIG_CHANGED,
+    /** Cluster properties have changed. */
+    CLUSTER_PROPERTIES_CHANGED
     // other types? eg. Overseer leader change, shard leader change,
     // node overload (eg. CPU / MEM circuit breakers tripped)?
   }
@@ -37,6 +43,7 @@ public interface ClusterEvent {
   /** Get event type. */
   EventType getType();
 
-  /** Get event timestamp. */
+  /** Get event timestamp. This is the instant when the event was generated (not necessarily when
+   * the underlying condition first occurred). */
   Instant getTimestamp();
 }

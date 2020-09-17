@@ -19,7 +19,7 @@ package org.apache.solr.cluster.events;
 import java.util.Collection;
 
 /**
- *
+ * Event generated when some collections have been added.
  */
 public interface CollectionsAddedEvent extends ClusterEvent {
 

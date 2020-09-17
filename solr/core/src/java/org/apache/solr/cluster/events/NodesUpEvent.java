@@ -19,7 +19,7 @@ package org.apache.solr.cluster.events;
 import java.util.Collection;
 
 /**
- *
+ * Event generated when some nodes went up.
  */
 public interface NodesUpEvent extends ClusterEvent {
 

@@ -19,17 +19,17 @@ package org.apache.solr.cluster.events;
 import java.util.Map;
 
 /**
- *
+ * Event generated when {@link org.apache.solr.common.cloud.ZkStateReader#CLUSTER_PROPS} is modified.
  */
-public interface ClusterConfigChangedEvent extends ClusterEvent {
+public interface ClusterPropertiesChangedEvent extends ClusterEvent {
 
   @Override
   default EventType getType() {
-    return EventType.CLUSTER_CONFIG_CHANGED;
+    return EventType.CLUSTER_PROPERTIES_CHANGED;
   }
 
-  Map<String, Object> getOldClusterConfig();
+  Map<String, Object> getOldClusterProperties();
 
-  Map<String, Object> getNewClusterConfig();
+  Map<String, Object> getNewClusterProperties();
 
 }

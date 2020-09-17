@@ -16,17 +16,24 @@
  */
 package org.apache.solr.cluster.events.impl;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.events.NodesDownEvent;
 import org.apache.solr.cluster.events.ReplicasDownEvent;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,12 +53,14 @@ public class CollectionsRepairEventListener implements ClusterSingleton, Cluster
 
   private final CoreContainer cc;
   private final SolrClientCache solrClientCache;
+  private final SolrCloudManager solrCloudManager;
 
   private boolean running = false;
 
   public CollectionsRepairEventListener(CoreContainer cc) {
     this.cc = cc;
     this.solrClientCache = cc.getSolrClientCache();
+    this.solrCloudManager = cc.getZkController().getSolrCloudManager();
   }
 
   @Override
@@ -81,11 +90,29 @@ public class CollectionsRepairEventListener implements ClusterSingleton, Cluster
   }
 
   private void handleNodesDown(NodesDownEvent event) {
-    // send MOVEREPLICA admin requests for all replicas from that node
+    // collect all lost replicas
+    List<Replica> lostReplicas = new ArrayList<>();
+    try {
+      ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
+      clusterState.forEachCollection(coll -> {
+        coll.forEachReplica((shard, replica) -> {
+          if (event.getNodeNames().contains(replica.getNodeName())) {
+            lostReplicas.add(replica);
+          }
+        });
+      });
+    } catch (IOException e) {
+      log.warn("Exception getting cluster state", e);
+      return;
+    }
+
+    // compute new placements for all replicas from lost nodes
+    // send MOVEREPLICA admin requests for each lost replica
   }
 
   private void handleReplicasDown(ReplicasDownEvent event) {
-    // send ADDREPLICA admin request
+    // compute new placements for all replicas that went down
+    // send ADDREPLICA admin request for each lost replica
   }
 
   @Override

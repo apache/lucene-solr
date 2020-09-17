@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cluster.events;
 
+import org.apache.solr.cloud.ClusterSingleton;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -24,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Component that produces {@link ClusterEvent} instances.
  */
-public interface ClusterEventProducer {
+public interface ClusterEventProducer extends ClusterSingleton {
 
   String PLUGIN_NAME = "clusterEventProducer";
 

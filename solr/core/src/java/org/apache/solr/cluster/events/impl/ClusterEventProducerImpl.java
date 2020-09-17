@@ -24,11 +24,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cluster.events.ClusterConfigChangedEvent;
+import org.apache.solr.cluster.events.ClusterPropertiesChangedEvent;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
@@ -69,7 +70,7 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
           ClusterEvent.EventType.NODES_UP,
           ClusterEvent.EventType.COLLECTIONS_ADDED,
           ClusterEvent.EventType.COLLECTIONS_REMOVED,
-          ClusterEvent.EventType.CLUSTER_CONFIG_CHANGED
+          ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED
       ));
 
   private volatile boolean isClosed = false;
@@ -176,19 +177,20 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
     });
     zkController.zkStateReader.registerCloudCollectionsListener(cloudCollectionsListener);
 
-    lastClusterProperties = zkController.zkStateReader.getClusterProperties();
+    lastClusterProperties = new LinkedHashMap<>(zkController.zkStateReader.getClusterProperties());
     clusterPropertiesListener = (newProperties) -> {
       if (newProperties.equals(lastClusterProperties)) {
         return false;
       }
-      fireEvent(new ClusterConfigChangedEvent() {
+      fireEvent(new ClusterPropertiesChangedEvent() {
+        final Map<String, Object> oldProps = lastClusterProperties;
         @Override
-        public Map<String, Object> getOldClusterConfig() {
-          return lastClusterProperties;
+        public Map<String, Object> getOldClusterProperties() {
+          return oldProps;
         }
 
         @Override
-        public Map<String, Object> getNewClusterConfig() {
+        public Map<String, Object> getNewClusterProperties() {
           return newProperties;
         }
 
@@ -197,7 +199,7 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
           return Instant.now();
         }
       });
-      lastClusterProperties = newProperties;
+      lastClusterProperties = new LinkedHashMap<>(newProperties);
       return false;
     };
     zkController.zkStateReader.registerClusterPropertiesListener(clusterPropertiesListener);
