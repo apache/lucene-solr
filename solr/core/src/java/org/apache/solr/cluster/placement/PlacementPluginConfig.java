@@ -54,7 +54,7 @@ package org.apache.solr.cluster.placement;
  *     "myfirstString": "a text value",
  *     "aLong": 50,
  *     "aDoubleConfig": 3.1415928,
- *     "shouldIStay": true
+ *     "shouldIStay": true}
  * </pre>
  *
  * <p>In order to delete the placement-plugin section from {@code /clusterprops.json} (and to fallback to either Legacy
