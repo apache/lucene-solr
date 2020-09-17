@@ -54,7 +54,7 @@ package org.apache.solr.cluster.placement;
  *     "myfirstString": "a text value",
  *     "aLong": 50,
  *     "aDoubleConfig": 3.1415928,
- *     "shouldIStay": true
+ *     "shouldIStay": true}
  * </pre>
  *
  * <p>In order to delete the placement-plugin section from {@code /clusterprops.json} (and to fallback to either Legacy
@@ -63,7 +63,7 @@ package org.apache.solr.cluster.placement;
  * <pre>
  *
  * curl -X POST -H 'Content-type:application/json' -d '{
- *   "unset-placement-plugin" : null
+ *   "set-placement-plugin" : null
  * }' http://localhost:8983/api/cluster
  * </pre>
  */
