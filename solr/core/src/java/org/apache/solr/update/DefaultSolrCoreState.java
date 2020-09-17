@@ -19,6 +19,7 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
@@ -414,34 +415,27 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     if (prepForClose) {
       this.prepForClose = true;
     }
-    try (ParWork closer = new ParWork(this, true)) {
-      if (recoveryStrat != null) {
-        closer.collect("recoveryStrat", (() -> {
-          try {
-            recoveryStrat.close();
-            recoveryFuture.cancel(true);
-          } catch (NullPointerException e) {
-            // okay
-          }
-        }));
 
-        if (wait && recoveryStrat != null && recoveryFuture != null) {
-          closer.collect("recoveryStrat", (() -> {
-            try {
-              recoveryFuture.get(10,
-                  TimeUnit.MINUTES); // nocommit - how long? make configurable too
-            } catch (InterruptedException e) {
-              ParWork.propagateInterrupt(e);
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            } catch (ExecutionException e) {
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            } catch (TimeoutException e) {
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            }
-          }));
-        }
+    if (recoveryStrat != null) {
+
+      try {
+        recoveryStrat.close();
+        recoveryFuture.cancel(true);
+      } catch (NullPointerException e) {
+        // okay
+      }
+
+      try {
+        recoveryFuture.get(10, TimeUnit.MINUTES); // nocommit - how long? make configurable too
+      } catch (CancellationException e) {
+        // okay
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+      } catch (Exception e) {
+        log.warn("Exception canceling recovery", e);
       }
     }
+
     recoveryFuture = null;
     recoveryStrat = null;
   }
@@ -460,23 +454,19 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void close(IndexWriterCloser closer) {
-    try (ParWork worker = new ParWork(this, true)) {
-      worker.collect("cancelRecovery", () -> {
-        cancelRecovery(true, true);
-      });
-      worker.collect(recoveryStrat);
-      worker.collect("closeIndexWriter", () -> {
-      // we can't lock here without
-      // a blocking race, we should not need to
-      // though
-       // iwLock.writeLock().lock();
-        try {
-          closeIndexWriter(closer);
-        } finally {
-         // iwLock.writeLock().unlock();
-        }
-      });
+
+    cancelRecovery(true, true);
+
+    // we can't lock here without
+    // a blocking race, we should not need to
+    // though
+    // iwLock.writeLock().lock();
+    try {
+      closeIndexWriter(closer);
+    } finally {
+      // iwLock.writeLock().unlock();
     }
+
   }
 
   @Override

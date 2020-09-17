@@ -559,7 +559,7 @@ public class SolrRequestParsers {
           null, // temp dir (null=default)
           -1, // maxFileSize  (-1=none)
           uploadLimitKB * 1024, // maxRequestSize
-          100 * 1024 ); // fileSizeThreshold after which will go to disk
+          2097152 ); // fileSizeThreshold after which will go to disk
     }
     
     @Override
