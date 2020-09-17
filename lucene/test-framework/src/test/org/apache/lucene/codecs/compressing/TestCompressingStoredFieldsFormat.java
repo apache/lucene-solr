@@ -297,7 +297,8 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       for (LeafReaderContext leaf : ir2.leaves()) {
         CodecReader sr = (CodecReader) leaf.reader();
         CompressingStoredFieldsReader reader = (CompressingStoredFieldsReader)sr.getFieldsReader();
-        assertEquals(1, reader.getNumChunks());
+        assertTrue(reader.getNumDirtyDocs() > 0);
+        assertTrue(reader.getNumDirtyDocs() < 100); // can't be gte the number of docs per chunk
         assertEquals(1, reader.getNumDirtyChunks());
       }
     }
