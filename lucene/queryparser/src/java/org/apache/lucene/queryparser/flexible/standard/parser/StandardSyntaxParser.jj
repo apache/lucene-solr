@@ -84,10 +84,6 @@ public class StandardSyntaxParser implements SyntaxParser {
       throw e;
     }
   }
-
-  private QueryNode applyBoost(QueryNode q, Token boost) {
-    return q == null ? q : new BoostQueryNode(q, Float.parseFloat(boost.image));
-  }
 }
 PARSER_END(StandardSyntaxParser)
 
@@ -314,7 +310,7 @@ private QueryNode Boost(QueryNode node) : {
 {
   <CARAT> boost = <NUMBER>
   {
-    return applyBoost(node, boost);
+    return node == null ? node : new BoostQueryNode(node, Float.parseFloat(boost.image));
   }
 }
 

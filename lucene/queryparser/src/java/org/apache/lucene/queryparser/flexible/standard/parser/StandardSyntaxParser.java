@@ -74,10 +74,6 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     }
   }
 
-  private QueryNode applyBoost(QueryNode q, Token boost) {
-    return q == null ? q : new BoostQueryNode(q, Float.parseFloat(boost.image));
-  }
-
   final public QueryNode TopLevelQuery(CharSequence field) throws ParseException {QueryNode q;
     q = Query(field);
     jj_consume_token(0);
@@ -310,7 +306,7 @@ if (modifier != ModifierQueryNode.Modifier.MOD_NONE) {
   final private QueryNode Boost(QueryNode node) throws ParseException {Token boost;
     jj_consume_token(CARAT);
     boost = jj_consume_token(NUMBER);
-{if ("" != null) return applyBoost(node, boost);}
+{if ("" != null) return node == null ? node : new BoostQueryNode(node, Float.parseFloat(boost.image));}
     throw new Error("Missing return statement in function");
 }
 
@@ -610,24 +606,6 @@ if (left.kind == RANGE_QUOTED) {
     finally { jj_save(2, xla); }
   }
 
-  private boolean jj_3R_5()
- {
-    if (jj_3R_4()) return true;
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_scan_token(17)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(18)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(19)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(20)) return true;
-    }
-    }
-    }
-    return false;
-  }
-
   private boolean jj_3_3()
  {
     if (jj_scan_token(NUMBER)) return true;
@@ -655,6 +633,24 @@ if (left.kind == RANGE_QUOTED) {
   private boolean jj_3_2()
  {
     if (jj_3R_5()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_5()
+ {
+    if (jj_3R_4()) return true;
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_scan_token(17)) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(18)) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(19)) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(20)) return true;
+    }
+    }
+    }
     return false;
   }
 
