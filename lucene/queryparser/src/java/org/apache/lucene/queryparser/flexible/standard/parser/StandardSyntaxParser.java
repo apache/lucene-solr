@@ -40,6 +40,8 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
+import org.apache.lucene.queryparser.charstream.CharStream;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
 
 /**
  * Parser for the standard Lucene syntax
@@ -707,16 +709,6 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     finally { jj_save(1, xla); }
   }
 
-  private boolean jj_3R_12() {
-    if (jj_scan_token(RANGEIN_START)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_11() {
-    if (jj_scan_token(REGEXPTERM)) return true;
-    return false;
-  }
-
   private boolean jj_3_1() {
     if (jj_scan_token(TERM)) return true;
     Token xsp;
@@ -817,6 +809,16 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     jj_scanpos = xsp;
     if (jj_3R_5()) return true;
     }
+    return false;
+  }
+
+  private boolean jj_3R_12() {
+    if (jj_scan_token(RANGEIN_START)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_11() {
+    if (jj_scan_token(REGEXPTERM)) return true;
     return false;
   }
 

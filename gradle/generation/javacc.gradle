@@ -72,6 +72,18 @@ def commonCleanups = { FileTree generatedFiles ->
 
   generatedFiles.matching({ include "*TokenManager.java" }).each { file ->
     modifyFile(file, { text ->
+      // Remove redundant imports.
+      text = text.replaceAll(
+          /(?m)^import .+/,
+          "")
+      // Add CharStream imports.
+      text = text.replaceAll(
+          /package (.+)/,
+          '''
+          package $1
+          import org.apache.lucene.queryparser.charstream.CharStream;
+          import org.apache.lucene.queryparser.charstream.FastCharStream; 
+          '''.trim())
       // Eliminates redundant cast message.
       text = text.replace(
           "int hiByte = (int)(curChar >> 8);",
@@ -111,16 +123,6 @@ configure(project(":lucene:queryparser")) {
           return text
         })
       }
-
-      generatedFiles.matching { include "*TokenManager.java" }.each { file ->
-        modifyFile(file, { text ->
-          // Remove redundant imports.
-          text = text.replaceAll(
-              /(?m)^import .+/,
-              "")
-          return text
-        })
-      }
     }
   }
 
@@ -140,16 +142,6 @@ configure(project(":lucene:queryparser")) {
           text = text.replace(
               "new java.util.ArrayList<int[]>",
               "new java.util.ArrayList<>")
-          return text
-        })
-      }
-
-      generatedFiles.matching { include "*TokenManager.java" }.each { file ->
-        modifyFile(file, { text ->
-          // Remove redundant imports.
-          text = text.replaceAll(
-              /(?m)^import .+/,
-              "")
           return text
         })
       }
@@ -229,16 +221,6 @@ configure(project(":lucene:queryparser")) {
           return text
         })
       }
-
-      generatedFiles.matching { include "StandardSyntaxParserTokenManager.java" }.each { file ->
-        modifyFile(file, { text ->
-          // Remove redundant imports.
-          text = text.replaceAll(
-              /(?m)^import .+/,
-              "")
-          return text
-        })
-      }
     }
   }
 
@@ -273,16 +255,6 @@ configure(project(":solr:core")) {
           text = text.replace(
               "final private LookaheadSuccess jj_ls =",
               "static final private LookaheadSuccess jj_ls =")
-          return text
-        })
-      }
-
-      generatedFiles.matching { include "*TokenManager.java" }.each { file ->
-        modifyFile(file, { text ->
-          // Remove redundant imports.
-          text = text.replaceAll(
-              /(?m)^import .+/,
-              "")
           return text
         })
       }
@@ -362,6 +334,9 @@ class JavaCCTask extends DefaultTask {
     project.copy {
       from tempDir
       into targetDir
+
+      // We don't need CharStream interface as we redirect to our own.
+      exclude "CharStream.java"
     }
   }
 }
