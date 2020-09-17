@@ -132,6 +132,7 @@ Improvements
   "after". Also redesign numeric comparators to provide skipping functionality
   by default. (Mayya Sharipova, Jim Ferenczi)
 
+* LUCENE-9527: Upgrade javacc to 7.0.4, regenerate query parsers. (Dawid Weiss)
 
 Bug fixes
 
