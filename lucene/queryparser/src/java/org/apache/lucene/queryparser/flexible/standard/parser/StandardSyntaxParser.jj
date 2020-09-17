@@ -205,7 +205,7 @@ QueryNode Query(CharSequence field) :
           if (first instanceof ModifierQueryNode) {
             ModifierQueryNode m = (ModifierQueryNode) first;
             if (m.getModifier() == ModifierQueryNode.Modifier.MOD_NOT) {
-              return new BooleanQueryNode(Arrays.<QueryNode> asList(m));
+              return new BooleanQueryNode(Arrays.asList(m));
             }
           }
           return first;
@@ -325,8 +325,7 @@ QueryNode Clause(CharSequence field) : {
 }
 {
 (
-  LOOKAHEAD(3)
-  fieldToken=<TERM> (
+  LOOKAHEAD(3) fieldToken=<TERM> (
     ( <OP_COLON> | <OP_EQUAL> ) {field=EscapeQuerySyntaxImpl.discardEscapeChar(fieldToken.image);} q=Term(field)
   | ( operator=<OP_LESSTHAN> | operator=<OP_LESSTHANEQ> | operator=<OP_MORETHAN> | operator=<OP_MORETHANEQ> ) {field=EscapeQuerySyntaxImpl.discardEscapeChar(fieldToken.image);}( term=<TERM> | term=<QUOTED> | term=<NUMBER> )
     {
@@ -377,14 +376,14 @@ QueryNode Clause(CharSequence field) : {
         q = new TermRangeQueryNode(qLower, qUpper, lowerInclusive, upperInclusive);
     }
   )
-| [
-    LOOKAHEAD(2)
+  | LOOKAHEAD(3) [
+    LOOKAHEAD(3)
     fieldToken=<TERM>
     ( <OP_COLON> | <OP_EQUAL> ) {field=EscapeQuerySyntaxImpl.discardEscapeChar(fieldToken.image);}
   ]
   (
-   q=Term(field)
-   | <LPAREN> q=Query(field) <RPAREN> (<CARAT> boost=<NUMBER>)? {group=true;}
+   (q=Term(field))
+   | (<LPAREN> q=Query(field) <RPAREN> (<CARAT> boost=<NUMBER>)? {group=true;})
   )
 )
     {
