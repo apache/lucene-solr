@@ -64,10 +64,10 @@ When processing queries, Lucene/Solr recognizes three types of clauses: mandator
 
 The table below explains the various ways that mm values can be specified.
 
-// Keep manual column formatting
-[cols="30,10,60",options="header"]
+[cols="30,10,60"]
 |===
 |Syntax |Example |Description
+
 |Positive integer |3 |Defines the minimum number of clauses that must match, regardless of how many clauses there are in total.
 |Negative integer |-2 |Sets the minimum number of matching clauses to the total number of optional clauses, minus this value.
 |Percentage |75% |Sets the minimum number of matching clauses to this percentage of the total number of optional clauses. The number computed from the percentage is rounded down and used as the minimum.
