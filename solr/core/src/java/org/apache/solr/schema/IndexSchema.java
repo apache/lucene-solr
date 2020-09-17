@@ -20,6 +20,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
@@ -136,6 +138,7 @@ public class IndexSchema {
   protected final Version luceneVersion;
   protected float version;
   protected final SolrResourceLoader loader;
+  protected ResourceLoader resourceLoader;
   protected final SolrClassLoader solrClassLoader;
   protected final Properties substitutableProperties;
 
@@ -181,7 +184,7 @@ public class IndexSchema {
     this.resourceName = Objects.requireNonNull(name);
     try {
       readSchema(is);
-      loader.inform(loader);
+      loader.inform(this.resourceLoader);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -190,8 +193,36 @@ public class IndexSchema {
   protected IndexSchema(Version luceneVersion, SolrResourceLoader loader, Properties substitutableProperties) {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
-    this.solrClassLoader = loader.getSchemaLoader() == null ? loader : loader.getSchemaLoader();
-    this.substitutableProperties = substitutableProperties;
+    this.solrClassLoader = loader.getSchemaLoader() == null ?
+        loader :
+        loader.getSchemaLoader();
+    resourceLoader = this.solrClassLoader instanceof SolrResourceLoader ?
+        (ResourceLoader) this.solrClassLoader :
+        wrappedResourceLoader(this.solrClassLoader);
+    this.substitutableProperties = substitutableProper`ties;
+  }
+
+  /**We want resources to be loaded using {@link SolrResourceLoader}
+   * and classes to be loaded using {@link org.apache.solr.pkg.PackageListeningClassLoader}
+   *
+   */
+  private ResourceLoader wrappedResourceLoader(SolrClassLoader solrClassLoader) {
+    return new ResourceLoader() {
+      @Override
+      public InputStream openResource(String resource) throws IOException {
+        return loader.openResource(resource);
+      }
+
+      @Override
+      public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
+        return solrClassLoader.findClass(cname, expectedType);
+      }
+
+      @Override
+      public <T> T newInstance(String cname, Class<T> expectedType) {
+        return solrClassLoader.newInstance(cname, expectedType);
+      }
+    };
   }
 
   /**
