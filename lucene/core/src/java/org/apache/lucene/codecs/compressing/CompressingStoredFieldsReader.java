@@ -90,8 +90,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private final int numDocs;
   private final boolean merging;
   private final BlockState state;
-  private final long numChunks; // number of compressed blocks written
   private final long numDirtyChunks; // number of incomplete compressed blocks written
+  private final long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
   private boolean closed;
 
   // used by clone
@@ -106,8 +106,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.compressionMode = reader.compressionMode;
     this.decompressor = reader.decompressor.clone();
     this.numDocs = reader.numDocs;
-    this.numChunks = reader.numChunks;
     this.numDirtyChunks = reader.numDirtyChunks;
+    this.numDirtyDocs = reader.numDirtyDocs;
     this.merging = merging;
     this.state = new BlockState();
     this.closed = false;
@@ -187,15 +187,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       this.indexReader = indexReader;
 
       if (version >= VERSION_META) {
-        numChunks = metaIn.readVLong();
         numDirtyChunks = metaIn.readVLong();
+        numDirtyDocs = metaIn.readVLong();
       } else {
-        fieldsStream.seek(maxPointer);
-        numChunks = fieldsStream.readVLong();
-        numDirtyChunks = fieldsStream.readVLong();
-      }
-      if (numDirtyChunks > numChunks) {
-        throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, fieldsStream);
+        // Old versions of this format did not record numDirtyDocs. Since bulk
+        // merges are disabled on version increments anyway, we make no effort
+        // to get valid values of numDirtyChunks and numDirtyDocs.
+        numDirtyChunks = numDirtyDocs = -1;
       }
 
       if (metaIn != null) {
@@ -693,12 +691,24 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     return chunkSize;
   }
   
-  long getNumChunks() {
-    return numChunks;
+  long getNumDirtyDocs() {
+    if (version != VERSION_CURRENT) {
+      throw new IllegalStateException("getNumDirtyDocs should only ever get called when the reader is on the current version");
+    }
+    assert numDirtyDocs >= 0;
+    return numDirtyDocs;
   }
   
   long getNumDirtyChunks() {
+    if (version != VERSION_CURRENT) {
+      throw new IllegalStateException("getNumDirtyChunks should only ever get called when the reader is on the current version");
+    }
+    assert numDirtyChunks >= 0;
     return numDirtyChunks;
+  }
+
+  int getNumDocs() {
+    return numDocs;
   }
 
   int getPackedIntsVersion() {
