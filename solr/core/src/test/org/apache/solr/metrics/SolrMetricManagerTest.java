@@ -39,7 +39,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeSolrMetricManagerTest() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
   }
 
   @Test

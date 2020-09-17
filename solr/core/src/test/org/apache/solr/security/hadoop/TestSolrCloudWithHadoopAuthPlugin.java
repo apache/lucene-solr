@@ -43,7 +43,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     System.setProperty("solr.disablePublicKeyHandler", "false");
     HdfsTestUtil.checkAssumptions();
 

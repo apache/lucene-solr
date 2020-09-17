@@ -62,10 +62,10 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     System.setProperty("solr.skipCommitOnClose", "false");
   }
 

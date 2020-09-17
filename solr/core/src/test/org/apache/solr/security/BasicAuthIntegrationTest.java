@@ -84,7 +84,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
   @Before
   public void setupCluster() throws Exception {
     System.setProperty("solr.disablePublicKeyHandler", "false");
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     useFactory(null);
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))

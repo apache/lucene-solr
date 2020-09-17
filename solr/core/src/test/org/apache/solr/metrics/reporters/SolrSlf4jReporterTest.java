@@ -48,7 +48,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
   }
 
   @Test

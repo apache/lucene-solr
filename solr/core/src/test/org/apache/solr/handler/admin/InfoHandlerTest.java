@@ -30,7 +30,7 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     initCore("solrconfig.xml", "schema.xml");
   }
   

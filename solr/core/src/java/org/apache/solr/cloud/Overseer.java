@@ -307,7 +307,7 @@ public class Overseer implements SolrCloseable {
 //            } else {
 //              wait = 0;
 //            }
-            queue = new LinkedList<>(stateUpdateQueue.peekElements(10000, wait, (x) -> true));
+            queue = new LinkedList<>(stateUpdateQueue.peekElements(1500, wait, (x) -> true));
           } catch (AlreadyClosedException e) {
             return;
           } catch (KeeperException.SessionExpiredException e) {

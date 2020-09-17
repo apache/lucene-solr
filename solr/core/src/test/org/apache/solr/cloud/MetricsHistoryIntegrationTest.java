@@ -61,7 +61,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     boolean simulated = TEST_NIGHTLY ? random().nextBoolean() : true;
     if (simulated) {
       cloudManager = SimCloudManager.createCluster(1, TimeSource.get("simTime:50"));

@@ -261,7 +261,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("zookeeper.nio.shutdownTimeout", "10");
 
       // can make things quite slow
-      System.setProperty("solr.disableJmxReporter", "true");
+      System.setProperty("solr.disableDefaultJmxReporter", "true");
       System.setProperty("solr.skipCommitOnClose", "true");
 
       // can generate tons of URL garbage and can happen too often, defaults to false now anyway

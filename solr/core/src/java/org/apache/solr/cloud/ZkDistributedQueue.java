@@ -99,15 +99,12 @@ public class ZkDistributedQueue implements DistributedQueue {
    * Therefore, methods like {@link #peek()} have to double-check actual node existence, and methods
    * like {@link #poll()} must resolve any races by attempting to delete the underlying node.
    */
-  protected TreeSet<String> knownChildren = new TreeSet<>();
+  protected volatile TreeSet<String> knownChildren;
 
   /**
    * Used to wait on ZK changes to the child list; you must hold {@link #updateLock} before waiting on this condition.
    */
   private final Condition changed = updateLock.newCondition();
-
-
-  private LongAdder watcherCount = new LongAdder();
 
   private final int maxQueueSize;
 
@@ -485,7 +482,7 @@ public class ZkDistributedQueue implements DistributedQueue {
 
           while (existingChildren == knownChildren) {
             try {
-              changed.await(5000, TimeUnit.MILLISECONDS);
+              changed.await(500, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
               ParWork.propagateInterrupt(e);
               throw new AlreadyClosedException();
@@ -577,7 +574,7 @@ public class ZkDistributedQueue implements DistributedQueue {
   }
 
   @VisibleForTesting long watcherCount() throws InterruptedException {
-    return watcherCount.sum();
+    return 0;
   }
 
   @VisibleForTesting class ChildWatcher implements Watcher {
@@ -592,7 +589,6 @@ public class ZkDistributedQueue implements DistributedQueue {
 
       updateLock.lock();
       try {
-        watcherCount.decrement();
         knownChildren = fetchZkChildren(this);
 
         changed.signalAll();

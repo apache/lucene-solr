@@ -46,17 +46,17 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 public class StreamFactory implements Serializable {
   
   private transient HashMap<String, String> collectionZkHosts;
-  private transient HashMap<String, Supplier<Class<? extends Expressible>>> functionNames;
+  private transient volatile Map<String, Supplier<Class<? extends Expressible>>> functionNames;
   private transient String defaultZkHost;
   private transient String defaultCollection;
   private transient String defaultSort;
   
   public StreamFactory(){
     collectionZkHosts = new HashMap<>();
-    functionNames = new HashMap<>(1200);
+    functionNames = new HashMap<>(400);
   }
 
-  public StreamFactory(HashMap<String, Supplier<Class<? extends Expressible>>> functionNames) {
+  public StreamFactory(Map<String, Supplier<Class<? extends Expressible>>> functionNames) {
     this.functionNames = functionNames;
     collectionZkHosts = new HashMap<>();
   }
@@ -474,5 +474,10 @@ public class StreamFactory implements Serializable {
 
     // is a string
     return original;
+  }
+
+  public void setFunctionNames(Map<String,Supplier<Class<? extends Expressible>>> functionNames) {
+    functionNames.putAll(this.functionNames);
+    this.functionNames = functionNames;
   }
 }

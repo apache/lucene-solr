@@ -49,7 +49,7 @@ import org.junit.Test;
 public class MetricsHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     initCore("solrconfig-minimal.xml", "schema.xml");
     h.getCoreContainer().waitForLoadingCoresToFinish(30000);
 

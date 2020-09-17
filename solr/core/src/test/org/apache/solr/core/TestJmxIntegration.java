@@ -61,7 +61,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     // Make sure that at least one MBeanServer is available
     // prior to initializing the core
     //

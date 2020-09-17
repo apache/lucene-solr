@@ -51,7 +51,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     initCore("solrconfig-spatial.xml", "schema-spatial.xml");
   }
 

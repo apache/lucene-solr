@@ -66,7 +66,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
   }
 
   private void assertTagged(Map<String, SolrMetricReporter> reporters, String name) {
@@ -75,7 +75,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   @Before
   public void beforeTest() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     Path home = Paths.get(TEST_HOME());
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");

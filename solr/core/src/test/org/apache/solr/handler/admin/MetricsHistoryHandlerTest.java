@@ -66,7 +66,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.disableJmxReporter", "false");
+    System.setProperty("solr.disableDefaultJmxReporter", "false");
     TEST_MBEAN_SERVER = MBeanServerFactory.createMBeanServer();
     simulated = TEST_NIGHTLY ? random().nextBoolean() : true;
     Map<String, Object> args = new HashMap<>();

@@ -98,7 +98,7 @@ public class SolrZkClient implements Closeable {
   private final ConnectionManager connManager;
 
   // what about ensuring order of state updates per collection??
-  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService(3, 6, 1, new BlockingArrayQueue());
+  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService(1, 1, 1, new BlockingArrayQueue());
 
   final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService(1, 1, 1, new BlockingArrayQueue());
 
