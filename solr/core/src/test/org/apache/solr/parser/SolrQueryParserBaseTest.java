@@ -16,6 +16,7 @@
  */
 package org.apache.solr.parser;
 
+import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;

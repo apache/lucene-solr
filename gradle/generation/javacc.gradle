@@ -81,8 +81,7 @@ def commonCleanups = { FileTree generatedFiles ->
           /package (.+)/,
           '''
           package $1
-          import org.apache.lucene.queryparser.charstream.CharStream;
-          import org.apache.lucene.queryparser.charstream.FastCharStream; 
+          import org.apache.lucene.queryparser.charstream.CharStream; 
           '''.trim())
       // Eliminates redundant cast message.
       text = text.replace(
