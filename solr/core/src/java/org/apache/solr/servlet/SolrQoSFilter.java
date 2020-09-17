@@ -51,8 +51,8 @@ public class SolrQoSFilter extends QoSFilter {
     super.init(filterConfig);
     _origMaxRequests = Integer.getInteger("solr.concurrentRequests.max", 1000);
     super.setMaxRequests(_origMaxRequests);
-    super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 60000));
-    super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 1000));
+    super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 20000));
+    super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 5000));
   }
 
   @Override
@@ -72,8 +72,8 @@ public class SolrQoSFilter extends QoSFilter {
       if (log.isDebugEnabled()) log.debug("Our individual load is {}", ourLoad);
       if (ourLoad > SysStats.OUR_LOAD_HIGH) {
         int cMax = getMaxRequests();
-        if (cMax > 2) {
-          int max = Math.max(4, (int) ((double)cMax * 0.60D));
+        if (cMax > 5) {
+          int max = Math.max(5, (int) ((double)cMax * 0.60D));
           log.warn("Our individual load is {}, set max concurrent requests to {}", ourLoad, max);
           setMaxRequests(max);
         }
@@ -82,8 +82,8 @@ public class SolrQoSFilter extends QoSFilter {
         double sLoad = sysStats.getSystemLoad();
         if (sLoad > 1) {
           int cMax = getMaxRequests();
-          if (cMax > 2) {
-            int max = Math.max(4, (int) ((double) cMax * 0.60D));
+          if (cMax > 5) {
+            int max = Math.max(5, (int) ((double) cMax * 0.60D));
             log.warn("System load is {}, set max concurrent requests to {}", sLoad, max);
             setMaxRequests(max);
           }

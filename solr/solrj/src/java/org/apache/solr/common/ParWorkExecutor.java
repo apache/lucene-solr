@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ParWorkExecutor extends ThreadPoolExecutor {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
-  public static final int KEEP_ALIVE_TIME = 30000;
+  public static final int KEEP_ALIVE_TIME = 120000;
 
   private static AtomicInteger threadNumber = new AtomicInteger(0);
   private volatile boolean closed;

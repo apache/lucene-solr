@@ -942,40 +942,40 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       final RTimer timer = new RTimer();
       long timeElapsed = (long) timer.getTime() / 1000;
       int attempts = 0;
-      try (Http2SolrClient solr = new Http2SolrClient.Builder(coreUrl).withHttpClient(httpClient).markInternalRequest().build()) {
-        // eventually, this loop will get killed by the ExecutorService's timeout
-        while (true) {
-          try {
-            timeElapsed = (long) timer.getTime() / 1000;
-            if (timeElapsed >= maxWait) {
-              return false;
-            }
-            NamedList<Object> resp = solr.request(this);
-            if (resp != null) {
-              @SuppressWarnings({"rawtypes"})
-              Map m = (Map) resp.get(ZNODEVER);
-              if (m != null) {
-                remoteVersion = (Number) m.get(prop);
-                if (remoteVersion != null && remoteVersion.intValue() >= expectedZkVersion) break;
-              }
-            }
 
-            attempts++;
-            if (log.isInfoEnabled()) {
-              log.info(formatString("Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts", expectedZkVersion, coreUrl, prop, attempts));
-            }
-          } catch (Exception e) {
-            if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
-              ParWork.propagateInterrupt(e);
-              break; // stop looping
-            } else {
-              log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);
+      // eventually, this loop will get killed by the ExecutorService's timeout
+      while (true) {
+        try {
+          timeElapsed = (long) timer.getTime() / 1000;
+          if (timeElapsed >= maxWait) {
+            return false;
+          }
+          setBasePath(coreUrl);
+          NamedList<Object> resp = httpClient.request(this);
+          if (resp != null) {
+            @SuppressWarnings({"rawtypes"}) Map m = (Map) resp.get(ZNODEVER);
+            if (m != null) {
+              remoteVersion = (Number) m.get(prop);
+              if (remoteVersion != null && remoteVersion.intValue() >= expectedZkVersion) break;
             }
           }
-          log.info("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
-          Thread.sleep(500);
+
+          attempts++;
+          if (log.isInfoEnabled()) {
+            log.info(formatString("Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts", expectedZkVersion, coreUrl, prop, attempts));
+          }
+        } catch (Exception e) {
+          if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
+            ParWork.propagateInterrupt(e);
+            break; // stop looping
+          } else {
+            log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);
+          }
         }
+        log.info("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
+        Thread.sleep(500);
       }
+
       return true;
     }
 

@@ -20,7 +20,7 @@ public class SysStats extends Thread {
     private static final Logger log = LoggerFactory
         .getLogger(MethodHandles.lookup().lookupClass());
 
-    public static final double OUR_LOAD_HIGH = 1.2;
+    public static final double OUR_LOAD_HIGH = 1.5;
     public static final long REFRESH_INTERVAL = TimeUnit.NANOSECONDS.convert(5000, TimeUnit.MILLISECONDS);
     static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
     private final long refreshIntervalMs;

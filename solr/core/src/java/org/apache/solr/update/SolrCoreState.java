@@ -158,6 +158,8 @@ public abstract class SolrCoreState {
     void closeWriter(IndexWriter writer) throws IOException;
   }
 
+  public abstract void doRecovery(SolrCore core);
+
   public abstract void doRecovery(CoreContainer cc, CoreDescriptor cd);
   
   public abstract void cancelRecovery();

@@ -267,7 +267,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         if (zkController.getCoreContainer().isShutDown()) {
           for (int j=0; j < results.size(); j++) {
             Future<Integer> fut = results.get(j);
-            fut.cancel(true);
+            fut.cancel(false);
           }
           throw new AlreadyClosedException();
         }

@@ -41,6 +41,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -168,6 +169,8 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
   public static final String ELECTION_NODE = "election";
+
+  private final ReentrantLock updateLock = new ReentrantLock(true);
 
   /**
    * Collections with format2 state.json, "interesting" and actively watched.
@@ -369,7 +372,8 @@ public class ZkStateReader implements SolrCloseable {
   // don't call this, used in one place
 
   public void forciblyRefreshAllClusterStateSlow() throws KeeperException, InterruptedException {
-    synchronized (getUpdateLock()) {
+    updateLock.lock();
+    try {
       if (clusterState == null) {
         // Never initialized, just run normal initialization.
         createClusterStateWatchersAndUpdate();
@@ -388,6 +392,8 @@ public class ZkStateReader implements SolrCloseable {
         }
       }
       constructState(updatedCollections);
+    } finally {
+      updateLock.unlock();
     }
   }
 
@@ -409,8 +415,11 @@ public class ZkStateReader implements SolrCloseable {
       if (nu == null) return -1;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         if (updateWatchedCollection(coll, nu)) {
-          synchronized (getUpdateLock()) {
+          updateLock.lock();
+          try {
             constructState(Collections.singleton(coll));
+          } finally {
+            updateLock.unlock();
           }
         }
         collection = nu;
@@ -547,7 +556,8 @@ public class ZkStateReader implements SolrCloseable {
               return;
             }
             try {
-              synchronized (ZkStateReader.this.getUpdateLock()) {
+              updateLock.lock();
+              try {
                 log.info("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
 
                 // remake watch
@@ -565,6 +575,8 @@ public class ZkStateReader implements SolrCloseable {
                   log.error("Error running collections node listener", e);
                   return;
                 }
+              } finally {
+                updateLock.unlock();
               }
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
@@ -814,7 +826,8 @@ public class ZkStateReader implements SolrCloseable {
 
     // Can't lock getUpdateLock() until we release the other, it would cause deadlock.
     SortedSet<String> oldLiveNodes, newLiveNodes;
-    synchronized (getUpdateLock()) {
+    updateLock.lock();
+    try {
       newLiveNodes = lastFetchedLiveNodes.getAndSet(null);
       if (newLiveNodes == null) {
         // Someone else won the race to apply the last update, just exit.
@@ -826,6 +839,8 @@ public class ZkStateReader implements SolrCloseable {
       if (clusterState != null) {
         clusterState.setLiveNodes(newLiveNodes);
       }
+    } finally {
+      updateLock.unlock();
     }
     if (oldLiveNodes.size() != newLiveNodes.size()) {
       if (log.isInfoEnabled()) {
@@ -879,8 +894,8 @@ public class ZkStateReader implements SolrCloseable {
     return clusterState;
   }
 
-  public Object getUpdateLock() {
-    return this;
+  public ReentrantLock getUpdateLock() {
+    return updateLock;
   }
 
   public void close() {
@@ -1316,8 +1331,11 @@ public class ZkStateReader implements SolrCloseable {
       try {
         DocCollection newState = fetchCollectionState(coll, this);
         updateWatchedCollection(coll, newState);
-        synchronized (getUpdateLock()) {
+        updateLock.lock();
+        try {
           constructState(Collections.singleton(coll));
+        } finally {
+          updateLock.unlock();
         }
 
       } catch (KeeperException e) {
@@ -1379,7 +1397,7 @@ public class ZkStateReader implements SolrCloseable {
           log.error("", e);
           return;
         } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
+          log.info("interrupted");
         }
       }  else if (EventType.NodeDeleted.equals(event.getType())) {
         watchedCollectionProps.put(coll, new VersionedCollectionProps(0, Collections.emptyMap()));
@@ -1389,7 +1407,7 @@ public class ZkStateReader implements SolrCloseable {
           log.error("", e);
           return;
         } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
+          log.info("interrupted");
         }
         try (ParWork work = new ParWork(this, true)) {
           for (CollectionPropsWatcher observer : collectionPropsObservers.values()) {
@@ -1404,7 +1422,7 @@ public class ZkStateReader implements SolrCloseable {
         } catch (KeeperException e) {
           log.error("", e);
         } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
+          log.info("interrupted");
         }
       }
 
@@ -1474,8 +1492,11 @@ public class ZkStateReader implements SolrCloseable {
         log.error("An error has occurred", e);
         return;
       }
-      synchronized (getUpdateLock()) {
+      updateLock.lock();
+      try {
         constructState(Collections.emptySet());
+      } finally {
+        updateLock.unlock();
       }
     }
 
@@ -1629,8 +1650,11 @@ public class ZkStateReader implements SolrCloseable {
       });
     }
     if (reconstructState.get()) {
-      synchronized (getUpdateLock()) {
+      updateLock.lock();
+      try {
         constructState(Collections.emptySet());
+      } finally {
+        updateLock.unlock();
       }
     }
   }
@@ -1883,8 +1907,11 @@ public class ZkStateReader implements SolrCloseable {
       });
     }
     if (reconstructState.get()) {
-      synchronized (getUpdateLock()) {
+      updateLock.lock();
+      try {
         constructState(Collections.emptySet());
+      } finally {
+        updateLock.unlock();
       }
     }
   }
@@ -2058,9 +2085,12 @@ public class ZkStateReader implements SolrCloseable {
 
   // called by createClusterStateWatchersAndUpdate()
   private void refreshAliases(AliasesManager watcher) throws KeeperException, InterruptedException {
-    synchronized (getUpdateLock()) {
+    updateLock.lock();
+    try {
       constructState(Collections.emptySet());
       zkClient.exists(ALIASES, watcher);
+    } finally {
+      updateLock.unlock();
     }
     aliasesManager.update();
   }

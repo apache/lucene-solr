@@ -104,7 +104,7 @@ public class JettySolrRunner implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // NOTE: should be larger than HttpClientUtil.DEFAULT_SO_TIMEOUT or typical client SO timeout
-  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 30000;
+  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 60000;
 
   Server server;
 
@@ -300,6 +300,10 @@ public class JettySolrRunner implements Closeable {
 
     server = new Server(qtp);
 
+    if (config.qtp == null) {
+      server.manage(qtp);
+    }
+
     server.setStopTimeout(60); // will wait gracefull for stoptime / 2, then interrupts
     assert config.stopAtShutdown;
     server.setStopAtShutdown(config.stopAtShutdown);
@@ -318,7 +322,7 @@ public class JettySolrRunner implements Closeable {
       final SslContextFactory.Server sslcontext = SSLConfig.createContextFactory(config.sslConfig);
 
       HttpConfiguration configuration = new HttpConfiguration();
-      configuration.setOutputBufferSize(64 * 1024);
+      // configuration.setOutputBufferSize(8 * 1024);
       configuration.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
       ServerConnector connector;
       if (sslcontext != null) {
@@ -340,9 +344,9 @@ public class JettySolrRunner implements Closeable {
 
           HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
 
-          http2ConnectionFactory.setMaxConcurrentStreams(256);
+          http2ConnectionFactory.setMaxConcurrentStreams(512);
 
-          http2ConnectionFactory.setInputBufferSize(16384);
+          http2ConnectionFactory.setInputBufferSize(8192);
 
           ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(
               http2ConnectionFactory.getProtocol(),

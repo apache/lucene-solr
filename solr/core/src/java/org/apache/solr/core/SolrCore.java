@@ -1680,10 +1680,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         return solrCoreState;
       });
 
-      closer.collect("searcherExecutor#shutdownNow", () -> {
-        searcherExecutor.shutdownNow();
-        return solrCoreState;
-      });
       closer.collect(searcherExecutor);
 
       closer.addCollect();

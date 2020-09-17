@@ -46,7 +46,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -78,7 +78,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -197,7 +196,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile boolean replicateOnStart = false;
 
-  private volatile ScheduledExecutorService executorService;
+  private volatile ScheduledThreadPoolExecutor executorService;
 
   private volatile long executorStartTime;
 
@@ -1244,8 +1243,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     };
     //executorService = new ScheduledThreadPoolExecutor("IndexFetcher");
-    executorService = Executors.newSingleThreadScheduledExecutor(
-        new SolrNamedThreadFactory("indexFetcher"));
+    executorService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("indexFetcher"));
+    executorService.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+    executorService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     // Randomize initial delay, with a minimum of 1ms
     long initialDelayNs = new Random().nextLong() % pollIntervalNs
         + TimeUnit.NANOSECONDS.convert(1, TimeUnit.MILLISECONDS);
@@ -1432,7 +1432,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       @Override
       public void preClose(SolrCore core) {
         try {
-          restoreFuture.cancel(true);
+          restoreFuture.cancel(false);
           try {
             restoreFuture.get();
           } catch (InterruptedException e) {
@@ -1793,15 +1793,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void close() {
     this.closed = true;
-    if (executorService != null) executorService.shutdownNow();
+    if (executorService != null) executorService.shutdown();
 
     if (restoreFuture != null) {
       restoreFuture.cancel(false);
-    }
-    try {
-      executorService.shutdownNow();
-    } catch (NullPointerException e) {
-      // okay
     }
 
     try (ParWork closer = new ParWork(this, true)) {
@@ -1817,8 +1812,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         });
       }
     ///  closer.collect(restoreExecutor);
-     // closer.collect(executorService);
-      closer.addCollect();
+      closer.collect(executorService);
     }
 
   }

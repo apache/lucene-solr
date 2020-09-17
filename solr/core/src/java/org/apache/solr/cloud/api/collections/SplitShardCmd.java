@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -75,6 +76,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.STATE_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
@@ -593,6 +595,19 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         handleFailureOnAsyncRequest(results, msgOnError);
       }
       t.stop();
+
+//      zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+//        if (collectionState == null) return false;
+//        for (String subSlice : subSlices) {
+//          if (collectionState.getSlice(subSlice) == null || !collectionState.getSlice(subSlice).getState().equals(Slice.State.ACTIVE)) {
+//            return false;
+//          }
+//        }
+//        if (collectionState.getSlice(slice.get()) != null && !collectionState.getSlice(slice.get()).equals(Slice.State.INACTIVE)) {
+//          return false;
+//        }
+//        return true;
+//      });
 
       log.info("Successfully created all replica shards for all sub-slices {}", subSlices);
 

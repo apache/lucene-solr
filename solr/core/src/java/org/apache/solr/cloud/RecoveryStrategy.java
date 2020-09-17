@@ -51,6 +51,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -139,9 +140,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.coreName = cd.getName();
-    this.core = cc.getCore(coreName, false);
+    this.core = cc.getCore(coreName, true);
     if (core == null) {
-      throw new IllegalStateException("SolrCore is null");
+      close = true;
     }
     this.recoveryListener = recoveryListener;
     zkController = cc.getZkController();
@@ -211,6 +212,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       }
     } finally {
+      IOUtils.closeQuietly(core);
       core = null;
     }
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
@@ -386,7 +388,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // + core.getUpdateHandler().getUpdateLog());
     // return;
     // }
-    while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) { // don't use interruption or
+    while (!successfulRecovery && !isClosed()) { // don't use interruption or
                                                                                             // it will close channels
                                                                                             // though
       try {
@@ -523,7 +525,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
             Thread.sleep(startingRecoveryDelayMilliSeconds);
           }
         } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
           log.warn("Recovery was interrupted.", e);
           close = true;
         }
@@ -618,7 +619,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     final String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
     Future<RecoveryInfo> replayFuture = null;
-    while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) { // don't use interruption or
+    while (!successfulRecovery && !isClosed()) { // don't use interruption or
                                                                                             // it will close channels
                                                                                             // though
       try {

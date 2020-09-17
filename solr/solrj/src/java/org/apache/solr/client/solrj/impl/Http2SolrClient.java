@@ -219,18 +219,19 @@ public class Http2SolrClient extends SolrClient {
       } else {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
-      transport = new HttpClientTransportOverHTTP(2);
+      transport = new HttpClientTransportOverHTTP(1);
       httpClient = new HttpClient(transport, sslContextFactory);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     } else {
       log.debug("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
+      http2client.setSelectors(2);
       transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     }
     // nocommit - look at config again as well
-    httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(14, ParWork.PROC_COUNT), 8, idleTimeout);
+    httpClientExecutor = new SolrQueuedThreadPool("httpClient", Math.max(8, ParWork.PROC_COUNT / 4), 4, idleTimeout);
     httpClientExecutor.setLowThreadsThreshold(-1);
 
     httpClient.setIdleTimeout(idleTimeout);
@@ -241,6 +242,7 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setScheduler(scheduler);
       httpClient.manage(scheduler);
       httpClient.setExecutor(httpClientExecutor);
+      httpClient.manage(httpClientExecutor);
       httpClient.setStrictEventOrdering(true);
       httpClient.setConnectBlocking(false);
       httpClient.setFollowRedirects(false);
@@ -817,6 +819,7 @@ public class Http2SolrClient extends SolrClient {
     } finally {
       if (shouldClose) {
         try {
+          while(is.read() != -1) { }
           is.close();
         } catch (IOException e) {
           // quitely
@@ -934,7 +937,7 @@ public class Http2SolrClient extends SolrClient {
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout = Integer.getInteger("solr.http2solrclient.default.idletimeout", 30000);
     private Integer connectionTimeout;
-    private Integer maxConnectionsPerHost = 6;
+    private Integer maxConnectionsPerHost = 12;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
     protected Map<String,String> headers = new ConcurrentHashMap<>();

@@ -624,7 +624,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     if (collectService != null) {
       collectService.shutdown();
 
-      scheduledFuture.cancel(true);
+      scheduledFuture.cancel(false);
     }
 
     try (ParWork closer = new ParWork(this)) {

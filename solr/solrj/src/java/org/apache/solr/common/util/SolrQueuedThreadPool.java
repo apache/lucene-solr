@@ -162,13 +162,15 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         setLowThreadsThreshold(-1);
         if (queue == null)
         {
-            int capacity = Math.max(_minThreads, 8) * 1024;
-            queue = new BlockingArrayQueue<>(capacity, capacity);
+            int capacity = 128;
+            queue = new BlockingArrayQueue<>(capacity, 0);
         }
         _jobs = queue;
         _threadGroup = threadGroup;
         setThreadPoolBudget(new ThreadPoolBudget(this));
         _threadFactory = threadFactory == null ? this : threadFactory;
+
+        assert ObjectReleaseTracker.track(this);
     }
 
     @Override
@@ -567,6 +569,8 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     {
         while (true)
         {
+
+            if (closed) return;
             long counts = _counts.get();
             int threads = AtomicBiInteger.getHi(counts);
             if (threads == Integer.MIN_VALUE)
@@ -776,7 +780,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
             try
             {
                 Runnable job = null;
-                while (true)
+                while (!closed)
                 {
                     // If we had a job,
                     if (job != null)
@@ -900,27 +904,43 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         removeBean(_tryExecutor);
         _tryExecutor = TryExecutor.NO_TRY;
 
-        try {
-            super.doStop();
-        } catch (Exception e) {
-            LOG.warn("super.doStop", e);
-            return;
-        }
+        int threads = getBusyThreads() + getIdleThreads() + getThreads() * 2;
+        BlockingArrayQueue<Runnable> jobs = (BlockingArrayQueue<Runnable>) getQueue();
 
-        int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
-        BlockingQueue<Runnable> jobs = getQueue();
+        setIdleTimeout(1);
+
         // Fill the job queue with noop jobs to wakeup idle threads.
         for (int i = 0; i < threads; ++i) {
             jobs.offer(NOOP);
         }
 
         // interrupt threads
-        for (Future thread : _threadFutures)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Interrupting {}", thread);
-            thread.cancel(true);
-        }
+//        for (Future thread : _threadFutures)
+//        {
+//            if (LOG.isDebugEnabled())
+//                LOG.debug("Interrupting {}", thread);
+//            thread.cancel(true);
+//        }
+
+
+        // Close any un-executed jobs
+//        while (!_jobs.isEmpty())
+//        {
+//            Runnable job = _jobs.poll();
+//            if (job instanceof Closeable)
+//            {
+//                try
+//                {
+//                    ((Closeable)job).close();
+//                }
+//                catch (Throwable t)
+//                {
+//                    LOG.warn("", t);
+//                }
+//            }
+//            else if (job != NOOP)
+//                LOG.warn("Stopped without executing or closing {}", job);
+//        }
 
         try {
             joinThreads(15000);
@@ -932,23 +952,11 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
             LOG.warn("Execution exception in joinThreads on close {}", e);
         }
 
-        // Close any un-executed jobs
-        while (!_jobs.isEmpty())
-        {
-            Runnable job = _jobs.poll();
-            if (job instanceof Closeable)
-            {
-                try
-                {
-                    ((Closeable)job).close();
-                }
-                catch (Throwable t)
-                {
-                    LOG.warn("", t);
-                }
-            }
-            else if (job != NOOP)
-                LOG.warn("Stopped without executing or closing {}", job);
+        try {
+            super.doStop();
+        } catch (Exception e) {
+            LOG.warn("super.doStop", e);
+            return;
         }
 
         if (_budget != null)

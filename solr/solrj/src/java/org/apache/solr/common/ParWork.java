@@ -93,7 +93,7 @@ public class ParWork implements Closeable {
         ((ParWorkExecutor)EXEC).closeLock(false);
         EXEC.setKeepAliveTime(1, TimeUnit.NANOSECONDS);
         EXEC.allowCoreThreadTimeOut(true);
-        EXEC.shutdownNow();
+       // EXEC.shutdownNow();
         ExecutorUtil.shutdownAndAwaitTermination(EXEC);
         EXEC = null;
       }

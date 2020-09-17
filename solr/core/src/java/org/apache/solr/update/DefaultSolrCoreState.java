@@ -320,11 +320,18 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public synchronized void doRecovery(CoreContainer cc, CoreDescriptor cd) {
-    if (prepForClose || cc.isShutDown() || closed) {
+    try (SolrCore core = cc.getCore(cd.getName())) {
+      doRecovery(core);
+    }
+  }
+
+  @Override
+  public synchronized void doRecovery(SolrCore core) {
+    if (prepForClose || core.getCoreContainer().isShutDown() || closed) {
       return;
     }
     Runnable recoveryTask = () -> {
-      MDCLoggingContext.setCoreDescriptor(cc, cd);
+      MDCLoggingContext.setCoreDescriptor(core.getCoreContainer(), core.getCoreDescriptor());
       try {
         if (SKIP_AUTO_RECOVERY) {
           log.warn(
@@ -333,7 +340,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         }
 
         // check before we grab the lock
-        if (prepForClose || closed || cc.isShutDown()) {
+        if (prepForClose || closed || core.getCoreContainer().isShutDown()) {
           log.warn("Skipping recovery because Solr is shutdown");
           return;
         }
@@ -357,7 +364,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           }
 
           // to be air tight we must also check after lock
-          if (prepForClose || closed || cc.isShutDown()) {
+          if (prepForClose || closed || core.getCoreContainer().isShutDown()) {
             log.info("Skipping recovery due to being closed");
             return;
           }
@@ -366,7 +373,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           recoveryThrottle.markAttemptingAction();
 
           recoveryStrat = recoveryStrategyBuilder
-              .create(cc, cd, DefaultSolrCoreState.this);
+              .create(core.getCoreContainer(), core.getCoreDescriptor(), DefaultSolrCoreState.this);
           recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
 
           log.info("Running recovery");
@@ -392,19 +399,19 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         }
 
         if (recoveryFuture != null) {
-          recoveryFuture.cancel(true);
+         // recoveryFuture.cancel(false);
 
           try {
             recoveryFuture.get();
           } catch (Exception e) {
-            log.error("Exception waiting for previous recovery to finish");
+            log.error("Exception waiting for previous recovery to finish {}", e.getMessage());
           }
         }
       } catch (NullPointerException e) {
         // okay
       }
 
-      recoveryFuture = cc.getUpdateShardHandler().getRecoveryExecutor()
+      recoveryFuture = core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor()
           .submit(recoveryTask);
     } catch (RejectedExecutionException e) {
       // fine, we are shutting down
@@ -431,11 +438,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
 
     if (recoveryFuture != null) {
-      try {
-        recoveryFuture.cancel(true);
-      } catch (NullPointerException e) {
-        // okay
-      }
+//      try {
+//        recoveryFuture.cancel(false);
+//      } catch (NullPointerException e) {
+//        // okay
+//      }
       try {
         recoveryFuture.get(10, TimeUnit.MINUTES); // nocommit - how long? make configurable too
       } catch (CancellationException e) {

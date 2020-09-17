@@ -856,10 +856,10 @@ public class CoreContainer implements Closeable {
       metricManager.loadClusterReporters(cfg.getMetricsConfig().getMetricReporters(), this);
     }
 
-    final List<Future<SolrCore>> coreLoadFutures = new ArrayList<>();
-
+    List<Future<SolrCore>> coreLoadFutures = null;
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);
+      coreLoadFutures = new ArrayList<>(cds.size());
       if (isZooKeeperAware()) {
         // sort the cores if it is in SolrCloud. In standalone node the order does not matter
         CoreSorter coreComparator = new CoreSorter().init(zkSys.zkController, cds);
@@ -911,20 +911,21 @@ public class CoreContainer implements Closeable {
             log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
           }
         }
-        if (isZooKeeperAware()) {
-          for (Future<SolrCore> future : zkRegFutures) {
-            try {
-              future.get();
-            } catch (InterruptedException e) {
-              ParWork.propagateInterrupt(e);
-            } catch (ExecutionException e) {
-              log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
-            }
-          }
-        }
       }
     }
+
     if (isZooKeeperAware()) {
+
+      for (Future<SolrCore> future : zkRegFutures) {
+        try {
+          future.get();
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+        } catch (ExecutionException e) {
+          log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
+        }
+      }
+
       zkSys.getZkController().checkOverseerDesignate();
       // initialize this handler here when SolrCloudManager is ready
       autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);
@@ -1035,7 +1036,6 @@ public class CoreContainer implements Closeable {
        solrCores.closing();
      }
 
-    solrCoreLoadExecutor.shutdownNow();
 
     // must do before isShutDown=true
     if (isZooKeeperAware()) {
@@ -1052,10 +1052,6 @@ public class CoreContainer implements Closeable {
 
     if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null) {
       zkSys.zkController.disconnect();
-    }
-    if (replayUpdatesExecutor != null) {
-      // stop accepting new tasks
-      replayUpdatesExecutor.shutdownNow();
     }
 
     try (ParWork closer = new ParWork(this, true)) {

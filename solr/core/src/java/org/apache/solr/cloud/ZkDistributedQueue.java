@@ -480,9 +480,9 @@ public class ZkDistributedQueue implements DistributedQueue {
 
           TreeSet<String> existingChildren = knownChildren;
 
-          while (existingChildren == knownChildren) {
+          while (existingChildren == knownChildren && existingChildren.size() == 0) {
             try {
-              changed.await(500, TimeUnit.MILLISECONDS);
+              changed.await(250, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
               ParWork.propagateInterrupt(e);
               throw new AlreadyClosedException();

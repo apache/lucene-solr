@@ -503,16 +503,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
 
   static UpdateResponse softCommit(String url, Http2SolrClient httpClient) throws SolrServerException, IOException {
-
-    try (Http2SolrClient client = new Http2SolrClient.Builder(url)
-        .withHttpClient(httpClient)
-        .markInternalRequest()
-        .build()) {
-      UpdateRequest ureq = new UpdateRequest();
-      ureq.setParams(new ModifiableSolrParams());
-      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
-      return ureq.process(client);
-    }
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.setBasePath(url);
+    ureq.setParams(new ModifiableSolrParams());
+    ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
+    return ureq.process(httpClient);
   }
 
   static String waitForCoreNodeName(ZkStateReader zkStateReader, String collectionName, String msgNodeName, String msgCore) {
@@ -553,7 +548,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   void waitForNewShard(String collectionName, String sliceName) {
     log.debug("Waiting for slice {} of collection {} to be available", sliceName, collectionName);
     try {
-      zkStateReader.waitForState(collectionName, 15, TimeUnit.SECONDS, (n, c) -> {
+      zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (n, c) -> {
         if (c == null)
           return false;
         Slice slice = c.getSlice(sliceName);
@@ -766,7 +761,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
 
     ClusterState clusterState = zkStateReader.getClusterState();
-    DocCollection coll = clusterState.getCollection(collectionName);
+    DocCollection coll = clusterState.getCollectionOrNull(collectionName);
+    if (coll == null) return null;
     List<Replica> notLivesReplicas = new ArrayList<>();
     final ShardRequestTracker shardRequestTracker = new ShardRequestTracker(asyncId, adminPath, zkStateReader, shardHandlerFactory, overseer);
     for (Slice slice : coll.getSlices()) {

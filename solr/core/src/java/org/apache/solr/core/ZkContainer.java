@@ -231,7 +231,7 @@ public class ZkContainer implements Closeable {
           MDCLoggingContext.clear();
         }
       };
-     return ParWork.getMyPerThreadExecutor().submit(r); // ### expert usage
+     return ParWork.getRootSharedExecutor().submit(r); // ### expert usage
 
   }
   

@@ -51,6 +51,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import com.google.common.base.Strings;
@@ -232,6 +233,8 @@ public class ZkController implements Closeable {
 
   private final Map<String, ReplicateFromLeader> replicateFromLeaders = new ConcurrentHashMap<>(132, 0.75f, 50);
   private final Map<String, ZkCollectionTerms> collectionToTerms = new ConcurrentHashMap<>(132, 0.75f, 50);
+
+  private final ReentrantLock collectionToTermsLock = new ReentrantLock(true);
 
   // for now, this can be null in tests, in which case recovery will be inactive, and other features
   // may accept defaults or use mocks rather than pulling things from a CoreContainer
@@ -588,7 +591,7 @@ public class ZkController implements Closeable {
   /**
    * Closes the underlying ZooKeeper client.
    */
-  public synchronized void close() {
+  public void close() {
     log.info("Closing ZkController");
     assert closeTracker.close();
     this.shudownCalled = true;
@@ -1652,9 +1655,7 @@ public class ZkController implements Closeable {
     log.info("{} stopping background replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = replicateFromLeaders.remove(coreName);
     if (replicateFromLeader != null) {
-      synchronized (replicateFromLeader) {
-        ParWork.close(replicateFromLeader);
-      }
+      ParWork.close(replicateFromLeader);
     }
   }
 
@@ -1931,16 +1932,22 @@ public class ZkController implements Closeable {
   }
 
   private ZkCollectionTerms getCollectionTerms(String collection) {
-    synchronized (collectionToTerms) {
+    collectionToTermsLock.lock();
+    try {
       if (!collectionToTerms.containsKey(collection)) collectionToTerms.put(collection, new ZkCollectionTerms(collection, zkClient));
       return collectionToTerms.get(collection);
+    } finally {
+      collectionToTermsLock.unlock();
     }
   }
 
   public void clearZkCollectionTerms() {
-    synchronized (collectionToTerms) {
+    collectionToTermsLock.lock();
+    try {
       collectionToTerms.values().forEach(ZkCollectionTerms::close);
       collectionToTerms.clear();
+    } finally {
+      collectionToTermsLock.unlock();
     }
   }
 
@@ -1949,17 +1956,17 @@ public class ZkController implements Closeable {
   }
 
   public void unregister(String coreName, CoreDescriptor cd, boolean removeCoreFromZk) throws Exception {
+    if (!zkClient.isConnected()) return;
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
     final String collection = cd.getCloudDescriptor().getCollectionName();
 
     zkStateReader.unregisterCore(collection);
 
-    synchronized (collectionToTerms) {
-      ZkCollectionTerms ct = collectionToTerms.get(collection);
-      if (ct != null) {
-        ct.remove(cd.getCloudDescriptor().getShardId(), cd);
-      }
+    ZkCollectionTerms ct = collectionToTerms.get(collection);
+    if (ct != null) {
+      ct.remove(cd.getCloudDescriptor().getShardId(), cd);
     }
+
     replicasMetTragicEvent.remove(collection+":"+coreNodeName);
 
     if (Strings.isNullOrEmpty(collection)) {

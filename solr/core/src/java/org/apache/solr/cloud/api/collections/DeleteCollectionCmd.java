@@ -75,6 +75,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     final String extCollection = message.getStr(NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
 
+    boolean skipFinalStateWork = false;
+
     if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
     }
@@ -129,19 +131,26 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       Set<String> okayExceptions = new HashSet<>(1);
       okayExceptions.add(NonExistentCoreException.class.getName());
-      okayExceptions.add(SolrException.class.getName()); // could not find collection
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
       @SuppressWarnings({"unchecked"})
       List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, null, okayExceptions);
 
-    } finally {
-      log.info("Send DELETE operation to Overseer collection={}", collection);
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      if (failedReplicas == null) {
+        skipFinalStateWork = true;
 
-      // wait for a while until we don't see the collection
-      zkStateReader.waitForState(collection, 10, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection");
+      }
+
+    } finally {
+      if (!skipFinalStateWork) {
+        log.info("Send DELETE operation to Overseer collection={}", collection);
+        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+
+        // wait for a while until we don't see the collection
+        zkStateReader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
+      }
 
       zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
 

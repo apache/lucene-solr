@@ -147,6 +147,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   public void afterTest() throws Exception {
     if (qtp != null) {
       qtp.close();
+      qtp = null;
     }
   }
 
