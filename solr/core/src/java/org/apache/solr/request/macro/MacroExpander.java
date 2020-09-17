@@ -142,7 +142,6 @@ public class MacroExpander {
 
       // found unescaped "${"
       final int matchedStart = idx;
-      idx += macroStart.length();
 
       int rbrace = val.indexOf('}', matchedStart + macroStart.length());
       if (rbrace == -1) {
@@ -161,7 +160,7 @@ public class MacroExpander {
       // update "start" to be at the end of ${...}
       idx = start = rbrace + 1;
 
-      // String in-between = val.substring(idx, rbrace);
+      // String in-between braces
       StrParser parser = new StrParser(val, matchedStart + macroStart.length(), rbrace);
       try {
         String paramName = parser.getId();
