@@ -61,9 +61,10 @@ def commonCleanups = { FileTree generatedFiles ->
     })
   }
 
-  // Side-effect of this is that all files have normalized EOLs
   generatedFiles.each {file ->
     modifyFile(file, { text ->
+      // Normalize EOLs and tabs (EOLs are a side-effect of modifyFile).
+      text = text.replace("\t", "    ");
       text = text.replaceAll("JavaCC - OriginalChecksum=[^*]+", "(filtered)")
       text = text.replace("StringBuffer", "StringBuilder")
       return text
