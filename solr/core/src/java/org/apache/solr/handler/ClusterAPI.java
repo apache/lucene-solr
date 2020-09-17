@@ -161,28 +161,21 @@ public class ClusterAPI {
     public void setPlacementPlugin(PayloadObj<Map<String, Object>> obj) {
       Map<String, Object> placementPluginConfig = obj.getDataMap();
       ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
-      // Very basic sanity check (not checking class actually exists)
-      if (!placementPluginConfig.containsKey(PlacementPluginConfigImpl.CONFIG_CLASS)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Must contain " + PlacementPluginConfigImpl.CONFIG_CLASS + " attribute");
+      // When the json contains { "set-placement-plugin" : null }, the map is empty, not null.
+      final boolean unset = placementPluginConfig.isEmpty();
+      // Very basic sanity check. Real validation will be done when the config is used...
+      if (!unset && !placementPluginConfig.containsKey(PlacementPluginConfigImpl.CONFIG_CLASS)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Must contain " + PlacementPluginConfigImpl.CONFIG_CLASS + " attribute (or be null)");
       }
       try {
         // Need to reset to null first otherwise the mappings in placementPluginConfig are added to existing ones
-        // in /clusterprops.json rather than replace them
+        // in /clusterprops.json rather than replacing them. If removing the config, that's all we do.
         clusterProperties.setClusterProperties(
                 Collections.singletonMap(PlacementPluginConfigImpl.PLACEMENT_PLUGIN_CONFIG_KEY, null));
-        clusterProperties.setClusterProperties(
-                Collections.singletonMap(PlacementPluginConfigImpl.PLACEMENT_PLUGIN_CONFIG_KEY, placementPluginConfig));
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
-      }
-    }
-
-    @Command(name = "unset-placement-plugin")
-    public void unsetPlacementPlugin(PayloadObj<Object> obj) {
-      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
-      try {
-        clusterProperties.setClusterProperties(
-                Collections.singletonMap(PlacementPluginConfigImpl.PLACEMENT_PLUGIN_CONFIG_KEY, null));
+        if (!unset) {
+          clusterProperties.setClusterProperties(
+                  Collections.singletonMap(PlacementPluginConfigImpl.PLACEMENT_PLUGIN_CONFIG_KEY, placementPluginConfig));
+        }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }
