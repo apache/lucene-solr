@@ -63,7 +63,7 @@ package org.apache.solr.cluster.placement;
  * <pre>
  *
  * curl -X POST -H 'Content-type:application/json' -d '{
- *   "unset-placement-plugin" : null
+ *   "set-placement-plugin" : null
  * }' http://localhost:8983/api/cluster
  * </pre>
  */
