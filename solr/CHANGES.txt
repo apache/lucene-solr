@@ -53,6 +53,9 @@ Improvements
 * SOLR-14802: geodist: Support most (all?) spatial field types as an argument like LLPSF, SRPTFT, and others.
   (Tom Edge, Craig Wrigglesworth)
 
+* SOLR-14859: DateRangeField now throws errors when invalid field/fieldType options specified; no longer silently accepts incompatible option values
+  (Jason Gerlowski, Chris Hostetter, Munendra S N)
+
 Optimizations
 ---------------------
 
