@@ -40,6 +40,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -84,6 +85,10 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       apiBag = new ApiBag(false);
       Collection<Api> apis = collectionsHandler.getApis();
       for (Api api : apis) apiBag.register(api, Collections.emptyMap());
+
+      ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler);
+      apiBag.registerObject(clusterAPI);
+      apiBag.registerObject(clusterAPI.commands);
     }
     //test a simple create collection call
     compareOutput(apiBag, "/collections", POST,
@@ -275,6 +280,11 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     LocalSolrQueryRequest req;
 
     MockCollectionsHandler() {
+    }
+
+    @Override
+    protected CoreContainer checkErrors() {
+      return null;
     }
 
     @Override

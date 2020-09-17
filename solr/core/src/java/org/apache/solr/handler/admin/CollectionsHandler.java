@@ -228,17 +228,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Make sure the cores is enabled
-    CoreContainer cores = getCoreContainer();
-    if (cores == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Core container instance missing");
-    }
-
-    // Make sure that the core is ZKAware
-    if (!cores.isZooKeeperAware()) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-          "Solr instance is not running in SolrCloud mode.");
-    }
+    CoreContainer cores = checkErrors();
 
     // Pick the action
     SolrParams params = req.getParams();
@@ -259,6 +249,21 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
     }
     rsp.setHttpCaching(false);
+  }
+
+  protected CoreContainer checkErrors() {
+    CoreContainer cores = getCoreContainer();
+    if (cores == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Core container instance missing");
+    }
+
+    // Make sure that the core is ZKAware
+    if (!cores.isZooKeeperAware()) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Solr instance is not running in SolrCloud mode.");
+    }
+    return cores;
   }
 
   @SuppressWarnings({"unchecked"})

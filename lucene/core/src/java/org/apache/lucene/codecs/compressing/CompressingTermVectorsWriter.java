@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.compressing;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.SortedSet;
@@ -41,6 +42,7 @@ import org.apache.lucene.store.GrowableByteArrayDataOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -206,7 +208,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   private final BlockPackedWriter writer;
 
   /** Sole constructor. */
-  public CompressingTermVectorsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
+  CompressingTermVectorsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
       String formatName, CompressionMode compressionMode, int chunkSize, int blockShift) throws IOException {
     assert directory != null;
     this.segment = si.name;
@@ -852,5 +854,16 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     // more than 1% dirty, or more than hard limit of 1024 dirty chunks
     return candidate.getNumDirtyChunks() > 1024 || 
            candidate.getNumDirtyChunks() * 100 > candidate.getNumChunks();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return positionsBuf.length + startOffsetsBuf.length + lengthsBuf.length + payloadLengthsBuf.length
+        + termSuffixes.ramBytesUsed() + payloadBytes.ramBytesUsed() + lastTerm.bytes.length;
+  }
+
+  @Override
+  public Collection<Accountable> getChildResources() {
+    return Arrays.asList(termSuffixes, payloadBytes);
   }
 }

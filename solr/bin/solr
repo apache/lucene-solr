@@ -2035,7 +2035,7 @@ fi
 
 if [ "$SOLR_MODE" == 'solrcloud' ]; then
   if [ -z "$ZK_CLIENT_TIMEOUT" ]; then
-    ZK_CLIENT_TIMEOUT="15000"
+    ZK_CLIENT_TIMEOUT="30000"
   fi
 
   CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")

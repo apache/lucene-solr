@@ -12,11 +12,15 @@ API Changes
   is now public, making it easier for applications to decode facet
   ordinals into their corresponding labels (Ankur)
 
+* LUCENE-9515: IndexingChain now accepts individual primitives rather than a
+  DocumentsWriterPerThread instance in order to create a new DocConsumer.
+  (Simon Willnauer)
+
 * LUCENE-9449: Field comparators for numeric fields and _doc
   were moved to their own package. TopFieldCollector sets
   TotalHits.relation to GREATER_THAN_OR_EQUAL_TO,
   as soon as the requested total hits threshold is reached, even though
-  in some cases no skipping optimization is applied and all hits are collected.
+  in some cases no skipping optimization is applied and all hits are collected.  
 
 New Features
 ---------------------
@@ -47,9 +51,15 @@ Improvements
 * LUCENE-9446: In BooleanQuery rewrite, always remove MatchAllDocsQuery filter clauses
   when possible. (Julie Tibshirani)
 
-* LUCENE-9501: Improve how Asserting* test classes handle singleton doc values.
+* LUCENE-9501: Improve coverage for Asserting* test classes: make sure to handle singleton doc
+  values, and sometimes exercise Weight#scorer instead of Weight#bulkScorer for top-level
+  queries. (Julie Tibshirani)
 
 * LUCENE-9511: Include StoredFieldsWriter in DWPT accounting to ensure that it's 
+  heap consumption is taken into account when IndexWriter stalls or should flush
+  DWPTs. (Simon Willnauer)
+
+* LUCENE-9514: Include TermVectorsWriter in DWPT accounting to ensure that it's 
   heap consumption is taken into account when IndexWriter stalls or should flush
   DWPTs. (Simon Willnauer)
 
@@ -65,11 +75,13 @@ Optimizations
 * LUCENE-9373: FunctionMatchQuery now accepts a "matchCost" optimization hint.
   (Maxim Glazkov, David Smiley)
 
+* LUCENE-9510: Indexing with an index sort is now faster by not compressing
+  temporary representations of the data. (Adrien Grand)
+
 * LUCENE-9449: Enhance DocComparator to provide an iterator over competitive
   documents when searching with "after". This iterator can quickly position
   on the desired "after" document skipping all documents and segments before
-  "after". Also redesign numeric comparators to provide skipping functionality
-  by default. (Mayya Sharipova, Jim Ferenczi)
+  "after". (Mayya Sharipova, Jim Ferenczi)
 
 Bug Fixes
 ---------------------
