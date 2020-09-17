@@ -260,44 +260,33 @@ configure(project(":solr:core")) {
 
     javaccFile = file('src/java/org/apache/solr/parser/QueryParser.jj')
 
-    
 
-    doLast {
-      def separator = System.getProperty('line.separator')
-      def parentDir = javaccFile.parentFile
-
-      [/import java\.io\.StringReader;/,
-       /import java\.util\.ArrayList;/,
-       /import java\.util\.Arrays;/,
-       /import java\.util\.HashSet;/,
-       /import java\.util\.List;/,
-       /import java\.util\.Set;/,
-       /import org\.apache\.lucene\.analysis\.Analyzer;/,
-       /import org\.apache\.lucene\.search\.BooleanClause;/,
-       /import org\.apache\.lucene\.search\.Query;/,
-       /import org\.apache\.solr\.search\.SyntaxError;/,
-       /import org\.apache\.solr\.search\.QParser;/
-      ].each {
-        ant.replaceregexp(file: file("${parentDir}/QueryParserTokenManager.java"),
-            match: "${it}\\s*${separator}",
-            replace: "",
-            encoding: "UTF-8")
+    afterGenerate << commonCleanups
+    afterGenerate << { FileTree generatedFiles ->
+      generatedFiles.matching { include "QueryParser.java" }.each { file ->
+        modifyFile(file, { text ->
+          text = text.replace(
+              "public QueryParser(CharStream ",
+              "protected QueryParser(CharStream ")
+          text = text.replace(
+              "public QueryParser(QueryParserTokenManager ",
+              "protected QueryParser(QueryParserTokenManager ")
+          text = text.replace(
+              "final private LookaheadSuccess jj_ls =",
+              "static final private LookaheadSuccess jj_ls =")
+          return text
+        })
       }
 
-      ant.replace(file: "${parentDir}/QueryParser.java",
-          token: "public QueryParser(CharStream ",
-          value: "protected QueryParser(CharStream ",
-          encoding: "UTF-8")
-
-      ant.replace(file: "${parentDir}/QueryParser.java",
-          token: "public QueryParser(QueryParserTokenManager ",
-          value: "protected QueryParser(QueryParserTokenManager ",
-          encoding: "UTF-8")
-
-      ant.replace(file: "${parentDir}/QueryParser.java",
-          token: "final private LookaheadSuccess jj_ls =",
-          value: "static final private LookaheadSuccess jj_ls =",
-          encoding: "UTF-8")
+      generatedFiles.matching { include "*TokenManager.java" }.each { file ->
+        modifyFile(file, { text ->
+          // Remove redundant imports.
+          text = text.replaceAll(
+              /(?m)^import .+/,
+              "")
+          return text
+        })
+      }
     }
   }
 }
