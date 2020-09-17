@@ -65,9 +65,9 @@ Mapping file syntax:
 * The source string must contain at least one character, but the target string may be empty.
 * The following character escape sequences are recognized within source and target strings:
 +
-[%autowidth.spread,options="header"]
 |===
 |Escape Sequence |Resulting Character (http://www.ecma-international.org/publications/standards/Ecma-048.htm[ECMA-48] alias) |Unicode Character |Example Mapping Line
+
 |`\\` |`\` |U+005C |`"\\" \=> "/"`
 |`\"` |`"` |U+0022 |`"\"and\"" \=> "'and'"`
 |`\b` |backspace (BS) |U+0008 |`"\b" \=> " "`
@@ -105,9 +105,9 @@ TIP: The input need not be an HTML document. The filter removes only constructs 
 
 The table below presents examples of HTML stripping.
 
-[width="100%",options="header",]
 |===
 |Input |Output
+
 |`my <a href="www.foo.bar">link</a>` |my link
 |`<br>hello<!--comment-\->` |hello
 |`hello<script><!-- f('<!--internal-\-></script>'); -\-></script>` |hello

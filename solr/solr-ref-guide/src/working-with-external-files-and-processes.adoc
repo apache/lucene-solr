@@ -93,9 +93,7 @@ By default, the query-time analyzer for fields of this type will be the same as 
 
 This is the default serialization format used by PreAnalyzedField type. It uses a top-level JSON map with the following keys:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,60,20",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Key |Description |Required
 |`v` |Version key. Currently the supported version is `1`. |required
@@ -110,9 +108,7 @@ Any other top-level key is silently ignored.
 
 The token stream is expressed as a JSON list of JSON maps. The map for each token consists of the following keys and values:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="10,20,20,30,20",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Key |Description |Lucene Attribute |Value |Required?
 |`t` |token |{lucene-javadocs}/core/org/apache/lucene/analysis/tokenattributes/CharTermAttribute.html[CharTermAttribute] |UTF-8 string representing the current token |required
@@ -183,9 +179,7 @@ Please note that Unicode sequences (e.g., `\u0001`) are not supported.
 
 The following token attributes are supported, and identified with short symbolic names:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="10,30,30,30",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Name |Description |Lucene attribute |Value format
 |`i` |position increment |{lucene-javadocs}/core/org/apache/lucene/analysis/tokenattributes/PositionIncrementAttribute.html[PositionIncrementAttribute] |integer

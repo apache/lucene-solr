@@ -94,9 +94,7 @@ Resource bundles can be added by providing a JAR file visible by the SolrResourc
 
 === VelocityResponseWriter Context Objects
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Context Reference |Description
 |`request` |{solr-javadocs}solr-core/org/apache/solr/request/SolrQueryRequest.html[SolrQueryRequest] javadocs
