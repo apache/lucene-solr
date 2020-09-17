@@ -14,21 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.queryparser.charstream;
+package org.apache.lucene.queryparser.flexible.standard.parser;
 
 import java.io.*;
 
-/**
- * An efficient implementation of JavaCC's CharStream interface.
- * <p>
- * Note that this does not do line-number counting, but instead keeps track of the
- * character position of the token in the input, as required by Lucene's
- * {@link org.apache.lucene.analysis.tokenattributes.OffsetAttribute} API.
- */
+/** An efficient implementation of JavaCC's CharStream interface.  <p>Note that
+ * this does not do line-number counting, but instead keeps track of the
+ * character position of the token in the input, as required by Lucene's {@link
+ * org.apache.lucene.analysis.tokenattributes.OffsetAttribute} API.
+ * */
 public final class FastCharStream implements CharStream {
-  // See SOLR-11314
-  private final static IOException READ_PAST_EOF = new IOException("Read past EOF.");
-
   char[] buffer = null;
 
   int bufferLength = 0;          // end of valid chars
@@ -39,9 +34,7 @@ public final class FastCharStream implements CharStream {
 
   Reader input;            // source of chars
 
-  /**
-   * Constructs from a Reader.
-   */
+  /** Constructs from a Reader. */
   public FastCharStream(Reader r) {
     input = r;
   }
@@ -53,7 +46,7 @@ public final class FastCharStream implements CharStream {
     return buffer[bufferPosition++];
   }
 
-  private void refill() throws IOException {
+  private final void refill() throws IOException {
     int newPosition = bufferLength - tokenStart;
 
     if (tokenStart == 0) {        // token won't fit in buffer
@@ -74,9 +67,9 @@ public final class FastCharStream implements CharStream {
     tokenStart = 0;
 
     int charsRead =          // fill space in buffer
-        input.read(buffer, newPosition, buffer.length - newPosition);
+      input.read(buffer, newPosition, buffer.length-newPosition);
     if (charsRead == -1)
-      throw READ_PAST_EOF;
+      throw new IOException("read past eof");
     else
       bufferLength += charsRead;
   }
@@ -109,32 +102,42 @@ public final class FastCharStream implements CharStream {
     try {
       input.close();
     } catch (IOException e) {
-      throw new UncheckedIOException(e);
     }
   }
 
+  /**
+   * Returns the column position of the character last read.
+   * @deprecated see #getEndColumn
+   */
+  @Deprecated
+  @Override
+  public final int getColumn() {
+    return bufferStart + bufferPosition;
+  }
+  /**
+   * @deprecated see #getEndLine
+   */
+  @Deprecated
+  @Override
+  public final int getLine() {
+    return 1;
+  }
   @Override
   public final int getEndColumn() {
     return bufferStart + bufferPosition;
   }
-
   @Override
   public final int getEndLine() {
     return 1;
   }
-
   @Override
   public final int getBeginColumn() {
     return bufferStart + tokenStart;
   }
-
   @Override
   public final int getBeginLine() {
     return 1;
   }
-<<<<<<< HEAD:lucene/queryparser/src/java/org/apache/lucene/queryparser/charstream/FastCharStream.java
-}
-=======
 
   @Override
   public void setTabSize(int i) {
@@ -156,4 +159,3 @@ public final class FastCharStream implements CharStream {
     throw new RuntimeException("Line/Column tracking not implemented.");
   }
 }
->>>>>>> origin/master:lucene/queryparser/src/java/org/apache/lucene/queryparser/surround/parser/FastCharStream.java
