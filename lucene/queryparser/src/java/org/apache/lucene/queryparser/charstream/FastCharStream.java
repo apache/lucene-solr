@@ -22,12 +22,12 @@ import java.io.*;
  * An efficient implementation of JavaCC's CharStream interface.
  * <p>
  * Note that this does not do line-number counting, but instead keeps track of the
- * character position of the token in the input, as required by Lucene's {@link
- * org.apache.lucene.analysis.tokenattributes.OffsetAttribute} API.
+ * character position of the token in the input, as required by Lucene's
+ * {@link org.apache.lucene.analysis.tokenattributes.OffsetAttribute} API.
  */
 public final class FastCharStream implements CharStream {
   // See SOLR-11314
-  private final static IOException READ_PAST_EOF = new IOException("read past eof");
+  private final static IOException READ_PAST_EOF = new IOException("Read past EOF.");
 
   char[] buffer = null;
 
@@ -109,19 +109,8 @@ public final class FastCharStream implements CharStream {
     try {
       input.close();
     } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
-  }
-
-  @Deprecated
-  @Override
-  public final int getColumn() {
-    return bufferStart + bufferPosition;
-  }
-
-  @Override
-  @Deprecated
-  public final int getLine() {
-    return 1;
   }
 
   @Override
