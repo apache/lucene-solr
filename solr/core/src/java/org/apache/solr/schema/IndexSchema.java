@@ -245,8 +245,8 @@ public class IndexSchema {
 
   protected volatile Map<String,FieldType> fieldTypes = new ConcurrentHashMap<>(32);
 
-  protected volatile Set<SchemaField> fieldsWithDefaultValue = ConcurrentHashMap.newKeySet(16);
-  protected volatile Collection<SchemaField> requiredFields = ConcurrentHashMap.newKeySet(16);
+  protected volatile Set<SchemaField> fieldsWithDefaultValue = ConcurrentHashMap.newKeySet(32);
+  protected volatile Collection<SchemaField> requiredFields = ConcurrentHashMap.newKeySet(32);
   protected volatile DynamicField[] dynamicFields = EMPTY_DYNAMIC_FIELDS1;
 
   public DynamicField[] getDynamicFields() { return dynamicFields; }
@@ -256,9 +256,9 @@ public class IndexSchema {
   private volatile Analyzer indexAnalyzer;
   private volatile Analyzer queryAnalyzer;
 
-  protected volatile Set<SchemaAware> schemaAware = ConcurrentHashMap.newKeySet(332);
+  protected volatile Set<SchemaAware> schemaAware = ConcurrentHashMap.newKeySet(32);
 
-  protected volatile Map<String,Set<CopyField>> copyFieldsMap = new ConcurrentHashMap<>(16);
+  protected volatile Map<String,Set<CopyField>> copyFieldsMap = new ConcurrentHashMap<>(32);
   public Map<String,Set<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
 
   protected volatile DynamicCopy[] dynamicCopyFields = EMPTY_DYNAMIC_COPIES;

@@ -1328,8 +1328,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     // build the new FieldType using the existing FieldTypePluginLoader framework
     // which expects XML, so we use a JSON to XML adapter to transform the JSON object
     // provided in the request into the XML format supported by the plugin loader
-    Map<String,FieldType> newFieldTypes = new HashMap<>(64);
-    List<SchemaAware> schemaAwareList = new ArrayList<>(64);
+    Map<String,FieldType> newFieldTypes = new HashMap<>(32);
+    List<SchemaAware> schemaAwareList = new ArrayList<>(32);
     FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, newFieldTypes, schemaAwareList);
     typeLoader.loadSingle(loader, FieldTypeXmlAdapter.toNode(loader, options));
     FieldType ft = newFieldTypes.get(typeName);

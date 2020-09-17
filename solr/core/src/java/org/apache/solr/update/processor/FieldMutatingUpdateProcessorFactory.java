@@ -129,7 +129,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
   private Collection<SelectorParams> exclusions 
     = new ArrayList<>();
 
-  private FieldNameSelector selector = null;
+  private volatile FieldNameSelector selector = null;
   
   protected final FieldNameSelector getSelector() {
     if (null != selector) return selector;
