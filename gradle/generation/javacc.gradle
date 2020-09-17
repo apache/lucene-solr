@@ -180,7 +180,7 @@ configure(project(":lucene:queryparser")) {
           import org.apache.lucene.queryparser.flexible.messages.*;
           import org.apache.lucene.queryparser.flexible.core.*;
           import org.apache.lucene.queryparser.flexible.core.messages.*;
-          '''.stripIndent())
+          ''')
 
           // Modify constructors and code bits
           text = text.replaceAll(
@@ -194,7 +194,7 @@ configure(project(":lucene:queryparser")) {
             this.expectedTokenSequences = expectedTokenSequencesVal;
             this.tokenImage = tokenImageVal;
           }
-          '''.stripIndent().indent(2))
+          ''')
 
           text = text.replaceAll(
               /(?s)[ ]*public ParseException\(String message\)[^}]+[}]/, '''\
@@ -202,7 +202,7 @@ configure(project(":lucene:queryparser")) {
           {
             super(message);
           }
-          '''.stripIndent().indent(2))
+          ''')
 
           text = text.replaceAll(
               /(?s)[ ]*public ParseException\(\)[^}]+[}]/, '''\
@@ -210,7 +210,7 @@ configure(project(":lucene:queryparser")) {
           {
             super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, "Error"));
           }
-          '''.stripIndent().indent(2))
+          ''')
           return text
         })
       }
