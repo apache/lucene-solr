@@ -22,8 +22,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.MultiTerms;
@@ -42,6 +44,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -106,6 +109,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unsupported value of '" + CommonAdminParams.SPLIT_METHOD + "': " + methodStr);
     }
     SolrCore parentCore = it.handler.coreContainer.getCore(cname);
+    Map<SolrCore,CoreDescriptor> newCoresMap = null;
     List<SolrCore> newCores = null;
     SolrQueryRequest req = null;
 
@@ -136,11 +140,12 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
 
       if (pathsArr == null) {
+        newCoresMap = new HashMap<>(partitions);
         newCores = new ArrayList<>(partitions);
         for (String newCoreName : newCoreNames) {
           SolrCore newcore = it.handler.coreContainer.getCore(newCoreName);
           if (newcore != null) {
-            newCores.add(newcore);
+            newCoresMap.put(newcore, newcore.getCoreDescriptor());
             if (it.handler.coreContainer.isZooKeeperAware()) {
               // this core must be the only replica in its shard otherwise
               // we cannot guarantee consistency between replicas because when we add data to this replica
@@ -165,9 +170,10 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       parentCore.getUpdateHandler().split(cmd);
 
       if (it.handler.coreContainer.isZooKeeperAware()) {
-        for (SolrCore newcore : newCores) {
+        Set<Map.Entry<SolrCore,CoreDescriptor>> entries = newCoresMap.entrySet();
+        for (Map.Entry<SolrCore,CoreDescriptor> entry : entries) {
           // the index of the core changed from empty to have some data, its term must be not zero
-          CloudDescriptor cd = newcore.getCoreDescriptor().getCloudDescriptor();
+          CloudDescriptor cd = entry.getValue().getCloudDescriptor();
           ZkShardTerms zkShardTerms = it.handler.coreContainer.getZkController().getShardTerms(cd.getCollectionName(), cd.getShardId());
           zkShardTerms.ensureHighestTermsAreNotZero();
         }

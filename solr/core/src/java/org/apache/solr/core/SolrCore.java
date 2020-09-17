@@ -1419,7 +1419,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public void closeAndWait() throws TimeoutException {
     close();
-    int timeouts = 5;
+    int timeouts = 180;
     TimeOut timeout = new TimeOut(timeouts, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     synchronized (closeAndWait) {
       while (!isClosed()) {
@@ -1716,7 +1716,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       closer.addCollect();
 
       closer.collect("CleanupOldIndexDirs", () -> {
-        if (coreStateClosed.get()) cleanupOldIndexDirectories(false);
+        if (coreStateClosed.get()) {
+          try {
+            cleanupOldIndexDirectories(false);
+          } catch (Exception e) {
+            log.error("Error cleaning up old index dirs", e);
+          }
+        }
       });
       closer.addCollect();
       closer.collect("directoryFactory", () -> {
@@ -3256,7 +3262,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       } catch (Exception exc) {
         SolrZkClient.checkInterrupted(exc);
         log.error("Failed to cleanup old index directories for core {}", coreName, exc);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to cleanup old index directories for core name=" + coreName, exc);
       }
     }
   }

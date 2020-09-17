@@ -120,6 +120,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           "Collection: " + collectionName + " shard: " + shard + " does not exist");
     }
 
+    // nocommit
     boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
     final String asyncId = message.getStr(ASYNC);
@@ -131,6 +132,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Both 'node' and 'createNodeSet' parameters cannot be specified together.");
     }
 
+    // nocommit
     int timeout = message.getInt(TIMEOUT, 15); // 10 minutes
 
     Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()).toUpperCase(Locale.ROOT));
@@ -156,7 +158,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     List<CreateReplica> createReplicas;
 
     try {
-      ocmh.zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      ocmh.zkStateReader.waitForState(collectionName, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
         if (collectionState == null) {
           return false;
         }
@@ -212,7 +214,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         }
 
         try {
-          zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+          zkStateReader.waitForState(collectionName, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
             if (collectionState == null) {
               return false;
             }
@@ -256,7 +258,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       runnable.run();
       try {
-        zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+        zkStateReader.waitForState(collectionName, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
           if (collectionState == null) {
             return false;
           }
