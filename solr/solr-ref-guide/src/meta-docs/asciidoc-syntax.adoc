@@ -302,11 +302,11 @@ The basic structure of a table is similar to Markdown, with pipes (`|`) delimiti
 Note the use of `|===` at the start and end. For basic tables that's not exactly required, but it does help to delimit the start and end of the table in case you accidentally introduce (or maybe prefer) spaces between the rows.
 
 === Header Rows
-To add a header to a table, you need only set the `header` attribute at the start of the table:
+Most of our tables are laid out with a header and spread out to the width of the page, so you will see this header definition frequently:
 
 [source]
 ----
-[options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 | header col 1 | header col 2|
 | col 1 row 1 | col 2 row 1|
