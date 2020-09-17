@@ -20,7 +20,7 @@ should be used instead, such as autoscaling policy or rules-based placement.
 
 New Features
 ---------------------
-* SOLR-14789: Migrate docker image creation from docker-solr repo to solr/docker. (Houston Putman, Tim Potter, David Smiley, janhoy, Mike Drob)
+* SOLR-14789: Migrate docker image creation from docker-solr repo to solr/docker. (Houston Putman, Martijn Koster, Tim Potter, David Smiley, janhoy, Mike Drob)
 
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
@@ -45,6 +45,8 @@ Improvements
 * SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
 
 * SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
+
+* SOLR-14799: JWT authentication plugin only requires "sub" claim when principalClaim=sub. (Erik Hatcher)
 
 Other Changes
 ----------------------
@@ -248,6 +250,9 @@ Other Changes
 
 * SOLR-14579: Comment SolrJ 'Utils' generic map functions 
   (Megan Carey and a lot of education from Uwe Schindler via Erick Erickson)
+
+* SOLR-10471: Update default Zookeeper session timeout to 30s in bin/solr and bin/solr.cmd
+  (Michael Braun, Markus Jelsma via Munendra S N)
 
 ==================  8.6.2 ==================
 
