@@ -132,28 +132,4 @@ public final class FastCharStream implements CharStream {
   public final int getBeginLine() {
     return 1;
   }
-<<<<<<< HEAD:lucene/queryparser/src/java/org/apache/lucene/queryparser/charstream/FastCharStream.java
 }
-=======
-
-  @Override
-  public void setTabSize(int i) {
-    throw new RuntimeException("Tab size not implemented.");
-  }
-
-  @Override
-  public int getTabSize() {
-    throw new RuntimeException("Tab size not implemented.");
-  }
-
-  @Override
-  public boolean getTrackLineColumn() {
-    return false;
-  }
-
-  @Override
-  public void setTrackLineColumn(boolean trackLineColumn) {
-    throw new RuntimeException("Line/Column tracking not implemented.");
-  }
-}
->>>>>>> origin/master:lucene/queryparser/src/java/org/apache/lucene/queryparser/surround/parser/FastCharStream.java
