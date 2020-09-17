@@ -144,7 +144,7 @@ public class MacroExpander {
       final int matchedStart = idx;
       idx += macroStart.length();
 
-      int rbrace = val.indexOf('}', idx);
+      int rbrace = val.indexOf('}', matchedStart + macroStart.length());
       if (rbrace == -1) {
         // no matching close brace...
         continue;
