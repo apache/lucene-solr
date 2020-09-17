@@ -418,7 +418,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           throw new SolrException(BAD_REQUEST, message);
         }
         if (log.isDebugEnabled()) {
-          StringBuilder builder = new StringBuilder(512);
+          StringBuilder builder = new StringBuilder(1024);
           builder.append("\nFields to be added to the schema: [");
           boolean isFirst = true;
           for (SchemaField field : newFields) {
@@ -470,28 +470,16 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
               ((ManagedIndexSchema)newSchema).persistManagedSchema(false);
               core.setLatestSchema(newSchema);
               cmd.getReq().updateSchemaToLatest();
-              log.debug("Successfully added field(s) and copyField(s) to the schema.");
+              if (log.isDebugEnabled()) log.debug("Successfully added field(s) and copyField(s) to the schema.");
               break; // success - exit from the retry loop
             } else {
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to add fields and/or copyFields.");
             }
           } catch (ManagedIndexSchema.FieldExistsException e) {
             log.error("At least one field to be added already exists in the schema - retrying.");
-            try {
-              Thread.sleep(200);
-            } catch (InterruptedException interruptedException) {
-              ParWork.propagateInterrupt(interruptedException);
-              throw new AlreadyClosedException();
-            }
             cmd.getReq().updateSchemaToLatest();
           } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
-            if (log.isDebugEnabled()) log.debug("Schema changed while processing request - retrying.");
-            try {
-              Thread.sleep(200);
-            } catch (InterruptedException interruptedException) {
-              ParWork.propagateInterrupt(interruptedException);
-              throw new AlreadyClosedException();
-            }
+            log.info("Schema changed while processing request - retrying.");
             oldSchema = core.getLatestSchema();
             cmd.getReq().updateSchemaToLatest();
           }

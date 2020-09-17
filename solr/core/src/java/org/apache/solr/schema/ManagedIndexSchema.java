@@ -204,7 +204,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           log.info("Persisted managed schema version {}  at {}", schemaZkVersion, managedSchemaPath);
         } catch (KeeperException.BadVersionException e) {
 
-          log.error("Bad version when trying to persist schema using {} due to: ", schemaZkVersion, e);
+          log.info("Bad version when trying to persist schema using {}", schemaZkVersion);
 
           success = false;
           schemaChangedInZk = true;
