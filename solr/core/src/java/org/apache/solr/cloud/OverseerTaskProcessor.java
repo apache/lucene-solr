@@ -64,7 +64,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
    * Maximum number of overseer collection operations which can be
    * executed concurrently
    */
-  public static final int MAX_PARALLEL_TASKS = 10;
+  public static final int MAX_PARALLEL_TASKS = 100;
   public static final int MAX_BLOCKED_TASKS = 1000;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -76,10 +76,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private DistributedMap failureMap;
 
   // Set that maintains a list of all the tasks that are running. This is keyed on zk id of the task.
-  private final Set<String> runningTasks = ConcurrentHashMap.newKeySet(500);
+  private final Set<String> runningTasks = ConcurrentHashMap.newKeySet(32);
 
   // List of completed tasks. This is used to clean up workQueue in zk.
-  private final Map<String, QueueEvent> completedTasks = new ConcurrentHashMap<>(132, 0.75f, 50);
+  private final Map<String, QueueEvent> completedTasks = new ConcurrentHashMap<>(32, 0.75f);
 
   private final String myId;
 
@@ -90,7 +90,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   // Set of tasks that have been picked up for processing but not cleaned up from zk work-queue.
   // It may contain tasks that have completed execution, have been entered into the completed/failed map in zk but not
   // deleted from the work-queue as that is a batched operation.
-  final private Set<String> runningZKTasks = ConcurrentHashMap.newKeySet(500);
+  final private Set<String> runningZKTasks = ConcurrentHashMap.newKeySet(32);
   // This map may contain tasks which are read from work queue but could not
   // be executed because they are blocked or the execution queue is full
   // This is an optimization to ensure that we do not read the same tasks
@@ -420,6 +420,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   protected class Runner implements Runnable {
     final ZkNodeProps message;
     final String operation;
+    private final OverseerMessageHandler.Lock lock;
     volatile OverseerSolrResponse response;
     final QueueEvent head;
     final OverseerMessageHandler messageHandler;
@@ -429,6 +430,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       this.operation = operation;
       this.head = head;
       this.messageHandler = messageHandler;
+      this.lock = lock;
     }
 
 
@@ -464,7 +466,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           }
         } else {
           byte[] sdata = OverseerSolrResponseSerializer.serialize(response);
-         // cc.getZkController().zkStateReader.getZkClient().setData(head.getId(), sdata, false);
           head.setBytes(sdata);
           log.debug("Completed task:[{}] {}", head.getId(), response.getResponse());
         }
@@ -487,6 +488,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           return;
         }
         log.error("Exception running task", e);
+      } finally {
+        lock.unlock();
       }
 
       if (log.isDebugEnabled()) {

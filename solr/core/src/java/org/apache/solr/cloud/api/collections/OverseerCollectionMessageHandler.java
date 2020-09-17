@@ -73,7 +73,6 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ConcurrentNamedList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -372,7 +371,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
               "' parameters are required for the BALANCESHARDUNIQUE operation, no action taken");
     }
-    SolrZkClient zkClient = zkStateReader.getZkClient();
     Map<String, Object> m = new HashMap<>(message.getProperties().size() + 1);
     m.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
     m.putAll(message.getProperties());
@@ -416,24 +414,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       throws Exception {
     ((DeleteReplicaCmd) commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, message, results, onComplete);
 
-  }
-
-  boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
-    try {
-      zkStateReader.waitForState(collectionName, timeoutms, TimeUnit.MILLISECONDS, (c) -> {
-          if (c == null)
-            return true;
-          Slice slice = c.getSlice(shard);
-          if(slice == null || slice.getReplica(replicaName) == null) {
-            return true;
-          }
-          return false;
-        });
-    } catch (TimeoutException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting for nodes to go away");
-    }
-
-    return false;
   }
 
   void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws Exception {
