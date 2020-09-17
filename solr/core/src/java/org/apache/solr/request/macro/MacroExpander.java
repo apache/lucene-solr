@@ -141,7 +141,7 @@ public class MacroExpander {
       }
 
       // found unescaped "${"
-      int matchedStart = idx;
+      final int matchedStart = idx;
       idx += macroStart.length();
 
       int rbrace = val.indexOf('}', idx);
