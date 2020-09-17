@@ -132,6 +132,7 @@ Improvements
   "after". Also redesign numeric comparators to provide skipping functionality
   by default. (Mayya Sharipova, Jim Ferenczi)
 
+* LUCENE-9527: Upgrade javacc to 7.0.4, regenerate query parsers. (Dawid Weiss)
 
 Bug fixes
 
@@ -242,6 +243,9 @@ Optimizations
 
 * LUCENE-9373: FunctionMatchQuery now accepts a "matchCost" optimization hint.
   (Maxim Glazkov, David Smiley)
+
+* LUCENE-9510: Indexing with an index sort is now faster by not compressing
+  temporary representations of the data. (Adrien Grand)
 
 Bug Fixes
 ---------------------

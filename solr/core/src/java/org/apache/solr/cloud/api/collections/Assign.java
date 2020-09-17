@@ -44,6 +44,9 @@ import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
+import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -297,8 +300,7 @@ public class Assign {
         .assignPullReplicas(pullReplicas)
         .onNodes(createNodeList)
         .build();
-    AssignStrategyFactory assignStrategyFactory = new AssignStrategyFactory(cloudManager);
-    AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, coll);
+    AssignStrategy assignStrategy = createAssignStrategy(cloudManager, clusterState, coll);
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
@@ -387,12 +389,12 @@ public class Assign {
   }
 
   public static class AssignRequest {
-    public String collectionName;
-    public List<String> shardNames;
-    public List<String> nodes;
-    public int numNrtReplicas;
-    public int numTlogReplicas;
-    public int numPullReplicas;
+    public final String collectionName;
+    public final List<String> shardNames;
+    public final List<String> nodes;
+    public final int numNrtReplicas;
+    public final int numTlogReplicas;
+    public final int numPullReplicas;
 
     public AssignRequest(String collectionName, List<String> shardNames, List<String> nodes, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
       this.collectionName = collectionName;
@@ -543,40 +545,30 @@ public class Assign {
     }
   }
 
-  public static class AssignStrategyFactory {
-    public SolrCloudManager solrCloudManager;
+  /**
+   * Creates the appropriate instance of {@link AssignStrategy} based on how the cluster and/or individual collections are
+   * configured.
+   */
+  public static AssignStrategy createAssignStrategy(SolrCloudManager solrCloudManager, ClusterState clusterState, DocCollection collection) {
+    PlacementPlugin plugin = PlacementPluginConfigImpl.getPlacementPlugin(solrCloudManager);
 
-    public AssignStrategyFactory(SolrCloudManager solrCloudManager) {
-      this.solrCloudManager = solrCloudManager;
-    }
-
-    public AssignStrategy create(ClusterState clusterState, DocCollection collection) throws IOException, InterruptedException {
+    if (plugin != null) {
+      // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin), it overrides
+      // per collection configuration (i.e. rules are ignored)
+      return new PlacementPluginAssignStrategy(collection, plugin);
+    } else {
       @SuppressWarnings({"unchecked", "rawtypes"})
-      List<Map> ruleMaps = (List<Map>) collection.get("rule");
-      @SuppressWarnings({"rawtypes"})
-      List snitches = (List) collection.get(SNITCH);
+      List<Map> ruleMaps = (List<Map>) collection.get(DocCollection.RULE);
 
-      Strategy strategy = null;
       if (ruleMaps != null && !ruleMaps.isEmpty()) {
-        strategy = Strategy.RULES;
+        List<Rule> rules = new ArrayList<>();
+        for (Object map : ruleMaps) rules.add(new Rule((Map) map));
+        @SuppressWarnings({"rawtypes"})
+        List snitches = (List) collection.get(SNITCH);
+        return new RulesBasedAssignStrategy(rules, snitches, clusterState);
       } else {
-        strategy = Strategy.LEGACY;        
+        return new LegacyAssignStrategy();
       }
-      
-      switch (strategy) {
-        case LEGACY:
-          return new LegacyAssignStrategy();
-        case RULES:
-          List<Rule> rules = new ArrayList<>();
-          for (Object map : ruleMaps) rules.add(new Rule((Map) map));
-          return new RulesBasedAssignStrategy(rules, snitches, clusterState);
-        default:
-          throw new Assign.AssignmentException("Unknown strategy type: " + strategy);
-      }
-    }
-
-    private enum Strategy {
-      LEGACY, RULES;
     }
   }
 }

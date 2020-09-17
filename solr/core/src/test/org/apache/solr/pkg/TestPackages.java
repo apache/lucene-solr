@@ -19,13 +19,20 @@ package org.apache.solr.pkg;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.solr.client.solrj.*;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -69,9 +76,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
+import static org.apache.solr.filestore.TestDistribPackageStore.checkAllNodesForFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
-import static org.apache.solr.filestore.TestDistribPackageStore.checkAllNodesForFile;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
@@ -655,10 +662,14 @@ public class TestPackages extends SolrCloudTestCase {
       postFileAndWait(cluster, "runtimecode/schema-plugins.jar.bin", FILE1,
               "iSRhrogDyt9P1htmSf/krh1kx9oty3TYyWm4GKHQGlb8a+X4tKCe9kKk+3tGs+bU9zq5JBZ5txNXsn96aZem5A==");
 
+      String FILE2 = "/schemapkg/payload-component.jar";
+      postFileAndWait(cluster, "runtimecode/payload-component.jar.bin", FILE2,
+          "gI6vYUDmSXSXmpNEeK1cwqrp4qTeVQgizGQkd8A4Prx2K8k7c5QlXbcs4lxFAAbbdXz9F4esBqTCiLMjVDHJ5Q==");
+
       Package.AddVersion add = new Package.AddVersion();
       add.version = "1.0";
       add.pkg = "schemapkg";
-      add.files = Arrays.asList(new String[]{FILE1});
+      add.files = Arrays.asList(FILE1,FILE2);
       V2Request req = new V2Request.Builder("/cluster/package")
               .forceV2(true)
               .withMethod(SolrRequest.METHOD.POST)
@@ -697,7 +708,7 @@ public class TestPackages extends SolrCloudTestCase {
       String tokenizer =
               "        'tokenizer' : { 'class':'schemapkg:my.pkg.MyWhitespaceTokenizerFactory' },\n";
       String filters =
-              "        'filters' : [{ 'class':'solr.ASCIIFoldingFilterFactory' }]\n";
+          "        'filters' : [{ 'class':'solr.DelimitedPayloadTokenFilterFactory', 'encoder' : 'schemapkg:com.o19s.payloads.Base64Encoder'}]\n";
       String suffix = "    }\n" +
               "}}";
       cluster.getSolrClient().request(new SolrRequest(SolrRequest.METHOD.POST, "/schema") {

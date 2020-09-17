@@ -46,6 +46,8 @@ Improvements
 
 * SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
 
+* SOLR-14799: JWT authentication plugin only requires "sub" claim when principalClaim=sub. (Erik Hatcher)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
