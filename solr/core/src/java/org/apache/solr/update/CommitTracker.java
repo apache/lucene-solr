@@ -38,6 +38,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Helper class for tracking autoCommit state.
@@ -61,6 +62,8 @@ public final class CommitTracker implements Runnable, Closeable {
   private int docsUpperBound;
   private long timeUpperBound;
   private long tLogFileSizeUpperBound;
+
+  private ReentrantLock lock = new ReentrantLock(true);
 
   // note: can't use ExecutorsUtil because it doesn't have a *scheduled* ExecutorService.
   //  Not a big deal but it means we must take care of MDC logging here.
@@ -105,15 +108,21 @@ public final class CommitTracker implements Runnable, Closeable {
     return openSearcher;
   }
   
-  public synchronized void close() {
-    this.closed = true;
+  public void close() {
+
+    lock.lock();
     try {
-      pending.cancel(true);
-    } catch (NullPointerException e) {
-      // okay
+      this.closed = true;
+      try {
+        pending.cancel(true);
+      } catch (NullPointerException e) {
+        // okay
+      }
+      pending = null;
+      ParWork.close(scheduler);
+    } finally {
+      lock.unlock();
     }
-    pending = null;
-    ParWork.close(scheduler);
     assert ObjectReleaseTracker.release(this);
   }
   
@@ -123,13 +132,16 @@ public final class CommitTracker implements Runnable, Closeable {
   }
 
   public void cancelPendingCommit() {
-    synchronized (this) {
+    lock.lock();
+    try {
       if (pending != null) {
         boolean canceled = pending.cancel(false);
         if (canceled) {
           pending = null;
         }
       }
+    } finally {
+      lock.unlock();
     }
   }
   
@@ -143,7 +155,8 @@ public final class CommitTracker implements Runnable, Closeable {
 
   private void _scheduleCommitWithin(long commitMaxTime) {
     if (commitMaxTime <= 0) return;
-    synchronized (this) {
+    lock.lock();
+    try {
       if (pending != null && pending.getDelay(TimeUnit.MILLISECONDS) <= commitMaxTime) {
         // There is already a pending commit that will happen first, so
         // nothing else to do here.
@@ -172,6 +185,8 @@ public final class CommitTracker implements Runnable, Closeable {
       if (!closed) {
         pending = scheduler.schedule(this, commitMaxTime, TimeUnit.MILLISECONDS);
       }
+    } finally {
+      lock.unlock();
     }
   }
   
@@ -248,21 +263,27 @@ public final class CommitTracker implements Runnable, Closeable {
   
   /** Inform tracker that a rollback has occurred, cancel any pending commits */
   public void didRollback() {
-    synchronized (this) {
+    lock.lock();
+    try {
       if (pending != null) {
         pending.cancel(false);
         pending = null; // let it start another one
       }
       docsSinceCommit.set(0);
+    } finally {
+      lock.unlock();
     }
   }
   
   /** This is the worker part for the ScheduledFuture **/
   @Override
   public void run() {
-    synchronized (this) {
+    lock.lock();
+    try {
       // log.info("###start commit. pending=null");
       pending = null;  // allow a new commit to be scheduled
+    } finally {
+      lock.unlock();
     }
 
     MDCLoggingContext.setCore(core);

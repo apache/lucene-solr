@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
@@ -77,7 +78,7 @@ public class TransactionLog implements Closeable {
   FileChannel channel;
   OutputStream os;
   FastOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
-  final Object fosLock = new Object();
+  final ReentrantLock fosLock = new ReentrantLock(true);
   volatile int numRecords;
   boolean isBuffer;
 
@@ -239,9 +240,12 @@ public class TransactionLog implements Closeable {
 
   public boolean endsWithCommit() throws IOException {
     long size;
-    synchronized (fosLock) {
+    fosLock.lock();
+    try {
       fos.flush();
       size = fos.size();
+    } finally {
+      fosLock.unlock();
     }
 
     // the end of the file should have the end message (added during a commit) plus a 4 byte size
@@ -326,12 +330,15 @@ public class TransactionLog implements Closeable {
     // rollback() is the only function that can reset to zero, and it blocks updates.
     if (fos.size() != 0) return;
 
-    synchronized (fosLock) {
+    fosLock.lock();
+    try {
       if (fos.size() != 0) return;  // check again while synchronized
       if (optional != null) {
         addGlobalStrings(optional.getFieldNames());
       }
       writeLogHeader(codec);
+    } finally {
+      fosLock.unlock();
     }
   }
 
@@ -390,7 +397,8 @@ public class TransactionLog implements Closeable {
       }
 
 
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         lastAddSize = (int) out.size();
 
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
@@ -407,6 +415,8 @@ public class TransactionLog implements Closeable {
         endRecord(pos);
         // fos.flushBuffer();  // flush later
         return pos;
+      } finally {
+        fosLock.unlock();
       }
 
     } catch (IOException e) {
@@ -430,13 +440,16 @@ public class TransactionLog implements Closeable {
       codec.writeLong(cmd.getVersion());
       codec.writeByteArray(br.bytes, br.offset, br.length);
 
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         assert pos != 0;
         out.writeAll(fos);
         endRecord(pos);
         // fos.flushBuffer();  // flush later
         return pos;
+      } finally {
+        fosLock.unlock();
       }
 
     } catch (IOException e) {
@@ -457,12 +470,15 @@ public class TransactionLog implements Closeable {
       codec.writeLong(cmd.getVersion());
       codec.writeStr(cmd.query);
 
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         out.writeAll(fos);
         endRecord(pos);
         // fos.flushBuffer();  // flush later
         return pos;
+      } finally {
+        fosLock.unlock();
       }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -473,7 +489,8 @@ public class TransactionLog implements Closeable {
 
   public long writeCommit(CommitUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
-    synchronized (fosLock) {
+    fosLock.lock();
+    try {
       try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
 
@@ -496,6 +513,8 @@ public class TransactionLog implements Closeable {
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
+    } finally {
+      fosLock.unlock();
     }
   }
 
@@ -509,7 +528,8 @@ public class TransactionLog implements Closeable {
 
     try {
       // make sure any unflushed buffer has been flushed
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         // TODO: optimize this by keeping track of what we have flushed up to
         fos.flushBuffer();
         /***
@@ -518,6 +538,8 @@ public class TransactionLog implements Closeable {
          throw new RuntimeException("ERROR" + "###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
          }
          ***/
+      } finally {
+        fosLock.unlock();
       }
 
       ChannelFastInputStream fis = new ChannelFastInputStream(channel, pos);
@@ -548,8 +570,11 @@ public class TransactionLog implements Closeable {
 
   /** returns the current position in the log file */
   public long position() {
-    synchronized (fosLock) {
+    fosLock.lock();
+    try {
       return fos.size();
+    } finally {
+      fosLock.unlock();
     }
   }
 
@@ -561,8 +586,11 @@ public class TransactionLog implements Closeable {
   public void finish(UpdateLog.SyncLevel syncLevel) {
     if (syncLevel == UpdateLog.SyncLevel.NONE) return;
     try {
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         fos.flushBuffer();
+      } finally {
+        fosLock.unlock();
       }
 
       if (syncLevel == UpdateLog.SyncLevel.FSYNC) {
@@ -583,9 +611,12 @@ public class TransactionLog implements Closeable {
         log.debug("Closing tlog {}", this);
       }
 
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         fos.flush();
         fos.close();
+      } finally {
+        fosLock.unlock();
       }
 
       if (deleteOnClose) {
@@ -665,7 +696,8 @@ public class TransactionLog implements Closeable {
      */
     public Object next() throws IOException, InterruptedException {
       long pos;
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         pos = fis.position();
         if (trace) {
           log.trace("Reading log record.  pos={} currentSize={}", pos, fos.size());
@@ -696,6 +728,8 @@ public class TransactionLog implements Closeable {
         assert size == fis.position() - pos - 4;
 
         return o;
+      } finally {
+        fosLock.unlock();
       }
     }
 
@@ -737,7 +771,8 @@ public class TransactionLog implements Closeable {
 
     @Override
     public Object next() throws IOException, InterruptedException {
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         if (versionToPos == null) {
           versionToPos = new TreeMap<>();
           Object o;
@@ -767,6 +802,8 @@ public class TransactionLog implements Closeable {
           if (pos != currentPos()) fis.seek(pos);
           return super.next();
         }
+      } finally {
+        fosLock.unlock();
       }
     }
   }
@@ -808,7 +845,8 @@ public class TransactionLog implements Closeable {
       incref();
 
       long sz;
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         fos.flushBuffer();
         sz = fos.size();
         assert sz == channel.size();
@@ -820,6 +858,8 @@ public class TransactionLog implements Closeable {
           fis.seek(prevPos);
           nextLength = fis.readInt();
         }
+      } finally {
+        fosLock.unlock();
       }
     }
 
@@ -830,7 +870,8 @@ public class TransactionLog implements Closeable {
      */
     public Object next() throws IOException {
       Object o = null;
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         if (prevPos <= 0) return null;
 
         long endOfThisRecord = prevPos;
@@ -862,6 +903,8 @@ public class TransactionLog implements Closeable {
         o = codec.readVal(fis);
 
         // assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the data (and we currently skip reading SolrInputDocument
+      } finally {
+        fosLock.unlock();
       }
       return o;
     }
@@ -877,8 +920,11 @@ public class TransactionLog implements Closeable {
 
     @Override
     public String toString() {
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + "}";
+      } finally {
+        fosLock.unlock();
       }
     }
 
@@ -898,14 +944,18 @@ public class TransactionLog implements Closeable {
     @Override
     public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
       ByteBuffer bb = ByteBuffer.wrap(target, offset, len);
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         int ret = ch.read(bb, readFromStream);
         return ret;
+      } finally {
+        fosLock.unlock();
       }
     }
 
     public void seek(long position) throws IOException {
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         if (position <= readFromStream && position >= getBufferPos()) {
           // seek within buffer
           pos = (int) (position - getBufferPos());
@@ -916,26 +966,37 @@ public class TransactionLog implements Closeable {
           end = pos = 0;
         }
         assert position() == position;
+      } finally {
+        fosLock.unlock();
       }
     }
 
   /** where is the start of the buffer relative to the whole file */
     public long getBufferPos() {
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         return readFromStream - end;
+      } finally {
+        fosLock.unlock();
       }
     }
 
     public int getBufferSize() {
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         return buf.length;
+      } finally {
+        fosLock.unlock();
       }
     }
 
     @Override
     public void close() throws IOException {
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         ch.close();
+      } finally {
+        fosLock.unlock();
       }
     }
 

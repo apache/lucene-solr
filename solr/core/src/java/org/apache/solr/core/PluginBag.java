@@ -86,7 +86,7 @@ public class PluginBag<T> implements AutoCloseable {
     // TODO: since reads will dominate writes, we could also think about creating a new instance of a map each time it changes.
     // Not sure how much benefit this would have over ConcurrentHashMap though
     // We could also perhaps make this constructor into a factory method to return different implementations depending on thread safety needs.
-    this.registry = new ConcurrentHashMap<>(64, 0.75f, 4);
+    this.registry = new ConcurrentHashMap<>(128, 0.75f, 3);
     this.immutableRegistry = Collections.unmodifiableMap(registry);
     meta = SolrConfig.classVsSolrPluginInfo.get(klass.getName());
     if (meta == null) {
@@ -364,10 +364,10 @@ public class PluginBag<T> implements AutoCloseable {
   @Override
   public void close() {
     try (ParWork worker = new ParWork(this)) {
-      for (Map.Entry<String,PluginHolder<T>> e : registry.entrySet()) {
-        worker.collect(e.getValue());
-      }
-      worker.addCollect();
+      registry.forEach((s, tPluginHolder) -> {
+        worker.collect(tPluginHolder);
+      });
+
     }
   }
 

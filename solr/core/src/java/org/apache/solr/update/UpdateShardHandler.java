@@ -104,8 +104,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     if (cfg != null) {
       updateOnlyClientBuilder
           .connectionTimeout(cfg.getDistributedConnectionTimeout())
-          .idleTimeout(cfg.getDistributedSocketTimeout())
-          .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
+          .idleTimeout(cfg.getDistributedSocketTimeout());
     }
     updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().build();
     updateOnlyClient.enableCloseLock();

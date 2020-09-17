@@ -202,13 +202,16 @@ public class CdcrTransactionLog extends TransactionLog {
         codec.writePrimitive(false);
       }
 
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         assert pos != 0;
         out.writeAll(fos);
         endRecord(pos);
         // fos.flushBuffer();  // flush later
         return pos;
+      } finally {
+        fosLock.unlock();
       }
 
     } catch (IOException e) {
@@ -236,12 +239,15 @@ public class CdcrTransactionLog extends TransactionLog {
       } else {
         codec.writePrimitive(false);
       }
-      synchronized (fosLock) {
+      fosLock.lock();
+      try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
         out.writeAll(fos);
         endRecord(pos);
         // fos.flushBuffer();  // flush later
         return pos;
+      } finally {
+        fosLock.unlock();
       }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -251,7 +257,8 @@ public class CdcrTransactionLog extends TransactionLog {
   @Override
   public long writeCommit(CommitUpdateCommand cmd) {
     LogCodec codec = new LogCodec(resolver);
-    synchronized (fosLock) {
+    fosLock.lock();
+    try {
       try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
 
@@ -278,6 +285,8 @@ public class CdcrTransactionLog extends TransactionLog {
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
+    } finally {
+      fosLock.unlock();
     }
   }
 

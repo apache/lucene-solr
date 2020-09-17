@@ -265,7 +265,8 @@ public class HdfsTransactionLog extends TransactionLog {
   }
 
   private void doCloseOutput() throws IOException {
-    synchronized (fosLock) {
+    fosLock.lock();
+    try {
       if (fos == null) return;
       if (debug) {
         log.debug("Closing output for {}", tlogFile);
@@ -273,6 +274,8 @@ public class HdfsTransactionLog extends TransactionLog {
       fos.flushBuffer();
       finalLogSize = fos.size();
       fos = null;
+    } finally {
+      fosLock.unlock();
     }
 
     tlogOutStream.hflush();

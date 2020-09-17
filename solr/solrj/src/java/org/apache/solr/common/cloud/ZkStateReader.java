@@ -199,10 +199,10 @@ public class ZkStateReader implements SolrCloseable {
 
   private final Runnable securityNodeListener;
 
-  private final ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches = new ConcurrentHashMap<>(16, 0.75f, 5);
+  private final ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches = new ConcurrentHashMap<>(32, 0.75f, 3);
 
   // named this observers so there's less confusion between CollectionPropsWatcher map and the PropsWatcher map.
-  private final ConcurrentHashMap<String, CollectionPropsWatcher> collectionPropsObservers = new ConcurrentHashMap<>(16, 0.75f, 5);
+  private final ConcurrentHashMap<String, CollectionPropsWatcher> collectionPropsObservers = new ConcurrentHashMap<>(32, 0.75f, 3);
 
   private Set<CloudCollectionsListener> cloudCollectionsListeners = ConcurrentHashMap.newKeySet();
 
@@ -1677,16 +1677,15 @@ public class ZkStateReader implements SolrCloseable {
    */
   public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
     AtomicBoolean watchSet = new AtomicBoolean(false);
-    synchronized (collectionWatches) {
-      collectionWatches.compute(collection, (k, v) -> {
-        if (v == null) {
-          v = new CollectionWatch<>();
-          watchSet.set(true);
-        }
-        v.stateWatchers.add(stateWatcher);
-        return v;
-      });
-    }
+
+    collectionWatches.compute(collection, (k, v) -> {
+      if (v == null) {
+        v = new CollectionWatch<>();
+        watchSet.set(true);
+      }
+      v.stateWatchers.add(stateWatcher);
+      return v;
+    });
 
     if (watchSet.get()) {
       new StateWatcher(collection).refreshAndWatch();
