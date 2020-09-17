@@ -781,8 +781,15 @@ public class Overseer implements SolrCloseable {
   /**
    * Start {@link ClusterSingleton} plugins when we become the leader.
    */
-  private void startClusterSingletons() {
-    getCoreContainer().getClusterSingletons().forEach((name, singleton) -> {
+  public void startClusterSingletons() {
+    Map<String, ClusterSingleton> singletons = getCoreContainer().getClusterSingletons();
+    if (singletons == null) {
+      return;
+    }
+    if (isClosed()) {
+      return;
+    }
+    singletons.forEach((name, singleton) -> {
       try {
         singleton.start();
         if (singleton instanceof ClusterEventListener) {
@@ -798,7 +805,11 @@ public class Overseer implements SolrCloseable {
    * Stop {@link ClusterSingleton} plugins when we lose leadership.
    */
   private void stopClusterSingletons() {
-    getCoreContainer().getClusterSingletons().forEach((name, singleton) -> {
+    Map<String, ClusterSingleton> singletons = getCoreContainer().getClusterSingletons();
+    if (singletons == null) {
+      return;
+    }
+    singletons.forEach((name, singleton) -> {
       if (singleton instanceof ClusterEventListener) {
         getCoreContainer().getClusterEventProducer().unregisterListener((ClusterEventListener) singleton);
       }

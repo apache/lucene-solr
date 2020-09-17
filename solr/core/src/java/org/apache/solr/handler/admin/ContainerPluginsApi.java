@@ -51,7 +51,7 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 public class ContainerPluginsApi {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String PLUGIN = "plugin";
+  public static final String PLUGINS = "plugins";
   private final Supplier<SolrZkClient> zkClientSupplier;
   private final CoreContainer coreContainer;
   public final Read readAPI = new Read();
@@ -64,15 +64,15 @@ public class ContainerPluginsApi {
 
   public class Read {
     @EndPoint(method = METHOD.GET,
-        path = "/cluster/plugin",
+        path = "/cluster/plugins",
         permission = PermissionNameProvider.Name.COLL_READ_PERM)
     public void list(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-      rsp.add(PLUGIN, plugins(zkClientSupplier));
+      rsp.add(PLUGINS, plugins(zkClientSupplier));
     }
   }
 
   @EndPoint(method = METHOD.POST,
-      path = "/cluster/plugin",
+      path = "/cluster/plugins",
       permission = PermissionNameProvider.Name.COLL_EDIT_PERM)
   public class Edit {
 
@@ -151,7 +151,7 @@ public class ContainerPluginsApi {
     SolrZkClient zkClient = zkClientSupplier.get();
     try {
       Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
-      return (Map<String, Object>) clusterPropsJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>());
+      return (Map<String, Object>) clusterPropsJson.computeIfAbsent(PLUGINS, o -> new LinkedHashMap<>());
     } catch (KeeperException.NoNodeException e) {
       return new LinkedHashMap<>();
     } catch (KeeperException | InterruptedException e) {
@@ -165,9 +165,9 @@ public class ContainerPluginsApi {
       zkClientSupplier.get().atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
         Map rawJson = bytes == null ? new LinkedHashMap() :
             (Map) Utils.fromJSON(bytes);
-        Map pluginsModified = modifier.apply((Map) rawJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>()));
+        Map pluginsModified = modifier.apply((Map) rawJson.computeIfAbsent(PLUGINS, o -> new LinkedHashMap<>()));
         if (pluginsModified == null) return null;
-        rawJson.put(PLUGIN, pluginsModified);
+        rawJson.put(PLUGINS, pluginsModified);
         return Utils.toJSON(rawJson);
       });
     } catch (KeeperException | InterruptedException e) {

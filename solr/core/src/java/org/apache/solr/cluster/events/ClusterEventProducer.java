@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public interface ClusterEventProducer {
 
+  String PLUGIN_NAME = "clusterEventProducer";
+
   /**
    * Returns a modifiable map of event types and listeners to process events
    * of a given type.

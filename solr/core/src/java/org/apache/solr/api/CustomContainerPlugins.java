@@ -67,6 +67,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     refresh();
     return false;
   }
+
   public CustomContainerPlugins(CoreContainer coreContainer, ApiBag apiBag) {
     this.coreContainer = coreContainer;
     this.containerApiBag = apiBag;
@@ -75,6 +76,10 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     currentPlugins.forEach(ew.getBiConsumer());
+  }
+
+  public synchronized ApiInfo getPlugin(String name) {
+    return currentPlugins.get(name);
   }
 
   public synchronized void refresh() {
@@ -221,6 +226,9 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       return null;
     }
 
+    public Object getInstance() {
+      return instance;
+    }
 
     @SuppressWarnings({"unchecked","rawtypes"})
     public ApiInfo(PluginMeta info, List<String> errs) {
@@ -267,7 +275,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
             errs.add("Only one HTTP method and url supported for each API");
           }
           if (endPoint.method().length != 1 || endPoint.path().length != 1) {
-            errs.add("The @EndPint must have exactly one method and path attributes");
+            errs.add("The @EndPoint must have exactly one method and path attributes");
           }
           List<String> pathSegments = StrUtils.splitSmart(endPoint.path()[0], '/', true);
           PathTrie.replaceTemplates(pathSegments, getTemplateVars(info));

@@ -55,7 +55,7 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<ClusterEvent.EventType, Set<ClusterEventListener>> listeners = new HashMap<>();
-  private final CoreContainer cc;
+  private CoreContainer coreContainer;
   private LiveNodesListener liveNodesListener;
   private CloudCollectionsListener cloudCollectionsListener;
   private ClusterPropertiesListener clusterPropertiesListener;
@@ -75,19 +75,19 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
   private volatile boolean isClosed = false;
 
   public ClusterEventProducerImpl(CoreContainer coreContainer) {
-    this.cc = coreContainer;
+    this.coreContainer = coreContainer;
   }
 
   // ClusterSingleton lifecycle methods
   @Override
   public void start() {
-    this.zkController = this.cc.getZkController();
-    if (zkController == null) {
+    if (coreContainer == null) {
       liveNodesListener = null;
       cloudCollectionsListener = null;
       clusterPropertiesListener = null;
       return;
     }
+    this.zkController = this.coreContainer.getZkController();
 
     // clean up any previous instances
     doStop();
@@ -136,6 +136,7 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
       }
       return false;
     };
+    zkController.zkStateReader.registerLiveNodesListener(liveNodesListener);
 
     cloudCollectionsListener = ((oldCollections, newCollections) -> {
       if (oldCollections.equals(newCollections)) {
@@ -231,19 +232,12 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
     clusterPropertiesListener = null;
   }
 
-  private void ensureRunning() {
-    if (isClosed || !running) {
-      throw new RuntimeException("ClusterEventProducerImpl is not running.");
-    }
-  }
-
   @Override
   public void registerListener(ClusterEventListener listener) throws Exception {
-    ensureRunning();
     try {
       listener.getEventTypes().forEach(type -> {
         if (!supportedEvents.contains(type)) {
-          throw new RuntimeException("event type " + type + " not supported yet");
+          log.warn("event type {} not supported yet.", type);
         }
       });
     } catch (Throwable e) {
@@ -261,7 +255,6 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
 
   @Override
   public Map<ClusterEvent.EventType, Set<ClusterEventListener>> getEventListeners() {
-    ensureRunning();
     return listeners;
   }
 }

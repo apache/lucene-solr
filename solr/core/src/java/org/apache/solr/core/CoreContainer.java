@@ -69,6 +69,7 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cluster.events.ClusterEventProducer;
@@ -177,7 +178,6 @@ public class CoreContainer {
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
 
   private final CustomContainerPlugins customContainerPlugins =  new CustomContainerPlugins(this, containerHandlers.getApiBag());
-  private final Map<String, ClusterSingleton> clusterSingletons = new ConcurrentHashMap<>();
 
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
@@ -251,6 +251,7 @@ public class CoreContainer {
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
+  private Map<String, ClusterSingleton> clusterSingletons = null;
 
   private Set<Path> allowPaths;
 
@@ -891,20 +892,37 @@ public class CoreContainer {
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
-      // create the default ClusterEventProducer
-      // XXX can we load it as a pluggable component? or configurable?
-      clusterEventProducer = new ClusterEventProducerImpl(this);
+
+      // create the ClusterEventProducer
+      CustomContainerPlugins.ApiInfo clusterEventProducerInfo = customContainerPlugins.getPlugin(ClusterEventProducer.PLUGIN_NAME);
+      if (clusterEventProducerInfo != null) {
+        clusterEventProducer = (ClusterEventProducer) clusterEventProducerInfo.getInstance();
+      } else {
+        clusterEventProducer = new ClusterEventProducerImpl(this);
+      }
+      // init ClusterSingleton-s
+      Map<String, ClusterSingleton> singletons = new ConcurrentHashMap<>();
+      if (clusterEventProducer instanceof ClusterSingleton) {
+        singletons.put(ClusterEventProducer.PLUGIN_NAME, (ClusterSingleton) clusterEventProducer);
+      }
+
       // register ClusterSingleton handlers
       // XXX register also other ClusterSingleton-s from packages - how?
       containerHandlers.keySet().forEach(handlerName -> {
         SolrRequestHandler handler = containerHandlers.get(handlerName);
         if (handler instanceof ClusterSingleton) {
-          clusterSingletons.put(handlerName, (ClusterSingleton) handler);
+          singletons.put(handlerName, (ClusterSingleton) handler);
         }
       });
-      // our default clusterEventProducer is also a ClusterSingleton
-      clusterSingletons.put("clusterEventProducer", (ClusterSingleton) clusterEventProducer);
       zkSys.getZkController().checkOverseerDesignate();
+
+      // XXX note that these ClusterSingleton components are registered too late -
+      // XXX the Overseer leader may be already started
+      clusterSingletons = singletons;
+      Overseer overseer = zkSys.getZkController().getOverseer();
+      if (!overseer.isClosed()) { // we are the leader
+        overseer.startClusterSingletons();
+      }
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
