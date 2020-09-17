@@ -426,7 +426,7 @@ public class ParWork implements Closeable {
                 for (Future<Object> future : results) {
                   try {
                     future.get(
-                        Integer.getInteger("solr.parwork.task_timeout", 10000),
+                        Integer.getInteger("solr.parwork.task_timeout", 120000),
                         TimeUnit.MILLISECONDS); // nocommit
                     if (!future.isDone() || future.isCancelled()) {
                       log.warn("A task did not finish isDone={} isCanceled={}",

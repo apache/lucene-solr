@@ -218,7 +218,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         if (heads.size() < MAX_BLOCKED_TASKS) {
           //instead of reading MAX_PARALLEL_TASKS items always, we should only fetch as much as we can execute
           int toFetch = Math.min(MAX_BLOCKED_TASKS - heads.size(), MAX_PARALLEL_TASKS - runningTasksSize());
-          List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 10000);
+          List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 1500);
           if (log.isDebugEnabled()) log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(), newTasks);
           heads.addAll(newTasks);
         }
