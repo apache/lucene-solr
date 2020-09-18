@@ -175,19 +175,15 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     InputStream inputStream = contentStreamsIterator.next().getStream();
 
     // Create a node for the configuration in zookeeper
-    boolean trusted = getTrusted(req);
-    Set<String> filesToDelete = Collections.emptySet();
-    if (overwritesExisting) {
-      if (!trusted) {
-        ensureOverwritingUntrustedConfigSet(zkClient, configPathInZk);
-      }
-      if (req.getParams().getBool(ConfigSetParams.CLEANUP, false)) {
-        filesToDelete = getAllConfigsetFiles(zkClient, configPathInZk);
-      }
+    boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
+    
+    Set<String> filesToDelete;
+    if (overwritesExisting && cleanup) {
+      filesToDelete = getAllConfigsetFiles(zkClient, configPathInZk);
     } else {
-      zkClient.makePath(configPathInZk, ("{\"trusted\": " + Boolean.toString(trusted) + "}").
-              getBytes(StandardCharsets.UTF_8), true);
+      filesToDelete = Collections.emptySet();
     }
+    createBaseZnode(zkClient, overwritesExisting, getTrusted(req), cleanup, configPathInZk);
 
     ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
     ZipEntry zipEntry = null;
@@ -207,6 +203,20 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
     zis.close();
     deleteUnusedFiles(zkClient, filesToDelete);
+  }
+
+  private void createBaseZnode(SolrZkClient zkClient, boolean overwritesExisting, boolean requestIsTrusted, boolean cleanup, String configPathInZk) throws KeeperException, InterruptedException {
+    byte[] baseZnodeData =  ("{\"trusted\": " + Boolean.toString(requestIsTrusted) + "}").getBytes(StandardCharsets.UTF_8);
+
+    if (overwritesExisting) {
+      if (cleanup && requestIsTrusted) {
+        zkClient.setData(configPathInZk, baseZnodeData, true);
+      } else if (!requestIsTrusted) {
+        ensureOverwritingUntrustedConfigSet(zkClient, configPathInZk);
+      }
+    } else {
+      zkClient.makePath(configPathInZk, baseZnodeData, true);
+    }
   }
 
   private void deleteUnusedFiles(SolrZkClient zkClient, Set<String> filesToDelete) throws InterruptedException, KeeperException {
