@@ -34,6 +34,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
@@ -111,6 +112,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
+  @Ignore // debug
   public void testCollectionParameters() throws IOException, SolrServerException {
 
     int cussThreadCount = 2;

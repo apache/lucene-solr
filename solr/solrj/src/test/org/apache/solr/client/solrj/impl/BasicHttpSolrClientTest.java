@@ -569,7 +569,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       NamedList response = solrClient.request(req);
       InputStream stream = (InputStream) response.get("stream");
       assertNotNull(stream);
-      stream.close();
+      while (stream.read() != -1) {}
     } finally {
       HttpClientUtil.close(client);;
     }

@@ -241,33 +241,7 @@ public class SolrRequestParsers {
     }
 
     final HttpSolrCall httpSolrCall = req == null ? null : (HttpSolrCall) req.getAttribute(HttpSolrCall.class.getName());
-    SolrQueryRequestBase q = new SolrQueryRequestBase(core, params, requestTimer) {
-      @Override
-      public Principal getUserPrincipal() {
-        return req == null ? null : req.getUserPrincipal();
-      }
-
-      @Override
-      public List<CommandOperation> getCommands(boolean validateInput) {
-        if (httpSolrCall != null) {
-          return httpSolrCall.getCommands(validateInput);
-        }
-        return super.getCommands(validateInput);
-      }
-
-      @Override
-      public Map<String, String> getPathTemplateValues() {
-        if (httpSolrCall != null && httpSolrCall instanceof V2HttpCall) {
-          return ((V2HttpCall) httpSolrCall).getUrlParts();
-        }
-        return super.getPathTemplateValues();
-      }
-
-      @Override
-      public HttpSolrCall getHttpSolrCall() {
-        return httpSolrCall;
-      }
-    };
+    SolrQueryRequestBase q = new SQPSolrQueryRequestBase(core, params, requestTimer, req, httpSolrCall);
     if( streams != null && streams.size() > 0 ) {
       q.setContentStreams( streams );
     }
@@ -688,9 +662,10 @@ public class SolrRequestParsers {
       } catch (IllegalStateException ise) {
         throw (SolrException) getParameterIncompatibilityException().initCause(ise);
       } finally {
-        if (in == null) {
-          IOUtils.closeWhileHandlingException(fin);
-        }
+          if (fin != null) {
+            while (fin.read() != -1) {}
+          }
+          // IOUtils.closeWhileHandlingException(fin);
       }
 
       return new MultiMapSolrParams(map);
@@ -903,6 +878,40 @@ public class SolrRequestParsers {
     }
   }
 
+  private static class SQPSolrQueryRequestBase extends SolrQueryRequestBase {
+    private final HttpServletRequest req;
+    private final HttpSolrCall httpSolrCall;
 
+    public SQPSolrQueryRequestBase(SolrCore core, SolrParams params, RTimerTree requestTimer, HttpServletRequest req, HttpSolrCall httpSolrCall) {
+      super(core, params, requestTimer);
+      this.req = req;
+      this.httpSolrCall = httpSolrCall;
+    }
 
+    @Override
+    public Principal getUserPrincipal() {
+      return req == null ? null : req.getUserPrincipal();
+    }
+
+    @Override
+    public List<CommandOperation> getCommands(boolean validateInput) {
+      if (httpSolrCall != null) {
+        return httpSolrCall.getCommands(validateInput);
+      }
+      return super.getCommands(validateInput);
+    }
+
+    @Override
+    public Map<String, String> getPathTemplateValues() {
+      if (httpSolrCall != null && httpSolrCall instanceof V2HttpCall) {
+        return ((V2HttpCall) httpSolrCall).getUrlParts();
+      }
+      return super.getPathTemplateValues();
+    }
+
+    @Override
+    public HttpSolrCall getHttpSolrCall() {
+      return httpSolrCall;
+    }
+  }
 }

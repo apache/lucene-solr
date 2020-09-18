@@ -1914,7 +1914,7 @@ public class IndexFetcher {
         //close stream on error
         if (is != null) {
           while (is.read() != -1) {}
-          is.close();
+          // is.close();
         }
         throw new IOException("Could not download file '" + fileName + "'", e);
       }

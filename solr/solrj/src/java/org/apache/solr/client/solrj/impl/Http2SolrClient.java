@@ -364,6 +364,7 @@ public class Http2SolrClient extends SolrClient {
     }
 
     decorateRequest(postRequest, updateRequest);
+    updateRequest.setBasePath(baseUrl);
     InputStreamResponseListener responseListener = new OurInputStreamResponseListener();
 
     postRequest.send(responseListener);
@@ -473,7 +474,7 @@ public class Http2SolrClient extends SolrClient {
       }
     } else {
       try {
-        InputStreamResponseListener listener = new MyInputStreamResponseListener(asyncTracker);
+        InputStreamResponseListener listener = new MyInputStreamResponseListener();
         req.send(listener);
         Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
         InputStream is = listener.getInputStream();
@@ -859,7 +860,7 @@ public class Http2SolrClient extends SolrClient {
       if (shouldClose) {
         try {
           while(is.read() != -1) { }
-          is.close();
+          // is.close();
         } catch (IOException e) {
           // quietly
         }
@@ -1277,10 +1278,8 @@ public class Http2SolrClient extends SolrClient {
 
   private static class MyInputStreamResponseListener extends InputStreamResponseListener {
 
-    AsyncTracker tracker;
+    MyInputStreamResponseListener() {
 
-    MyInputStreamResponseListener(AsyncTracker tracker) {
-      this.tracker = tracker;
     }
 
     @Override

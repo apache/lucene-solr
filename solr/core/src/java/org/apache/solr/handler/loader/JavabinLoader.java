@@ -70,7 +70,7 @@ public class JavabinLoader extends ContentStreamLoader {
       parseAndLoadDocs(req, rsp, is, processor);
     } finally {
       if(is != null) {
-        is.close();
+        while (is.read() != -1) {}
       }
     }
   }
@@ -201,6 +201,7 @@ public class JavabinLoader extends ContentStreamLoader {
           }
         }
         processor.processDelete(delcmd);
+        delcmd.clear();
       }
     }
     

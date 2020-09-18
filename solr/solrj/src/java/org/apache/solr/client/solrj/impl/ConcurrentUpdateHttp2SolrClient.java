@@ -503,8 +503,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             } else {
               long currentStallTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
               if (currentStallTime > stallTime) {
-                log.warn("Task queue processing has stalled for " + currentStallTime + " ms with " + queueSize + " remaining elements to process.");
-                return;
+                throw new IOException("Task queue processing has stalled for " + currentStallTime + " ms with " + queueSize + " remaining elements to process.");
+//                Thread.currentThread().interrupt();
+//                break;
               }
             }
           }
