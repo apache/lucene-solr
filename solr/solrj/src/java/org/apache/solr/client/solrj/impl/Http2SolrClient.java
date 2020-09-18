@@ -445,7 +445,9 @@ public class Http2SolrClient extends SolrClient {
               onComplete.onFailure(e);
             } finally {
               asyncTracker.arrive();
-              finalDone.countDown();
+              if (finalDone != null) {
+                finalDone.countDown();
+              }
             }
 
           }
