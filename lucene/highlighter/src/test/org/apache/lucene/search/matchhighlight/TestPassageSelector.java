@@ -240,19 +240,23 @@ public class TestPassageSelector extends LuceneTestCase {
     PassageSelector selector = new PassageSelector();
     PassageFormatter formatter = new PassageFormatter("...", ">", "<");
     ArrayList<OffsetRange> highlights = new ArrayList<>();
-    ArrayList<OffsetRange> ranges = new ArrayList<>();
+    ArrayList<OffsetRange> permittedRanges = new ArrayList<>();
 
     for (int i = 0; i < 5000; i++) {
       String value =
           randomBoolean()
               ? randomAsciiLettersOfLengthBetween(0, 100)
               : randomRealisticUnicodeOfCodepointLengthBetween(0, 1000);
+      int maxLength = value.length();
 
-      ranges.clear();
+      permittedRanges.clear();
       highlights.clear();
       for (int j = randomIntBetween(0, 10); --j >= 0; ) {
         int from = randomIntBetween(0, value.length());
-        highlights.add(new OffsetRange(from, from + randomIntBetween(1, 10)));
+        int to = Math.min(from + randomIntBetween(1, 10), maxLength);
+        if (from < to) {
+          highlights.add(new OffsetRange(from, to));
+        }
       }
 
       int charWindow = randomIntBetween(1, 100);
@@ -262,17 +266,20 @@ public class TestPassageSelector extends LuceneTestCase {
         int increment = value.length() / 10;
         for (int c = randomIntBetween(0, 20), start = 0; --c >= 0; ) {
           int step = randomIntBetween(0, increment);
-          ranges.add(new OffsetRange(start, start + step));
+          int to = Math.min(start + step, maxLength);
+          if (start < to) {
+            permittedRanges.add(new OffsetRange(start, to));
+          }
           start += step + randomIntBetween(0, 3);
         }
       } else {
-        ranges.add(new OffsetRange(0, value.length()));
+        permittedRanges.add(new OffsetRange(0, value.length()));
       }
 
       // Just make sure there are no exceptions.
       List<Passage> passages =
-          selector.pickBest(value, highlights, charWindow, maxPassages, ranges);
-      formatter.format(value, passages, ranges);
+          selector.pickBest(value, highlights, charWindow, maxPassages, permittedRanges);
+      formatter.format(value, passages, permittedRanges);
     }
   }
 
