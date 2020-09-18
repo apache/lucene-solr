@@ -21,6 +21,13 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <updateLog enable="${enable.update.log:true}">
+      <str name="dir">${solr.ulog.dir:}</str>
+    </updateLog>
+  </updateHandler>
+
+
   <searchComponent class="solr.PhrasesIdentificationComponent" name="phrases" />
   
   <!-- our default search handler should suggest phrases in addition to doing queries if requested -->
