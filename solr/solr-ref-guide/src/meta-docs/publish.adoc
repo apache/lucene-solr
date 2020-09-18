@@ -43,7 +43,7 @@ The build process generates the page hierarchy and builds the HTML pages with cu
 To build the HTML, from the top level of the project, run:
 
 [source,bash]
-$ gradlew clean solr:solr-ref-guide:buildSite
+$ ./gradlew clean solr:solr-ref-guide:buildSite
 
 This will produce pages with a DRAFT watermark across them. While these are fine for initial DRAFT publication, see the section <<Publish the Final Guide>> for steps to produce final production-ready HTML pages.
 
@@ -72,11 +72,9 @@ Since the Guide has already been uploaded to SVN, you need to overwrite the exis
 Build the Guide locally with a parameter for the Guide version. This requires the same <<Pre-Requisites,pre-requisites>> from above.
 
 [source,bash]
-$gradlew clean solr:solr-ref-guide:buildSite -PsolrGuideVersion=X.Y
+$ ./gradlew solr:solr-ref-guide:buildSite -PsolrGuideDraft=false
 
-where `X.Y` is the version you want to publish (i.e., `7.7`).
-
-IMPORTANT: The `-PsolrGuideVersion` system property is optional if you build drafts locally or as pre-publication DRAFTs (i.e., not for publication). By default the build system uses the `build.gradle` file in the current branch to identify the version and assumes this is a `DRAFT` build which will have a DRAFT watermark and other labels on the pages. Including the `-PsolrGuideVersion` system property ensures the DRAFT watermark and labels are removed from the HTML files.
+IMPORTANT: The `-PsolrGuideDraft` system property is optional if you build drafts locally or as pre-publication DRAFTs (i.e., not for publication). By default the build system assumes this is a `DRAFT` build which will have a DRAFT watermark and other labels on the pages. Including the `-PsolrGuideDraft=false` property ensures the DRAFT watermark and labels are removed from the HTML files.
 
 *Pull Production Repo and Upload New Files*
 
