@@ -673,7 +673,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     int count = 0;
     for (DocumentsWriterPerThread next : perThreadPool) {
       if (next.isFlushPending() == false && next.getNumDocsInRAM() > 0) {
-        final long nextRam = next.ramBytesUsed();
+        final long nextRam = next.getLastCommittedBytesUsed();
         if (infoStream.isEnabled("FP")) {
           infoStream.message("FP", "thread state has " + nextRam + " bytes; docInRAM=" + next.getNumDocsInRAM());
         }
