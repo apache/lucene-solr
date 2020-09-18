@@ -26,7 +26,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ConfigSetsAPITest extends SolrCloudTestCase {
+public class TestConfigSetsAPISolrCloud extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
