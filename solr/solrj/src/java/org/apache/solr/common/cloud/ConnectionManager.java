@@ -187,6 +187,7 @@ public class ConnectionManager implements Watcher, Closeable {
       if (isClosed()) return;
       if (keeper != null) {
         ParWork.close(keeper);
+        keeper = null;
       }
       SolrZooKeeper zk = createSolrZooKeeper(zkServerAddress, zkTimeout, this);
       keeper = zk;
@@ -340,6 +341,7 @@ public class ConnectionManager implements Watcher, Closeable {
     client.zkCallbackExecutor.shutdown();
     client.zkConnManagerCallbackExecutor.shutdown();
     keeper.close();
+    keeper = null;
     ExecutorUtil.awaitTermination(client.zkCallbackExecutor);
   //  client.zkConnManagerCallbackExecutor.shutdownNow();
     ExecutorUtil.awaitTermination(client.zkConnManagerCallbackExecutor);

@@ -83,7 +83,6 @@ public class PeerSync implements SolrMetricProducer {
 
   private final boolean cantReachIsSuccess;
   private final boolean doFingerprint;
-  private final Http2SolrClient client;
   private final boolean onlyIfActive;
   private final SolrCore core;
   private final Updater updater;
@@ -114,14 +113,12 @@ public class PeerSync implements SolrMetricProducer {
     this.nUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.doFingerprint = doFingerprint && !("true".equals(System.getProperty("solr.disableFingerprint")));
-    this.client = core.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient();
     this.onlyIfActive = onlyIfActive;
     
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();
-    // TODO: close
     shardHandlerFactory = (HttpShardHandlerFactory) core.getCoreContainer().getShardHandlerFactory();
-    shardHandler = shardHandlerFactory.getShardHandler(client);
+    shardHandler = shardHandlerFactory.getShardHandler();
     this.updater = new Updater(msg(), core);
 
     core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.REPLICATION.toString(), this);
@@ -418,7 +415,7 @@ public class PeerSync implements SolrMetricProducer {
     sreq.params.set(DISTRIB, false);
     sreq.params.set("checkCanHandleVersionRanges", false);
 
-    ShardHandler sh = shardHandlerFactory.getShardHandler(client);
+    ShardHandler sh = shardHandlerFactory.getShardHandler();
     sh.submit(sreq, replica, sreq.params);
 
     ShardResponse srsp = sh.takeCompletedIncludingErrors();

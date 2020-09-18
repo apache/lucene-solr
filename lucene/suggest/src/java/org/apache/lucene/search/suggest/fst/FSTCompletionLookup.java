@@ -97,12 +97,12 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
   /**
    * Automaton used for completions with higher weights reordering.
    */
-  private FSTCompletion higherWeightsCompletion;
+  private volatile FSTCompletion higherWeightsCompletion;
 
   /**
    * Automaton used for normal completions.
    */
-  private FSTCompletion normalCompletion;
+  private volatile FSTCompletion normalCompletion;
 
   /** Number of entries the lookup was built with */
   private long count = 0;

@@ -291,6 +291,8 @@ public class SolrTestCase extends LuceneTestCase {
       // unlimited - System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
       System.setProperty("solr.minContainerThreads", "8");
+      System.setProperty("solr.minHttp2ClientThreads", "8");
+
 
       ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_SECONDS = 1;
       ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS =1;
@@ -301,7 +303,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("solr.tests.ramBufferSizeMB", "100");
 
-      System.setProperty("solr.http2solrclient.default.idletimeout", "10000");
+      System.setProperty("solr.http2solrclient.default.idletimeout", "30000");
       System.setProperty("distribUpdateSoTimeout", "15000");
       System.setProperty("socketTimeout", "10000");
       System.setProperty("connTimeout", "10000");
@@ -310,7 +312,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.so_commit_timeout.default", "15000");
       System.setProperty("solr.httpclient.defaultConnectTimeout", "10000");
       System.setProperty("solr.httpclient.defaultSoTimeout", "10000");
-      System.setProperty("solr.containerThreadsIdle", "30000");
+      System.setProperty("solr.containerThreadsIdle", "60000");
 
       System.setProperty("solr.indexfetcher.sotimeout", "5000");
       System.setProperty("solr.indexfetch.so_timeout.default", "5000");

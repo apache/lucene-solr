@@ -67,22 +67,19 @@ public class SolrCmdDistributor implements Closeable {
   
   private final Http2SolrClient solrClient;
 
-  Http2SolrClient.AsyncTracker tracker = new Http2SolrClient.AsyncTracker();
-
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
-    this.solrClient = updateShardHandler.getTheSharedHttpClient();
+    this.solrClient = new Http2SolrClient.Builder().markInternalRequest().withHttpClient(updateShardHandler.getTheSharedHttpClient()).idleTimeout(60000).build();
   }
 
   public void finish() {
     assert !finished : "lifecycle sanity check";
-  //  nonCommitTracker.waitForComplete();
-    tracker.waitForComplete();
+    solrClient.waitForOutstandingRequests();
     finished = true;
   }
   
   public void close() {
-    tracker.close();
+    solrClient.close();
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -199,7 +196,7 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   public void blockAndDoRetries() {
-    tracker.waitForComplete();
+    solrClient.waitForOutstandingRequests();
   }
   
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
@@ -235,16 +232,13 @@ public class SolrCmdDistributor implements Closeable {
       return;
     }
 
-    if (register) {
-      tracker.register();
-    }
+
     try {
       solrClient.request(req.uReq, null, new Http2SolrClient.OnComplete() {
 
         @Override
         public void onSuccess(NamedList result) {
-          log.info("Success for distrib update {}", result);
-          tracker.arrive();
+          if (log.isTraceEnabled()) log.trace("Success for distrib update {}", result);
         }
 
         @Override
@@ -265,17 +259,15 @@ public class SolrCmdDistributor implements Closeable {
 
           if (retry) {
             log.info("Retrying distrib update on error: {}", t.getMessage());
-            submit(req, false);
+            submit(req, true);
             return;
           } else {
             allErrors.add(error);
           }
-          tracker.arrive();
         }
       });
     } catch (Exception e) {
       log.error("Exception sending dist update", e);
-      tracker.arrive();
       Error error = new Error();
       error.t = e;
       error.req = req;

@@ -193,6 +193,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request");
   private static final Logger slowLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".SlowRequest");
+  private final CoreDescriptor coreDescriptor;
   private volatile String name;
   private String logid; // used to show what name is set
 
@@ -958,10 +959,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private SolrCore(CoreContainer coreContainer, String name, ConfigSet configSet, CoreDescriptor coreDescriptor,
                   String dataDir, UpdateHandler updateHandler,
                   IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
-    boolean failedCreation1;
 
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
     assert ObjectReleaseTracker.track(this);
+
+    this.coreDescriptor = coreDescriptor;
+
     this.coreContainer = coreContainer;
 
     try {
@@ -1079,13 +1082,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         ((SolrMetricProducer) directoryFactory).initializeMetrics(solrMetricsContext, "directoryFactory");
       }
 
-      if (coreContainer.isZooKeeperAware() && coreContainer.getZkController().getZkClient().isConnected()) {
-        // make sure we see our shard first - these tries to cover a surprising race where we don't find our shard in the clusterstate
-        // in the below bufferUpdatesIfConstructing call
-
-        coreContainer.getZkController().getZkStateReader().waitForState(coreDescriptor.getCollectionName(),
-            10, TimeUnit.SECONDS, (l,c) -> c != null && c.getSlice(coreDescriptor.getCloudDescriptor().getShardId()) != null);
-      }
       bufferUpdatesIfConstructing(coreDescriptor);
 
       this.ruleExpiryLock = new ReentrantLock();
@@ -1169,6 +1165,22 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       final DocCollection collection = clusterState.getCollectionOrNull(coreDescriptor.getCloudDescriptor().getCollectionName());
       if (collection != null) {
+
+        if (coreContainer.getZkController().getZkClient().isConnected()) {
+          // make sure we see our shard first - these tries to cover a surprising race where we don't find our shard in the clusterstate
+          // in the below bufferUpdatesIfConstructing call
+
+          try {
+            coreContainer.getZkController().getZkStateReader().waitForState(coreDescriptor.getCollectionName(),
+                10, TimeUnit.SECONDS, (l,c) -> c != null && c.getSlice(coreDescriptor.getCloudDescriptor().getShardId()) != null);
+          } catch (InterruptedException e) {
+            ParWork.propagateInterrupt(e);
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          } catch (TimeoutException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        }
+
         final Slice slice = collection.getSlice(coreDescriptor.getCloudDescriptor().getShardId());
         if (slice.getState() == Slice.State.CONSTRUCTION) {
           // set update log to buffer before publishing the core
@@ -1551,11 +1563,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * expert: increments the core reference count
    */
   public void open() {
-    if (isClosed()) {
-      throw new AlreadyClosedException();
-    }
     int cnt = refCount.incrementAndGet();
-    if (log.isDebugEnabled()) log.debug("open refcount {} {}", this, cnt);
+    if (log.isTraceEnabled()) log.trace("open refcount {} {}", this, cnt);
     MDCLoggingContext.setCore(this);
   }
 
@@ -1587,7 +1596,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   @Override
   public void close() {
     int count = refCount.decrementAndGet();
-    if (log.isDebugEnabled()) log.debug("close refcount {} {}", this, count);
+    if (log.isTraceEnabled()) log.trace("close refcount {} {}", this, count);
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
       log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this);
@@ -1903,7 +1912,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
-  final ExecutorService searcherExecutor = new ParWorkExecutor("searcherExecutor", 1, 1, 0, new ArrayBlockingQueue(6, true));
+  final ExecutorService searcherExecutor = ParWork.getExecutorService(1, true);
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private final Object searcherLock = new Object();  // the sync object for the searcher
@@ -3051,7 +3060,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public CoreDescriptor getCoreDescriptor() {
-    return coreContainer.getCoreDescriptor(name);
+    return coreDescriptor;
   }
 
   public IndexDeletionPolicyWrapper getDeletionPolicy() {

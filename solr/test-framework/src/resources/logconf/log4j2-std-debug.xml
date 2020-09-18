@@ -33,7 +33,7 @@
         <AsyncLogger name="org.apache.hadoop" level="WARN"/>
         <AsyncLogger name="org.apache.directory" level="WARN"/>
         <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>
-        <AsyncLogger name="org.eclipse.jetty" level="INFO"/>
+        <AsyncLogger name="org.eclipse.jetty" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.handler.admin.CollectionsHandler" level="INFO"/>
         <AsyncLogger name="org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler" level="INFO"/>
         <AsyncLogger name="org.apache.solr.cloud.api.collections.CreateCollectionCmd" level="INFO"/>
@@ -57,7 +57,7 @@
 
         <AsyncRoot level="INFO">
             <AppenderRef ref="STDERR_COLOR"/>
-            <!--   <AppenderRef ref="FILE"/> -->
+             <AppenderRef ref="FILE"/>
         </AsyncRoot>
     </Loggers>
 </Configuration>

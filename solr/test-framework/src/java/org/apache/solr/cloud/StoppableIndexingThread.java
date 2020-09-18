@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,8 +30,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.StoppableThread {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   static String t1 = "a_t";
   static String i1 = "a_i";
   private volatile boolean stop = false;
@@ -47,6 +53,8 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
   private List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
   private int batchSize;
   private boolean pauseBetweenUpdates;
+
+  private String collection;
   
   public StoppableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes) {
     this(controlClient, cloudClient, id, doDeletes, -1, 1, true);
@@ -63,7 +71,11 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
     this.pauseBetweenUpdates = pauseBetweenUpdates;
     setDaemon(true);
   }
-  
+
+  public void setCollection(String collection) {
+    this.collection = collection;
+  }
+
   @Override
   public void run() {
     int i = 0;
@@ -91,21 +103,18 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
             UpdateRequest req = new UpdateRequest();
             req.deleteById(deleteId);
             req.setParam("CONTROL", "TRUE");
-            req.process(controlClient);
+            req.process(controlClient, collection);
           }
           
-          cloudClient.deleteById(deleteId);
+          UpdateRequest req = new UpdateRequest();
+          req.deleteById(id);
+          req.process(cloudClient, collection);
         } catch (Exception e) {
           if (e instanceof InterruptedException) {
             ParWork.propagateInterrupt(e);
             return;
           }
-          System.err.println("REQUEST FAILED for id=" + deleteId);
-          e.printStackTrace();
-          if (e instanceof SolrServerException) {
-            System.err.println("ROOT CAUSE for id=" + deleteId);
-            ((SolrServerException) e).getRootCause().printStackTrace();
-          }
+          log.error("REQUEST FAILED for id=" + id, e);
           deleteFails.add(deleteId);
         }
       }
@@ -129,12 +138,8 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
           return;
         }
         addFailed = true;
-        System.err.println("REQUEST FAILED for id=" + id);
-        e.printStackTrace();
-        if (e instanceof SolrServerException) {
-          System.err.println("ROOT CAUSE for id=" + id);
-          ((SolrServerException) e).getRootCause().printStackTrace();
-        }
+        log.error("REQUEST FAILED for id=" + id, e);
+
         addFails.add(id);
       }
       
@@ -152,7 +157,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
       }
     }
     
-    System.err.println("added docs:" + numAdds + " with " + (addFails.size() + deleteFails.size()) + " fails"
+    log.info("added docs:" + numAdds + " with " + (addFails.size() + deleteFails.size()) + " fails"
         + " deletes:" + numDeletes);
   }
   
@@ -186,12 +191,12 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
       UpdateRequest req = new UpdateRequest();
       req.add(docs);
       req.setParam("CONTROL", "TRUE");
-      req.process(controlClient);
+      req.process(controlClient, collection);
     }
     
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(docs);
-    ureq.process(cloudClient);
+    ureq.process(cloudClient, collection);
   }
   
   public int getNumDeletes() {

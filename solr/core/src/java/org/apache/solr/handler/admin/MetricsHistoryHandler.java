@@ -622,16 +622,14 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     }
 
     if (collectService != null) {
-      collectService.shutdown();
-
-      scheduledFuture.cancel(false);
+      scheduledFuture.cancel(true);
+      collectService.shutdownNow();
     }
 
     try (ParWork closer = new ParWork(this)) {
       closer.collect(knownDbs.values());
       closer.collect();
       closer.collect(factory);
-      closer.collect();
       closer.collect(collectService);
     }
     knownDbs.clear();

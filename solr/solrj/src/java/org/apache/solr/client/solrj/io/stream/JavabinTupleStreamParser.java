@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.JavaBinCodec;
 
 public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStreamParser {
@@ -184,6 +185,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
 
   @Override
   public void close() throws IOException {
-    is.close();
+    while (is.read() != -1) {}
+    IOUtils.closeQuietly(is);
   }
 }

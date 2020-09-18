@@ -78,7 +78,6 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                     .getCloudDescriptor();
           }
         } else {
-          Thread.sleep(500);
           coreContainer.waitForLoadingCore(cname, 30000);
           try (SolrCore core2 = coreContainer.getCore(cname)) {
             if (core2 == null) {

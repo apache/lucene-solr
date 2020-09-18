@@ -119,9 +119,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
-//    if (clusterState.hasCollection(collectionName)) {
-//      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
-//    }
+    if (clusterState.hasCollection(collectionName)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
+    }
     if (aliases.hasAlias(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection alias already exists: " + collectionName);
     }
@@ -172,9 +172,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
 
-      if (zkStateReader.getClusterState().getCollectionOrNull(collectionName) != null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection '"+collectionName+"' already exists!");
-      }
+//      if (zkStateReader.getClusterState().getCollectionOrNull(collectionName) != null) {
+//        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection '"+collectionName+"' already exists!");
+//      }
 
       createCollectionZkNode(stateManager, collectionName, collectionParams, configName);
 

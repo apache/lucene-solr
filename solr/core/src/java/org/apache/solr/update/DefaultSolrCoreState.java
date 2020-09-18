@@ -55,7 +55,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
 
-  private final ReentrantLock recoveryLock = new ReentrantLock();
+  private final ReentrantLock recoveryLock = new ReentrantLock(true);
 
   private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", Integer.getInteger("solr.recoveryThrottle", 100));
 
@@ -334,8 +334,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       MDCLoggingContext.setCoreDescriptor(core.getCoreContainer(), core.getCoreDescriptor());
       try {
         if (SKIP_AUTO_RECOVERY) {
-          log.warn(
-              "Skipping recovery according to sys prop solrcloud.skip.autorecovery");
+          log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
           return;
         }
 
@@ -372,8 +371,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           recoveryThrottle.minimumWaitBetweenActions();
           recoveryThrottle.markAttemptingAction();
 
-          recoveryStrat = recoveryStrategyBuilder
-              .create(core.getCoreContainer(), core.getCoreDescriptor(), DefaultSolrCoreState.this);
+          recoveryStrat = recoveryStrategyBuilder.create(core.getCoreContainer(), core.getCoreDescriptor(), DefaultSolrCoreState.this);
           recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
 
           log.info("Running recovery");
@@ -382,6 +380,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         } finally {
           if (recoveryLock.isHeldByCurrentThread()) recoveryLock.unlock();
         }
+      } catch (AlreadyClosedException e) {
+
+      } catch (Exception e) {
+        log.error("Exception starting recovery", e);
       } finally {
         MDCLoggingContext.clear();
       }
@@ -438,23 +440,23 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
 
     if (recoveryFuture != null) {
-//      try {
-//        recoveryFuture.cancel(false);
-//      } catch (NullPointerException e) {
-//        // okay
-//      }
       try {
-        recoveryFuture.get(10, TimeUnit.MINUTES); // nocommit - how long? make configurable too
-      } catch (CancellationException e) {
-        // okay
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-        throw new AlreadyClosedException();
+        recoveryFuture.cancel(false);
       } catch (NullPointerException e) {
         // okay
-      } catch (Exception e) {
-        log.warn("Exception canceling recovery", e);
       }
+//      try {
+//        recoveryFuture.get(10, TimeUnit.MINUTES); // nocommit - how long? make configurable too
+//      } catch (CancellationException e) {
+//        // okay
+//      } catch (InterruptedException e) {
+//        ParWork.propagateInterrupt(e);
+//        throw new AlreadyClosedException();
+//      } catch (NullPointerException e) {
+//        // okay
+//      } catch (Exception e) {
+//        log.warn("Exception canceling recovery", e);
+//      }
     }
 
     recoveryFuture = null;

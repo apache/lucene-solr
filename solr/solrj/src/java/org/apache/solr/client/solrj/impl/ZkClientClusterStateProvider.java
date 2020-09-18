@@ -157,6 +157,9 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public synchronized void connect() {
+    if (isClosed) {
+      throw new AlreadyClosedException();
+    }
     if (this.zkStateReader == null) {
       this.zkStateReader = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
       this.zkStateReader.createClusterStateWatchersAndUpdate();

@@ -64,7 +64,7 @@ public class SolrQoSFilter extends QoSFilter {
     String source = req.getHeader(QoSParams.REQUEST_SOURCE);
     boolean imagePath = req.getPathInfo() != null && req.getPathInfo().startsWith("/img/");
     boolean externalRequest = !imagePath && (source == null || !source.equals(QoSParams.INTERNAL));
-    log.info("SolrQoSFilter {} {} {}", sysStats.getSystemLoad(), sysStats.getTotalUsage(), externalRequest);
+    if (log.isDebugEnabled()) log.debug("SolrQoSFilter {} {} {}", sysStats.getSystemLoad(), sysStats.getTotalUsage(), externalRequest);
 
     if (externalRequest) {
       if (log.isDebugEnabled()) log.debug("external request"); //nocommit: remove when testing is done
@@ -75,7 +75,7 @@ public class SolrQoSFilter extends QoSFilter {
         if (cMax > 5) {
           int max = Math.max(5, (int) ((double)cMax * 0.60D));
           log.warn("Our individual load is {}, set max concurrent requests to {}", ourLoad, max);
-          setMaxRequests(max);
+          //setMaxRequests(max);
         }
       } else {
         // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
@@ -85,12 +85,12 @@ public class SolrQoSFilter extends QoSFilter {
           if (cMax > 5) {
             int max = Math.max(5, (int) ((double) cMax * 0.60D));
             log.warn("System load is {}, set max concurrent requests to {}", sLoad, max);
-            setMaxRequests(max);
+            //setMaxRequests(max);
           }
         } else if (sLoad < 0.95 && _origMaxRequests != getMaxRequests()) {
 
-          log.info("set max concurrent requests to orig value {}", _origMaxRequests);
-          setMaxRequests(_origMaxRequests);
+          if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
+          //setMaxRequests(_origMaxRequests);
         }
       }
 

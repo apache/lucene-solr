@@ -338,14 +338,11 @@ public class ZkController implements Closeable {
       log.info("node name={}", nodeName);
       MDCLoggingContext.setNode(nodeName);
 
-      if (log.isDebugEnabled()) log.debug("leaderVoteWait get");
+
       this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
-      if (log.isDebugEnabled()) log.debug("leaderConflictWait get");
       this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
-      if (log.isDebugEnabled()) log.debug("clientTimeout get");
       this.clientTimeout = cloudConfig.getZkClientTimeout();
-      if (log.isDebugEnabled()) log.debug("create connection strat");
 
       String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
 
@@ -607,11 +604,13 @@ public class ZkController implements Closeable {
       closer.collect(cloudSolrClient);
     }
 
-    IOUtils.closeQuietly(zkStateReader);
     if (overseer != null) {
       overseer.closeAndDone();
     }
     ParWork.close(overseerContexts);
+
+    IOUtils.closeQuietly(zkStateReader);
+
     if (closeZkClient) {
       IOUtils.closeQuietly(zkClient);
     }
@@ -1537,14 +1536,14 @@ public class ZkController implements Closeable {
         throw new AlreadyClosedException();
       }
 
-      getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (n,c) -> c != null && c.getLeader(shardId) != null && c.getLeader(shardId).getState().equals(
-          Replica.State.ACTIVE));
+//      getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (n,c) -> c != null && c.getLeader(shardId) != null && c.getLeader(shardId).getState().equals(
+//          Replica.State.ACTIVE));
 
       //  there should be no stale leader state at this point, dont hit zk directly
       String leaderUrl = zkStateReader.getLeaderUrl(collection, shardId, 15000);
 
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-      log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
+      log.info("We are {} and leader is {}", ourUrl, leaderUrl);
       boolean isLeader = leaderUrl.equals(ourUrl);
       assert !(isLeader && replica.getType() == Type.PULL) : "Pull replica became leader!";
 
@@ -1585,9 +1584,7 @@ public class ZkController implements Closeable {
         }
         boolean didRecovery
             = checkRecovery(recoverReloadedCores, isLeader, skipRecovery, collection, coreZkNodeName, shardId, core, cc, afterExpiration);
-        if (isClosed()) {
-          throw new AlreadyClosedException();
-        }
+
         if (!didRecovery) {
           if (isTlogReplicaAndNotLeader) {
             startReplicationFromLeader(coreName, true);

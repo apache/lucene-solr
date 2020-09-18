@@ -83,9 +83,11 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -258,13 +260,13 @@ public class IndexFetcher {
     String compress = (String) initArgs.get(COMPRESSION);
     useInternalCompression = INTERNAL.equals(compress);
     useExternalCompression = EXTERNAL.equals(compress);
-    connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 5000, null);
+    connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
     
     // allow a master override for tests - you specify this in /replication slave section of solrconfig and some 
     // test don't want to define this
     soTimeout = Integer.getInteger("solr.indexfetcher.sotimeout", -1);
     if (soTimeout == -1) {
-      soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, Integer.getInteger("solr.indexfetch.so_timeout.default", 15000), null);
+      soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
     }
 
     if (initArgs.getBooleanArg(TLOG_FILES) != null) {
@@ -416,7 +418,6 @@ public class IndexFetcher {
       try {
         response = getLatestVersion();
       } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
         final String errorMsg = e.toString();
         if (!Strings.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
             log.warn("Master at: {} is not available. Index fetch failed by interrupt. Exception: {}", masterUrl, errorMsg);
@@ -507,7 +508,7 @@ public class IndexFetcher {
       }
 
       // Create the sync service
-      fsyncService = ParWork.getRootSharedExecutor();
+      fsyncService = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("fsyncService"));
       // use a synchronized list because the list is read by other threads (to show details)
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generation of master is older than that of the slave , it means they are not compatible to be copied
@@ -562,7 +563,7 @@ public class IndexFetcher {
               log.info("Sleeping for 250ms to wait for unused lucene index files to be delete-able");
               Thread.sleep(250);
               c++;
-              if (c >= 30)  {
+              if (c >= 120)  {
                 log.warn("IndexFetcher unable to cleanup unused lucene index files so we must do a full copy instead");
                 isFullCopyNeeded = true;
                 break;
@@ -697,10 +698,8 @@ public class IndexFetcher {
       } catch (SolrException e) {
         throw e;
       } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
         throw new InterruptedException("Index fetch interrupted");
       } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       }
     } finally {
@@ -722,14 +721,11 @@ public class IndexFetcher {
       Directory indexDir, boolean deleteTmpIdxDir, File tmpTlogDir, boolean successfulInstall) throws IOException {
     try {
       if (!successfulInstall) {
-        if (!core.getCoreContainer().isShutDown()) {
-          try {
-            logReplicationTimeAndConfFiles(null, successfulInstall);
-          } catch (Exception e) {
-            ParWork.propagateInterrupt(e);
-            // this can happen on shutdown, a fetch may be running in a thread after DirectoryFactory is closed
-            log.warn("Could not log failed replication details", e);
-          }
+        try {
+          logReplicationTimeAndConfFiles(null, successfulInstall);
+        } catch (Exception e) {
+          // this can happen on shutdown, a fetch may be running in a thread after DirectoryFactory is closed
+          log.warn("Could not log failed replication details", e);
         }
       }
 
@@ -742,6 +738,7 @@ public class IndexFetcher {
       markReplicationStop();
       dirFileFetcher = null;
       localFileFetcher = null;
+      if (fsyncService != null && !fsyncService.isShutdown()) fsyncService.shutdown();
       fsyncService = null;
       fsyncServiceFuture = null;
       stop = false;
@@ -754,13 +751,11 @@ public class IndexFetcher {
           core.getDirectoryFactory().remove(tmpIndexDir);
         }
       } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
         SolrException.log(log, e);
       } finally {
         try {
           if (tmpIndexDir != null) core.getDirectoryFactory().release(tmpIndexDir);
         } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
           SolrException.log(log, e);
         }
         try {
@@ -768,13 +763,11 @@ public class IndexFetcher {
             core.getDirectoryFactory().release(indexDir);
           }
         } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
           SolrException.log(log, e);
         }
         try {
           if (tmpTlogDir != null) delTree(tmpTlogDir);
         } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
           SolrException.log(log, e);
         }
       }
@@ -801,9 +794,10 @@ public class IndexFetcher {
    * terminate the fsync service and wait for all the tasks to complete. If it is already terminated
    */
   private void terminateAndWaitFsyncService() throws Exception {
-    if (fsyncServiceFuture == null) return;
-     // give a long wait say 1 hr
-    fsyncServiceFuture.get(3600, TimeUnit.SECONDS);
+    if (fsyncServiceFuture == null || fsyncService.isTerminated()) return;
+    fsyncService.shutdown();
+    // give a long wait say 1 hr
+    fsyncService.awaitTermination(3600, TimeUnit.SECONDS);
     // if any fsync failed, throw that exception back
     Exception fsyncExceptionCopy = fsyncException;
     if (fsyncExceptionCopy != null) throw fsyncExceptionCopy;
@@ -1175,6 +1169,7 @@ public class IndexFetcher {
     solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
     this.solrCore.closeSearcher();
     assert testWait.getAsBoolean();
+    solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(this.solrCore, false);
     //solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(this.solrCore, false);
    // solrCore.getUpdateHandler().getSolrCoreState().newIndexWriter(this.solrCore, false);
     for (String f : filesTobeDeleted) {
@@ -1301,7 +1296,7 @@ public class IndexFetcher {
    * <p/>
    */
   private boolean moveAFile(Directory tmpIdxDir, Directory indexDir, String fname) {
-    log.debug("Moving file: {}", fname);
+    if (log.isDebugEnabled()) log.debug("Moving file: {}", fname);
     boolean success = false;
     try {
       if (slowFileExists(indexDir, fname)) {
@@ -1566,6 +1561,7 @@ public class IndexFetcher {
    */
   void abortFetch() {
     stop = true;
+
   }
 
   @SuppressForbidden(reason = "Need currentTimeMillis for debugging/stats")
@@ -1720,7 +1716,7 @@ public class IndexFetcher {
     
     private void fetch() throws Exception {
       try {
-        while (true && !aborted && !stop) {
+        while (true) {
           final FastInputStream is = getStream();
           int result;
           try {
@@ -1731,11 +1727,11 @@ public class IndexFetcher {
               return;
             }
             //if there is an error continue. But continue from the point where it got broken
-          } catch (Exception e) {
-            log.error("Exception fetching file", e);
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
           } finally {
-            IOUtils.closeQuietly(is);
+            if (is != null) {
+              while (is.read() != -1) {}
+              IOUtils.closeQuietly(is);
+            }
           }
         }
       } finally {
@@ -1910,13 +1906,16 @@ public class IndexFetcher {
         if (is == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Did not find inputstream in response");
         }
-        if (useInternalCompression) {
-          is = new InflaterInputStream(is);
-        }
+//        if (useInternalCompression) {
+//          is = new InflaterInputStream(is);
+//        }
         return new FastInputStream(is);
       } catch (Exception e) {
         //close stream on error
-        ParWork.close(is);
+        if (is != null) {
+          while (is.read() != -1) {}
+          is.close();
+        }
         throw new IOException("Could not download file '" + fileName + "'", e);
       }
     }

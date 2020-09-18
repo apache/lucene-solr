@@ -227,8 +227,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
   }
 
-  protected BaseCloudSolrClient(boolean updatesToLeaders, boolean parallelUpdates, boolean directUpdatesToLeadersOnly) {
-    if (parallelUpdates) {
+  protected BaseCloudSolrClient(boolean updatesToLeaders, boolean parallelUpdates, boolean directUpdatesToLeadersOnly, boolean createPool) {
+    if (parallelUpdates && createPool) {
       threadPool = new ParWorkExecutor("ParWork-CloudSolrClient", Math.max(12, Runtime.getRuntime().availableProcessors()));
     } else {
       threadPool = null;
@@ -259,7 +259,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       threadPool.shutdown();
       boolean success = false;
       try {
-        success = threadPool.awaitTermination(3, TimeUnit.SECONDS);
+        success = threadPool.awaitTermination(10, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         ParWork.propagateInterrupt(e, true);
       }
@@ -965,8 +965,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       }
     } catch (Exception exc) {
-      ParWork.propagateInterrupt(exc);
-      exc.printStackTrace();
+      ParWork.propagateInterrupt("Request failed", exc);
       Throwable rootCause = SolrException.getRootCause(exc);
       // don't do retry support for admin requests
       // or if the request doesn't have a collection specified

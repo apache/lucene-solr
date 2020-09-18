@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -28,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
@@ -68,6 +68,7 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
+import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
@@ -128,7 +129,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private volatile String coreName;
   private final AtomicInteger retries = new AtomicInteger(0);
   private boolean recoveringAfterStartup;
-  private volatile HttpUriRequest prevSendPreRecoveryHttpUriRequest;
+  private volatile Http2SolrClient.Abortable prevSendPreRecoveryHttpUriRequest;
   private volatile Replica.Type replicaType;
   private volatile CoreDescriptor coreDescriptor;
 
@@ -140,7 +141,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.coreName = cd.getName();
-    this.core = cc.getCore(coreName, true);
+    this.core = cc.getCore(coreName, false);
     if (core == null) {
       close = true;
     }
@@ -212,7 +213,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       }
     } finally {
-      IOUtils.closeQuietly(core);
       core = null;
     }
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
@@ -331,7 +331,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);// Why do we need to open searcher if
     // "onlyLeaderIndexes"?
     ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
-    ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, false).process(client);
+    ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(client);
   }
 
   @Override
@@ -588,9 +588,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
           }
         }
       } catch (Exception e) {
-        ParWork.propagateInterrupt(e);;
+        if (e instanceof  InterruptedException) {
+          return;
+        }
+        ParWork.propagateInterrupt(e);
         SolrException.log(log, "Error getting recent versions.", e);
-        recentVersions = new ArrayList<>(0);
+        recentVersions = Collections.emptyList();
       }
     }
 
@@ -852,7 +855,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
       numTried++;
 
-      if (numTried > 5) {
+      if (numTried > 3) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not ping leader");
         // instead of hammering on the leader,
         // let recovery process continue normally
@@ -860,44 +863,51 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       Replica leaderReplica = null;
 
-      if (isClosed()) {
-        throw new AlreadyClosedException();
-      }
 
       try {
         leaderReplica = zkStateReader.getLeaderRetry(
-            cloudDesc.getCollectionName(), cloudDesc.getShardId());
+            cloudDesc.getCollectionName(), cloudDesc.getShardId(), 5000);
       } catch (SolrException e) {
-        Thread.sleep(250);
+        Thread.sleep(500);
+        log.info("Could not find leader, looping again ...", e);
         continue;
       }
 
-      if (leaderReplica.getCoreUrl().equals(ourUrl)) {
-        return leaderReplica;
-      }
-      try {
-        Http2SolrClient httpSolrClient = core.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient();
-        SolrPing req = new SolrPing();
-        req.setBasePath(leaderReplica.getCoreUrl());
-        SolrPingResponse resp = req.process(httpSolrClient, null);
-        return leaderReplica;
-      } catch (IOException e) {
-        // let the recovery throttle handle pauses
-        log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
-      } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
-        if (e.getCause() instanceof IOException) {
-          log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
-        } else {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
-      }
+      return leaderReplica;
+//      try {
+//        try (Http2SolrClient httpSolrClient = buildRecoverySolrClient(leaderReplica.getCoreUrl())) {
+//          SolrPing req = new SolrPing();
+//          req.setBasePath(leaderReplica.getCoreUrl());
+//          SolrPingResponse resp = req.process(httpSolrClient, null);
+//          return leaderReplica;
+//        }
+//      } catch (IOException e) {
+//        // let the recovery throttle handle pauses
+//        log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getCoreUrl(), e);
+//      } catch (Exception e) {
+//        ParWork.propagateInterrupt("Failed to connect leader " + leaderReplica.getCoreUrl() + " on recovery, try again", e);
+//        if (e.getCause() instanceof IOException) {
+//          log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getCoreUrl());
+//        } else {
+//          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+//        }
+//      }
     }
   }
 
   public static Runnable testing_beforeReplayBufferingUpdates;
 
-  final private Future<RecoveryInfo> replay(SolrCore core)
+    /** Builds a new HttpSolrClient for use in recovery.  Caller must close */
+    private final Http2SolrClient buildRecoverySolrClient(final String leaderUrl) {
+      return new Http2SolrClient.Builder(leaderUrl)
+          .connectionTimeout(2000)
+          .idleTimeout(5000)
+          .withHttpClient(cc.getUpdateShardHandler().getTheSharedHttpClient())
+          .markInternalRequest().build();
+    }
+
+
+    final private Future<RecoveryInfo> replay(SolrCore core)
       throws InterruptedException, ExecutionException {
     if (testing_beforeReplayBufferingUpdates != null) {
       testing_beforeReplayBufferingUpdates.run();
@@ -966,7 +976,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   final private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
-      throws SolrServerException, IOException, InterruptedException, ExecutionException {
+      throws SolrServerException, IOException {
 
     WaitForState prepCmd = new WaitForState();
     prepCmd.setCoreName(leaderCoreName);
@@ -981,12 +991,28 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
-
+    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
     // nocommit
-    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "100"));
-    Http2SolrClient client = core.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient();
-    prepCmd.setBasePath(leaderBaseUrl);
-    log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
-    client.request(prepCmd);
+    try (Http2SolrClient client = new Http2SolrClient.Builder(leaderBaseUrl).withHttpClient(core.getCoreContainer().getUpdateShardHandler().
+        getTheSharedHttpClient()).idleTimeout(readTimeout).connectionTimeout(1000).markInternalRequest().build()) {
+      prepCmd.setBasePath(leaderBaseUrl);
+      log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
+      NamedList<Object> result = client.request(prepCmd, null, new PrepRecoveryOnComplete(), true);
+      prevSendPreRecoveryHttpUriRequest = (Http2SolrClient.Abortable) result.get("abortable");
+
+      ((Runnable) result.get("wait")).run();
+    }
+  }
+
+  private static class PrepRecoveryOnComplete implements Http2SolrClient.OnComplete {
+    @Override
+    public void onSuccess(NamedList<Object> result) {
+
+    }
+
+    @Override
+    public void onFailure(Throwable e) {
+
+    }
   }
 }

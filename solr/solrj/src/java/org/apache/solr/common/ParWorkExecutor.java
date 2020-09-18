@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common;
 
+import org.apache.solr.common.util.CloseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +36,8 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
   public static final int KEEP_ALIVE_TIME = 120000;
 
   private static AtomicInteger threadNumber = new AtomicInteger(0);
-  private volatile boolean closed;
-  private volatile boolean closeLock;
+
+  private CloseTracker closeTracker;
 
   public ParWorkExecutor(String name, int maxPoolsSize) {
     this(name, 0, maxPoolsSize, KEEP_ALIVE_TIME, new SynchronousQueue<>());
@@ -50,29 +51,29 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
       int keepalive, BlockingQueue<Runnable> workQueue) {
     super(corePoolsSize, maxPoolsSize, keepalive, TimeUnit.MILLISECONDS, workQueue
     , new ParWorkThreadFactory(name));
+    assert (closeTracker = new CloseTracker()) != null;
   }
 
   public void shutdown() {
-    if (closeLock) {
-      IllegalCallerException e = new IllegalCallerException();
-      log.error("IllegalCallerException", e);
-    }
-    this.closed = true;
+    closeTracker.close();
     super.shutdown();
   }
 
   public List<Runnable> shutdownNow() {
-    if (closeLock) {
-      IllegalCallerException e = new IllegalCallerException();
-      log.error("IllegalCallerException", e);
-    }
-    this.closed = true;
     super.shutdownNow();
     return Collections.emptyList();
   }
 
-  public void closeLock(boolean lock) {
-    this.closeLock = lock;
+  public void enableCloseLock() {
+    if (this.closeTracker != null) {
+      this.closeTracker.enableCloseLock();
+    }
+  }
+
+  public void disableCloseLock() {
+    if (this.closeTracker != null) {
+      this.closeTracker.disableCloseLock();
+    }
   }
 
   private static class ParWorkThreadFactory implements ThreadFactory {

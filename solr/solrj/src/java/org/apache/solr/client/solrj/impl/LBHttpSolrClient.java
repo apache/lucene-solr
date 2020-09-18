@@ -308,10 +308,11 @@ public class LBHttpSolrClient extends LBSolrClient {
     super.close();
     if(clientIsInternal) {
       HttpClientUtil.close(httpClient);
+      try (ParWork closer = new ParWork(this)) {
+        closer.collect(urlToClient.values());
+      }
     }
-    try (ParWork closer = new ParWork(this)) {
-      closer.collect(urlToClient.values());
-    }
+
     urlToClient.clear();
     assert ObjectReleaseTracker.release(this);
   }

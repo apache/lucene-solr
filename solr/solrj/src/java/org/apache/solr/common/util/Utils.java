@@ -637,8 +637,8 @@ public class Utils {
        */
       private static void readFully (InputStream is) throws IOException {
         is.skip(is.available());
-        while (is.read() != -1) {
-        }
+        while (is.read() != -1) {}
+        is.close();
       }
 
       @SuppressWarnings({"unchecked"})

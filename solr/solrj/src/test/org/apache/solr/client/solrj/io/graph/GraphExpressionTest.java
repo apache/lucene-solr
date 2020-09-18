@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
@@ -883,7 +884,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     QueryRequest query = new QueryRequest(params);
     query.setPath("/collection1/graph");
 
-    query.setResponseParser(new InputStreamResponseParser("xml"));
+    query.setResponseParser(new InputStreamResponseParser(CommonParams.JAVABIN));
     query.setMethod(SolrRequest.METHOD.POST);
 
     NamedList<Object> genericResponse = client.request(query);

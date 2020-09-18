@@ -65,7 +65,7 @@ public class JSONTupleStream implements TupleStreamParser {
 
     QueryRequest query = new QueryRequest( requestParams );
     query.setPath(p);
-    query.setResponseParser(new InputStreamResponseParser("json"));
+    query.setResponseParser(new InputStreamResponseParser("filestream"));
     query.setMethod(SolrRequest.METHOD.POST);
     NamedList<Object> genericResponse = server.request(query);
     InputStream stream = (InputStream)genericResponse.get("stream");
@@ -93,7 +93,7 @@ public class JSONTupleStream implements TupleStreamParser {
 
   public void close() throws IOException {
     reader.close();
-    stream.close();
+    while (stream.read() != -1) {}
   }
 
 

@@ -48,7 +48,6 @@ import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -375,9 +374,6 @@ public abstract class LBSolrClient extends SolrClient {
 
   protected Exception doRequest(String baseUrl, Req req, Rsp rsp, boolean isNonRetryable,
                                 boolean isZombie) throws SolrServerException, IOException {
-    if (closed)  {
-      throw new AlreadyClosedException();
-    }
     Exception ex = null;
     try {
       rsp.server = baseUrl;

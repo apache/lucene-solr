@@ -466,9 +466,10 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
       log.debug("Closing {}", hashCode());
     }
     closed = true;
-    syncService.shutdown();
 
-    scheduledFuture.cancel(false);
+    scheduledFuture.cancel(true);
+
+    syncService.shutdownNow();
 
     try (ParWork closer = new ParWork(this)) {
       closer.collect(backends.values());

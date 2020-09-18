@@ -104,7 +104,7 @@ public class SolrScheduledExecutorScheduler extends AbstractLifeCycle implements
     if (fscheduler != null) {
       fscheduler.shutdown();
       fscheduler.awaitTermination(3, TimeUnit.SECONDS); // nocommit - trying something
-      //fscheduler.shutdownNow();
+      fscheduler.shutdownNow();
       ExecutorUtil.awaitTermination(fscheduler);
       super.doStop();
     }

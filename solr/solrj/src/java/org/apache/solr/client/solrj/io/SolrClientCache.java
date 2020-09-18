@@ -71,6 +71,7 @@ public class SolrClientCache implements Serializable, Closeable {
     this.httpClient = httpClient;
     this.zkStateReader = reader;
     closeZKStateReader = false;
+    closeClient = false;
     assert ObjectReleaseTracker.track(this);
   }
 

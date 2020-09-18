@@ -48,10 +48,7 @@ public class BinaryResponseParser extends ResponseParser {
   @Override
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     try {
-      return (NamedList<Object>) createCodec().unmarshal(body);
-    } catch (EOFException e) {
-      // no body
-      return new NamedList<>();
+      return (NamedList<Object>) new JavaBinCodec().unmarshal(body);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
 

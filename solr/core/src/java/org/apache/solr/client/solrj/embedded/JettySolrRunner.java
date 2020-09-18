@@ -139,7 +139,7 @@ public class JettySolrRunner implements Closeable {
   private volatile boolean isClosed;
 
 
-  private final Scheduler scheduler;
+  private static Scheduler scheduler;
   private volatile SolrQueuedThreadPool qtp;
   private volatile boolean closed;
 
@@ -300,9 +300,9 @@ public class JettySolrRunner implements Closeable {
 
     server = new Server(qtp);
 
-    if (config.qtp == null) {
-      server.manage(qtp);
-    }
+//    if (config.qtp == null) {
+//      server.manage(qtp);
+//    }
 
     server.setStopTimeout(60); // will wait gracefull for stoptime / 2, then interrupts
     assert config.stopAtShutdown;
@@ -322,8 +322,6 @@ public class JettySolrRunner implements Closeable {
       final SslContextFactory.Server sslcontext = SSLConfig.createContextFactory(config.sslConfig);
 
       HttpConfiguration configuration = new HttpConfiguration();
-      // configuration.setOutputBufferSize(8 * 1024);
-      configuration.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
       ServerConnector connector;
       if (sslcontext != null) {
         configuration.setSecureScheme("https");
@@ -345,13 +343,12 @@ public class JettySolrRunner implements Closeable {
           HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
 
           http2ConnectionFactory.setMaxConcurrentStreams(512);
-
-          http2ConnectionFactory.setInputBufferSize(8192);
+          http2ConnectionFactory.setInputBufferSize(16384);
 
           ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(
               http2ConnectionFactory.getProtocol(),
               http1ConnectionFactory.getProtocol());
-          alpn.setDefaultProtocol(http1ConnectionFactory.getProtocol());
+          alpn.setDefaultProtocol(http2ConnectionFactory.getProtocol());
           connector.addConnectionFactory(alpn);
           connector.addConnectionFactory(http1ConnectionFactory);
           connector.addConnectionFactory(http2ConnectionFactory);
@@ -369,6 +366,7 @@ public class JettySolrRunner implements Closeable {
       connector.setSoLingerTime(-1);
       connector.setPort(port);
       connector.setHost("127.0.0.1");
+
       server.setConnectors(new Connector[] {connector});
 
     } else {

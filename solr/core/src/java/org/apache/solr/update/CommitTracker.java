@@ -114,7 +114,7 @@ public final class CommitTracker implements Runnable, Closeable {
     try {
       this.closed = true;
       try {
-        pending.cancel(false);
+        pending.cancel(true);
       } catch (NullPointerException e) {
         // okay
       }

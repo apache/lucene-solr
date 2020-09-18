@@ -170,7 +170,8 @@ public class ColStatus {
           continue;
         }
         String url = ZkCoreNodeProps.getCoreUrl(leader);
-        try (SolrClient client = solrClientCache.getHttpSolrClient(url)) {
+        SolrClient client = solrClientCache.getHttpSolrClient(url);
+        try {
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.add(CommonParams.QT, "/admin/segments");
           params.add(FIELD_INFO_PROP, "true");
@@ -186,20 +187,20 @@ public class ColStatus {
           NamedList<Object> rsp = client.request(req);
           rsp.remove("responseHeader");
           leaderMap.add("segInfos", rsp);
-          NamedList<Object> segs = (NamedList<Object>)rsp.get("segments");
+          NamedList<Object> segs = (NamedList<Object>) rsp.get("segments");
           if (segs != null) {
-            for (Map.Entry<String, Object> entry : segs) {
-              NamedList<Object> fields = (NamedList<Object>)((NamedList<Object>)entry.getValue()).get("fields");
+            for (Map.Entry<String,Object> entry : segs) {
+              NamedList<Object> fields = (NamedList<Object>) ((NamedList<Object>) entry.getValue()).get("fields");
               if (fields != null) {
-                for (Map.Entry<String, Object> fEntry : fields) {
-                  Object nc = ((NamedList<Object>)fEntry.getValue()).get("nonCompliant");
+                for (Map.Entry<String,Object> fEntry : fields) {
+                  Object nc = ((NamedList<Object>) fEntry.getValue()).get("nonCompliant");
                   if (nc != null) {
                     nonCompliant.add(fEntry.getKey());
                   }
                 }
               }
               if (!withFieldInfo) {
-                ((NamedList<Object>)entry.getValue()).remove("fields");
+                ((NamedList<Object>) entry.getValue()).remove("fields");
               }
             }
           }

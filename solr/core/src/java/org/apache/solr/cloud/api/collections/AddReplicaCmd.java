@@ -158,7 +158,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     List<CreateReplica> createReplicas;
 
     try {
-      ocmh.zkStateReader.waitForState(collectionName, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      ocmh.zkStateReader.waitForState(collectionName, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
         if (collectionState == null) {
           return false;
         }
@@ -198,7 +198,6 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
     }
 
-    int finalTotalReplicas = totalReplicas;
     Runnable runnable = () -> {
       try {
         shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
@@ -214,7 +213,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         }
 
         try {
-          zkStateReader.waitForState(collectionName, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+          zkStateReader.waitForState(collectionName, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
             if (collectionState == null) {
               return false;
             }

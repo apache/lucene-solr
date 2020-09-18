@@ -349,6 +349,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit
   public void testSplitShard() throws Exception {
 
     final String collectionName = "solrj_test_splitshard";

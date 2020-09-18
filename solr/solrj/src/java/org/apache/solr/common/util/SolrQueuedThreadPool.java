@@ -96,7 +96,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     }
 
     public SolrQueuedThreadPool(String name) {
-        this(Integer.MAX_VALUE, 12,
+        this(Integer.MAX_VALUE, Integer.getInteger("solr.minContainerThreads", 18),
             120000, -1, // no reserved executor threads - we can process requests after shutdown or some race - we try to limit without threadpool limits no anyway
                 null, null,
                 new  SolrNamedThreadFactory(name));
@@ -160,10 +160,11 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         setIdleTimeout(idleTimeout);
         setReservedThreads(0);
         setLowThreadsThreshold(-1);
+        setStopTimeout(5000);
         if (queue == null)
         {
-            int capacity = 128;
-            queue = new BlockingArrayQueue<>(capacity, 0);
+            int capacity = Math.max(_minThreads, 8) * 1024;
+            queue = new BlockingArrayQueue<>(capacity, capacity);
         }
         _jobs = queue;
         _threadGroup = threadGroup;
@@ -569,8 +570,6 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     {
         while (true)
         {
-
-            if (closed) return;
             long counts = _counts.get();
             int threads = AtomicBiInteger.getHi(counts);
             if (threads == Integer.MIN_VALUE)
@@ -907,7 +906,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         int threads = getBusyThreads() + getIdleThreads() + getThreads() * 2;
         BlockingArrayQueue<Runnable> jobs = (BlockingArrayQueue<Runnable>) getQueue();
 
-        setIdleTimeout(1);
+        //setIdleTimeout(1);
 
         // Fill the job queue with noop jobs to wakeup idle threads.
         for (int i = 0; i < threads; ++i) {
@@ -915,12 +914,12 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         }
 
         // interrupt threads
-//        for (Future thread : _threadFutures)
-//        {
-//            if (LOG.isDebugEnabled())
-//                LOG.debug("Interrupting {}", thread);
-//            thread.cancel(true);
-//        }
+        for (Future thread : _threadFutures)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Interrupting {}", thread);
+            thread.cancel(true);
+        }
 
 
         // Close any un-executed jobs
@@ -942,6 +941,15 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 //                LOG.warn("Stopped without executing or closing {}", job);
 //        }
 
+
+        try {
+            super.doStop();
+        } catch (Exception e) {
+            LOG.warn("super.doStop", e);
+            return;
+        }
+
+
         try {
             joinThreads(15000);
         } catch (InterruptedException e) {
@@ -950,13 +958,6 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
             LOG.warn("Timeout in joinThreads on close {}", e);
         } catch (ExecutionException e) {
             LOG.warn("Execution exception in joinThreads on close {}", e);
-        }
-
-        try {
-            super.doStop();
-        } catch (Exception e) {
-            LOG.warn("super.doStop", e);
-            return;
         }
 
         if (_budget != null)

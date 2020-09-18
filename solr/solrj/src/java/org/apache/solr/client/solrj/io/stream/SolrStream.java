@@ -286,7 +286,7 @@ public class SolrStream extends TupleStream {
       modifiableSolrParams.set("indent", modifiableSolrParams.get("indent", "off"));
     }
 
-    String wt = requestParams.get(CommonParams.WT, "json");
+    String wt = requestParams.get(CommonParams.WT, CommonParams.JAVABIN);
     QueryRequest query = new QueryRequest(requestParams);
     query.setPath(p);
     query.setResponseParser(new InputStreamResponseParser(wt));
@@ -307,7 +307,7 @@ public class SolrStream extends TupleStream {
         return new JSONTupleStream(stream);
       }
     }catch (Exception e) {
-      IOUtils.closeQuietly(stream);
+      while (stream.read() != -1) {}
       throw new SolrException(SolrException.ErrorCode.UNKNOWN, "", e);
     }
   }

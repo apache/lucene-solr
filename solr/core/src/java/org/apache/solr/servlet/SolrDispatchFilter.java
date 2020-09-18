@@ -504,6 +504,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     try {
       ServletInputStream is = req.getInputStream();
       while (!is.isFinished() && is.read() != -1) {}
+      IOUtils.closeQuietly(is);
     } catch (IOException e) {
       if (req.getHeader(HttpHeaders.EXPECT) != null && response.isCommitted()) {
         log.debug("No input stream to consume from client");

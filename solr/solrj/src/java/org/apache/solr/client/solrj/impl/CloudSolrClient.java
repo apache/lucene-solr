@@ -76,7 +76,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
    * @param builder a {@link CloudSolrClient.Builder} with the options used to create the client.
    */
   protected CloudSolrClient(Builder builder) {
-    super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
+    super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly, true);
 
     if (builder.stateProvider == null) {
       if (builder.zkHosts != null && builder.zkHosts.size() > 0 && builder.solrUrls != null && builder.solrUrls.size() > 0) {

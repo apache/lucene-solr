@@ -906,6 +906,9 @@ public class ZkStateReader implements SolrCloseable {
       if (closeClient) {
         IOUtils.closeQuietly(zkClient);
       }
+
+      waitLatches.forEach(c -> { for (int i = 0; i < c.getCount(); i++) c.countDown(); });
+
     } finally {
       assert ObjectReleaseTracker.release(this);
     }

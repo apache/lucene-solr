@@ -52,7 +52,7 @@ import org.slf4j.MDC;
  * @since solr 8.0
  */
 @SuppressWarnings("serial")
-public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
+public class CloudHttp2SolrClient extends BaseCloudSolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -70,7 +70,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
    * @param builder a {@link Http2SolrClient.Builder} with the options used to create the client.
    */
   protected CloudHttp2SolrClient(Builder builder) {
-    super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
+    super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly, false);
     this.clientIsInternal = builder.httpClient == null;
     if (builder.stateProvider == null) {
       if (builder.zkHosts != null && builder.zkHosts.size() > 0 && builder.solrUrls != null && builder.solrUrls.size() > 0) {

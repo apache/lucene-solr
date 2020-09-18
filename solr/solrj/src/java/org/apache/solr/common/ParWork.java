@@ -79,22 +79,25 @@ public class ParWork implements Closeable {
       synchronized (ParWork.class) {
         if (EXEC == null) {
           EXEC = (ThreadPoolExecutor) getParExecutorService(12, Integer.MAX_VALUE, 30000, new SynchronousQueue<>());
-          ((ParWorkExecutor)EXEC).closeLock(true);
+          ((ParWorkExecutor)EXEC).enableCloseLock();
         }
       }
     }
     return EXEC;
   }
 
-
   public static void shutdownRootSharedExec() {
+    shutdownRootSharedExec(true);
+  }
+
+  public static void shutdownRootSharedExec(boolean wait) {
     synchronized (ParWork.class) {
       if (EXEC != null) {
-        ((ParWorkExecutor)EXEC).closeLock(false);
+        ((ParWorkExecutor)EXEC).disableCloseLock();
         EXEC.setKeepAliveTime(1, TimeUnit.NANOSECONDS);
         EXEC.allowCoreThreadTimeOut(true);
        // EXEC.shutdownNow();
-        ExecutorUtil.shutdownAndAwaitTermination(EXEC);
+        if (wait) ExecutorUtil.shutdownAndAwaitTermination(EXEC);
         EXEC = null;
       }
     }
