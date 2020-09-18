@@ -10,10 +10,19 @@ public class CloseTracker {
 
     public static volatile AlreadyClosedException lastAlreadyClosedEx;
     public static volatile IllegalCallerException lastIllegalCallerEx;
+    private boolean checkClosedTwice;
 
     private volatile boolean closed = false;
     private volatile String closeStack = "";
     private volatile boolean closeLock;
+
+    public CloseTracker() {
+
+    }
+
+    public CloseTracker(boolean checkClosedTwice) {
+        this.checkClosedTwice = checkClosedTwice;
+    }
 
     public boolean close() {
         if (closeLock) {
@@ -21,7 +30,7 @@ public class CloseTracker {
             lastIllegalCallerEx = ex;
             throw ex;
         }
-        if (closed) {
+        if (checkClosedTwice && closed) {
             StringBuilderWriter sw = new StringBuilderWriter(4096);
             PrintWriter pw = new PrintWriter(sw);
             new ObjectReleaseTracker.ObjectTrackerException(this.getClass().getName()).printStackTrace(pw);

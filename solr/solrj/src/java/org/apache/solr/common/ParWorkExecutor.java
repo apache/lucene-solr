@@ -51,7 +51,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
       int keepalive, BlockingQueue<Runnable> workQueue) {
     super(corePoolsSize, maxPoolsSize, keepalive, TimeUnit.MILLISECONDS, workQueue
     , new ParWorkThreadFactory(name));
-    assert (closeTracker = new CloseTracker()) != null;
+    assert (closeTracker = new CloseTracker(false)) != null;
   }
 
   public void shutdown() {

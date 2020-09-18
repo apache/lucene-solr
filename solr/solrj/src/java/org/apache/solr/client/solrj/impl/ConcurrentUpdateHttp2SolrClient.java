@@ -43,7 +43,6 @@ import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.eclipse.jetty.client.api.Response;
@@ -316,7 +315,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         // make sure the stream is full read
         is.skip(is.available());
         while (is.read() != -1) {}
-        IOUtils.closeQuietly(is);
       } catch (UnsupportedOperationException e) {
         // nothing to do then
       } catch (IOException e) {
