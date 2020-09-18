@@ -48,6 +48,8 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
+import org.apache.lucene.queryparser.charstream.CharStream;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
 
 /**
  * Parser for the standard Lucene syntax
