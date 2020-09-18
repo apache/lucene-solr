@@ -126,62 +126,40 @@ ext {
     buildContentDir = file("${buildDir}/content")
     mainPage = "index"
 
+    // the "MAJOR.MINOR" version of solr this guide is about (guides aren't specific to BUGFIX releases)
+    // So on 'branch_9_9' where 'version' may be 9.9.0, 9.9.1, 9.9.9, etc..;  solrDocsVersion = 9.9
     solrDocsVersion = "${version}".replaceAll(/^(\d+\.\d+)(|\..*)$/, "\$1")
-    solrDocsVersionPath = "${solrDocsVersion}".replaceAll(/^(\d+)\.(\d+)$/, "\$1_\$2_0")
-
-    solrGuideVersion = propertyOrDefault("solrGuideVersion", "${solrDocsVersion}-DRAFT")
-
-    solrRootPath = '../../../../solr/'
-    solrGuideDraftStatus = solrGuideVersion.matches(/^\d+\.\d+(|\.\d+)$/) ? "" : "DRAFT"
-    solrGuideVersionPath = solrGuideVersion.replaceAll(/^(\d+)\.(\d+)(-DRAFT)?.*/, "\$1_\$2\$3")
-
-    javadocLink = "https://docs.oracle.com/en/java/javase/11/docs/api/"
+    
+    // the "MAJOR_MINOR" version as a path for publishing the guide
+    // So on 'branch_9_9' where solrDocsVersion = 9.9; solrGuideVersionPath => 9_9
+    solrGuideVersionPath = "${solrDocsVersion}".replaceAll(/^(\d+)\.(\d+)$/, "\$1_\$2")
 
     if (project.hasProperty("local.javadocs")) {
         htmlSolrJavadocs = "link:../../docs/"
         htmlLuceneJavadocs = "link:../../../../lucene/build/docs/"
     } else {
-        htmlSolrJavadocs = "https://lucene.apache.org/solr/${solrDocsVersionPath}/"
-        htmlLuceneJavadocs = "https://lucene.apache.org/core/${solrDocsVersionPath}/"
+        // when linking to javadocs of code releases, which always use paths like "MAJOR_MINOR_BUGFIX"
+        // (even when 'BUGFIX' = 0), we link to the javadocs for the "MAJOR.MINOR.0" release
+        // So if solrGuideVersionPath = '9_9'; use '9_9_0' for javadoc links...
+        htmlSolrJavadocs = "https://lucene.apache.org/solr/${solrGuideVersionPath}_0/"
+        htmlLuceneJavadocs = "https://lucene.apache.org/core/${solrGuideVersionPath}_0/"
     }
 
-    bareBonesDir = file("${buildDir}/bare-bones-html")
-
-    // Some additional version properties are lazily computed
-    // in setupLazyProps (because they need to be computed after evaluation is complete).
-    props = [
-            "solr-root-path"         : solrRootPath,
-            "solr-guide-draft-status": solrGuideDraftStatus,
-            "solr-guide-version"     : solrGuideVersion,
-            "solr-guide-version-path": solrGuideVersionPath,
-            "solr-docs-version"      : solrDocsVersion,
-            "javadoc.link"           : javadocLink,
-            "java-javadocs"          : javadocLink,
-            "solr-javadocs"          : htmlSolrJavadocs,
-            "html-solr-javadocs"     : htmlSolrJavadocs,
-            "lucene-javadocs"        : htmlLuceneJavadocs,
-            "html-lucene-javadocs"   : htmlLuceneJavadocs,
-            "build-date"             : buildDate,
-            "DSTAMP"                 : buildDate,
-            "build-year"             : buildYear,
-            "current.year"           : buildYear
-    ]
-
-    asciiDocAttrs = [
-            'common': [
-                    'attribute-missing' : 'warn',
-                    'icons'             : 'font',
-                    'icon-set'          : 'fa',
-                    'figure-caption!'   : '',
-                    'idprefix'          : '',
-                    'idseparator'       : '-',
-                    'source-highlighter': 'coderay',
-                    'solr-root-path'    : solrRootPath,
-            ],
-            'html'  : [
-                    'imagesdir': buildContentDir.toString()
-            ]
-    ]
+    // ivy* props will be set in setupLazyProps
+    // (because they need to be computed after evaluation is complete).
+    templateProps = [
+      javadocLink: "https://docs.oracle.com/en/java/javase/11/docs/api/",
+                      
+      solrGuideDraftStatus: propertyOrDefault("solrGuideDraft", "true").toBoolean() ? "DRAFT" : "",
+      solrRootPath: project(':solr').projectDir.toString() + File.separator,
+      
+      solrDocsVersion: solrDocsVersion,
+      solrGuideVersionPath: solrGuideVersionPath,
+      htmlSolrJavadocs: htmlSolrJavadocs,
+      htmlLuceneJavadocs: htmlLuceneJavadocs,
+      buildDate: buildDate,
+      buildYear: buildYear,
+    ]   
 }
 
 task setupLazyProps {
@@ -189,25 +167,18 @@ task setupLazyProps {
         // These properties have to be resolved after the configuration phase is complete (palantir's constraint)
         // so we can't use them as input for caches.
         [
-                ["ivyversions./commons-codec/commons-codec", "commons-codec", "commons-codec"],
-                ["ivyversions.io.dropwizard.metrics.version", "io.dropwizard.metrics", "metrics-core"],
-                ["ivyversions.org.apache.logging.log4j.version", "org.apache.logging.log4j", "log4j-core"],
-                ["ivyversions./org.apache.opennlp/opennlp-tools", "org.apache.opennlp", "opennlp-tools"],
-                ["ivyversions.org.apache.tika.version", "org.apache.tika", "tika-core"],
-                ["ivyversions.org.apache.zookeeper.version", "org.apache.zookeeper", "zookeeper"],
-
-                ["ivy-zookeeper-version", "org.apache.zookeeper", "zookeeper"],
-                ["ivy-log4j-version", "org.apache.logging.log4j", "log4j-core"],
-                ["ivy-tika-version", "org.apache.tika", "tika-core"],
-                ["ivy-opennlp-version", "org.apache.opennlp", "opennlp-tools"],
-                ["ivy-commons-codec-version", "commons-codec", "commons-codec"],
-                ["ivy-dropwizard-version", "io.dropwizard.metrics", "metrics-core"]
-        ].each { antProp, depGroup, depId ->
-            props[antProp] = getVersion(depGroup, depId, configurations.depVer)
+                ["ivyCommonsCodec", "commons-codec", "commons-codec"],
+                ["ivyDropwizardMetrics", "io.dropwizard.metrics", "metrics-core"],
+                ["ivyLog4j", "org.apache.logging.log4j", "log4j-core"],
+                ["ivyOpennlpTools", "org.apache.opennlp", "opennlp-tools"],
+                ["ivyTika", "org.apache.tika", "tika-core"],
+                ["ivyZookeeper", "org.apache.zookeeper", "zookeeper"],
+        ].each { p, depGroup, depId ->
+            templateProps[p] = getVersion(depGroup, depId, configurations.depVer)
         }
 
         // Emit info about properties for clarity.
-        logger.warn("Building ref guide with:\n" + props.collect({ k, v -> "  ${k} -> ${v}" }).join('\n'))
+        logger.warn("Building ref guide with:\n" + templateProps.collect({ k, v -> "  ${k} -> ${v}" }).join('\n'))
     }
 }
 
@@ -215,9 +186,7 @@ task prepareSources(type: Sync) {
     dependsOn setupLazyProps
 
     // If replaceable properties change, we have to rerun the task.
-    inputs.properties props
-
-    def dummyAntProject = new org.apache.tools.ant.Project()
+    inputs.properties templateProps
 
     from(file("src"), {
        exclude '**/*.template'
@@ -227,14 +196,8 @@ task prepareSources(type: Sync) {
         include '**/*.template'
         rename '(.+)\\.template', '$1'
         filteringCharset = 'UTF-8'
-        filter(org.apache.tools.ant.filters.ExpandProperties, project: dummyAntProject)
+        expand(templateProps)
     })
-
-    doFirst {
-        props.each { k, v ->
-          dummyAntProject.setProperty(k, v)
-        }
-    }
 
     into buildContentDir
 }
@@ -259,60 +222,6 @@ task buildNavDataFiles(type: JavaExec) {
         ].each { name ->
             project.delete(file("${buildContentDir}/_data/${name}"))
         }
-    }
-}
-
-task bareBonesAsciiDoctor {
-    dependsOn buildNavDataFiles
-
-    doLast {
-        // Regenerate fully.
-        project.delete(bareBonesDir)
-        bareBonesDir.mkdirs()
-
-        // Convert each file separately so that folders are preserved.
-        Path source = buildContentDir.toPath().toAbsolutePath().normalize()
-        Path target = bareBonesDir.toPath().toAbsolutePath().normalize()
-
-        Asciidoctor adoc = Asciidoctor.Factory.create()
-        fileTree(source, {
-            include "**/*.adoc"
-            exclude "**/_*"
-        }).each { file ->
-            Path relative = source.relativize(file.toPath())
-            Path targetDir = target.resolve(relative).getParent()
-
-            def opts = OptionsBuilder.options()
-                    .backend('html5')
-                    .docType("book")
-                    .headerFooter(false)
-                    .safe(SafeMode.UNSAFE)
-                    .baseDir(source.toFile())
-                    .toDir(targetDir.toFile())
-                    .destinationDir(targetDir.toFile())
-                    .mkDirs(true)
-                    .attributes(asciiDocAttrs.common + asciiDocAttrs.html + props)
-
-            adoc.convertFile(file, opts)
-        }
-    }
-}
-
-task bareBonesHtmlValidation(type: JavaExec) {
-    dependsOn bareBonesAsciiDoctor
-    description("Builds (w/o Jekyll) a very simple html version of the guide and runs link/anchor validation on it")
-
-    classpath = sourceSets.main.runtimeClasspath
-    main = 'CheckLinksAndAnchors'
-    workingDir = buildContentDir
-
-    args([
-            "${bareBonesDir}",
-            "-bare-bones"
-    ])
-
-    if (project.hasProperty("local.javadocs")) {
-        args += "-check-all-relative-links"
     }
 }
 
@@ -347,7 +256,7 @@ task buildSite(type: JavaExec) {
 }
 
 // Hook up custom tasks with standard tasks.
-check.dependsOn bareBonesHtmlValidation
+check.dependsOn buildSite
 
 // Do not hook site building to assemble, at least for now.
 // assemble.dependsOn buildSite
