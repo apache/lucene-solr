@@ -311,8 +311,8 @@ final class DocumentsWriterPerThread implements Accountable {
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
     segmentInfo.setMaxDoc(numDocsInRAM);
     final SegmentWriteState flushState = new SegmentWriteState(infoStream, directory, segmentInfo, fieldInfos.finish(),
-        pendingUpdates, new IOContext(new FlushInfo(numDocsInRAM, ramBytesUsed())));
-    final double startMBUsed = ramBytesUsed() / 1024. / 1024.;
+        pendingUpdates, new IOContext(new FlushInfo(numDocsInRAM, lastCommittedBytesUsed)));
+    final double startMBUsed = lastCommittedBytesUsed / 1024. / 1024.;
 
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
@@ -518,11 +518,13 @@ final class DocumentsWriterPerThread implements Accountable {
 
   @Override
   public long ramBytesUsed() {
+    assert lock.isHeldByCurrentThread();
     return (deleteDocIDs.length  * Integer.BYTES)+ pendingUpdates.ramBytesUsed() + consumer.ramBytesUsed();
   }
 
   @Override
   public Collection<Accountable> getChildResources() {
+    assert lock.isHeldByCurrentThread();
     return Collections.unmodifiableList(Arrays.asList(pendingUpdates, consumer));
   }
 
