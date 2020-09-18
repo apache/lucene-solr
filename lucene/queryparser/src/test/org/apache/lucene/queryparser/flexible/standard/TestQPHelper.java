@@ -567,8 +567,6 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryEquals("term~0.7", null, "term~1");
 
     assertQueryEquals("term~^3", null, "(term~2)^3.0");
-    // Syntax not supported
-    //assertQueryEquals("term^3~", null, "(term~2)^3.0");
     assertQueryEquals("term*germ", null, "term*germ");
     assertQueryEquals("term*germ^3", null, "(term*germ)^3.0");
 
@@ -585,6 +583,7 @@ public class TestQPHelper extends LuceneTestCase {
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
 
     assertQueryNodeException("term~1.1"); // value > 1, throws exception
+    assertQueryNodeException("term^3~"); // Boost must be applied to FuzzyOp.
 
     assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
 
@@ -1173,6 +1172,9 @@ public class TestQPHelper extends LuceneTestCase {
     re = new RegexpQuery(new Term("field", "http~0.5"));
     assertEquals(re, qp.parse("field:/http~0.5/", df));
     assertEquals(re, qp.parse("/http~0.5/", df));
+
+    // fuzzy op doesn't apply to regexps.
+    assertQueryNodeException("/http/~2");
     
     re = new RegexpQuery(new Term("field", "boo"));
     assertEquals(re, qp.parse("field:/boo/", df));
