@@ -45,6 +45,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
@@ -54,7 +55,6 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
-import org.apache.lucene.queryparser.flexible.standard.parser.FastCharStream;
 import org.apache.lucene.queryparser.flexible.standard.parser.ParseException;
 import org.apache.lucene.queryparser.flexible.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.search.BooleanClause.Occur;

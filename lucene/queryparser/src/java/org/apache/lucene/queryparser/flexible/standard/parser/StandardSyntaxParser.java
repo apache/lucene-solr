@@ -41,6 +41,8 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
+import org.apache.lucene.queryparser.charstream.CharStream;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
 
 /**
  * Parser for the standard Lucene syntax
@@ -747,17 +749,6 @@ if (boost != null) {
     finally { jj_save(2, xla); }
   }
 
-  private boolean jj_3R_26()
- {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3_2()) {
-    jj_scanpos = xsp;
-    if (jj_3_3()) return true;
-    }
-    return false;
-  }
-
   private boolean jj_3R_22()
  {
     if (jj_scan_token(OR)) return true;
@@ -1041,6 +1032,17 @@ if (boost != null) {
     jj_scanpos = xsp;
     if (jj_3R_12()) return true;
     }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_26()
+ {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3_2()) {
+    jj_scanpos = xsp;
+    if (jj_3_3()) return true;
     }
     return false;
   }

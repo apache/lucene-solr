@@ -134,6 +134,9 @@ Improvements
 
 * LUCENE-9527: Upgrade javacc to 7.0.4, regenerate query parsers. (Dawid Weiss)
 
+* LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved
+  from each query parser package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
