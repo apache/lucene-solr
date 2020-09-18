@@ -86,9 +86,9 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   private final CompressionMode compressionMode;
   private final Compressor compressor;
   private final int chunkSize;
-  
-  private long numChunks; // number of compressed blocks written
+
   private long numDirtyChunks; // number of incomplete compressed blocks written
+  private long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
 
   /** a pending doc */
   private class DocData {
@@ -371,7 +371,6 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     curDoc = null;
     curField = null;
     termSuffixes.reset();
-    numChunks++;
   }
 
   private int flushNumFields(int chunkDocs) throws IOException {
@@ -645,15 +644,17 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   @Override
   public void finish(FieldInfos fis, int numDocs) throws IOException {
     if (!pendingDocs.isEmpty()) {
-      flush();
       numDirtyChunks++; // incomplete: we had to force this flush
+      final long expectedChunkDocs = Math.min(MAX_DOCUMENTS_PER_CHUNK, (long) ((double) chunkSize / termSuffixes.getPosition() * pendingDocs.size()));
+      numDirtyDocs += expectedChunkDocs - pendingDocs.size();
+      flush();
     }
     if (numDocs != this.numDocs) {
       throw new RuntimeException("Wrote " + this.numDocs + " docs, finish called with numDocs=" + numDocs);
     }
     indexWriter.finish(numDocs, vectorsStream.getFilePointer(), metaStream);
-    metaStream.writeVLong(numChunks);
     metaStream.writeVLong(numDirtyChunks);
+    metaStream.writeVLong(numDirtyDocs);
     CodecUtil.writeFooter(metaStream);
     CodecUtil.writeFooter(vectorsStream);
   }
@@ -817,8 +818,8 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
         }
         
         // since we bulk merged all chunks, we inherit any dirty ones from this segment.
-        numChunks += matchingVectorsReader.getNumChunks();
         numDirtyChunks += matchingVectorsReader.getNumDirtyChunks();
+        numDirtyDocs += matchingVectorsReader.getNumDirtyDocs();
       } else {        
         // naive merge...
         if (vectorsReader != null) {
@@ -853,7 +854,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   boolean tooDirty(CompressingTermVectorsReader candidate) {
     // more than 1% dirty, or more than hard limit of 1024 dirty chunks
     return candidate.getNumDirtyChunks() > 1024 || 
-           candidate.getNumDirtyChunks() * 100 > candidate.getNumChunks();
+           candidate.getNumDirtyDocs() * 100 > candidate.getNumDocs();
   }
 
   @Override
