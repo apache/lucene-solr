@@ -182,7 +182,7 @@ private QueryNode Query(CharSequence field) : {
       QueryNode first = clauses.get(0);
       if (first instanceof ModifierQueryNode
           && ((ModifierQueryNode) first).getModifier() == ModifierQueryNode.Modifier.MOD_NOT) {
-        clauses.set(0, new BooleanQueryNode(Collections.<QueryNode> singletonList(first)));
+        clauses.set(0, new BooleanQueryNode(Collections.singletonList(first)));
       }
     }
 
