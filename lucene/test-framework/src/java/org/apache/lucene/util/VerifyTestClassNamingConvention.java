@@ -31,13 +31,14 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Enforce test naming convention.
  */
 public class VerifyTestClassNamingConvention extends AbstractBeforeAfterRule {
-  public static final Pattern ALLOWED_CONVENTION = Pattern.compile("(.+?)\\.Test[^.]+");
+  public static final Pattern ALLOWED_CONVENTION = Pattern.compile("(.+\\.)(Test)([^.]+)");
 
   private static Set<String> exceptions;
   static {
@@ -72,10 +73,20 @@ public class VerifyTestClassNamingConvention extends AbstractBeforeAfterRule {
     //
     // dumpSuiteNamesOnly(suiteName);
 
-    if (!ALLOWED_CONVENTION.matcher(suiteName).matches()) {
+    Matcher matcher = ALLOWED_CONVENTION.matcher(suiteName);
+    if (!matcher.matches()) {
       // if this class exists on the exception list, leave it.
       if (!exceptions.contains("!" + suiteName)) {
         throw new AssertionError("Suite must follow Test*.java naming convention: "
+          + suiteName);
+      }
+    } else if (matcher.groupCount() == 3) {
+      // conventional suite name: package test class
+      // alternative  suite name: package class test
+      String alternativeSuiteName = matcher.group(1) + matcher.group(3) + matcher.group(2);
+      // if FooBarTest.java exists on the exception list, disallow TestFooBar.java addition
+      if (exceptions.contains("!" + alternativeSuiteName)) {
+        throw new AssertionError("Please remove the '"+alternativeSuiteName+"' test-naming-exceptions.txt before adding a new suite that follows the Test*.java naming convention: "
           + suiteName);
       }
     }
