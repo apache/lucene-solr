@@ -150,6 +150,8 @@ New Features
 
 * SOLR-13751: Add BooleanSimilarityFactory class. (Andy Webb via Christine Poerschke)
 
+* SOLR-14875: Make SolrEventListeners load from packages (noble)
+
 Improvements
 ---------------------
 
