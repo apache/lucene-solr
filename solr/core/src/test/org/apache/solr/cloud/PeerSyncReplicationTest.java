@@ -65,7 +65,6 @@ import static java.util.Collections.singletonList;
  * This test is modeled after SyncSliceTest
  */
 @Slow
-@Ignore // nocommit debug, flakey
 @LuceneTestCase.Nightly
 public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
 

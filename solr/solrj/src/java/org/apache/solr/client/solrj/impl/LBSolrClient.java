@@ -419,7 +419,7 @@ public abstract class LBSolrClient extends SolrClient {
       }
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
-      throw new SolrServerException(e);
+      throw new SolrServerException("baseUrl=" + baseUrl, e);
     }
 
     return ex;

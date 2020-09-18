@@ -102,6 +102,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly // slow, processAndWait still polls ...
   public void testAsyncRequests() throws Exception {
     final String collection = "testAsyncOperations";
     final CloudHttp2SolrClient client = cluster.getSolrClient();

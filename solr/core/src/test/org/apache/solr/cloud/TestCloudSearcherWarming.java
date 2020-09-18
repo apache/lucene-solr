@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * Tests related to SOLR-6086
  */
 @LogLevel("org.apache.solr.cloud.overseer.*=DEBUG,org.apache.solr.cloud.Overseer=DEBUG,org.apache.solr.cloud.ZkController=DEBUG")
-@LuceneTestCase.Nightly // nocommit speedup
+@LuceneTestCase.Nightly
 public class TestCloudSearcherWarming extends SolrCloudTestCase {
   public static final AtomicReference<String> coreNodeNameRef = new AtomicReference<>(null),
       coreNameRef = new AtomicReference<>(null);

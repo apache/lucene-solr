@@ -100,7 +100,6 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 /**
  * Simple ConfigSets API tests on user errors and simple success cases.
  */
-@Ignore // nocommit debug
 public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -124,6 +123,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testCreateErrors() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
@@ -155,6 +155,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testCreate() throws Exception {
     // no old, no new
     verifyCreate(null, "configSet1", null, null);
@@ -318,6 +319,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testUploadDisabled() throws Exception {
     SolrZkClient zkClient = zkClient();
     for (boolean enabled : new boolean[]{true, false}) {
@@ -333,6 +335,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testUpload() throws Exception {
     String suffix = "-untrusted";
     uploadConfigSetWithAssertions("regular", suffix, null, null);
@@ -341,6 +344,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
   
   @Test
+  @Ignore // nocommit debug
   public void testUploadWithScriptUpdateProcessor() throws Exception {
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("JavaScript"));
@@ -641,6 +645,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
   
   @Test
+  @Ignore // nocommit debug
   public void testDeleteErrors() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
@@ -676,6 +681,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testDelete() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
@@ -697,11 +703,10 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testList() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-
-    SolrZkClient zkClient = zkClient();
 
     // test empty
     ConfigSetAdminRequest.List list = new ConfigSetAdminRequest.List();

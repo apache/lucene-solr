@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -51,7 +52,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 
-@Ignore // nocommit flakey looks like solrcorestate leak
+@LuceneTestCase.Nightly // slow test
 public class TestCloudRecovery extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";

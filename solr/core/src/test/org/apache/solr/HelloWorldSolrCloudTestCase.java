@@ -37,7 +37,6 @@ import org.junit.Test;
  * #2 Modify the test, e.g.
  *    in setupCluster add further documents and then re-run the test.
  */
-@Ignore // nocommit debug
 public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
   private static final String COLLECTION = "hello_world" ;

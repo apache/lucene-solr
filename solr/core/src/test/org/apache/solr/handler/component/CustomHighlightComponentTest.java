@@ -38,7 +38,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug, flakey
 public class CustomHighlightComponentTest extends SolrCloudTestCase {
 
   public static class CustomHighlightComponent extends HighlightComponent {

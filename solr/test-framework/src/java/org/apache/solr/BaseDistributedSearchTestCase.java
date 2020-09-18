@@ -394,6 +394,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       else shardStr += "/" + DEFAULT_TEST_CORENAME;
 
       shardsArr.set(i, shardStr);
+      if (sb.length() > 0) {
+        sb.append(",");
+      }
       sb.append(shardStr);
     }
 

@@ -96,7 +96,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Slow 
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@LuceneTestCase.Nightly // TODO speedup
+@LuceneTestCase.Nightly // TODO speedup, bridge
 public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

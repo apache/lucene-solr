@@ -211,18 +211,24 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     if (controlCluster != null) controlCluster.shutdown();
     cluster = null;
     controlCluster = null;
+    synchronized (clients) {
+      for (SolrClient client : clients) {
+        client.close();
+      }
+    }
+    clients.clear();
   }
   
   
   @AfterClass
   public static void afterSolrCloudBridgeTestCase() throws Exception {
+    closeRestTestHarnesses();
     synchronized (newClients) {
       for (SolrClient client : newClients) {
         client.close();
       }
     }
-    
-    closeRestTestHarnesses();
+    newClients.clear();
   }
   
   protected String getBaseUrl(HttpSolrClient client) {

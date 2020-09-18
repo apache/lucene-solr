@@ -209,7 +209,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
   }
 
-  @Ignore // nocommit - hmmm..
+  @Ignore // nocommit investigate java.lang.AssertionError: Expected :1 Actual   :2
   public void testSearcherListeners() throws Exception {
     MockSearchComponent.registerSlowSearcherListener = false;
         
@@ -273,7 +273,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertTrue(connection.request("/select",params, null ).contains("<int name=\"status\">0</int>"));
   }
 
-  @Ignore // nocommit - hmmm, dunno about this test ...
   public void testDontUseColdSearcher() throws Exception {
     MockSearchComponent.registerFirstSearcherListener = false;
     MockSearchComponent.registerNewSearcherListener = false;

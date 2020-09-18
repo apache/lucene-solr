@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-@Ignore // nocommit - parallel commit/update
+@Ignore // nocommit - parallel commit/update (need to track down and harden this) // if the version matches, the val must log.error("ERROR, id={} found={} model {}", id, response, info);
 public class TestStressReorder extends TestRTGBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

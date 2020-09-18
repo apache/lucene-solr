@@ -67,7 +67,8 @@ public final class CommitTracker implements Runnable, Closeable {
 
   // note: can't use ExecutorsUtil because it doesn't have a *scheduled* ExecutorService.
   //  Not a big deal but it means we must take care of MDC logging here.
-  private final ScheduledThreadPoolExecutor scheduler = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("commitScheduler"));
+  private final ScheduledThreadPoolExecutor scheduler = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,
+      new SolrNamedThreadFactory("commitScheduler", true));
   @SuppressWarnings({"rawtypes"})
   private volatile ScheduledFuture pending;
   
@@ -114,11 +115,12 @@ public final class CommitTracker implements Runnable, Closeable {
     try {
       this.closed = true;
       try {
-        pending.cancel(true);
+        pending.cancel(false);
       } catch (NullPointerException e) {
         // okay
       }
       pending = null;
+      scheduler.shutdownNow();
       ParWork.close(scheduler);
     } finally {
       lock.unlock();

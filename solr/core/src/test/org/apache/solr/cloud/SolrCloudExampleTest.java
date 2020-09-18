@@ -34,6 +34,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -63,6 +64,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
  * use data driven functionality and managed schema features of the default configset
  * (configsets/_default).
  */
+@LuceneTestCase.Nightly
 public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -80,7 +82,6 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
 
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
-  @Ignore // nocommit flakey
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
 
     log.info("testLoadDocsIntoGettingStartedCollection initialized OK ... running test logic");

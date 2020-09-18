@@ -41,7 +41,7 @@ import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit debug
+@Ignore // nocommit something flakey (random fail) around url: Caused by: java.lang.IllegalArgumentException: Invalid URI host: null (authority: null)
 public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -131,7 +131,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
 
       JettySolrRunner downJetty = cluster.getJettySolrRunners().get(0);
       if (stopNode) {
-        cluster.stopJettySolrRunner(downJetty);
+        downJetty.stop();
       }
 
       String cname = "STARTCOLLECTION";
@@ -146,7 +146,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
 
       if (stopNode) {
         // this will start it with a new port.... does it matter?
-        cluster.startJettySolrRunner(downJetty);
+        downJetty.start();
       }
     }
 

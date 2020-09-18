@@ -23,7 +23,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
 public class DeleteLastCustomShardedReplicaTest extends SolrCloudTestCase {
 
   @BeforeClass

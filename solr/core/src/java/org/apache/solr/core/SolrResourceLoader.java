@@ -104,8 +104,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private final Set<SolrInfoBean> infoMBeans = ConcurrentHashMap.newKeySet(5000);
   private final Set<ResourceLoaderAware> waitingForResources = ConcurrentHashMap.newKeySet(5000);
 
-  private volatile boolean live;
-
   // Provide a registry so that managed resources can register themselves while the XML configuration
   // documents are being parsed ... after all are registered, they are asked by the RestManager to
   // initialize themselves. This two-step process is required because not all resources are available
@@ -619,40 +617,29 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   public <T> void addToInfoBeans(T obj) {
-    if(!live) {
-      if (obj instanceof SolrInfoBean) {
-        //TODO: Assert here?
-        infoMBeans.add((SolrInfoBean) obj);
-      }
+    if (obj instanceof SolrInfoBean) {
+      //TODO: Assert here?
+      infoMBeans.add((SolrInfoBean) obj);
     }
   }
 
   public <T> boolean addToResourceLoaderAware(T obj) {
-    if (!live) {
-      if (obj instanceof ResourceLoaderAware) {
-        assertAwareCompatibility(ResourceLoaderAware.class, obj);
-        waitingForResources.add((ResourceLoaderAware) obj);
-      }
-      return true;
-    } else {
-      return false;
+    if (obj instanceof ResourceLoaderAware) {
+      assertAwareCompatibility(ResourceLoaderAware.class, obj);
+      waitingForResources.add((ResourceLoaderAware) obj);
     }
+    return true;
   }
 
   /** the inform() callback should be invoked on the listener.
-   * If this is 'live', the callback is not called so currently this returns 'false'
    *
    */
   public <T> boolean addToCoreAware(T obj) {
-    if (!live) {
-      if (obj instanceof SolrCoreAware) {
-        assertAwareCompatibility(SolrCoreAware.class, obj);
-        waitingForCore.add((SolrCoreAware) obj);
-      }
-      return true;
-    } else {
-      return false;
+    if (obj instanceof SolrCoreAware) {
+      assertAwareCompatibility(SolrCoreAware.class, obj);
+      waitingForCore.add((SolrCoreAware) obj);
     }
+    return true;
   }
 
 
@@ -675,9 +662,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
         });
       }
     }
-
-    // this is the last method to be called in SolrCore before the latch is released.
-    live = true;
   }
 
   /**

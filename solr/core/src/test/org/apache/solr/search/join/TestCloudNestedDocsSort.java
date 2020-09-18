@@ -42,7 +42,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit - still working on dependent docs, no synchronous
+@Ignore // nocommit - investigate
 public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
   private static ArrayList<String> vals = new ArrayList<>();

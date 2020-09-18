@@ -36,7 +36,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Slow
-@Ignore // nocommit this test needs work
 public class CleanupOldIndexTest extends SolrCloudTestCase {
 
   @BeforeClass

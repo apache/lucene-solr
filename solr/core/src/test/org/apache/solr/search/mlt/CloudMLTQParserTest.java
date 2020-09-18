@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -36,7 +37,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocomit debug, seems to pass in isolation
+@LuceneTestCase.Nightly // slow test
 public class CloudMLTQParserTest extends SolrCloudTestCase {
   
   @Before

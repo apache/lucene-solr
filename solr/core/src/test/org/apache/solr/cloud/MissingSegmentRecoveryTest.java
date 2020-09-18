@@ -44,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-@Ignore // harden - do we end up having a good local index directory after trying to recover from corruption? Perhaps a race.
 public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

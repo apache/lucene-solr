@@ -35,7 +35,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit figure out how to ensure these end up the same request, there was no promise before either and bad perf tradeoff to try
 public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

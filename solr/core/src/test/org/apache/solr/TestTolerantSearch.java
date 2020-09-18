@@ -40,7 +40,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
-@Ignore // nocommit
+@Ignore // nocommit junit.framework.AssertionFailedError: Expected exception SolrException but no exception was thrown
 public class TestTolerantSearch extends SolrJettyTestBase {
   
   private static SolrClient collection1;

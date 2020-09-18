@@ -57,7 +57,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.Replica.State.DOWN;
 
-@Ignore // nocommit - unfortunately can still leak a SolrCmdDistributor - not a huge deal, but not to block it somehow
 public class DeleteReplicaTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -148,7 +147,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit: investigate
   public void deleteReplicaAndVerifyDirectoryCleanup() throws Exception {
 
     final String collectionName = "deletereplica_test";
