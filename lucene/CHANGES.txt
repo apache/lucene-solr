@@ -63,6 +63,9 @@ Improvements
   heap consumption is taken into account when IndexWriter stalls or should flush
   DWPTs. (Simon Willnauer)
 
+* LUCENE-9523: In query shapes over shape fields, skip points while traversing the
+  BKD tree when the relationship with the document is already known. (Ignacio Vera)
+
 Optimizations
 ---------------------
 
