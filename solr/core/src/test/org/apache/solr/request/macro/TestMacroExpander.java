@@ -17,9 +17,8 @@
 package org.apache.solr.request.macro;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.HashMap;
-
+import java.util.Map;
 
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
@@ -156,14 +155,18 @@ public class TestMacroExpander extends SolrTestCase {
 
   @Test
   public void testUnbalanced() { // SOLR-13181
-    Map<String, String[]> map = Collections.singletonMap("p", new String[]{
-        "preamble ${exp${bad}", // unbalanced
-        "${${b}}" // embedded
-    });
-    Map<String, String[]> expanded = MacroExpander.expand(map);
-    assertArrayEquals(new String[]{
-            "preamble ", // gone
-            "${${b}}" // left alone
-        }, expanded.get("p"));
+    final MacroExpander meSkipOnMissingParams = new MacroExpander(Collections.emptyMap());
+    final MacroExpander meFailOnMissingParams = new MacroExpander(Collections.emptyMap(), true);
+    assertEquals("${noClose", meSkipOnMissingParams.expand("${noClose"));
+    assertNull(meFailOnMissingParams.expand("${noClose"));
+
+    assertEquals("${${b}}", meSkipOnMissingParams.expand("${${b}}"));
+    assertNull(meFailOnMissingParams.expand("${${b}}"));
+
+    // Does not register as a syntax failure, although may subjectively look like it.
+    //   Consequently, the expression is replaced with nothing in default mode.
+    //   It'd be nice if there was a mode to leave un-resolved macros as-is when they don't resolve.
+    assertEquals("preamble ", meSkipOnMissingParams.expand("preamble ${exp${bad}"));
+    assertNull(meFailOnMissingParams.expand("preamble ${exp${bad}"));
   }
 }

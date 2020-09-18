@@ -135,9 +135,7 @@ public class MacroExpander {
         }
       }
       else if (idx < 0) {
-        if (sb == null) return val;
-        sb.append(val, start, val.length());
-        return sb.toString();
+        break;
       }
 
       // found unescaped "${"
@@ -146,7 +144,10 @@ public class MacroExpander {
       int rbrace = val.indexOf('}', matchedStart + macroStart.length());
       if (rbrace == -1) {
         // no matching close brace...
-        continue;
+        if (failOnMissingParams) {
+          return null;
+        }
+        break;
       }
 
       if (sb == null) {
@@ -187,13 +188,19 @@ public class MacroExpander {
         }
 
       } catch (SyntaxError syntaxError) {
+        if (failOnMissingParams) {
+          return null;
+        }
         // append the part we would have skipped
         sb.append(val, matchedStart, start);
-        continue;
       }
+    } // loop idx
 
+    if (sb == null) {
+      return val;
     }
-
+    sb.append(val, start, val.length());
+    return sb.toString();
   }
 
 
