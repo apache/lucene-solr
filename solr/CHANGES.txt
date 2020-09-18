@@ -126,6 +126,8 @@ Other Changes
 
 * SOLR-14846: Backup/Restore classes no longer take Optional method parameters and will accept nulls instead. (Mike Drob)
 
+* LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved from each query parser
+               package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
 
 Bug Fixes
 ---------------------
@@ -149,6 +151,8 @@ New Features
   set when using a custom MergePolicy (doesn't have any effect on the default MP) (Tomás Fernández Löbbe)
 
 * SOLR-13751: Add BooleanSimilarityFactory class. (Andy Webb via Christine Poerschke)
+
+* SOLR-14875: Make SolrEventListeners load from packages (noble)
 
 Improvements
 ---------------------
