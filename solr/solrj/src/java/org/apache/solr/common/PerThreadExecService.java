@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RunnableFuture;
@@ -19,7 +18,6 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SysStats;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +30,8 @@ public class PerThreadExecService extends AbstractExecutorService {
 
   private final ExecutorService service;
   private final int maxSize;
-  private final boolean noCallerRuns;
+  private final boolean noCallerRunsAllowed;
+  private final boolean noCallerRunsAvailableLimit;
   private volatile boolean terminated;
   private volatile boolean shutdown;
 
@@ -113,13 +112,14 @@ public class PerThreadExecService extends AbstractExecutorService {
   }
 
   public PerThreadExecService(ExecutorService service, int maxSize) {
-    this(service, maxSize, false);
+    this(service, maxSize, false, false);
   }
   
-  public PerThreadExecService(ExecutorService service, int maxSize, boolean noCallerRuns) {
+  public PerThreadExecService(ExecutorService service, int maxSize, boolean noCallerRunsAllowed, boolean noCallerRunsAvailableLimit) {
     assert service != null;
     assert (closeTracker = new CloseTracker()) != null;
-    this.noCallerRuns = noCallerRuns; 
+    this.noCallerRunsAllowed = noCallerRunsAllowed;
+    this.noCallerRunsAvailableLimit = noCallerRunsAvailableLimit;
     //assert ObjectReleaseTracker.track(this);
     if (maxSize == -1) {
       this.maxSize = MAX_AVAILABLE;
@@ -131,7 +131,7 @@ public class PerThreadExecService extends AbstractExecutorService {
 
   @Override
   protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
-    if (noCallerRuns) {
+    if (noCallerRunsAllowed) {
       return (RunnableFuture) new ParWork.SolrFutureTask(runnable, value);
     }
     return new FutureTask(runnable, value);
@@ -140,7 +140,7 @@ public class PerThreadExecService extends AbstractExecutorService {
 
   @Override
   protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-    if (noCallerRuns || callable instanceof ParWork.NoLimitsCallable) {
+    if (noCallerRunsAllowed || callable instanceof ParWork.NoLimitsCallable) {
       return (RunnableFuture) new ParWork.SolrFutureTask(callable);
     }
     return new FutureTask(callable);
@@ -226,19 +226,28 @@ public class PerThreadExecService extends AbstractExecutorService {
 
     if (shutdown) {
       throw new RejectedExecutionException(closeTracker.getCloseStack());
-//      runIt(runnable, false, true, true);
-//      return;
     }
     running.incrementAndGet();
     if (runnable instanceof ParWork.SolrFutureTask) {
+      if (noCallerRunsAvailableLimit) {
+        try {
+          available.acquire();
+        } catch (InterruptedException e) {
+          throw new RejectedExecutionException("Interrupted");
+        }
+      }
       try {
         service.execute(new Runnable() {
           @Override
           public void run() {
-            runIt(runnable, false, false, false);
+            runIt(runnable, noCallerRunsAvailableLimit, false);
+            if (noCallerRunsAvailableLimit) {
+              available.release();
+            }
           }
         });
       } catch (Exception e) {
+        log.error("", e);
         running.decrementAndGet();
         synchronized (awaitTerminate) {
           awaitTerminate.notifyAll();
@@ -247,26 +256,24 @@ public class PerThreadExecService extends AbstractExecutorService {
       return;
     }
 
-    if (runnable instanceof ParWork.SolrFutureTask) {
 
-    } else {
       if (!checkLoad()) {
-        runIt(runnable, false, true, false);
+        runIt(runnable, false, false);
         return;
       }
 
       if (!available.tryAcquire()) {
-        runIt(runnable, false, true, false);
+        runIt(runnable, false, false);
         return;
       }
-    }
+
 
     Runnable finalRunnable = runnable;
     try {
       service.execute(new Runnable() {
       @Override
       public void run() {
-          runIt(finalRunnable, true, false, false);
+          runIt(finalRunnable, true, false);
       }
     });
     } catch (Exception e) {
@@ -300,7 +307,7 @@ public class PerThreadExecService extends AbstractExecutorService {
 //    }
   }
 
-  private void runIt(Runnable runnable, boolean acquired, boolean callThreadRuns, boolean alreadyShutdown) {
+  private void runIt(Runnable runnable, boolean acquired, boolean alreadyShutdown) {
     try {
       runnable.run();
     } finally {

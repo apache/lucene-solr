@@ -213,7 +213,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       run.put(i, i);
     }
     OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3,
-        ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3, true));
+        ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3, true, true));
     try {
       for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 55); i++) {
         int key = random().nextInt(N);

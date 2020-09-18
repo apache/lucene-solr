@@ -172,7 +172,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   @SuppressWarnings({"unchecked"})
   private void initComponents() {
-    assert core != null;
     Object declaredComponents = initArgs.get(INIT_COMPONENTS);
     List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
     List<String> last  = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);

@@ -1048,7 +1048,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
       searcherExecutor.submit(() -> {
-        searcherReadyLatch.await(10000, TimeUnit.MILLISECONDS);
+        searcherReadyLatch.await(15000, TimeUnit.MILLISECONDS);
         return null;
       });
 
@@ -1089,9 +1089,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       registerConfListener();
 
-      resourceLoader.inform(this); // last call before the latch is released.
-      searcherReadyLatch.countDown();
-
       // register any SolrInfoMBeans SolrResourceLoader initialized
       //
       // this must happen after the latch is released, because a JMX server impl may
@@ -1100,6 +1097,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // from the core.
       resourceLoader.inform(infoRegistry);
 
+
+      resourceLoader.inform(this); // last call before the latch is released.
+      searcherReadyLatch.countDown();
 
       // seed version buckets with max from index during core initialization ... requires a searcher!
       if (!reload) {
@@ -1912,7 +1912,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
   private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
-  final ExecutorService searcherExecutor = ParWork.getExecutorService(1, true);
+  final ExecutorService searcherExecutor = ParWork.getExecutorService(1, true, true);
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
   private final Object searcherLock = new Object();  // the sync object for the searcher
