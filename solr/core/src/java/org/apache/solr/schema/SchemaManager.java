@@ -189,6 +189,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.addFieldTypes(singletonList(fieldType), false);
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -223,6 +224,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.addCopyFields(src, dests, maxChars);
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -240,6 +242,7 @@ public class SchemaManager {
               = mgr.managedIndexSchema.addFields(singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -257,6 +260,7 @@ public class SchemaManager {
               = mgr.managedIndexSchema.addDynamicFields(singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -275,6 +279,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFieldTypes(singleton(name));
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -331,6 +336,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteDynamicFields(singleton(name));
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -346,6 +352,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.replaceFieldType(name, className, op.getDataMap());
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -366,6 +373,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.replaceField(name, ft, op.getValuesExcluding(NAME, TYPE));
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
