@@ -62,7 +62,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
   private static final ArrayList<Http2SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
     
     // multi replicas should not matter...
     final int repFactor = usually() ? 1 : 2;
@@ -111,7 +111,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     for (Http2SolrClient client : CLIENTS) {
       client.close();
     }
