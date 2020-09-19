@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.facet.taxonomy;
 
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.IntsRef;
 
@@ -43,10 +42,6 @@ public class TaxonomyFacetLabels {
    */
   private final TaxonomyReader taxoReader;
 
-  /**
-   * {@code FacetsConfig} provided to the constructor
-   */
-  private final FacetsConfig config;
 
   /**
    * {@code OrdinalsReader} to decode ordinals previously indexed into the {@code BinaryDocValues} facet field
@@ -56,9 +51,8 @@ public class TaxonomyFacetLabels {
   /**
    * Sole constructor.  Do not close the provided {@link TaxonomyReader} while still using this instance!
    */
-  public TaxonomyFacetLabels(TaxonomyReader taxoReader, FacetsConfig config, String indexFieldName) throws IOException {
+  public TaxonomyFacetLabels(TaxonomyReader taxoReader, String indexFieldName) throws IOException {
     this.taxoReader = taxoReader;
-    this.config = config;
     this.indexFieldName = indexFieldName;
     this.ordsReader = new DocValuesOrdinalsReader(indexFieldName);
   }

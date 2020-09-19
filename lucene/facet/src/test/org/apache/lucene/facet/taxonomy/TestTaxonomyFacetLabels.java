@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class TestTaxonomyLabels extends FacetTestCase {
+public class TestTaxonomyFacetLabels extends FacetTestCase {
 
   private List<Document> prepareDocuments() {
     List<Document> docs = new ArrayList<>();
@@ -147,7 +147,7 @@ public class TestTaxonomyLabels extends FacetTestCase {
     FacetsCollector fc = new FacetsCollector();
     searcher.search(new MatchAllDocsQuery(), fc);
 
-    TaxonomyFacetLabels taxoLabels = new TaxonomyFacetLabels(taxoReader, config, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
+    TaxonomyFacetLabels taxoLabels = new TaxonomyFacetLabels(taxoReader, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
 
     // Check labels for all dimensions
     List<FacetLabel> facetLabels = lookupFacetLabels(taxoLabels, fc.getMatchingDocs());

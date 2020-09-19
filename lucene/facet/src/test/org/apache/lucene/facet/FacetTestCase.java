@@ -33,6 +33,7 @@ import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.OrdinalsReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyFacetLabels;
+import org.apache.lucene.facet.taxonomy.TaxonomyFacetLabels.FacetLabelReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
@@ -60,12 +61,27 @@ public abstract class FacetTestCase extends LuceneTestCase {
     return facets;
   }
 
-  public List<List<FacetLabel>> getTaxonomyFacetLabels(TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
+  /**
+   * Utility method that uses {@link FacetLabelReader} to get facet labels
+   * for each hit in {@link MatchingDocs}. The method returns {@code List<List<FacetLabel>>}
+   * where outer list has at most one entry per document and inner list has all {@link FacetLabel}
+   * entries that belong to a document.
+   *
+   * <p><b>NOTE</b>: A hit that has no facet labels will not have an entry in the outer list.
+   * The outer list, however is always non-null</p>
+   *
+   * @param taxoReader {@link TaxonomyReader} used to read taxonomy during search. This instance is expected to be open for reading.
+   * @param fc         {@link FacetsCollector} A collector with matching hits.
+   * @return {@code List<List<FacetLabel>} where outer list has at most one entry per document
+   * and inner list contain all {@link FacetLabel} entries that belong to a document.
+   * @throws IOException when a low-level IO issue occurs.
+   */
+  public List<List<FacetLabel>> getAllTaxonomyFacetLabels(TaxonomyReader taxoReader, FacetsCollector fc) throws IOException {
     List<List<FacetLabel>> actualLabels = new ArrayList<>();
-    TaxonomyFacetLabels taxoLabels = new TaxonomyFacetLabels(taxoReader, config, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
+    TaxonomyFacetLabels taxoLabels = new TaxonomyFacetLabels(taxoReader, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
 
     for (MatchingDocs m : fc.getMatchingDocs()) {
-      TaxonomyFacetLabels.FacetLabelReader facetLabelReader = taxoLabels.getFacetLabelReader(m.context);
+      FacetLabelReader facetLabelReader = taxoLabels.getFacetLabelReader(m.context);
 
       DocIdSetIterator disi = m.bits.iterator();
       while (disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -76,7 +92,9 @@ public abstract class FacetTestCase extends LuceneTestCase {
           facetLabels.add(facetLabel);
           facetLabel = facetLabelReader.nextFacetLabel(docId);
         }
-        actualLabels.add(facetLabels);
+        if (facetLabels.size() > 0) {
+          actualLabels.add(facetLabels);
+        }
       }
     }
     return actualLabels;

@@ -702,7 +702,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
               facetLabels.add(new FacetLabel("dim" + j, doc.dims[j]));
             }
           }
-
+          // facetLabels will be non-empty only if a document has one or more non-null dimensions
           if (facetLabels.size() > 0) {
             expectedLabels.add(facetLabels);
           }
@@ -724,7 +724,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
       }
 
       // Test facet labels for each matching test doc
-      List<List<FacetLabel>> actualLabels = getTaxonomyFacetLabels(tr, config, fc);
+      List<List<FacetLabel>> actualLabels = getAllTaxonomyFacetLabels(tr, fc);
       assertEquals(expectedLabels.size(), actualLabels.size());
       assertTrue(sortedFacetLabels(expectedLabels).equals(sortedFacetLabels(actualLabels)));
 
@@ -744,19 +744,13 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
   }
 
   private static List<List<FacetLabel>> sortedFacetLabels(List<List<FacetLabel>> allfacetLabels) {
+    // sort each inner list since there is no guaranteed order in which FacetLabels
+    // are expected to be retrieved for each document
     for (List<FacetLabel> facetLabels : allfacetLabels) {
       Collections.sort(facetLabels);
     }
 
     Collections.sort(allfacetLabels, (o1, o2) -> {
-      if (o1 == null) {
-        return -1;
-      }
-
-      if (o2 == null) {
-        return 1;
-      }
-
       int diff = o1.size() - o2.size();
       if (diff != 0) {
         return diff;
