@@ -76,7 +76,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private final Path instanceDir;
   private String dataDir; // gone in 9.0
 
-
+  /**
+   * this is set  by the {@link SolrCore}
+   * This could be null if the core is not yet initialized
+   */
+  SolrCore core;
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
@@ -201,6 +205,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     TokenFilterFactory.reloadTokenFilters(this.classLoader);
     TokenizerFactory.reloadTokenizers(this.classLoader);
   }
+
+  public SolrCore getCore(){
+    return core;
+  }
+
 
   private static URLClassLoader addURLsToClassLoader(final URLClassLoader oldLoader, List<URL> urls) {
     if (urls.size() == 0) {
