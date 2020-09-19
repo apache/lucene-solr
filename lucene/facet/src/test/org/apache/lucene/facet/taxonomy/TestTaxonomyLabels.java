@@ -151,7 +151,9 @@ public class TestTaxonomyLabels extends FacetTestCase {
 
     // Check labels for all dimensions
     List<FacetLabel> facetLabels = lookupFacetLabels(taxoLabels, fc.getMatchingDocs());
-    assertTrue(facetLabels.size() == 10);
+    assertEquals("Incorrect number of facet labels received", 10, facetLabels.size());
+
+    // Check labels for all dimensions
     assertTrue(facetLabels.stream()
         .filter(l -> "Author".equals(l.components[0]))
         .map(l -> l.components[1]).collect(Collectors.toSet())
@@ -163,26 +165,26 @@ public class TestTaxonomyLabels extends FacetTestCase {
         .collect(Collectors.toSet())
         .equals(Set.of("2010/10/15", "2010/10/20", "2012/1/1", "2012/1/7", "1999/5/5")));
 
-    // Check labels for specific dimension
+    // Check labels for a specific dimension
     facetLabels = lookupFacetLabels(taxoLabels, fc.getMatchingDocs(), "Publish Date");
-    assertTrue(facetLabels.size() == 5);
+    assertEquals("Incorrect number of facet labels received for 'Publish Date'", 5, facetLabels.size());
+
     assertTrue(facetLabels.stream()
-        .filter(l -> "Publish Date".equals(l.components[0]))
         .map(l -> String.join("/", l.components[1], l.components[2], l.components[3]))
         .collect(Collectors.toSet())
         .equals(Set.of("2010/10/15", "2010/10/20", "2012/1/1", "2012/1/7", "1999/5/5")));
 
     try {
       facetLabels = lookupFacetLabels(taxoLabels, fc.getMatchingDocs(), null, true);
-      fail("Assertion error was not thrown for using docIds supplied in decreasing order");
-    } catch (AssertionError ae) {
+      fail("IllegalArgumentException was not thrown for using docIds supplied in decreasing order");
+    } catch (IllegalArgumentException ae) {
       assertTrue(ae.getMessage().contains("docs out of order"));
     }
 
     try {
       facetLabels = lookupFacetLabels(taxoLabels, fc.getMatchingDocs(), "Publish Date", true);
       fail("Assertion error was not thrown for using docIds supplied in decreasing order");
-    } catch (AssertionError ae) {
+    } catch (IllegalArgumentException ae) {
       assertTrue(ae.getMessage().contains("docs out of order"));
     }
 

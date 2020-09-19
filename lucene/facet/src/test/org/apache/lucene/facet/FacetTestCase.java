@@ -25,18 +25,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.taxonomy.CachedOrdinalsReader;
 import org.apache.lucene.facet.taxonomy.DocValuesOrdinalsReader;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.OrdinalsReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyFacetCounts;
+import org.apache.lucene.facet.taxonomy.TaxonomyFacetLabels;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public abstract class FacetTestCase extends LuceneTestCase {
-  
+
   public Facets getTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector c) throws IOException {
     return getTaxonomyFacetCounts(taxoReader, config, c, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
   }
@@ -54,6 +58,28 @@ public abstract class FacetTestCase extends LuceneTestCase {
     }
 
     return facets;
+  }
+
+  public List<List<FacetLabel>> getTaxonomyFacetLabels(TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
+    List<List<FacetLabel>> actualLabels = new ArrayList<>();
+    TaxonomyFacetLabels taxoLabels = new TaxonomyFacetLabels(taxoReader, config, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
+
+    for (MatchingDocs m : fc.getMatchingDocs()) {
+      TaxonomyFacetLabels.FacetLabelReader facetLabelReader = taxoLabels.getFacetLabelReader(m.context);
+
+      DocIdSetIterator disi = m.bits.iterator();
+      while (disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+        List<FacetLabel> facetLabels = new ArrayList<>();
+        int docId = disi.docID();
+        FacetLabel facetLabel = facetLabelReader.nextFacetLabel(docId);
+        while (facetLabel != null) {
+          facetLabels.add(facetLabel);
+          facetLabel = facetLabelReader.nextFacetLabel(docId);
+        }
+        actualLabels.add(facetLabels);
+      }
+    }
+    return actualLabels;
   }
 
   protected String[] getRandomTokens(int count) {

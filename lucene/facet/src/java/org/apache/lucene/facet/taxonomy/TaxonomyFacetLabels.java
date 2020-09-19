@@ -107,13 +107,19 @@ public class TaxonomyFacetLabels {
      * first {@link FacetLabel} for that document, or {@code null} if that document has no indexed facets.  Each
      * new {@code docId} must be in strictly monotonic (increasing) order.
      *
+     * <p><b>NOTE</b>: The returned FacetLabels may not be in the same order in which they were indexed</p>
+     *
      * @param docId input docId provided in monotonic (non-decreasing) order
      * @return the first or next {@link FacetLabel}, or {@code null} if there are no more
      * @throws IOException when a low-level IO issue occurs
+     * @throws IllegalArgumentException if docId provided is less than docId supplied in an earlier invocation
      */
     public FacetLabel nextFacetLabel(int docId) throws IOException {
       if (currentDocId != docId) {
-        assert docId > currentDocId: "docs out of order!  currentDocId=" + currentDocId + " docId=" + docId;
+        if (docId < currentDocId) {
+          throw new IllegalArgumentException("docs out of order: previous docId=" + currentDocId
+              + " current docId=" + docId);
+        }
         ordinalsSegmentReader.get(docId, decodedOrds);
         currentDocId = docId;
         currentPos = decodedOrds.offset;
@@ -148,18 +154,29 @@ public class TaxonomyFacetLabels {
      * the new {@code docId} and provides the first {@link FacetLabel} for that document, or {@code null} if that document
      * has no indexed facets.  Each new {@code docId} must be in strictly monotonic (increasing) order.
      *
-     * <p><b>NOTE</b>: this method loads the {@code int[] parents} array from the taxonomy index</p>
+     * <p><b>NOTE</b>: This method loads the {@code int[] parents} array from the taxonomy index.
+     * The returned FacetLabels may not be in the same order in which they were indexed.</p>
      *
      * @param docId input docId provided in non-decreasing order
      * @return the first or next {@link FacetLabel}, or {@code null} if there are no more
      * @throws IOException if {@link TaxonomyReader} has problems getting path for an ordinal
+     * @throws IllegalArgumentException if docId provided is less than docId supplied in an earlier invocation
+     * @throws IllegalArgumentException if facetDimension is null
      */
     public FacetLabel nextFacetLabel(int docId, String facetDimension) throws IOException {
+      if (facetDimension == null) {
+        throw new IllegalArgumentException("Input facet dimension cannot be null");
+      }
       final int parentOrd = taxoReader.getOrdinal(new FacetLabel(facetDimension));
-      assert parentOrd != INVALID_ORDINAL : "Category ordinal not found for facet dimension: " + facetDimension;
+      if (parentOrd == INVALID_ORDINAL) {
+        throw new IllegalArgumentException("Category ordinal not found for facet dimension: " + facetDimension);
+      }
 
       if (currentDocId != docId) {
-        assert docId > currentDocId: "docs out of order!  currentDocId=" + currentDocId + " docId=" + docId;
+        if (docId < currentDocId) {
+          throw new IllegalArgumentException("docs out of order: previous docId=" + currentDocId
+              + " current docId=" + docId);
+        }
         ordinalsSegmentReader.get(docId, decodedOrds);
         currentPos = decodedOrds.offset;
         currentDocId = docId;
