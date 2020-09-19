@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -1580,32 +1579,19 @@ public class CoreContainer {
   }
 
   /**
-   * reloads a core
-   * refer {@link CoreContainer#reload(String, UUID)} for details
-   */
-  public void reload(String name) {
-    reload(name, null);
-  }
-  /**
    * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to
    * and processed by the old core
    *
    * @param name the name of the SolrCore to reload
-   * @param coreId The unique Id of the core {@link SolrCore#uniqueId}. If this is null, it's reloaded anyway. If the current
-   *               core has a different id, this is a no-op
    */
-  public void reload(String name, UUID coreId) {
+  public void reload(String name) {
     if (isShutDown) {
       throw new AlreadyClosedException();
     }
     SolrCore newCore = null;
     SolrCore core = solrCores.getCoreFromAnyList(name, false);
     if (core != null) {
-      if(coreId != null && core.uniqueId != coreId) {
-        //trying to reload an already unloaded core
-        return;
-      }
 
       // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
       // CoreDescriptor and we need to reload it from the disk files

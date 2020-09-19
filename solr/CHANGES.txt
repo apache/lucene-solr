@@ -140,8 +140,7 @@ Consult the lucene/CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-
-* SOLR-14151 Make schema components load from packages (noble)
+(No changes)
 
 * SOLR-14681: Introduce ability to delete .jar stored in the Package Store. (MarcusSorealheis , Mike Drob)
 
