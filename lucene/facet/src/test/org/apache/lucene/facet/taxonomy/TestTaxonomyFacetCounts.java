@@ -685,11 +685,10 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
         expectedCounts[i] = new HashMap<>();
       }
 
-      for(TestDoc doc : testDocs) {
+      for (TestDoc doc : testDocs) {
         if (doc.content.equals(searchToken)) {
           List<FacetLabel> facetLabels = new ArrayList<>();
-
-          for(int j=0;j<numDims;j++) {
+          for (int j = 0; j < numDims; j++) {
             if (doc.dims[j] != null) {
               Integer v = expectedCounts[j].get(doc.dims[j]);
               if (v == null) {
@@ -702,10 +701,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
               facetLabels.add(new FacetLabel("dim" + j, doc.dims[j]));
             }
           }
-          // facetLabels will be non-empty only if a document has one or more non-null dimensions
-          if (facetLabels.size() > 0) {
-            expectedLabels.add(facetLabels);
-          }
+          expectedLabels.add(facetLabels);
         }
       }
 
@@ -743,14 +739,14 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     IOUtils.close(tw, searcher.getIndexReader(), tr, indexDir, taxoDir);
   }
 
-  private static List<List<FacetLabel>> sortedFacetLabels(List<List<FacetLabel>> allfacetLabels) {
+  private static List<List<FacetLabel>> sortedFacetLabels(List<List<FacetLabel>> allFacetLabels) {
     // sort each inner list since there is no guaranteed order in which FacetLabels
     // are expected to be retrieved for each document
-    for (List<FacetLabel> facetLabels : allfacetLabels) {
+    for (List<FacetLabel> facetLabels : allFacetLabels) {
       Collections.sort(facetLabels);
     }
 
-    Collections.sort(allfacetLabels, (o1, o2) -> {
+    Collections.sort(allFacetLabels, (o1, o2) -> {
       int diff = o1.size() - o2.size();
       if (diff != 0) {
         return diff;
@@ -767,7 +763,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
       return 0;
     });
 
-    return allfacetLabels;
+    return allFacetLabels;
   }
 
   private static Facets getAllFacets(String indexFieldName, IndexSearcher searcher, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {

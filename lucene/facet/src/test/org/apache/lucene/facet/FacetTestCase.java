@@ -64,15 +64,13 @@ public abstract class FacetTestCase extends LuceneTestCase {
   /**
    * Utility method that uses {@link FacetLabelReader} to get facet labels
    * for each hit in {@link MatchingDocs}. The method returns {@code List<List<FacetLabel>>}
-   * where outer list has at most one entry per document and inner list has all {@link FacetLabel}
-   * entries that belong to a document.
-   *
-   * <p><b>NOTE</b>: A hit that has no facet labels will not have an entry in the outer list.
-   * The outer list, however is always non-null</p>
+   * where outer list has one entry per document and inner list has all {@link FacetLabel}
+   * entries that belong to a document. The inner list may be empty if no {@link FacetLabel}
+   * are found for a hit.
    *
    * @param taxoReader {@link TaxonomyReader} used to read taxonomy during search. This instance is expected to be open for reading.
    * @param fc         {@link FacetsCollector} A collector with matching hits.
-   * @return {@code List<List<FacetLabel>} where outer list has at most one entry per document
+   * @return {@code List<List<FacetLabel>} where outer list has one non-null entry per document
    * and inner list contain all {@link FacetLabel} entries that belong to a document.
    * @throws IOException when a low-level IO issue occurs.
    */
@@ -92,9 +90,7 @@ public abstract class FacetTestCase extends LuceneTestCase {
           facetLabels.add(facetLabel);
           facetLabel = facetLabelReader.nextFacetLabel(docId);
         }
-        if (facetLabels.size() > 0) {
-          actualLabels.add(facetLabels);
-        }
+        actualLabels.add(facetLabels);
       }
     }
     return actualLabels;
