@@ -61,7 +61,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
@@ -88,6 +87,7 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -106,46 +106,33 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static ZkConfigManager zkConfigManager;
+
   @BeforeClass
   public static void setUpClass() throws Exception {
     configureCluster(1)
             .withSecurityJson(getSecurityJson())
             .configure();
+    zkConfigManager = new ZkConfigManager(cluster.getZkClient());
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    zkConfigManager = null;
   }
 
   @Override
   public void tearDown() throws Exception {
-    deleteAllCollections();
-    deleteAllConfigsets();
+    cluster.deleteAllCollections();
+    cluster.deleteAllConfigSets();
     super.tearDown();
-  }
-
-  private void deleteAllConfigsets() throws IOException, SolrServerException, KeeperException, InterruptedException {
-    for (String configset:new ConfigSetAdminRequest.List().process(cluster.getSolrClient()).getConfigSets()) {
-      if ("_default".equals(configset)) {
-        continue;
-      }
-      try {
-        // cleanup any property before removing the configset
-        cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + "/" + configset + "/" + DEFAULT_FILENAME, -1, true);
-      } catch (KeeperException.NoNodeException nne) {}
-      Delete delete = new Delete();
-      delete.setConfigSetName(configset);
-      delete.process(cluster.getSolrClient());
-    }
-  }
-
-  private void deleteAllCollections() throws IOException, SolrServerException {
-    for (String collection:CollectionAdminRequest.listCollections(cluster.getSolrClient())) {
-      CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
-    }
   }
 
   @Test
   public void testCreateErrors() throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    cluster.uploadConfigSet(configset("configset-2"), "configSet");
+    zkConfigManager.uploadConfigDir(configset("configset-2"), "configSet");
 
     // no action
     CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
@@ -200,7 +187,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       FileUtils.write(new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
           getConfigSetProps(oldProps), StandardCharsets.UTF_8);
     }
-    cluster.uploadConfigSet(tmpConfigDir.toPath(), baseConfigSetName);
+    zkConfigManager.uploadConfigDir(tmpConfigDir.toPath(), baseConfigSetName);
   }
 
   private void verifyCreate(String baseConfigSetName, String configSetName,
@@ -648,7 +635,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     FileUtils.write(new File(tmpConfigDir, "configsetprops.json"),
         getConfigSetProps(ImmutableMap.<String, String>of("immutable", "true")), StandardCharsets.UTF_8);
-    cluster.uploadConfigSet(tmpConfigDir.toPath(), "configSet");
+    zkConfigManager.uploadConfigDir(tmpConfigDir.toPath(), "configSet");
 
     // no ConfigSet name
     DeleteNoErrorChecking delete = new DeleteNoErrorChecking();
@@ -680,7 +667,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final String configSet = "testDelete";
-    cluster.uploadConfigSet(configset("configset-2"), configSet);
+    zkConfigManager.uploadConfigDir(configset("configset-2"), configSet);
 
     SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
@@ -718,7 +705,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Set<String> configSets = new HashSet<String>();
       for (int i = 0; i < 5; ++i) {
         String configSet = "configSet" + i;
-        cluster.uploadConfigSet(configset("configset-2"), configSet);
+        zkConfigManager.uploadConfigDir(configset("configset-2"), configSet);
         configSets.add(configSet);
       }
       response = list.process(solrClient);
