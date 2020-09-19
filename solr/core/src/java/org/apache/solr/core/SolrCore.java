@@ -923,12 +923,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     final CountDownLatch latch = new CountDownLatch(1);
     try {
+      this.coreContainer = coreContainer;
+      this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
+      setName(coreDescriptor.getName());
+      
       IndexSchema schema = configSet.getIndexSchema();
-
-      CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
-      coreContainer.solrCores.addCoreDescriptor(cd);
-
-      setName(name);
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
