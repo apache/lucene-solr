@@ -136,6 +136,8 @@ Other Changes
 * SOLR-10471: Update default Zookeeper session timeout to 30s in bin/solr and bin/solr.cmd
   (Michael Braun, Markus Jelsma via Munendra S N)
 
+* SOLR-14876: Upgrade to zookeeper 3.6.2 (odidev via Erick Erickson)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
