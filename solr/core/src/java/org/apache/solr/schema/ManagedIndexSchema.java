@@ -66,10 +66,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.CreateMode;
@@ -1343,13 +1343,10 @@ public final class ManagedIndexSchema extends IndexSchema {
     TokenFilterFactory[] filters = chain.getTokenFilterFactories();
     for (TokenFilterFactory next : filters) {
       if (next instanceof ResourceLoaderAware) {
-        SolrResourceLoader.CURRENT_AWARE.set((ResourceLoaderAware) next);
         try {
           ((ResourceLoaderAware) next).inform(loader);
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        } finally {
-          SolrResourceLoader.CURRENT_AWARE.remove();
         }
       }
     }
