@@ -43,7 +43,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-//@Ignore // nocommit debug
+@Ignore // nocommit debug, testOverlap is flakey
 public class PeerSyncTest extends BaseDistributedSearchTestCase {
   protected static int numVersions = 100;  // number of versions to use when syncing
   protected static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();

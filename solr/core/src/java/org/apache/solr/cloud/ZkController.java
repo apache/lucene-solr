@@ -465,7 +465,7 @@ public class ZkController implements Closeable {
               ParWork.close(overseerElector.getContext());
             }
             overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), overseerContexts);
-            ZkController.this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getTheSharedHttpClient()), cc.getUpdateShardHandler(),
+            ZkController.this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(), cc.getUpdateShardHandler(),
                     CommonParams.CORES_HANDLER_PATH, zkStateReader, ZkController.this, cloudConfig);
             overseerElector.setup(context);
             overseerElector.joinElection(context, true);
@@ -1126,7 +1126,7 @@ public class ZkController implements Closeable {
 
         zkStateReader.createClusterStateWatchersAndUpdate();
 
-        this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getTheSharedHttpClient()), cc.getUpdateShardHandler(),
+        this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(), cc.getUpdateShardHandler(),
                 CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
         this.overseerRunningMap = Overseer.getRunningMap(zkClient);
         this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);

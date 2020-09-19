@@ -42,7 +42,6 @@ import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
-import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.apache.solr.util.stats.MetricUtils;
@@ -67,7 +66,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final InstrumentedHttpRequestExecutor httpRequestExecutor;
 
-  private final InstrumentedHttpListenerFactory updateHttpListenerFactory;
+  //private final InstrumentedHttpListenerFactory updateHttpListenerFactory;
 
 
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
@@ -96,7 +95,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     log.debug("Created default UpdateShardHandler HTTP client with params: {}", clientParams);
 
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
-    updateHttpListenerFactory = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
+    //updateHttpListenerFactory = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
 
     defaultClient = HttpClientUtil.createClient(clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
@@ -108,7 +107,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     }
     updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().build();
     updateOnlyClient.enableCloseLock();
-    updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
+   // updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
     Set<String> queryParams = new HashSet<>(2);
     queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
     queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
@@ -138,19 +137,19 @@ public class UpdateShardHandler implements SolrInfoBean {
     return metricNameStrategy;
   }
 
-  private InstrumentedHttpListenerFactory.NameStrategy getNameStrategy(UpdateShardHandlerConfig cfg) {
-    InstrumentedHttpListenerFactory.NameStrategy nameStrategy =
-        InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
-
-    if (cfg != null)  {
-      nameStrategy = InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
-      if (nameStrategy == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unknown metricNameStrategy: " + cfg.getMetricNameStrategy() + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
-      }
-    }
-    return nameStrategy;
-  }
+//  private InstrumentedHttpListenerFactory.NameStrategy getNameStrategy(UpdateShardHandlerConfig cfg) {
+//    InstrumentedHttpListenerFactory.NameStrategy nameStrategy =
+//        InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
+//
+//    if (cfg != null)  {
+//      nameStrategy = InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
+//      if (nameStrategy == null) {
+//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+//            "Unknown metricNameStrategy: " + cfg.getMetricNameStrategy() + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+//      }
+//    }
+//    return nameStrategy;
+//  }
 
   @Override
   public String getName() {
@@ -161,7 +160,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    updateHttpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
+    //.initializeMetrics(solrMetricsContext, expandedScope);
     defaultConnectionManager.initializeMetrics(solrMetricsContext, expandedScope);
     recoveryExecutor = MetricUtils.instrumentedExecutorService(recoveryExecutor, this, solrMetricsContext.getMetricRegistry(),
             SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));

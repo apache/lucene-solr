@@ -188,7 +188,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new IllegalStateException("Did not get enough positions to cover new replicas");
     }
 
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     ZkStateReader zkStateReader = ocmh.zkStateReader;
 
     final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);

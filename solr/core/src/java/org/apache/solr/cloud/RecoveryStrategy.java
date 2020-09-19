@@ -39,6 +39,8 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -129,7 +131,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private volatile String coreName;
   private final AtomicInteger retries = new AtomicInteger(0);
   private boolean recoveringAfterStartup;
-  private volatile Http2SolrClient.Abortable prevSendPreRecoveryHttpUriRequest;
+  private volatile Cancellable prevSendPreRecoveryHttpUriRequest;
   private volatile Replica.Type replicaType;
   private volatile CoreDescriptor coreDescriptor;
 
@@ -200,7 +202,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       try (ParWork closer = new ParWork(this, true)) {
         closer.collect("prevSendPreRecoveryHttpUriRequestAbort", () -> {
           try {
-            prevSendPreRecoveryHttpUriRequest.abort();
+            prevSendPreRecoveryHttpUriRequest.cancel();
           } catch (NullPointerException e) {
             // expected
           }
@@ -653,7 +655,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             .getSlice(cloudDesc.getShardId());
 
         try {
-          prevSendPreRecoveryHttpUriRequest.abort();
+          prevSendPreRecoveryHttpUriRequest.cancel();
         } catch (NullPointerException e) {
           // okay
         }
@@ -997,21 +999,21 @@ public class RecoveryStrategy implements Runnable, Closeable {
         getTheSharedHttpClient()).idleTimeout(readTimeout).connectionTimeout(1000).markInternalRequest().build()) {
       prepCmd.setBasePath(leaderBaseUrl);
       log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
-      NamedList<Object> result = client.request(prepCmd, null, new PrepRecoveryOnComplete(), true);
-      prevSendPreRecoveryHttpUriRequest = (Http2SolrClient.Abortable) result.get("abortable");
+      Cancellable result = client.asyncRequest(prepCmd, null, new NamedListAsyncListener());
+      prevSendPreRecoveryHttpUriRequest = result;
 
-      ((Runnable) result.get("wait")).run();
+      client.waitForOutstandingRequests();
     }
   }
 
-  private static class PrepRecoveryOnComplete implements Http2SolrClient.OnComplete {
+  private static class NamedListAsyncListener implements AsyncListener<NamedList<Object>> {
     @Override
-    public void onSuccess(NamedList<Object> result) {
+    public void onSuccess(NamedList<Object> entries) {
 
     }
 
     @Override
-    public void onFailure(Throwable e) {
+    public void onFailure(Throwable throwable) {
 
     }
   }

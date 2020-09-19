@@ -339,7 +339,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     sreq.shards = new String[] {baseUrl};
     sreq.actualShards = sreq.shards;
     sreq.params = params;
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     shardHandler.submit(sreq, baseUrl, sreq.params);
   }
 
@@ -719,7 +719,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
     String collectionName = message.getStr(NAME);
     @SuppressWarnings("deprecation")
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection coll = clusterState.getCollectionOrNull(collectionName);
@@ -779,7 +779,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   private static NamedList<Object> waitForCoreAdminAsyncCallToComplete(String nodeName, String requestId, String adminPath, ZkStateReader zkStateReader, HttpShardHandlerFactory shardHandlerFactory, Overseer overseer) throws KeeperException, InterruptedException {
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient());
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REQUESTSTATUS.toString());
     params.set(CoreAdminParams.REQUESTID, requestId);

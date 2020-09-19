@@ -31,8 +31,8 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -77,7 +77,7 @@ public class PeerSync implements SolrMetricProducer {
 
   private UpdateHandler uhandler;
   private UpdateLog ulog;
-  private HttpShardHandlerFactory shardHandlerFactory;
+  private ShardHandlerFactory shardHandlerFactory;
   private ShardHandler shardHandler;
   private List<SyncShardRequest> requests = new ArrayList<>();
 
@@ -117,7 +117,8 @@ public class PeerSync implements SolrMetricProducer {
     
     uhandler = core.getUpdateHandler();
     ulog = uhandler.getUpdateLog();
-    shardHandlerFactory = (HttpShardHandlerFactory) core.getCoreContainer().getShardHandlerFactory();
+
+    shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
     shardHandler = shardHandlerFactory.getShardHandler();
     this.updater = new Updater(msg(), core);
 

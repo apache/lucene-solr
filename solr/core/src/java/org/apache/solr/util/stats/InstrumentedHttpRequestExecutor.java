@@ -17,13 +17,14 @@
 
 package org.apache.solr.util.stats;
 
+import static org.apache.solr.metrics.SolrMetricManager.mkName;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import com.codahale.metrics.Timer;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -34,9 +35,9 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetricsContext;
 
-import static org.apache.solr.metrics.SolrMetricManager.mkName;
+import com.codahale.metrics.Timer;
+import org.apache.solr.metrics.SolrMetricsContext;
 
 /**
  * Sub-class of HttpRequestExecutor which tracks metrics interesting to solr

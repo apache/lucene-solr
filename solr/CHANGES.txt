@@ -110,6 +110,11 @@ Other Changes
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
+Optimizations
+---------------------
+
+* SOLR-14354: HttpShardHandler send requests in async (Cao Manh Dat).
+
 Bug Fixes
 ---------------------
 * SOLR-14751: Zookeeper Admin screen not working for old ZK versions (janhoy)

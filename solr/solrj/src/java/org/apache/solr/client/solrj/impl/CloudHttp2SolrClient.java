@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -127,13 +128,8 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
       lbRequest.request.setBasePath(url);
       try {
         MDC.put("CloudSolrClient.url", url);
-        try {
-          myClient.request(lbRequest.request, null, new UpdateOnComplete(tsResponses, url, tsExceptions));
-        } catch (IOException e) {
-          tsExceptions.put(url, e);
-        } catch (SolrServerException e) {
-          tsExceptions.put(url, e);
-        }
+
+        myClient.asyncRequest(lbRequest.request, null, new UpdateOnComplete(tsResponses, url, tsExceptions));
 
       } finally {
         MDC.remove("CloudSolrClient.url");
@@ -141,6 +137,7 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
     }
 
     // wait until the async requests we fired off above are done
+    // nocommit we are going to allowing sharing this client, we cannot use the built in async support
     myClient.waitForOutstandingRequests();
 
     exceptions.addAll(tsExceptions);
@@ -309,7 +306,7 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
 
   }
 
-  private static class UpdateOnComplete implements Http2SolrClient.OnComplete {
+  private static class UpdateOnComplete implements AsyncListener<NamedList<Object>> {
 
     private final Map<String,NamedList> tsResponses;
     private final String url;

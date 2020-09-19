@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -232,10 +233,9 @@ public class SolrCmdDistributor implements Closeable {
       return;
     }
 
-
     try {
-      solrClient.request(req.uReq, null, new Http2SolrClient.OnComplete() {
 
+      solrClient.asyncRequest(req.uReq, null, new AsyncListener<NamedList<Object>>() {
         @Override
         public void onSuccess(NamedList result) {
           if (log.isTraceEnabled()) log.trace("Success for distrib update {}", result);
