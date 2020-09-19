@@ -26,6 +26,7 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -34,6 +35,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -225,7 +227,9 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
         String klas = (String) v;
         PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
         if (parsedClassName.pkg != null) {
-          MapWriter mw = req.getCore().getSchemaPluginsLoader().getPackageVersion(parsedClassName);
+          SolrClassLoader solrClassLoader = req.getCore().getLatestSchema().getSolrClassLoader();
+          MapWriter mw = solrClassLoader instanceof PackageListeningClassLoader ?
+              ((PackageListeningClassLoader) solrClassLoader).getPackageVersion(parsedClassName) : null;
           if (mw != null) nl.add("_packageinfo_", mw);
         }
       }
