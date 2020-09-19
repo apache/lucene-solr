@@ -909,7 +909,7 @@ public class IndexFetcher {
     final CountDownLatch latch = new CountDownLatch(1);
     new Thread(() -> {
       try {
-        solrCore.getCoreContainer().reload(solrCore.getName(), solrCore.uniqueId);
+        solrCore.getCoreContainer().reload(solrCore.getName());
       } catch (Exception e) {
         log.error("Could not reload core ", e);
       } finally {
