@@ -57,7 +57,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -112,9 +111,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
-import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.pkg.*;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -280,8 +277,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
 
   private ExecutorService coreAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
-
-  public  final SolrCore.Provider coreProvider;
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
@@ -637,26 +632,19 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
 
   private void initListeners() {
+    final Class<SolrEventListener> clazz = SolrEventListener.class;
+    final String label = "Event Listener";
     for (PluginInfo info : solrConfig.getPluginInfos(SolrEventListener.class.getName())) {
       final String event = info.attributes.get("event");
       if ("firstSearcher".equals(event)) {
-        SolrEventListener obj = createEventListener(info);
+        SolrEventListener obj = createInitInstance(info, clazz, label, null);
         firstSearcherListeners.add(obj);
         log.debug("[{}] Added SolrEventListener for firstSearcher: [{}]", logid, obj);
       } else if ("newSearcher".equals(event)) {
-        SolrEventListener obj = createEventListener(info);
+        SolrEventListener obj = createInitInstance(info, clazz, label, null);
         newSearcherListeners.add(obj);
         log.debug("[{}] Added SolrEventListener for newSearcher: [{}]", logid, obj);
       }
-    }
-  }
-
-  public SolrEventListener createEventListener(PluginInfo info) {
-    final String label = "Event Listener";
-    if(info.pkgName == null) {
-      return createInitInstance(info, SolrEventListener.class, label, null);
-    } else {
-      return new DelegatingEventListener(new PackagePluginHolder<>(info, this,   SolrConfig.classVsSolrPluginInfo.get(SolrEventListener.class.getName())));
     }
   }
 
@@ -951,7 +939,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.configSet = configSet;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       setName(coreDescriptor.getName());
-      coreProvider = new Provider(coreContainer, getName(), uniqueId);
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
@@ -3257,29 +3244,5 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public void runAsync(Runnable r) {
     coreAsyncTaskExecutor.submit(r);
-  }
-
-  /**Provides the core instance if the core instance is still alive.
-   * This helps to not hold on to a live {@link SolrCore} instance
-   * even after it's unloaded
-   *
-   */
-  public static class Provider {
-    private final CoreContainer coreContainer;
-    private final String coreName;
-    private final UUID coreId;
-
-    public Provider(CoreContainer coreContainer, String coreName, UUID coreId) {
-      this.coreContainer = coreContainer;
-      this.coreName = coreName;
-      this.coreId = coreId;
-    }
-
-    public void withCore(Consumer<SolrCore> r) {
-      try(SolrCore core = coreContainer.getCore(coreName, coreId)) {
-        if(core == null) return;
-        r.accept(core);
-      }
-    }
   }
 }

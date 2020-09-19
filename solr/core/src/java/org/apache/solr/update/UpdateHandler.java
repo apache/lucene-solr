@@ -57,14 +57,16 @@ public abstract class UpdateHandler implements SolrInfoBean {
   protected SolrMetricsContext solrMetricsContext;
 
   private void parseEventListeners() {
+    final Class<SolrEventListener> clazz = SolrEventListener.class;
+    final String label = "Event Listener";
     for (PluginInfo info : core.getSolrConfig().getPluginInfos(SolrEventListener.class.getName())) {
       String event = info.attributes.get("event");
       if ("postCommit".equals(event)) {
-        SolrEventListener obj = core.createEventListener(info);
+        SolrEventListener obj = core.createInitInstance(info,clazz,label,null);
         commitCallbacks.add(obj);
         log.info("added SolrEventListener for postCommit: {}", obj);
       } else if ("postOptimize".equals(event)) {
-        SolrEventListener obj = core.createEventListener(info);
+        SolrEventListener obj = core.createInitInstance(info,clazz,label,null);
         optimizeCallbacks.add(obj);
         log.info("added SolrEventListener for postOptimize: {}", obj);
       }
