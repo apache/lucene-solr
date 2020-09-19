@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.codecs.Codec;
@@ -60,7 +59,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader {
+public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String base = "org.apache.solr";
@@ -75,8 +74,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
-
-
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());

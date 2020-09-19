@@ -1306,7 +1306,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     Map<String,FieldType> newFieldTypes = new HashMap<>();
     List<SchemaAware> schemaAwareList = new ArrayList<>();
     FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, newFieldTypes, schemaAwareList);
-    typeLoader.loadSingle(solrClassLoader, FieldTypeXmlAdapter.toNode(options));
+    typeLoader.loadSingle(loader, FieldTypeXmlAdapter.toNode(options));
     FieldType ft = newFieldTypes.get(typeName);
     if (!schemaAwareList.isEmpty())
       schemaAware.addAll(schemaAwareList);

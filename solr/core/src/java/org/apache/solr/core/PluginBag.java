@@ -347,10 +347,6 @@ public class PluginBag<T> implements AutoCloseable {
     protected final PluginInfo pluginInfo;
     boolean registerAPI = false;
 
-    public PluginHolder(T inst, SolrConfig.SolrPluginInfo info) {
-      this.inst = inst;
-      pluginInfo = new PluginInfo(info.tag, Collections.singletonMap("class", inst.getClass().getName()));
-    }
     public PluginHolder(PluginInfo info) {
       this.pluginInfo = info;
     }
@@ -399,10 +395,6 @@ public class PluginBag<T> implements AutoCloseable {
 
     public PluginInfo getPluginInfo() {
       return pluginInfo;
-    }
-
-    public String toString() {
-      return String.valueOf(inst);
     }
   }
 

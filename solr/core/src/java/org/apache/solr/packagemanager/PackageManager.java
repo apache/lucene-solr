@@ -55,7 +55,7 @@ import org.apache.solr.filestore.DistribPackageStore;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -334,7 +334,7 @@ public class PackageManager implements Closeable {
       // Set the package version in the collection's parameters
       try {
         SolrCLI.postJsonToSolr(solrClient, PackageUtils.getCollectionParamsPath(collection),
-            "{set:{PKG_VERSIONS:{" + packageInstance.name+": '" + (pegToLatest? PackageLoader.LATEST: packageInstance.version)+"'}}}");
+            "{set:{PKG_VERSIONS:{" + packageInstance.name+": '" + (pegToLatest? PackagePluginHolder.LATEST: packageInstance.version)+"'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
@@ -380,7 +380,7 @@ public class PackageManager implements Closeable {
       // Set the package version in the collection's parameters
       try {
         SolrCLI.postJsonToSolr(solrClient, PackageUtils.getCollectionParamsPath(collection),
-            "{update:{PKG_VERSIONS:{'" + packageInstance.name + "' : '" + (pegToLatest? PackageLoader.LATEST: packageInstance.version) + "'}}}");
+            "{update:{PKG_VERSIONS:{'" + packageInstance.name + "' : '" + (pegToLatest? PackagePluginHolder.LATEST: packageInstance.version) + "'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
@@ -634,7 +634,7 @@ public class PackageManager implements Closeable {
         }
       }
     }
-    if (version == null || version.equalsIgnoreCase(PackageUtils.LATEST) || version.equalsIgnoreCase(PackageLoader.LATEST)) {
+    if (version == null || version.equalsIgnoreCase(PackageUtils.LATEST) || version.equalsIgnoreCase(PackagePluginHolder.LATEST)) {
       return latest;
     } else return null;
   }
@@ -755,7 +755,7 @@ public class PackageManager implements Closeable {
 
   /**
    * Given a package, return a map of collections where this package is
-   * installed to the installed version (which can be {@link PackageLoader#LATEST})
+   * installed to the installed version (which can be {@link PackagePluginHolder#LATEST})
    */
   public Map<String, String> getDeployedCollections(String packageName) {
     List<String> allCollections;
