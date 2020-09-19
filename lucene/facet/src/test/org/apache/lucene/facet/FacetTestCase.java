@@ -100,7 +100,7 @@ public abstract class FacetTestCase extends LuceneTestCase {
    */
   List<FacetLabel> allFacetLabels(int docId, String dimension, FacetLabelReader facetLabelReader) throws IOException {
     List<FacetLabel> facetLabels = new ArrayList<>();
-    FacetLabel facetLabel = null;
+    FacetLabel facetLabel;
     if (dimension != null) {
       for (facetLabel = facetLabelReader.nextFacetLabel(docId, dimension); facetLabel != null; ){
         facetLabels.add(facetLabel);
