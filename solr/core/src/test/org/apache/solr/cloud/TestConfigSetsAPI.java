@@ -64,12 +64,14 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
+import org.apache.solr.cloud.api.collections.DeleteCollectionCmd;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -87,13 +89,16 @@ import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
+import org.apache.solr.security.MockAuthorizationPlugin;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
@@ -110,15 +115,13 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private MiniSolrCloudCluster solrCluster;
-  private Path zkDir;
+  private static MiniSolrCloudCluster solrCluster;
+  private static Path zkDir;
 
-  private ZkTestServer zookeeper;
+  private static ZkTestServer zookeeper;
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void setUpClass() throws Exception {
     zkDir = createTempDir("TestConfigSetsAPI");
     zookeeper = new ZkTestServer(zkDir);
     zookeeper.run();
@@ -126,9 +129,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     solrCluster = new MiniSolrCloudCluster(1, createTempDir(), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML, buildJettyConfig("/solr"), zookeeper);
   }
 
-  @Override
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDownClass() throws Exception {
     if (null != solrCluster) {
       solrCluster.shutdown();
       solrCluster = null;
@@ -141,7 +143,34 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       FileUtils.deleteDirectory(zkDir.toFile());
       zkDir = null;
     }
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    deleteAllCollections();
+    deleteAllConfigsets();
     super.tearDown();
+  }
+
+  private void deleteAllConfigsets() throws IOException, SolrServerException, KeeperException, InterruptedException {
+    for (String configset:new ConfigSetAdminRequest.List().process(solrCluster.getSolrClient()).getConfigSets()) {
+      if ("_default".equals(configset)) {
+        continue;
+      }
+      try {
+        // cleanup any property before removing the configset
+        solrCluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + "/" + configset + "/" + DEFAULT_FILENAME, -1, true);
+      } catch (KeeperException.NoNodeException nne) {}
+      Delete delete = new Delete();
+      delete.setConfigSetName(configset);
+      delete.process(solrCluster.getSolrClient());
+    }
+  }
+
+  private void deleteAllCollections() throws IOException, SolrServerException {
+    for (String collection:CollectionAdminRequest.listCollections(solrCluster.getSolrClient())) {
+      CollectionAdminRequest.deleteCollection(collection).process(solrCluster.getSolrClient());
+    }
   }
 
   @Test
@@ -444,7 +473,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     Thread.sleep(1000); // TODO: Without a delay, the test fails. Some problem with Authc/Authz framework?
   }
 
-  private void putSecurityFile() throws KeeperException, InterruptedException {
+  private static void putSecurityFile() throws KeeperException, InterruptedException {
     String securityJson = "{\n" +
             "  'authentication':{\n" +
             "    'class':'" + MockAuthenticationPlugin.class.getName() + "'},\n" +
@@ -694,7 +723,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   public void testDelete() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    final String configSet = "configSet";
+    final String configSet = "testDelete";
     solrCluster.uploadConfigSet(configset("configset-2"), configSet);
 
     SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
