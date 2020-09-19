@@ -22,7 +22,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.HashSet; 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -696,10 +696,9 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
               } else {
                 expectedCounts[j].put(doc.dims[j], v.intValue() + 1);
               }
-
               // Add document facet labels
               facetLabels.add(new FacetLabel("dim" + j, doc.dims[j]));
-            }
+             }
           }
           expectedLabels.add(facetLabels);
         }
@@ -719,11 +718,6 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
         }
       }
 
-      // Test facet labels for each matching test doc
-      List<List<FacetLabel>> actualLabels = getAllTaxonomyFacetLabels(tr, fc);
-      assertEquals(expectedLabels.size(), actualLabels.size());
-      assertTrue(sortedFacetLabels(expectedLabels).equals(sortedFacetLabels(actualLabels)));
-
       // Sort by highest value, tie break by value:
       sortFacetResults(expected);
 
@@ -733,6 +727,18 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
       sortTies(actual);
 
       assertEquals(expected, actual);
+
+      // Test facet labels for each matching test doc
+      List<List<FacetLabel>> actualLabels = getAllTaxonomyFacetLabels(null, tr, fc);
+      assertEquals(expectedLabels.size(), actualLabels.size());
+      assertTrue(sortedFacetLabels(expectedLabels).equals(sortedFacetLabels(actualLabels)));
+
+      // Test facet labels for each matching test doc, given a specific dimension chosen randomly
+      final String dimension = "dim" + random().nextInt(numDims);
+      expectedLabels.forEach(list -> list.removeIf(f -> f.components[0].equals(dimension) == false));
+
+      actualLabels = getAllTaxonomyFacetLabels(dimension, tr, fc);
+      assertTrue(sortedFacetLabels(expectedLabels).equals(sortedFacetLabels(actualLabels)));
     }
 
     w.close();
@@ -740,8 +746,8 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
   }
 
   private static List<List<FacetLabel>> sortedFacetLabels(List<List<FacetLabel>> allFacetLabels) {
-    // sort each inner list since there is no guaranteed order in which FacetLabels
-    // are expected to be retrieved for each document
+    // Sort each inner list since there is no guaranteed order in which
+    // FacetLabels are expected to be retrieved for each document.
     for (List<FacetLabel> facetLabels : allFacetLabels) {
       Collections.sort(facetLabels);
     }
