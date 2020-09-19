@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkController;
@@ -31,7 +30,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -61,9 +59,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   public SolrResourceLoader getResourceLoader() { return loader; }
   private String resourceName;
   private ManagedIndexSchema schema;
-  private CoreContainer coreContainer;
-  private String coreName;
-  private UUID coreId;
+  private SolrCore core;
   private ZkIndexSchemaReader zkIndexSchemaReader;
 
 
@@ -403,9 +399,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   @Override
   public void inform(SolrCore core) {
-    this.coreName = core.getName();
-    this.coreId = core.uniqueId;
-    this.coreContainer =  core.getCoreContainer();
+    this.core = core;
     if (loader instanceof ZkSolrResourceLoader) {
       this.zkIndexSchemaReader = new ZkIndexSchemaReader(this, core);
       ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
@@ -433,10 +427,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   public void setSchema(ManagedIndexSchema schema) {
     this.schema = schema;
-    try ( SolrCore core = coreContainer.getCore(coreName, coreId)) {
-      if(core == null) return;
-      core.setLatestSchema(schema);
-    }
+    core.setLatestSchema(schema);
   }
   
   public boolean isMutable() {

@@ -33,9 +33,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -231,10 +229,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
         String klas = (String) v;
         PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
         if (parsedClassName.pkg != null) {
-          SolrClassLoader cl = req.getCore().getLatestSchema().getSolrClassLoader();
-          MapWriter mw = cl instanceof PackageListeningClassLoader?
-              ((PackageListeningClassLoader) cl).getPackageVersion(parsedClassName):
-              null;
+          MapWriter mw = req.getCore().getSchemaPluginsLoader().getPackageVersion(parsedClassName);
           if (mw != null) nl.add("_packageinfo_", mw);
         }
       }
