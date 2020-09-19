@@ -76,6 +76,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   protected URLClassLoader classLoader;
   private final Path instanceDir;
   private String dataDir; // gone in 9.0
+  SolrConfig solrConfig;
 
 
 
@@ -788,6 +789,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       builder.append( "[" ).append( v.getName() ).append( "] ") ;
     }
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, builder.toString() );
+  }
+  public CoreContainer getCoreContainer() {
+    return null;
+  }
+
+  public SolrConfig getSolrConfig() {
+    return solrConfig;
   }
 
   @Override
