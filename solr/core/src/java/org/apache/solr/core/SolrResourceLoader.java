@@ -46,6 +46,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
@@ -61,7 +62,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader {
+public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassLoader, SolrCoreAware  {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String base = "org.apache.solr";
@@ -76,6 +77,30 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
+  private String coreName;
+  private UUID coreId;
+  private SolrConfig config;
+  private CoreContainer coreContainer;
+  private PackageListeningClassLoader schemaLoader ;
+
+  private PackageListeningClassLoader createSchemaLoader() {
+    CoreContainer cc = getCoreContainer();
+    if (cc == null) {
+      //corecontainer not available . can't load from packages
+      return null;
+    }
+    return new PackageListeningClassLoader(cc, this, pkg -> {
+      if (getSolrConfig() == null) return null;
+      return getSolrConfig().maxPackageVersion(pkg);
+    }, () -> {
+      if(getCoreContainer() == null || config == null || coreName == null || coreId==null) return;
+      try (SolrCore c = getCoreContainer().getCore(coreName, coreId)) {
+        if (c != null) {
+          c.fetchLatestSchema();
+        }
+      }
+    });
+  }
 
 
 
@@ -99,6 +124,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       managedResourceRegistry = new RestManager.Registry();
     }
     return managedResourceRegistry;
+  }
+
+  public SolrClassLoader getSchemaLoader() {
+    if (schemaLoader == null) {
+      schemaLoader = createSchemaLoader();
+    }
+    return schemaLoader;
   }
 
   public SolrResourceLoader() {
@@ -607,6 +639,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * Tell all {@link SolrCoreAware} instances about the SolrCore
    */
   public void inform(SolrCore core) {
+    this.coreName = core.getName();
+    this.config = core.getSolrConfig();
+    this.coreId = core.uniqueId;
+    this.coreContainer = core.getCoreContainer();
+    if(getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
+
     // make a copy to avoid potential deadlock of a callback calling newInstance and trying to
     // add something to waitingForCore.
     SolrCoreAware[] arr;
@@ -745,6 +783,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, builder.toString());
   }
 
+  public CoreContainer getCoreContainer(){
+    return coreContainer;
+  }
+
+  public SolrConfig getSolrConfig() {
+    return config;
+
+  }
   @Override
   public void close() throws IOException {
     IOUtils.close(classLoader);
