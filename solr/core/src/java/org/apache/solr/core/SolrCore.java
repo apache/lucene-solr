@@ -221,12 +221,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final RecoveryStrategy.Builder recoveryStrategyBuilder;
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
-<<<<<<< HEAD
-  //singleton listener for all packages used in schema
-  private final PackageListeningClassLoader schemaPluginsLoader;
-=======
   private final MemClassLoader memClassLoader;
->>>>>>> parent of 03d658a7bc3... SOLR-14151 Make schema components load from packages (#1669)
 
   private final CircuitBreakerManager circuitBreakerManager;
 
