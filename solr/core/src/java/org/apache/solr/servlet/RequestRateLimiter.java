@@ -17,7 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterConfig;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -92,36 +91,6 @@ public class RequestRateLimiter {
 
   public RateLimiterConfig getRateLimiterConfig() {
     return rateLimiterConfig;
-  }
-
-  static long getParamAndParseLong(FilterConfig config, String parameterName, long defaultValue) {
-    String tempBuffer = config.getInitParameter(parameterName);
-
-    if (tempBuffer != null) {
-      return Long.parseLong(tempBuffer);
-    }
-
-    return defaultValue;
-  }
-
-  static int getParamAndParseInt(FilterConfig config, String parameterName, int defaultValue) {
-    String tempBuffer = config.getInitParameter(parameterName);
-
-    if (tempBuffer != null) {
-      return Integer.parseInt(tempBuffer);
-    }
-
-    return defaultValue;
-  }
-
-  static boolean getParamAndParseBoolean(FilterConfig config, String parameterName, boolean defaultValue) {
-    String tempBuffer = config.getInitParameter(parameterName);
-
-    if (tempBuffer != null) {
-      return Boolean.parseBoolean(tempBuffer);
-    }
-
-    return defaultValue;
   }
 
   // Represents the metadata for a slot

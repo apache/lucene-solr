@@ -17,7 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterConfig;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;

@@ -17,7 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterConfig;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -27,8 +26,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 import static org.apache.solr.servlet.RateLimiterConfig.RL_CONFIG_KEY;
 
 /** Implementation of RequestRateLimiter specific to query request types. Most of the actual work is delegated
@@ -40,6 +37,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
     super(constructQueryRateLimiterConfig(solrZkClient));
   }
 
+  @SuppressWarnings({"unchecked"})
   public void processConfigChange(Map<String, Object> properties) {
     RateLimiterConfig rateLimiterConfig = getRateLimiterConfig();
     Map<String, Object> propertiesMap = (Map<String, Object>) properties.get(RL_CONFIG_KEY);
@@ -48,6 +46,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
   }
 
   // To be used in initialization
+  @SuppressWarnings({"unchecked"})
   private static RateLimiterConfig constructQueryRateLimiterConfig(SolrZkClient zkClient) {
     try {
       Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
