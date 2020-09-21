@@ -183,7 +183,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     } else {
       filesToDelete = Collections.emptySet();
     }
-    createBaseZnode(zkClient, overwritesExisting, getTrusted(req), cleanup, configPathInZk);
+    createBaseZnode(zkClient, overwritesExisting, isTrusted(req), cleanup, configPathInZk);
 
     ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
     ZipEntry zipEntry = null;
@@ -267,7 +267,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
   }
 
-  boolean getTrusted(SolrQueryRequest req) {
+  boolean isTrusted(SolrQueryRequest req) {
     AuthenticationPlugin authcPlugin = coreContainer.getAuthenticationPlugin();
     if (log.isInfoEnabled()) {
       log.info("Trying to upload a configset. authcPlugin: {}, user principal: {}",
