@@ -131,6 +131,8 @@ Other Changes
 * LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved from each query parser
                package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
 
+* SOLR-9607: Remove /terms configuration from solrconfig.xml, as implicit definition is up-to-par now (Alexandre Rafalovitch)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -180,6 +182,12 @@ Improvements
 * SOLR-14722: Track timeAllowed from earlier in the request lifecycle. (David Smiley)
 
 * SOLR-13438: On deleting a collection, its config set will also be deleted iff it has been auto-created, and not used by any other collection (Anderson Dorow)
+
+* SOLR-14802: geodist: Support most (all?) spatial field types as an argument like LLPSF, SRPTFT, and others.
+  (Tom Edge, Craig Wrigglesworth)
+
+* SOLR-14859: DateRangeField now throws errors when invalid field/fieldType options specified; no longer silently accepts incompatible option values
+  (Jason Gerlowski, Chris Hostetter, Munendra S N)
 
 Optimizations
 ---------------------

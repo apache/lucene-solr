@@ -131,7 +131,11 @@
       "useParams":"_TERMS",
       "components": [
         "terms"
-      ]
+      ],
+      "defaults": {
+        "terms": true,
+        "distrib": false
+      }
     },
     "/analysis/document": {
       "class": "solr.DocumentAnalysisRequestHandler",
