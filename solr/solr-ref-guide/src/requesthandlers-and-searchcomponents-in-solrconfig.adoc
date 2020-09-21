@@ -123,8 +123,9 @@ There are several default search components that work with all SearchHandlers wi
 |mlt |`solr.MoreLikeThisComponent` |Described in the section <<morelikethis.adoc#morelikethis,MoreLikeThis>>.
 |highlight |`solr.HighlightComponent` |Described in the section <<highlighting.adoc#highlighting,Highlighting>>.
 |stats |`solr.StatsComponent` |Described in the section <<the-stats-component.adoc#the-stats-component,The Stats Component>>.
-|debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
 |expand |`solr.ExpandComponent` |Described in the section <<collapse-and-expand-results.adoc#collapse-and-expand-results,Collapse and Expand Results>>.
+|terms |`solr.TermsComponent` |Described in the section <<the-terms-component.adoc#the-terms-component,The Terms Component>>.
+|debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
 |===
 
 If you register a new search component with one of these default names, the newly defined component will be used instead of the default.
@@ -168,7 +169,6 @@ Many of the other useful components are described in sections of this Guide for 
 * `SpellCheckComponent`, described in the section <<spell-checking.adoc#spell-checking,Spell Checking>>.
 * `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>.
 * `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>.
-* `TermsComponent`, described in the section <<the-terms-component.adoc#the-terms-component,The Terms Component>>.
 * `RealTimeGetComponent`, described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
 * `ClusteringComponent`, described in the section <<result-clustering.adoc#result-clustering,Result Clustering>>.
 * `SuggestComponent`, described in the section <<suggester.adoc#suggester,Suggester>>.
