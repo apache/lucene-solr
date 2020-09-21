@@ -187,7 +187,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       coresInit = createCoreContainer(solrHomePath, extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
-      RateLimitManager.Builder builder = new RateLimitManager.Builder(config);
+      RateLimitManager.Builder builder = new RateLimitManager.Builder(cores.zkClientSupplier.get());
 
       this.rateLimitManager = builder.build();
 

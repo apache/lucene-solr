@@ -18,10 +18,14 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.FilterConfig;
-
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
@@ -31,19 +35,36 @@ import static org.apache.solr.servlet.RateLimiterConfig.RL_CONFIG_KEY;
  *  to the parent class but specific configurations and parsing are handled by this class.
  */
 public class QueryRateLimiter extends RequestRateLimiter {
-  final static String IS_QUERY_RATE_LIMITER_ENABLED = "isQueryRateLimiterEnabled";
-  final static String MAX_QUERY_REQUESTS = "maxQueryRequests";
-  final static String QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS = "queryWaitForSlotAllocationInMS";
-  final static String QUERY_GUARANTEED_SLOTS = "queryGuaranteedSlots";
-  final static String QUERY_ALLOW_SLOT_BORROWING = "queryAllowSlotBorrowing";
 
-  public QueryRateLimiter(FilterConfig filterConfig) {
-    super(constructQueryRateLimiterConfig(filterConfig));
+  public QueryRateLimiter(SolrZkClient solrZkClient) {
+    super(constructQueryRateLimiterConfig(solrZkClient));
   }
 
   public void processConfigChange(Map<String, Object> properties) {
     RateLimiterConfig rateLimiterConfig = getRateLimiterConfig();
     Map<String, Object> propertiesMap = (Map<String, Object>) properties.get(RL_CONFIG_KEY);
+
+    constructQueryRateLimiterConfigInternal(propertiesMap, rateLimiterConfig);
+  }
+
+  // To be used in initialization
+  private static RateLimiterConfig constructQueryRateLimiterConfig(SolrZkClient zkClient) {
+    try {
+      Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+      Map<String, Object> propertiesMap = (Map<String, Object>) clusterPropsJson.get(RL_CONFIG_KEY);
+      RateLimiterConfig rateLimiterConfig = new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
+
+      constructQueryRateLimiterConfigInternal(propertiesMap, rateLimiterConfig);
+
+      return rateLimiterConfig;
+    } catch (KeeperException.NoNodeException e) {
+      return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
+    } catch (KeeperException | InterruptedException e) {
+      throw new RuntimeException("Error reading cluster property", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  private static void constructQueryRateLimiterConfigInternal(Map<String, Object> propertiesMap, RateLimiterConfig rateLimiterConfig) {
 
     if (propertiesMap.get(RateLimiterConfig.RL_ALLOWED_REQUESTS) != null) {
       rateLimiterConfig.allowedRequests = Integer.parseInt(propertiesMap.get(RateLimiterConfig.RL_ALLOWED_REQUESTS).toString());
@@ -64,20 +85,5 @@ public class QueryRateLimiter extends RequestRateLimiter {
     if (propertiesMap.get(RateLimiterConfig.RL_TIME_SLOT_ACQUISITION_INMS) != null) {
       rateLimiterConfig.waitForSlotAcquisition = Long.parseLong(propertiesMap.get(RateLimiterConfig.RL_TIME_SLOT_ACQUISITION_INMS).toString());
     }
-  }
-
-  protected static RateLimiterConfig constructQueryRateLimiterConfig(FilterConfig filterConfig) {
-    RateLimiterConfig queryRateLimiterConfig = new RateLimiterConfig();
-
-    queryRateLimiterConfig.requestType = SolrRequest.SolrRequestType.QUERY;
-    queryRateLimiterConfig.isEnabled = getParamAndParseBoolean(filterConfig, IS_QUERY_RATE_LIMITER_ENABLED, false);
-    queryRateLimiterConfig.waitForSlotAcquisition = getParamAndParseLong(filterConfig, QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS,
-        DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS);
-    queryRateLimiterConfig.allowedRequests = getParamAndParseInt(filterConfig, MAX_QUERY_REQUESTS,
-        DEFAULT_CONCURRENT_REQUESTS);
-    queryRateLimiterConfig.isSlotBorrowingEnabled = getParamAndParseBoolean(filterConfig, QUERY_ALLOW_SLOT_BORROWING, false);
-    queryRateLimiterConfig.guaranteedSlotsThreshold = getParamAndParseInt(filterConfig, QUERY_GUARANTEED_SLOTS, queryRateLimiterConfig.allowedRequests / 2);
-
-    return queryRateLimiterConfig;
   }
 }

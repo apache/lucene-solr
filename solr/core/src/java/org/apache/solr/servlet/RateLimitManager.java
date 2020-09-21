@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,16 +179,16 @@ public class RateLimitManager implements ClusterPropertiesListener {
   }
 
   public static class Builder {
-    protected FilterConfig config;
+    protected SolrZkClient solrZkClient;
 
-    public Builder(FilterConfig config) {
-      this.config = config;
+    public Builder(SolrZkClient solrZkClient) {
+      this.solrZkClient = solrZkClient;
     }
 
     public RateLimitManager build() {
       RateLimitManager rateLimitManager = new RateLimitManager();
 
-      rateLimitManager.registerRequestRateLimiter(new QueryRateLimiter(config), SolrRequest.SolrRequestType.QUERY);
+      rateLimitManager.registerRequestRateLimiter(new QueryRateLimiter(solrZkClient), SolrRequest.SolrRequestType.QUERY);
 
       return rateLimitManager;
     }

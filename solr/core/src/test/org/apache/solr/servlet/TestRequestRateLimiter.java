@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,7 +62,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     RateLimiterConfig rateLimiterConfig = new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY,
         true, 1, DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isSlotBorrowing */);
     // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes its parent here
-    RateLimitManager.Builder builder = new MockBuilder(null /* dummy FilterConfig */, new MockRequestRateLimiter(rateLimiterConfig, 5));
+    RateLimitManager.Builder builder = new MockBuilder(null /* dummy SolrZkClient */, new MockRequestRateLimiter(rateLimiterConfig, 5));
     RateLimitManager rateLimitManager = builder.build();
 
     solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
@@ -96,7 +97,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     RateLimiterConfig indexRateLimiterConfig = new RateLimiterConfig(SolrRequest.SolrRequestType.UPDATE,
         true, 1, DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS, 5 /* allowedRequests */, true /* isSlotBorrowing */);
     // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes its parent
-    RateLimitManager.Builder builder = new MockBuilder(null /*dummy FilterConfig */, new MockRequestRateLimiter(queryRateLimiterConfig, 5), new MockRequestRateLimiter(indexRateLimiterConfig, 5));
+    RateLimitManager.Builder builder = new MockBuilder(null /*dummy SolrZkClient */, new MockRequestRateLimiter(queryRateLimiterConfig, 5), new MockRequestRateLimiter(indexRateLimiterConfig, 5));
     RateLimitManager rateLimitManager = builder.build();
 
     solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
@@ -205,15 +206,15 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     private final RequestRateLimiter queryRequestRateLimiter;
     private final RequestRateLimiter indexRequestRateLimiter;
 
-    public MockBuilder(FilterConfig config, RequestRateLimiter queryRequestRateLimiter) {
-      super(config);
+    public MockBuilder(SolrZkClient zkClient, RequestRateLimiter queryRequestRateLimiter) {
+      super(zkClient);
 
       this.queryRequestRateLimiter = queryRequestRateLimiter;
       this.indexRequestRateLimiter = null;
     }
 
-    public MockBuilder(FilterConfig config, RequestRateLimiter queryRequestRateLimiter, RequestRateLimiter indexRequestRateLimiter) {
-      super(config);
+    public MockBuilder(SolrZkClient zkClient, RequestRateLimiter queryRequestRateLimiter, RequestRateLimiter indexRequestRateLimiter) {
+      super(zkClient);
 
       this.queryRequestRateLimiter = queryRequestRateLimiter;
       this.indexRequestRateLimiter = indexRequestRateLimiter;
