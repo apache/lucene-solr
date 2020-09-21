@@ -16,10 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.hamcrest.CoreMatchers.containsString;
-
 import java.io.IOException;
 import java.util.List;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -32,6 +31,8 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.containsString;
+
 public class CustomTermsComponentTest extends ShardsWhitelistTest {
 
   public static class CustomTermsComponent extends TermsComponent {
@@ -39,11 +40,6 @@ public class CustomTermsComponentTest extends ShardsWhitelistTest {
     public void init( @SuppressWarnings({"rawtypes"})NamedList args )
     {
       super.init(args);
-    }
-
-    @Override
-    protected void checkShardsWhitelist(final ResponseBuilder rb, final List<String> lst) {
-      // ignore shards whitelist
     }
 
   }
