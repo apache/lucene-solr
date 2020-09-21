@@ -181,6 +181,9 @@ Improvements
 
 * SOLR-13438: On deleting a collection, its config set will also be deleted iff it has been auto-created, and not used by any other collection (Anderson Dorow)
 
+* SOLR-14802: geodist: Support most (all?) spatial field types as an argument like LLPSF, SRPTFT, and others.
+  (Tom Edge, Craig Wrigglesworth)
+
 Optimizations
 ---------------------
 
