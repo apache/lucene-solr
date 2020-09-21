@@ -889,7 +889,7 @@ The `bin/solr export` command takes the following parameters:
 The file format of the export, `jsonl` (default) or `javabin`. Choosing `javabin` exports to a file with extension `.javabin` which is the native Solr format. This is compact and faster to import.
 
 `out`::
-The file name of the export. If the file name ends with `json.gz` the output will be compressed into a .gz file.
+The file name of the export. If the file name ends with `jsonl.gz` the output will be compressed into a .gz file.
 
 `query`::
 A custom query. The default is `\*:*` which will export all documents.
@@ -907,11 +907,11 @@ Export all documents from a collection `gettingstarted`:
 [source,bash]
 bin/solr export -url http://localhost:8983/solr/gettingstarted limit -1
 
-Export all documents of collection `gettingstarted` into a file called `1MDocs.json.gz` as a zipped JSON file:
+Export all documents of collection `gettingstarted` into a file called `1MDocs.jsonl.gz` as a zipped JSON file:
 
 [source,bash]
 ----
-bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -out 1MDocs.json.gz
+bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -out 1MDocs.jsonl.gz
 ----
 
 === Importing Documents to a Collection
@@ -920,7 +920,7 @@ Once you have exported documents in a file, you can use the <<updatehandlers-in-
 
 *Example: import `jsonl` files*
 
-`curl -X POST -d @gettingstarted.json http://localhost:8983/solr/gettingstarted/update/json/docs?commit=true`
+`curl -X POST -d @gettingstarted.jsonl http://localhost:8983/solr/gettingstarted/update/json/docs?commit=true`
 
 *Example: import `javabin` files*
 
