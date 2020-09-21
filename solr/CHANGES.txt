@@ -46,6 +46,10 @@ Improvements
 
 * SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
 
+* SOLR-14799: JWT authentication plugin only requires "sub" claim when principalClaim=sub. (Erik Hatcher)
+
+* SOLR-14878: Report solr.xml's coreRootDirectory property via System Settings API, when set (Alexandre Rafalovitch)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -124,6 +128,8 @@ Other Changes
 
 * SOLR-14846: Backup/Restore classes no longer take Optional method parameters and will accept nulls instead. (Mike Drob)
 
+* LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved from each query parser
+               package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
 
 Bug Fixes
 ---------------------
@@ -147,6 +153,8 @@ New Features
   set when using a custom MergePolicy (doesn't have any effect on the default MP) (Tomás Fernández Löbbe)
 
 * SOLR-13751: Add BooleanSimilarityFactory class. (Andy Webb via Christine Poerschke)
+
+* SOLR-14875: Make SolrEventListeners load from packages (noble)
 
 Improvements
 ---------------------
@@ -251,6 +259,8 @@ Other Changes
 
 * SOLR-10471: Update default Zookeeper session timeout to 30s in bin/solr and bin/solr.cmd
   (Michael Braun, Markus Jelsma via Munendra S N)
+
+* SOLR-14876: Upgrade to zookeeper 3.6.2 (odidev via Erick Erickson)
 
 ==================  8.6.2 ==================
 

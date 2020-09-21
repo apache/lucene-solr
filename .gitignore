@@ -8,7 +8,6 @@ dist
 lib
 test-lib
 /*~
-/velocity.log
 /build.properties
 /.idea
 lucene/**/*.iml

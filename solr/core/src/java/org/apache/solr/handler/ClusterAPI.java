@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +25,7 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.ClusterPropInfo;
+import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -81,9 +83,8 @@ public class ClusterAPI {
     CollectionsHandler.CollectionOperation.DELETESTATUS_OP.execute(req, rsp, coreContainer.getCollectionsHandler());
   }
 
-  @SuppressWarnings({"rawtypes"})
   public static SolrQueryRequest wrapParams(SolrQueryRequest req, Object... def) {
-    Map m = Utils.makeMap(def);
+    Map<String, Object> m = Utils.makeMap(def);
     return wrapParams(req, m);
   }
 
@@ -117,8 +118,6 @@ public class ClusterAPI {
       path = "/cluster",
       permission = COLL_EDIT_PERM)
   public class Commands {
-
-
     @Command(name = "add-role")
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void addRole(PayloadObj<RoleInfo> obj) throws Exception {
@@ -134,8 +133,7 @@ public class ClusterAPI {
       RoleInfo info = obj.get();
       Map m = info.toMap(new HashMap<>());
       m.put("action", REMOVEROLE.toString());
-      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(),m), obj.getResponse());
-
+      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 
     @Command(name = "set-obj-property")
@@ -149,7 +147,6 @@ public class ClusterAPI {
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }
-
     }
 
     @Command(name = "set-property")
@@ -158,9 +155,31 @@ public class ClusterAPI {
       Map m =  obj.get();
       m.put("action", CLUSTERPROP.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(),m ), obj.getResponse());
-
     }
 
+    @Command(name = "set-placement-plugin")
+    public void setPlacementPlugin(PayloadObj<Map<String, Object>> obj) {
+      Map<String, Object> placementPluginConfig = obj.getDataMap();
+      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
+      // When the json contains { "set-placement-plugin" : null }, the map is empty, not null.
+      final boolean unset = placementPluginConfig.isEmpty();
+      // Very basic sanity check. Real validation will be done when the config is used...
+      if (!unset && !placementPluginConfig.containsKey(PlacementPluginConfigImpl.CONFIG_CLASS)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Must contain " + PlacementPluginConfigImpl.CONFIG_CLASS + " attribute (or be null)");
+      }
+      try {
+        // Need to reset to null first otherwise the mappings in placementPluginConfig are added to existing ones
+        // in /clusterprops.json rather than replacing them. If removing the config, that's all we do.
+        clusterProperties.setClusterProperties(
+                Collections.singletonMap(PlacementPluginConfigImpl.PLACEMENT_PLUGIN_CONFIG_KEY, null));
+        if (!unset) {
+          clusterProperties.setClusterProperties(
+                  Collections.singletonMap(PlacementPluginConfigImpl.PLACEMENT_PLUGIN_CONFIG_KEY, placementPluginConfig));
+        }
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
+      }
+    }
   }
 
   public static class RoleInfo implements ReflectMapWriter {
@@ -168,8 +187,5 @@ public class ClusterAPI {
     public String node;
     @JsonProperty(required = true)
     public String role;
-
   }
-
-
 }
