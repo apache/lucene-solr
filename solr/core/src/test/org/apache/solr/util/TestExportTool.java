@@ -18,9 +18,11 @@
 package org.apache.solr.util;
 
 import java.io.File;
+import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.zip.GZIPInputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -44,8 +46,36 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JsonRecordReader;
 
+import org.junit.Test;
+
 @SolrTestCaseJ4.SuppressSSL
 public class TestExportTool extends SolrCloudTestCase {
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testJsonNotValidOutputFileFormat() throws Exception {
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner("http://somesolr/mycollection/");
+    info.setOutFormat(null, "json");
+  }
+
+  public void testJsonlValidOutputFileFormat() throws Exception {
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner("http://somesolr/mycollection/");
+    info.setOutFormat(null, "jsonl");
+  }
+
+  public void testJavabinValidOutputFileFormat() throws Exception {
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner("http://somesolr/mycollection/");
+    info.setOutFormat(null, "javabin");
+  }
+
+  public void testGZJsonlValidOutputFileFormat() throws Exception {
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner("http://somesolr/mycollection/");
+    info.setOutFormat("/somedir.jsonl.gz", "jsonl");
+  }
+
+  public void testGZJavabinValidOutputFileFormat() throws Exception {
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner("http://somesolr/mycollection/");
+    info.setOutFormat("/somedir.javabin.gz", "javabin");
+  }
 
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
@@ -80,7 +110,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
 
       ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
-      String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("200");
       info.fields = "id,desc_s,a_dt";
@@ -89,7 +119,16 @@ public class TestExportTool extends SolrCloudTestCase {
       assertJsonDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
 
       info = new ExportTool.MultiThreadedRunner(url);
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl.gz";
+      info.setOutFormat(absolutePath, "jsonl");
+      info.setLimit("200");
+      info.fields = "id,desc_s,a_dt";
+      info.exportDocs();
+
+      assertJsonDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
+
+      info = new ExportTool.MultiThreadedRunner(url);
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("-1");
       info.fields = "id,desc_s";
@@ -182,7 +221,7 @@ public class TestExportTool extends SolrCloudTestCase {
       }
       info = new ExportTool.MultiThreadedRunner(url);
       info.output = System.out;
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
       info.setOutFormat(absolutePath, "jsonl");
       info.fields = "id,desc_s";
       info.setLimit("-1");
@@ -214,13 +253,17 @@ public class TestExportTool extends SolrCloudTestCase {
     }
   }
 
-    private void assertJsonDocsCount(ExportTool.Info info, int expected, Predicate<Map<String,Object>> predicate) throws IOException {
+  private void assertJsonDocsCount(ExportTool.Info info, int expected, Predicate<Map<String,Object>> predicate) throws IOException {
     assertTrue("" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
 
     JsonRecordReader jsonReader;
     Reader rdr;
     jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));
-    rdr = new InputStreamReader(new FileInputStream(info.out), StandardCharsets.UTF_8);
+    InputStream is = new FileInputStream(info.out);
+    if(info.out.endsWith(".jsonl.gz")) {
+      is = new GZIPInputStream(is);
+    }
+    rdr = new InputStreamReader(is, StandardCharsets.UTF_8);
     try {
       int[] count = new int[]{0};
       jsonReader.streamRecords(rdr, (record, path) -> {

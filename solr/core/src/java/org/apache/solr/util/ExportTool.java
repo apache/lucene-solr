@@ -130,7 +130,7 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     public void setOutFormat(String out, String format) {
       this.format = format;
-      if (format == null) format = "jsonl";
+      if (format == null) format = "json";
       if (!formats.contains(format)) {
         throw new IllegalArgumentException("format must be one of :" + formats);
       }
@@ -139,7 +139,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       if (this.out == null) {
         this.out = JAVABIN.equals(format) ?
             coll + ".javabin" :
-            coll + ".json";
+            coll + ".jsonl";
       }
 
     }
@@ -226,7 +226,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       Option.builder("format")
           .hasArg()
           .required(false)
-          .desc("format  json/javabin, default to json. file extension would be .json")
+          .desc("format  jsonl/javabin, defaults to jsonl. file extension will be .jsonl")
           .build(),
       Option.builder("limit")
           .hasArg()
@@ -257,7 +257,9 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      if(info.out.endsWith(".json.gz") || info.out.endsWith(".json.")) fos = new GZIPOutputStream(fos);
+      if(info.out.endsWith(".jsonl.gz")) {
+        fos = new GZIPOutputStream(fos);
+      }
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
