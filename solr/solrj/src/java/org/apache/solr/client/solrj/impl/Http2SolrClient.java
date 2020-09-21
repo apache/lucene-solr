@@ -151,7 +151,6 @@ public class Http2SolrClient extends SolrClient {
    */
   private volatile String serverBaseUrl;
   private volatile boolean closeClient;
-  private volatile SolrQueuedThreadPool httpClientExecutor;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     assert (closeTracker = new CloseTracker()) != null;
@@ -217,12 +216,9 @@ public class Http2SolrClient extends SolrClient {
     }
     // nocommit - look at config again as well
     int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", 12);
-    httpClientExecutor = new SolrQueuedThreadPool("http2Client",
-        Integer.getInteger("solr.maxHttp2ClientThreads", Math.min(16, ParWork.PROC_COUNT / 2)),
-        minThreads,
-        this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) &&
-            this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 3000 : 5000, new ArrayBlockingQueue<>(minThreads, true),
-            (int) TimeUnit.SECONDS.toMillis(30), null);
+    SolrQueuedThreadPool httpClientExecutor = new SolrQueuedThreadPool("http2Client", Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(16, ParWork.PROC_COUNT / 2)), minThreads,
+        this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) && this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 3000 : 5000,
+        new ArrayBlockingQueue<>(minThreads, true), (int) TimeUnit.SECONDS.toMillis(30), null);
     httpClientExecutor.setLowThreadsThreshold(-1);
 
     boolean sslOnJava8OrLower = ssl && !Constants.JRE_IS_MINIMUM_JAVA9;
@@ -432,7 +428,7 @@ public class Http2SolrClient extends SolrClient {
         public void onHeaders(Response response) {
           super.onHeaders(response);
           InputStreamResponseListener listener = this;
-          ParWork.getRootSharedExecutor().execute(() -> {
+          httpClient.getExecutor().execute(() -> {
             if (log.isDebugEnabled()) log.debug("async response ready");
             InputStream is = listener.getInputStream();
             try {
@@ -454,9 +450,9 @@ public class Http2SolrClient extends SolrClient {
         public void onFailure(Response response, Throwable failure) {
           try {
             super.onFailure(response, failure);
-            if (failure != CANCELLED_EXCEPTION) {
+            //if (failure != CANCELLED_EXCEPTION) {
               asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
-            }
+            //}
           } finally {
             asyncTracker.arrive();
           }
@@ -467,11 +463,7 @@ public class Http2SolrClient extends SolrClient {
       throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
     }
     return () -> {
-      try {
-        req.abort(CANCELLED_EXCEPTION);
-      } finally {
-        asyncTracker.arrive();
-      }
+      req.abort(CANCELLED_EXCEPTION);
     };
   }
 

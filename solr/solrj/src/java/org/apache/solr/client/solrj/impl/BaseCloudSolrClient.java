@@ -84,6 +84,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -104,7 +105,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   private volatile String defaultCollection;
   //no of times collection state to be reloaded if stale state error is received
-  private static final int MAX_STALE_RETRIES = Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
+  private static final int MAX_STALE_RETRIES = Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "1"));
   private Random rand = new Random();
 
   private final boolean updatesToLeaders;
@@ -256,17 +257,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   @Override
   public void close() throws IOException {
     if (threadPool != null) {
-      threadPool.shutdown();
-      boolean success = false;
-      try {
-        success = threadPool.awaitTermination(10, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e, true);
-      }
-      if (!success) {
-        threadPool.shutdownNow();
-        ExecutorUtil.shutdownAndAwaitTermination(threadPool);
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(threadPool);
     }
   }
 

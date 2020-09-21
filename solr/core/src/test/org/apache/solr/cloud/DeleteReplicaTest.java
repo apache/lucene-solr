@@ -20,8 +20,11 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -34,6 +37,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -388,7 +392,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 10, TimeUnit.SECONDS, 1, 2);
     AtomicBoolean closed = new AtomicBoolean(false);
-    Thread[] threads = new Thread[100];
+    List<Future> futures = new ArrayList<>(TEST_NIGHTLY ? 50 : 5);
+    Thread[] threads = new Thread[TEST_NIGHTLY ? 50 : 5];
     for (int i = 0; i < threads.length; i++) {
       int finalI = i;
       threads[i] = new Thread(() -> {
@@ -404,15 +409,17 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
           }
         }
       });
-      threads[i].start();
+      futures.add(ParWork.getRootSharedExecutor().submit(threads[i]));
     }
+
+
 
     Slice shard1 = getCollectionState(collectionName).getSlice("shard1");
     Replica nonLeader = shard1.getReplicas(rep -> !rep.getName().equals(shard1.getLeader().getName())).get(0);
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", nonLeader.getName()).process(cluster.getSolrClient());
     closed.set(true);
-    for (int i = 0; i < threads.length; i++) {
-      threads[i].join();
+    for (Future future : futures) {
+      future.get();
     }
 
     try {

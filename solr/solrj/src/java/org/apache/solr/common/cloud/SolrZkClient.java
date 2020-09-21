@@ -98,9 +98,9 @@ public class SolrZkClient implements Closeable {
   private final ConnectionManager connManager;
 
   // what about ensuring order of state updates per collection??
-  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService(4, 9, 1000, new BlockingArrayQueue());
+  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 4, 9, 1000, new BlockingArrayQueue());
 
-  final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService(1, 1, 1, new BlockingArrayQueue());
+  final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService("zkConnManagerCallbackExecutor",1, 1, 1, new BlockingArrayQueue());
 
   private volatile boolean isClosed = false;
 
@@ -243,7 +243,7 @@ public class SolrZkClient implements Closeable {
    */
   public Watcher wrapWatcher(final Watcher watcher) {
     if (watcher == null || watcher instanceof ProcessWatchWithExecutor) return watcher;
-    return new ProcessWatchWithExecutor(watcher);
+    return new ProcessWatchWithExecutor(watcher, zkCallbackExecutor);
   }
 
   /**
@@ -1056,24 +1056,23 @@ public class SolrZkClient implements Closeable {
    * to react to other watches, but also ensures that two wrappers containing equal watches are considered
    * equal (and thus we won't accumulate multiple wrappers of the same watch).
    */
-  private final class ProcessWatchWithExecutor implements Watcher { // see below for why final.
+  private final static class ProcessWatchWithExecutor implements Watcher { // see below for why final.
     private final Watcher watcher;
+    private final ExecutorService executorService;
 
-    ProcessWatchWithExecutor(Watcher watcher) {
+    ProcessWatchWithExecutor(Watcher watcher, ExecutorService executorService) {
       if (watcher == null) {
         throw new IllegalArgumentException("Watcher must not be null");
       }
+      this.executorService = executorService;
       this.watcher = watcher;
     }
 
     @Override
     public void process(final WatchedEvent event) {
-      if (isClosed) {
-        return;
-      }
       if (log.isDebugEnabled()) log.debug("Submitting job to respond to event {}", event);
       try {
-        zkCallbackExecutor.submit(() -> watcher.process(event));
+        executorService.submit(() -> watcher.process(event));
       } catch (RejectedExecutionException e) {
         log.info("Rejected from executor", e);
       }

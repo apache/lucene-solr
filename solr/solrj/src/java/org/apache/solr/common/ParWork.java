@@ -78,7 +78,7 @@ public class ParWork implements Closeable {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
-          EXEC = (ThreadPoolExecutor) getParExecutorService(Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 250), Integer.MAX_VALUE, 30000, new SynchronousQueue<>());
+          EXEC = (ThreadPoolExecutor) getParExecutorService("RootExec", Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 250), Integer.MAX_VALUE, 30000, new SynchronousQueue<>());
           ((ParWorkExecutor)EXEC).enableCloseLock();
         }
       }
@@ -94,6 +94,7 @@ public class ParWork implements Closeable {
     synchronized (ParWork.class) {
       if (EXEC != null) {
         ((ParWorkExecutor)EXEC).disableCloseLock();
+        EXEC.shutdown();
         EXEC.setKeepAliveTime(1, TimeUnit.NANOSECONDS);
         EXEC.allowCoreThreadTimeOut(true);
        // EXEC.shutdownNow();
@@ -504,9 +505,9 @@ public class ParWork implements Closeable {
     return exec;
   }
 
-  public static ExecutorService getParExecutorService(int corePoolSize, int maxPoolSize, int keepAliveTime, BlockingQueue queue) {
+  public static ExecutorService getParExecutorService(String name, int corePoolSize, int maxPoolSize, int keepAliveTime, BlockingQueue queue) {
     ThreadPoolExecutor exec;
-    exec = new ParWorkExecutor("ParWork-" + Thread.currentThread().getName(),
+    exec = new ParWorkExecutor(name + "-" + Thread.currentThread().getName(),
             corePoolSize, maxPoolSize, keepAliveTime, queue);
     return exec;
   }

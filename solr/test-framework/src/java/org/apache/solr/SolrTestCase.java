@@ -274,7 +274,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("solr.defaultCollectionActiveWait", "10");
 
-      System.setProperty("solr.http2solrclient.maxpool.size", "6");
+      System.setProperty("solr.http2solrclient.maxpool.size", "12");
       System.setProperty("solr.http2solrclient.pool.keepalive", "1500");
 
       System.setProperty("solr.disablePublicKeyHandler", "false");
@@ -286,7 +286,7 @@ public class SolrTestCase extends LuceneTestCase {
       // unlimited - System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
       System.setProperty("solr.minContainerThreads", "4");
-      System.setProperty("solr.rootSharedThreadPoolCoreSize", "60");
+      System.setProperty("solr.rootSharedThreadPoolCoreSize", "16");
       System.setProperty("solr.minHttp2ClientThreads", "4");
 
 

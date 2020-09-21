@@ -60,8 +60,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
   }
 
   public List<Runnable> shutdownNow() {
-    super.shutdownNow();
-    return Collections.emptyList();
+    return super.shutdownNow();
   }
 
   public void enableCloseLock() {

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.util.AsyncListener;
@@ -122,23 +123,27 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
       NamedList<Throwable> exceptions, NamedList<NamedList> shardResponses) {
     Map<String,Throwable> tsExceptions = new ConcurrentHashMap<>();
     Map<String,NamedList> tsResponses = new ConcurrentHashMap<>();
+    final CountDownLatch latch = new CountDownLatch(routes.size());
     for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
       final String url = entry.getKey();
       final LBSolrClient.Req lbRequest = entry.getValue();
       lbRequest.request.setBasePath(url);
       try {
         MDC.put("CloudSolrClient.url", url);
-
-        myClient.asyncRequest(lbRequest.request, null, new UpdateOnComplete(tsResponses, url, tsExceptions));
-
+        myClient.asyncRequest(lbRequest.request, null, new UpdateOnComplete(latch, tsResponses, url, tsExceptions));
       } finally {
         MDC.remove("CloudSolrClient.url");
       }
     }
 
     // wait until the async requests we fired off above are done
-    // nocommit we are going to allowing sharing this client, we cannot use the built in async support
-    myClient.waitForOutstandingRequests();
+    // we cannot use Http2SolrClient#waitForOutstanding as the client may be shared
+    try {
+      latch.await(); // eventually the requests will timeout after the socket read timeout is reached.
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
 
     exceptions.addAll(tsExceptions);
 
@@ -308,11 +313,13 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
 
   private static class UpdateOnComplete implements AsyncListener<NamedList<Object>> {
 
+    private final CountDownLatch latch;
     private final Map<String,NamedList> tsResponses;
     private final String url;
     private final Map<String,Throwable> tsExceptions;
 
-    public UpdateOnComplete(Map<String,NamedList> tsResponses, String url, Map<String,Throwable> tsExceptions) {
+    public UpdateOnComplete(CountDownLatch latch, Map<String,NamedList> tsResponses, String url, Map<String,Throwable> tsExceptions) {
+      this.latch = latch;
       this.tsResponses = tsResponses;
       this.url = url;
       this.tsExceptions = tsExceptions;
@@ -321,11 +328,13 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
     @Override
     public void onSuccess(NamedList result) {
       tsResponses.put(url, result);
+      latch.countDown();
     }
 
     @Override
     public void onFailure(Throwable t) {
       tsExceptions.put(url, t);
+      latch.countDown();
     }
   }
 }
