@@ -14,35 +14,35 @@ public class SolrShutdownHandler extends ShutdownHandler {
         super("solrrocks");
     }
 
-//    protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException {
-//        for (Connector connector : getServer().getConnectors()) {
-//            connector.shutdown();
-//        }
-//
-//        baseRequest.setHandled(true);
-//        response.setStatus(200);
-//        response.flushBuffer();
-//
-//        final Server server = getServer();
-//        new Thread() {
-//            @Override
-//            public void run() {
-//                try {
-//                    shutdownServer(server);
-//                } catch (InterruptedException e) {
-//
-//                } catch (Exception e) {
-//                    throw new RuntimeException("Shutting down server", e);
-//                }
-//            }
-//        }.start();
-//    }
-//
-//    private void shutdownServer(Server server) throws Exception
-//    {
-//        server.stop();
-//        ParWork.shutdownRootSharedExec();
-//        System.exit(0);
-//    }
+    protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException {
+        for (Connector connector : getServer().getConnectors()) {
+            connector.shutdown();
+        }
+
+        baseRequest.setHandled(true);
+        response.setStatus(200);
+        response.flushBuffer();
+
+        final Server server = getServer();
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    shutdownServer(server);
+                } catch (InterruptedException e) {
+
+                } catch (Exception e) {
+                    throw new RuntimeException("Shutting down server", e);
+                }
+            }
+        }.start();
+    }
+
+    private void shutdownServer(Server server) throws Exception
+    {
+        server.stop();
+        ParWork.shutdownRootSharedExec();
+        System.exit(0);
+    }
 
 }

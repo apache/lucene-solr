@@ -288,7 +288,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
       if (onComplete != null) onComplete.run();
     } else {
-      ParWork.getRootSharedExecutor().execute(runnable);
+      ocmh.tpe.submit(runnable);
     }
 
     return createReplicas.stream()

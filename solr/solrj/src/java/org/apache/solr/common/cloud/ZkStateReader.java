@@ -57,6 +57,7 @@ import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
@@ -213,7 +214,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private Set<CloudCollectionsListener> cloudCollectionsListeners = ConcurrentHashMap.newKeySet();
 
-  private final ExecutorService notifications = ParWork.getRootSharedExecutor();
+  private final ExecutorService notifications = ParWork.getExecutorService(10, true, true);
 
   private final Set<LiveNodesListener> liveNodesListeners = ConcurrentHashMap.newKeySet();
 
@@ -892,6 +893,7 @@ public class ZkStateReader implements SolrCloseable {
     log.info("Closing ZkStateReader");
     assert closeTracker.close();
     this.closed = true;
+    ExecutorUtil.shutdownAndAwaitTermination(notifications);
     try {
       if (closeClient) {
         IOUtils.closeQuietly(zkClient);

@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,6 +57,7 @@ import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.PerThreadExecService;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -73,9 +76,11 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
@@ -170,6 +175,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   // This is used for handling mutual exclusion of the tasks.
 
   final private LockTree lockTree = new LockTree();
+  ExecutorService tpe = new PerThreadExecService(ParWork.getRootSharedExecutor(), 15, true, true);
 
   public static final Random RANDOM;
   static {
@@ -924,7 +930,14 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       cloudManager.close();
     } catch (NullPointerException e) {
       // okay
+    } finally {
+      if (tpe != null) {
+        if (!tpe.isShutdown()) {
+          ExecutorUtil.shutdownAndAwaitTermination(tpe);
+        }
+      }
     }
+
     assert ObjectReleaseTracker.release(this);
   }
 
