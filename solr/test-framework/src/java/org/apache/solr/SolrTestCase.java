@@ -185,11 +185,6 @@ public class SolrTestCase extends LuceneTestCase {
 
     System.setProperty("org.eclipse.jetty.util.log.class", "org.apache.logging.log4j.appserver.jetty.Log4j2Logger");
 
-    // we do this because threads can be finished, but waiting
-    // for an idle timeout or in a TERMINATED state, and we don't
-    // want to wait for them - in prod these threads are daemon
-    interruptThreadsOnTearDown("ParWork", false);
-
     if (!SysStats.getSysStats().isAlive()) {
       SysStats.reStartSysStats();
     }

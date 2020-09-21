@@ -233,9 +233,7 @@ public class Http2SolrClient extends SolrClient {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
       SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(1);
-      transport.getHttpClient().setIdleTimeout(idleTimeout);
       httpClient = new HttpClient(transport, sslContextFactory);
-      if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     } else {
       log.debug("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
@@ -245,7 +243,6 @@ public class Http2SolrClient extends SolrClient {
       http2client.setInputBufferSize(16384);
       HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
-      if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     }
 
     try {
@@ -260,6 +257,7 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setStrictEventOrdering(strictEventOrdering);
       httpClient.setConnectBlocking(false);
       httpClient.setFollowRedirects(false);
+      if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
       httpClient.setMaxRequestsQueuedPerDestination(100000);
       httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
       httpClient.setIdleTimeout(idleTimeout);
