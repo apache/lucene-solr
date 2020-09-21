@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.solr.cluster.events;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -8,51 +25,14 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  *
  */
 public class ClusterEventProducerTest extends SolrCloudTestCase {
-
-  public static class AllEventsListener implements ClusterEventListener {
-    CountDownLatch eventLatch = new CountDownLatch(1);
-    ClusterEvent.EventType expectedType;
-    Map<ClusterEvent.EventType, List<ClusterEvent>> events = new HashMap<>();
-
-    @Override
-    public Set<ClusterEvent.EventType> getEventTypes() {
-      return new HashSet<>(Arrays.asList(ClusterEvent.EventType.values()));
-    }
-
-    @Override
-    public void onEvent(ClusterEvent event) {
-      events.computeIfAbsent(event.getType(), type -> new ArrayList<>()).add(event);
-      if (event.getType() == expectedType) {
-        eventLatch.countDown();
-      }
-    }
-
-    public void setExpectedType(ClusterEvent.EventType expectedType) {
-      this.expectedType = expectedType;
-      eventLatch = new CountDownLatch(1);
-    }
-
-    public void waitForExpectedEvent(int timeoutSeconds) throws InterruptedException {
-      boolean await = eventLatch.await(timeoutSeconds, TimeUnit.SECONDS);
-      if (!await) {
-        fail("Timed out waiting for expected event " + expectedType);
-      }
-    }
-  }
 
   private static AllEventsListener eventsListener = new AllEventsListener();
 
@@ -96,7 +76,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     ClusterEvent event = events.get(0);
     assertEquals("should be NODES_DOWN event type", ClusterEvent.EventType.NODES_DOWN, event.getType());
     NodesDownEvent nodesDown = (NodesDownEvent) event;
-    assertEquals("should be node " + nodeName, nodeName, nodesDown.getNodeNames().iterator().next());
+    assertEquals("should be node " + nodeName, nodeName, nodesDown.getNodeNames().next());
 
     // NODES_UP
     eventsListener.setExpectedType(ClusterEvent.EventType.NODES_UP);
@@ -109,7 +89,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     event = events.get(0);
     assertEquals("should be NODES_UP event type", ClusterEvent.EventType.NODES_UP, event.getType());
     NodesUpEvent nodesUp = (NodesUpEvent) event;
-    assertEquals("should be node " + newNode.getNodeName(), newNode.getNodeName(), nodesUp.getNodeNames().iterator().next());
+    assertEquals("should be node " + newNode.getNodeName(), newNode.getNodeName(), nodesUp.getNodeNames().next());
 
     // COLLECTIONS_ADDED
     eventsListener.setExpectedType(ClusterEvent.EventType.COLLECTIONS_ADDED);
@@ -124,7 +104,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     event = events.get(0);
     assertEquals("should be COLLECTIONS_ADDED event type", ClusterEvent.EventType.COLLECTIONS_ADDED, event.getType());
     CollectionsAddedEvent collectionsAdded = (CollectionsAddedEvent) event;
-    assertEquals("should be collection " + collection, collection, collectionsAdded.getCollectionNames().iterator().next());
+    assertEquals("should be collection " + collection, collection, collectionsAdded.getCollectionNames().next());
 
     // COLLECTIONS_REMOVED
     eventsListener.setExpectedType(ClusterEvent.EventType.COLLECTIONS_REMOVED);
@@ -137,7 +117,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     event = events.get(0);
     assertEquals("should be COLLECTIONS_REMOVED event type", ClusterEvent.EventType.COLLECTIONS_REMOVED, event.getType());
     CollectionsRemovedEvent collectionsRemoved = (CollectionsRemovedEvent) event;
-    assertEquals("should be collection " + collection, collection, collectionsRemoved.getCollectionNames().iterator().next());
+    assertEquals("should be collection " + collection, collection, collectionsRemoved.getCollectionNames().next());
 
     // CLUSTER_CONFIG_CHANGED
     eventsListener.setExpectedType(ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED);
@@ -152,7 +132,6 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     assertEquals("should be CLUSTER_CONFIG_CHANGED event type", ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED, event.getType());
     ClusterPropertiesChangedEvent propertiesChanged = (ClusterPropertiesChangedEvent) event;
     Map<String, Object> newProps = propertiesChanged.getNewClusterProperties();
-    assertEquals("old props should be the same", oldProps, propertiesChanged.getOldClusterProperties());
     assertEquals("new properties wrong value of the 'ext.foo' property: " + newProps,
         "bar", newProps.get("ext.foo"));
 
@@ -166,7 +145,6 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     event = events.get(1);
     assertEquals("should be CLUSTER_CONFIG_CHANGED event type", ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED, event.getType());
     propertiesChanged = (ClusterPropertiesChangedEvent) event;
-    assertEquals("old props should be the same as previous new props", newProps, propertiesChanged.getOldClusterProperties());
     assertEquals("new properties should not have 'ext.foo' property: " + propertiesChanged.getNewClusterProperties(),
         null, propertiesChanged.getNewClusterProperties().get("ext.foo"));
 

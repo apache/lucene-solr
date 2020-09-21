@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cluster.events;
 
-import java.util.Set;
-
 /**
  * Components that want to be notified of cluster-wide events should use this.
  *
@@ -25,11 +23,6 @@ import java.util.Set;
  * XXX difficult (or pointless) to propagate to every node.
  */
 public interface ClusterEventListener {
-
-  /**
-   * The types of events that this listener can process.
-   */
-  Set<ClusterEvent.EventType> getEventTypes();
 
   /**
    * Handle the event. Implementations should be non-blocking - if any long

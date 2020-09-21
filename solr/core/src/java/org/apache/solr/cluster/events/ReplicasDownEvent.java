@@ -18,7 +18,7 @@ package org.apache.solr.cluster.events;
 
 import org.apache.solr.common.cloud.Replica;
 
-import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Event generated when some replicas went down.
@@ -30,5 +30,5 @@ public interface ReplicasDownEvent extends ClusterEvent {
     return EventType.REPLICAS_DOWN;
   }
 
-  Collection<Replica> getReplicas();
+  Iterator<Replica> getReplicas();
 }

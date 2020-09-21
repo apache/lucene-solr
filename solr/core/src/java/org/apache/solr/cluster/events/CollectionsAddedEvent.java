@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cluster.events;
 
-import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Event generated when some collections have been added.
@@ -28,5 +28,5 @@ public interface CollectionsAddedEvent extends ClusterEvent {
     return EventType.COLLECTIONS_ADDED;
   }
 
-  Collection<String> getCollectionNames();
+  Iterator<String> getCollectionNames();
 }

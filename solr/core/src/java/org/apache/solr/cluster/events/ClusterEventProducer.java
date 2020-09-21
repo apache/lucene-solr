@@ -18,8 +18,10 @@ package org.apache.solr.cluster.events;
 
 import org.apache.solr.cloud.ClusterSingleton;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -37,16 +39,21 @@ public interface ClusterEventProducer extends ClusterSingleton {
   Map<ClusterEvent.EventType, Set<ClusterEventListener>> getEventListeners();
 
   /**
-   * Register an event listener. This listener will be notified about event
-   * of the types that it declares in {@link ClusterEventListener#getEventTypes()}
+   * Register an event listener for processing the specified event types.
    * @param listener non-null listener. If the same instance of the listener is
    *                 already registered it will be ignored.
+   * @param eventTypes non-empty array of event types that this listener
+   *                   is being registered for. If this is null or empty then all types will be used.
    */
-  default void registerListener(ClusterEventListener listener) throws Exception {
-    listener.getEventTypes().forEach(type -> {
+  default void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) throws Exception {
+    Objects.requireNonNull(listener);
+    if (eventTypes == null || eventTypes.length == 0) {
+      eventTypes = ClusterEvent.EventType.values();
+    }
+    for (ClusterEvent.EventType type : eventTypes) {
       Set<ClusterEventListener> perType = getEventListeners().computeIfAbsent(type, t -> ConcurrentHashMap.newKeySet());
       perType.add(listener);
-    });
+    }
   }
 
   /**
@@ -54,9 +61,28 @@ public interface ClusterEventProducer extends ClusterSingleton {
    * @param listener non-null listener.
    */
   default void unregisterListener(ClusterEventListener listener) {
-    listener.getEventTypes().forEach(type ->
-        getEventListeners().getOrDefault(type, Collections.emptySet()).remove(listener)
-    );
+    Objects.requireNonNull(listener);
+    getEventListeners().forEach((type, listeners) -> {
+      listeners.remove(listener);
+    });
+  }
+
+  /**
+   * Unregister an event listener for specified event types.
+   * @param listener non-null listener.
+   * @param eventTypes event types from which the listener will be unregistered. If this
+   *                   is null or empty then all event types will be used
+   */
+  default void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
+    Objects.requireNonNull(listener);
+    if (eventTypes == null || eventTypes.length == 0) {
+      eventTypes = ClusterEvent.EventType.values();
+    }
+    for (ClusterEvent.EventType type : eventTypes) {
+      getEventListeners()
+          .getOrDefault(type, Collections.emptySet())
+          .remove(listener);
+    }
   }
 
   /**

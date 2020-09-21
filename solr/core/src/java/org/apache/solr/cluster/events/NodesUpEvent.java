@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cluster.events;
 
-import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Event generated when some nodes went up.
@@ -28,5 +28,5 @@ public interface NodesUpEvent extends ClusterEvent {
     return EventType.NODES_UP;
   }
 
-  Collection<String> getNodeNames();
+  Iterator<String> getNodeNames();
 }

@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -60,7 +61,6 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
   private LiveNodesListener liveNodesListener;
   private CloudCollectionsListener cloudCollectionsListener;
   private ClusterPropertiesListener clusterPropertiesListener;
-  private Map<String, Object> lastClusterProperties;
   private ZkController zkController;
   private boolean running;
 
@@ -110,8 +110,8 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
       if (!downNodes.isEmpty()) {
         fireEvent(new NodesDownEvent() {
           @Override
-          public Collection<String> getNodeNames() {
-            return downNodes;
+          public Iterator<String> getNodeNames() {
+            return downNodes.iterator();
           }
 
           @Override
@@ -125,8 +125,8 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
       if (!upNodes.isEmpty()) {
         fireEvent(new NodesUpEvent() {
           @Override
-          public Collection<String> getNodeNames() {
-            return upNodes;
+          public Iterator<String> getNodeNames() {
+            return upNodes.iterator();
           }
 
           @Override
@@ -149,8 +149,8 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
       if (!removed.isEmpty()) {
         fireEvent(new CollectionsRemovedEvent() {
           @Override
-          public Collection<String> getCollectionNames() {
-            return removed;
+          public Iterator<String> getCollectionNames() {
+            return removed.iterator();
           }
 
           @Override
@@ -164,8 +164,8 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
       if (!added.isEmpty()) {
         fireEvent(new CollectionsAddedEvent() {
           @Override
-          public Collection<String> getCollectionNames() {
-            return added;
+          public Iterator<String> getCollectionNames() {
+            return added.iterator();
           }
 
           @Override
@@ -177,18 +177,9 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
     });
     zkController.zkStateReader.registerCloudCollectionsListener(cloudCollectionsListener);
 
-    lastClusterProperties = new LinkedHashMap<>(zkController.zkStateReader.getClusterProperties());
     clusterPropertiesListener = (newProperties) -> {
-      if (newProperties.equals(lastClusterProperties)) {
-        return false;
-      }
       fireEvent(new ClusterPropertiesChangedEvent() {
-        final Map<String, Object> oldProps = lastClusterProperties;
-        @Override
-        public Map<String, Object> getOldClusterProperties() {
-          return oldProps;
-        }
-
+        final Instant now = Instant.now();
         @Override
         public Map<String, Object> getNewClusterProperties() {
           return newProperties;
@@ -196,10 +187,9 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
 
         @Override
         public Instant getTimestamp() {
-          return Instant.now();
+          return now;
         }
       });
-      lastClusterProperties = new LinkedHashMap<>(newProperties);
       return false;
     };
     zkController.zkStateReader.registerClusterPropertiesListener(clusterPropertiesListener);
@@ -235,17 +225,17 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
   }
 
   @Override
-  public void registerListener(ClusterEventListener listener) throws Exception {
+  public void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) throws Exception {
     try {
-      listener.getEventTypes().forEach(type -> {
+      for (ClusterEvent.EventType type : eventTypes) {
         if (!supportedEvents.contains(type)) {
           log.warn("event type {} not supported yet.", type);
         }
-      });
+      }
     } catch (Throwable e) {
       throw new Exception(e);
     }
-    ClusterEventProducer.super.registerListener(listener);
+    ClusterEventProducer.super.registerListener(listener, eventTypes);
   }
 
   @Override

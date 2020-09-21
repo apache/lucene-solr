@@ -28,8 +28,6 @@ public interface ClusterPropertiesChangedEvent extends ClusterEvent {
     return EventType.CLUSTER_PROPERTIES_CHANGED;
   }
 
-  Map<String, Object> getOldClusterProperties();
-
   Map<String, Object> getNewClusterProperties();
 
 }
