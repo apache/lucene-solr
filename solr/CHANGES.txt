@@ -50,6 +50,8 @@ Improvements
 
 * SOLR-14878: Report solr.xml's coreRootDirectory property via System Settings API, when set (Alexandre Rafalovitch)
 
+* SOLR-14882: Clean up handling of .jsonl versus .json in bin/solr export CLI tool (Eric Pugh)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -198,7 +200,7 @@ Optimizations
 
 * SOLR-14819: Fix inefficient iterator pattern in JsonSchemaValidator. (Thomas DuBuisson via Bruno Roustant)
 
-* SOLR-14658: SolrJ's CollectionAdminRequest.collectionStatus(collection) would internally get 
+* SOLR-14658: SolrJ's CollectionAdminRequest.collectionStatus(collection) would internally get
   all collection statuses instead of just the specified collection. (Andy Vuong)
 
 Bug Fixes
@@ -257,7 +259,7 @@ Other Changes
 * SOLR-14731: Rename @SolrSingleThreaded to @SolrThreadUnsafe, mark DistribPackageStore with the annotation
   (marcussorealheis)
 
-* SOLR-14579: Comment SolrJ 'Utils' generic map functions 
+* SOLR-14579: Comment SolrJ 'Utils' generic map functions
   (Megan Carey and a lot of education from Uwe Schindler via Erick Erickson)
 
 * SOLR-10471: Update default Zookeeper session timeout to 30s in bin/solr and bin/solr.cmd
