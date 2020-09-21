@@ -63,19 +63,18 @@
   </Appenders>
   <Loggers>
 
-    <AsyncLogger name="org.eclipse.jetty.servlets" level="DEBUG"/>
-    <AsyncLogger name="org.eclipse.jetty" level="warn"/>
-    <AsyncLogger name="org.eclipse.jetty.server.Server" level="INFO"/>
-    <AsyncLogger name="org.apache.hadoop" level="warn"/>
-    <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
-    <AsyncLogger name="org.apache.zookeeper" level="warn"/>
-    <AsyncLogger name="org.apache.solr.core.SolrCore.SlowRequest" level="info" additivity="false">
+    <AsyncLogger name="org.eclipse.jetty.servlets" level="WARN"/>
+    <AsyncLogger name="org.eclipse.jetty" level="WARN"/>
+    <AsyncLogger name="org.eclipse.jetty.server.Server" level="WARN"/>
+    <AsyncLogger name="org.apache.hadoop" level="WARN"/>
+    <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="OFF"/>
+    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
+    <AsyncLogger name="org.apache.solr.core.SolrCore.SlowRequest" level="INFO" additivity="false">
       <AppenderRef ref="SlowLogFile"/>
     </AsyncLogger>
 
-    <AsyncRoot level="info">
+    <AsyncRoot level="WARN">
       <AppenderRef ref="MainLogFile"/>
-      <AppenderRef ref="STDOUT"/>
     </AsyncRoot>
   </Loggers>
 </Configuration>

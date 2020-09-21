@@ -78,6 +78,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     private final BlockingQueue<Runnable> _jobs;
     private final ThreadGroup _threadGroup;
     private final ThreadFactory _threadFactory;
+    private final int _queueOfferTimeout;
     private String _name = "qtp" + hashCode();
     private int _idleTimeout;
     private int _maxThreads;
@@ -96,74 +97,57 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     }
 
     public SolrQueuedThreadPool(String name) {
-        this(Integer.MAX_VALUE, Integer.getInteger("solr.minContainerThreads", 18),
-            120000, -1, // no reserved executor threads - we can process requests after shutdown or some race - we try to limit without threadpool limits no anyway
-                null, null,
+        this(name, Integer.MAX_VALUE, Integer.getInteger("solr.minContainerThreads", 250),
+            5000, 0, // no reserved executor threads - we can process requests after shutdown or some race - we try to limit without threadpool limits no anyway
+                null, -1, null,
                 new  SolrNamedThreadFactory(name));
         this.name = name;
     }
 
     public SolrQueuedThreadPool(String name, int maxThreads, int minThreads, int idleTimeout) {
-        this(maxThreads, minThreads,
+        this(name, maxThreads, minThreads,
             idleTimeout, -1,
-            null, null,
+            null, -1, null,
             new  SolrNamedThreadFactory(name));
-        this.name = name;
     }
 
-    public SolrQueuedThreadPool(@Name("maxThreads") int maxThreads)
+    public SolrQueuedThreadPool(String name, @Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout,
+        @Name("queue") BlockingQueue<Runnable> queue, @Name("queueOfferTimeout") int queueOfferTimeout)
     {
-        this(maxThreads, Math.min(8, maxThreads));
+        this(name, maxThreads, minThreads, idleTimeout, queue, queueOfferTimeout,null);
     }
 
-    public SolrQueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads)
+    public SolrQueuedThreadPool(String name, @Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout,
+        @Name("queue") BlockingQueue<Runnable> queue,  @Name("queueOfferTimeout") int queueOfferTimeout, @Name("threadGroup") ThreadGroup threadGroup)
     {
-        this(maxThreads, minThreads, 60000);
+        this(name, maxThreads, minThreads, idleTimeout, -1, queue, queueOfferTimeout, threadGroup);
     }
 
-    public SolrQueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("queue") BlockingQueue<Runnable> queue)
-    {
-        this(maxThreads, minThreads, 60000, -1, queue, null);
-    }
-
-    public SolrQueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout)
-    {
-        this(maxThreads, minThreads, idleTimeout, null);
-    }
-
-    public SolrQueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue)
-    {
-        this(maxThreads, minThreads, idleTimeout, queue, null);
-    }
-
-    public SolrQueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
-    {
-        this(maxThreads, minThreads, idleTimeout, -1, queue, threadGroup);
-    }
-
-    public SolrQueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads,
+    private SolrQueuedThreadPool(String name, @Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads,
                             @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads,
-                            @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
+                            @Name("queue") BlockingQueue<Runnable> queue, @Name("queueOfferTimeout") int queueOfferTimeout, @Name("threadGroup") ThreadGroup threadGroup)
     {
-        this(maxThreads, minThreads, idleTimeout, reservedThreads, queue, threadGroup, null);
+        this(name, maxThreads, minThreads, idleTimeout, reservedThreads, queue, queueOfferTimeout, threadGroup, null);
     }
 
-    public SolrQueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads,
+    private SolrQueuedThreadPool(String name, @Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads,
                             @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads,
-                            @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup,
+                            @Name("queue") BlockingQueue<Runnable> queue, @Name("queueOfferTimeout") int queueOfferTimeout, @Name("threadGroup") ThreadGroup threadGroup,
                             @Name("threadFactory") ThreadFactory threadFactory)
     {
         if (maxThreads < minThreads)
             throw new IllegalArgumentException("max threads (" + maxThreads + ") less than min threads (" + minThreads + ")");
+        this.name = name;
+        this._queueOfferTimeout = queueOfferTimeout;
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);
-        setReservedThreads(0);
+        setReservedThreads(reservedThreads);
         setLowThreadsThreshold(-1);
         setStopTimeout(5000);
         if (queue == null)
         {
-            int capacity = Math.max(_minThreads, 8) * 1024;
+            int capacity = Math.max(_minThreads, 8) * 2048;
             queue = new BlockingArrayQueue<>(capacity, capacity);
         }
         _jobs = queue;
@@ -477,12 +461,22 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
             break;
         }
 
-        if (!_jobs.offer(job))
-        {
-            // reverse our changes to _counts.
-            if (addCounts(-startThread, 1 - startThread))
-                LOG.warn("{} rejected {}", this, job);
-            throw new RejectedExecutionException(job.toString());
+        if (_queueOfferTimeout == -1) {
+            if (!_jobs.offer(job)) {
+                // reverse our changes to _counts.
+                if (addCounts(-startThread, 1 - startThread)) LOG.warn("{} rejected {}", this, job);
+                throw new RejectedExecutionException(job.toString());
+            }
+        } else {
+            try {
+                if (!_jobs.offer(job, _queueOfferTimeout, TimeUnit.MILLISECONDS)) {
+                    // reverse our changes to _counts.
+                    if (addCounts(-startThread, 1 - startThread)) LOG.warn("{} rejected {}", this, job);
+                    throw new RejectedExecutionException(job.toString());
+                }
+            } catch (InterruptedException e) {
+
+            }
         }
 
         if (LOG.isDebugEnabled())
@@ -904,7 +898,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         _tryExecutor = TryExecutor.NO_TRY;
 
         int threads = getBusyThreads() + getIdleThreads() + getThreads() * 2;
-        BlockingArrayQueue<Runnable> jobs = (BlockingArrayQueue<Runnable>) getQueue();
+        BlockingQueue<Runnable> jobs = (BlockingQueue<Runnable>) getQueue();
 
         //setIdleTimeout(1);
 

@@ -42,17 +42,25 @@ public class SolrQoSFilter extends QoSFilter {
   static final String SUSPEND_INIT_PARAM = "suspendMs";
   static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
-  protected int _origMaxRequests;
+  protected volatile int _origMaxRequests;
 
   private static SysStats sysStats = ParWork.getSysStats();
+  private QoSFilter internQosFilter;
+  private volatile long lastUpdate;
 
   @Override
   public void init(FilterConfig filterConfig) {
     super.init(filterConfig);
-    _origMaxRequests = Integer.getInteger("solr.concurrentRequests.max", 1000);
+    _origMaxRequests = Integer.getInteger("solr.concurrentRequests.max", 10000);
     super.setMaxRequests(_origMaxRequests);
     super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 20000));
-    super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 5000));
+    super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 500));
+
+    internQosFilter = new QoSFilter();
+    internQosFilter.init(filterConfig);
+    internQosFilter.setMaxRequests(10000);
+    internQosFilter.setSuspendMs(30000);
+    internQosFilter.setWaitMs(50);
   }
 
   @Override
@@ -75,30 +83,39 @@ public class SolrQoSFilter extends QoSFilter {
         if (cMax > 5) {
           int max = Math.max(5, (int) ((double)cMax * 0.60D));
           log.warn("Our individual load is {}, set max concurrent requests to {}", ourLoad, max);
-          //setMaxRequests(max);
+          updateMaxRequests(max);
         }
       } else {
         // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
         double sLoad = sysStats.getSystemLoad();
-        if (sLoad > 1) {
+        if (sLoad > 1.3) {
           int cMax = getMaxRequests();
           if (cMax > 5) {
-            int max = Math.max(5, (int) ((double) cMax * 0.60D));
+            int max = Math.max(5, (int) ((double) cMax * 0.95D));
             log.warn("System load is {}, set max concurrent requests to {}", sLoad, max);
-            //setMaxRequests(max);
+            updateMaxRequests(max);
           }
         } else if (sLoad < 0.95 && _origMaxRequests != getMaxRequests()) {
 
           if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
-          //setMaxRequests(_origMaxRequests);
+          updateMaxRequests(_origMaxRequests);
         }
       }
 
+      //chain.doFilter(req, response);
       super.doFilter(req, response, chain);
 
     } else {
       if (log.isDebugEnabled()) log.debug("internal request, allow");
-      chain.doFilter(req, response);
+     // chain.doFilter(req, response);
+      internQosFilter.doFilter(req, response, chain);
+    }
+  }
+
+  private void updateMaxRequests(int max) {
+    if (System.currentTimeMillis() - lastUpdate < 10000)  {
+      lastUpdate = System.currentTimeMillis();
+      setMaxRequests(max);
     }
   }
 }

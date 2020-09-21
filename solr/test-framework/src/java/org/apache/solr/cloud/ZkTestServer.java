@@ -576,7 +576,7 @@ public class ZkTestServer implements Closeable {
               log.error("zkServer error", t);
             }
           } finally {
-            ParWork.closeMyPerThreadExecutor(true);
+           // ParWork.closeMyPerThreadExecutor(true);
           }
         }
       };

@@ -35,10 +35,10 @@
               <New class="org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory">
                 <Arg name="config"><Ref refid="httpConfig" /></Arg>
                 <Set name="maxConcurrentStreams">512</Set>
-                <Set name="inputBufferSize">8192</Set>
+                <Set name="inputBufferSize">16384</Set>
                 <Set name="rateControlFactory">
                   <New class="org.eclipse.jetty.http2.parser.WindowRateControl$Factory">
-                    <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="1000"/></Arg>
+                    <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="1000000"/></Arg>
                   </New>
                 </Set>
               </New>

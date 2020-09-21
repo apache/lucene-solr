@@ -309,75 +309,64 @@ public class JettySolrRunner implements Closeable {
     server.setStopAtShutdown(config.stopAtShutdown);
 
     //if (System.getProperty("jetty.testMode") != null) {
-    if (true) {
-      // if this property is true, then jetty will be configured to use SSL
-      // leveraging the same system properties as java to specify
-      // the keystore/truststore if they are set unless specific config
-      // is passed via the constructor.
-      //
-      // This means we will use the same truststore, keystore (and keys) for
-      // the server as well as any client actions taken by this JVM in
-      // talking to that server, but for the purposes of testing that should
-      // be good enough
-      final SslContextFactory.Server sslcontext = SSLConfig.createContextFactory(config.sslConfig);
 
-      HttpConfiguration configuration = new HttpConfiguration();
-      ServerConnector connector;
-      if (sslcontext != null) {
-        configuration.setSecureScheme("https");
-        configuration.addCustomizer(new SecureRequestCustomizer());
-        HttpConnectionFactory http1ConnectionFactory = new HttpConnectionFactory(configuration);
+    // if this property is true, then jetty will be configured to use SSL
+    // leveraging the same system properties as java to specify
+    // the keystore/truststore if they are set unless specific config
+    // is passed via the constructor.
+    //
+    // This means we will use the same truststore, keystore (and keys) for
+    // the server as well as any client actions taken by this JVM in
+    // talking to that server, but for the purposes of testing that should
+    // be good enough
+    final SslContextFactory.Server sslcontext = SSLConfig.createContextFactory(config.sslConfig);
 
-        if (config.onlyHttp1 || !Constants.JRE_IS_MINIMUM_JAVA9) {
-          connector = new ServerConnector(server, qtp, scheduler, null, 1, 2, new SslConnectionFactory(sslcontext,
-              http1ConnectionFactory.getProtocol()),
-              http1ConnectionFactory);
-        } else {
-          sslcontext.setCipherComparator(HTTP2Cipher.COMPARATOR);
+    HttpConfiguration configuration = new HttpConfiguration();
+    configuration.setRequestHeaderSize(16 * 1024);
+    configuration.setResponseHeaderSize(16 * 1024);
+    ServerConnector connector;
+    if (sslcontext != null) {
+      configuration.setSecureScheme("https");
+      configuration.addCustomizer(new SecureRequestCustomizer());
+      HttpConnectionFactory http1ConnectionFactory = new HttpConnectionFactory(configuration);
 
-          connector = new ServerConnector(server, qtp, scheduler, null, 1, 2);
-          SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslcontext, "alpn");
-          connector.addConnectionFactory(sslConnectionFactory);
-          connector.setDefaultProtocol(sslConnectionFactory.getProtocol());
-
-          HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
-
-          http2ConnectionFactory.setMaxConcurrentStreams(512);
-          http2ConnectionFactory.setInputBufferSize(16384);
-
-          ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(
-              http2ConnectionFactory.getProtocol(),
-              http1ConnectionFactory.getProtocol());
-          alpn.setDefaultProtocol(http2ConnectionFactory.getProtocol());
-          connector.addConnectionFactory(alpn);
-          connector.addConnectionFactory(http1ConnectionFactory);
-          connector.addConnectionFactory(http2ConnectionFactory);
-        }
+      if (config.onlyHttp1 || !Constants.JRE_IS_MINIMUM_JAVA9) {
+        connector = new ServerConnector(server, qtp, scheduler, null, 1, 2, new SslConnectionFactory(sslcontext, http1ConnectionFactory.getProtocol()), http1ConnectionFactory);
       } else {
-        if (config.onlyHttp1) {
-          connector = new ServerConnector(server,  qtp, scheduler, null, 1, 2, new HttpConnectionFactory(configuration));
-        } else {
-          connector = new ServerConnector(server,  qtp, scheduler, null, 1, 2, new HttpConnectionFactory(configuration),
-              new HTTP2CServerConnectionFactory(configuration));
-        }
+        sslcontext.setCipherComparator(HTTP2Cipher.COMPARATOR);
+
+        connector = new ServerConnector(server, qtp, scheduler, null, 1, 2);
+        SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslcontext, "alpn");
+        connector.addConnectionFactory(sslConnectionFactory);
+        connector.setDefaultProtocol(sslConnectionFactory.getProtocol());
+
+        HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
+
+        http2ConnectionFactory.setMaxConcurrentStreams(512);
+        http2ConnectionFactory.setInputBufferSize(16384);
+        http2ConnectionFactory.setStreamIdleTimeout(TimeUnit.MINUTES.toMillis(10));
+
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(http2ConnectionFactory.getProtocol(), http1ConnectionFactory.getProtocol());
+        alpn.setDefaultProtocol(http2ConnectionFactory.getProtocol());
+        connector.addConnectionFactory(alpn);
+        connector.addConnectionFactory(http1ConnectionFactory);
+        connector.addConnectionFactory(http2ConnectionFactory);
       }
-
-      connector.setReuseAddress(true);
-      connector.setSoLingerTime(-1);
-      connector.setPort(port);
-      connector.setHost("127.0.0.1");
-
-      server.setConnectors(new Connector[] {connector});
-
     } else {
-      HttpConfiguration configuration = new HttpConfiguration();
-      configuration.setIdleTimeout(Integer.getInteger("solr.containerThreadsIdle", THREAD_POOL_MAX_IDLE_TIME_MS));
-      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
-      connector.setReuseAddress(true);
-      connector.setPort(port);
-      connector.setSoLingerTime(-1);
-      server.setConnectors(new Connector[] {connector});
+      if (config.onlyHttp1) {
+        connector = new ServerConnector(server, qtp, scheduler, null, 1, 2, new HttpConnectionFactory(configuration));
+      } else {
+        connector = new ServerConnector(server, qtp, scheduler, null, 1, 2, new HttpConnectionFactory(configuration), new HTTP2CServerConnectionFactory(configuration));
+      }
     }
+    connector.setIdleTimeout(TimeUnit.MINUTES.toMillis(10));
+    connector.setReuseAddress(true);
+    connector.setSoLingerTime(-1);
+    connector.setPort(port);
+    connector.setHost("127.0.0.1");
+
+    server.setConnectors(new Connector[] {connector});
+
 
     //server.setDumpAfterStart(true);
    // server.setDumpBeforeStop(true);

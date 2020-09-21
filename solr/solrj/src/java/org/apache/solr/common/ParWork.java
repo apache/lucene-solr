@@ -78,7 +78,7 @@ public class ParWork implements Closeable {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
-          EXEC = (ThreadPoolExecutor) getParExecutorService(12, Integer.MAX_VALUE, 30000, new SynchronousQueue<>());
+          EXEC = (ThreadPoolExecutor) getParExecutorService(Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 250), Integer.MAX_VALUE, 30000, new SynchronousQueue<>());
           ((ParWorkExecutor)EXEC).enableCloseLock();
         }
       }
@@ -429,7 +429,7 @@ public class ParWork implements Closeable {
                 for (Future<Object> future : results) {
                   try {
                     future.get(
-                        Integer.getInteger("solr.parwork.task_timeout", 120000),
+                        Long.getLong("solr.parwork.task_timeout", TimeUnit.MINUTES.toMillis(10)),
                         TimeUnit.MILLISECONDS); // nocommit
                     if (!future.isDone() || future.isCancelled()) {
                       log.warn("A task did not finish isDone={} isCanceled={}",

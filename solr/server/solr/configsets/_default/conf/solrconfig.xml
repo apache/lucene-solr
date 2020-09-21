@@ -149,7 +149,7 @@
          before flushing.
          If both ramBufferSizeMB and maxBufferedDocs is set, then
          Lucene will flush based on whichever limit is hit first.  -->
-    <!-- <ramBufferSizeMB>100</ramBufferSizeMB> -->
+         <ramBufferSizeMB>300</ramBufferSizeMB>
     <!-- <maxBufferedDocs>1000</maxBufferedDocs> -->
 
     <!-- Expert: ramPerThreadHardLimitMB sets the maximum amount of RAM that can be consumed
@@ -181,9 +181,14 @@
          can perform merges in the background using separate threads.
          The SerialMergeScheduler (Lucene 2.2 default) does not.
      -->
-    <!--
-       <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
-       -->
+
+       <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler">
+         <int name="maxThreadCount">6</int>
+         <int name="maxMergeCount">8</int>
+         <bool name="ioThrottle">false</bool>
+
+
+       </mergeScheduler>
 
     <!-- LockFactory
 

@@ -57,14 +57,13 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     Replica.State waitForState = Replica.State.getState(params.get(ZkStateReader.STATE_PROP));
     Boolean checkLive = params.getBool("checkLive");
     Boolean onlyIfLeader = params.getBool("onlyIfLeader");
-    Boolean onlyIfLeaderActive = params.getBool("onlyIfLeaderActive");
 
     CoreContainer coreContainer = it.handler.coreContainer;
     // wait long enough for the leader conflict to work itself out plus a little extra
     int conflictWaitMs = coreContainer.getZkController().getLeaderConflictResolveWait();
     log.info(
-        "Going to wait for coreNodeName: {}, state: {}, checkLive: {}, onlyIfLeader: {}, onlyIfLeaderActive: {}",
-        coreNodeName, waitForState, checkLive, onlyIfLeader, onlyIfLeaderActive);
+        "Going to wait for coreNodeName: {}, state: {}, checkLive: {}, onlyIfLeader: {}: {}",
+        coreNodeName, waitForState, checkLive, onlyIfLeader);
 
     String collectionName;
     CloudDescriptor cloudDescriptor;
@@ -97,8 +96,10 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     AtomicReference<String> errorMessage = new AtomicReference<>();
     try {
       coreContainer.getZkController().getZkStateReader().waitForState(collectionName, conflictWaitMs, TimeUnit.MILLISECONDS, (n, c) -> {
-        if (c == null)
+        if (c == null) {
+          log.info("collection not found {}",collectionName);
           return false;
+        }
 
         // wait until we are sure the recovering node is ready
         // to accept updates
@@ -113,20 +114,6 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
             final Replica.State localState = cloudDescriptor.getLastPublished();
 
-            // TODO: This is funky but I've seen this in testing where the replica asks the
-            // leader to be in recovery? Need to track down how that happens ... in the meantime,
-            // this is a safeguard
-            boolean leaderDoesNotNeedRecovery = (onlyIfLeader != null &&
-                onlyIfLeader &&
-                cname.equals(replica.getStr("core")) &&
-                waitForState == Replica.State.RECOVERING &&
-                localState == Replica.State.ACTIVE &&
-                state == Replica.State.ACTIVE);
-
-            if (leaderDoesNotNeedRecovery) {
-              log.warn("Leader {} ignoring request to be in the recovering state because it is live and active.", cname);
-            }
-
             ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collectionName, slice.getName());
             // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
             if (waitForState == Replica.State.RECOVERING && shardTerms.registered(coreNodeName)
@@ -137,24 +124,27 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
               shardTerms.refreshTerms(null);
             }
 
-            boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive
-                && localState != Replica.State.ACTIVE;
             if (log.isInfoEnabled()) {
               log.info(
                   "In WaitForState(" + waitForState + "): collection=" + collectionName + ", shard=" + slice.getName() +
-                      ", thisCore=" + cname + ", leaderDoesNotNeedRecovery=" + leaderDoesNotNeedRecovery +
+                      ", thisCore=" + cname +
                       ", isLeader? " + cloudDescriptor.isLeader() +
                       ", live=" + live + ", checkLive=" + checkLive + ", currentState=" + state
                       + ", localState=" + localState + ", nodeName=" + nodeName +
-                      ", coreNodeName=" + coreNodeName + ", onlyIfActiveCheckResult=" + onlyIfActiveCheckResult
+                      ", coreNodeName=" + coreNodeName
                       + ", nodeProps: " + replica); //LOGOK
             }
-            if (!onlyIfActiveCheckResult && replica != null && (state == waitForState || leaderDoesNotNeedRecovery)) {
+
+            log.info("replica={} state={} waitForState={}", replica, state, waitForState);
+            if (replica != null && (state == waitForState)) {
               if (checkLive == null) {
+                log.info("checkLive=false, return true");
                 return true;
               } else if (checkLive && live) {
+                log.info("checkLive=true live={}, return true", live);
                 return true;
               } else if (!checkLive && !live) {
+                log.info("checkLive=false live={}, return true", live);
                 return true;
               }
             }

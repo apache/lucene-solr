@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ParWorkExecutor extends ThreadPoolExecutor {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
-  public static final int KEEP_ALIVE_TIME = 120000;
+  public static final int KEEP_ALIVE_TIME = 30000;
 
   private static AtomicInteger threadNumber = new AtomicInteger(0);
 
@@ -55,7 +55,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
   }
 
   public void shutdown() {
-    closeTracker.close();
+    assert closeTracker.close();
     super.shutdown();
   }
 
@@ -98,7 +98,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
           try {
             r.run();
           } finally {
-            ParWork.closeMyPerThreadExecutor(true);
+           // ParWork.closeMyPerThreadExecutor(true);
           }
         }
       };

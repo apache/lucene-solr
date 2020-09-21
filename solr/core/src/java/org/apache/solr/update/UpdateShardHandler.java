@@ -103,6 +103,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     if (cfg != null) {
       updateOnlyClientBuilder
           .connectionTimeout(cfg.getDistributedConnectionTimeout())
+          .maxOutstandingAsyncRequests(-1)
           .idleTimeout(cfg.getDistributedSocketTimeout());
     }
     updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().build();

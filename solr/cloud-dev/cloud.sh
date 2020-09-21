@@ -254,7 +254,7 @@ cleanIfReq() {
 recompileIfReq() {
   if [[ "$RECOMPILE" = true ]]; then
     pushd "$VCS_WORK"/solr
-    ant clean create-package
+    ./gradlew clean distTar
     if [[ "$?" -ne 0 ]]; then
       echo "BUILD FAIL - cloud.sh stopping, see above output for details"; popd; exit 7;
     fi
@@ -274,10 +274,10 @@ copyTarball() {
     echo "baz"
     pushd # back to original dir to properly resolve vcs working dir
     echo "foobar:"$(pwd)
-    if [[ ! -f $(ls "$VCS_WORK"/solr/package/solr-*.tgz) ]]; then
+    if [[ ! -f $(ls "$VCS_WORK"/solr/packaging/solr-*.tgz) ]]; then
       echo "No solr tarball found try again with -r"; popd; exit 10;
     fi
-    cp "$VCS_WORK"/solr/package/solr-*.tgz ${CLUSTER_WD}
+    cp "$VCS_WORK"/solr/packaging/solr-*.tgz ${CLUSTER_WD}
     pushd # back into cluster wd to unpack
     tar xzvf solr-*.tgz
     popd

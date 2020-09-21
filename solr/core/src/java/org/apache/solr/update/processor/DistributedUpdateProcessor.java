@@ -250,7 +250,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
 
-    try (ParWork worker = new ParWork(this)) {
+    try (ParWork worker = new ParWork(this, false, true)) {
       if (!forwardToLeader && !didLocalAdd) {
         worker.collect("localAddUpdate", () -> {
 

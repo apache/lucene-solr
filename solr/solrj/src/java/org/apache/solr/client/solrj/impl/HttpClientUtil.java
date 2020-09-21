@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
@@ -79,7 +80,7 @@ public class HttpClientUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final int DEFAULT_CONNECT_TIMEOUT = 10000;
-  public static final int DEFAULT_SO_TIMEOUT = 30000;
+  public static final int DEFAULT_SO_TIMEOUT = (int) TimeUnit.MINUTES.toMillis(5);
   public static final int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
   public static final int DEFAULT_MAXCONNECTIONS = 100000;
 
@@ -189,19 +190,29 @@ public class HttpClientUtil {
       // don't synchronize traversal - can lead to deadlock - CopyOnWriteArrayList is critical
       // we also do not want to have to acquire the mutex when the list is empty or put a global
       // mutex around the process calls
-      interceptors.forEach(new Consumer<HttpRequestInterceptor>() {
+      interceptors.forEach(new HttpRequestInterceptorConsumer(request, context));
 
-        @Override
-        public void accept(HttpRequestInterceptor interceptor) {
-          try {
-            interceptor.process(request, context);
-          } catch (Exception e) {
-            ParWork.propagateInterrupt(e);
-            log.error("", e);
-          }
+    }
+
+    private static class HttpRequestInterceptorConsumer implements Consumer<HttpRequestInterceptor> {
+
+      private final HttpRequest request;
+      private final HttpContext context;
+
+      public HttpRequestInterceptorConsumer(HttpRequest request, HttpContext context) {
+        this.request = request;
+        this.context = context;
+      }
+
+      @Override
+      public void accept(HttpRequestInterceptor interceptor) {
+        try {
+          interceptor.process(request, context);
+        } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
+          log.error("", e);
         }
-      });
-
+      }
     }
   }
 
