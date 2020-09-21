@@ -190,6 +190,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       RateLimitManager.Builder builder = new RateLimitManager.Builder(config);
 
       this.rateLimitManager = builder.build();
+
+      cores.getZkController().zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
+
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
       }

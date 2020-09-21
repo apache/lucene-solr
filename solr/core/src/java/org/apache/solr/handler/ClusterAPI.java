@@ -55,6 +55,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+import static org.apache.solr.servlet.RateLimiterConfig.RL_CONFIG_KEY;
 
 /** All V2 APIs that have  a prefix of /api/cluster/
  *
@@ -206,7 +207,7 @@ public class ClusterAPI {
     public void setProperty(PayloadObj<Map<String,String>> obj) throws Exception {
       Map<String,Object> m =  obj.getDataMap();
       m.put("action", CLUSTERPROP.toString());
-      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(),m ), obj.getResponse());
+      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 
     @Command(name = "set-placement-plugin")
@@ -224,6 +225,25 @@ public class ClusterAPI {
             null:
             new MapWriterMap(placementPluginConfig),
             PlacementPluginConfigImpl.PLACEMENT_PLUGIN_CONFIG_KEY);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
+      }
+    }
+
+    @Command(name = "set-ratelimiters")
+    public void setRateLimiters(PayloadObj<Map<String, Object>> obj) {
+      Map<String, Object> rateLimiterConfig = obj.getDataMap();
+      final boolean unset = rateLimiterConfig.isEmpty();
+      ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
+
+      try {
+        clusterProperties.setClusterProperties(
+            Collections.singletonMap(RL_CONFIG_KEY, null));
+
+        if (!unset) {
+          clusterProperties.setClusterProperties(
+              Collections.singletonMap(RL_CONFIG_KEY, rateLimiterConfig));
+        }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }

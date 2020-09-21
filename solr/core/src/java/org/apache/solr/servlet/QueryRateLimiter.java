@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
+import static org.apache.solr.servlet.RateLimiterConfig.RL_CONFIG_KEY;
 
 /** Implementation of RequestRateLimiter specific to query request types. Most of the actual work is delegated
  *  to the parent class but specific configurations and parsing are handled by this class.
@@ -42,25 +43,26 @@ public class QueryRateLimiter extends RequestRateLimiter {
 
   public void processConfigChange(Map<String, Object> properties) {
     RateLimiterConfig rateLimiterConfig = getRateLimiterConfig();
+    Map<String, Object> propertiesMap = (Map<String, Object>) properties.get(RL_CONFIG_KEY);
 
-    if (properties.get(RateLimiterConfig.RL_ALLOWED_REQUESTS) != null) {
-      rateLimiterConfig.allowedRequests = Integer.parseInt(properties.get(RateLimiterConfig.RL_ALLOWED_REQUESTS).toString());
+    if (propertiesMap.get(RateLimiterConfig.RL_ALLOWED_REQUESTS) != null) {
+      rateLimiterConfig.allowedRequests = Integer.parseInt(propertiesMap.get(RateLimiterConfig.RL_ALLOWED_REQUESTS).toString());
     }
 
-    if (properties.get(RateLimiterConfig.RL_ENABLED) != null) {
-      rateLimiterConfig.isEnabled = Boolean.parseBoolean(properties.get(RateLimiterConfig.RL_ENABLED).toString());
+    if (propertiesMap.get(RateLimiterConfig.RL_ENABLED) != null) {
+      rateLimiterConfig.isEnabled = Boolean.parseBoolean(propertiesMap.get(RateLimiterConfig.RL_ENABLED).toString());
     }
 
-    if (properties.get(RateLimiterConfig.RL_GUARANTEED_SLOTS) != null) {
-      rateLimiterConfig.guaranteedSlotsThreshold = Integer.parseInt(properties.get(RateLimiterConfig.RL_GUARANTEED_SLOTS).toString());
+    if (propertiesMap.get(RateLimiterConfig.RL_GUARANTEED_SLOTS) != null) {
+      rateLimiterConfig.guaranteedSlotsThreshold = Integer.parseInt(propertiesMap.get(RateLimiterConfig.RL_GUARANTEED_SLOTS).toString());
     }
 
-    if (properties.get(RateLimiterConfig.RL_SLOT_BORROWING_ENABLED) != null) {
-      rateLimiterConfig.isSlotBorrowingEnabled = Boolean.parseBoolean(properties.get(RateLimiterConfig.RL_SLOT_BORROWING_ENABLED).toString());
+    if (propertiesMap.get(RateLimiterConfig.RL_SLOT_BORROWING_ENABLED) != null) {
+      rateLimiterConfig.isSlotBorrowingEnabled = Boolean.parseBoolean(propertiesMap.get(RateLimiterConfig.RL_SLOT_BORROWING_ENABLED).toString());
     }
 
-    if (properties.get(RateLimiterConfig.RL_TIME_SLOT_ACQUISITION) != null) {
-      rateLimiterConfig.waitForSlotAcquisition = Long.parseLong(properties.get(RateLimiterConfig.RL_TIME_SLOT_ACQUISITION).toString());
+    if (propertiesMap.get(RateLimiterConfig.RL_TIME_SLOT_ACQUISITION_INMS) != null) {
+      rateLimiterConfig.waitForSlotAcquisition = Long.parseLong(propertiesMap.get(RateLimiterConfig.RL_TIME_SLOT_ACQUISITION_INMS).toString());
     }
   }
 
