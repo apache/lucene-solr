@@ -57,6 +57,12 @@ public class TestExportTool extends SolrCloudTestCase {
     info.setOutFormat(null, "json");
   }
 
+  public void testJsonlDefaultOutputFileFormat() throws Exception {
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner("http://somesolr/mycollection/");
+    info.setOutFormat(null, null);
+    assertEquals("jsonl", info.format);
+  }
+
   public void testJsonlValidOutputFileFormat() throws Exception {
     ExportTool.Info info = new ExportTool.MultiThreadedRunner("http://somesolr/mycollection/");
     info.setOutFormat(null, "jsonl");

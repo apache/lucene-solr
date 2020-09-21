@@ -128,9 +128,11 @@ public class ExportTool extends SolrCLI.ToolBase {
       if (limit == -1) limit = Long.MAX_VALUE;
     }
 
-    public void setOutFormat(String out, String format) {
+    public void setOutFormat(String out, String format) {      
+      if (format == null) {
+        format = "jsonl";
+      }
       this.format = format;
-      if (format == null) format = "json";
       if (!formats.contains(format)) {
         throw new IllegalArgumentException("format must be one of :" + formats);
       }
