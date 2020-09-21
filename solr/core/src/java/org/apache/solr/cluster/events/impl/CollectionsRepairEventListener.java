@@ -48,15 +48,11 @@ import org.slf4j.LoggerFactory;
  * This is an illustration how to re-implement the combination of 8x
  * NodeLostTrigger and AutoAddReplicasPlanAction to maintain the collection's replication factor.
  * <p>NOTE: there's no support for 'waitFor' yet.</p>
+ * <p>NOTE 2: this functionality would be probably more reliable when executed also as a
+ * periodically scheduled check - both as a reactive (listener) and proactive (scheduled) measure.</p>
  */
 public class CollectionsRepairEventListener implements ClusterSingleton, ClusterEventListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final Set<ClusterEvent.EventType> EVENT_TYPES = new HashSet<>(
-      Arrays.asList(
-          ClusterEvent.EventType.NODES_DOWN,
-          ClusterEvent.EventType.REPLICAS_DOWN
-      ));
 
   private static final String ASYNC_ID_PREFIX = "_col_repair_";
   private static final AtomicInteger counter = new AtomicInteger();
