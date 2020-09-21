@@ -50,6 +50,9 @@ Improvements
 
 * SOLR-14799: JWT authentication plugin only requires "sub" claim when principalClaim=sub. (Erik Hatcher)
 
+* SOLR-14802: geodist: Support most (all?) spatial field types as an argument like LLPSF, SRPTFT, and others.
+  (Tom Edge, Craig Wrigglesworth)
+
 Optimizations
 ---------------------
 
