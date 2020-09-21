@@ -22,8 +22,8 @@
       <tokenizer class="solr.PatternTokenizerFactory" pattern=".*!" group="0"/>
     </analyzer>
   </fieldType>
-  <fieldType name="int" class="solr.IntPointField" omitNorms="true" positionIncrementGap="0" docValues="false" precisionStep="0"/>
-  <fieldType name="long" class="solr.LongPointField" omitNorms="true" positionIncrementGap="0" docValues="false" precisionStep="0"/>
+  <fieldType name="int" class="solr.IntPointField" docValues="false"/>
+  <fieldType name="long" class="solr.LongPointField" docValues="false" />
   <fieldType name="myNewTextFieldWithAnalyzerClass" class="schemapkg:my.pkg.MyTextField">
     <analyzer>
       <charFilter class="schemapkg:my.pkg.MyPatternReplaceCharFilterFactory" pattern="([a-zA-Z])\\1+" replacement="$1$1"/>
