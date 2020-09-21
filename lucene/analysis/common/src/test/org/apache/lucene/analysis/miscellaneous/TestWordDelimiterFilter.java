@@ -365,35 +365,6 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
       }
     };
   }
-
-  // https://issues.apache.org/jira/browse/LUCENE-9006
-  public void testCatenateAllEmittedBeforeParts() throws Exception {
-    final int flags = PRESERVE_ORIGINAL | GENERATE_WORD_PARTS | CATENATE_ALL;
-    final boolean useCharFilter = true;
-    final boolean graphOffsetsAreCorrect = false; // note: could solve via always incrementing wordPos on first word ('8')
-
-    //not using getAnalyzer because we want adjustInternalOffsets=true
-    Analyzer a = new Analyzer() {
-      @Override
-      public TokenStreamComponents createComponents(String field) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(tokenizer, flags, null));
-      }
-    };
-
-    // input starts with a number, but we don't generate numbers.
-    //   Nonetheless preserve-original and concatenate-all show up first.
-    assertTokenStreamContents(a.tokenStream("dummy", "8-other"),
-        new String[] { "8-other", "8other", "other" }, new int[]{0, 0, 2}, new int[]{7, 7, 7});
-    checkAnalysisConsistency(random(), a, useCharFilter, "8-other", graphOffsetsAreCorrect);
-
-    // input ends with a number, but we don't generate numbers
-    assertTokenStreamContents(a.tokenStream("dummy", "other-9"),
-        new String[] { "other-9", "other9", "other" }, new int[]{0, 0, 0}, new int[]{7, 7, 5});
-    checkAnalysisConsistency(random(), a, useCharFilter, "other-9", graphOffsetsAreCorrect);
-
-    a.close();
-  }
   
   /** concat numbers + words + all */
   public void testLotsOfConcatenating() throws Exception {

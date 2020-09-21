@@ -390,7 +390,6 @@ public final class WordDelimiterFilter extends TokenFilter {
   
   private AttributeSource.State buffered[] = new AttributeSource.State[8];
   private int startOff[] = new int[8];
-  private int endOff[] = new int[8];
   private int posInc[] = new int[8];
   private int bufferedLen = 0;
   private int bufferedPos = 0;
@@ -399,20 +398,10 @@ public final class WordDelimiterFilter extends TokenFilter {
   private class OffsetSorter extends InPlaceMergeSorter {
     @Override
     protected int compare(int i, int j) {
-      // earlier start offset
       int cmp = Integer.compare(startOff[i], startOff[j]);
-      if (cmp != 0) {
-        return cmp;
+      if (cmp == 0) {
+        cmp = Integer.compare(posInc[j], posInc[i]);
       }
-      
-      // earlier position
-      cmp = Integer.compare(posInc[j], posInc[i]);
-      if (cmp != 0) {
-        return cmp;
-      }
-      
-      // later end offset
-      cmp = Integer.compare(endOff[j], endOff[i]);
       return cmp;
     }
 
@@ -425,10 +414,6 @@ public final class WordDelimiterFilter extends TokenFilter {
       int tmp2 = startOff[i];
       startOff[i] = startOff[j];
       startOff[j] = tmp2;
-
-      tmp2 = endOff[i];
-      endOff[i] = endOff[j];
-      endOff[j] = tmp2;
       
       tmp2 = posInc[i];
       posInc[i] = posInc[j];
@@ -443,11 +428,9 @@ public final class WordDelimiterFilter extends TokenFilter {
       int newSize = ArrayUtil.oversize(bufferedLen+1, 8);
       buffered = ArrayUtil.growExact(buffered, newSize);
       startOff = ArrayUtil.growExact(startOff, newSize);
-      endOff = ArrayUtil.growExact(endOff, newSize);
       posInc = ArrayUtil.growExact(posInc, newSize);
     }
     startOff[bufferedLen] = offsetAttribute.startOffset();
-    endOff[bufferedLen] = offsetAttribute.endOffset();
     posInc[bufferedLen] = posIncAttribute.getPositionIncrement();
     buffered[bufferedLen] = captureState();
     bufferedLen++;
