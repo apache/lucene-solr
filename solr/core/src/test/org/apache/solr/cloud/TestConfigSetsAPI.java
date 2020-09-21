@@ -377,15 +377,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, null, zkClient, true, false));
       assertTrue("Expecting version bump",
               solrconfigZkVersion < getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
-      // Fake a trusted configset
-      zkClient.setData(String.format(Locale.ROOT, "/configs/%s%s", configsetName, configsetSuffix), "{\"trusted\": true}".getBytes(UTF_8), true);
-      solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
-      ignoreException("Trying to make an unstrusted ConfigSet update on a trusted configSet");
-      assertEquals("Can't upload a trusted configset with an untrusted request",
-              400, uploadConfigSet(configsetName, configsetSuffix, null, zkClient, true, false));
-      unIgnoreException("Trying to make an unstrusted ConfigSet update on a trusted configSet");
-      assertEquals("Expecting version to remain equal",
-              solrconfigZkVersion, getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
     }
 
   }
@@ -421,58 +412,58 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public void testOverwriteWithTrust() throws Exception {
     String configsetName = "regular";
     String configsetSuffix = "testOverwriteWithTrust-1";
-    uploadConfigSetWithAssertions(configsetName, configsetSuffix, null, null);
-    try (SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
+    uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
+    try (SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
             AbstractZkTestCase.TIMEOUT, 45000, null)) {
       assertFalse(isTrusted(zkClient, configsetName, configsetSuffix));
       int solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
       // Was untrusted, overwrite with untrusted
-      assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, null, null, zkClient, true, false));
+      assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, null, zkClient, true, false));
       assertTrue("Expecting version bump",
               solrconfigZkVersion < getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
       assertFalse(isTrusted(zkClient, configsetName, configsetSuffix));
       solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
 
       // Was untrusted, overwrite with trusted but no cleanup
-      assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, "solr", "SolrRocks", zkClient, true, false));
+      assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, "solr", zkClient, true, false));
       assertTrue("Expecting version bump",
               solrconfigZkVersion < getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
       assertFalse(isTrusted(zkClient, configsetName, configsetSuffix));
       solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
 
       // Was untrusted, overwrite with trusted with cleanup
-      assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, "solr", "SolrRocks", zkClient, true, true));
+      assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, "solr", zkClient, true, true));
       assertTrue("Expecting version bump",
               solrconfigZkVersion < getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
       assertTrue(isTrusted(zkClient, configsetName, configsetSuffix));
       solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
 
-      // Was trusted, try to override with untrusted with no cleanup
+      // Was trusted, try to overwrite with untrusted with no cleanup
       ignoreException("Trying to make an unstrusted ConfigSet update on a trusted configSet");
       assertEquals("Can't upload a trusted configset with an untrusted request",
-              400, uploadConfigSet(configsetName, configsetSuffix, null, null, zkClient, true, false));
+              400, uploadConfigSet(configsetName, configsetSuffix, null, zkClient, true, false));
       assertEquals("Expecting version to remain equal",
               solrconfigZkVersion, getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
       assertTrue(isTrusted(zkClient, configsetName, configsetSuffix));
 
-      // Was trusted, try to override with untrusted with cleanup
+      // Was trusted, try to overwrite with untrusted with cleanup
       ignoreException("Trying to make an unstrusted ConfigSet update on a trusted configSet");
       assertEquals("Can't upload a trusted configset with an untrusted request",
-              400, uploadConfigSet(configsetName, configsetSuffix, null, null, zkClient, true, true));
+              400, uploadConfigSet(configsetName, configsetSuffix, null, zkClient, true, true));
       assertEquals("Expecting version to remain equal",
               solrconfigZkVersion, getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
       assertTrue(isTrusted(zkClient, configsetName, configsetSuffix));
       unIgnoreException("Trying to make an unstrusted ConfigSet update on a trusted configSet");
 
       // Was trusted, overwrite with trusted no cleanup
-      assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, "solr", "SolrRocks", zkClient, true, false));
+      assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, "solr", zkClient, true, false));
       assertTrue("Expecting version bump",
               solrconfigZkVersion < getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
       assertTrue(isTrusted(zkClient, configsetName, configsetSuffix));
       solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
 
       // Was trusted, overwrite with trusted with cleanup
-      assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, "solr", "SolrRocks", zkClient, true, true));
+      assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, "solr", zkClient, true, true));
       assertTrue("Expecting version bump",
               solrconfigZkVersion < getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
       assertTrue(isTrusted(zkClient, configsetName, configsetSuffix));
