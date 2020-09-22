@@ -88,6 +88,7 @@
  *    <li>Any component that uses ShardHandler (eg. CollectionsHandler Cmd-s)</li>
  *  </ul>
  *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 package org.apache.solr.cloud.autoscaling.sim;
 

@@ -19,6 +19,10 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import org.apache.solr.client.solrj.SolrRequest;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class NoneSuggester extends Suggester {
 
   public static NoneSuggester get(Policy.Session session) {

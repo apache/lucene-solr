@@ -53,6 +53,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Various utility methods useful for autoscaling simulations and snapshots.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SimUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

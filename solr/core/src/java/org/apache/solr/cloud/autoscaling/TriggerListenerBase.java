@@ -28,6 +28,8 @@ import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Base class for implementations of {@link TriggerListener}.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public abstract class TriggerListenerBase implements TriggerListener {
 

@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORE_IDX;
 
 /**
- *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class IndexSizeTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

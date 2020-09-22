@@ -28,6 +28,8 @@ import org.apache.solr.common.cloud.LiveNodesListener;
 
 /**
  * This class represents a set of live nodes and allows adding listeners to track their state.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class LiveNodesSet implements Iterable<String> {
 

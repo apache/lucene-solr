@@ -42,6 +42,8 @@ import org.slf4j.LoggerFactory;
  * after their cleanup TTL period elapsed.
  * <p>Shard delete requests are put into the {@link ActionContext}'s properties
  * with the key name "operations". The value is a List of SolrRequest objects.</p>
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class InactiveShardPlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -35,6 +35,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 
 /**
  * Read-only snapshot of another {@link NodeStateProvider}.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SnapshotNodeStateProvider implements NodeStateProvider {
   private Map<String, Map<String, Object>> nodeValues = new LinkedHashMap<>();

@@ -50,6 +50,10 @@ import static org.apache.solr.common.params.AutoScalingParams.BELOW;
 import static org.apache.solr.common.params.AutoScalingParams.METRIC;
 import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class MetricTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

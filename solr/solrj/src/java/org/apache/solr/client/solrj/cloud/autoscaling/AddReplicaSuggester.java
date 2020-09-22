@@ -29,6 +29,10 @@ import org.apache.solr.common.util.Pair;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 class AddReplicaSuggester extends Suggester {
 
   @SuppressWarnings({"rawtypes"})

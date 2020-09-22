@@ -50,6 +50,8 @@ import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 
 /**
  * Trigger for the {@link TriggerEventType#NODELOST} event
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class NodeLostTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

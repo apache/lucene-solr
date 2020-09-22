@@ -29,6 +29,11 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 
+/**
+ * Common autoscaling interfaces.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class AutoScaling {
 
   /**

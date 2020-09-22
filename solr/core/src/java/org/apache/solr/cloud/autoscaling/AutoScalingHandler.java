@@ -76,7 +76,9 @@ import static org.apache.solr.common.params.AutoScalingParams.*;
 import static org.apache.solr.common.params.CommonParams.JSON;
 
 /**
- * Handler for /cluster/autoscaling
+ * Handler for /cluster/autoscaling.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class AutoScalingHandler extends RequestHandlerBase implements PermissionNameProvider {
   public static final String HANDLER_PATH = "/admin/autoscaling";

@@ -124,6 +124,8 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  *     <li>maintaining an up-to-date /clusterprops.json. Note: this file is only written, but never read by the
  *     framework!</li>
  *   </ul>
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SimClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

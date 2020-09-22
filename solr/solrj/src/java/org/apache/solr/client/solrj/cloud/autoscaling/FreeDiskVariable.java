@@ -35,6 +35,10 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.TOTAL
 import static org.apache.solr.common.cloud.rule.ImplicitSnitch.DISK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class FreeDiskVariable extends VariableBase {
 
   public FreeDiskVariable(Type type) {

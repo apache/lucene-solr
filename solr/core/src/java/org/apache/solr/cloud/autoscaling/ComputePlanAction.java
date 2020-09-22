@@ -47,6 +47,8 @@ import static org.apache.solr.cloud.autoscaling.TriggerEvent.NODE_NAMES;
  * <p>
  * The cluster operations computed here are put into the {@link ActionContext}'s properties
  * with the key name "operations". The value is a List of SolrRequest objects.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class ComputePlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

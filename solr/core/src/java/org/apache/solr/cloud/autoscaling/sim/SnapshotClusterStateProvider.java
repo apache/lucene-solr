@@ -37,6 +37,8 @@ import org.noggit.JSONWriter;
 
 /**
  * Read-only snapshot of another {@link ClusterStateProvider}.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SnapshotClusterStateProvider implements ClusterStateProvider {
 

@@ -22,6 +22,10 @@ import org.apache.solr.common.util.Pair;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class NodeVariable extends VariableBase {
   public NodeVariable(Type type) {
     super(type);

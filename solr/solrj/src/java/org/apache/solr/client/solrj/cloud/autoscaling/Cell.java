@@ -26,6 +26,7 @@ import org.apache.solr.common.util.Utils;
 
 /**Each instance represents an attribute that is being tracked by the framework such as , freedisk, cores etc
  *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class Cell implements MapWriter {
   final int index;

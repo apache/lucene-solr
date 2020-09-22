@@ -48,6 +48,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Base class for {@link org.apache.solr.cloud.autoscaling.AutoScaling.Trigger} implementations.
  * It handles state snapshot / restore in ZK.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public abstract class TriggerBase implements AutoScaling.Trigger {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

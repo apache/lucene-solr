@@ -29,6 +29,10 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class Violation implements MapWriter {
   final String shard, coll, node;
   final Object actualVal;

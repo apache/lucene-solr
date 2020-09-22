@@ -52,6 +52,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 /**
  * Overseer thread responsible for reading triggers from zookeeper and
  * adding/removing them from {@link ScheduledTriggers}
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class OverseerTriggerThread implements Runnable, SolrCloseable {
 

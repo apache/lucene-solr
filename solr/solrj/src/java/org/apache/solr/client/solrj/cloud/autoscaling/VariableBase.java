@@ -28,6 +28,10 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.suggestN
 import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.suggestPositiveViolations;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class VariableBase implements Variable {
   final Type varType;
 

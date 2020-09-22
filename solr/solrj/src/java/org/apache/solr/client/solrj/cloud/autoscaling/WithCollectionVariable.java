@@ -33,6 +33,8 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
 
 /**
  * Implements the 'withCollection' variable type
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class WithCollectionVariable extends VariableBase {
 

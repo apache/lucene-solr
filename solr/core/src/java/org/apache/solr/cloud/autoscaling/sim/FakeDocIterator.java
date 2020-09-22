@@ -25,6 +25,8 @@ import org.apache.solr.common.SolrInputField;
  * Lightweight generator of fake documents
  * NOTE: this iterator only ever returns the same document N times, which works ok
  * for our "bulk index update" simulation. Obviously don't use this for real indexing.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class FakeDocIterator implements Iterator<SolrInputDocument> {
   final SolrInputDocument doc = new SolrInputDocument();

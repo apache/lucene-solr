@@ -29,6 +29,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
 /**
  * This class configures the parent ComputePlanAction to compute plan
  * only for collections which have autoAddReplicas=true.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class AutoAddReplicasPlanAction extends ComputePlanAction {
 

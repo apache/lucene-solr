@@ -23,6 +23,10 @@ import java.util.function.Consumer;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class CoresVariable extends VariableBase {
   public CoresVariable(Type type) {
     super(type);

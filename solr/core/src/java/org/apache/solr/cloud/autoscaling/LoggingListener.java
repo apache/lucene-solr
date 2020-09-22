@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Implementation of {@link TriggerListener} that reports
  * events to a log.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class LoggingListener extends TriggerListenerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

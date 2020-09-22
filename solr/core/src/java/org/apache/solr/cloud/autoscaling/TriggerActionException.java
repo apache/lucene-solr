@@ -19,6 +19,8 @@ package org.apache.solr.cloud.autoscaling;
 
 /**
  * Trigger action-specific exception.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class TriggerActionException extends Exception {
 

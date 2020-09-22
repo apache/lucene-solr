@@ -25,6 +25,8 @@ import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Interface for actions performed in response to a trigger being activated
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public interface TriggerAction extends Closeable {
 

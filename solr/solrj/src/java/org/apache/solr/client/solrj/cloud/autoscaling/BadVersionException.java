@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 /**
  *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class BadVersionException extends Exception {
 

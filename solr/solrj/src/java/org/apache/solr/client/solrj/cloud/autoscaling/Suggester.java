@@ -50,12 +50,15 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
-/* A suggester is capable of suggesting a collection operation
+/**
+ * A suggester is capable of suggesting a collection operation
  * given a particular session. Before it suggests a new operation,
  * it ensures that ,
  *  a) load is reduced on the most loaded node
  *  b) it causes no new violations
  *
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public abstract class Suggester implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

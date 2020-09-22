@@ -55,6 +55,8 @@ import org.slf4j.LoggerFactory;
  *   <li>timeout - int, optional connection and socket timeout in milliseconds. Default is 60 seconds.</li>
  *   <li>followRedirects - boolean, optional setting to follow redirects. Default is false.</li>
  * </ul>
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class HttpTriggerListener extends TriggerListenerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

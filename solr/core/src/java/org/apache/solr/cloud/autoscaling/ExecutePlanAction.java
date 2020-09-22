@@ -50,6 +50,8 @@ import org.slf4j.LoggerFactory;
 /**
  * This class is responsible for executing cluster operations read from the {@link ActionContext}'s properties
  * with the key name "operations".
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class ExecutePlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

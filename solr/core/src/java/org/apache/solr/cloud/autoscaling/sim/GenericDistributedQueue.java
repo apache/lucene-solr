@@ -55,6 +55,8 @@ import org.slf4j.LoggerFactory;
 /**
  * A distributed queue that uses {@link DistribStateManager} as the underlying distributed store.
  * Implementation based on {@link org.apache.solr.cloud.ZkDistributedQueue}
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class GenericDistributedQueue implements DistributedQueue {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

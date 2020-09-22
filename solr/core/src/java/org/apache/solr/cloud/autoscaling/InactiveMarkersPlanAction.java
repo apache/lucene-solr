@@ -44,6 +44,8 @@ import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STA
  * This plan simply removes nodeAdded and nodeLost markers from Zookeeper if their TTL has
  * expired. These markers are used by {@link NodeAddedTrigger} and {@link NodeLostTrigger} to
  * ensure fault tolerance in case of Overseer leader crash.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class InactiveMarkersPlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

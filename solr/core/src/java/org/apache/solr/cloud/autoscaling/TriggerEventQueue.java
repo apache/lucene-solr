@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class TriggerEventQueue {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

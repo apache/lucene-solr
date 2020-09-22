@@ -55,6 +55,8 @@ import org.slf4j.LoggerFactory;
  *   <li>collection - optional string, specifies what collection should be used for storing events. Default value
  *   is {@link CollectionAdminParams#SYSTEM_COLL}.</li>
  * </ul>
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SystemLogListener extends TriggerListenerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
