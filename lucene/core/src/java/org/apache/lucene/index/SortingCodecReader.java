@@ -41,7 +41,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * {@link Sort}. This can be used to re-sort and index after it's been created by wrapping all
  * readers of the index with this reader and adding it to a fresh IndexWriter via
  * {@link IndexWriter#addIndexes(CodecReader...)}.
- * NOTE: This reader should only be used for merging. Pulling fields from this ready might be very costly and memory
+ * NOTE: This reader should only be used for merging. Pulling fields from this reader might be very costly and memory
  * intensive.
  *
  * @lucene.experimental
