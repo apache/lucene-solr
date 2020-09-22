@@ -32,6 +32,7 @@ import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.packed.PackedInts;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -51,10 +52,9 @@ public final class SortingCodecReader extends FilterCodecReader {
 
   private final Map<String, int[]> cachedSortedDVs = new HashMap<>();
 
-  // TODO: pack long[][] into an int[] (offset) and long[] instead:
-  private final Map<String, long[][]> cachedSortedSetDVs = new HashMap<>();
+  private final Map<String, SortedSetDocValuesWriter.LongOrds> cachedSortedSetDVs = new HashMap<>();
 
-  private final Map<String, long[][]> cachedSortedNumericDVs = new HashMap<>();
+  private final Map<String, SortedNumericDocValuesWriter.LongValues> cachedSortedNumericDVs = new HashMap<>();
 
   private static class SortingBits implements Bits {
 
@@ -381,7 +381,7 @@ public final class SortingCodecReader extends FilterCodecReader {
         synchronized (cachedBinaryDVs) {
           dvs = cachedBinaryDVs.get(field);
           if (dvs == null) {
-            dvs = BinaryDocValuesWriter.sortDocValues(maxDoc(), docMap, oldDocValues);
+            dvs = new BinaryDocValuesWriter.CachedBinaryDVs(maxDoc(), docMap, oldDocValues);
             cachedBinaryDVs.put(field.name, dvs);
           }
         }
@@ -412,11 +412,11 @@ public final class SortingCodecReader extends FilterCodecReader {
       @Override
       public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
         final SortedNumericDocValues oldDocValues = delegate.getSortedNumeric(field);
-        long[][] values;
+        SortedNumericDocValuesWriter.LongValues values;
         synchronized (cachedSortedNumericDVs) {
           values = cachedSortedNumericDVs.get(field);
           if (values == null) {
-            values = SortedNumericDocValuesWriter.sortDocValues(maxDoc(), docMap, oldDocValues);
+            values = new SortedNumericDocValuesWriter.LongValues(maxDoc(), docMap, oldDocValues, PackedInts.FAST);
             cachedSortedNumericDVs.put(field.name, values);
           }
         }
@@ -427,11 +427,11 @@ public final class SortingCodecReader extends FilterCodecReader {
       @Override
       public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
         SortedSetDocValues oldDocValues = delegate.getSortedSet(field);
-        long[][] ords;
+        SortedSetDocValuesWriter.LongOrds ords;
         synchronized (cachedSortedSetDVs) {
           ords = cachedSortedSetDVs.get(field);
           if (ords == null) {
-            ords = SortedSetDocValuesWriter.sortDocValues(maxDoc(), docMap, oldDocValues);
+            ords = new SortedSetDocValuesWriter.LongOrds(maxDoc(), docMap, oldDocValues, PackedInts.FASTEST);
             cachedSortedSetDVs.put(field.name, ords);
           }
         }

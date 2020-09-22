@@ -22,6 +22,7 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
@@ -139,28 +140,6 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     bytesUsed = newBytesUsed;
   }
 
-  static long[][] sortDocValues(int maxDoc, Sorter.DocMap sortMap, SortedSetDocValues oldValues) throws IOException {
-    long[][] ords = new long[maxDoc][];
-    int docID;
-    while ((docID = oldValues.nextDoc()) != NO_MORE_DOCS) {
-      int newDocID = sortMap.oldToNew(docID);
-      long[] docOrds = new long[1];
-      int upto = 0;
-      while (true) {
-        long ord = oldValues.nextOrd();
-        if (ord == NO_MORE_ORDS) {
-          break;
-        }
-        if (upto == docOrds.length) {
-          docOrds = ArrayUtil.grow(docOrds);
-        }
-        docOrds[upto++] = ord;
-      }
-      ords[newDocID] = ArrayUtil.copyOfSubArray(docOrds, 0, upto);
-    }
-    return ords;
-  }
-
   @Override
   SortedSetDocValues getDocValues() {
     if (finalOrds == null) {
@@ -203,12 +182,12 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
       ordMap = finalOrdMap;
     }
 
-    final long[][] sorted;
+    final LongOrds longOrds;
     if (sortMap != null) {
-      sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap,
-          new BufferedSortedSetDocValues(sortedValues, ordMap, hash, ords, ordCounts, maxCount, docsWithField.iterator()));
+      longOrds = new LongOrds(state.segmentInfo.maxDoc(), sortMap,
+          new BufferedSortedSetDocValues(sortedValues, ordMap, hash, ords, ordCounts, maxCount, docsWithField.iterator()), PackedInts.FASTEST);
     } else {
-      sorted = null;
+      longOrds = null;
     }
     dvConsumer.addSortedSetField(fieldInfo,
                                  new EmptyDocValuesProducer() {
@@ -219,10 +198,10 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
                                      }
                                      final SortedSetDocValues buf =
                                          new BufferedSortedSetDocValues(sortedValues, ordMap, hash, ords, ordCounts, maxCount, docsWithField.iterator());
-                                     if (sorted == null) {
+                                     if (longOrds == null) {
                                        return buf;
                                      } else {
-                                       return new SortingSortedSetDocValues(buf, sorted);
+                                       return new SortingSortedSetDocValues(buf, longOrds);
                                      }
                                    }
                                  });
@@ -311,11 +290,11 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
   static class SortingSortedSetDocValues extends SortedSetDocValues {
 
     private final SortedSetDocValues in;
-    private final long[][] ords;
+    private final LongOrds ords;
     private int docID = -1;
-    private int ordUpto;
+    private long ordUpto;
 
-    SortingSortedSetDocValues(SortedSetDocValues in, long[][] ords) {
+    SortingSortedSetDocValues(SortedSetDocValues in, LongOrds ords) {
       this.in = in;
       this.ords = ords;
     }
@@ -327,18 +306,13 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
 
     @Override
     public int nextDoc() {
-      while (true) {
+      do {
         docID++;
-        if (docID == ords.length) {
-          docID = NO_MORE_DOCS;
-          break;
+        if (docID == ords.offsets.length) {
+          return docID = NO_MORE_DOCS;
         }
-        if (ords[docID] != null) {
-          break;
-        }
-        // skip missing docs
-      }
-      ordUpto = 0;
+      } while (ords.offsets[docID] <= 0);
+      ordUpto = ords.offsets[docID]-1;
       return docID;
     }
 
@@ -351,16 +325,16 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     public boolean advanceExact(int target) throws IOException {
       // needed in IndexSorter#StringSorter
       docID = target;
-      ordUpto = 0;
-      return ords[docID] != null;
+      ordUpto = ords.offsets[docID]-1;
+      return ords.offsets[docID] > 0;
     }
-
     @Override
     public long nextOrd() {
-      if (ordUpto == ords[docID].length) {
+      long ord = ords.ords.get(ordUpto++);
+      if (ord == 0) {
         return NO_MORE_ORDS;
       } else {
-        return ords[docID][ordUpto++];
+        return ord - 1 ;
       }
     }
 
@@ -377,6 +351,36 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     @Override
     public long getValueCount() {
       return in.getValueCount();
+    }
+  }
+
+  static class LongOrds {
+    final long[] offsets;
+    final PackedLongValues ords;
+
+    LongOrds(int maxDoc, Sorter.DocMap sortMap, SortedSetDocValues oldValues, float acceptableOverheadRatio) throws IOException {
+      offsets = new long[maxDoc];
+      PackedLongValues.Builder builder = PackedLongValues.packedBuilder(acceptableOverheadRatio);
+      long ordOffset = 1; // 0 marks docs with no values
+      int docID;
+      while ((docID = oldValues.nextDoc()) != NO_MORE_DOCS) {
+        int newDocID = sortMap.oldToNew(docID);
+        long startOffset = ordOffset;
+        while (true) {
+          long ord = oldValues.nextOrd();
+          if (ord == NO_MORE_ORDS) {
+            if (startOffset != ordOffset) {
+              offsets[newDocID] = startOffset;
+              builder.add(0); // 0 ord marks next value
+              ordOffset++;
+            }
+            break;
+          }
+          builder.add(ord+1);
+          ordOffset++;
+        }
+      }
+      ords = builder.build();
     }
   }
 }
