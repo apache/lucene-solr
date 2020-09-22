@@ -115,7 +115,7 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
   print('  prepare-release')
-  cmd = './gradlew -Dversion.release=%s clean :lucene:assembleDist :solr:packaging:assembleDist' % version
+  cmd = './gradlew -Dversion.release=%s clean assembleDist' % version
   if gpgKeyID is not None:
     # TODO sign
     # cmd += ' -Psigning.keyId=%s publishSignedPublicationToMavenLocal' % gpgKeyID
@@ -203,7 +203,7 @@ def pushLocal(version, root, rev, rcNum, localDir):
   os.remove('%s/lucene.tar.bz2' % lucene_dist_dir)
 
   print('  Solr')
-  solr_dist_dir = '%s/solr/packaging/build/distributions/' % root
+  solr_dist_dir = '%s/solr/packaging/build/distributions' % root
   os.chdir(solr_dist_dir)
   print('    zip...')
   if os.path.exists('solr.tar.bz2'):
