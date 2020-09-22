@@ -66,6 +66,9 @@ Improvements
 * LUCENE-9523: In query shapes over shape fields, skip points while traversing the
   BKD tree when the relationship with the document is already known. (Ignacio Vera)
 
+* LUCENE-9539: Use more compact datastructures to represent sorted doc-values in memory when 
+  sorting a segment before flush and in SortingCodecReader. (Simon Willnauer)
+
 Optimizations
 ---------------------
 
