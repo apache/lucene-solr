@@ -1675,7 +1675,9 @@ public class SolrCLI implements CLIO {
         }
 
         // convert raw JSON into user-friendly output
-        coreRootDirectory = (String)systemInfo.get("solr_core_root");
+        coreRootDirectory = (String)systemInfo.get("core_root");
+
+        //Fall back to solr_home, in case we are running against older server that does not return the property
         if (coreRootDirectory == null)  coreRootDirectory = (String)systemInfo.get("solr_home");
         if (coreRootDirectory == null)  coreRootDirectory = configsetsDir.getParentFile().getAbsolutePath();
 
