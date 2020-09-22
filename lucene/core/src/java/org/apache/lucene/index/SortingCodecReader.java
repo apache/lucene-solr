@@ -140,10 +140,6 @@ public final class SortingCodecReader extends FilterCodecReader {
     }
   }
 
-
-
-
-
   /** Return a sorted view of <code>reader</code> according to the order
    *  defined by <code>sort</code>. If the reader is already sorted, this
    *  method might return the reader as-is. */
@@ -313,8 +309,7 @@ public final class SortingCodecReader extends FilterCodecReader {
     return new NormsProducer() {
       @Override
       public NumericDocValues getNorms(FieldInfo field) throws IOException {
-        NumericDocValues oldNorms = delegate.getNorms(field);
-        return getNumericDocValues(oldNorms);
+        return getNumericDocValues(delegate.getNorms(field));
       }
 
       @Override
@@ -340,8 +335,7 @@ public final class SortingCodecReader extends FilterCodecReader {
     return new DocValuesProducer() {
       @Override
       public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-        NumericDocValues oldNorms = delegate.getNumeric(field);
-        return getNumericDocValues(oldNorms);
+        return getNumericDocValues(delegate.getNumeric(field));
       }
 
       @Override
@@ -398,11 +392,8 @@ public final class SortingCodecReader extends FilterCodecReader {
   private NumericDocValues getNumericDocValues(NumericDocValues oldNorms) throws IOException {
     FixedBitSet docsWithField = new FixedBitSet(maxDoc());
     long[] values = new long[maxDoc()];
-    while (true) {
-      int docID = oldNorms.nextDoc();
-      if (docID == NO_MORE_DOCS) {
-        break;
-      }
+    int docID;
+    while ((docID = oldNorms.nextDoc()) != NO_MORE_DOCS) {
       int newDocID = docMap.oldToNew(docID);
       docsWithField.set(newDocID);
       values[newDocID] = oldNorms.longValue();
