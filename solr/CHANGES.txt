@@ -160,6 +160,8 @@ New Features
 
 * SOLR-14875: Make SolrEventListeners load from packages (noble)
 
+* SOLR-10391: ConfigSet handler now supports overrides on existing configsets. (Tomás Fernández Löbbe)
+
 Improvements
 ---------------------
 
