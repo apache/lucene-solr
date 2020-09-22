@@ -365,17 +365,14 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
       while ((docID = oldValues.nextDoc()) != NO_MORE_DOCS) {
         int newDocID = sortMap.oldToNew(docID);
         long startOffset = ordOffset;
-        while (true) {
-          long ord = oldValues.nextOrd();
-          if (ord == NO_MORE_ORDS) {
-            if (startOffset != ordOffset) {
-              offsets[newDocID] = startOffset;
-              builder.add(0); // 0 ord marks next value
-              ordOffset++;
-            }
-            break;
-          }
-          builder.add(ord+1);
+        long ord;
+        while ((ord = oldValues.nextOrd()) != NO_MORE_ORDS) {
+          builder.add(ord + 1);
+          ordOffset++;
+        }
+        if (startOffset != ordOffset) { // do we have any values?
+          offsets[newDocID] = startOffset;
+          builder.add(0); // 0 ord marks next value
           ordOffset++;
         }
       }

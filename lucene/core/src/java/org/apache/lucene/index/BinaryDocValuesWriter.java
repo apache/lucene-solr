@@ -244,11 +244,8 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
       offsets = new int[maxDoc];
       values = new BytesRefArray(Counter.newCounter());
       int offset = 1; // 0 means no values for this document
-      while (true) {
-        int docID = oldValues.nextDoc();
-        if (docID == NO_MORE_DOCS) {
-          break;
-        }
+      int docID;
+      while ((docID = oldValues.nextDoc()) != NO_MORE_DOCS) {
         int newDocID = sortMap.oldToNew(docID);
         values.append(oldValues.binaryValue());
         offsets[newDocID] = offset++;
