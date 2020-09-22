@@ -163,7 +163,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
             ranges[id][0].setMax(d, ranges[oldID][0].getMax(d));
           }
           if (VERBOSE) {
-            System.out.println("  id=" + id + " box=" + ranges[id] + " (same box as doc=" + oldID + ")");
+            System.out.println("  id=" + id + " box=" + Arrays.toString(ranges[id]) + " (same box as doc=" + oldID + ")");
           }
         } else {
           for (int m = 0, even = dimensions % 2; m < dimensions * 2; ++m) {
@@ -173,12 +173,12 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
               if (even == 0) { // even is min
                 ranges[id][0].setMin(d, ranges[oldID][0].getMin(d));
                 if (VERBOSE) {
-                  System.out.println("  id=" + id + " box=" + ranges[id] + " (same min[" + d + "] as doc=" + oldID + ")");
+                  System.out.println("  id=" + id + " box=" + Arrays.toString(ranges[id]) + " (same min[" + d + "] as doc=" + oldID + ")");
                 }
               } else { // odd is max
                 ranges[id][0].setMax(d, ranges[oldID][0].getMax(d));
                 if (VERBOSE) {
-                  System.out.println("  id=" + id + " box=" + ranges[id] + " (same max[" + d + "] as doc=" + oldID + ")");
+                  System.out.println("  id=" + id + " box=" + Arrays.toString(ranges[id]) + " (same max[" + d + "] as doc=" + oldID + ")");
                 }
               }
             }

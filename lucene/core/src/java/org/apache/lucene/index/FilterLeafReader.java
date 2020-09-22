@@ -59,7 +59,7 @@ public abstract class FilterLeafReader extends LeafReader {
      * Creates a new FilterFields.
      * @param in the underlying Fields instance.
      */
-    public FilterFields(Fields in) {
+    protected FilterFields(Fields in) {
       if (in == null) {
         throw new NullPointerException("incoming Fields must not be null");
       }
@@ -95,7 +95,7 @@ public abstract class FilterLeafReader extends LeafReader {
      * Creates a new FilterTerms
      * @param in the underlying Terms instance.
      */
-    public FilterTerms(Terms in) {
+    protected FilterTerms(Terms in) {
       if (in == null) {
         throw new NullPointerException("incoming Terms must not be null");
       }
@@ -162,7 +162,7 @@ public abstract class FilterLeafReader extends LeafReader {
      * Creates a new FilterTermsEnum
      * @param in the underlying TermsEnum instance.
      */
-    public FilterTermsEnum(TermsEnum in) {
+    protected FilterTermsEnum(TermsEnum in) {
       if (in == null) {
         throw new NullPointerException("incoming TermsEnum must not be null");
       }
@@ -244,7 +244,7 @@ public abstract class FilterLeafReader extends LeafReader {
      * Create a new FilterPostingsEnum
      * @param in the underlying PostingsEnum instance.
      */
-    public FilterPostingsEnum(PostingsEnum in) {
+    protected FilterPostingsEnum(PostingsEnum in) {
       if (in == null) {
         throw new NullPointerException("incoming PostingsEnum must not be null");
       }
@@ -305,7 +305,7 @@ public abstract class FilterLeafReader extends LeafReader {
    * <p>Note that base reader is closed if this FilterLeafReader is closed.</p>
    * @param in specified base reader.
    */
-  public FilterLeafReader(LeafReader in) {
+  protected FilterLeafReader(LeafReader in) {
     super();
     if (in == null) {
       throw new NullPointerException("incoming LeafReader must not be null");

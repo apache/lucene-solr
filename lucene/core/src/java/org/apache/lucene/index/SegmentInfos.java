@@ -668,8 +668,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     final Directory directory;
 
-    /** Sole constructor. */ 
-    public FindSegmentsFile(Directory directory) {
+    /** Sole constructor. */
+    protected FindSegmentsFile(Directory directory) {
       this.directory = directory;
     }
 

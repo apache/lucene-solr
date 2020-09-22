@@ -20,6 +20,8 @@ should be used instead, such as autoscaling policy or rules-based placement.
 
 New Features
 ---------------------
+* SOLR-14789: Migrate docker image creation from docker-solr repo to solr/docker. (Houston Putman, Martijn Koster, Tim Potter, David Smiley, janhoy, Mike Drob)
+
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
 * SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
@@ -43,6 +45,12 @@ Improvements
 * SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
 
 * SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
+
+* SOLR-14799: JWT authentication plugin only requires "sub" claim when principalClaim=sub. (Erik Hatcher)
+
+* SOLR-14878: Report solr.xml's coreRootDirectory property via System Settings API, when set (Alexandre Rafalovitch)
+
+* SOLR-14880: Support coreRootDirectory setting when create new cores from command line, in standalone mode (Alexandre Rafalovitch)
 
 Other Changes
 ----------------------
@@ -120,6 +128,12 @@ Other Changes
 
 * SOLR-14783: Remove Data Import Handler (DIH), previously deprecated (Alexandre Rafalovitch)
 
+* SOLR-14846: Backup/Restore classes no longer take Optional method parameters and will accept nulls instead. (Mike Drob)
+
+* LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved from each query parser
+               package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
+
+* SOLR-9607: Remove /terms configuration from solrconfig.xml, as implicit definition is up-to-par now (Alexandre Rafalovitch)
 
 Bug Fixes
 ---------------------
@@ -143,6 +157,10 @@ New Features
   set when using a custom MergePolicy (doesn't have any effect on the default MP) (Tomás Fernández Löbbe)
 
 * SOLR-13751: Add BooleanSimilarityFactory class. (Andy Webb via Christine Poerschke)
+
+* SOLR-14875: Make SolrEventListeners load from packages (noble)
+
+* SOLR-10391: ConfigSet handler now supports overrides on existing configsets. (Tomás Fernández Löbbe)
 
 Improvements
 ---------------------
@@ -168,6 +186,12 @@ Improvements
 * SOLR-14722: Track timeAllowed from earlier in the request lifecycle. (David Smiley)
 
 * SOLR-13438: On deleting a collection, its config set will also be deleted iff it has been auto-created, and not used by any other collection (Anderson Dorow)
+
+* SOLR-14802: geodist: Support most (all?) spatial field types as an argument like LLPSF, SRPTFT, and others.
+  (Tom Edge, Craig Wrigglesworth)
+
+* SOLR-14859: DateRangeField now throws errors when invalid field/fieldType options specified; no longer silently accepts incompatible option values
+  (Jason Gerlowski, Chris Hostetter, Munendra S N)
 
 Optimizations
 ---------------------
@@ -220,6 +244,10 @@ Bug Fixes
 * SOLR-14821: {!terms} docValuesTermsFilterTopLevel method now works with single-valued strings (Anatolii Siuniaev
   via Jason Gerlowski)
 
+* SOLR-13181: macro expansion of parameters could result in a StringIndexOutOfBoundsException.
+  Also, params with macros will be processed more strictly by LTR FeatureWeight.
+  (David Smiley, Cesar Rodriguez, Christine Poerschke)
+
 Other Changes
 ---------------------
 
@@ -244,6 +272,11 @@ Other Changes
 
 * SOLR-14579: Comment SolrJ 'Utils' generic map functions 
   (Megan Carey and a lot of education from Uwe Schindler via Erick Erickson)
+
+* SOLR-10471: Update default Zookeeper session timeout to 30s in bin/solr and bin/solr.cmd
+  (Michael Braun, Markus Jelsma via Munendra S N)
+
+* SOLR-14876: Upgrade to zookeeper 3.6.2 (odidev via Erick Erickson)
 
 ==================  8.6.2 ==================
 

@@ -40,14 +40,12 @@ abstract class TermsHash {
   final ByteBlockPool bytePool;
   ByteBlockPool termBytePool;
   final Counter bytesUsed;
-  final boolean trackAllocations;
 
-  TermsHash(final DocumentsWriterPerThread docWriter, boolean trackAllocations, TermsHash nextTermsHash) {
-    this.trackAllocations = trackAllocations;
+  TermsHash(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Counter bytesUsed, TermsHash nextTermsHash) {
     this.nextTermsHash = nextTermsHash;
-    this.bytesUsed = trackAllocations ? docWriter.bytesUsed : Counter.newCounter();
-    intPool = new IntBlockPool(docWriter.intBlockAllocator);
-    bytePool = new ByteBlockPool(docWriter.byteBlockAllocator);
+    this.bytesUsed = bytesUsed;
+    intPool = new IntBlockPool(intBlockAllocator);
+    bytePool = new ByteBlockPool(byteBlockAllocator);
 
     if (nextTermsHash != null) {
       // We are primary

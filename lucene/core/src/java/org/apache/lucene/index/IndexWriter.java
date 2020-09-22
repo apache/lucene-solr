@@ -82,6 +82,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -272,7 +273,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * and a message is printed to infoStream, if set (see {@link
    * IndexWriterConfig#setInfoStream(InfoStream)}).
    */
-  public final static int MAX_TERM_LENGTH = DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8;
+  public final static int MAX_TERM_LENGTH =  BYTE_BLOCK_SIZE-2;
 
   /**
    * Maximum length string for a stored field.
@@ -4473,7 +4474,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         final int delCount = numDeletedDocs(info);
         assert delCount <= info.info.maxDoc();
         final double delRatio = ((double) delCount)/info.info.maxDoc();
-        merge.estimatedMergeBytes += info.sizeInBytes() * (1.0 - delRatio);
+        merge.estimatedMergeBytes += (long) (info.sizeInBytes() * (1.0 - delRatio));
         merge.totalMergeBytes += info.sizeInBytes();
       }
     }

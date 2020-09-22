@@ -116,4 +116,20 @@ public interface LeafFieldComparator {
    * obtain the current hit's score, if necessary. */
   void setScorer(Scorable scorer) throws IOException;
 
+  /**
+   * Returns a competitive iterator
+   * @return an iterator over competitive docs that are stronger than already collected docs
+   * or {@code null} if such an iterator is not available for the current comparator or segment.
+   */
+  default DocIdSetIterator competitiveIterator() throws IOException {
+    return null;
+  }
+
+  /**
+   * Informs this leaf comparator that hits threshold is reached.
+   * This method is called from a collector when hits threshold is reached.
+   */
+  default void setHitsThresholdReached() throws IOException{
+  }
+
 }

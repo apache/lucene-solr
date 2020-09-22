@@ -1533,7 +1533,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, new StringSplitAnalyzer());
 
-    char[] chars = new char[DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8];
+    char[] chars = new char[IndexWriter.MAX_TERM_LENGTH];
     Arrays.fill(chars, 'x');
     Document hugeDoc = new Document();
     final String bigTerm = new String(chars);
@@ -3385,7 +3385,7 @@ public class TestIndexWriter extends LuceneTestCase {
     try (Directory dir = new FilterDirectory(newDirectory()) {
       @Override
       public IndexOutput createOutput(String name, IOContext context) throws IOException {
-        if (callStackContains(DefaultIndexingChain.class, "flush")) {
+        if (callStackContains(IndexingChain.class, "flush")) {
           try {
             inFlush.countDown();
             latch.await();
@@ -3717,8 +3717,6 @@ public class TestIndexWriter extends LuceneTestCase {
           states.add(state::unlock);
           state.deleteQueue.getNextSequenceNumber();
         }
-      } catch (IOException e) {
-        throw new AssertionError(e);
       } finally {
         IOUtils.closeWhileHandlingException(states);
       }

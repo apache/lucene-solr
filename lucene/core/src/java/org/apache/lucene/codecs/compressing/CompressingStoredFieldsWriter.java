@@ -95,8 +95,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private int docBase; // doc ID at the beginning of the chunk
   private int numBufferedDocs; // docBase + numBufferedDocs == current doc ID
   
-  private long numChunks; // number of compressed blocks written
   private long numDirtyChunks; // number of incomplete compressed blocks written
+  private long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
 
   /** Sole constructor. */
   CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
@@ -252,7 +252,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     docBase += numBufferedDocs;
     numBufferedDocs = 0;
     bufferedDocs.reset();
-    numChunks++;
   }
   
   @Override
@@ -468,8 +467,10 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   @Override
   public void finish(FieldInfos fis, int numDocs) throws IOException {
     if (numBufferedDocs > 0) {
-      flush();
       numDirtyChunks++; // incomplete: we had to force this flush
+      final long expectedChunkDocs = Math.min(maxDocsPerChunk, (long) ((double) chunkSize / bufferedDocs.size() * numBufferedDocs));
+      numDirtyDocs += expectedChunkDocs - numBufferedDocs;
+      flush();
     } else {
       assert bufferedDocs.size() == 0;
     }
@@ -477,8 +478,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       throw new RuntimeException("Wrote " + docBase + " docs, finish called with numDocs=" + numDocs);
     }
     indexWriter.finish(numDocs, fieldsStream.getFilePointer(), metaStream);
-    metaStream.writeVLong(numChunks);
     metaStream.writeVLong(numDirtyChunks);
+    metaStream.writeVLong(numDirtyDocs);
     CodecUtil.writeFooter(metaStream);
     CodecUtil.writeFooter(fieldsStream);
     assert bufferedDocs.size() == 0;
@@ -632,8 +633,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
         }
         
         // since we bulk merged all chunks, we inherit any dirty ones from this segment.
-        numChunks += matchingFieldsReader.getNumChunks();
         numDirtyChunks += matchingFieldsReader.getNumDirtyChunks();
+        numDirtyDocs += matchingFieldsReader.getNumDirtyDocs();
       } else {
         // optimized merge, we copy serialized (but decompressed) bytes directly
         // even on simple docs (1 stored field), it seems to help by about 20%
@@ -669,7 +670,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   boolean tooDirty(CompressingStoredFieldsReader candidate) {
     // more than 1% dirty, or more than hard limit of 1024 dirty chunks
     return candidate.getNumDirtyChunks() > 1024 || 
-           candidate.getNumDirtyChunks() * 100 > candidate.getNumChunks();
+           candidate.getNumDirtyDocs() * 100 > candidate.getNumDocs();
   }
 
   private static class CompressingStoredFieldsMergeSub extends DocIDMerger.Sub {
@@ -677,7 +678,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     private final int maxDoc;
     int docID = -1;
 
-    public CompressingStoredFieldsMergeSub(CompressingStoredFieldsReader reader, MergeState.DocMap docMap, int maxDoc) {
+    CompressingStoredFieldsMergeSub(CompressingStoredFieldsReader reader, MergeState.DocMap docMap, int maxDoc) {
       super(docMap);
       this.maxDoc = maxDoc;
       this.reader = reader;
@@ -692,5 +693,10 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
         return docID;
       }
     }
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return bufferedDocs.ramBytesUsed() + numStoredFields.length * Integer.BYTES + endOffsets.length * Integer.BYTES;
   }
 }

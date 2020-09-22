@@ -124,7 +124,10 @@ _(raw; not yet edited)_
   monitors on Solr KPIs that mention "master" or "slave" will also now be "leader" and "follower"
 
 * SOLR-14783: Data Import Handler (DIH) has been removed from Solr. The community package is available at: https://github.com/rohitbemax/dataimporthandler (Alexandre Rafalovitch)
-  
+
+* SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the numFound value (exact vs approximation).
+  Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the

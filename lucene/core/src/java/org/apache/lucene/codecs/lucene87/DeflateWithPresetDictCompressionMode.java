@@ -39,20 +39,20 @@ import org.apache.lucene.util.BytesRef;
  */
 public final class DeflateWithPresetDictCompressionMode extends CompressionMode {
 
-  private final int dictLength, subBlockLength;
+  // Shoot for 10 sub blocks
+  private static final int NUM_SUB_BLOCKS = 10;
+  // And a dictionary whose size is about 6x smaller than sub blocks
+  private static final int DICT_SIZE_FACTOR = 6;
 
   /** Sole constructor. */
-  public DeflateWithPresetDictCompressionMode(int dictLength, int subBlockLength) {
-    this.dictLength = dictLength;
-    this.subBlockLength = subBlockLength;
-  }
+  public DeflateWithPresetDictCompressionMode() {}
 
   @Override
   public Compressor newCompressor() {
     // notes:
     // 3 is the highest level that doesn't have lazy match evaluation
     // 6 is the default, higher than that is just a waste of cpu
-    return new DeflateWithPresetDictCompressor(6, dictLength, subBlockLength);
+    return new DeflateWithPresetDictCompressor(6);
   }
 
   @Override
@@ -155,16 +155,15 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
 
   private static class DeflateWithPresetDictCompressor extends Compressor {
 
-    private final int dictLength, blockLength;
     final Deflater compressor;
+    final BugfixDeflater_JDK8252739 deflaterBugfix;
     byte[] compressed;
     boolean closed;
 
-    DeflateWithPresetDictCompressor(int level, int dictLength, int blockLength) {
-      compressor = BugfixDeflater_JDK8252739.createDeflaterInstance(level, true, dictLength);
+    DeflateWithPresetDictCompressor(int level) {
+      compressor = new Deflater(level, true);
+      deflaterBugfix = BugfixDeflater_JDK8252739.createBugfix(compressor);
       compressed = new byte[64];
-      this.dictLength = dictLength;
-      this.blockLength = blockLength;
     }
 
     private void doCompress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
@@ -196,7 +195,8 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
 
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
-      final int dictLength = Math.min(this.dictLength, len);
+      final int dictLength = len / (NUM_SUB_BLOCKS * DICT_SIZE_FACTOR);
+      final int blockLength = (len - dictLength + NUM_SUB_BLOCKS - 1) / NUM_SUB_BLOCKS;
       out.writeVInt(dictLength);
       out.writeVInt(blockLength);
       final int end = off + len;
@@ -208,7 +208,7 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
       // And then sub blocks
       for (int start = off + dictLength; start < end; start += blockLength) {
         compressor.reset();
-        compressor.setDictionary(bytes, off, dictLength);
+        deflaterBugfix.setDictionary(bytes, off, dictLength);
         doCompress(bytes, start, Math.min(blockLength, off + len - start), out);
       }
     }

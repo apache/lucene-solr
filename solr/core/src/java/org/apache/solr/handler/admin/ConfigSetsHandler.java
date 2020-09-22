@@ -20,9 +20,12 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -38,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
@@ -154,7 +158,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     String configPathInZk = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName;
 
-    if (zkClient.exists(configPathInZk, true)) {
+    boolean overwritesExisting = zkClient.exists(configPathInZk, true);
+
+    if (overwritesExisting && !req.getParams().getBool(ConfigSetParams.OVERWRITE, false)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "The configuration " + configSetName + " already exists in zookeeper");
     }
@@ -169,25 +175,99 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     InputStream inputStream = contentStreamsIterator.next().getStream();
 
     // Create a node for the configuration in zookeeper
-    boolean trusted = getTrusted(req);
-    zkClient.makePath(configPathInZk, ("{\"trusted\": " + Boolean.toString(trusted) + "}").
-        getBytes(StandardCharsets.UTF_8), true);
+    boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
+    
+    Set<String> filesToDelete;
+    if (overwritesExisting && cleanup) {
+      filesToDelete = getAllConfigsetFiles(zkClient, configPathInZk);
+    } else {
+      filesToDelete = Collections.emptySet();
+    }
+    createBaseZnode(zkClient, overwritesExisting, isTrusted(req), cleanup, configPathInZk);
 
     ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
     ZipEntry zipEntry = null;
     while ((zipEntry = zis.getNextEntry()) != null) {
       String filePathInZk = configPathInZk + "/" + zipEntry.getName();
+      if (filePathInZk.endsWith("/")) {
+        filesToDelete.remove(filePathInZk.substring(0, filePathInZk.length() -1));
+      } else {
+        filesToDelete.remove(filePathInZk);
+      }
       if (zipEntry.isDirectory()) {
-        zkClient.makePath(filePathInZk, true);
+        zkClient.makePath(filePathInZk, false,  true);
       } else {
         createZkNodeIfNotExistsAndSetData(zkClient, filePathInZk,
             IOUtils.toByteArray(zis));
       }
     }
     zis.close();
+    deleteUnusedFiles(zkClient, filesToDelete);
   }
 
-  boolean getTrusted(SolrQueryRequest req) {
+  private void createBaseZnode(SolrZkClient zkClient, boolean overwritesExisting, boolean requestIsTrusted, boolean cleanup, String configPathInZk) throws KeeperException, InterruptedException {
+    byte[] baseZnodeData =  ("{\"trusted\": " + Boolean.toString(requestIsTrusted) + "}").getBytes(StandardCharsets.UTF_8);
+
+    if (overwritesExisting) {
+      if (cleanup && requestIsTrusted) {
+        zkClient.setData(configPathInZk, baseZnodeData, true);
+      } else if (!requestIsTrusted) {
+        ensureOverwritingUntrustedConfigSet(zkClient, configPathInZk);
+      }
+    } else {
+      zkClient.makePath(configPathInZk, baseZnodeData, true);
+    }
+  }
+
+  private void deleteUnusedFiles(SolrZkClient zkClient, Set<String> filesToDelete) throws InterruptedException, KeeperException {
+    if (!filesToDelete.isEmpty()) {
+      if (log.isInfoEnabled()) {
+        log.info("Cleaning up {} unused files", filesToDelete.size());
+      }
+      if (log.isDebugEnabled()) {
+        log.debug("Cleaning up unused files: {}", filesToDelete);
+      }
+      for (String f:filesToDelete) {
+        try {
+          zkClient.delete(f, -1, true);
+        } catch (KeeperException.NoNodeException nne) {
+        }
+      }
+    }
+  }
+
+  private Set<String> getAllConfigsetFiles(SolrZkClient zkClient, String configPathInZk) throws KeeperException, InterruptedException {
+    final Set<String> files = new HashSet<>();
+    if (!configPathInZk.startsWith(ZkConfigManager.CONFIGS_ZKNODE + "/")) {
+      throw new IllegalArgumentException("\"" + configPathInZk + "\" not recognized as a configset path");
+    }
+    ZkMaintenanceUtils.traverseZkTree(zkClient, configPathInZk, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, files::add);
+    files.remove(configPathInZk);
+    return files;
+  }
+
+  /*
+   * Fail if an untrusted request tries to update a trusted ConfigSet
+   */
+  private void ensureOverwritingUntrustedConfigSet(SolrZkClient zkClient, String configSetZkPath) {
+    byte[] configSetNodeContent;
+    try {
+      configSetNodeContent = zkClient.getData(configSetZkPath, null, null, true);
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Exception while fetching current configSet at " + configSetZkPath, e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while fetching current configSet at " + configSetZkPath, e);
+    }
+    @SuppressWarnings("unchecked")
+    Map<Object, Object> contentMap = (Map<Object, Object>) Utils.fromJSON(configSetNodeContent);
+    boolean isCurrentlyTrusted = (boolean) contentMap.getOrDefault("trusted", true);
+    if (isCurrentlyTrusted) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Trying to make an unstrusted ConfigSet update on a trusted configSet");
+    }
+  }
+
+  boolean isTrusted(SolrQueryRequest req) {
     AuthenticationPlugin authcPlugin = coreContainer.getAuthenticationPlugin();
     if (log.isInfoEnabled()) {
       log.info("Trying to upload a configset. authcPlugin: {}, user principal: {}",

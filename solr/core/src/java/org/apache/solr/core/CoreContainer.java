@@ -87,6 +87,7 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.filestore.PackageStoreAPI;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -265,10 +266,10 @@ public class CoreContainer {
    *                       If not specified, a default implementation is used.
    * @return a new instance of {@linkplain BackupRepository}.
    */
-  public BackupRepository newBackupRepository(Optional<String> repositoryName) {
+  public BackupRepository newBackupRepository(String repositoryName) {
     BackupRepository repository;
-    if (repositoryName.isPresent()) {
-      repository = backupRepoFactory.newInstance(getResourceLoader(), repositoryName.get());
+    if (repositoryName != null) {
+      repository = backupRepoFactory.newInstance(getResourceLoader(), repositoryName);
     } else {
       repository = backupRepoFactory.newInstance(getResourceLoader());
     }
@@ -719,6 +720,9 @@ public class CoreContainer {
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
+    ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler);
+    containerHandlers.getApiBag().registerObject(clusterAPI);
+    containerHandlers.getApiBag().registerObject(clusterAPI.commands);
     /*
      * HealthCheckHandler needs to be initialized before InfoHandler, since the later one will call CoreContainer.getHealthCheckHandler().
      * We don't register the handler here because it'll be registered inside InfoHandler
@@ -1582,6 +1586,13 @@ public class CoreContainer {
   public void reload(String name) {
     reload(name, null);
   }
+  public void reload(String name, UUID coreId, boolean async) {
+    if(async) {
+      runAsync(() -> reload(name, coreId));
+    } else {
+      reload(name, coreId);
+    }
+  }
   /**
    * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to
@@ -1596,13 +1607,8 @@ public class CoreContainer {
       throw new AlreadyClosedException();
     }
     SolrCore newCore = null;
-    SolrCore core = solrCores.getCoreFromAnyList(name, false);
+    SolrCore core = solrCores.getCoreFromAnyList(name, false, coreId);
     if (core != null) {
-      if(coreId != null && core.uniqueId != coreId) {
-        //trying to reload an already unloaded core
-        return;
-      }
-
       // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
       // CoreDescriptor and we need to reload it from the disk files
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
@@ -1673,6 +1679,7 @@ public class CoreContainer {
         solrCores.removeFromPendingOps(cd.getName());
       }
     } else {
+      if(coreId != null) return;// yeah, this core is already reloaded/unloaded return right away
       CoreLoadFailure clf = coreInitFailures.get(name);
       if (clf != null) {
         try {
@@ -1832,6 +1839,9 @@ public class CoreContainer {
     return cfg.getCoreRootDirectory();
   }
 
+  public SolrCore getCore(String name) {
+    return getCore(name, null);
+  }
   /**
    * Gets a core by name and increase its refcount.
    *
@@ -1840,10 +1850,10 @@ public class CoreContainer {
    * @throws SolrCoreInitializationException if a SolrCore with this name failed to be initialized
    * @see SolrCore#close()
    */
-  public SolrCore getCore(String name) {
+  public SolrCore getCore(String name, UUID id) {
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
-    SolrCore core = solrCores.getCoreFromAnyList(name, true);
+    SolrCore core = solrCores.getCoreFromAnyList(name, true, id);
 
     // If a core is loaded, we're done just return it.
     if (core != null) {

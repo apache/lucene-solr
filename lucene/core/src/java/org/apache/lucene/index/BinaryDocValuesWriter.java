@@ -24,11 +24,10 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
@@ -58,7 +57,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
 
   private PackedLongValues finalLengths;
 
-  public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.bytes = new PagedBytes(BLOCK_BITS);
     this.bytesOut = bytes.getDataOutput();
@@ -100,21 +99,6 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     bytesUsed = newBytesUsed;
   }
 
-  static CachedBinaryDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
-    FixedBitSet docsWithField = new FixedBitSet(maxDoc);
-    BytesRef[] values = new BytesRef[maxDoc];
-    while (true) {
-      int docID = oldValues.nextDoc();
-      if (docID == NO_MORE_DOCS) {
-        break;
-      }
-      int newDocID = sortMap.oldToNew(docID);
-      docsWithField.set(newDocID);
-      values[newDocID] = BytesRef.deepCopyOf(oldValues.binaryValue());
-    }
-    return new CachedBinaryDVs(values, docsWithField);
-  }
-
   @Override
   BinaryDocValues getDocValues() {
     if (finalLengths == null) {
@@ -131,7 +115,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     }
     final CachedBinaryDVs sorted;
     if (sortMap != null) {
-      sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap,
+      sorted = new CachedBinaryDVs(state.segmentInfo.maxDoc(), sortMap,
           new BufferedBinaryDocValues(finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator()));
     } else {
       sorted = null;
@@ -206,8 +190,8 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
 
   static class SortingBinaryDocValues extends BinaryDocValues {
     private final CachedBinaryDVs dvs;
+    private final BytesRefBuilder spare = new BytesRefBuilder();
     private int docID = -1;
-    private long cost = -1;
 
     SortingBinaryDocValues(CachedBinaryDVs dvs) {
       this.dvs = dvs;
@@ -215,11 +199,12 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
 
     @Override
     public int nextDoc() {
-      if (docID+1 == dvs.docsWithField.length()) {
-        docID = NO_MORE_DOCS;
-      } else {
-        docID = dvs.docsWithField.nextSetBit(docID+1);
-      }
+      do {
+        docID++;
+        if (docID == dvs.offsets.length) {
+          return docID = NO_MORE_DOCS;
+        }
+      } while (dvs.offsets[docID] <= 0);
       return docID;
     }
 
@@ -240,26 +225,29 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
 
     @Override
     public BytesRef binaryValue() {
-      return dvs.values[docID];
+      dvs.values.get(spare, dvs.offsets[docID]-1);
+      return spare.get();
     }
 
     @Override
     public long cost() {
-      if (cost == -1) {
-        cost = dvs.docsWithField.cardinality();
-      }
-      return cost;
+      return dvs.values.size();
     }
   }
 
-  static class CachedBinaryDVs {
-    // TODO: at least cutover to BytesRefArray here:
-    private final BytesRef[] values;
-    private final BitSet docsWithField;
-
-    CachedBinaryDVs(BytesRef[] values, BitSet docsWithField) {
-      this.values = values;
-      this.docsWithField = docsWithField;
+  static final class CachedBinaryDVs {
+    final int[] offsets;
+    final BytesRefArray values;
+    CachedBinaryDVs(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
+      offsets = new int[maxDoc];
+      values = new BytesRefArray(Counter.newCounter());
+      int offset = 1; // 0 means no values for this document
+      int docID;
+      while ((docID = oldValues.nextDoc()) != NO_MORE_DOCS) {
+        int newDocID = sortMap.oldToNew(docID);
+        values.append(oldValues.binaryValue());
+        offsets[newDocID] = offset++;
+      }
     }
   }
 }

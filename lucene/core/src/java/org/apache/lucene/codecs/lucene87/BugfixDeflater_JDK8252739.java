@@ -21,49 +21,46 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.SuppressForbidden;
+
 /**
  * This class is a workaround for JDK bug
  * <a href="https://bugs.openjdk.java.net/browse/JDK-8252739">JDK-8252739</a>.
  */
-final class BugfixDeflater_JDK8252739 extends Deflater {
+@FunctionalInterface
+interface BugfixDeflater_JDK8252739 {
   
   public static final boolean IS_BUGGY_JDK = detectBuggyJDK();
 
   /**
-   * Creates a {@link Deflater} instance, which works around JDK-8252739.
+   * Creates a bugfix for {@link Deflater} instances, which works around JDK-8252739.
    * <p>
-   * Use this whenever you intend to call {@link #setDictionary(byte[], int, int)} or
-   * {@link #setDictionary(java.nio.ByteBuffer)} on a {@code Deflater}.
+   * Use this whenever you intend to call {@link Deflater#setDictionary(byte[], int, int)}
+   * on a {@code Deflater}.
    * */
-  public static Deflater createDeflaterInstance(int level, boolean nowrap, int dictLength) {
-    if (dictLength < 0) {
-      throw new IllegalArgumentException("dictLength must be >= 0");
-    }
+  @SuppressForbidden(reason = "Works around bug, so it must call forbidden method")
+  public static BugfixDeflater_JDK8252739 createBugfix(Deflater deflater) {
     if (IS_BUGGY_JDK) {
-      return new BugfixDeflater_JDK8252739(level, nowrap, dictLength);
+      final BytesRefBuilder dictBytesScratch = new BytesRefBuilder();
+      return (dictBytes, off, len) -> {
+        if (off > 0) {
+          dictBytesScratch.grow(len);
+          System.arraycopy(dictBytes, off, dictBytesScratch.bytes(), 0, len);
+          deflater.setDictionary(dictBytesScratch.bytes(), 0, len);
+        } else {
+          deflater.setDictionary(dictBytes, off, len);
+        }
+      };
     } else {
-      return new Deflater(level, nowrap);
+      return deflater::setDictionary;
     }
   }
   
+  /** Call this method as a workaround */
+  void setDictionary(byte[] dictBytes, int off, int len);
   
-  private final byte[] dictBytesScratch;
-
-  private BugfixDeflater_JDK8252739(int level, boolean nowrap, int dictLength) {
-    super(level, nowrap);
-    this.dictBytesScratch = new byte[dictLength];
-  }
-  
-  @Override
-  public void setDictionary(byte[] dictBytes, int off, int len) {
-    if (off > 0) {
-      System.arraycopy(dictBytes, off, dictBytesScratch, 0, len);
-      super.setDictionary(dictBytesScratch, 0, len);
-    } else {
-      super.setDictionary(dictBytes, off, len);
-    }
-  }
-
+  @SuppressForbidden(reason = "Detector for the bug, so it must call buggy method")
   private static boolean detectBuggyJDK() {
     final byte[] testData = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
     final byte[] compressed = new byte[32]; // way enough space
