@@ -41,20 +41,12 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * {@link Sort}. This can be used to re-sort and index after it's been created by wrapping all
  * readers of the index with this reader and adding it to a fresh IndexWriter via
  * {@link IndexWriter#addIndexes(CodecReader...)}.
+ * NOTE: This reader should only be used for merging. Pulling fields from this ready might be very costly and memory
+ * intensive.
  *
  * @lucene.experimental
  */
 public final class SortingCodecReader extends FilterCodecReader {
-
-  private final Map<String, NumericDocValuesWriter.CachedNumericDVs> cachedNumericDVs = new HashMap<>();
-
-  private final Map<String, BinaryDocValuesWriter.CachedBinaryDVs> cachedBinaryDVs = new HashMap<>();
-
-  private final Map<String, int[]> cachedSortedDVs = new HashMap<>();
-
-  private final Map<String, SortedSetDocValuesWriter.DocOrds> cachedSortedSetDVs = new HashMap<>();
-
-  private final Map<String, SortedNumericDocValuesWriter.LongValues> cachedSortedNumericDVs = new HashMap<>();
 
   private static class SortingBits implements Bits {
 
@@ -321,7 +313,8 @@ public final class SortingCodecReader extends FilterCodecReader {
     return new NormsProducer() {
       @Override
       public NumericDocValues getNorms(FieldInfo field) throws IOException {
-        return produceNumericDocValues(field, delegate.getNorms(field), cachedNorms);
+        NumericDocValues oldNorms = delegate.getNorms(field);
+        return getNumericDocValues(oldNorms);
       }
 
       @Override
@@ -339,30 +332,6 @@ public final class SortingCodecReader extends FilterCodecReader {
         return delegate.ramBytesUsed();
       }
     };
-  }
-
-  private NumericDocValues produceNumericDocValues(FieldInfo field, NumericDocValues oldNorms,
-                                                   Map<String, NumericDocValuesWriter.CachedNumericDVs> cachedNorms) throws IOException {
-    NumericDocValuesWriter.CachedNumericDVs norms;
-    synchronized (cachedNorms) {
-      norms = cachedNorms.get(field);
-      if (norms == null) {
-        FixedBitSet docsWithField = new FixedBitSet(maxDoc());
-        long[] values = new long[maxDoc()];
-        while (true) {
-          int docID = oldNorms.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            break;
-          }
-          int newDocID = docMap.oldToNew(docID);
-          docsWithField.set(newDocID);
-          values[newDocID] = oldNorms.longValue();
-        }
-        norms = new NumericDocValuesWriter.CachedNumericDVs(values, docsWithField);
-        cachedNorms.put(field.name, norms);
-      }
-    }
-    return new NumericDocValuesWriter.SortingNumericDocValues(norms);
   }
 
   @Override
@@ -371,39 +340,25 @@ public final class SortingCodecReader extends FilterCodecReader {
     return new DocValuesProducer() {
       @Override
       public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-        return produceNumericDocValues(field,delegate.getNumeric(field), cachedNumericDVs);
+        NumericDocValues oldNorms = delegate.getNumeric(field);
+        return getNumericDocValues(oldNorms);
       }
 
       @Override
       public BinaryDocValues getBinary(FieldInfo field) throws IOException {
         final BinaryDocValues oldDocValues = delegate.getBinary(field);
-        BinaryDocValuesWriter.CachedBinaryDVs dvs;
-        synchronized (cachedBinaryDVs) {
-          dvs = cachedBinaryDVs.get(field);
-          if (dvs == null) {
-            dvs = new BinaryDocValuesWriter.CachedBinaryDVs(maxDoc(), docMap, oldDocValues);
-            cachedBinaryDVs.put(field.name, dvs);
-          }
-        }
-        return new BinaryDocValuesWriter.SortingBinaryDocValues(dvs);
+        return new BinaryDocValuesWriter.SortingBinaryDocValues(new BinaryDocValuesWriter.CachedBinaryDVs(maxDoc(), docMap, oldDocValues));
       }
 
       @Override
       public SortedDocValues getSorted(FieldInfo field) throws IOException {
         SortedDocValues oldDocValues = delegate.getSorted(field);
-        int[] ords;
-        synchronized (cachedSortedDVs) {
-          ords = cachedSortedDVs.get(field);
-          if (ords == null) {
-            ords = new int[maxDoc()];
-            Arrays.fill(ords, -1);
-            int docID;
-            while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
-              int newDocID = docMap.oldToNew(docID);
-              ords[newDocID] = oldDocValues.ordValue();
-            }
-            cachedSortedDVs.put(field.name, ords);
-          }
+        int[] ords = new int[maxDoc()];
+        Arrays.fill(ords, -1);
+        int docID;
+        while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
+          int newDocID = docMap.oldToNew(docID);
+          ords[newDocID] = oldDocValues.ordValue();
         }
 
         return new SortedDocValuesWriter.SortingSortedDocValues(oldDocValues, ords);
@@ -412,30 +367,15 @@ public final class SortingCodecReader extends FilterCodecReader {
       @Override
       public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
         final SortedNumericDocValues oldDocValues = delegate.getSortedNumeric(field);
-        SortedNumericDocValuesWriter.LongValues values;
-        synchronized (cachedSortedNumericDVs) {
-          values = cachedSortedNumericDVs.get(field);
-          if (values == null) {
-            values = new SortedNumericDocValuesWriter.LongValues(maxDoc(), docMap, oldDocValues, PackedInts.FAST);
-            cachedSortedNumericDVs.put(field.name, values);
-          }
-        }
-
-        return new SortedNumericDocValuesWriter.SortingSortedNumericDocValues(oldDocValues, values);
+        return new SortedNumericDocValuesWriter.SortingSortedNumericDocValues(oldDocValues,
+            new SortedNumericDocValuesWriter.LongValues(maxDoc(), docMap, oldDocValues, PackedInts.FAST));
       }
 
       @Override
       public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
         SortedSetDocValues oldDocValues = delegate.getSortedSet(field);
-        SortedSetDocValuesWriter.DocOrds ords;
-        synchronized (cachedSortedSetDVs) {
-          ords = cachedSortedSetDVs.get(field);
-          if (ords == null) {
-            ords = new SortedSetDocValuesWriter.DocOrds(maxDoc(), docMap, oldDocValues, PackedInts.FASTEST);
-            cachedSortedSetDVs.put(field.name, ords);
-          }
-        }
-        return new SortedSetDocValuesWriter.SortingSortedSetDocValues(oldDocValues, ords);
+        return new SortedSetDocValuesWriter.SortingSortedSetDocValues(oldDocValues,
+            new SortedSetDocValuesWriter.DocOrds(maxDoc(), docMap, oldDocValues, PackedInts.FAST));
       }
 
       @Override
@@ -453,6 +393,21 @@ public final class SortingCodecReader extends FilterCodecReader {
         return delegate.ramBytesUsed();
       }
     };
+  }
+
+  private NumericDocValues getNumericDocValues(NumericDocValues oldNorms) throws IOException {
+    FixedBitSet docsWithField = new FixedBitSet(maxDoc());
+    long[] values = new long[maxDoc()];
+    while (true) {
+      int docID = oldNorms.nextDoc();
+      if (docID == NO_MORE_DOCS) {
+        break;
+      }
+      int newDocID = docMap.oldToNew(docID);
+      docsWithField.set(newDocID);
+      values[newDocID] = oldNorms.longValue();
+    }
+    return new NumericDocValuesWriter.SortingNumericDocValues(new NumericDocValuesWriter.CachedNumericDVs(values, docsWithField));
   }
 
   @Override
@@ -509,5 +464,4 @@ public final class SortingCodecReader extends FilterCodecReader {
   public LeafMetaData getMetaData() {
     return metaData;
   }
-
 }
