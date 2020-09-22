@@ -26,6 +26,14 @@ jobs:
         java-version: 11
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-docker-${{ hashFiles('versions.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-docker-
+          ${{ runner.os }}-gradle-
     - name: Build Docker image with Gradle
       run: ./gradlew solr:docker:docker
     - name: Run tests on Docker image
