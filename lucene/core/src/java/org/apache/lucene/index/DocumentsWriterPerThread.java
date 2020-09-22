@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
@@ -47,17 +46,6 @@ import org.apache.lucene.util.Version;
 
 final class DocumentsWriterPerThread implements Accountable {
 
-  /**
-   * The IndexingChain must define the {@link #getChain(int, SegmentInfo, Directory, FieldInfos.Builder, LiveIndexWriterConfig, Consumer)} method
-   * which returns the DocConsumer that the DocumentsWriter calls to process the
-   * documents.
-   */
-  abstract static class IndexingChain {
-    abstract DocConsumer getChain(int indexCreatedVersionMajor, SegmentInfo segmentInfo, Directory directory,
-                                  FieldInfos.Builder fieldInfos, LiveIndexWriterConfig indexWriterConfig,
-                                  Consumer<Throwable> abortingExceptionConsumer);
-  }
-
   private Throwable abortingException;
 
   private void onAbortingException(Throwable throwable) {
@@ -69,16 +57,6 @@ final class DocumentsWriterPerThread implements Accountable {
   final boolean isAborted() {
     return aborted;
   }
-
-  static final IndexingChain defaultIndexingChain = new IndexingChain() {
-
-    @Override
-    DocConsumer getChain(int indexCreatedVersionMajor, SegmentInfo segmentInfo, Directory directory,
-                         FieldInfos.Builder fieldInfos, LiveIndexWriterConfig indexWriterConfig,
-                         Consumer<Throwable> abortingExceptionConsumer) {
-      return new DefaultIndexingChain(indexCreatedVersionMajor, segmentInfo, directory, fieldInfos, indexWriterConfig, abortingExceptionConsumer);
-    }
-  };
 
   static final class FlushedSegment {
     final SegmentCommitInfo segmentInfo;
@@ -111,7 +89,7 @@ final class DocumentsWriterPerThread implements Accountable {
         infoStream.message("DWPT", "now abort");
       }
       try {
-        consumer.abort();
+        indexingChain.abort();
       } finally {
         pendingUpdates.clear();
       }
@@ -124,7 +102,7 @@ final class DocumentsWriterPerThread implements Accountable {
   private final static boolean INFO_VERBOSE = false;
   final Codec codec;
   final TrackingDirectoryWrapper directory;
-  private final DocConsumer consumer;
+  private final IndexingChain indexingChain;
 
   // Updates for our still-in-RAM (to be flushed next) segment
   private final BufferedUpdates pendingUpdates;
@@ -167,7 +145,7 @@ final class DocumentsWriterPerThread implements Accountable {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentName + " delQueue=" + deleteQueue);  
     }
     this.enableTestPoints = enableTestPoints;
-    consumer = indexWriterConfig.getIndexingChain().getChain(indexVersionCreated, segmentInfo, this.directory, fieldInfos, indexWriterConfig, this::onAbortingException);
+    indexingChain = new IndexingChain(indexVersionCreated, segmentInfo, this.directory, fieldInfos, indexWriterConfig, this::onAbortingException);
   }
   
   final void testPoint(String message) {
@@ -205,7 +183,7 @@ final class DocumentsWriterPerThread implements Accountable {
           // it's very hard to fix (we can't easily distinguish aborting
           // vs non-aborting exceptions):
           reserveOneDoc();
-          consumer.processDocument(numDocsInRAM++, doc);
+          indexingChain.processDocument(numDocsInRAM++, doc);
         }
         allDocsIndexed = true;
         return finishDocuments(deleteNode, docsInRamBefore);
@@ -311,8 +289,8 @@ final class DocumentsWriterPerThread implements Accountable {
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
     segmentInfo.setMaxDoc(numDocsInRAM);
     final SegmentWriteState flushState = new SegmentWriteState(infoStream, directory, segmentInfo, fieldInfos.finish(),
-        pendingUpdates, new IOContext(new FlushInfo(numDocsInRAM, ramBytesUsed())));
-    final double startMBUsed = ramBytesUsed() / 1024. / 1024.;
+        pendingUpdates, new IOContext(new FlushInfo(numDocsInRAM, lastCommittedBytesUsed)));
+    final double startMBUsed = lastCommittedBytesUsed / 1024. / 1024.;
 
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
@@ -343,11 +321,11 @@ final class DocumentsWriterPerThread implements Accountable {
     try {
       DocIdSetIterator softDeletedDocs;
       if (indexWriterConfig.getSoftDeletesField() != null) {
-        softDeletedDocs = consumer.getHasDocValues(indexWriterConfig.getSoftDeletesField());
+        softDeletedDocs = indexingChain.getHasDocValues(indexWriterConfig.getSoftDeletesField());
       } else {
         softDeletedDocs = null;
       }
-      sortMap = consumer.flush(flushState);
+      sortMap = indexingChain.flush(flushState);
       if (softDeletedDocs == null) {
         flushState.softDelCountOnFlush = 0;
       } else {
@@ -518,12 +496,14 @@ final class DocumentsWriterPerThread implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return (deleteDocIDs.length  * Integer.BYTES)+ pendingUpdates.ramBytesUsed() + consumer.ramBytesUsed();
+    assert lock.isHeldByCurrentThread();
+    return (deleteDocIDs.length  * Integer.BYTES)+ pendingUpdates.ramBytesUsed() + indexingChain.ramBytesUsed();
   }
 
   @Override
   public Collection<Accountable> getChildResources() {
-    return List.of(pendingUpdates, consumer);
+    assert lock.isHeldByCurrentThread();
+    return List.of(pendingUpdates, indexingChain);
   }
 
   @Override

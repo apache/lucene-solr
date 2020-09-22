@@ -36,17 +36,17 @@ import org.apache.lucene.util.compress.LZ4;
  */
 public final class LZ4WithPresetDictCompressionMode extends CompressionMode {
 
-  private final int dictLength, subBlockLength;
+  // Shoot for 10 sub blocks
+  private static final int NUM_SUB_BLOCKS = 10;
+  // And a dictionary whose size is about 16x smaller than sub blocks
+  private static final int DICT_SIZE_FACTOR = 16;
 
   /** Sole constructor. */
-  public LZ4WithPresetDictCompressionMode(int dictLength, int subBlockLength) {
-    this.dictLength = dictLength;
-    this.subBlockLength = subBlockLength;
-  }
+  public LZ4WithPresetDictCompressionMode() {}
 
   @Override
   public Compressor newCompressor() {
-    return new LZ4WithPresetDictCompressor(dictLength, subBlockLength);
+    return new LZ4WithPresetDictCompressor();
   }
 
   @Override
@@ -147,18 +147,14 @@ public final class LZ4WithPresetDictCompressionMode extends CompressionMode {
 
   private static class LZ4WithPresetDictCompressor extends Compressor {
 
-    final int dictLength;
-    final int blockLength;
     final ByteBuffersDataOutput compressed;
     final LZ4.FastCompressionHashTable hashTable;
-    final byte[] buffer;
+    byte[] buffer;
 
-    LZ4WithPresetDictCompressor(int dictLength, int blockLength) {
+    LZ4WithPresetDictCompressor() {
       compressed = ByteBuffersDataOutput.newResettableInstance();
       hashTable = new LZ4.FastCompressionHashTable();
-      this.dictLength = dictLength;
-      this.blockLength = blockLength;
-      buffer = new byte[dictLength + blockLength];
+      buffer = BytesRef.EMPTY_BYTES;
     }
 
     private void doCompress(byte[] bytes, int dictLen, int len, DataOutput out) throws IOException {
@@ -170,7 +166,9 @@ public final class LZ4WithPresetDictCompressionMode extends CompressionMode {
 
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
-      final int dictLength = Math.min(this.dictLength, len);
+      final int dictLength = len / (NUM_SUB_BLOCKS * DICT_SIZE_FACTOR);
+      final int blockLength = (len - dictLength + NUM_SUB_BLOCKS - 1) / NUM_SUB_BLOCKS;
+      buffer = ArrayUtil.grow(buffer, dictLength + blockLength);
       out.writeVInt(dictLength);
       out.writeVInt(blockLength);
       final int end = off + len;

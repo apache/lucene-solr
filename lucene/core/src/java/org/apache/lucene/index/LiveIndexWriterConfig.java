@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -66,10 +65,6 @@ public class LiveIndexWriterConfig {
 
   /** {@link MergeScheduler} to use for running merges. */
   protected volatile MergeScheduler mergeScheduler;
-
-  /** {@link IndexingChain} that determines how documents are
-   *  indexed. */
-  protected volatile IndexingChain indexingChain;
 
   /** {@link Codec} used to write new segments. */
   protected volatile Codec codec;
@@ -124,7 +119,6 @@ public class LiveIndexWriterConfig {
     openMode = OpenMode.CREATE_OR_APPEND;
     similarity = IndexSearcher.getDefaultSimilarity();
     mergeScheduler = new ConcurrentMergeScheduler();
-    indexingChain = DocumentsWriterPerThread.defaultIndexingChain;
     codec = Codec.getDefault();
     if (codec == null) {
       throw new NullPointerException();
@@ -351,13 +345,6 @@ public class LiveIndexWriterConfig {
    */
   public boolean getReaderPooling() {
     return readerPooling;
-  }
-
-  /**
-   * Returns the indexing chain.
-   */
-  IndexingChain getIndexingChain() {
-    return indexingChain;
   }
 
   /**

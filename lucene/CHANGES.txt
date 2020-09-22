@@ -61,6 +61,10 @@ API Changes
 * LUCENE-9462: Fields without positions should still return MatchIterator.
   (Alan Woodward, Dawid Weiss)
 
+* LUCENE-9516: Removed the ability to replace the IndexingChain / DocConsumer
+  in Lucenes IndexWriter. The interface is not sufficient to efficiently
+  replace the functionality with reasonable efforts. (Simon Willnauer)
+
 Improvements
 
 * LUCENE-9463: Query match region retrieval component, passage scoring and formatting
@@ -128,6 +132,10 @@ Improvements
   "after". Also redesign numeric comparators to provide skipping functionality
   by default. (Mayya Sharipova, Jim Ferenczi)
 
+* LUCENE-9527: Upgrade javacc to 7.0.4, regenerate query parsers. (Dawid Weiss)
+
+* LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved
+  from each query parser package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
 
 Bug fixes
 
@@ -227,6 +235,9 @@ Improvements
   heap consumption is taken into account when IndexWriter stalls or should flush
   DWPTs. (Simon Willnauer)
 
+* LUCENE-9523: In query shapes over shape fields, skip points while traversing the
+  BKD tree when the relationship with the document is already known. (Ignacio Vera)
+
 Optimizations
 ---------------------
 
@@ -238,6 +249,9 @@ Optimizations
 
 * LUCENE-9373: FunctionMatchQuery now accepts a "matchCost" optimization hint.
   (Maxim Glazkov, David Smiley)
+
+* LUCENE-9510: Indexing with an index sort is now faster by not compressing
+  temporary representations of the data. (Adrien Grand)
 
 Bug Fixes
 ---------------------
