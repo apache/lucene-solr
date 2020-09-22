@@ -34,7 +34,7 @@ resources for indexing.
 The default rate limiter is search rate limiter. Accordingly, it can be configured using the following command:
 
  curl -X POST -H 'Content-type:application/json' -d '{
-   "set-rate-limiters": {
+   "set-ratelimiters": {
      "rlEnabled": "true",
      "rlGuaranteedSlots":5,
      "rlAllowedRequests":20,
