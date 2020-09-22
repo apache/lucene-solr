@@ -26,6 +26,8 @@ import org.apache.lucene.util.BitUtil;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+import static org.apache.lucene.geo.GeoUtils.lineCrossesLine;
+import static org.apache.lucene.geo.GeoUtils.lineOverlapLine;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
@@ -110,10 +112,11 @@ final public class Tessellator {
         sortByMorton(outerNode);
       }
     }
+    checkIntersection(outerNode, mortonOptimized);
     // Calculate the tessellation using the doubly LinkedList.
     List<Triangle> result = earcutLinkedList(polygon, outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
     if (result.size() == 0) {
-      throw new IllegalArgumentException("Unable to Tessellate shape [" + polygon + "]. Possible malformed shape detected.");
+      throw new IllegalArgumentException("Unable to Tessellate shape. Possible malformed shape detected.");
     }
 
     return result;
@@ -150,10 +153,11 @@ final public class Tessellator {
         sortByMorton(outerNode);
       }
     }
+    checkIntersection(outerNode, mortonOptimized);
     // Calculate the tessellation using the doubly LinkedList.
     List<Triangle> result = earcutLinkedList(polygon, outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
     if (result.size() == 0) {
-      throw new IllegalArgumentException("Unable to Tessellate shape [" + polygon + "]. Possible malformed shape detected.");
+      throw new IllegalArgumentException("Unable to Tessellate shape. Possible malformed shape detected.");
     }
 
     return result;
@@ -466,7 +470,7 @@ final public class Tessellator {
               // as a last resort, try splitting the remaining polygon into two
               if (splitEarcut(polygon, currEar, tessellation, mortonOptimized) == false) {
                 //we could not process all points. Tessellation failed
-                throw new IllegalArgumentException("Unable to Tessellate shape [" + polygon + "]. Possible malformed shape detected.");
+                throw new IllegalArgumentException("Unable to Tessellate shape. Possible malformed shape detected.");
               }
               break;
           }
@@ -718,6 +722,99 @@ final public class Tessellator {
       }
     }
     return false;
+  }
+
+  /** Computes if edge defined by a and b overlaps with a polygon edge **/
+  private static void checkIntersection(Node a, boolean isMorton) {
+    Node next = a.next;
+    do {
+      Node innerNext = next.next;
+      if (isMorton) {
+        mortonCheckIntersection(next, innerNext);
+      } else {
+        do {
+          checkIntersectionPoint(next, innerNext);
+          innerNext = innerNext.next;
+        } while (innerNext != next.previous);
+      }
+      next = next.next;
+    } while(next != a.previous);
+  }
+
+  /** Uses morton code for speed to determine whether or not and edge defined by a and b overlaps with a polygon edge */
+  private static final void mortonCheckIntersection(final Node a, final Node b) {
+    // edge bbox (flip the bits so negative encoded values are < positive encoded values)
+    int minTX = StrictMath.min(a.x, a.next.x) ^ 0x80000000;
+    int minTY = StrictMath.min(a.y, a.next.y) ^ 0x80000000;
+    int maxTX = StrictMath.max(a.x, a.next.x) ^ 0x80000000;
+    int maxTY = StrictMath.max(a.y, a.next.y) ^ 0x80000000;
+
+    // z-order range for the current edge;
+    long minZ = BitUtil.interleave(minTX, minTY);
+    long maxZ = BitUtil.interleave(maxTX, maxTY);
+
+    // now make sure we don't have other points inside the potential ear;
+
+    // look for points inside edge in both directions
+    Node p = b.previousZ;
+    Node n = b.nextZ;
+    while (p != null && Long.compareUnsigned(p.morton, minZ) >= 0
+        && n != null && Long.compareUnsigned(n.morton, maxZ) <= 0) {
+      checkIntersectionPoint(p, a);
+      p = p.previousZ;
+      checkIntersectionPoint(n, a);
+      n = n.nextZ;
+    }
+
+    // first look for points inside the edge in decreasing z-order
+    while (p != null && Long.compareUnsigned(p.morton, minZ) >= 0) {
+      checkIntersectionPoint(p, a);
+      p = p.previousZ;
+    }
+    // then look for points in increasing z-order
+    while (n != null &&
+        Long.compareUnsigned(n.morton, maxZ) <= 0) {
+      checkIntersectionPoint(n, a);
+      n = n.nextZ;
+    }
+  }
+
+  private static void checkIntersectionPoint(final Node a, final Node b) {
+    if (a == b) {
+      return;
+    }
+
+    if (Math.max(a.getY(), a.next.getY()) <= Math.min(b.getY(), b.next.getY()) ||
+        Math.min(a.getY(), a.next.getY()) >= Math.max(b.getY(), b.next.getY()) ||
+        Math.max(a.getX(), a.next.getX()) <= Math.min(b.getX(), b.next.getX()) ||
+        Math.min(a.getX(), a.next.getX()) >= Math.max(b.getX(), b.next.getX())) {
+      return;
+    }
+
+    if(lineCrossesLine(a.getX(), a.getY(), a.next.getX(), a.next.getY(), b.getX(), b.getY(), b.next.getX(), b.next.getY())) {
+      // Line AB represented as a1x + b1y = c1
+      double a1 = a.next.getY() - a.getY();
+      double b1 = a.getX() - a.next.getX();
+      double c1 = a1*(a.getX()) + b1*(a.getY());
+
+      // Line CD represented as a2x + b2y = c2
+      double a2 = b.next.getY() - b.getY();
+      double b2 = b.getX() - b.next.getX();
+      double c2 = a2*(b.getX())+ b2*(b.getY());
+
+      double determinant = a1*b2 - a2*b1;
+
+      assert determinant != 0;
+
+      double x = (b2*c1 - b1*c2)/determinant;
+      double y = (a1*c2 - a2*c1)/determinant;
+
+     throw new IllegalArgumentException("Polygon self-intersection at lat=" +y + " lon=" + x);
+    }
+    if (a.isNextEdgeFromPolygon && b.isNextEdgeFromPolygon &&
+        lineOverlapLine(a.getX(), a.getY(), a.next.getX(), a.next.getY(), b.getX(), b.getY(), b.next.getX(), b.next.getY())) {
+      throw new IllegalArgumentException("Polygon ring self-intersection at lat=" + a.getY() + " lon=" + a.getX());
+    }
   }
 
   /** Links two polygon vertices using a bridge. **/

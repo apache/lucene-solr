@@ -744,7 +744,9 @@ public class GeoTestUtil {
         is = new GZIPInputStream(is);
       }
       BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-      return reader.readLine();
+      StringBuilder builder = new StringBuilder();
+      reader.lines().forEach(s -> builder.append(s));
+      return builder.toString();
     }
   }
 }

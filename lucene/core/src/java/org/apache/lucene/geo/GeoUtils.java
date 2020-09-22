@@ -217,6 +217,15 @@ public final class GeoUtils {
     return false;
   }
 
+  /** uses orient method to compute whether two line overlap each other */
+  public static boolean lineOverlapLine(double a1x, double a1y, double b1x, double b1y, double a2x, double a2y, double b2x, double b2y) {
+    if (orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y) == 0 &&
+        orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y) == 0) {
+      return true;
+    }
+    return false;
+  }
+
   /**
    * used to define the orientation of 3 points
    * -1 = Clockwise
