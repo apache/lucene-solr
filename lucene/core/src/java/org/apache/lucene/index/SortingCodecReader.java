@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -301,8 +299,6 @@ public final class SortingCodecReader extends FilterCodecReader {
     };
   }
 
-  private final Map<String, NumericDocValuesWriter.CachedNumericDVs> cachedNorms = new HashMap<>();
-
   @Override
   public NormsProducer getNormsReader() {
     final NormsProducer delegate = in.getNormsReader();
@@ -341,7 +337,7 @@ public final class SortingCodecReader extends FilterCodecReader {
       @Override
       public BinaryDocValues getBinary(FieldInfo field) throws IOException {
         final BinaryDocValues oldDocValues = delegate.getBinary(field);
-        return new BinaryDocValuesWriter.SortingBinaryDocValues(new BinaryDocValuesWriter.CachedBinaryDVs(maxDoc(), docMap, oldDocValues));
+        return new BinaryDocValuesWriter.SortingBinaryDocValues(new BinaryDocValuesWriter.BinaryDVs(maxDoc(), docMap, oldDocValues));
       }
 
       @Override
@@ -398,7 +394,7 @@ public final class SortingCodecReader extends FilterCodecReader {
       docsWithField.set(newDocID);
       values[newDocID] = oldNorms.longValue();
     }
-    return new NumericDocValuesWriter.SortingNumericDocValues(new NumericDocValuesWriter.CachedNumericDVs(values, docsWithField));
+    return new NumericDocValuesWriter.SortingNumericDocValues(new NumericDocValuesWriter.NumericDVs(values, docsWithField));
   }
 
   @Override
