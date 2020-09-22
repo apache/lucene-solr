@@ -64,6 +64,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -187,11 +188,21 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       coresInit = createCoreContainer(solrHomePath, extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
-      RateLimitManager.Builder builder = new RateLimitManager.Builder(cores.zkClientSupplier.get());
+
+      SolrZkClient zkClient = null;
+      ZkController zkController = coresInit.getZkController();
+
+      if (zkController != null) {
+        zkClient = zkController.getZkClient();
+      }
+
+      RateLimitManager.Builder builder = new RateLimitManager.Builder(zkClient);
 
       this.rateLimitManager = builder.build();
 
-      cores.getZkController().zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
+      if (zkController != null) {
+        zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
+      }
 
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));

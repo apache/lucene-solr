@@ -49,6 +49,11 @@ public class QueryRateLimiter extends RequestRateLimiter {
   @SuppressWarnings({"unchecked"})
   private static RateLimiterConfig constructQueryRateLimiterConfig(SolrZkClient zkClient) {
     try {
+
+      if (zkClient == null) {
+        return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
+      }
+
       Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
       Map<String, Object> propertiesMap = (Map<String, Object>) clusterPropsJson.get(RL_CONFIG_KEY);
       RateLimiterConfig rateLimiterConfig = new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
@@ -64,6 +69,11 @@ public class QueryRateLimiter extends RequestRateLimiter {
   }
 
   private static void constructQueryRateLimiterConfigInternal(Map<String, Object> propertiesMap, RateLimiterConfig rateLimiterConfig) {
+
+    if (propertiesMap == null) {
+      // No Rate limiter configuration defined in clusterprops.json
+      return;
+    }
 
     if (propertiesMap.get(RateLimiterConfig.RL_ALLOWED_REQUESTS) != null) {
       rateLimiterConfig.allowedRequests = Integer.parseInt(propertiesMap.get(RateLimiterConfig.RL_ALLOWED_REQUESTS).toString());
