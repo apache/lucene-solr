@@ -85,8 +85,8 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   private final int numDocs;
   private boolean closed;
   private final BlockPackedReaderIterator reader;
-  private final long numChunks; // number of compressed blocks written
   private final long numDirtyChunks; // number of incomplete compressed blocks written
+  private final long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
   private final long maxPointer; // end of the data section
 
   // used by clone
@@ -101,8 +101,8 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     this.numDocs = reader.numDocs;
     this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
     this.version = reader.version;
-    this.numChunks = reader.numChunks;
     this.numDirtyChunks = reader.numDirtyChunks;
+    this.numDirtyDocs = reader.numDirtyDocs;
     this.maxPointer = reader.maxPointer;
     this.closed = false;
   }
@@ -178,15 +178,13 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       this.maxPointer = maxPointer;
 
       if (version >= VERSION_META) {
-        numChunks = metaIn.readVLong();
         numDirtyChunks = metaIn.readVLong();
+        numDirtyDocs = metaIn.readVLong();
       } else {
-        vectorsStream.seek(maxPointer);
-        numChunks = vectorsStream.readVLong();
-        numDirtyChunks = vectorsStream.readVLong();
-      }
-      if (numDirtyChunks > numChunks) {
-        throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, vectorsStream);
+        // Old versions of this format did not record numDirtyDocs. Since bulk
+        // merges are disabled on version increments anyway, we make no effort
+        // to get valid values of numDirtyChunks and numDirtyDocs.
+        numDirtyChunks = numDirtyDocs = -1;
       }
 
       decompressor = compressionMode.newDecompressor();
@@ -240,12 +238,24 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     return maxPointer;
   }
   
-  long getNumChunks() {
-    return numChunks;
+  long getNumDirtyDocs() {
+    if (version != VERSION_CURRENT) {
+      throw new IllegalStateException("getNumDirtyDocs should only ever get called when the reader is on the current version");
+    }
+    assert numDirtyDocs >= 0;
+    return numDirtyDocs;
   }
   
   long getNumDirtyChunks() {
+    if (version != VERSION_CURRENT) {
+      throw new IllegalStateException("getNumDirtyChunks should only ever get called when the reader is on the current version");
+    }
+    assert numDirtyChunks >= 0;
     return numDirtyChunks;
+  }
+
+  int getNumDocs() {
+    return numDocs;
   }
 
   /**

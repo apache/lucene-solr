@@ -17,6 +17,7 @@
 package org.apache.lucene.queryparser.flexible.standard;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -44,6 +45,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
@@ -53,6 +55,8 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.parser.ParseException;
+import org.apache.lucene.queryparser.flexible.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -494,7 +498,12 @@ public class TestQPHelper extends LuceneTestCase {
         "+(apple \"steve jobs\") -(foo bar baz)");
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
         "+(title:dog title:cat) -author:\"bob dole\"");
+  }
 
+  public void testParse() throws ParseException {
+    StandardSyntaxParser p = new StandardSyntaxParser(new FastCharStream(new StringReader("")));
+    p.ReInit(new FastCharStream(new StringReader("title:(dog OR cat)")));
+    System.out.println(p.TopLevelQuery("_fld_"));
   }
 
   public void testPunct() throws Exception {
@@ -558,8 +567,6 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryEquals("term~0.7", null, "term~1");
 
     assertQueryEquals("term~^3", null, "(term~2)^3.0");
-
-    assertQueryEquals("term^3~", null, "(term~2)^3.0");
     assertQueryEquals("term*germ", null, "term*germ");
     assertQueryEquals("term*germ^3", null, "(term*germ)^3.0");
 
@@ -576,6 +583,7 @@ public class TestQPHelper extends LuceneTestCase {
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
 
     assertQueryNodeException("term~1.1"); // value > 1, throws exception
+    assertQueryNodeException("term^3~"); // Boost must be applied to FuzzyOp.
 
     assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
 
@@ -1164,6 +1172,9 @@ public class TestQPHelper extends LuceneTestCase {
     re = new RegexpQuery(new Term("field", "http~0.5"));
     assertEquals(re, qp.parse("field:/http~0.5/", df));
     assertEquals(re, qp.parse("/http~0.5/", df));
+
+    // fuzzy op doesn't apply to regexps.
+    assertQueryNodeException("/http/~2");
     
     re = new RegexpQuery(new Term("field", "boo"));
     assertEquals(re, qp.parse("field:/boo/", df));

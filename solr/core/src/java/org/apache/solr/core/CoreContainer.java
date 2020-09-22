@@ -1716,6 +1716,7 @@ public class CoreContainer {
         solrCores.removeFromPendingOps(cd.getName());
       }
     } else {
+      if(coreId != null) return;// yeah, this core is already reloaded/unloaded return right away
       CoreLoadFailure clf = coreInitFailures.get(name);
       if (clf != null) {
         try {
