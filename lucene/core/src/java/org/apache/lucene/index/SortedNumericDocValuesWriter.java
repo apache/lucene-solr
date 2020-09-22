@@ -39,13 +39,13 @@ class SortedNumericDocValuesWriter extends DocValuesWriter<SortedNumericDocValue
   private long bytesUsed; // this only tracks differences in 'pending' and 'pendingCounts'
   private final FieldInfo fieldInfo;
   private int currentDoc = -1;
-  private long currentValues[] = new long[8];
+  private long[] currentValues = new long[8];
   private int currentUpto = 0;
 
   private PackedLongValues finalValues;
   private PackedLongValues finalValuesCount;
 
-  public SortedNumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  SortedNumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);

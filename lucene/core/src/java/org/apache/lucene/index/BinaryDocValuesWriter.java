@@ -59,7 +59,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
 
   private PackedLongValues finalLengths;
 
-  public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.bytes = new PagedBytes(BLOCK_BITS);
     this.bytesOut = bytes.getDataOutput();
@@ -237,7 +237,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     }
   }
 
-  static class CachedBinaryDVs {
+  static final class CachedBinaryDVs {
     final int[] offsets;
     final BytesRefArray values;
     CachedBinaryDVs(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {

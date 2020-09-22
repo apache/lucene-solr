@@ -45,7 +45,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
   private long bytesUsed; // this only tracks differences in 'pending' and 'pendingCounts'
   private final FieldInfo fieldInfo;
   private int currentDoc = -1;
-  private int currentValues[] = new int[8];
+  private int[] currentValues = new int[8];
   private int currentUpto;
   private int maxCount;
 
@@ -55,7 +55,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
   private int[] finalOrdMap;
 
 
-  public SortedSetDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  SortedSetDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     hash = new BytesRefHash(
@@ -214,7 +214,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     final PackedLongValues.Iterator ordsIter;
     final PackedLongValues.Iterator ordCountsIter;
     final DocIdSetIterator docsWithField;
-    final int currentDoc[];
+    final int[] currentDoc;
     
     private int ordCount;
     private int ordUpto;
@@ -353,7 +353,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     }
   }
 
-  static class DocOrds {
+  static final class DocOrds {
     final long[] offsets;
     final PackedLongValues ords;
 
