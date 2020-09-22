@@ -23,5 +23,13 @@ jobs:
         java-version: 11
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-solrj-${{ hashFiles('versions.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-solrj-
+          ${{ runner.os }}-gradle-
     - name: Test the SolrJ Package
       run: ./gradlew solr:solrj:test
