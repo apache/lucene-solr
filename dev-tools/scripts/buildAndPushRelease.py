@@ -115,7 +115,7 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
   print('  prepare-release')
-  cmd = './gradlew -Dversion=%s clean :lucene:assembleDist :solr:packaging:assembleDist' % version
+  cmd = './gradlew -Dversion.release=%s clean :lucene:assembleDist :solr:packaging:assembleDist' % version
   if gpgKeyID is not None:
     # TODO sign
     # cmd += ' -Psigning.keyId=%s publishSignedPublicationToMavenLocal' % gpgKeyID
