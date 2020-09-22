@@ -50,6 +50,8 @@ Improvements
 
 * SOLR-14878: Report solr.xml's coreRootDirectory property via System Settings API, when set (Alexandre Rafalovitch)
 
+* SOLR-14880: Support coreRootDirectory setting when create new cores from command line, in standalone mode (Alexandre Rafalovitch)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -131,6 +133,8 @@ Other Changes
 * LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved from each query parser
                package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
 
+* SOLR-9607: Remove /terms configuration from solrconfig.xml, as implicit definition is up-to-par now (Alexandre Rafalovitch)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -183,6 +187,9 @@ Improvements
 
 * SOLR-14802: geodist: Support most (all?) spatial field types as an argument like LLPSF, SRPTFT, and others.
   (Tom Edge, Craig Wrigglesworth)
+
+* SOLR-14859: DateRangeField now throws errors when invalid field/fieldType options specified; no longer silently accepts incompatible option values
+  (Jason Gerlowski, Chris Hostetter, Munendra S N)
 
 Optimizations
 ---------------------
