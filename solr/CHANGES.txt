@@ -10,7 +10,6 @@ Consult the lucene/CHANGES.txt file for additional, low level, changes in this r
 
 Upgrade Notes
 ---------------------
-
 * SOLR-12847: maxShardsPerNode parameter has been removed because it was broken and
 inconsistent with other replica placement strategies. Other relevant placement strategies
 should be used instead, such as autoscaling policy or rules-based placement.
@@ -25,7 +24,6 @@ New Features
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
 * SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
-
 
 Improvements
 ----------------------
@@ -247,6 +245,9 @@ Bug Fixes
 * SOLR-13181: macro expansion of parameters could result in a StringIndexOutOfBoundsException.
   Also, params with macros will be processed more strictly by LTR FeatureWeight.
   (David Smiley, Cesar Rodriguez, Christine Poerschke)
+
+* SOLR-14768: Fix HTTP multipart POST to Solr -- a regression from 8.6.0.
+  Many Jetty classes are not classpath-visible from the Solr webapp.  (David Smiley)
 
 Other Changes
 ---------------------
