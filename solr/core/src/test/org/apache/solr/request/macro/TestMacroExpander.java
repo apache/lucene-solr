@@ -155,10 +155,15 @@ public class TestMacroExpander extends SolrTestCase {
 
   @Test
   public void testUnbalanced() { // SOLR-13181
-    final MacroExpander meSkipOnMissingParams = new MacroExpander(Collections.emptyMap());
-    final MacroExpander meFailOnMissingParams = new MacroExpander(Collections.emptyMap(), true);
+    final Map<String, String[]> request = Collections.singletonMap("answer", new String[]{ "42" });
+    final MacroExpander meSkipOnMissingParams = new MacroExpander(request);
+    final MacroExpander meFailOnMissingParams = new MacroExpander(request, true);
     assertEquals("${noClose", meSkipOnMissingParams.expand("${noClose"));
+    assertEquals("42 ${noClose", meSkipOnMissingParams.expand("${answer} ${noClose"));
+    assertEquals("42 ${noClose fooBar", meSkipOnMissingParams.expand("${answer} ${noClose fooBar"));
     assertNull(meFailOnMissingParams.expand("${noClose"));
+    assertNull(meFailOnMissingParams.expand("${answer} ${noClose"));
+    assertNull(meFailOnMissingParams.expand("${answer} ${noClose fooBar"));
 
     assertEquals("${${b}}", meSkipOnMissingParams.expand("${${b}}"));
     assertNull(meFailOnMissingParams.expand("${${b}}"));
