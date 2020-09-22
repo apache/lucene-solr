@@ -113,6 +113,9 @@ Bug Fixes
   Also, params with macros will be processed more strictly by LTR FeatureWeight.
   (David Smiley, Cesar Rodriguez, Christine Poerschke)
 
+* SOLR-14768: Fix HTTP multipart POST to Solr -- a regression from 8.6.0.
+  Many Jetty classes are not classpath-visible from the Solr webapp.  (David Smiley)
+
 Other Changes
 ---------------------
 
@@ -140,7 +143,7 @@ Other Changes
 
 * SOLR-14641: PeerSync, remove canHandleVersionRanges check (Cao Manh Dat)
 
-* SOLR-14579: Comment SolrJ 'Utils' generic map functions 
+* SOLR-14579: Comment SolrJ 'Utils' generic map functions
   (Megan Carey and a lot of education from Uwe Schindler via Erick Erickson)
 
 * SOLR-10471: Update default Zookeeper session timeout to 30s in bin/solr and bin/solr.cmd
