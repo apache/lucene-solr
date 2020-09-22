@@ -23,4 +23,8 @@ allprojects {
     dirMode = 0755
     fileMode = 0644
   }
+
+  tasks.withType(Tar).configureEach {
+    compression = Compression.GZIP
+  }
 }

@@ -17,3 +17,66 @@
 
 // This project puts together a "distribution", assembling dependencies from
 // various other projects.
+
+plugins {
+    id 'distribution'
+}
+
+description = 'Lucene packaging'
+
+distributions {
+    main {
+        distributionBaseName = 'lucene'
+
+        contents {
+            // Manually correct posix permissions (matters when packaging on Windows).
+            filesMatching(["**/*.sh", "**/*.bat"]) { copy ->
+                copy.setMode(0755)
+            }
+
+            from(project(':lucene').projectDir, {
+                include "README.md"
+                include "LICENSE.txt"
+                include "NOTICE.txt"
+                include "MIGRATE.md"
+                include "JRE_VERSION_MIGRATION.md"
+                include "SYSTEM_REQUIREMENTS.md"
+                include "CHANGES.txt"
+                include "licenses/*"
+            })
+
+            from(project(':lucene:luke').projectDir, {
+                include 'bin/*'  // need to strip prefix here
+
+                into 'luke'
+            })
+
+            // TODO:
+            // module jars
+            // docs/[subproject]/*
+            // queryparser/docs/*
+            // module/lib jars
+
+//       This was copied from ANT and remains to be implemented
+//            from(project.buildDir, {
+//                include "docs/"
+//                include "**/*.jar"
+//                include "**/*.war"
+//                exclude "**/*-sources.jar" // was: *-src.jar
+//                exclude "**/*-sources.war"
+//                // TODO also *-javadoc.jar ?
+//            })
+//
+//            from(project.projectDir, {
+//                include "**/lib/*.jar"
+//                include "*/docs/"
+//                include "**/README*"
+//                exclude "*/build/**"
+//                exclude "site/**"
+//                exclude "tools/**"
+//                exclude "**/lib/*servlet-api*.jar"
+//                exclude "dev-docs/**"
+//            })
+        }
+    }
+}

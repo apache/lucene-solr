@@ -78,8 +78,8 @@ distributions {
           "**/bin/solr",
           "**/bin/init.d/solr",
           "**/bin/solr-exporter",
-      ]) {
-        setMode 0755
+      ]) { copy ->
+        copy.setMode(0755)
       }
 
       from(project(":solr").projectDir, {
@@ -120,10 +120,6 @@ distributions {
       // docs/   - TODO: this is assembled via XSLT... leaving out for now.
     }
   }
-}
-
-distTar {
-  compression = Compression.GZIP
 }
 
 installDist {
