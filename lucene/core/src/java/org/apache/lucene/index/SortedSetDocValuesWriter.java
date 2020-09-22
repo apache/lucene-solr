@@ -22,7 +22,6 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
@@ -182,12 +181,12 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
       ordMap = finalOrdMap;
     }
 
-    final LongOrds longOrds;
+    final DocOrds docOrds;
     if (sortMap != null) {
-      longOrds = new LongOrds(state.segmentInfo.maxDoc(), sortMap,
+      docOrds = new DocOrds(state.segmentInfo.maxDoc(), sortMap,
           new BufferedSortedSetDocValues(sortedValues, ordMap, hash, ords, ordCounts, maxCount, docsWithField.iterator()), PackedInts.FASTEST);
     } else {
-      longOrds = null;
+      docOrds = null;
     }
     dvConsumer.addSortedSetField(fieldInfo,
                                  new EmptyDocValuesProducer() {
@@ -198,10 +197,10 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
                                      }
                                      final SortedSetDocValues buf =
                                          new BufferedSortedSetDocValues(sortedValues, ordMap, hash, ords, ordCounts, maxCount, docsWithField.iterator());
-                                     if (longOrds == null) {
+                                     if (docOrds == null) {
                                        return buf;
                                      } else {
-                                       return new SortingSortedSetDocValues(buf, longOrds);
+                                       return new SortingSortedSetDocValues(buf, docOrds);
                                      }
                                    }
                                  });
@@ -290,11 +289,11 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
   static class SortingSortedSetDocValues extends SortedSetDocValues {
 
     private final SortedSetDocValues in;
-    private final LongOrds ords;
+    private final DocOrds ords;
     private int docID = -1;
     private long ordUpto;
 
-    SortingSortedSetDocValues(SortedSetDocValues in, LongOrds ords) {
+    SortingSortedSetDocValues(SortedSetDocValues in, DocOrds ords) {
       this.in = in;
       this.ords = ords;
     }
@@ -354,11 +353,11 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     }
   }
 
-  static class LongOrds {
+  static class DocOrds {
     final long[] offsets;
     final PackedLongValues ords;
 
-    LongOrds(int maxDoc, Sorter.DocMap sortMap, SortedSetDocValues oldValues, float acceptableOverheadRatio) throws IOException {
+    DocOrds(int maxDoc, Sorter.DocMap sortMap, SortedSetDocValues oldValues, float acceptableOverheadRatio) throws IOException {
       offsets = new long[maxDoc];
       PackedLongValues.Builder builder = PackedLongValues.packedBuilder(acceptableOverheadRatio);
       long ordOffset = 1; // 0 marks docs with no values

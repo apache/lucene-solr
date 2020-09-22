@@ -52,7 +52,7 @@ public final class SortingCodecReader extends FilterCodecReader {
 
   private final Map<String, int[]> cachedSortedDVs = new HashMap<>();
 
-  private final Map<String, SortedSetDocValuesWriter.LongOrds> cachedSortedSetDVs = new HashMap<>();
+  private final Map<String, SortedSetDocValuesWriter.DocOrds> cachedSortedSetDVs = new HashMap<>();
 
   private final Map<String, SortedNumericDocValuesWriter.LongValues> cachedSortedNumericDVs = new HashMap<>();
 
@@ -427,11 +427,11 @@ public final class SortingCodecReader extends FilterCodecReader {
       @Override
       public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
         SortedSetDocValues oldDocValues = delegate.getSortedSet(field);
-        SortedSetDocValuesWriter.LongOrds ords;
+        SortedSetDocValuesWriter.DocOrds ords;
         synchronized (cachedSortedSetDVs) {
           ords = cachedSortedSetDVs.get(field);
           if (ords == null) {
-            ords = new SortedSetDocValuesWriter.LongOrds(maxDoc(), docMap, oldDocValues, PackedInts.FASTEST);
+            ords = new SortedSetDocValuesWriter.DocOrds(maxDoc(), docMap, oldDocValues, PackedInts.FASTEST);
             cachedSortedSetDVs.put(field.name, ords);
           }
         }
