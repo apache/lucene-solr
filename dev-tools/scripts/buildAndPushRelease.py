@@ -190,7 +190,7 @@ def pushLocal(version, root, rev, rcNum, localDir):
   os.makedirs('%s/%s/lucene' % (localDir, dir))
   os.makedirs('%s/%s/solr' % (localDir, dir))
   print('  Lucene')
-  lucene_dist_dir = '%s/lucene/build/distributions' % root
+  lucene_dist_dir = '%s/lucene/packaging/build/distributions' % root
   os.chdir(lucene_dist_dir)
   print('    zip...')
   if os.path.exists('lucene.tar.bz2'):
