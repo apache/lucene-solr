@@ -443,4 +443,46 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     dir.close();
   }
 
+  /**
+   * Test that sorting on _doc works correctly.
+   * This test goes through DefaultBulkSorter::scoreRange, where scorerIterator is BitSetIterator.
+   * As a conjunction of this BitSetIterator with DocComparator's iterator, we get BitSetConjunctionDISI.
+   * BitSetConjuctionDISI advances based on the DocComparator's iterator, and doesn't consider
+   * that its BitSetIterator may have advanced passed a certain doc. 
+   */
+  public void testDocSort() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = 4;
+    for (int i = 0; i < numDocs; ++i) {
+      final Document doc = new Document();
+      doc.add(new StringField("id", "id" + i, Field.Store.NO));
+      if (i < 2) {
+        doc.add(new LongPoint("lf", 1));
+      }
+      writer.addDocument(doc);
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    writer.close();
+
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.setQueryCache(null);
+    final int numHits = 10;
+    final int totalHitsThreshold = 10;
+    final Sort sort = new Sort(FIELD_DOC);
+
+    {
+      final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
+      bq.add(LongPoint.newExactQuery("lf", 1), BooleanClause.Occur.MUST);
+      bq.add(new TermQuery(new Term("id", "id3")), BooleanClause.Occur.MUST_NOT);
+      searcher.search(bq.build(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(2, topDocs.scoreDocs.length);
+    }
+
+    reader.close();
+    dir.close();
+  }
+
 }
