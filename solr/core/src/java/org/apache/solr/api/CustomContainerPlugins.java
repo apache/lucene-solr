@@ -230,12 +230,12 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       pkg = klassInfo.pkg;
       if (pkg != null) {
         Optional<PackageLoader.Package.Version> ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
-        if (ver.isEmpty()) {
+        if (!ver.isPresent()) {
           //may be we are a bit early. Do a refresh and try again
          coreContainer.getPackageLoader().getPackageAPI().refreshPackages(null);
          ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         }
-        if (ver.isEmpty()) {
+        if (!ver.isPresent()) {
           PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);
           if (p == null) {
             errs.add("Invalid package " + klassInfo.pkg);
