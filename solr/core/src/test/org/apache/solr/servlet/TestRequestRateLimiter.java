@@ -17,7 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterConfig;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
