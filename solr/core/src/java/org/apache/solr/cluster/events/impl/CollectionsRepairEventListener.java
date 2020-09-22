@@ -126,7 +126,7 @@ public class CollectionsRepairEventListener implements ClusterSingleton, Cluster
             List<ReplicaPosition> positions = assignStrategy.assign(solrCloudManager, assignRequest);
             newPositions.put(coll.getName(), positions);
           } catch (Exception e) {
-            log.warn("Exception computing positions for " + coll.getName() + "/" + shard, e);
+            log.warn("Exception computing positions for {}/{}: {}", coll.getName(), shard, e);
             return;
           }
         });
@@ -152,7 +152,7 @@ public class CollectionsRepairEventListener implements ClusterSingleton, Cluster
       try {
         solrClient.request(addReplica);
       } catch (Exception e) {
-        log.warn("Exception calling ADDREPLICA " + addReplica.getParams().toQueryString(), e);
+        log.warn("Exception calling ADDREPLICA {}: {}", addReplica.getParams().toQueryString(), e);
       }
     });
 
