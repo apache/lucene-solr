@@ -244,6 +244,10 @@ Bug Fixes
 * SOLR-14821: {!terms} docValuesTermsFilterTopLevel method now works with single-valued strings (Anatolii Siuniaev
   via Jason Gerlowski)
 
+* SOLR-13181: macro expansion of parameters could result in a StringIndexOutOfBoundsException.
+  Also, params with macros will be processed more strictly by LTR FeatureWeight.
+  (David Smiley, Cesar Rodriguez, Christine Poerschke)
+
 Other Changes
 ---------------------
 
