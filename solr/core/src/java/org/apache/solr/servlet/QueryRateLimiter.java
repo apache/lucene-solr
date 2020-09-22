@@ -17,9 +17,9 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterConfig;
-
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.PluginInfo;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUESTS;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
@@ -34,21 +34,27 @@ public class QueryRateLimiter extends RequestRateLimiter {
   final static String QUERY_GUARANTEED_SLOTS = "queryGuaranteedSlots";
   final static String QUERY_ALLOW_SLOT_BORROWING = "queryAllowSlotBorrowing";
 
-  public QueryRateLimiter(FilterConfig filterConfig) {
-    super(constructQueryRateLimiterConfig(filterConfig));
+  public QueryRateLimiter(NodeConfig nodeConfig) {
+    super(constructQueryRateLimiterConfig(nodeConfig));
   }
 
-  protected static RequestRateLimiter.RateLimiterConfig constructQueryRateLimiterConfig(FilterConfig filterConfig) {
+  protected static RequestRateLimiter.RateLimiterConfig constructQueryRateLimiterConfig(NodeConfig nodeConfig) {
     RequestRateLimiter.RateLimiterConfig queryRateLimiterConfig = new RequestRateLimiter.RateLimiterConfig();
 
+    PluginInfo pluginInfo = null;
+
+    if (nodeConfig != null) {
+      pluginInfo = nodeConfig.getRateLimitManagerConfig();
+    }
+
     queryRateLimiterConfig.requestType = SolrRequest.SolrRequestType.QUERY;
-    queryRateLimiterConfig.isEnabled = getParamAndParseBoolean(filterConfig, IS_QUERY_RATE_LIMITER_ENABLED, false);
-    queryRateLimiterConfig.waitForSlotAcquisition = getParamAndParseLong(filterConfig, QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS,
+    queryRateLimiterConfig.isEnabled = getParamAndParseBoolean(pluginInfo, IS_QUERY_RATE_LIMITER_ENABLED, false);
+    queryRateLimiterConfig.waitForSlotAcquisition = getParamAndParseLong(pluginInfo, QUERY_WAIT_FOR_SLOT_ALLOCATION_INMS,
         DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS);
-    queryRateLimiterConfig.allowedRequests = getParamAndParseInt(filterConfig, MAX_QUERY_REQUESTS,
+    queryRateLimiterConfig.allowedRequests = getParamAndParseInt(pluginInfo, MAX_QUERY_REQUESTS,
         DEFAULT_CONCURRENT_REQUESTS);
-    queryRateLimiterConfig.isSlotBorrowingEnabled = getParamAndParseBoolean(filterConfig, QUERY_ALLOW_SLOT_BORROWING, false);
-    queryRateLimiterConfig.guaranteedSlotsThreshold = getParamAndParseInt(filterConfig, QUERY_GUARANTEED_SLOTS, queryRateLimiterConfig.allowedRequests / 2);
+    queryRateLimiterConfig.isSlotBorrowingEnabled = getParamAndParseBoolean(pluginInfo, QUERY_ALLOW_SLOT_BORROWING, false);
+    queryRateLimiterConfig.guaranteedSlotsThreshold = getParamAndParseInt(pluginInfo, QUERY_GUARANTEED_SLOTS, queryRateLimiterConfig.allowedRequests / 2);
 
     return queryRateLimiterConfig;
   }

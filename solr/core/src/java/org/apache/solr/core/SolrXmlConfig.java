@@ -105,6 +105,7 @@ public class SolrXmlConfig {
     configBuilder.setSolrResourceLoader(config.getResourceLoader());
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getShardHandlerFactoryPluginInfo(config));
+    configBuilder.setRateLimitManagerConfig(getRateLimitManagerPluginInfo(config));
     configBuilder.setSolrCoreCacheFactoryConfig(getTransientCoreCacheFactoryPluginInfo(config));
     configBuilder.setTracerConfig(getTracerPluginInfo(config));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(config, "solr/logging/*[@name]", "solr/logging/watcher/*[@name]"));
@@ -485,6 +486,11 @@ public class SolrXmlConfig {
   private static PluginInfo getShardHandlerFactoryPluginInfo(XmlConfigFile config) {
     Node node = config.getNode("solr/shardHandlerFactory", false);
     return (node == null) ? null : new PluginInfo(node, "shardHandlerFactory", false, true);
+  }
+
+  private static PluginInfo getRateLimitManagerPluginInfo(XmlConfigFile config) {
+    Node node = config.getNode("solr/rateLimitManager", false);
+    return (node == null) ? null : new PluginInfo(node, "rateLimitManager", false, true);
   }
 
   private static PluginInfo[] getBackupRepositoryPluginInfos(XmlConfigFile config) {
