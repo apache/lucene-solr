@@ -68,6 +68,8 @@ distributions {
   main {
     distributionBaseName = 'solr'
     contents {
+      // TODO: This is missing module README files, as compared to 8x
+
       // Manually correct posix permissions (matters when packaging on Windows).
       filesMatching([
           "**/*.sh",

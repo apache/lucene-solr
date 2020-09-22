@@ -15,8 +15,56 @@
  * limitations under the License.
  */
 
+// Should we do this as :lucene:packaging similar to how Solr does it?
+// Or is this fine here?
+
+plugins {
+  id 'distribution'
+}
+
 description = 'Parent project for Apache Lucene Core'
 
 subprojects {
   group "org.apache.lucene"
+}
+
+distributions {
+  main {
+      // This is empirically wrong, but it is mostly a copy from `ant package-zip`
+      // Need to spend time going through this to ensure we don't miss anything from before
+      contents {
+          from(project.buildDir, {
+              include "docs/"
+              include "**/*.jar"
+              include "**/*.war"
+              exclude "**/*-sources.jar" // was: *-src.jar
+              exclude "**/*-sources.war"
+              // TODO also *-javadoc.jar ?
+          })
+
+          from(project.projectDir, {
+              include "LICENSE.txt"
+              include "NOTICE.txt"
+              include "MIGRATE.md"
+              include "JRE_VERSION_MIGRATION.md"
+              include "SYSTEM_REQUIREMENTS.md"
+              include "CHANGES.txt"
+              include "**/lib/*.jar"
+              include "licenses/**"
+              include "*/docs/"
+              include "**/README*"
+              include "**/*.sh"//, fileMode: 0755
+              include "**/*.bat"//, fileMode: 0755
+              exclude "*/build/**"
+              exclude "site/**"
+              exclude "tools/**"
+              exclude "**/lib/*servlet-api*.jar"
+              exclude "dev-docs/**"
+          })
+      }
+  }
+}
+
+distTar {
+    compression = Compression.GZIP
 }
