@@ -23,7 +23,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
-import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Date;
@@ -141,16 +140,8 @@ public class SystemInfoHandler extends RequestHandlerBase
       rsp.add("zkHost", getCoreContainer(req, core).getZkController().getZkServerAddress());
     }
     if (cc != null) {
-      String solrHome = cc.getSolrHome();
-      rsp.add("solr_home", solrHome);
-
-      Path coreRootDirectory = cc.getCoreRootDirectory();
-      if (coreRootDirectory != null) {
-        String coreRootDirectoryString = coreRootDirectory.toString();
-        if (!coreRootDirectoryString.equals(solrHome)) {
-          rsp.add("solr_core_root", coreRootDirectoryString);
-        }
-      }
+      rsp.add("solr_home", cc.getSolrHome());
+      rsp.add("core_root", cc.getCoreRootDirectory().toString());
     }
 
     rsp.add( "lucene", getLuceneInfo() );
