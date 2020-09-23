@@ -144,7 +144,7 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
   StoredFieldsFormat impl(Mode mode) {
     switch (mode) {
       case BEST_SPEED:
-        return new CompressingStoredFieldsFormat("Lucene87StoredFieldsFastData", BEST_SPEED_MODE, BEST_SPEED_BLOCK_LENGTH, 1024, 10);
+        return new CompressingStoredFieldsFormat("Lucene87StoredFieldsFastData", BEST_SPEED_MODE, BEST_SPEED_BLOCK_LENGTH, 512, 10);
       case BEST_COMPRESSION:
         return new CompressingStoredFieldsFormat("Lucene87StoredFieldsHighData", BEST_COMPRESSION_MODE, BEST_COMPRESSION_BLOCK_LENGTH, 4096, 10);
       default: throw new AssertionError();
@@ -157,8 +157,8 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
   /** Compression mode for {@link Mode#BEST_COMPRESSION} */
   public static final CompressionMode BEST_COMPRESSION_MODE = new DeflateWithPresetDictCompressionMode();
 
-  // Shoot for 10 sub blocks of 60kB each.
-  private static final int BEST_SPEED_BLOCK_LENGTH = 10 * 60 * 1024;
+  // Shoot for 5 sub blocks of 60kB each.
+  private static final int BEST_SPEED_BLOCK_LENGTH = 5 * 60 * 1024;
 
   /** Compression mode for {@link Mode#BEST_SPEED} */
   public static final CompressionMode BEST_SPEED_MODE = new LZ4WithPresetDictCompressionMode();
