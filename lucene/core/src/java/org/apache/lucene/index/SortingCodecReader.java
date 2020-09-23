@@ -30,8 +30,10 @@ import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.packed.PackedInts;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -41,20 +43,12 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * {@link Sort}. This can be used to re-sort and index after it's been created by wrapping all
  * readers of the index with this reader and adding it to a fresh IndexWriter via
  * {@link IndexWriter#addIndexes(CodecReader...)}.
+ * NOTE: This reader should only be used for merging. Pulling fields from this reader might be very costly and memory
+ * intensive.
  *
  * @lucene.experimental
  */
 public final class SortingCodecReader extends FilterCodecReader {
-
-  private final Map<String, NumericDocValuesWriter.CachedNumericDVs> cachedNumericDVs = new HashMap<>();
-
-  private final Map<String, BinaryDocValuesWriter.CachedBinaryDVs> cachedBinaryDVs = new HashMap<>();
-
-  private final Map<String, int[]> cachedSortedDVs = new HashMap<>();
-
-  private final Map<String, SortedSetDocValuesWriter.DocOrds> cachedSortedSetDVs = new HashMap<>();
-
-  private final Map<String, SortedNumericDocValuesWriter.LongValues> cachedSortedNumericDVs = new HashMap<>();
 
   private static class SortingBits implements Bits {
 
@@ -147,10 +141,6 @@ public final class SortingCodecReader extends FilterCodecReader {
       return in.getDocCount();
     }
   }
-
-
-
-
 
   /** Return a sorted view of <code>reader</code> according to the order
    *  defined by <code>sort</code>. If the reader is already sorted, this
@@ -313,15 +303,13 @@ public final class SortingCodecReader extends FilterCodecReader {
     };
   }
 
-  private final Map<String, NumericDocValuesWriter.CachedNumericDVs> cachedNorms = new HashMap<>();
-
   @Override
   public NormsProducer getNormsReader() {
     final NormsProducer delegate = in.getNormsReader();
     return new NormsProducer() {
       @Override
       public NumericDocValues getNorms(FieldInfo field) throws IOException {
-        return produceNumericDocValues(field, delegate.getNorms(field), cachedNorms);
+        return new NumericDocValuesWriter.SortingNumericDocValues(getOrCreateNorms(field.name, () -> getNumericDocValues(delegate.getNorms(field))));
       }
 
       @Override
@@ -339,30 +327,6 @@ public final class SortingCodecReader extends FilterCodecReader {
         return delegate.ramBytesUsed();
       }
     };
-  }
-
-  private NumericDocValues produceNumericDocValues(FieldInfo field, NumericDocValues oldNorms,
-                                                   Map<String, NumericDocValuesWriter.CachedNumericDVs> cachedNorms) throws IOException {
-    NumericDocValuesWriter.CachedNumericDVs norms;
-    synchronized (cachedNorms) {
-      norms = cachedNorms.get(field);
-      if (norms == null) {
-        FixedBitSet docsWithField = new FixedBitSet(maxDoc());
-        long[] values = new long[maxDoc()];
-        while (true) {
-          int docID = oldNorms.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            break;
-          }
-          int newDocID = docMap.oldToNew(docID);
-          docsWithField.set(newDocID);
-          values[newDocID] = oldNorms.longValue();
-        }
-        norms = new NumericDocValuesWriter.CachedNumericDVs(values, docsWithField);
-        cachedNorms.put(field.name, norms);
-      }
-    }
-    return new NumericDocValuesWriter.SortingNumericDocValues(norms);
   }
 
   @Override
@@ -371,71 +335,42 @@ public final class SortingCodecReader extends FilterCodecReader {
     return new DocValuesProducer() {
       @Override
       public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-        return produceNumericDocValues(field,delegate.getNumeric(field), cachedNumericDVs);
+        return new NumericDocValuesWriter.SortingNumericDocValues(getOrCreateDV(field.name, () -> getNumericDocValues(delegate.getNumeric(field))));
       }
 
       @Override
       public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-        final BinaryDocValues oldDocValues = delegate.getBinary(field);
-        BinaryDocValuesWriter.CachedBinaryDVs dvs;
-        synchronized (cachedBinaryDVs) {
-          dvs = cachedBinaryDVs.get(field);
-          if (dvs == null) {
-            dvs = new BinaryDocValuesWriter.CachedBinaryDVs(maxDoc(), docMap, oldDocValues);
-            cachedBinaryDVs.put(field.name, dvs);
-          }
-        }
-        return new BinaryDocValuesWriter.SortingBinaryDocValues(dvs);
+        return new BinaryDocValuesWriter.SortingBinaryDocValues(getOrCreateDV(field.name,
+            () -> new BinaryDocValuesWriter.BinaryDVs(maxDoc(), docMap, delegate.getBinary(field))));
       }
 
       @Override
       public SortedDocValues getSorted(FieldInfo field) throws IOException {
         SortedDocValues oldDocValues = delegate.getSorted(field);
-        int[] ords;
-        synchronized (cachedSortedDVs) {
-          ords = cachedSortedDVs.get(field);
-          if (ords == null) {
-            ords = new int[maxDoc()];
-            Arrays.fill(ords, -1);
-            int docID;
-            while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
-              int newDocID = docMap.oldToNew(docID);
-              ords[newDocID] = oldDocValues.ordValue();
-            }
-            cachedSortedDVs.put(field.name, ords);
+        return new SortedDocValuesWriter.SortingSortedDocValues(oldDocValues, getOrCreateDV(field.name, () -> {
+          int[] ords = new int[maxDoc()];
+          Arrays.fill(ords, -1);
+          int docID;
+          while ((docID = oldDocValues.nextDoc()) != NO_MORE_DOCS) {
+            int newDocID = docMap.oldToNew(docID);
+            ords[newDocID] = oldDocValues.ordValue();
           }
-        }
-
-        return new SortedDocValuesWriter.SortingSortedDocValues(oldDocValues, ords);
+          return ords;
+        }));
       }
 
       @Override
       public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
         final SortedNumericDocValues oldDocValues = delegate.getSortedNumeric(field);
-        SortedNumericDocValuesWriter.LongValues values;
-        synchronized (cachedSortedNumericDVs) {
-          values = cachedSortedNumericDVs.get(field);
-          if (values == null) {
-            values = new SortedNumericDocValuesWriter.LongValues(maxDoc(), docMap, oldDocValues, PackedInts.FAST);
-            cachedSortedNumericDVs.put(field.name, values);
-          }
-        }
-
-        return new SortedNumericDocValuesWriter.SortingSortedNumericDocValues(oldDocValues, values);
+        return new SortedNumericDocValuesWriter.SortingSortedNumericDocValues(oldDocValues, getOrCreateDV(field.name, () ->
+            new SortedNumericDocValuesWriter.LongValues(maxDoc(), docMap, oldDocValues, PackedInts.FAST)));
       }
 
       @Override
       public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
         SortedSetDocValues oldDocValues = delegate.getSortedSet(field);
-        SortedSetDocValuesWriter.DocOrds ords;
-        synchronized (cachedSortedSetDVs) {
-          ords = cachedSortedSetDVs.get(field);
-          if (ords == null) {
-            ords = new SortedSetDocValuesWriter.DocOrds(maxDoc(), docMap, oldDocValues, PackedInts.FASTEST);
-            cachedSortedSetDVs.put(field.name, ords);
-          }
-        }
-        return new SortedSetDocValuesWriter.SortingSortedSetDocValues(oldDocValues, ords);
+        return new SortedSetDocValuesWriter.SortingSortedSetDocValues(oldDocValues, getOrCreateDV(field.name, () ->
+            new SortedSetDocValuesWriter.DocOrds(maxDoc(), docMap, oldDocValues, PackedInts.FAST)));
       }
 
       @Override
@@ -453,6 +388,18 @@ public final class SortingCodecReader extends FilterCodecReader {
         return delegate.ramBytesUsed();
       }
     };
+  }
+
+  private NumericDocValuesWriter.NumericDVs getNumericDocValues(NumericDocValues oldNumerics) throws IOException {
+    FixedBitSet docsWithField = new FixedBitSet(maxDoc());
+    long[] values = new long[maxDoc()];
+    int docID;
+    while ((docID = oldNumerics.nextDoc()) != NO_MORE_DOCS) {
+      int newDocID = docMap.oldToNew(docID);
+      docsWithField.set(newDocID);
+      values[newDocID] = oldNumerics.longValue();
+    }
+    return new NumericDocValuesWriter.NumericDVs(values, docsWithField);
   }
 
   @Override
@@ -510,4 +457,51 @@ public final class SortingCodecReader extends FilterCodecReader {
     return metaData;
   }
 
+  // we try to cache the last used DV or Norms instance since during merge
+  // this instance is used more than once. We could in addition to this single instance
+  // also cache the fields that are used for sorting since we do the work twice for these fields
+  private String cachedField;
+  private Object cachedObject;
+  private boolean cacheIsNorms;
+
+  private <T> T getOrCreateNorms(String field, IOSupplier<T> supplier) throws IOException {
+    return getOrCreate(field, true, supplier);
+  }
+
+  @SuppressWarnings("unchecked")
+  private synchronized  <T> T getOrCreate(String field, boolean norms, IOSupplier<T> supplier) throws IOException {
+    if ((field.equals(cachedField) && cacheIsNorms == norms) == false) {
+      assert assertCreatedOnlyOnce(field, norms);
+      cachedObject = supplier.get();
+      cachedField = field;
+      cacheIsNorms = norms;
+    }
+    assert cachedObject != null;
+    return (T) cachedObject;
+  }
+
+  private final Map<String, Integer> cacheStats = new HashMap<>(); // only with assertions enabled
+  private boolean assertCreatedOnlyOnce(String field, boolean norms) {
+    assert Thread.holdsLock(this);
+    // this is mainly there to make sure we change anything in the way we merge we realize it early
+    Integer timesCached = cacheStats.compute(field + "N:" + norms, (s, i) -> i == null ? 1 : i.intValue() + 1);
+    if (timesCached > 1) {
+      assert norms == false :"[" + field + "] norms must not be cached twice";
+      boolean isSortField = false;
+      for (SortField sf : metaData.getSort().getSort()) {
+        if (field.equals(sf.getField())) {
+          isSortField = true;
+          break;
+        }
+      }
+      assert timesCached == 2 : "[" + field + "] must not be cached more than twice but was cached: "
+          + timesCached + " times isSortField: " + isSortField;
+      assert isSortField : "only sort fields should be cached twice but [" + field + "] is not a sort field";
+    }
+    return true;
+  }
+
+  private <T> T getOrCreateDV(String field, IOSupplier<T> supplier) throws IOException {
+    return getOrCreate(field, false, supplier);
+  }
 }

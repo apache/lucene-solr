@@ -113,9 +113,9 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     if (finalLengths == null) {
       finalLengths = this.lengths.build();
     }
-    final CachedBinaryDVs sorted;
+    final BinaryDVs sorted;
     if (sortMap != null) {
-      sorted = new CachedBinaryDVs(state.segmentInfo.maxDoc(), sortMap,
+      sorted = new BinaryDVs(state.segmentInfo.maxDoc(), sortMap,
           new BufferedBinaryDocValues(finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator()));
     } else {
       sorted = null;
@@ -189,11 +189,11 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
   }
 
   static class SortingBinaryDocValues extends BinaryDocValues {
-    private final CachedBinaryDVs dvs;
+    private final BinaryDVs dvs;
     private final BytesRefBuilder spare = new BytesRefBuilder();
     private int docID = -1;
 
-    SortingBinaryDocValues(CachedBinaryDVs dvs) {
+    SortingBinaryDocValues(BinaryDVs dvs) {
       this.dvs = dvs;
     }
 
@@ -235,10 +235,10 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     }
   }
 
-  static final class CachedBinaryDVs {
+  static final class BinaryDVs {
     final int[] offsets;
     final BytesRefArray values;
-    CachedBinaryDVs(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
+    BinaryDVs(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
       offsets = new int[maxDoc];
       values = new BytesRefArray(Counter.newCounter());
       int offset = 1; // 0 means no values for this document
