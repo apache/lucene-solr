@@ -50,7 +50,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
       return;
     }
 
-    RateLimiterMeta rateLimiterMeta = mapper.readValue(configInputg, RateLimiterMeta.class);
+    RateLimiterMeta rateLimiterMeta = mapper.readValue(configInput, RateLimiterMeta.class);
 
     constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
   }
