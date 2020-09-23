@@ -16,9 +16,83 @@
  */
 package org.apache.solr.search.stats;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.junit.Test;
+
 public class TestExactStatsCache extends TestBaseStatsCache {
+  private int docId = 0;
+
   @Override
   protected String getStatsCacheClassName() {
     return ExactStatsCache.class.getName();
+  }
+
+  @Test
+  @ShardsFixed(num = 3)
+  public void testShardsTolerant() throws Exception {
+    del("*:*");
+    commit();
+    for (int i = 0; i < clients.size(); i++) {
+      int shard = i + 1;
+      index_specific(i, id, docId++, "a_t", "one two three",
+              "shard_i", shard);
+      index_specific(i, id, docId++, "a_t", "one two three four five",
+              "shard_i", shard);
+    }
+    commit();
+    handle.clear();
+    handle.put("QTime", SKIPVAL);
+    handle.put("timestamp", SKIPVAL);
+
+    checkShardsTolerantQuery("q", "a_t:one", "debugQuery", "true", "fl", "*,score");
+  }
+
+  protected void checkShardsTolerantQuery(Object... q) throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    for (int i = 0; i < q.length; i += 2) {
+      params.add(q[i].toString(), q[i + 1].toString());
+    }
+
+    // query a random server
+    params.set(ShardParams.SHARDS, getShardsStringWithOneDeadShard());
+    params.set(ShardParams.SHARDS_TOLERANT, "true");
+    int which = r.nextInt(clients.size());
+    SolrClient client = clients.get(which);
+    QueryResponse rsp = client.query(params);
+    checkPartialResponse(rsp);
+  }
+
+  protected String getShardsStringWithOneDeadShard() {
+    if (deadServers == null) return shards;
+
+    StringBuilder sb = new StringBuilder();
+    for (int shardN = 0; shardN < shardsArr.length; shardN++) {
+      if (sb.length() > 0) sb.append(',');
+
+      String shard;
+      if (shardsArr.length == 1 || shardN != shardsArr.length - 1) {
+        shard = shardsArr[shardN];
+      } else {
+        if (deadServers[0].endsWith("/")) shard = deadServers[0] + DEFAULT_TEST_COLLECTION_NAME;
+        else shard = deadServers[0] + "/" + DEFAULT_TEST_CORENAME;
+      }
+      sb.append(shard);
+    }
+
+    return sb.toString();
+  }
+
+
+  protected void checkPartialResponse(QueryResponse shardRsp) {
+    System.out.println("======================= Shard Response =======================");
+    System.out.println("");
+    System.out.println(shardRsp);
+    SolrDocumentList shardList = shardRsp.getResults();
+    assertEquals(4, shardList.size());
+    assertEquals(4, shardList.getNumFound());
   }
 }
