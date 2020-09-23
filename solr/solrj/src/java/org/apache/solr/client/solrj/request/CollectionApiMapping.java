@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
@@ -38,9 +37,6 @@ import org.apache.solr.common.util.Utils;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.CONFIG_COMMANDS;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.CONFIG_DEL;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.ConfigSetEndPoint.LIST_CONFIG;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_ALIASES;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS_COMMANDS;
@@ -181,23 +177,6 @@ public class CollectionApiMapping {
             NAME, "collection",
             "propertyName", "name",
             "propertyValue", "value")),
-/*    ADD_ROLE(CLUSTER_CMD,
-        POST,
-        ADDROLE,
-        "add-role",null),*/
-/*    REMOVE_ROLE(CLUSTER_CMD,
-        POST,
-        REMOVEROLE,
-        "remove-role",null),*/
-
-  /*  SET_CLUSTER_PROPERTY(CLUSTER_CMD,
-        POST,
-        CLUSTERPROP,
-        "set-property",null),*/
-   /* SET_CLUSTER_PROPERTY_OBJ(CLUSTER_CMD,
-        POST,
-        null,
-        "set-obj-property", null),*/
     BACKUP_COLLECTION(COLLECTIONS_COMMANDS,
         POST,
         BACKUP,
@@ -359,60 +338,6 @@ public class CollectionApiMapping {
 
     String getSpecName();
   }
-
-  public enum ConfigSetMeta implements CommandMeta {
-    LIST(LIST_CONFIG, GET,null, ConfigSetAction.LIST),
-    CREATE(CONFIG_COMMANDS, POST, "create", ConfigSetAction.CREATE),
-    DEL(CONFIG_DEL,  DELETE, null, ConfigSetAction.DELETE)
-    ;
-    public final ConfigSetEndPoint endPoint;
-    public final SolrRequest.METHOD method;
-    public final String cmdName;
-    public final ConfigSetAction action;
-
-
-    ConfigSetMeta(ConfigSetEndPoint endPoint, SolrRequest.METHOD method, String cmdName, ConfigSetAction action) {
-      this.cmdName = cmdName;
-      this.endPoint = endPoint;
-      this.method = method;
-      this.action = action;
-    }
-
-    @Override
-    public String getName() {
-      return cmdName;
-    }
-
-    @Override
-    public SolrRequest.METHOD getHttpMethod() {
-      return method;
-    }
-
-    @Override
-    public V2EndPoint getEndPoint() {
-      return endPoint;
-    }
-
-
-  }
-  public enum ConfigSetEndPoint implements V2EndPoint {
-    LIST_CONFIG("cluster.configs"),
-    CONFIG_COMMANDS("cluster.configs.Commands"),
-    CONFIG_DEL("cluster.configs.delete");
-
-    public final String spec;
-
-    ConfigSetEndPoint(String spec) {
-      this.spec = spec;
-    }
-
-    @Override
-    public String getSpecName() {
-      return spec;
-    }
-  }
-
-
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   private static Collection<String> getParamNames_(CommandOperation op, CommandMeta command) {
