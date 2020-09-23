@@ -124,6 +124,18 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   public static final String NAME = "collapse";
   public static final String HINT_TOP_FC = "top_fc";
 
+  /**
+   * @deprecated use {@link NullPolicy} instead.
+   */
+  @Deprecated
+  public static final String NULL_COLLAPSE = "collapse";
+  @Deprecated
+  public static final String NULL_IGNORE = "ignore";
+  @Deprecated
+  public static final String NULL_EXPAND = "expand";
+  @Deprecated
+  public static final String HINT_MULTI_DOCVALUES = "multi_docvalues";
+
   public enum NullPolicy {
     IGNORE("ignore", 0),
     COLLAPSE("collapse", 1),
