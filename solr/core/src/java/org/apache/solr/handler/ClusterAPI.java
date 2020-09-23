@@ -37,7 +37,6 @@ import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -57,29 +56,30 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_P
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
 public class ClusterAPI {
-  private final CoreContainer coreContainer;
+//  private final CoreContainer coreContainer;
   private final CollectionsHandler collectionsHandler;
+  private final ConfigSetsHandler configSetsHandler;
 
   public  final Commands commands = new Commands();
   public  final ConfigSetCommands configSetCommands = new ConfigSetCommands();
 
-  public ClusterAPI(CollectionsHandler ch) {
+  public ClusterAPI(CollectionsHandler ch, ConfigSetsHandler configSetsHandler) {
     this.collectionsHandler = ch;
-    this.coreContainer = ch.getCoreContainer();
+    this.configSetsHandler = configSetsHandler;
   }
 
   @EndPoint(method = GET,
       path = "/cluster/overseer",
       permission = COLL_READ_PERM)
   public void getOverseerStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    coreContainer.getCollectionsHandler().handleRequestBody(wrapParams(req, "action", OVERSEERSTATUS.toString()), rsp);
+    collectionsHandler.getCoreContainer().getCollectionsHandler().handleRequestBody(wrapParams(req, "action", OVERSEERSTATUS.toString()), rsp);
   }
 
   @EndPoint(method = GET,
       path = "/cluster",
       permission = COLL_READ_PERM)
   public void getCluster(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    CollectionsHandler.CollectionOperation.LIST_OP.execute(req, rsp, coreContainer.getCollectionsHandler());
+    CollectionsHandler.CollectionOperation.LIST_OP.execute(req, rsp, collectionsHandler.getCoreContainer().getCollectionsHandler());
   }
 
   @EndPoint(method = DELETE,
@@ -87,7 +87,7 @@ public class ClusterAPI {
       permission = COLL_EDIT_PERM)
   public void deleteCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     wrapParams(req, REQUESTID, req.getPathTemplateValues().get("id"));
-    CollectionsHandler.CollectionOperation.DELETESTATUS_OP.execute(req, rsp, coreContainer.getCollectionsHandler());
+    CollectionsHandler.CollectionOperation.DELETESTATUS_OP.execute(req, rsp, collectionsHandler);
   }
 
   @EndPoint(method = DELETE,
@@ -98,14 +98,14 @@ public class ClusterAPI {
     req = wrapParams(req,
         "action", ConfigSetParams.ConfigSetAction.DELETE.toString(),
         CommonParams.NAME, req.getPathTemplateValues().get("name"));
-    coreContainer.getConfigSetsHandler().handleRequestBody(req, rsp);
+    configSetsHandler.handleRequestBody(req, rsp);
   }
 
   @EndPoint(method = GET,
       path = "/cluster/configs",
       permission = CONFIG_READ_PERM)
   public void listConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    ConfigSetsHandler.ConfigSetOperation.LIST_OP.call(req, rsp, coreContainer.getConfigSetsHandler());
+    ConfigSetsHandler.ConfigSetOperation.LIST_OP.call(req, rsp, configSetsHandler);
   }
 
   @EndPoint(method = POST,
@@ -123,7 +123,7 @@ public class ClusterAPI {
         customProps.forEach((k, o) -> mapVals.put(OverseerConfigSetMessageHandler.PROPERTY_PREFIX+"."+ k, o));
       }
       mapVals.put("action", ConfigSetParams.ConfigSetAction.CREATE.toString());
-      coreContainer.getConfigSetsHandler().handleRequestBody(wrapParams(obj.getRequest(), mapVals), obj.getResponse());
+      configSetsHandler.handleRequestBody(wrapParams(obj.getRequest(), mapVals), obj.getResponse());
     }
 
   }
@@ -156,7 +156,7 @@ public class ClusterAPI {
       path = "/cluster/nodes",
       permission = COLL_READ_PERM)
   public void getNodes(SolrQueryRequest req, SolrQueryResponse rsp) {
-    rsp.add("nodes", coreContainer.getZkController().getClusterState().getLiveNodes());
+    rsp.add("nodes", collectionsHandler.getCoreContainer().getZkController().getClusterState().getLiveNodes());
   }
 
   @EndPoint(method = POST,
@@ -186,7 +186,7 @@ public class ClusterAPI {
     public void setObjProperty(PayloadObj<ClusterPropInfo> obj) {
       //Not using the object directly here because the API differentiate between {name:null} and {}
       Map m = obj.getDataMap();
-      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
+      ClusterProperties clusterProperties = new ClusterProperties(collectionsHandler.getCoreContainer().getZkController().getZkClient());
       try {
         clusterProperties.setClusterProperties(m);
       } catch (Exception e) {
@@ -204,7 +204,7 @@ public class ClusterAPI {
     @Command(name = "set-placement-plugin")
     public void setPlacementPlugin(PayloadObj<Map<String, Object>> obj) {
       Map<String, Object> placementPluginConfig = obj.getDataMap();
-      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
+      ClusterProperties clusterProperties = new ClusterProperties(collectionsHandler.getCoreContainer().getZkController().getZkClient());
       // When the json contains { "set-placement-plugin" : null }, the map is empty, not null.
       final boolean unset = placementPluginConfig.isEmpty();
       // Very basic sanity check. Real validation will be done when the config is used...

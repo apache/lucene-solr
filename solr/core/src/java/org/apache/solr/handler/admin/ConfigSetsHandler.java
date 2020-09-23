@@ -98,16 +98,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    if (coreContainer == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Core container instance missing");
-    }
-
-    // Make sure that the core is ZKAware
-    if (!coreContainer.isZooKeeperAware()) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-          "Solr instance is not running in SolrCloud mode.");
-    }
+    checkErrors();
 
     // Pick the action
     SolrParams params = req.getParams();
@@ -126,6 +117,19 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
 
     rsp.setHttpCaching(false);
+  }
+
+  protected void checkErrors() {
+    if (coreContainer == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Core container instance missing");
+    }
+
+    // Make sure that the core is ZKAware
+    if (!coreContainer.isZooKeeperAware()) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Solr instance is not running in SolrCloud mode.");
+    }
   }
 
   void invokeAction(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetAction action) throws Exception {
