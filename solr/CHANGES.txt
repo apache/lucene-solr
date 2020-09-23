@@ -119,6 +119,9 @@ Bug Fixes
 * SOLR-14768: Fix HTTP multipart POST to Solr -- a regression from 8.6.0.
   Many Jetty classes are not classpath-visible from the Solr webapp.  (David Smiley)
 
+* SOLR-14503: Use specified waitForZk value as connection timeout for zookeeper in SolrDispatcherFilter.
+  Also, consume specified SOLR_WAIT_FOR_ZK in bin/solr.cmd (Colvin Cowie via Munendra S N)
+
 Other Changes
 ---------------------
 
