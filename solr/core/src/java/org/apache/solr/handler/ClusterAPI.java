@@ -25,16 +25,21 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.ClusterPropInfo;
+import org.apache.solr.client.solrj.request.beans.CreateConfigInfo;
+import org.apache.solr.cloud.OverseerConfigSetMessageHandler;
 import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -48,18 +53,20 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.OV
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
 public class ClusterAPI {
   private final CoreContainer coreContainer;
   private final CollectionsHandler collectionsHandler;
 
   public  final Commands commands = new Commands();
+  public  final ConfigSetCommands configSetCommands = new ConfigSetCommands();
 
   public ClusterAPI(CollectionsHandler ch) {
     this.collectionsHandler = ch;
     this.coreContainer = ch.getCoreContainer();
   }
-
 
   @EndPoint(method = GET,
       path = "/cluster/overseer",
@@ -81,6 +88,44 @@ public class ClusterAPI {
   public void deleteCommandStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     wrapParams(req, REQUESTID, req.getPathTemplateValues().get("id"));
     CollectionsHandler.CollectionOperation.DELETESTATUS_OP.execute(req, rsp, coreContainer.getCollectionsHandler());
+  }
+
+  @EndPoint(method = DELETE,
+      path =   "/cluster/configs/{name}",
+      permission = CONFIG_EDIT_PERM
+  )
+  public void deleteConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    req = wrapParams(req,
+        "action", ConfigSetParams.ConfigSetAction.DELETE.toString(),
+        CommonParams.NAME, req.getPathTemplateValues().get("name"));
+    coreContainer.getConfigSetsHandler().handleRequestBody(req, rsp);
+  }
+
+  @EndPoint(method = GET,
+      path = "/cluster/configs",
+      permission = CONFIG_READ_PERM)
+  public void listConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    ConfigSetsHandler.ConfigSetOperation.LIST_OP.call(req, rsp, coreContainer.getConfigSetsHandler());
+  }
+
+  @EndPoint(method = POST,
+  path = "/cluster/configs",
+      permission = CONFIG_EDIT_PERM
+  )
+  public class ConfigSetCommands {
+
+    @Command(name = "create")
+    @SuppressWarnings("unchecked")
+    public void create(PayloadObj<CreateConfigInfo> obj) throws Exception {
+      Map<String, Object> mapVals = obj.get().toMap(new HashMap<>());
+      Map<String,Object> customProps = (Map<String, Object>) mapVals.remove("properties");
+      if(customProps!= null) {
+        customProps.forEach((k, o) -> mapVals.put(OverseerConfigSetMessageHandler.PROPERTY_PREFIX+"."+ k, o));
+      }
+      mapVals.put("action", ConfigSetParams.ConfigSetAction.CREATE.toString());
+      coreContainer.getConfigSetsHandler().handleRequestBody(wrapParams(obj.getRequest(), mapVals), obj.getResponse());
+    }
+
   }
 
   public static SolrQueryRequest wrapParams(SolrQueryRequest req, Object... def) {
@@ -150,9 +195,8 @@ public class ClusterAPI {
     }
 
     @Command(name = "set-property")
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public void setProperty(PayloadObj<Map<String,String>> obj) throws Exception {
-      Map m =  obj.get();
+      Map<String,Object> m =  obj.getDataMap();
       m.put("action", CLUSTERPROP.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(),m ), obj.getResponse());
     }
