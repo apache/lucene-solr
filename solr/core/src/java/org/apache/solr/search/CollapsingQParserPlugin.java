@@ -208,7 +208,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public String toString(){
-      return "groupHeadSelectorText=" +this.selectorText + ", groupHeadSelectorType=" +this.type;
+      return "GroupHeadSelector[selectorText=" + this.selectorText + ", type=" +this.type + "]";
     }
 
     /**
@@ -299,12 +299,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public String toString(String s) {
-      return "{!collapse field=" + this.collapseField +
+      return "CollapsingPostFilter[field=" + this.collapseField +
           ", nullPolicy=" + this.nullPolicy.getName() + ", " +
           this.groupHeadSelector.toString() +
           (hint == null ? "": ", hint=" + this.hint) +
           ", size=" + this.size
-          + "}";
+          + "]";
     }
 
     public CollapsingPostFilter(SolrParams localParams, SolrParams params, SolrQueryRequest request) {

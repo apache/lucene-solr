@@ -219,10 +219,10 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
     final SolrParams solrParams = params("q", query, "debug", "true", "fq", filterQuery);
     final QueryResponse response = SOLR.query(solrParams);
     final Object actualParsedFilterQuery = response.getDebugMap().get("parsed_filter_queries");
-    final String expectedParsedFilterString = "CollapsingPostFilter({!collapse field=id, " +
-        "nullPolicy=" + nullPolicy + ", groupHeadSelectorText=" + groupHeadSort.substring(1,
-        groupHeadSort.length() - 1) + ", groupHeadSelectorType=SORT" +
-        ", hint=" + collapseHint + ", size=" + collapseSize + "})";
+    final String expectedParsedFilterString = "CollapsingPostFilter([CollapsingPostFilter field=id, " +
+        "nullPolicy=" + nullPolicy + ", GroupHeadSelector[selectorText=" + groupHeadSort.substring(1,
+        groupHeadSort.length() - 1) + ", type=SORT" +
+        "], hint=" + collapseHint + ", size=" + collapseSize + "})";
     final ArrayList<String> expectedParsedFilterQuery = new ArrayList<>();
     expectedParsedFilterQuery.add(expectedParsedFilterString);
 
