@@ -26,6 +26,7 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.ClusterPropInfo;
 import org.apache.solr.client.solrj.request.beans.CreateConfigInfo;
 import org.apache.solr.cloud.OverseerConfigSetMessageHandler;
+import org.apache.solr.client.solrj.request.beans.RateLimiterMeta;
 import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
@@ -230,19 +231,18 @@ public class ClusterAPI {
       }
     }
 
-    @Command(name = "set-ratelimiters")
-    public void setRateLimiters(PayloadObj<Map<String, Object>> obj) {
-      Map<String, Object> rateLimiterConfig = obj.getDataMap();
-      final boolean unset = rateLimiterConfig.isEmpty();
-      ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
-
+    @Command(name = "set-ratelimiter")
+    public void setRateLimiters(PayloadObj<RateLimiterMeta> payLoad) {
+      RateLimiterMeta rateLimiterConfig = payLoad.get();
+      final boolean unset = rateLimiterConfig == null;
+      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
       try {
         clusterProperties.setClusterProperties(
             Collections.singletonMap(RL_CONFIG_KEY, null));
 
         if (!unset) {
           clusterProperties.setClusterProperties(
-              Collections.singletonMap(RL_CONFIG_KEY, rateLimiterConfig));
+              Collections.singletonMap(RL_CONFIG_KEY, Utils.toJSONString(rateLimiterConfig)));
         }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);

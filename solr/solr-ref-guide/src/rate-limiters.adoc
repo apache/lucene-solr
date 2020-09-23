@@ -34,12 +34,12 @@ resources for indexing.
 The default rate limiter is search rate limiter. Accordingly, it can be configured using the following command:
 
  curl -X POST -H 'Content-type:application/json' -d '{
-   "set-ratelimiters": {
-     "rlEnabled": "true",
-     "rlGuaranteedSlots":5,
-     "rlAllowedRequests":20,
-     "rlSlotBorrowingEnabled":true,
-     "rlSlotAcquisitionTimeoutInMS":70
+   "set-ratelimiter": {
+     "enabled": true,
+     "guaranteedSlots":5,
+     "allowedRequests":20,
+     "slotBorrowingEnabled":true,
+     "slotAcquisitionTimeoutInMS":70
    }
  }' http://localhost:8983/api/cluster
 

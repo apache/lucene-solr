@@ -23,11 +23,6 @@ import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUES
 
 public class RateLimiterConfig {
   public static final String RL_CONFIG_KEY = "rate-limiters";
-  public static final String RL_ENABLED = "rlEnabled";
-  public static final String RL_GUARANTEED_SLOTS = "rlGuaranteedSlots";
-  public static final String RL_ALLOWED_REQUESTS = "rlAllowedRequests";
-  public static final String RL_SLOT_BORROWING_ENABLED = "rlSlotBorrowingEnabled";
-  public static final String RL_TIME_SLOT_ACQUISITION_INMS = "rlSlotAcquisitionTimeoutInMS";
 
   public SolrRequest.SolrRequestType requestType;
   public boolean isEnabled;

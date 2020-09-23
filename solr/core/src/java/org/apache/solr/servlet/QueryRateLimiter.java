@@ -17,12 +17,16 @@
 
 package org.apache.solr.servlet;
 
+import java.io.IOException;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.beans.RateLimiterMeta;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
@@ -32,17 +36,18 @@ import static org.apache.solr.servlet.RateLimiterConfig.RL_CONFIG_KEY;
  *  to the parent class but specific configurations and parsing are handled by this class.
  */
 public class QueryRateLimiter extends RequestRateLimiter {
+  private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
 
   public QueryRateLimiter(SolrZkClient solrZkClient) {
     super(constructQueryRateLimiterConfig(solrZkClient));
   }
 
   @SuppressWarnings({"unchecked"})
-  public void processConfigChange(Map<String, Object> properties) {
+  public void processConfigChange(Map<String, Object> properties) throws IOException {
     RateLimiterConfig rateLimiterConfig = getRateLimiterConfig();
-    Map<String, Object> propertiesMap = (Map<String, Object>) properties.get(RL_CONFIG_KEY);
+    RateLimiterMeta rateLimiterMeta = mapper.readValue(Utils.toJSON(properties.get(RL_CONFIG_KEY)), RateLimiterMeta.class);
 
-    constructQueryRateLimiterConfigInternal(propertiesMap, rateLimiterConfig);
+    constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
   }
 
   // To be used in initialization
@@ -55,44 +60,46 @@ public class QueryRateLimiter extends RequestRateLimiter {
       }
 
       Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
-      Map<String, Object> propertiesMap = (Map<String, Object>) clusterPropsJson.get(RL_CONFIG_KEY);
+      RateLimiterMeta rateLimiterMeta = mapper.readValue(Utils.toJSON(clusterPropsJson.get(RL_CONFIG_KEY)), RateLimiterMeta.class);
       RateLimiterConfig rateLimiterConfig = new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
 
-      constructQueryRateLimiterConfigInternal(propertiesMap, rateLimiterConfig);
+      constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
 
       return rateLimiterConfig;
     } catch (KeeperException.NoNodeException e) {
       return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
     } catch (KeeperException | InterruptedException e) {
       throw new RuntimeException("Error reading cluster property", SolrZkClient.checkInterrupted(e));
+    } catch (IOException e) {
+      throw new RuntimeException("Encountered an IOException " + e.getMessage());
     }
   }
 
-  private static void constructQueryRateLimiterConfigInternal(Map<String, Object> propertiesMap, RateLimiterConfig rateLimiterConfig) {
+  private static void constructQueryRateLimiterConfigInternal(RateLimiterMeta rateLimiterMeta, RateLimiterConfig rateLimiterConfig) {
 
-    if (propertiesMap == null) {
+    if (rateLimiterMeta == null) {
       // No Rate limiter configuration defined in clusterprops.json
       return;
     }
 
-    if (propertiesMap.get(RateLimiterConfig.RL_ALLOWED_REQUESTS) != null) {
-      rateLimiterConfig.allowedRequests = Integer.parseInt(propertiesMap.get(RateLimiterConfig.RL_ALLOWED_REQUESTS).toString());
+    if (rateLimiterMeta.allowedRequests != null) {
+      rateLimiterConfig.allowedRequests = rateLimiterMeta.allowedRequests.intValue();
     }
 
-    if (propertiesMap.get(RateLimiterConfig.RL_ENABLED) != null) {
-      rateLimiterConfig.isEnabled = Boolean.parseBoolean(propertiesMap.get(RateLimiterConfig.RL_ENABLED).toString());
+    if (rateLimiterMeta.enabled != null) {
+      rateLimiterConfig.isEnabled = rateLimiterMeta.enabled;
     }
 
-    if (propertiesMap.get(RateLimiterConfig.RL_GUARANTEED_SLOTS) != null) {
-      rateLimiterConfig.guaranteedSlotsThreshold = Integer.parseInt(propertiesMap.get(RateLimiterConfig.RL_GUARANTEED_SLOTS).toString());
+    if (rateLimiterMeta.guaranteedSlots != null) {
+      rateLimiterConfig.guaranteedSlotsThreshold = rateLimiterMeta.guaranteedSlots;
     }
 
-    if (propertiesMap.get(RateLimiterConfig.RL_SLOT_BORROWING_ENABLED) != null) {
-      rateLimiterConfig.isSlotBorrowingEnabled = Boolean.parseBoolean(propertiesMap.get(RateLimiterConfig.RL_SLOT_BORROWING_ENABLED).toString());
+    if (rateLimiterMeta.slotBorrowingEnabled != null) {
+      rateLimiterConfig.isSlotBorrowingEnabled = rateLimiterMeta.slotBorrowingEnabled;
     }
 
-    if (propertiesMap.get(RateLimiterConfig.RL_TIME_SLOT_ACQUISITION_INMS) != null) {
-      rateLimiterConfig.waitForSlotAcquisition = Long.parseLong(propertiesMap.get(RateLimiterConfig.RL_TIME_SLOT_ACQUISITION_INMS).toString());
+    if (rateLimiterMeta.slotAcquisitionTimeoutInMS != null) {
+      rateLimiterConfig.waitForSlotAcquisition = rateLimiterMeta.slotAcquisitionTimeoutInMS;
     }
   }
 }
