@@ -400,8 +400,13 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   public long ramBytesUsed() {
     // Return a rough estimation for allocated blocks. Note that we do not make
     // any special distinction for direct memory buffers.
-    return RamUsageEstimator.NUM_BYTES_OBJECT_REF * blocks.size() + 
-           blocks.stream().mapToLong(buf -> buf.capacity()).sum();
+    ByteBuffer first = blocks.peek();
+    if (first == null) {
+      return 0L;
+    } else {
+      // All blocks have the same capacity.
+      return first.capacity() * blocks.size();
+    }
   }
 
   /**
