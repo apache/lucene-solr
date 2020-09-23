@@ -22,14 +22,14 @@
 #SOLR_JAVA_HOME=""
 
 # This controls the number of seconds that the solr script will wait for
-# Solr to start.  If the start fails, the script will give up waiting and
-# display the last few lines of the logfile.
-#SOLR_START_WAIT="180"
-
-# This controls the number of seconds that the solr script will wait for
 # Solr to stop gracefully.  If the graceful stop fails, the script will
 # forcibly stop Solr.
 #SOLR_STOP_WAIT="180"
+
+# This controls the number of seconds that the solr script will wait for
+# Solr to start.  If the start fails, the script will give up waiting and
+# display the last few lines of the logfile.
+#SOLR_START_WAIT="$SOLR_STOP_WAIT"
 
 # Increase Java Heap as needed to support your indexing / query needs
 #SOLR_HEAP="512m"
