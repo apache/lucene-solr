@@ -20,10 +20,12 @@ import java.io.Closeable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -47,7 +49,8 @@ import org.apache.lucene.util.ThreadInterruptedException;
 final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerThread>, Closeable {
 
   private final Set<DocumentsWriterPerThread> dwpts = Collections.newSetFromMap(new IdentityHashMap<>());
-  private final Deque<DocumentsWriterPerThread> freeList = new ArrayDeque<>();
+  private final PriorityQueue<DocumentsWriterPerThread> freeList = new PriorityQueue<>(Comparator.comparing(DocumentsWriterPerThread::getLastCommittedBytesUsed).reversed());
+  private final Deque<DocumentsWriterPerThread> spare = new ArrayDeque<>();
   private final Supplier<DocumentsWriterPerThread> dwptFactory;
   private int takenWriterPermits = 0;
   private boolean closed;
@@ -112,17 +115,21 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
   DocumentsWriterPerThread getAndLock() {
     synchronized (this) {
       ensureOpen();
-      // Important that we are LIFO here! This way if number of concurrent indexing threads was once high,
-      // but has now reduced, we only use a limited number of DWPTs. This also guarantees that if we have suddenly
-      // a single thread indexing
-      final Iterator<DocumentsWriterPerThread> descendingIterator = freeList.descendingIterator();
-      while (descendingIterator.hasNext()) {
-        DocumentsWriterPerThread perThread = descendingIterator.next();
+      // We try to optimize for larger segments by picking the largest segment. This is especially helpful if the
+      // number of indexing threads is not constant over time.
+      assert spare.isEmpty();
+      while (freeList.isEmpty() == false) {
+        DocumentsWriterPerThread perThread = freeList.poll();
         if (perThread.tryLock()) {
-          descendingIterator.remove();
+          freeList.addAll(spare);
+          spare.clear();
           return perThread;
+        } else {
+          spare.add(perThread);
         }
       }
+      freeList.addAll(spare);
+      spare.clear();
       // DWPT is already locked before return by this method:
       return newWriter();
     }
