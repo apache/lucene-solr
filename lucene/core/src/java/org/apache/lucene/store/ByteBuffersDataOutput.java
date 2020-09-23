@@ -33,7 +33,6 @@ import java.util.function.IntFunction;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
