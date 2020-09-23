@@ -33,6 +33,7 @@ import java.util.function.IntFunction;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
@@ -404,7 +405,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
       return 0L;
     } else {
       // All blocks have the same capacity.
-      return first.capacity() * blocks.size();
+      return (first.capacity() + RamUsageEstimator.NUM_BYTES_OBJECT_REF) * blocks.size();
     }
   }
 
