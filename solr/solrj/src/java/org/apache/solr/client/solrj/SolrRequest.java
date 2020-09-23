@@ -24,11 +24,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * 
@@ -244,6 +246,43 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    */
   public final T process(SolrClient client) throws SolrServerException, IOException {
     return process(client, null);
+  }
+
+  /**
+   * Send this request to a {@link SolrClient} asynchronously
+   *
+   * @param client the SolrClient to communicate with
+   * @param collection the collection to execute the request against
+   *
+   * @return a {@link CompletableFuture} that tracks the progress of the async request.
+   * Once completed, the CompletableFuture will contain the response.
+   */
+  public final CompletableFuture<T> processAsynchronously(SolrClient client, String collection) {
+    final long startNanos = System.nanoTime();
+    final CompletableFuture<NamedList<Object>> internalFuture = client.requestAsync(this, collection);
+
+    final CompletableFuture<T> apiFuture = new CompletableFuture<>();
+
+    internalFuture.whenComplete((result, error) -> {
+      if (!internalFuture.isCompletedExceptionally()) {
+        T res = createResponse(client);
+        res.setResponse(result);
+        long endNanos = System.nanoTime();
+        res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
+        apiFuture.complete(res);
+      } else {
+        apiFuture.completeExceptionally(error);
+      }
+    });
+
+    apiFuture.exceptionally((error) -> {
+      if (apiFuture.isCancelled()) {
+        internalFuture.cancel(true);
+      }
+      return null;
+    });
+
+    return apiFuture;
   }
 
   public String getCollection() {

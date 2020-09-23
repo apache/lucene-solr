@@ -24,9 +24,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.*;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -1288,6 +1293,109 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public final NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request) throws SolrServerException, IOException {
     return request(request, null);
+  }
+
+  /**
+   * Execute an asynchronous request against a Solr server for a given collection.
+   *
+   * This is only currently supported on the {@link Http2SolrClient} and {@link CloudHttp2SolrClient}. For other
+   * clients, use {@link SolrClient#requestAsync(SolrRequest, String, ExecutorService)}.
+   * 
+   * @param request the request to execute
+   * @param collection the collection to execute the request against
+   *
+   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports cancelling requests via
+   * {@link CompletableFuture#cancel(boolean)}, adding callbacks/error handling using {@link CompletableFuture#whenComplete(BiConsumer)}
+   * and {@link CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture functionality. Will
+   * complete exceptionally in case of either an {@link IOException} or {@link SolrServerException} during the request.
+   * Once completed, the CompletableFuture will contain a {@link NamedList} with the response from the server.
+   */
+  public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> request, String collection) {
+    throw new UnsupportedOperationException("Async requests not supported on this Solr Client without providing an executor service.");
+  }
+
+  /**
+   * Execute an asynchronous request against a Solr server.
+   *
+   * This is only currently supported on the {@link Http2SolrClient} and {@link CloudHttp2SolrClient}. For other
+   * clients, use {@link SolrClient#requestAsync(SolrRequest, ExecutorService)}.
+   *
+   * @param request the request to execute
+   *
+   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports cancelling requests via
+   * {@link CompletableFuture#cancel(boolean)}, adding callbacks/error handling using {@link CompletableFuture#whenComplete(BiConsumer)}
+   * and {@link CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture functionality. Will
+   * complete exceptionally in case of either an {@link IOException} or {@link SolrServerException} during the request.
+   * Once completed, the CompletableFuture will contain a {@link NamedList} with the response from the server.
+   */
+  public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> request) {
+    return requestAsync(request, (String) null);
+  }
+
+  /**
+   * Execute an asynchronous request against a Solr server for a given collection using the provided
+   * {@link ExecutorService}. This method works on all client implementations, however {@link Http2SolrClient} and
+   * {@link CloudHttp2SolrClient} support async requests without an {@link ExecutorService} via
+   * {@link SolrClient#requestAsync(SolrRequest, String)}.
+   *
+   * @param request the request to execute
+   * @param collection the collection to execute the request against
+   * @param executor the executor service that submits the request
+   *
+   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports cancelling requests via
+   * {@link CompletableFuture#cancel(boolean)}, adding callbacks/error handling using {@link CompletableFuture#whenComplete(BiConsumer)}
+   * and {@link CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture functionality. Will
+   * complete exceptionally in case of either an {@link IOException} or {@link SolrServerException} during the request.
+   * Once completed, the CompletableFuture will contain a {@link NamedList} with the response from the server.
+   */
+  public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> request,
+                                                           String collection,
+                                                           ExecutorService executor) {
+    return this.asyncExecutorCall(() -> this.request(request, collection), executor);
+  }
+
+  /**
+   * Execute an asynchronous request against a Solr server using the provided {@link ExecutorService}.
+   * This method works on all client implementations, however {@link Http2SolrClient} and
+   * {@link CloudHttp2SolrClient} support async requests without an {@link ExecutorService} via
+   * {@link SolrClient#requestAsync(SolrRequest)}.
+   *
+   * @param request the request to execute
+   * @param executor the executor service that submits the request
+   *
+   * @return a {@link CompletableFuture} that tracks the progress of the async request. Supports cancelling requests via
+   * {@link CompletableFuture#cancel(boolean)}, adding callbacks/error handling using {@link CompletableFuture#whenComplete(BiConsumer)}
+   * and {@link CompletableFuture#exceptionally(Function)} methods, and other CompletableFuture functionality. Will
+   * complete exceptionally in case of either an {@link IOException} or {@link SolrServerException} during the request.
+   * Once completed, the CompletableFuture will contain a {@link NamedList} with the response from the server.
+   */
+  public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> request, ExecutorService executor) {
+    return requestAsync(request, null, executor);
+  }
+
+  /**
+   * Helper function to call a {@link Callable} asynchronously using an {@link ExecutorService}, returning the
+   * result within a {@link CompletableFuture} wrapper.
+   */
+  protected <T> CompletableFuture<T> asyncExecutorCall(Callable<T> callable, ExecutorService executor) {
+    CompletableFuture<T> apiFuture = new CompletableFuture<>();
+
+    Future<?> cancellable = executor.submit(() -> {
+      try {
+        apiFuture.complete(callable.call());
+      } catch (Exception e) {
+        apiFuture.completeExceptionally(e);
+      }
+    });
+
+    apiFuture.exceptionally((error) -> {
+      if (apiFuture.isCancelled()) {
+        cancellable.cancel(true);
+      }
+      return null;
+    });
+
+    return apiFuture;
   }
 
   /**

@@ -31,6 +31,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -398,14 +399,17 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testUpdate() throws Exception {
+    testUpdate(true);
+    testUpdate(false);
+  }
+
+  private void testUpdate(boolean useAsyncClient) throws Exception {
     DebugServlet.clear();
     try (Http2SolrClient client = getHttp2SolrClient(jetty.getBaseUrl().toString() + "/debug/foo")) {
       UpdateRequest req = new UpdateRequest();
       req.add(new SolrInputDocument());
       req.setParam("a", "\u1234");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
+      makeRequest(client, req, useAsyncClient);
 
       //default method
       assertEquals("post", DebugServlet.lastMethod);
@@ -426,9 +430,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       //XML response and writer
       client.setParser(new XMLResponseParser());
       client.setRequestWriter(new RequestWriter());
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
+      makeRequest(client, req, useAsyncClient);
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
@@ -444,9 +446,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       client.setParser(new BinaryResponseParser());
       client.setRequestWriter(new BinaryRequestWriter());
       DebugServlet.clear();
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
+      makeRequest(client, req, useAsyncClient);
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
@@ -547,6 +547,12 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testQueryString() throws Exception {
+    testQueryString(true);
+    testQueryString(false);
+  }
+
+
+  private void testQueryString(boolean useAsyncClient) throws Exception {
 
     final String clientUrl = jetty.getBaseUrl().toString() + "/debug/foo";
     try(Http2SolrClient client = getHttp2SolrClient(clientUrl)) {
@@ -555,9 +561,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       client.setQueryParams(setOf("serverOnly"));
       UpdateRequest req = new UpdateRequest();
       setReqParamsOf(req, "serverOnly", "notServer");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
+      makeRequest(client, req, useAsyncClient);
       verifyServletState(client, req);
 
       // test without server query params
@@ -566,9 +570,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       req = new UpdateRequest();
       req.setQueryParams(setOf("requestOnly"));
       setReqParamsOf(req, "requestOnly", "notRequest");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
+      makeRequest(client, req, useAsyncClient);
       verifyServletState(client, req);
 
       // test with both request and server query params
@@ -577,9 +579,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       client.setQueryParams(setOf("serverOnly", "both"));
       req.setQueryParams(setOf("requestOnly", "both"));
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
+      makeRequest(client, req, useAsyncClient);
       verifyServletState(client, req);
 
       // test with both request and server query params with single stream
@@ -589,9 +589,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       client.setQueryParams(setOf("serverOnly", "both"));
       req.setQueryParams(setOf("requestOnly", "both"));
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
+      makeRequest(client, req, useAsyncClient);
       // NOTE: single stream requests send all the params
       // as part of the query string.  So add "neither" to the request
       // so it passes the verification step.
@@ -608,6 +606,18 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     SslContextFactory.Client sslContextFactory = Http2SolrClient.getDefaultSslContextFactory();
     assertEquals("HTTPS", sslContextFactory.getEndpointIdentificationAlgorithm());
     System.clearProperty("solr.jetty.ssl.verifyClientHostName");
+  }
+
+  private void makeRequest(Http2SolrClient client, SolrRequest<?> req, boolean useAsyncClient) throws Exception {
+    if (useAsyncClient) {
+      try {
+        client.requestAsync(req).get();
+      } catch (ExecutionException e) {}
+    } else {
+      try {
+        client.request(req);
+      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
+    }
   }
 
   /**

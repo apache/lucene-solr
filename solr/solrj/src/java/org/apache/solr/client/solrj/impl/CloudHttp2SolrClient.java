@@ -22,9 +22,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * SolrJ client class to communicate with SolrCloud using Http2SolrClient.
@@ -111,6 +115,15 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
   @Override
   protected boolean wasCommError(Throwable rootCause) {
     return false;
+  }
+
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> request, String collection) {
+    try {
+      return makeRequest(request, collection, true);
+    } catch (SolrServerException | IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
   }
 
   /**
