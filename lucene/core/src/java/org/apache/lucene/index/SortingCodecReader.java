@@ -468,6 +468,7 @@ public final class SortingCodecReader extends FilterCodecReader {
     return getOrCreate(field, true, supplier);
   }
 
+  @SuppressWarnings("unchecked")
   private synchronized  <T> T getOrCreate(String field, boolean norms, IOSupplier<T> supplier) throws IOException {
     if ((field.equals(cachedField) && cacheIsNorms == norms) == false) {
       assert assertCreatedOnlyOnce(field, norms);
