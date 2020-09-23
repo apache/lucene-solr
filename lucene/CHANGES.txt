@@ -274,6 +274,13 @@ Documentation
 
 * LUCENE-9424: Add a performance warning to AttributeSource.captureState javadocs (Haoyu Zhai)
 
+Changes in Runtime Behavior
+---------------------
+
+* LUCENE-9539: SortingCodecReader now doesn't cache doc values fields anymore. Previously, SortingCodecReader
+  used to cache all doc values fields after they were loaded into memory. This reader should only be used
+  to sort segments after the fact using IndexWriter#addIndices. (Simon Willnauer) 
+
 
 Other
 ---------------------
