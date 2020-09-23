@@ -125,6 +125,10 @@ Other
 * LUCENE-9512: Move LockFactory stress test to be a unit/integration
   test. (Uwe Schindler, Dawid Weiss, Robert Muir)
 
+Build
+
+* Upgrade forbiddenapis to version 3.1.  (Uwe Schindler)
+
 ======================= Lucene 8.6.2 =======================
 
 Bug Fixes
