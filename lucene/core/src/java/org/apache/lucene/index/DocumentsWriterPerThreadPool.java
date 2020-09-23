@@ -115,7 +115,7 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
   DocumentsWriterPerThread getAndLock() {
     synchronized (this) {
       ensureOpen();
-      // We try to optimize for larger segments by picking the largest segment. This is especially helpful if the
+      // We try to optimize for larger segments by picking the largest DWPT. This is especially helpful if the
       // number of indexing threads is not constant over time.
       assert spare.isEmpty();
       while (freeList.isEmpty() == false) {
