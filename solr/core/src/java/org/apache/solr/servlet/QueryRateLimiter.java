@@ -42,10 +42,15 @@ public class QueryRateLimiter extends RequestRateLimiter {
     super(constructQueryRateLimiterConfig(solrZkClient));
   }
 
-  @SuppressWarnings({"unchecked"})
   public void processConfigChange(Map<String, Object> properties) throws IOException {
     RateLimiterConfig rateLimiterConfig = getRateLimiterConfig();
-    RateLimiterMeta rateLimiterMeta = mapper.readValue(Utils.toJSON(properties.get(RL_CONFIG_KEY)), RateLimiterMeta.class);
+    byte[] configInput = Utils.toJSON(properties.get(RL_CONFIG_KEY));
+
+    if (configInput == null) {
+      return;
+    }
+
+    RateLimiterMeta rateLimiterMeta = mapper.readValue(configInputg, RateLimiterMeta.class);
 
     constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
   }
@@ -59,9 +64,16 @@ public class QueryRateLimiter extends RequestRateLimiter {
         return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
       }
 
-      Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
-      RateLimiterMeta rateLimiterMeta = mapper.readValue(Utils.toJSON(clusterPropsJson.get(RL_CONFIG_KEY)), RateLimiterMeta.class);
       RateLimiterConfig rateLimiterConfig = new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
+      Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+      byte[] configInput = Utils.toJSON(clusterPropsJson.get(RL_CONFIG_KEY));
+
+      if (configInput.length == 0) {
+        // No Rate Limiter configuration defined in clusterprops.json. Return default configuration values
+        return rateLimiterConfig;
+      }
+
+      RateLimiterMeta rateLimiterMeta = mapper.readValue(configInput, RateLimiterMeta.class);
 
       constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
 

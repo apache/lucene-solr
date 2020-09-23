@@ -18,6 +18,7 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,7 +65,11 @@ public class RateLimitManager implements ClusterPropertiesListener {
     QueryRateLimiter queryRateLimiter = (QueryRateLimiter) requestRateLimiterMap.get(SolrRequest.SolrRequestType.QUERY);
 
     if (queryRateLimiter != null) {
-      queryRateLimiter.processConfigChange(properties);
+      try {
+        queryRateLimiter.processConfigChange(properties);
+      } catch (IOException e) {
+        throw new RuntimeException("Encountered IOException: " + e.getMessage());
+      }
     }
 
     return false;
