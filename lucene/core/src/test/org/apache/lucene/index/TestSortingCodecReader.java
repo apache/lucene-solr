@@ -120,6 +120,8 @@ public class TestSortingCodecReader extends LuceneTestCase {
           String s = RandomStrings.randomRealisticUnicodeOfLength(random(), 25);
           doc.add(new TextField("text_field", s, Field.Store.YES));
           doc.add(new BinaryDocValuesField("text_field", new BytesRef(s)));
+          doc.add(new TextField("another_text_field", s, Field.Store.YES));
+          doc.add(new BinaryDocValuesField("another_text_field", new BytesRef(s)));
           doc.add(new SortedNumericDocValuesField("sorted_numeric_dv", docId));
           doc.add(new SortedDocValuesField("binary_sorted_dv", new BytesRef(Integer.toString(docId))));
           doc.add(new BinaryDocValuesField("binary_dv", new BytesRef(Integer.toString(docId))));

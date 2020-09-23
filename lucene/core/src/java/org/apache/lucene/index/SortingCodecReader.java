@@ -475,7 +475,6 @@ public final class SortingCodecReader extends FilterCodecReader {
       cachedObject = supplier.get();
       cachedField = field;
       cacheIsNorms = norms;
-
     }
     assert cachedObject != null;
     return (T) cachedObject;
