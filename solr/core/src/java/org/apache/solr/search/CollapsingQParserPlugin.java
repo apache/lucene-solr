@@ -156,6 +156,21 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public int getCode() {
       return code;
     }
+
+    public static NullPolicy fromString(String nullPolicy) {
+      if (StringUtils.isEmpty(nullPolicy)) {
+        return DEFAULT_POLICY;
+      }
+      switch (nullPolicy) {
+        case "ignore": return IGNORE;
+        case "collapse": return COLLAPSE;
+        case "expand": return EXPAND;
+        default:
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid nullPolicy: " + nullPolicy);
+      }
+    }
+
+    static NullPolicy DEFAULT_POLICY = IGNORE;
   }
 
 
@@ -313,7 +328,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public String toString(String s) {
       return "CollapsingPostFilter[field=" + this.collapseField +
           ", nullPolicy=" + this.nullPolicy.getName() + ", " +
-          this.groupHeadSelector.toString() +
+          this.groupHeadSelector +
           (hint == null ? "": ", hint=" + this.hint) +
           ", size=" + this.size
           + "]";
@@ -391,12 +406,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      String nPolicy = localParams.get("nullPolicy",NullPolicy.IGNORE.getName());
-      try {
-        this.nullPolicy = NullPolicy.valueOf(nPolicy);
-      } catch (IllegalArgumentException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid nullPolicy: " + nPolicy);
-      }
+      this.nullPolicy = NullPolicy.fromString(localParams.get("nullPolicy"));
     }
 
     @SuppressWarnings({"unchecked"})
