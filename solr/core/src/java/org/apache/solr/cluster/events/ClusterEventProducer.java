@@ -18,7 +18,6 @@ package org.apache.solr.cluster.events;
 
 import org.apache.solr.cloud.ClusterSingleton;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -31,6 +30,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public interface ClusterEventProducer extends ClusterSingleton {
 
   String PLUGIN_NAME = "clusterEventProducer";
+
+  default String getName() {
+    return PLUGIN_NAME;
+  }
 
   /**
    * Returns a modifiable map of event types and listeners to process events

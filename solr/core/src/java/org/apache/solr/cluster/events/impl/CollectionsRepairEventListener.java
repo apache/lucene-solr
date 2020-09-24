@@ -34,7 +34,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
-import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.events.NodesDownEvent;
 import org.apache.solr.cluster.events.ReplicasDownEvent;
 import org.apache.solr.common.cloud.ClusterState;
@@ -51,10 +50,11 @@ import org.slf4j.LoggerFactory;
  * <p>NOTE 2: this functionality would be probably more reliable when executed also as a
  * periodically scheduled check - both as a reactive (listener) and proactive (scheduled) measure.</p>
  */
-public class CollectionsRepairEventListener implements ClusterSingleton, ClusterEventListener {
+public class CollectionsRepairEventListener implements ClusterEventListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String ASYNC_ID_PREFIX = "_col_repair_";
+  public static final String PLUGIN_NAME = "collectionsRepairListener";
+  private static final String ASYNC_ID_PREFIX = "_async_" + PLUGIN_NAME;
   private static final AtomicInteger counter = new AtomicInteger();
 
   private final SolrClient solrClient;
@@ -65,6 +65,11 @@ public class CollectionsRepairEventListener implements ClusterSingleton, Cluster
   public CollectionsRepairEventListener(CoreContainer cc) {
     this.solrClient = cc.getSolrClientCache().getCloudSolrClient(cc.getZkController().getZkClient().getZkServerAddress());
     this.solrCloudManager = cc.getZkController().getSolrCloudManager();
+  }
+
+  @Override
+  public String getName() {
+    return PLUGIN_NAME;
   }
 
   @Override

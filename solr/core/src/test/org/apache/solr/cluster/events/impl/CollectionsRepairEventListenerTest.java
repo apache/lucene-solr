@@ -43,13 +43,32 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
 
     CollectionsRepairWrapperListener(CoreContainer cc) throws Exception {
       delegate = new CollectionsRepairEventListener(cc);
-      delegate.start();
     }
 
     @Override
     public void onEvent(ClusterEvent event) {
       delegate.onEvent(event);
       completed.countDown();
+    }
+
+    @Override
+    public String getName() {
+      return "wrapperListener";
+    }
+
+    @Override
+    public void start() throws Exception {
+      delegate.start();
+    }
+
+    @Override
+    public boolean isRunning() {
+      return delegate.isRunning();
+    }
+
+    @Override
+    public void stop() {
+      delegate.stop();
     }
   }
 
@@ -69,6 +88,7 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     repairListener = new CollectionsRepairWrapperListener(cc);
     cc.getClusterEventProducer()
         .registerListener(repairListener, ClusterEvent.EventType.NODES_DOWN);
+    repairListener.start();
   }
 
   @Before

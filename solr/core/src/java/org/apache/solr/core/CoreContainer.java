@@ -250,9 +250,10 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
+  private final Map<String, ClusterSingleton> clusterSingletons = new ConcurrentHashMap<>();
+
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
-  private Map<String, ClusterSingleton> clusterSingletons = null;
 
   private Set<Path> allowPaths;
 
@@ -897,32 +898,28 @@ public class CoreContainer {
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
 
+      // init ClusterSingleton-s
+
+      // register handlers that are also ClusterSingleton
+      containerHandlers.keySet().forEach(handlerName -> {
+        SolrRequestHandler handler = containerHandlers.get(handlerName);
+        if (handler instanceof ClusterSingleton) {
+          clusterSingletons.put(handlerName, (ClusterSingleton) handler);
+        }
+      });
       // create the ClusterEventProducer
       CustomContainerPlugins.ApiInfo clusterEventProducerInfo = customContainerPlugins.getPlugin(ClusterEventProducer.PLUGIN_NAME);
       if (clusterEventProducerInfo != null) {
         clusterEventProducer = (ClusterEventProducer) clusterEventProducerInfo.getInstance();
       } else {
         clusterEventProducer = new ClusterEventProducerImpl(this);
-      }
-      // init ClusterSingleton-s
-      Map<String, ClusterSingleton> singletons = new ConcurrentHashMap<>();
-      if (clusterEventProducer instanceof ClusterSingleton) {
-        singletons.put(ClusterEventProducer.PLUGIN_NAME, (ClusterSingleton) clusterEventProducer);
+        clusterSingletons.put(ClusterEventProducer.PLUGIN_NAME, clusterEventProducer);
       }
 
-      // register ClusterSingleton handlers
-      // XXX register also other ClusterSingleton-s from packages - how?
-      containerHandlers.keySet().forEach(handlerName -> {
-        SolrRequestHandler handler = containerHandlers.get(handlerName);
-        if (handler instanceof ClusterSingleton) {
-          singletons.put(handlerName, (ClusterSingleton) handler);
-        }
-      });
       zkSys.getZkController().checkOverseerDesignate();
 
-      // XXX note that these ClusterSingleton components are registered too late -
+      // XXX note that ClusterSingleton components are registered too late -
       // XXX the Overseer leader may be already started
-      clusterSingletons = singletons;
       Overseer overseer = zkSys.getZkController().getOverseer();
       if (!overseer.isClosed()) { // we are the leader
         overseer.startClusterSingletons();

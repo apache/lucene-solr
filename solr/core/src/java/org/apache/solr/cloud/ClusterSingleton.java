@@ -34,6 +34,11 @@ package org.apache.solr.cloud;
 public interface ClusterSingleton {
 
   /**
+   * Unique name of this singleton. Used for registration.
+   */
+  String getName();
+
+  /**
    * Start the operation of the component. On return the component is assumed
    * to be in the RUNNING state.
    * @throws Exception on startup errors. The component should revert to the

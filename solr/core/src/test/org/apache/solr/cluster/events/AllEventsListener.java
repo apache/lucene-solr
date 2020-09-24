@@ -38,6 +38,11 @@ public class AllEventsListener implements ClusterEventListener {
   Map<ClusterEvent.EventType, List<ClusterEvent>> events = new HashMap<>();
 
   @Override
+  public String getName() {
+    return "allEventsListener";
+  }
+
+  @Override
   public void onEvent(ClusterEvent event) {
     events.computeIfAbsent(event.getType(), type -> new ArrayList<>()).add(event);
     if (event.getType() == expectedType) {
@@ -55,5 +60,20 @@ public class AllEventsListener implements ClusterEventListener {
     if (!await) {
       Assert.fail("Timed out waiting for expected event " + expectedType);
     }
+  }
+
+  @Override
+  public void start() throws Exception {
+
+  }
+
+  @Override
+  public boolean isRunning() {
+    return false;
+  }
+
+  @Override
+  public void stop() {
+
   }
 }
