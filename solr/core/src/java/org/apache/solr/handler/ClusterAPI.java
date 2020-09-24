@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -233,18 +234,14 @@ public class ClusterAPI {
 
     @Command(name = "set-ratelimiter")
     public void setRateLimiters(PayloadObj<RateLimiterMeta> payLoad) {
-      RateLimiterMeta rateLimiterConfig = payLoad.get();
-      final boolean unset = rateLimiterConfig == null;
+      RateLimiterMeta rateLimiterConfig = payLoad.get();g
       ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
 
       try {
-        clusterProperties.setClusterProperties(
-            Collections.singletonMap(RL_CONFIG_KEY, null));
-
-        if (!unset) {
-          clusterProperties.setClusterProperties(
-              Collections.singletonMap(RL_CONFIG_KEY, Utils.toJSONString(rateLimiterConfig)));
-        }
+        clusterProperties.update(rateLimiterConfig == null?
+                null:
+                rateLimiterConfig,
+                RL_CONFIG_KEY);
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }
