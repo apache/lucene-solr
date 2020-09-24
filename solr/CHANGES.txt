@@ -22,6 +22,9 @@ New Features
 
 * SOLR-13751: Add BooleanSimilarityFactory class. (Andy Webb via Christine Poerschke)
 
+* SOLR-11167: Avoid $SOLR_STOP_WAIT use during 'bin/solr start' if $SOLR_START_WAIT is supplied.
+  (Omar Abdelnabi, Christine Poerschke)
+
 Improvements
 ---------------------
 
