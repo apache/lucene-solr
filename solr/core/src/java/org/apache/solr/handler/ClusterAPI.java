@@ -234,7 +234,7 @@ public class ClusterAPI {
 
     @Command(name = "set-ratelimiter")
     public void setRateLimiters(PayloadObj<RateLimiterMeta> payLoad) {
-      RateLimiterMeta rateLimiterConfig = payLoad.get();g
+      RateLimiterMeta rateLimiterConfig = payLoad.get();
       ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
 
       try {
