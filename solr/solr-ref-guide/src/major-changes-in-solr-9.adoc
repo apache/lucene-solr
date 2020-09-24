@@ -128,7 +128,7 @@ _(raw; not yet edited)_
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the numFound value (exact vs approximation).
   Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
 
-* SOLR-14036: Implicit /terms handler now supports distributed search by default, when running in cloud mode.
+* SOLR-14036: Implicit /terms handler now returns terms across all shards in SolrCloud instead of only the local core.  Users/apps may be assuming the old behavior.  A request can be modified via the standard distrib=false param to only use the local core receiving the request.
 
 === Upgrade Prerequisites in Solr 9
 
