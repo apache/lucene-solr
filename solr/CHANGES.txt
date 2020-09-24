@@ -281,7 +281,9 @@ Other Changes
 
 * SOLR-14876: Upgrade to zookeeper 3.6.2 (odidev via Erick Erickson)
 
-* SOLR-14333: Print readable version of CollapsedPostFilter query (Guna Sekhar Dora Kovvuru, Munendra S N, Mike Drob)
+* SOLR-14333: Implement toString in Collapse filter so that proper parsed queries returned in debug response.
+  Also, Deprecate unused constants NULL_COLLAPSE, NULL_IGNORE, NULL_EXPAND, HINT_MULTI_DOCVALUES in collapse parser.
+  (Guna Sekhar Dora Kovvuru, Munendra S N, Mike Drob)
 
 ==================  8.6.2 ==================
 
