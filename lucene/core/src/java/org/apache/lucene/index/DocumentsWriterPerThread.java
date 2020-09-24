@@ -540,12 +540,21 @@ final class DocumentsWriterPerThread implements Accountable {
   /**
    * Commits the current {@link #ramBytesUsed()} and stores it's value for later reuse.
    * The last committed bytes used can be retrieved via {@link #getLastCommittedBytesUsed()}
+   */
+  void commitLastBytesUsed(long delta) {
+    assert isHeldByCurrentThread();
+    assert getCommitLastBytesUsedDelta() == delta : "delta has changed";
+    lastCommittedBytesUsed += delta;
+  }
+
+  /**
+   * Calculates the delta between the last committed bytes used and the currently used ram.
+   * @see #commitLastBytesUsed(long)
    * @return the delta between the current {@link #ramBytesUsed()} and the current {@link #getLastCommittedBytesUsed()}
    */
-  long commitLastBytesUsed() {
+  long getCommitLastBytesUsedDelta() {
     assert isHeldByCurrentThread();
     long delta = ramBytesUsed() - lastCommittedBytesUsed;
-    lastCommittedBytesUsed += delta;
     return delta;
   }
 
