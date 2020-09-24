@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.servlet;
+package org.apache.solr.core;
 
 import org.apache.solr.client.solrj.SolrRequest;
 

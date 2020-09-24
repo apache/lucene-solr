@@ -26,11 +26,12 @@ import org.apache.solr.client.solrj.request.beans.RateLimiterMeta;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.RateLimiterConfig;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
-import static org.apache.solr.servlet.RateLimiterConfig.RL_CONFIG_KEY;
+import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 
 /** Implementation of RequestRateLimiter specific to query request types. Most of the actual work is delegated
  *  to the parent class but specific configurations and parsing are handled by this class.

@@ -56,7 +56,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
-import static org.apache.solr.servlet.RateLimiterConfig.RL_CONFIG_KEY;
+import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 
 /** All V2 APIs that have  a prefix of /api/cluster/
  *

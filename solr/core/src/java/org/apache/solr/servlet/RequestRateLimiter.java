@@ -21,6 +21,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.annotation.SolrThreadSafe;
+import org.apache.solr.core.RateLimiterConfig;
 
 /**
  * Handles rate limiting for a specific request type.
