@@ -235,7 +235,8 @@ public class ClusterAPI {
     public void setRateLimiters(PayloadObj<RateLimiterMeta> payLoad) {
       RateLimiterMeta rateLimiterConfig = payLoad.get();
       final boolean unset = rateLimiterConfig == null;
-      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
+      ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
+
       try {
         clusterProperties.setClusterProperties(
             Collections.singletonMap(RL_CONFIG_KEY, null));
