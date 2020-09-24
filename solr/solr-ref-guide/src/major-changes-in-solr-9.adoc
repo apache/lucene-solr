@@ -128,6 +128,8 @@ _(raw; not yet edited)_
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the numFound value (exact vs approximation).
   Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
 
+* SOLR-14036: Implicit /terms handler now returns terms across all shards in SolrCloud instead of only the local core.  Users/apps may be assuming the old behavior.  A request can be modified via the standard distrib=false param to only use the local core receiving the request.
+
 * SOLR-12847: maxShardsPerNode parameter has been removed because it was broken and inconsistent with other replica placement strategies. Other relevant placement strategies
   should be used instead, such as autoscaling policy or rules-based placement.
 
