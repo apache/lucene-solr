@@ -157,8 +157,13 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
   }
 
   DocumentsWriterPerThread doAfterDocument(DocumentsWriterPerThread perThread, boolean isUpdate) {
-    final long delta = perThread.commitLastBytesUsed();
+    final long delta = perThread.getCommitLastBytesUsedDelta();
     synchronized (this) {
+      // we need to commit this under lock but calculate it outside of the lock to minimize the time this lock is held
+      // per document. The reason we update this under lock is that we mark DWPTs as pending without acquiring it's
+      // lock in #setFlushPending and this also reads the committed bytes and modifies the flush/activeBytes.
+      // In the future we can clean this up to be more intuitive.
+      perThread.commitLastBytesUsed(delta);
       try {
         /*
          * We need to differentiate here if we are pending since setFlushPending
