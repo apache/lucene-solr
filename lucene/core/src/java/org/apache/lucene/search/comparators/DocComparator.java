@@ -133,16 +133,14 @@ public class DocComparator extends FieldComparator<Integer> {
                 return null;
             } else {
                 return new DocIdSetIterator() {
-                    private int doc;
-
                     @Override
                     public int nextDoc() throws IOException {
-                        return doc = competitiveIterator.nextDoc();
+                        return competitiveIterator.nextDoc();
                     }
 
                     @Override
                     public int docID() {
-                        return doc;
+                        return competitiveIterator.docID();
                     }
 
                     @Override
@@ -152,7 +150,7 @@ public class DocComparator extends FieldComparator<Integer> {
 
                     @Override
                     public int advance(int target) throws IOException {
-                        return doc = competitiveIterator.advance(target);
+                        return competitiveIterator.advance(target);
                     }
                 };
             }
@@ -176,7 +174,7 @@ public class DocComparator extends FieldComparator<Integer> {
                 if (docBase + maxDoc <= minDoc) {
                     competitiveIterator = DocIdSetIterator.empty(); // skip this segment
                 } else {
-                    int segmentMinDoc = Math.max(0, minDoc - docBase);
+                    int segmentMinDoc = Math.max(competitiveIterator.docID(), minDoc - docBase);
                     competitiveIterator = new MinDocIterator(segmentMinDoc, maxDoc);
                 }
             }

@@ -8,15 +8,6 @@ https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-u
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
-Upgrade Notes
----------------------
-* SOLR-12847: maxShardsPerNode parameter has been removed because it was broken and
-inconsistent with other replica placement strategies. Other relevant placement strategies
-should be used instead, such as autoscaling policy or rules-based placement.
-
-* SOLR-14654 : plugins cannot be loaded using "runtimeLib=true" option. Use the package manager to use
-  and load plugins
-
 New Features
 ---------------------
 * SOLR-14789: Migrate docker image creation from docker-solr repo to solr/docker. (Houston Putman, Martijn Koster, Tim Potter, David Smiley, janhoy, Mike Drob)
@@ -161,6 +152,9 @@ New Features
 * SOLR-14875: Make SolrEventListeners load from packages (noble)
 
 * SOLR-10391: ConfigSet handler now supports overrides on existing configsets. (Tomás Fernández Löbbe)
+
+* SOLR-11167: Avoid $SOLR_STOP_WAIT use during 'bin/solr start' if $SOLR_START_WAIT is supplied.
+  (Omar Abdelnabi, Christine Poerschke)
 
 Improvements
 ---------------------
