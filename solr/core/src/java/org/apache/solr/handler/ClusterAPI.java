@@ -37,6 +37,7 @@ import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -56,7 +57,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_P
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
 public class ClusterAPI {
-//  private final CoreContainer coreContainer;
   private final CollectionsHandler collectionsHandler;
   private final ConfigSetsHandler configSetsHandler;
 
@@ -72,14 +72,14 @@ public class ClusterAPI {
       path = "/cluster/overseer",
       permission = COLL_READ_PERM)
   public void getOverseerStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    collectionsHandler.getCoreContainer().getCollectionsHandler().handleRequestBody(wrapParams(req, "action", OVERSEERSTATUS.toString()), rsp);
+    getCoreContainer().getCollectionsHandler().handleRequestBody(wrapParams(req, "action", OVERSEERSTATUS.toString()), rsp);
   }
 
   @EndPoint(method = GET,
       path = "/cluster",
       permission = COLL_READ_PERM)
   public void getCluster(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    CollectionsHandler.CollectionOperation.LIST_OP.execute(req, rsp, collectionsHandler.getCoreContainer().getCollectionsHandler());
+    CollectionsHandler.CollectionOperation.LIST_OP.execute(req, rsp, getCoreContainer().getCollectionsHandler());
   }
 
   @EndPoint(method = DELETE,
@@ -109,7 +109,7 @@ public class ClusterAPI {
   }
 
   @EndPoint(method = POST,
-  path = "/cluster/configs",
+      path = "/cluster/configs",
       permission = CONFIG_EDIT_PERM
   )
   public class ConfigSetCommands {
@@ -128,8 +128,9 @@ public class ClusterAPI {
 
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static SolrQueryRequest wrapParams(SolrQueryRequest req, Object... def) {
-    Map<String, Object> m = Utils.makeMap(def);
+    Map m = Utils.makeMap(def);
     return wrapParams(req, m);
   }
 
@@ -156,7 +157,11 @@ public class ClusterAPI {
       path = "/cluster/nodes",
       permission = COLL_READ_PERM)
   public void getNodes(SolrQueryRequest req, SolrQueryResponse rsp) {
-    rsp.add("nodes", collectionsHandler.getCoreContainer().getZkController().getClusterState().getLiveNodes());
+    rsp.add("nodes", getCoreContainer().getZkController().getClusterState().getLiveNodes());
+  }
+
+  private CoreContainer getCoreContainer() {
+    return collectionsHandler.getCoreContainer();
   }
 
   @EndPoint(method = POST,
@@ -186,7 +191,7 @@ public class ClusterAPI {
     public void setObjProperty(PayloadObj<ClusterPropInfo> obj) {
       //Not using the object directly here because the API differentiate between {name:null} and {}
       Map m = obj.getDataMap();
-      ClusterProperties clusterProperties = new ClusterProperties(collectionsHandler.getCoreContainer().getZkController().getZkClient());
+      ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
       try {
         clusterProperties.setClusterProperties(m);
       } catch (Exception e) {
@@ -204,7 +209,7 @@ public class ClusterAPI {
     @Command(name = "set-placement-plugin")
     public void setPlacementPlugin(PayloadObj<Map<String, Object>> obj) {
       Map<String, Object> placementPluginConfig = obj.getDataMap();
-      ClusterProperties clusterProperties = new ClusterProperties(collectionsHandler.getCoreContainer().getZkController().getZkClient());
+      ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
       // When the json contains { "set-placement-plugin" : null }, the map is empty, not null.
       final boolean unset = placementPluginConfig.isEmpty();
       // Very basic sanity check. Real validation will be done when the config is used...
@@ -231,5 +236,8 @@ public class ClusterAPI {
     public String node;
     @JsonProperty(required = true)
     public String role;
+
   }
+
+
 }
