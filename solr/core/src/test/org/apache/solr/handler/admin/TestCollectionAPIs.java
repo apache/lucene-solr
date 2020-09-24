@@ -86,7 +86,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       Collection<Api> apis = collectionsHandler.getApis();
       for (Api api : apis) apiBag.register(api, Collections.emptyMap());
 
-      ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler);
+      ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler,null);
       apiBag.registerObject(clusterAPI);
       apiBag.registerObject(clusterAPI.commands);
     }

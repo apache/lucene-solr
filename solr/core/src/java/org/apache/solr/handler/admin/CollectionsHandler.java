@@ -1515,7 +1515,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  interface CollectionOp {
+  public interface CollectionOp {
     Map<String, Object> execute(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception;
 
   }
