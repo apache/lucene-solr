@@ -46,12 +46,12 @@ The default rate limiter is search rate limiter. Accordingly, it can be configur
 === Enable Query Rate Limiter
 Controls enabling of query rate limiter. Default value is `false`.
 
-  "rlEnabled": "true"
+  "enabled": true
 
 === Maximum Number Of Concurrent Requests
 Allows setting maximum concurrent search requests at a given point in time. Default value is number of cores * 3.
 
- "rlAllowedRequests":20
+ "allowedRequests":20
 
 === Request Slot Allocation Wait Time
 Wait time in ms for which a request will wait for a slot to be available when all slots are full,
@@ -60,7 +60,7 @@ the unavailability of the request slots for this rate limiter is a transient phe
 is -1, indicating no wait. 0 will represent the same -- no wait. Note that higher request allocation times
 can lead to larger queue times and can potentially lead to longer wait times for queries.
 
- "rlSlotAcquisitionTimeoutInMS":70
+ "slotAcquisitionTimeoutInMS":70
 
 === Slot Borrowing Enabled
 If slot borrowing (described below) is enabled or not. Default value is false.
@@ -68,7 +68,7 @@ If slot borrowing (described below) is enabled or not. Default value is false.
 NOTE: This feature is experimental and can cause slots to be blocked if the
 borrowing request is long lived.
 
- "rlSlotBorrowingEnabled":true,
+ "slotBorrowingEnabled":true,
 
 === Guaranteed Slots
 The number of guaranteed slots that the query rate limiter will reserve irrespective
@@ -79,7 +79,7 @@ borrow slots from its quota. Default value is allowed number of concurrent reque
 NOTE: This feature is experimental and can cause slots to be blocked if the
 borrowing request is long lived.
 
- "rlGuaranteedSlots":5,
+ "guaranteedSlots":5,
 
 == Salient Points
 
