@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,8 +25,8 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.ClusterPropInfo;
 import org.apache.solr.client.solrj.request.beans.CreateConfigInfo;
-import org.apache.solr.cloud.OverseerConfigSetMessageHandler;
 import org.apache.solr.client.solrj.request.beans.RateLimiterMeta;
+import org.apache.solr.cloud.OverseerConfigSetMessageHandler;
 import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
@@ -53,11 +52,11 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
-import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 
 /** All V2 APIs that have  a prefix of /api/cluster/
  *
