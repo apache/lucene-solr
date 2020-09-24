@@ -38,7 +38,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_ALIASES;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS_COMMANDS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTION_STATE;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION;
@@ -56,7 +55,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class CollectionApiMapping {
 
   public enum Meta implements CommandMeta {
-    GET_COLLECTIONS(COLLECTIONS, GET, LIST),
     GET_A_COLLECTION(COLLECTION_STATE, GET, CLUSTERSTATUS),
     LIST_ALIASES(CLUSTER_ALIASES, GET, LISTALIASES),
     CREATE_COLLECTION(COLLECTIONS_COMMANDS,
@@ -69,12 +67,6 @@ public class CollectionApiMapping {
             "createNodeSet", "nodeSet"
         ),
         Utils.makeMap("property.", "properties.")),
-
-    DELETE_COLL(EndPoint.PER_COLLECTION_DELETE,
-        DELETE,
-        CollectionAction.DELETE,
-        CollectionAction.DELETE.toLower(),
-        Utils.makeMap(NAME, "collection")),
 
     RELOAD_COLL(PER_COLLECTION,
         POST,
@@ -313,10 +305,8 @@ public class CollectionApiMapping {
   public enum EndPoint implements V2EndPoint {
     CLUSTER_ALIASES("cluster.aliases"),
     COLLECTIONS_COMMANDS("collections.Commands"),
-    COLLECTIONS("collections"),
     COLLECTION_STATE("collections.collection"),
     PER_COLLECTION("collections.collection.Commands"),
-    PER_COLLECTION_DELETE("collections.collection.delete"),
     PER_COLLECTION_SHARDS_COMMANDS("collections.collection.shards.Commands"),
     PER_COLLECTION_PER_SHARD_COMMANDS("collections.collection.shards.shard.Commands"),
     PER_COLLECTION_PER_SHARD_DELETE("collections.collection.shards.shard.delete"),
