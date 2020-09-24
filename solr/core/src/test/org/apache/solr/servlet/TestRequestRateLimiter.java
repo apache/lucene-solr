@@ -33,6 +33,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.core.RateLimiterConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
