@@ -54,6 +54,9 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PER
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
+/** All V2 APIs that have  a prefix of /api/cluster/
+ *
+ */
 public class ClusterAPI {
   private final CollectionsHandler collectionsHandler;
   private final ConfigSetsHandler configSetsHandler;
