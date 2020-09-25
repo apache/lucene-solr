@@ -119,7 +119,8 @@ There are several default search components that work with all SearchHandlers wi
 |===
 |Component Name |Class Name |More Information
 |query |`solr.QueryComponent` |Described in the section <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,Query Syntax and Parsing>>.
-|facet |`solr.FacetComponent` |Described in the section <<faceting.adoc#faceting,Faceting>>.
+|facet |`solr.FacetComponent` |Original parameter-based facet component, described in the section <<faceting.adoc#faceting,Faceting>>.
+|facet_module |`solr.facet.FacetModule` | JSON Faceting and Analytics module, described in the section <<json-facet-api.adoc#json-facet-api, JSON Facet API>>.
 |mlt |`solr.MoreLikeThisComponent` |Described in the section <<morelikethis.adoc#morelikethis,MoreLikeThis>>.
 |highlight |`solr.HighlightComponent` |Described in the section <<highlighting.adoc#highlighting,Highlighting>>.
 |stats |`solr.StatsComponent` |Described in the section <<the-stats-component.adoc#the-stats-component,The Stats Component>>.
@@ -149,9 +150,12 @@ It's possible to define some components as being used before (with `first-compon
 </arr>
 ----
 
+NOTE: The component registered with the name "debug" will always be executed after the "last-components"
+
 === Components
 
-If you define `components`, the default components (see above) will not be executed, and `first-components` and `last-components` are disallowed:
+If you define `components`, the <<#default-components,default components (above)>> will not be executed, and `first-components` and `last-components` are disallowed.
+This should be considered as a last-resort option as the default list may change in a later Solr version.
 
 [source,xml]
 ----

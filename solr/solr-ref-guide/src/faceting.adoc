@@ -20,6 +20,8 @@ Faceting is the arrangement of search results into categories based on indexed t
 
 Searchers are presented with the indexed terms, along with numerical counts of how many matching documents were found for each term. Faceting makes it easy for users to explore search results, narrowing in on exactly the results they are looking for.
 
+See also <<json-facet-api.adoc#json-facet-api, JSON Facet API>> for an alternative approach to this.
+
 == General Facet Parameters
 
 There are two general parameters for controlling faceting.
