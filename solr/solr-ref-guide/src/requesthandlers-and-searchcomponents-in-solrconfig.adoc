@@ -18,15 +18,15 @@
 
 After the `<query>` section of `solrconfig.xml`, request handlers and search components are configured.
 
-A _request handler_ processes requests coming to Solr. These might be query requests, index update requests or specialized handlers such as <<ping.adoc#ping,ping>>.
+A _request handler_ processes requests coming to Solr. These might be query requests, index update requests or specialized interactions such as <<ping.adoc#ping,ping>>.
 
 Not all handlers are defined explicitly in `solrconfig.xml`, many essential ones are actually defined <<implicit-requesthandlers.adoc#implicit-requesthandlers,implicitly>>.
 
 Additionally, handlers can be defined - or even overridden - in `configoverlay.json` by using <<config-api.adoc#config-api,Config API>>.
 Finally, independent parameter sets can be also defined by <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>.
-They will be stored in `params.json` file and invoked with <<#paramsets-and-useparams,useParams>> parameter.
+They will be stored in `params.json` file and referenced with <<#paramsets-and-useparams,useParams>>.
 
-All of this multi-layered configuration , may be queried via various option to the <<config-api.adoc#config-api,Config API>>.
+All of this multi-layered configuration, may be verified via  <<config-api.adoc#config-api,Config API>>.
 
 Defining your own config handlers is often a useful way to provide defaults and advanced configuration to support business cases and simplify client API.
 At the same time, using every single option explained in this guide, will most certainly cause some confusion about which parameter is actually used when.
@@ -42,13 +42,14 @@ http://localhost:8983/solr/gettingstarted/select?q=solr
 ----
 
 This query will be processed by the request handler with the name `/select`. We've only used the "q" parameter here, which includes our query term, a simple keyword of "solr".
-If the request handler has more default parameters defined, those will be used with any query we send to this request handler unless they are over-ridden by the client (or user) in the query itself.
+If the request handler has more default parameters defined, those will be used with any query we send to that request handler unless they are overridden by the client (or user) in the query itself.
 
-If you have another request handler defined, you would send your request with that name.
+If you have another request handler defined, you could send your request with that name.
 For example, `/update` is an implicit request handler that handles index updates (i.e., sending new documents to the index).
-By default, `/select` is a request handler that handles query requests.
+By default, `/select` is a request handler that handles query requests and one expected by most examples and tools.
 
-Request handlers can also process requests for nested paths of their names, for example, a request using `/myhandler/extrapath` may be processed by a request handler registered with the name `/myhandler`.
+Request handlers can also process requests for nested paths in their names,
+for example, a request using `/myhandler/extrapath` may be processed by a request handler registered with the name `/myhandler`.
 If a request handler is explicitly defined by the name `/myhandler/extrapath`, that would take precedence over the nested path.
 This assumes you are using the request handler classes included with Solr; if you create your own request handler,
 you should make sure it includes the ability to handle nested paths if you want to use them with your custom request handler.
@@ -66,7 +67,7 @@ If a request handler is not expected to be used very often, it can be marked wit
 There are 3 ways to configure request handlers inside their definitions and another 3 ways to configure them somewhere else.
 
 === Request parameters (GET and POST)
-The easiest and most common way to provide parameters with standard GET or POST requests.
+The easiest and most flexible way is to provide parameters with standard GET or POST requests.
 
 Here is an example of sending parameters `id`, `fl`, and `wt` to `/select` Search Handler.
 Notice the URL-encoded space (as +) for the values of `fl` parameter.
@@ -90,6 +91,9 @@ curl http://localhost:8983/solr/techproducts/query -d '
 Either way, the parameters are extracted and combined with other options explained below.
 
 === defaults, appends, and invariants
+
+==== defaults
+
 The most common way to configure request handlers is by providing `defaults` section.
 The parameters there are used unless they are overridden by any other method.
 
@@ -119,6 +123,8 @@ Here is how some other primitive types are represented:
 
 Other specialized types may exist, they would be explained in the sections for relevant components.
 
+==== Appends
+
 In the `appends` section, you can define parameters that are added those already defined elsewhere.
 These are useful when the same parameter may be meaningfully defined multiple times, such as for <<common-query-parameters.adoc#fq-filter-query-parameter,filter queries>>.
 There is no mechanism in Solr to allow a client to override these additions, so you should be absolutely sure you always want these parameters applied to queries.
@@ -131,6 +137,8 @@ There is no mechanism in Solr to allow a client to override these additions, so 
 ----
 
 In this example, the filter query "inStock:true" will always be added to every query.
+
+==== Invariants
 
 In the `invariants` section, you can define parameters that cannot be overridden by a client.
 The values defined in the `invariants` section will always be used regardless of the values specified by the user, by the client, in `defaults` or in `appends`.
