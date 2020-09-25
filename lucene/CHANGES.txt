@@ -106,6 +106,8 @@ Bug Fixes
 * LUCENE-9501: Fix a bug in IndexSortSortedNumericDocValuesRangeQuery where it could violate the
   DocIdSetIterator contract. (Julie Tibshirani)
 
+* LUCENE-9401: Include field in ComplexPhraseQuery's toString() (Thomas Hecker via Munendra S N)
+
 Documentation
 ---------------------
 
