@@ -22,9 +22,49 @@ plugins {
     id 'distribution'
 }
 
-description = 'Lucene packaging'
+description = 'Lucene distribution packaging'
+
+// Declare all subprojects that should be included in binary distribution.
+// By default everything is included, unless explicitly excluded.
+def includeInBinaries = project(":lucene").subprojects.findAll {subproject ->
+    return !(subproject.path in [
+        ":lucene:packaging",
+        ":lucene:analysis",
+    ])
+}
+
+// Create a configuration to each subproject and add dependency.
+def binaryArtifactsConf = { Project prj ->
+    return "dep-binary-" + prj.path.replace(':', '-')
+}
+
+def allDepsConf = { Project prj ->
+    return "dep-full-" + prj.path.replace(':', '-')
+}
+
+for (Project includedProject : includeInBinaries) {
+    def confBinaries = binaryArtifactsConf(includedProject)
+    def confFull = allDepsConf(includedProject)
+    configurations.create(confBinaries)
+    configurations.create(confFull)
+    dependencies { DependencyHandler handler ->
+        // Just project binaries.
+        handler.add(confBinaries, project(path: includedProject.path, configuration: "packaging"))
+        // All project dependencies, including transitive dependencies.
+        handler.add(confFull, project(path: includedProject.path), {
+            exclude group: "org.apache.lucene"
+
+            // Exclude these from all projects.
+            exclude group: "commons-logging"
+            exclude group: "org.slf4j"
+        })
+    }
+}
 
 distributions {
+    // The "main" distribution is the binary distribution.
+    // We should also add 'source' distribution at some point
+    // (we can't do it now as the build itself is tangled with Solr).
     main {
         distributionBaseName = 'lucene'
 
@@ -34,49 +74,61 @@ distributions {
                 copy.setMode(0755)
             }
 
+            // Root distribution files; these are cherry-picked manually.
             from(project(':lucene').projectDir, {
-                include "README.md"
-                include "LICENSE.txt"
-                include "NOTICE.txt"
-                include "MIGRATE.md"
-                include "JRE_VERSION_MIGRATION.md"
-                include "SYSTEM_REQUIREMENTS.md"
                 include "CHANGES.txt"
+                include "JRE_VERSION_MIGRATION.md"
+                include "LICENSE.txt"
                 include "licenses/*"
+                include "MIGRATE.md"
+                include "NOTICE.txt"
+                include "README.md"
+                include "SYSTEM_REQUIREMENTS.md"
             })
 
-            from(project(':lucene:luke').projectDir, {
-                include 'bin/*'  // need to strip prefix here
+            // Put included project's binary artifacts under their corresponding subfolders.
+            for (Project includedProject : includeInBinaries) {
+                def basePath = includedProject.path.replaceFirst("^:lucene", "").replace(':', '/')
+                def confBinaries = configurations.findByName(binaryArtifactsConf(includedProject))
+                def confFull = configurations.findByName(allDepsConf(includedProject))
+                from(confBinaries, {
+                    into basePath
+                })
+                from(confFull, {
+                    into "${basePath}/lib"
+                    // Manually exclude the project's main artifact. Don't know if there is any better way to do this.
+                    exclude "lucene-*"
+                })
+            }
+        }
+    }
+}
 
-                into 'luke'
+// Add common packaging artifacts.
+configure(project(":lucene").subprojects) {
+    plugins.withType(JavaPlugin) {
+        ext {
+            packagingDir = file("${buildDir}/packaging")
+        }
+
+        configurations {
+            packaging
+        }
+
+        task assemblePackaging(type: Sync) {
+            from(projectDir, {
+                include "README.*"
             })
 
-            // TODO:
-            // module jars
-            // docs/[subproject]/*
-            // queryparser/docs/*
-            // module/lib jars
+            from(tasks.findByName("jar"))
 
-//       This was copied from ANT and remains to be implemented
-//            from(project.buildDir, {
-//                include "docs/"
-//                include "**/*.jar"
-//                include "**/*.war"
-//                exclude "**/*-sources.jar" // was: *-src.jar
-//                exclude "**/*-sources.war"
-//                // TODO also *-javadoc.jar ?
-//            })
-//
-//            from(project.projectDir, {
-//                include "**/lib/*.jar"
-//                include "*/docs/"
-//                include "**/README*"
-//                exclude "*/build/**"
-//                exclude "site/**"
-//                exclude "tools/**"
-//                exclude "**/lib/*servlet-api*.jar"
-//                exclude "dev-docs/**"
-//            })
+            into packagingDir
+        }
+
+        artifacts {
+            packaging packagingDir, {
+                builtBy assemblePackaging
+            }
         }
     }
 }

@@ -23,7 +23,7 @@ plugins {
   id 'distribution'
 }
 
-description = 'Solr packaging'
+description = 'Solr distribution packaging'
 
 ext {
   distDir = file("$buildDir/solr-${version}")
