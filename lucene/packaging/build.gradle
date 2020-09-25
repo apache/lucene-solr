@@ -132,3 +132,13 @@ configure(project(":lucene").subprojects) {
         }
     }
 }
+
+// Add launch scripts for Luke.
+configure(project(":lucene:luke")) {
+    plugins.withType(JavaPlugin) {
+        assemblePackaging {
+            from("${projectDir}/bin", {
+            })
+        }
+    }
+}
