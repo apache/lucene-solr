@@ -36,8 +36,8 @@ import org.apache.lucene.util.compress.LZ4;
  */
 public final class LZ4WithPresetDictCompressionMode extends CompressionMode {
 
-  // Shoot for 5 sub blocks
-  private static final int NUM_SUB_BLOCKS = 5;
+  // Shoot for 10 sub blocks
+  private static final int NUM_SUB_BLOCKS = 10;
   // And a dictionary whose size is about 16x smaller than sub blocks
   private static final int DICT_SIZE_FACTOR = 16;
 
