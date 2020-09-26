@@ -25,6 +25,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.VectorValues;
 
 /**
  * Describes the properties of a field.
@@ -44,6 +45,8 @@ public class FieldType implements IndexableFieldType  {
   private int dimensionCount;
   private int indexDimensionCount;
   private int dimensionNumBytes;
+  private int vectorDimension;
+  private VectorValues.ScoreFunction vectorScoreFunction = VectorValues.ScoreFunction.NONE;
   private Map<String, String> attributes;
 
   /**
@@ -62,6 +65,8 @@ public class FieldType implements IndexableFieldType  {
     this.dimensionCount = ref.pointDimensionCount();
     this.indexDimensionCount = ref.pointIndexDimensionCount();
     this.dimensionNumBytes = ref.pointNumBytes();
+    this.vectorDimension = ref.vectorDimension();
+    this.vectorScoreFunction = ref.vectorScoreFunction();
     if (ref.getAttributes() != null) {
       this.attributes = new HashMap<>(ref.getAttributes());
     }
@@ -349,6 +354,31 @@ public class FieldType implements IndexableFieldType  {
   @Override
   public int pointNumBytes() {
     return dimensionNumBytes;
+  }
+
+  public void setVectorDimensionsAndScoreFunction(int numDimensions, VectorValues.ScoreFunction distFunc) {
+    if (numDimensions < 0) {
+      throw new IllegalArgumentException("vector numDimensions must be >= 0; got " + numDimensions);
+    }
+    if (numDimensions > VectorValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException("vector numDimensions must be <= VectorValues.MAX_DIMENSIONS (=" + VectorValues.MAX_DIMENSIONS + "); got " + numDimensions);
+    }
+    if (numDimensions == 0 && distFunc != VectorValues.ScoreFunction.NONE) {
+      throw new IllegalArgumentException("vector distFunc must be NONE when the vector numDimensions = 0; got " + distFunc);
+    }
+
+    this.vectorDimension = numDimensions;
+    this.vectorScoreFunction = distFunc;
+  }
+
+  @Override
+  public int vectorDimension() {
+    return vectorDimension;
+  }
+
+  @Override
+  public VectorValues.ScoreFunction vectorScoreFunction() {
+    return vectorScoreFunction;
   }
 
   /**
