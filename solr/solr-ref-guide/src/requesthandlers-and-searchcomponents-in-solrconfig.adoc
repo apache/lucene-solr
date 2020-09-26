@@ -137,12 +137,13 @@ There is no mechanism in Solr to allow a client to override these additions, so 
 </lst>
 ----
 
-In this example, the filter query "inStock:true" will always be added to every query.
+In this example, the filter query `inStock:true` will always be added to every query, enforcing that only available "products" are returned.
 
 ==== Invariants
 
 In the `invariants` section, you can define parameters that cannot be overridden by a client.
 The values defined in the `invariants` section will always be used regardless of the values specified by the user, by the client, in `defaults` or in `appends`.
+
 
 [source,xml]
 ----
@@ -153,6 +154,10 @@ The values defined in the `invariants` section will always be used regardless of
   <str name="facet.query">price:[500 TO *]</str>
 </lst>
 ----
+
+In this example, the `facet.field` and `facet.query` params would be fixed, limiting the facets clients can use.
+Faceting is not turned on by default - but if the client does specify  `facet=true` in the request,
+these are the only facets they will be able to see counts for; regardless of what other `facet.field` or `facet.query` params they may specify.
 
 === initParams
 It is also possible to configure defaults for request handlers with a section called `initParams`.
