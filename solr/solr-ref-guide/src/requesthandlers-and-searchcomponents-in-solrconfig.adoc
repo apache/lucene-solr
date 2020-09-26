@@ -107,8 +107,9 @@ The parameters there are used unless they are overridden by any other method.
 </requestHandler>
 ----
 
-This example defines the `rows` parameter, which defines how many search results to return, to "10".
-The `echoParams` parameter defines that the parameters defined in the query should be returned when debug information is returned.
+This example defined a useful troubleshooting parameter <<common-query-parameters.adoc#echoparams-parameter,echoParams>>, with value that returns only params defined in the request itself (no defaults), set it to `all` for more information.
+It also defines the `rows` parameter, with how many results to return (per page) (10 is a true default actually, so this is a redundant definition, if you are not going to modify it).
+
 Note also that the way the defaults are defined in the list varies if the parameter is a string, an integer, or another type.
 
 Here is how some other primitive types are represented:
@@ -181,82 +182,37 @@ If paramset is called but is not defined, it is ignored.
 This allows most <<implicit-requesthandlers.adoc#implicit-requesthandlers,implicit request handlers>> to call specific paramsets,
 that you can define later, as needed.
 
-//TODO - refactor from here
 
+== Search Handlers
 
-== SearchHandlers
+Search Handlers are very important to Solr, as the data is indexed (roughly) once but is searched many times.
+The whole design of Solr (and Lucene) is optimising data for searching and Search Handler is a flexible gateway to that.
 
-The primary request handler defined with Solr by default is the "SearchHandler", which handles search queries.
-The request handler is defined, and then a list of defaults for the handler are defined with a `defaults` list.
-
-For example, in the default `solrconfig.xml`, the first request handler defined looks like this:
-
-
-All of the parameters described in the section  <<searching.adoc#searching,Searching>> can be defined as defaults for any of the SearchHandlers.
-
-Besides `defaults`, there are other options for the SearchHandler, which are:
-
-In this example, facet fields have been defined which limits the facets that will be returned by Solr. If the client requests facets, the facets defined with a configuration like this are the only facets they will see.
-
-The final section of a request handler definition is `components`, which defines a list of search components that can be used with a request handler. They are only registered with the request handler. How to define a search component is discussed further on in the section on <<Search Components>> below. The `components` element can only be used with a request handler that is a SearchHandler.
-
-The `solrconfig.xml` file includes many other examples of SearchHandlers that can be used or modified as needed.
-
-=== Using SearchComponents
-
-//TODO: Uses default list (see below), can be augmented with first-components, last-components, replaced with components
-
-==== First-Components and Last-Components
-
-It's possible to define some components as being used before (with `first-components`) or after (with `last-components`) the default components listed above.
-
-[IMPORTANT]
-====
-`first-components` and/or `last-components` may only be used in conjunction with the default components. If you define your own `components`, the default components will not be executed, and `first-components` and `last-components` are disallowed.
-====
+The following sections are allowed within a Search Handler:
 
 [source,xml]
 ----
-<arr name="first-components">
-  <str>mycomponent</str>
-</arr>
-<arr name="last-components">
-  <str>spellcheck</str>
-</arr>
+<requestHandler name="/select" class="solr.SearchHandler">
+... defaults/appends/invariants
+... first-components/last-components or components
+... shardHandlerFactory
+</requestHandler>
 ----
 
-NOTE: The component registered with the name "debug" will always be executed after the "last-components"
+All the blocks are optional, especially since parameters can also be provided with `initParams` and `useParams`.
 
-==== Components
+The defaults/appends/invariants blocks were described <<#defaults-appends-and-invariants,higher>> on the page. All the parameters described in the section  <<searching.adoc#searching,Searching>> can be defined as parameters for any of the Search Handlers.
 
-If you define `components`, the <<#default-components,default components (above)>> will not be executed, and `first-components` and `last-components` are disallowed.
-This should be considered as a last-resort option as the default list may change in a later Solr version.
-
-[source,xml]
-----
-<arr name="components">
-  <str>mycomponent</str>
-  <str>query</str>
-  <str>debug</str>
-</arr>
-----
-
-=== ShardHandlers
-//TODO (This text is all wrong and ponts to legacy)
-It is possible to configure a request handler to search across shards of a cluster, used with distributed search. More information about distributed search and how to configure the shardHandler is in the section <<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,Distributed Search with Index Sharding>>.
+The Search Components blocks are described next, and <<distributed-requests.adoc#configuring-the-shardhandlerfactory,shardHandlerFactory>> is for fine-tuning of the SolrCloud distributed requests.
 
 === Defining Search Components
-==== Search Components
-//TODO: HACK for cross-references, to be fixed later
-A _search component_ is a feature of search, such as highlighting or faceting. The search component is defined in `solrconfig.xml` separate from the request handlers, and then registered with a request handler as needed.
-
-Search components define the logic that is used by the SearchHandler to perform queries for users.
+The search components themselves are defined outside of the Request Handlers and then are referenced from various Search Handlers that want to use them.
+Most Search Handlers use the default - implicit - stack of Search Components and only sometimes need to augment them with additional components prepended or appended.
+It is quite rare - and somewhat brittle - to completely override the component stack, though it is used in examples to clearly demonstrate the effect of a specific Search Component.
 
 ==== Default Components
 
-There are several default search components that work with all SearchHandlers without any additional configuration. If no components are defined (with the exception of `first-components` and `last-components` - see below), these are executed by default, in the following order:
-
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+As you can see below, what we see as a search experience is mostly a sequence of components defined below. They are called in the order listed.
 
 [cols="20,40,40",options="header"]
 |===
@@ -272,9 +228,23 @@ There are several default search components that work with all SearchHandlers wi
 |debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
 |===
 
-==== Custom Components
-If you register a new search component with one of these default names, the newly defined component will be used instead of the default.
+==== Shipped custom components
+Apart from default components, Solr ships with a number of additional - very useful - components.
+They do need to defined and referenced in `solrconfig.xml` to be actually used.
 
+* `AnalyticsComponent`, described in the section <<analytics.adoc#analytics,Analytics>>.
+* `ClusteringComponent`, described in the section <<result-clustering.adoc#result-clustering,Result Clustering>>.
+* `PhrasesIdentificationComponent`, used to identify & score "phrases" found in the input string, based on shingles in indexed fields, described in the {solr-javadocs}solr-core/org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] javadocs.
+* `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>.
+* `RealTimeGetComponent`, described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
+* `ResponseLogComponent`, used to record which documents are returned to the user via the Solr log, described in the {solr-javadocs}solr-core/org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] javadocs.
+* `SpellCheckComponent`, described in the section <<spell-checking.adoc#spell-checking,Spell Checking>>.
+* `SuggestComponent`, described in the section <<suggester.adoc#suggester,Suggester>>.
+* `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>.
+
+Some third party components are also linked from https://solr.cool/ website.
+
+==== Defining Custom Components
 To define custom component, the syntax is:
 
 [source,xml]
@@ -289,28 +259,46 @@ To define custom component, the syntax is:
 
 Custom components often have configuration elements not described here. Check specific component's documentation/examples for details.
 
-==== Shipped custom components
-Apart from default components, Solr ships with a number of additional - very useful - components.
+Notice: If you register a new search component with one of the default names, the newly defined component will be used instead of the default.
+This allows to override a specific component, while not having to worry so much about upgrading Solr.
 
-* `AnalyticsComponent`, described in the section <<analytics.adoc#analytics,Analytics>>.
-* `ClusteringComponent`, described in the section <<result-clustering.adoc#result-clustering,Result Clustering>>.
-* `PhrasesIdentificationComponent`, used to identify & score "phrases" found in the input string, based on shingles in indexed fields, described in the {solr-javadocs}solr-core/org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] javadocs.
-* `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>.
-* `RealTimeGetComponent`, described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
-* `ResponseLogComponent`, used to record which documents are returned to the user via the Solr log, described in the {solr-javadocs}solr-core/org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] javadocs.
-* `SpellCheckComponent`, described in the section <<spell-checking.adoc#spell-checking,Spell Checking>>.
-* `SuggestComponent`, described in the section <<suggester.adoc#suggester,Suggester>>.
-* `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>.
+=== Referencing SearchComponents
 
-==== Third party components
+It's possible to define some components as being used before (with `first-components`) or after (with `last-components`) the default components listed above.
 
-Some third party components are also linked from https://solr.cool/ website.
+[source,xml]
+----
+<searchComponent name="..." class="...">
+ <arr name="first-components">
+      <str>mycomponent</str>
+    </arr>
+    <arr name="last-components">
+      <str>spellcheck</str>
+    </arr>
+</searchComponent>
+----
+
+NOTE: The component registered with the name "debug" will always be executed after the "last-components"
+
+If you define `components` instead, the <<#default-components,default components (above)>> will not be executed, and `first-components` and `last-components` are disallowed.
+This should be considered as a last-resort option as the default list may change in a later Solr version.
+
+[source,xml]
+----
+<searchComponent name="..." class="...">
+    <arr name="components">
+      <str>mycomponent</str>
+      <str>query</str>
+      <str>debug</str>
+    </arr>
+</searchComponent>
+----
 
 
 == UpdateRequestHandlers
 
 The UpdateRequestHandlers are request handlers which process updates to the index. Most of the request handlers are implicit.
 
-Similar to Search Components for SearchHandlers, we have UpdateRequestProcessors for UpdateHandlers......
+Similar to Search Components for Search Handlers, we have UpdateRequestProcessors for UpdateHandlers......
 
 In this guide, we've covered these handlers in detail in the section <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>.

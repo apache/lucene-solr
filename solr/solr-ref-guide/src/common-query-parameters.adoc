@@ -18,7 +18,7 @@
 
 Several query parsers share supported query parameters.
 
-The following sections describe Solr's common query parameters, which are supported by the <<requesthandlers-and-searchcomponents-in-solrconfig#searchhandlers,Search RequestHandlers>>.
+The following sections describe Solr's common query parameters, which are supported by the <<requesthandlers-and-searchcomponents-in-solrconfig#search-handlers,Search RequestHandlers>>.
 
 == defType Parameter
 
