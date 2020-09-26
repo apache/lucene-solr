@@ -62,7 +62,7 @@ public class TopLevelJoinQuery extends JoinQuery {
 
     final SolrIndexSearcher solrSearcher = (SolrIndexSearcher) searcher;
     final JoinQueryWeight weight = new JoinQueryWeight(solrSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
-    final SolrIndexSearcher fromSearcher = weight.fromSearcher;
+    final SolrIndexSearcher fromSearcher = weight.toSearcher; // fromIndex isn't specified, so this has to be toSearcher
     final SolrIndexSearcher toSearcher = weight.toSearcher;
 
     try {
