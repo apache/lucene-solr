@@ -119,46 +119,47 @@ public final class Lucene90VectorReader extends VectorReader {
     }
   }
 
+  @Override
+  public long ramBytesUsed() {
+    // nocommit
+    return 0;
+  }
 
   @Override
   public void checkIntegrity() throws IOException {
-    // TODO
+    // nocommit
   }
 
   @Override
   public VectorValues getVectorValues(String field) throws IOException {
-
     FieldInfo info = fieldInfos.fieldInfo(field);
-    if (info != null) {
-
-      int numDims = info.getVectorDimension();
-      if (numDims > 0) {
-
-        final FieldEntry fieldEntry = fields.get(field);
-        if (fieldEntry != null) {
-          assert fieldEntry.dimension == numDims;
-          long numBytes = (long) fieldEntry.size() * numDims * Float.BYTES;
-          if (numBytes != fieldEntry.vectorDataLength) {
-            throw new IllegalStateException("Vector data length " + fieldEntry.vectorDataLength +
-                    " not matching size=" + fieldEntry.size() + " * dim=" + numDims + " * 4 = " +
-                    numBytes);
-          }
-          IndexInput bytesSlice = vectorData.slice("vector-data", fieldEntry.vectorDataOffset, fieldEntry.vectorDataLength);
-          return new RandomAccessVectorValues(fieldEntry, bytesSlice);
-        }
-      }
+    if (info == null) {
+      throw new IllegalStateException("No vectors indexed for field=\"" + field + "\"");
     }
-    return VectorValues.EMPTY;
+    int dimension = info.getVectorDimension();
+    if (dimension == 0) {
+      return VectorValues.EMPTY;
+    }
+    FieldEntry fieldEntry = fields.get(field);
+    if (fieldEntry == null) {
+      throw new IllegalStateException("No entry found for vector field=\"" + field + "\"");
+    }
+    if (dimension != fieldEntry.dimension) {
+      throw new IllegalStateException("Inconsistent vector dimension for field=\"" + field + "\"; " + dimension + " != " + fieldEntry.dimension);
+    }
+    long numBytes = (long) fieldEntry.size() * dimension * Float.BYTES;
+    if (numBytes != fieldEntry.vectorDataLength) {
+      throw new IllegalStateException("Vector data length " + fieldEntry.vectorDataLength +
+          " not matching size=" + fieldEntry.size() + " * dim=" + dimension + " * 4 = " +
+          numBytes);
+    }
+    IndexInput bytesSlice = vectorData.slice("vector-data", fieldEntry.vectorDataOffset, fieldEntry.vectorDataLength);
+    return new RandomAccessVectorValues(fieldEntry, bytesSlice);
   }
 
   @Override
   public void close() throws IOException {
     vectorData.close();
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return 0;
   }
 
   private static class FieldEntry {
@@ -169,6 +170,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
     final long vectorDataOffset;
     final long vectorDataLength;
+    // nocommit: remove
     final Map<Integer, Integer> docToOrd;
     final int[] ordToDoc;
 

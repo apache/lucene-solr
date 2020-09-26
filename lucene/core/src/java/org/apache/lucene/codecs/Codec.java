@@ -56,7 +56,6 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
       return LOADER;
     }
     
-    // TODO: should we use this, or maybe a system property is better?
     static Codec defaultCodec = LOADER.lookup("Lucene90");
   }
 

@@ -47,6 +47,7 @@ public final class SimpleTextCodec extends Codec {
   private final DocValuesFormat dvFormat = new SimpleTextDocValuesFormat();
   private final CompoundFormat compoundFormat = new SimpleTextCompoundFormat();
   private final PointsFormat pointsFormat = new SimpleTextPointsFormat();
+  private final VectorFormat vectorFormat = new SimpleTextVectorFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
@@ -104,7 +105,6 @@ public final class SimpleTextCodec extends Codec {
 
   @Override
   public VectorFormat vectorFormat() {
-    // TODO
-    return VectorFormat.EMPTY;
+    return vectorFormat;
   }
 }

@@ -30,7 +30,6 @@ public class TestVectorValues extends LuceneTestCase {
 
   private IndexWriterConfig createIndexWriterConfig() {
     IndexWriterConfig iwc = newIndexWriterConfig();
-    // nocommit - add new format to Lucene86 codec
     iwc.setCodec(Codec.forName("Lucene90"));
     return iwc;
   }
@@ -55,7 +54,7 @@ public class TestVectorValues extends LuceneTestCase {
 
   public void testIllegalDimChangeTwoDocs() throws Exception {
     try (Directory dir = newDirectory();
-         IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+         IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(new VectorField("dim", new float[4], VectorValues.ScoreFunction.DOT_PRODUCT));
       w.addDocument(doc);
@@ -183,11 +182,12 @@ public class TestVectorValues extends LuceneTestCase {
         Document doc = new Document();
         doc.add(new VectorField("dim", new float[5], VectorValues.ScoreFunction.DOT_PRODUCT));
         w2.addDocument(doc);
-        DirectoryReader r = DirectoryReader.open(dir);
-        IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-          w2.addIndexes(new CodecReader[]{(CodecReader) getOnlyLeafReader(r)});
-        });
-        assertEquals("cannot change vector dimension from 5 to 4 for field=\"dim\"", expected.getMessage());
+        try (DirectoryReader r = DirectoryReader.open(dir)) {
+          IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+            w2.addIndexes(new CodecReader[]{(CodecReader) getOnlyLeafReader(r)});
+          });
+          assertEquals("cannot change vector dimension from 5 to 4 for field=\"dim\"", expected.getMessage());
+        }
       }
     }
   }
@@ -204,11 +204,12 @@ public class TestVectorValues extends LuceneTestCase {
         Document doc = new Document();
         doc.add(new VectorField("dim", new float[4], VectorValues.ScoreFunction.EUCLIDEAN));
         w2.addDocument(doc);
-        DirectoryReader r = DirectoryReader.open(dir);
-        IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-          w2.addIndexes(new CodecReader[]{(CodecReader) getOnlyLeafReader(r)});
-        });
-        assertEquals("cannot change vector score function from EUCLIDEAN to DOT_PRODUCT for field=\"dim\"", expected.getMessage());
+        try (DirectoryReader r = DirectoryReader.open(dir)) {
+          IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+            w2.addIndexes(new CodecReader[]{(CodecReader) getOnlyLeafReader(r)});
+          });
+          assertEquals("cannot change vector score function from EUCLIDEAN to DOT_PRODUCT for field=\"dim\"", expected.getMessage());
+        }
       }
     }
   }
@@ -225,11 +226,12 @@ public class TestVectorValues extends LuceneTestCase {
         Document doc = new Document();
         doc.add(new VectorField("dim", new float[5], VectorValues.ScoreFunction.DOT_PRODUCT));
         w2.addDocument(doc);
-        DirectoryReader r = DirectoryReader.open(dir);
-        IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-          TestUtil.addIndexesSlowly(w2, r);
-        });
-        assertEquals("cannot change vector dimension from 5 to 4 for field=\"dim\"", expected.getMessage());
+        try (DirectoryReader r = DirectoryReader.open(dir)) {
+          IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+            TestUtil.addIndexesSlowly(w2, r);
+          });
+          assertEquals("cannot change vector dimension from 5 to 4 for field=\"dim\"", expected.getMessage());
+        }
       }
     }
   }
@@ -246,11 +248,12 @@ public class TestVectorValues extends LuceneTestCase {
         Document doc = new Document();
         doc.add(new VectorField("dim", new float[4], VectorValues.ScoreFunction.EUCLIDEAN));
         w2.addDocument(doc);
-        DirectoryReader r = DirectoryReader.open(dir);
-        IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-          TestUtil.addIndexesSlowly(w2, r);
-        });
-        assertEquals("cannot change vector score function from EUCLIDEAN to DOT_PRODUCT for field=\"dim\"", expected.getMessage());
+        try (DirectoryReader r = DirectoryReader.open(dir)) {
+          IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+            TestUtil.addIndexesSlowly(w2, r);
+          });
+          assertEquals("cannot change vector score function from EUCLIDEAN to DOT_PRODUCT for field=\"dim\"", expected.getMessage());
+        }
       }
     }
   }
@@ -327,7 +330,7 @@ public class TestVectorValues extends LuceneTestCase {
         doc.add(new VectorField("dim", new float[4], VectorValues.ScoreFunction.DOT_PRODUCT));
         w.addDocument(doc);
       }
-      try (IndexWriter w = new IndexWriter(dir, new IndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("dim", new float[4], VectorValues.ScoreFunction.DOT_PRODUCT));
         w.addDocument(doc);
