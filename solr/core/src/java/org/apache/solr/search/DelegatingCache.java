@@ -46,7 +46,7 @@ public class DelegatingCache<K, V> implements SolrCache<K, V> {
           @Override
           @SuppressWarnings("unchecked")
           protected Object initNewInstance(PackageLoader.Package.Version newest, SolrCore core) {
-            SolrCache newCache = cacheConfig.getSolrCache(() -> newest.getLoader().findClass(cName.className, SolrCache.class));
+            SolrCache<K,V> newCache = cacheConfig.getSolrCache(() -> newest.getLoader().findClass(cName.className, SolrCache.class));
             if (solrMetricsContext != null && scope != null) {
               newCache.initializeMetrics(solrMetricsContext, scope);
             }
@@ -65,6 +65,7 @@ public class DelegatingCache<K, V> implements SolrCache<K, V> {
 
 
   @Override
+  @SuppressWarnings("rawtypes")
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     return null;
   }
