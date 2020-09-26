@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundDirectory;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -61,6 +62,7 @@ final class SegmentCoreReaders {
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
   final PointsReader pointsReader;
+  final VectorReader vectorReader;
   final CompoundDirectory cfsReader;
   final String segment;
   /** 
@@ -137,6 +139,13 @@ final class SegmentCoreReaders {
       } else {
         pointsReader = null;
       }
+
+      if (coreFieldInfos.hasVectorValues()) {
+        vectorReader = codec.vectorFormat().fieldsReader(segmentReadState);
+      } else {
+        vectorReader = null;
+      }
+
       success = true;
     } catch (EOFException | FileNotFoundException e) {
       throw new CorruptIndexException("Problem reading index from " + dir, dir.toString(), e);
@@ -168,7 +177,7 @@ final class SegmentCoreReaders {
     if (ref.decrementAndGet() == 0) {
       try (Closeable finalizer = this::notifyCoreClosedListeners){
         IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
-                      cfsReader, normsProducer, pointsReader);
+                      cfsReader, normsProducer, pointsReader, vectorReader);
       }
     }
   }
