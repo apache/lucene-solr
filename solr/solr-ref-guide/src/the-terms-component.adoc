@@ -35,7 +35,6 @@ The definition is equivalent to:
 === Using the Terms Component in a Request Handler
 
 Solr comes with an <<implicit-requesthandlers.adoc#query-handlers,Implicit RequestHandler>> definition `/terms`, which enables (only) Terms component.
-This handler, by default, can only be used on a single Solr core (`distrib=false`).
 
 If you want to enable Terms component when using another Request Handler, `terms=true` parameter needs to be passed during the request or be set in the handler's defaults.
 

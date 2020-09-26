@@ -77,7 +77,7 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
     return new BufferedNumericDocValues(finalValues, docsWithField.iterator());
   }
 
-  static CachedNumericDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, NumericDocValues oldDocValues) throws IOException {
+  static NumericDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, NumericDocValues oldDocValues) throws IOException {
     FixedBitSet docsWithField = new FixedBitSet(maxDoc);
     long[] values = new long[maxDoc];
     while (true) {
@@ -89,7 +89,7 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
       docsWithField.set(newDocID);
       values[newDocID] = oldDocValues.longValue();
     }
-    return new CachedNumericDVs(values, docsWithField);
+    return new NumericDVs(values, docsWithField);
   }
 
   @Override
@@ -97,7 +97,7 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
     if (finalValues == null) {
       finalValues = pending.build();
     }
-    final CachedNumericDVs sorted;
+    final NumericDVs sorted;
     if (sortMap != null) {
       NumericDocValues oldValues = new BufferedNumericDocValues(finalValues, docsWithField.iterator());
       sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap, oldValues);
@@ -169,11 +169,11 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
 
   static class SortingNumericDocValues extends NumericDocValues {
 
-    private final CachedNumericDVs dvs;
+    private final NumericDVs dvs;
     private int docID = -1;
     private long cost = -1;
 
-    SortingNumericDocValues(CachedNumericDVs dvs) {
+    SortingNumericDocValues(NumericDVs dvs) {
       this.dvs = dvs;
     }
 
@@ -218,11 +218,11 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
     }
   }
 
-  static class CachedNumericDVs {
+  static class NumericDVs {
     private final long[] values;
     private final BitSet docsWithField;
 
-    CachedNumericDVs(long[] values, BitSet docsWithField) {
+    NumericDVs(long[] values, BitSet docsWithField) {
       this.values = values;
       this.docsWithField = docsWithField;
     }
