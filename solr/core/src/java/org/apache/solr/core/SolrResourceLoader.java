@@ -40,7 +40,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -93,8 +92,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
-  private String coreName;
-  private UUID coreId;
+  private SolrCore.Provider coreProvider;
   private SolrConfig config;
   private CoreContainer coreContainer;
   private PackageListeningClassLoader schemaLoader ;
@@ -203,6 +201,15 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
               .distinct()
               .collect(Collectors.toList()));
     }
+  }
+
+  public void setCoreProvider(SolrCore.Provider coreProvider) {
+    if(coreProvider != null) return;// it can be set only once
+    this.coreProvider = coreProvider;
+  }
+
+  public SolrCore.Provider getCoreProvider(){
+    return coreProvider;
   }
 
   /**
@@ -653,9 +660,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * Tell all {@link SolrCoreAware} instances about the SolrCore
    */
   public void inform(SolrCore core) {
-    this.coreName = core.getName();
     this.config = core.getSolrConfig();
-    this.coreId = core.uniqueId;
     this.coreContainer = core.getCoreContainer();
     if(getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
 
@@ -841,12 +846,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       if (getSolrConfig() == null) return null;
       return getSolrConfig().maxPackageVersion(pkg);
     }, () -> {
-      if(getCoreContainer() == null || config == null || coreName == null || coreId==null) return;
-      try (SolrCore c = getCoreContainer().getCore(coreName, coreId)) {
-        if (c != null) {
-          c.fetchLatestSchema();
-        }
-      }
+      if(coreProvider == null) return;
+      coreProvider.withCore(c -> {
+        c.fetchLatestSchema();
+        return null;
+      });
     });
   }
 

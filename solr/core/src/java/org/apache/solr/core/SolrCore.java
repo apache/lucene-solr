@@ -57,7 +57,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -281,7 +281,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private ExecutorService coreAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
 
-  public  final SolrCore.Provider coreProvider;
+  private SolrCore.Provider coreProvider;
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
@@ -951,7 +951,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.configSet = configSet;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       setName(coreDescriptor.getName());
-      coreProvider = new Provider(coreContainer, getName(), uniqueId);
+      coreProvider = new Provider(this);
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
@@ -1085,6 +1085,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     } finally {
       // allow firstSearcher events to fire and make sure it is released
       latch.countDown();
+      if(coreProvider !=null) coreProvider.coreUnderConstruction = null;
     }
 
     assert ObjectReleaseTracker.track(this);
@@ -3237,6 +3238,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return blobRef;
   }
 
+  public SolrCore.Provider getCoreProvider(){
+    return coreProvider;
+  }
   /**
    * Run an arbitrary task in it's own thread. This is an expert option and is
    * a method you should use with great care. It would be bad to run something that never stopped
@@ -3268,17 +3272,33 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     private final CoreContainer coreContainer;
     private final String coreName;
     private final UUID coreId;
+    private SolrCore coreUnderConstruction;
 
-    public Provider(CoreContainer coreContainer, String coreName, UUID coreId) {
-      this.coreContainer = coreContainer;
-      this.coreName = coreName;
-      this.coreId = coreId;
+    public Provider(SolrCore core) {
+      this.coreContainer = core.getCoreContainer();
+      this.coreName = core.getName();
+      this.coreId = core.uniqueId;
+      this.coreUnderConstruction = core;
     }
 
-    public void withCore(Consumer<SolrCore> r) {
+    public String getCoreName() {
+      return coreName;
+    }
+
+    public UUID getCoreId() {
+      return coreId;
+    }
+
+    public <T> T withCore(Function<SolrCore, T> r) {
+      if(coreUnderConstruction != null) {
+        //this core in under construction
+        return r.apply (coreUnderConstruction);
+      }
       try(SolrCore core = coreContainer.getCore(coreName, coreId)) {
-        if(core == null) return;
-        r.accept(core);
+        if(core == null) {
+          return null;
+        }
+        return r.apply(core);
       }
     }
   }

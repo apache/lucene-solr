@@ -45,7 +45,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
   public PackagePluginHolder(PluginInfo info, SolrCore core, SolrConfig.SolrPluginInfo pluginMeta) {
     super(info);
-    this.coreProvider = core.coreProvider;
+    this.coreProvider = core.getCoreProvider();
     this.pluginMeta = pluginMeta;
     this.info = info;
 
@@ -63,7 +63,10 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
       @Override
       public void changed(PackageLoader.Package pkg, Ctx ctx) {
-        coreProvider.withCore(c -> reload(pkg, c));
+        coreProvider.withCore(c -> {
+          reload(pkg, c);
+          return null;
+        });
 
       }
 
