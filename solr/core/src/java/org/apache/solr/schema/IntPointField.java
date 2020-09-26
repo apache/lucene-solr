@@ -146,7 +146,16 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    int intValue = (value instanceof Number) ? ((Number) value).intValue() : Integer.parseInt(value.toString());
+    int intValue;
+    if (value instanceof Number) {
+      intValue = ((Number) value).intValue();
+    } else {
+      try {
+        intValue = Integer.parseInt(value.toString());
+      } catch (NumberFormatException e) {
+        intValue = (int) Double.parseDouble(value.toString());
+      }
+    }
     return new IntPoint(field.getName(), intValue);
   }
 

@@ -151,7 +151,16 @@ public class LongPointField extends PointField implements LongValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    long longValue = (value instanceof Number) ? ((Number) value).longValue() : Long.parseLong(value.toString());
+    long longValue;
+    if (value instanceof Number) {
+      longValue = ((Number) value).longValue();
+    } else {
+      try {
+        longValue = Long.parseLong(value.toString());
+      } catch (NumberFormatException e) {
+        longValue = (long) Double.parseDouble(value.toString());
+      }
+    }
     return new LongPoint(field.getName(), longValue);
   }
 

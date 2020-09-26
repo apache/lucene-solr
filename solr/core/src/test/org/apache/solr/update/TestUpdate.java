@@ -238,4 +238,16 @@ public class TestUpdate extends SolrTestCaseJ4 {
     fail();
   }
 
+  @Test // SOLR-14767
+  public void testStringUpdateOnLongAndIntFields() throws IOException {
+    SolrInputDocument doc = new SolrInputDocument();
+    //values such as 2.3 should be parsed and not return failure
+    doc.addField("id", "1");
+    doc.addField("int_i", "42.0");
+    doc.addField("long_l", "42.2");
+
+    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = doc;
+      h.getCore().getUpdateHandler().addDoc(cmd);
+  }
 }
