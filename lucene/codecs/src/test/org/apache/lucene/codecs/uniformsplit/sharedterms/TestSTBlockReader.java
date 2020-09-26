@@ -42,6 +42,7 @@ import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
@@ -203,6 +204,8 @@ public class TestSTBlockReader extends LuceneTestCase {
         0,
         0,
         0,
+        0,
+        VectorValues.ScoreFunction.NONE,
         false
     );
   }

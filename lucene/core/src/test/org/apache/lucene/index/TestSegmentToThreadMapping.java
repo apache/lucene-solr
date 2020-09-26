@@ -107,6 +107,9 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
       }
 
       @Override
+      public VectorValues getVectorValues(String field) { return null; }
+
+      @Override
       protected void doClose() {
       }
 
