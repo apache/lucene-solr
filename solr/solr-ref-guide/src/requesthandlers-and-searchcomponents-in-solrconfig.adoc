@@ -295,10 +295,25 @@ This should be considered as a last-resort option as the default list may change
 ----
 
 
-== UpdateRequestHandlers
+== Update Request Handlers
 
-The UpdateRequestHandlers are request handlers which process updates to the index. Most of the request handlers are implicit.
+The Update Request Handlers are request handlers which process updates to the index. Most of the request handlers are <<implicit-requesthandlers.adoc#update-handlers,implicit>>
+and can be customized by defining properly named Paramsets.
 
-Similar to Search Components for Search Handlers, we have UpdateRequestProcessors for UpdateHandlers......
+If you need to define additional Update Request Handler, the syntax is:
 
-In this guide, we've covered these handlers in detail in the section <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>.
+[source,xml]
+----
+<requestHandler name="/update/json" class="solr.UpdateRequestHandler">
+... defaults/appends/invariants
+</requestHandler>
+
+----
+
+The full details are covered in the section <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>.
+
+Similar to Search Components for Search Handlers, Solr has document-preprocessing plugins for Update Request Handlers,
+called <<update-request-processors.adoc#update-request-processors,Update Request Processors>>,
+which also allow for default and custom configuration chains.
+
+Note: Do not confuse Update Request Handlers with <<updatehandlers-in-solrconfig.adoc#updatehandlers-in-solrconfig,`updateHandler`>> section also defined in `solrconfig.xml`.
