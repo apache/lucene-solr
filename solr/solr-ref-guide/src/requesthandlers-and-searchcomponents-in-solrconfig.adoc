@@ -1,4 +1,4 @@
-= RequestHandlers and SearchComponents in SolrConfig
+= Request Handlers and Search Components in SolrConfig
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -31,7 +31,7 @@ All of this multi-layered configuration, may be verified via  <<config-api.adoc#
 Defining your own config handlers is often a useful way to provide defaults and advanced configuration to support business cases and simplify client API.
 At the same time, using every single option explained in this guide, will most certainly cause some confusion about which parameter is actually used when.
 
-== Defining and calling Request Handlers
+== Defining and Calling Request Handlers
 
 Every request handler is defined with a name and a class. The name of the request handler is referenced with the request to Solr, typically as a path.
 For example, if Solr is installed at `\http://localhost:8983/solr/`, and you have a collection named "gettingstarted", you can make a request that looks like this:
@@ -63,10 +63,10 @@ If a request handler is not expected to be used very often, it can be marked wit
 </requestHandler>
 ----
 
-== Configuring request handlers
+== Configuring Request Handlers
 There are 3 ways to configure request handlers inside their definitions and another 3 ways to configure them somewhere else.
 
-=== Request parameters (GET and POST)
+=== Request Parameters (GET and POST)
 The easiest and most flexible way is to provide parameters with standard GET or POST requests.
 
 Here is an example of sending parameters `id`, `fl`, and `wt` to `/select` Search Handler.
@@ -90,9 +90,9 @@ curl http://localhost:8983/solr/techproducts/query -d '
 
 Either way, the parameters are extracted and combined with other options explained below.
 
-=== defaults, appends, and invariants
+=== Defaults, Appends, and Invariants
 
-==== defaults
+==== Defaults
 
 The most common way to configure request handlers is by providing `defaults` section.
 The parameters there are used unless they are overridden by any other method.
@@ -159,13 +159,13 @@ In this example, the `facet.field` and `facet.query` params would be fixed, limi
 Faceting is not turned on by default - but if the client does specify  `facet=true` in the request,
 these are the only facets they will be able to see counts for; regardless of what other `facet.field` or `facet.query` params they may specify.
 
-=== initParams
+=== InitParams
 It is also possible to configure defaults for request handlers with a section called `initParams`.
 These defaults can be used when you want to have common properties that will be used by each separate handler.
 For example, if you intend to create several request handlers that will all request the same list of fields in the response, you can configure an `initParams` section with your list of fields.
 For more information about `initParams`, see the section <<initparams-in-solrconfig.adoc#initparams-in-solrconfig,InitParams in SolrConfig>>.
 
-=== Paramsets and useParams
+=== Paramsets and UseParams
 If you are expecting to change the parameters often, or if you want define sets of parameters that you can apply on the fly,
 you can define them with <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>> and then invoke them
 by providing one or more in `useParams` setting either in the handler definition itself or as a query parameter.
@@ -233,7 +233,7 @@ As you can see below, what we see as a search experience is mostly a sequence of
 |debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
 |===
 
-==== Shipped custom components
+==== Shipped Custom Components
 Apart from default components, Solr ships with a number of additional - very useful - components.
 They do need to defined and referenced in `solrconfig.xml` to be actually used.
 
@@ -249,7 +249,7 @@ They do need to defined and referenced in `solrconfig.xml` to be actually used.
 
 Some third party components are also linked from https://solr.cool/ website.
 
-==== Defining Custom Components
+==== Defining Custom Search Components
 To define custom component, the syntax is:
 
 [source,xml]
@@ -267,7 +267,7 @@ Custom components often have configuration elements not described here. Check sp
 Notice: If you register a new search component with one of the default names, the newly defined component will be used instead of the default.
 This allows to override a specific component, while not having to worry so much about upgrading Solr.
 
-=== Referencing SearchComponents
+=== Referencing Search Components
 
 It's possible to define some components as being used before (with `first-components`) or after (with `last-components`) the default components listed above.
 
