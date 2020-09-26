@@ -13,6 +13,9 @@ Bug Fixes
 * SOLR-14859: DateRangeField now throws errors when invalid field/fieldType options specified; no longer silently accepts incompatible option values
   (Jason Gerlowski, Chris Hostetter, Munendra S N)
 
+* SOLR-14768: Fix HTTP multipart POST to Solr -- a regression from 8.6.0.
+  Many Jetty classes are not classpath-visible from the Solr webapp.  (David Smiley)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
