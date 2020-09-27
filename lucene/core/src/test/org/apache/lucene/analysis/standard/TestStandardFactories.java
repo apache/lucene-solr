@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.standard;
 
 
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
 import java.io.Reader;
