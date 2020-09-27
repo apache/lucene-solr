@@ -134,7 +134,7 @@ public final class Lucene90VectorReader extends VectorReader {
   public VectorValues getVectorValues(String field) throws IOException {
     FieldInfo info = fieldInfos.fieldInfo(field);
     if (info == null) {
-      throw new IllegalStateException("No vectors indexed for field=\"" + field + "\"");
+      return null;
     }
     int dimension = info.getVectorDimension();
     if (dimension == 0) {
@@ -142,7 +142,8 @@ public final class Lucene90VectorReader extends VectorReader {
     }
     FieldEntry fieldEntry = fields.get(field);
     if (fieldEntry == null) {
-      throw new IllegalStateException("No entry found for vector field=\"" + field + "\"");
+      // There is a FieldInfo, but no vectors. Should we have deleted the FieldInfo?
+      return null;
     }
     if (dimension != fieldEntry.dimension) {
       throw new IllegalStateException("Inconsistent vector dimension for field=\"" + field + "\"; " + dimension + " != " + fieldEntry.dimension);
@@ -236,9 +237,6 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue() throws IOException {
-      if (doc == NO_MORE_DOCS) {
-        return null;
-      }
       dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
       floatBuffer.position(0);
       floatBuffer.get(value, 0, fieldEntry.dimension);
@@ -268,7 +266,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public int nextDoc() throws IOException {
-      // TODO we can make this better
+      // nocommit we can make this better
       return advance(doc + 1);
     }
 

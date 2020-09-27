@@ -30,6 +30,8 @@ import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 /**
  * Writes vectors to an index.
  */
@@ -66,8 +68,8 @@ public abstract class VectorWriter implements Closeable {
     int dimension = -1;
     VectorValues.ScoreFunction scoreFunction = null;
     for (int i = 0; i < mergeState.vectorReaders.length; i++) {
-      VectorReader graphReader = mergeState.vectorReaders[i];
-      if (graphReader != null) {
+      VectorReader vectorReader = mergeState.vectorReaders[i];
+      if (vectorReader != null) {
         if (mergeFieldInfo != null && mergeFieldInfo.hasVectorValues()) {
           int segmentDimension = mergeFieldInfo.getVectorDimension();
           VectorValues.ScoreFunction segmentScoreFunction = mergeFieldInfo.getVectorScoreFunction();
@@ -81,16 +83,16 @@ public abstract class VectorWriter implements Closeable {
             throw new IllegalStateException("Varying score functions for vector-valued field " + mergeFieldInfo.name
                 + ": " + scoreFunction + "!=" + segmentScoreFunction);
           }
-          VectorValues values = graphReader.getVectorValues(mergeFieldInfo.name);
-          subs.add(new VectorValuesSub(i, mergeState.docMaps[i], values));
+          VectorValues values = vectorReader.getVectorValues(mergeFieldInfo.name);
+          if (values != null) {
+            subs.add(new VectorValuesSub(i, mergeState.docMaps[i], values));
+          }
         }
       }
     }
     // Create a new VectorValues by iterating over the sub vectors, mapping the resulting
     // docids using docMaps in the mergeState.
-    MultiVectorValues multiVectors = new MultiVectorValues(subs, mergeState.maxDocs, dimension, scoreFunction);
-    // TODO: handle sorted index and test index with deletions
-    writeField(mergeFieldInfo, multiVectors);
+    writeField(mergeFieldInfo, new VectorValuesMerger(subs, mergeState));
     if (mergeState.infoStream.isEnabled("VV")) {
       mergeState.infoStream.message("VV", "merge done " + mergeState.segmentInfo);
     }
@@ -102,6 +104,7 @@ public abstract class VectorWriter implements Closeable {
     final MergeState.DocMap docMap;
     final VectorValues values;
     final int segmentIndex;
+    int count;
 
     VectorValuesSub(int segmentIndex, MergeState.DocMap docMap, VectorValues values) {
       super(docMap);
@@ -113,146 +116,114 @@ public abstract class VectorWriter implements Closeable {
 
     @Override
     public int nextDoc() throws IOException {
-      return values.nextDoc();
+      int docId = values.nextDoc();
+      if (docId != NO_MORE_DOCS) {
+        // Note: this does count deleted docs  since they are present in the to-be-merged segment
+        ++count;
+      }
+      return docId;
     }
-
   }
 
-  // NOTE: we do two very different things with this right now:
-  // 1) iterate over the documents in order, forward-only, tracking docId
-  // 2) fetch values random-access style, by *ordinal*
-  //
-  // instead we should optimize for these with two separate VectorValues
-  // we don't want the seeking to mess up the forward-only iteration by mixing these
-
-  // provides a view over multiple VectorValues by concatenating their docid spaces
-  private static class MultiVectorValues extends VectorValues {
-    private final VectorValuesSub[] subValues;
-    private final int[] maxDocs;
-    private final int[] docBase;
-    private final int[] segmentMaxDocs;
-    private final int[] nonEmptySegment;
+  /**
+   * View over multiple VectorValues supporting iterator-style access via DocIdMerger. Maintains a reverse ordinal
+   * mapping for documents having values in order to support random access by dense ordinal.
+   */
+  private static class VectorValuesMerger extends VectorValues {
+    private final List<VectorValuesSub> subs;
+    private final DocIDMerger<VectorValuesSub> docIdMerger;
+    private final MergeState mergeState;
     private final int[] ordBase;
     private final int cost;
     private final int size;
-    private final int dimension;
-    private final ScoreFunction scoreFunction;
 
     private int docId;
-    private int whichSub;
+    private VectorValuesSub current;
+    private int[] ordMap;
+    private int ord;
 
-    MultiVectorValues(List<VectorValuesSub> subs, int[] maxDocs, int dimension, VectorValues.ScoreFunction scoreFunction) {
-      this.subValues = new VectorValuesSub[subs.size()];
-      this.maxDocs = maxDocs;
-      this.dimension = dimension;
-      this.scoreFunction = scoreFunction;
-      // TODO: this complicated logic needs its own test
-      // maxDocs actually says *how many* docs there are, not what the number of the max doc is
-      int maxDoc = -1;
-      int lastMaxDoc = -1;
-      segmentMaxDocs = new int[subs.size() - 1];
-      docBase = new int[subs.size()];
-      for (int i = 0, j = 0; j < subs.size(); i++) {
-        lastMaxDoc = maxDoc;
-        maxDoc += maxDocs[i];
-        if (i == subs.get(j).segmentIndex) {
-          // we may skip some segments if they have no docs with values for this field
-          if (j > 0) {
-            segmentMaxDocs[j - 1] = lastMaxDoc;
-          }
-          docBase[j] = lastMaxDoc + 1;
-          ++j;
-        }
-      }
+    VectorValuesMerger(List<VectorValuesSub> subs, MergeState mergeState) throws IOException {
+      this.subs = subs;
+      docIdMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
+      this.mergeState = mergeState;
+
       int i = 0;
-      int totalCost = 0, totalSize = 0, nonEmptySegmentsCount = 0;
+      int totalCost = 0, totalSize = 0;
       for (VectorValuesSub sub : subs) {
         totalCost += sub.values.cost();
-        int sz = sub.values.size();
-        totalSize += sz;
-        if (sz > 0) {
-          nonEmptySegmentsCount++;
-        }
-        this.subValues[i++] = sub;
+        totalSize += sub.values.size();;
       }
       cost = totalCost;
       size = totalSize;
-      nonEmptySegment = new int[nonEmptySegmentsCount];
-      ordBase = new int[nonEmptySegmentsCount];
-      int nonEmptySegmentOrd = 0, lastBase = 0;
+      ordMap = new int[size];
+      ordBase = new int[subs.size()];
+      int lastBase = 0;
       for (int k = 0; k < subs.size(); k++) {
-        if (subs.get(k).values.size() > 0) {
-          nonEmptySegment[nonEmptySegmentOrd] = k;
-          int size = subs.get(k).values.size();
-          ordBase[nonEmptySegmentOrd] = lastBase;
-          lastBase += size;
-          nonEmptySegmentOrd++;
-        }
+        int size = subs.get(k).values.size();
+        ordBase[k] = lastBase;
+        lastBase += size;
       }
-      whichSub = 0;
       docId = -1;
     }
 
-    public MultiVectorValues copy() {
+    public VectorValuesMerger copy() throws IOException {
       List<VectorValuesSub> subCopies= new ArrayList<>();
-      for (VectorValuesSub sub : subValues) {
+      for (VectorValuesSub sub : subs) {
         subCopies.add(new VectorValuesSub(sub.segmentIndex, sub.docMap, sub.values.copy()));
       }
-      return new MultiVectorValues(subCopies, maxDocs, dimension, scoreFunction);
+      return new VectorValuesMerger(subCopies, mergeState);
     }
 
     @Override
-    public int advance(int target) throws IOException {
-      int rebased = unmapSettingWhich(target);
-      if (rebased < 0) {
-        rebased = 0;
+    public int docID() {
+      return docId;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      current = docIdMerger.next();
+      if (current == null) {
+        docId = NO_MORE_DOCS;
+      } else {
+        docId = current.mappedDocID;
+        ordMap[ord++] = current.count;
       }
-      int segmentDocId = subValues[whichSub].values.advance(rebased);
-      if (segmentDocId == NO_MORE_DOCS) {
-        if (++whichSub < subValues.length) {
-          // Get the first document in the next segment; Note that all segments have values.
-          segmentDocId = subValues[whichSub].values.advance(0);
-        } else {
-          return docId = NO_MORE_DOCS;
-        }
-      }
-      docId = docBase[whichSub] + segmentDocId;
       return docId;
     }
 
     @Override
     public float[] vectorValue() throws IOException {
-      return subValues[whichSub].values.vectorValue();
+      return current.values.vectorValue();
     }
 
     @Override
     public BytesRef binaryValue() throws IOException {
-      return subValues[whichSub].values.binaryValue();
-    }
-
-    int unmap(int docid) {
-      // map from global (merged) to segment-local (unmerged)
-      // like mapDocid but no side effect - used for assertion
-      return docid - docBase[findSegment(docid)];
-    }
-
-    private int unmapSettingWhich(int target) {
-      whichSub = findSegment(target);
-      return target - docBase[whichSub];
-    }
-
-    private int findSegment(int docid) {
-      int segment = Arrays.binarySearch(segmentMaxDocs, docid);
-      if (segment < 0) {
-        return -1 - segment;
-      } else {
-        return segment;
-      }
+      return current.values.binaryValue();
     }
 
     @Override
-    public int dimension() {
-      return dimension;
+    public float[] vectorValue(int target) throws IOException {
+      int unmappedOrd = ordMap[target];
+      int segmentOrd = Arrays.binarySearch(ordBase, unmappedOrd);
+      if (segmentOrd < 0) {
+        // get the index of the greatest lower bound
+        segmentOrd = -2 - segmentOrd;
+      }
+      while(segmentOrd < ordBase.length - 1 && ordBase[segmentOrd + 1] == ordBase[segmentOrd]) {
+        // forward over empty segments which will share the same ordBase
+        segmentOrd++;
+      }
+      return subs.get(segmentOrd).values.vectorValue(unmappedOrd - ordBase[segmentOrd]);
+    }
+
+    @Override
+    public int advance(int target) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TopDocs search(float[] target, int k, int fanout) throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -266,35 +237,13 @@ public abstract class VectorWriter implements Closeable {
     }
 
     @Override
+    public int dimension() {
+      return subs.get(0).values.dimension();
+    }
+
+    @Override
     public VectorValues.ScoreFunction scoreFunction() {
-      return scoreFunction;
-    }
-
-    @Override
-    public float[] vectorValue(int target) throws IOException {
-      int segmentOrd = Arrays.binarySearch(ordBase, target);
-      if (segmentOrd < 0) {
-        // get the index of the greatest lower bound
-        segmentOrd = -2 - segmentOrd;
-      }
-      int segment = nonEmptySegment[segmentOrd];
-      return subValues[segment].values.vectorValue(target - ordBase[segmentOrd]);
-    }
-
-    @Override
-    public TopDocs search(float[] target, int k, int fanout) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int docID() {
-      return docId;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      // TODO: make this faster, avoiding binary search in advance (which supports random access)
-      return advance(docId + 1);
+      return subs.get(0).values.scoreFunction();
     }
   }
 }

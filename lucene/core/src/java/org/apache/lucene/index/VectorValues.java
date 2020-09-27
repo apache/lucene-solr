@@ -87,7 +87,7 @@ public abstract class VectorValues extends DocIdSetIterator {
   /**
    * @return another vector values that iterates independently over the same underlying vectors
    */
-  public abstract VectorValues copy();
+  public abstract VectorValues copy() throws IOException;
 
   /**
    * Score function. This is used during indexing and searching of the vectors to determine the nearest neighbors.

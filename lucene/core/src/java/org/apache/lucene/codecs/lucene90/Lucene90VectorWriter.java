@@ -83,7 +83,9 @@ public final class Lucene90VectorWriter extends VectorWriter {
       // TODO: write knn graph value
     }
     long vectorDataLength = vectorData.getFilePointer() - vectorDataOffset;
-    writeMeta(fieldInfo, vectorDataOffset, vectorDataLength, docIds);
+    if (vectorDataLength > 0) {
+      writeMeta(fieldInfo, vectorDataOffset, vectorDataLength, docIds);
+    }
   }
 
   private void writeVectorValue(VectorValues vectors) throws IOException {

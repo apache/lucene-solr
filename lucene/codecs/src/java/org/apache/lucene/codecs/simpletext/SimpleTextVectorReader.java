@@ -199,7 +199,7 @@ public class SimpleTextVectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue(int targetOrd) throws IOException {
-      return readVector(targetOrd);
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -223,7 +223,7 @@ public class SimpleTextVectorReader extends VectorReader {
     @Override
     public int nextDoc() throws IOException {
       if (++curOrd < entry.size()) {
-        readVector(curOrd);
+        readVector();
         return docID();
       }
       return NO_MORE_DOCS;
@@ -239,13 +239,7 @@ public class SimpleTextVectorReader extends VectorReader {
       return size();
     }
 
-    private float[] readVector(int targetOrd) throws IOException {
-      // random access in an unfriendly format; make no attempt at efficiency
-      in.seek(0);
-      for (int ord = 0; ord < targetOrd; ord++) {
-        // skip targetOrd lines
-        SimpleTextUtil.readLine(in, scratch);
-      }
+    private void readVector() throws IOException {
       SimpleTextUtil.readLine(in, scratch);
       // skip leading " [" and strip trailing "]"
       String s = new BytesRef(scratch.bytes(), 2, scratch.length() - 3).utf8ToString();
@@ -254,7 +248,6 @@ public class SimpleTextVectorReader extends VectorReader {
       for (int i = 0; i < floatStrings.length; i++) {
         value[i] = Float.parseFloat(floatStrings[i]);
       }
-      return value;
     }
   }
 
