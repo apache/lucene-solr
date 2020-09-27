@@ -17,8 +17,6 @@
 package org.apache.lucene.index;
 
 
-import java.io.ByteArrayOutputStream;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;

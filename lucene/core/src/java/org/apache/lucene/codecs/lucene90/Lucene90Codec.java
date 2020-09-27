@@ -33,13 +33,12 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86PointsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
@@ -83,7 +82,7 @@ public class Lucene90Codec extends Codec {
    * Instantiates a new codec.
    */
   public Lucene90Codec() {
-    this(Mode.BEST_SPEED);
+    this(Lucene87StoredFieldsFormat.Mode.BEST_SPEED);
   }
 
   /**
@@ -92,9 +91,9 @@ public class Lucene90Codec extends Codec {
    * @param mode stored fields compression mode to use for newly
    *             flushed/merged segments.
    */
-  public Lucene90Codec(Mode mode) {
+  public Lucene90Codec(Lucene87StoredFieldsFormat.Mode mode) {
     super("Lucene90");
-    this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
+    this.storedFieldsFormat = new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode));
     this.defaultFormat = new Lucene84PostingsFormat();
   }
 

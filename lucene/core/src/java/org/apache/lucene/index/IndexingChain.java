@@ -793,7 +793,7 @@ final class IndexingChain implements Accountable {
     fp.fieldInfo.setVectorDimensionAndScoreFunction(dimension, scoreFunction);
 
     if (fp.vectorValuesWriter == null) {
-      fp.vectorValuesWriter = new VectorValuesWriter(fp.fieldInfo, docWriter.bytesUsed);
+      fp.vectorValuesWriter = new VectorValuesWriter(fp.fieldInfo, bytesUsed);
     }
     fp.vectorValuesWriter.addValue(docID, ((VectorField) field).vectorValue());
   }
