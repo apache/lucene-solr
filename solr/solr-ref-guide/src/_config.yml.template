@@ -7,7 +7,7 @@
 #
 
 # Gems that are included for building the site. jekyll-asciidoc allows Jekyll to use Asciidoctor for variables and settings
-gems: [jekyll-asciidoc]
+plugins: [jekyll-asciidoc]
 
 destination: ../html-site
 
