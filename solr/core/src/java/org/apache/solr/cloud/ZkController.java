@@ -85,6 +85,8 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.eclipse.jetty.server.ShutdownMonitor;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -401,6 +403,8 @@ public class ZkController implements Closeable {
   }
 
   public void start() throws KeeperException {
+
+   // boolean isRegistered = ShutdownMonitor.isRegistered(this);
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
     if (zkCredentialsProviderClass != null && zkCredentialsProviderClass.trim().length() > 0) {

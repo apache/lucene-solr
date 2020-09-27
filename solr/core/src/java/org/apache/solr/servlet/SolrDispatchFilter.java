@@ -125,7 +125,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private String registryName;
   private volatile boolean closeOnDestroy = true;
   private volatile SolrZkClient zkClient;
-  private boolean shutdownRootExec = true;
 
   /**
    * Enum to define action that needs to be processed.
@@ -391,17 +390,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ParWork.close(zkClient);
       }
       GlobalTracer.get().close();
-
-      assert disableRootExecShutdownForTests();
-      if (shutdownRootExec) {
-        ParWork.shutdownRootSharedExec(true);
-      }
     }
-  }
-
-  private boolean disableRootExecShutdownForTests() {
-    shutdownRootExec = false;
-    return true;
   }
 
   @Override

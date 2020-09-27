@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 import org.apache.solr.common.ParWork;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -26,6 +27,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -53,7 +55,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, ThreadPool.SizedThreadPool, Dumpable, TryExecutor, Closeable {
+public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, ThreadPool.SizedThreadPool, Dumpable, TryExecutor, Closeable, Graceful {
     private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static Runnable NOOP = () ->
     {
@@ -703,6 +705,16 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     @Override
     public Thread newThread(Runnable runnable) {
         return null;
+    }
+
+    @Override
+    public Future<Void> shutdown() {
+        return new FutureCallback(true);
+    }
+
+    @Override
+    public boolean isShutdown() {
+        return true;
     }
 
     private static class MyRunnable implements Runnable {

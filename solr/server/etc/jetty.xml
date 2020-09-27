@@ -150,6 +150,10 @@
            <Set name="handlers">
              <Array type="org.eclipse.jetty.server.Handler">
                <Item>
+                 <New id="ShutdownHandler" class="org.apache.solr.servlet.SolrShutdownHandler">
+                 </New>
+               </Item>
+               <Item>
                  <New class="org.eclipse.jetty.server.handler.InetAccessHandler">
                    <Call name="include">
                      <Arg>
@@ -168,10 +172,6 @@
                    <Set name="handler">
                      <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
                    </Set>
-                 </New>
-               </Item>
-               <Item>
-                 <New id="ShutdownHandler" class="org.apache.solr.servlet.SolrShutdownHandler">
                  </New>
                </Item>
              </Array>

@@ -61,6 +61,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrQoSFilter;
+import org.apache.solr.servlet.SolrShutdownHandler;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -80,6 +81,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.ShutdownHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.HouseKeeper;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -442,9 +444,9 @@ public class JettySolrRunner implements Closeable {
     }
 
     chain = injectJettyHandlers(chain);
-//    ShutdownHandler shutdownHandler = new ShutdownHandler("solrrocks", false, false);
-//    shutdownHandler.setHandler(chain);
-//    chain = shutdownHandler;
+    SolrShutdownHandler shutdownHandler = new SolrShutdownHandler();
+    shutdownHandler.setHandler(chain);
+    chain = shutdownHandler;
     if(config.enableV2) {
       RewriteHandler rwh = new RewriteHandler();
       rwh.setHandler(chain);

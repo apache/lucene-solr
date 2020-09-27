@@ -1,48 +1,30 @@
 package org.apache.solr.servlet;
 
-import org.apache.solr.common.ParWork;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ShutdownHandler;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.component.Graceful;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.Future;
 
-public class SolrShutdownHandler extends ShutdownHandler {
+public class SolrShutdownHandler extends HandlerWrapper implements Graceful {
+
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
     public SolrShutdownHandler() {
-        super("solrrocks");
+        super();
     }
 
-    protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException {
-        for (Connector connector : getServer().getConnectors()) {
-            connector.shutdown();
-        }
-
-        baseRequest.setHandled(true);
-        response.setStatus(200);
-        response.flushBuffer();
-
-        final Server server = getServer();
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    shutdownServer(server);
-                } catch (InterruptedException e) {
-
-                } catch (Exception e) {
-                    throw new RuntimeException("Shutting down server", e);
-                }
-            }
-        }.start();
+    @Override
+    public Future<Void> shutdown() {
+        log.error("GRACEFUL SHUTDOWN CALLED");
+        return new FutureCallback(true);
     }
 
-    private void shutdownServer(Server server) throws Exception
-    {
-        server.stop();
-        ParWork.shutdownRootSharedExec();
-        System.exit(0);
+    @Override
+    public boolean isShutdown() {
+        return true;
     }
-
 }
