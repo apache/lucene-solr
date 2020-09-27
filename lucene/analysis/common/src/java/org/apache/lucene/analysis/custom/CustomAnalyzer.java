@@ -38,7 +38,7 @@ import org.apache.lucene.analysis.miscellaneous.ConditionalTokenFilterFactory;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.CharFilterFactory;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
+import org.apache.lucene.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.FilesystemResourceLoader;
 import org.apache.lucene.analysis.ResourceLoader;
 import org.apache.lucene.analysis.ResourceLoaderAware;

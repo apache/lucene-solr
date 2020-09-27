@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.miscellaneous;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
 /** Simple tests to ensure this factory is working */
 public class TestRemoveDuplicatesTokenFilterFactory extends BaseTokenStreamFactoryTestCase {

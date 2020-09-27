@@ -23,7 +23,7 @@ import java.util.HashMap;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.TokenFilterFactory;
 
 public class TestAsciiFoldingFilterFactory extends BaseTokenStreamFactoryTestCase {

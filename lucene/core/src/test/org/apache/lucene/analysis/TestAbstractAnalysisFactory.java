@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.util;
+package org.apache.lucene.analysis;
 
-import org.apache.lucene.analysis.AnalysisSPILoader;
-import org.apache.lucene.analysis.CharFilterFactory;
-import org.apache.lucene.analysis.TokenFilterFactory;
-import org.apache.lucene.analysis.TokenizerFactory;
-import org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory;
-import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
-import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
+import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestAbstractAnalysisFactory extends LuceneTestCase {
 
   public void testLookupTokenizerSPIName() throws NoSuchFieldException, IllegalAccessException {
-    assertEquals("whitespace", AnalysisSPILoader.lookupSPIName(WhitespaceTokenizerFactory.class));
-    assertEquals("whitespace", TokenizerFactory.findSPIName(WhitespaceTokenizerFactory.class));
+    assertEquals("standard", AnalysisSPILoader.lookupSPIName(StandardTokenizerFactory.class));
+    assertEquals("standard", TokenizerFactory.findSPIName(StandardTokenizerFactory.class));
   }
 
   public void testLookupCharFilterSPIName() throws NoSuchFieldException, IllegalAccessException {
-    assertEquals("htmlStrip", AnalysisSPILoader.lookupSPIName(HTMLStripCharFilterFactory.class));
-    assertEquals("htmlStrip", CharFilterFactory.findSPIName(HTMLStripCharFilterFactory.class));
+    assertEquals("fake", AnalysisSPILoader.lookupSPIName(FakeCharFilterFactory.class));
+    assertEquals("fake", CharFilterFactory.findSPIName(FakeCharFilterFactory.class));
   }
 
   public void testLookupTokenFilterSPIName() throws NoSuchFieldException, IllegalAccessException{
-    assertEquals("lowercase", AnalysisSPILoader.lookupSPIName(LowerCaseFilterFactory.class));
-    assertEquals("lowercase", TokenFilterFactory.findSPIName(LowerCaseFilterFactory.class));
+    assertEquals("fake", AnalysisSPILoader.lookupSPIName(FakeTokenFilterFactory.class));
+    assertEquals("fake", TokenFilterFactory.findSPIName(FakeTokenFilterFactory.class));
   }
 }

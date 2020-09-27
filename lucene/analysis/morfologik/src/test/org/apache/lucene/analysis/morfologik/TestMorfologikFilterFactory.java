@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
+import org.apache.lucene.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.ResourceLoader;
 
 /**

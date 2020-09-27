@@ -19,8 +19,8 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
-import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.ResourceLoader;
 
 public class TestStopFilterFactory extends BaseTokenStreamFactoryTestCase {

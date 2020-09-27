@@ -14,19 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.util;
+package org.apache.lucene.analysis;
 
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.CharFilterFactory;
-import org.apache.lucene.analysis.TokenFilterFactory;
-import org.apache.lucene.analysis.TokenizerFactory;
-import org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory;
-import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
-import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
-import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilterFactory;
+import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 
@@ -39,9 +33,9 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testLookupTokenizer() {
-    assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.forName("Whitespace", versionArgOnly()).getClass());
-    assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.forName("WHITESPACE", versionArgOnly()).getClass());
-    assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.forName("whitespace", versionArgOnly()).getClass());
+    assertSame(StandardTokenizerFactory.class, TokenizerFactory.forName("Standard", versionArgOnly()).getClass());
+    assertSame(StandardTokenizerFactory.class, TokenizerFactory.forName("STANDARD", versionArgOnly()).getClass());
+    assertSame(StandardTokenizerFactory.class, TokenizerFactory.forName("standard", versionArgOnly()).getClass());
   }
   
   public void testBogusLookupTokenizer() {
@@ -55,9 +49,9 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
 
   public void testLookupTokenizerClass() {
-    assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.lookupClass("Whitespace"));
-    assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.lookupClass("WHITESPACE"));
-    assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.lookupClass("whitespace"));
+    assertSame(StandardTokenizerFactory.class, TokenizerFactory.lookupClass("Standard"));
+    assertSame(StandardTokenizerFactory.class, TokenizerFactory.lookupClass("STANDARD"));
+    assertSame(StandardTokenizerFactory.class, TokenizerFactory.lookupClass("standard"));
   }
   
   public void testBogusLookupTokenizerClass() {
@@ -71,17 +65,13 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testAvailableTokenizers() {
-    assertTrue(TokenizerFactory.availableTokenizers().contains("whitespace"));
+    assertTrue(TokenizerFactory.availableTokenizers().contains("standard"));
   }
   
   public void testLookupTokenFilter() {
-    assertSame(LowerCaseFilterFactory.class, TokenFilterFactory.forName("Lowercase", versionArgOnly()).getClass());
-    assertSame(LowerCaseFilterFactory.class, TokenFilterFactory.forName("LOWERCASE", versionArgOnly()).getClass());
-    assertSame(LowerCaseFilterFactory.class, TokenFilterFactory.forName("lowercase", versionArgOnly()).getClass());
-    
-    assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.forName("RemoveDuplicates", versionArgOnly()).getClass());
-    assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.forName("REMOVEDUPLICATES", versionArgOnly()).getClass());
-    assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.forName("removeduplicates", versionArgOnly()).getClass());
+    assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.forName("Fake", versionArgOnly()).getClass());
+    assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.forName("FAKE", versionArgOnly()).getClass());
+    assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.forName("fake", versionArgOnly()).getClass());
   }
   
   public void testBogusLookupTokenFilter() {
@@ -95,13 +85,9 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
 
   public void testLookupTokenFilterClass() {
-    assertSame(LowerCaseFilterFactory.class, TokenFilterFactory.lookupClass("Lowercase"));
-    assertSame(LowerCaseFilterFactory.class, TokenFilterFactory.lookupClass("LOWERCASE"));
-    assertSame(LowerCaseFilterFactory.class, TokenFilterFactory.lookupClass("lowercase"));
-    
-    assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.lookupClass("RemoveDuplicates"));
-    assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.lookupClass("REMOVEDUPLICATES"));
-    assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.lookupClass("removeduplicates"));
+    assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.lookupClass("Fake"));
+    assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.lookupClass("FAKE"));
+    assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.lookupClass("fake"));
   }
   
   public void testBogusLookupTokenFilterClass() {
@@ -115,14 +101,13 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testAvailableTokenFilters() {
-    assertTrue(TokenFilterFactory.availableTokenFilters().contains("lowercase"));
-    assertTrue(TokenFilterFactory.availableTokenFilters().contains("removeDuplicates"));
+    assertTrue(TokenFilterFactory.availableTokenFilters().contains("fake"));
   }
   
   public void testLookupCharFilter() {
-    assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.forName("HTMLStrip", versionArgOnly()).getClass());
-    assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.forName("HTMLSTRIP", versionArgOnly()).getClass());
-    assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.forName("htmlstrip", versionArgOnly()).getClass());
+    assertSame(FakeCharFilterFactory.class, CharFilterFactory.forName("Fake", versionArgOnly()).getClass());
+    assertSame(FakeCharFilterFactory.class, CharFilterFactory.forName("FAKE", versionArgOnly()).getClass());
+    assertSame(FakeCharFilterFactory.class, CharFilterFactory.forName("fake", versionArgOnly()).getClass());
   }
   
   public void testBogusLookupCharFilter() {
@@ -136,9 +121,9 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
 
   public void testLookupCharFilterClass() {
-    assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.lookupClass("HTMLStrip"));
-    assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.lookupClass("HTMLSTRIP"));
-    assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.lookupClass("htmlstrip"));
+    assertSame(FakeCharFilterFactory.class, CharFilterFactory.lookupClass("Fake"));
+    assertSame(FakeCharFilterFactory.class, CharFilterFactory.lookupClass("FAKE"));
+    assertSame(FakeCharFilterFactory.class, CharFilterFactory.lookupClass("fake"));
   }
   
   public void testBogusLookupCharFilterClass() {
@@ -152,6 +137,6 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testAvailableCharFilters() {
-    assertTrue(CharFilterFactory.availableCharFilters().contains("htmlStrip"));
+    assertTrue(CharFilterFactory.availableCharFilters().contains("fake"));
   }
 }

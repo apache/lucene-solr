@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.util;
 
 
 import org.apache.lucene.analysis.ResourceLoader;
+import org.apache.lucene.util.ClasspathResourceLoader;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
