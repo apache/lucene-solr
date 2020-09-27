@@ -43,7 +43,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * The analysis package contains three primary components:
  * <ul>
  *  <li>{@link ArabicNormalizationFilter}: Arabic orthographic normalization.
- *  <li>{@link ArabicStemFilter}: Arabic light stemming
+ *  <li>{@link ArabicStemFilter}: Arabic stemming
  *  <li>Arabic stop words file: a set of default Arabic stop words.
  * </ul>
  *
@@ -153,4 +153,3 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
     return result;
   }
 }
-
