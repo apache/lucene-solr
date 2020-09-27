@@ -195,7 +195,7 @@ public class SolrTestCase extends LuceneTestCase {
     testStartTime = System.nanoTime();
 
 
-    testExecutor = ParWork.getMyPerThreadExecutor();
+    testExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), 12, true, false);
     ((PerThreadExecService) testExecutor).closeLock(true);
     // stop zkserver threads that can linger
     //interruptThreadsOnTearDown("nioEventLoopGroup", false);
@@ -285,9 +285,9 @@ public class SolrTestCase extends LuceneTestCase {
 
       // unlimited - System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
-      System.setProperty("solr.minContainerThreads", "4");
+      System.setProperty("solr.minContainerThreads", "8");
       System.setProperty("solr.rootSharedThreadPoolCoreSize", "16");
-      System.setProperty("solr.minHttp2ClientThreads", "4");
+      System.setProperty("solr.minHttp2ClientThreads", "6");
 
 
       ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_SECONDS = 1;
@@ -436,7 +436,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       SysStats.getSysStats().stopMonitor();
 
-      //ParWork.closeMyPerThreadExecutor(true);
+    //  testExecutor.shutdown();
       ParWork.shutdownRootSharedExec();
 
       AlreadyClosedException lastAlreadyClosedExp = CloseTracker.lastAlreadyClosedEx;

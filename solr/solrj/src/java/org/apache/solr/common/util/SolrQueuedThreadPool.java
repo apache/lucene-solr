@@ -98,7 +98,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     public SolrQueuedThreadPool(String name) {
         this(name, Integer.MAX_VALUE, Integer.getInteger("solr.minContainerThreads", 250),
-            5000, 0, // no reserved executor threads - we can process requests after shutdown or some race - we try to limit without threadpool limits no anyway
+            30000, 0, // no reserved executor threads - we can process requests after shutdown or some race - we try to limit without threadpool limits no anyway
                 null, -1, null,
                 new  SolrNamedThreadFactory(name));
         this.name = name;
@@ -714,7 +714,16 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
         @Override
         public void run() {
-            runnable.run();
+            try {
+                runnable.run();
+            } finally {
+                cleanupThreadLocals();
+            }
+        }
+
+        private void cleanupThreadLocals() {
+            JavaBinCodec.THREAD_LOCAL_ARR.remove();
+            JavaBinCodec.THREAD_LOCAL_BRR.remove();
         }
     }
 

@@ -91,16 +91,8 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
       group = (s != null)? s.getThreadGroup() :
           Thread.currentThread().getThreadGroup();
 
-      Thread t = new Thread(group,
-          name + threadNumber.getAndIncrement()) {
-        public void run() {
-          try {
-            r.run();
-          } finally {
-           // ParWork.closeMyPerThreadExecutor(true);
-          }
-        }
-      };
+      SolrThread t = new SolrThread(group, r,
+          name + threadNumber.getAndIncrement());
       t.setDaemon(true);
       return t;
     }

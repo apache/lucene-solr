@@ -39,73 +39,10 @@ public class PerThreadExecService extends AbstractExecutorService {
 
   private final Object awaitTerminate = new Object();
 
-//  private final BlockingArrayQueue<Runnable> workQueue = new BlockingArrayQueue<>(30, 0);
-//  private volatile Worker worker;
-//  private volatile Future<?> workerFuture;
-
   private CloseTracker closeTracker;
 
   private SysStats sysStats = ParWork.getSysStats();
   private volatile boolean closeLock;
-
-//  private class Worker implements Runnable {
-//
-//    Worker() {
-//    //  setName("ParExecWorker");
-//    }
-//
-//    @Override
-//    public void run() {
-//      while (!terminated && !Thread.currentThread().isInterrupted()) {
-//        Runnable runnable = null;
-//        try {
-//          runnable = workQueue.poll(Integer.MAX_VALUE, TimeUnit.SECONDS);
-//        } catch (InterruptedException e) {
-//           ParWork.propagateInterrupt(e);
-//           return;
-//        }
-//        if (runnable == null) {
-//          running.decrementAndGet();
-//          synchronized (awaitTerminate) {
-//            awaitTerminate.notifyAll();
-//          }
-//          return;
-//        }
-//
-//        if (runnable instanceof ParWork.SolrFutureTask) {
-//
-//        } else {
-//
-//          try {
-//            boolean success = available.tryAcquire();
-//            // I think if we wait here for available instead of running in caller thread
-//            // this is why we could not use the per thread executor in the stream classes
-//            // this means order cannot matter, but it should generally not matter
-//            if (!success) {
-//              runIt(runnable, true, true, false);
-//              return;
-//            }
-//          } catch (Exception e) {
-//            ParWork.propagateInterrupt(e);
-//            running.decrementAndGet();
-//            synchronized (awaitTerminate) {
-//              awaitTerminate.notifyAll();
-//            }
-//            return;
-//          }
-//
-//        }
-//
-//        Runnable finalRunnable = runnable;
-//        service.execute(new Runnable() {
-//          @Override
-//          public void run() {
-//            runIt(finalRunnable, true, false, false);
-//          }
-//        });
-//      }
-//    }
-//  }
 
   public PerThreadExecService(ExecutorService service) {
     this(service, -1);
@@ -120,7 +57,6 @@ public class PerThreadExecService extends AbstractExecutorService {
     assert (closeTracker = new CloseTracker()) != null;
     this.noCallerRunsAllowed = noCallerRunsAllowed;
     this.noCallerRunsAvailableLimit = noCallerRunsAvailableLimit;
-    //assert ObjectReleaseTracker.track(this);
     if (maxSize == -1) {
       this.maxSize = MAX_AVAILABLE;
     } else {
@@ -132,55 +68,26 @@ public class PerThreadExecService extends AbstractExecutorService {
   @Override
   protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
     if (noCallerRunsAllowed) {
-      return (RunnableFuture) new ParWork.SolrFutureTask(runnable, value);
+      return (RunnableFuture) new ParWork.SolrFutureTask(runnable, value, false);
     }
-    return new FutureTask(runnable, value);
-
+    return (RunnableFuture) new ParWork.SolrFutureTask(runnable, value);
   }
 
   @Override
   protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
     if (noCallerRunsAllowed || callable instanceof ParWork.NoLimitsCallable) {
-      return (RunnableFuture) new ParWork.SolrFutureTask(callable);
+      return (RunnableFuture) new ParWork.SolrFutureTask(callable, false);
     }
-    return new FutureTask(callable);
+    return (RunnableFuture) new ParWork.SolrFutureTask(callable, true);
   }
 
   @Override
   public void shutdown() {
-    if (closeLock) {
-      throw new IllegalCallerException();
-    }
-    assert ObjectReleaseTracker.release(this);
-    // assert closeTracker.close();
-    this.shutdown = true;
-   // worker.interrupt();
-  //  workQueue.clear();
-//    try {
-//      workQueue.offer(new Runnable() {
-//        @Override
-//        public void run() {
-//          // noop to wake from take
-//        }
-//      });
-//      workQueue.offer(new Runnable() {
-//        @Override
-//        public void run() {
-//          // noop to wake from take
-//        }
-//      });
-//      workQueue.offer(new Runnable() {
-//        @Override
-//        public void run() {
-//          // noop to wake from take
-//        }
-//      });
-
-
-   //   workerFuture.cancel(true);
-//    } catch (NullPointerException e) {
-//      // okay
+//    if (closeLock) {
+//      throw new IllegalCallerException();
 //    }
+    assert ObjectReleaseTracker.release(this);
+    this.shutdown = true;
   }
 
   @Override
@@ -208,7 +115,7 @@ public class PerThreadExecService extends AbstractExecutorService {
         throw new RuntimeException("Timeout");
       }
 
-     //zaa System.out.println("WAIT : " + workQueue.size() + " " + available.getQueueLength() + " " + workQueue.toString());
+      // System.out.println("WAIT : " + workQueue.size() + " " + available.getQueueLength() + " " + workQueue.toString());
       synchronized (awaitTerminate) {
         awaitTerminate.wait(500);
       }
@@ -228,7 +135,7 @@ public class PerThreadExecService extends AbstractExecutorService {
       throw new RejectedExecutionException(closeTracker.getCloseStack());
     }
     running.incrementAndGet();
-    if (runnable instanceof ParWork.SolrFutureTask) {
+    if (runnable instanceof ParWork.SolrFutureTask && !((ParWork.SolrFutureTask) runnable).isCallerThreadAllowed()) {
       if (noCallerRunsAvailableLimit) {
         try {
           available.acquire();
@@ -237,13 +144,10 @@ public class PerThreadExecService extends AbstractExecutorService {
         }
       }
       try {
-        service.execute(new Runnable() {
-          @Override
-          public void run() {
-            runIt(runnable, noCallerRunsAvailableLimit, false);
-            if (noCallerRunsAvailableLimit) {
-              available.release();
-            }
+        service.execute(() -> {
+          runIt(runnable, noCallerRunsAvailableLimit, false);
+          if (noCallerRunsAvailableLimit) {
+            available.release();
           }
         });
       } catch (Exception e) {
@@ -270,41 +174,13 @@ public class PerThreadExecService extends AbstractExecutorService {
 
     Runnable finalRunnable = runnable;
     try {
-      service.execute(new Runnable() {
-      @Override
-      public void run() {
-          runIt(finalRunnable, true, false);
-      }
-    });
+      service.execute(() -> runIt(finalRunnable, true, false));
     } catch (Exception e) {
       running.decrementAndGet();
       synchronized (awaitTerminate) {
         awaitTerminate.notifyAll();
       }
     }
-
-//    boolean success = this.workQueue.offer(runnable);
-//    if (!success) {
-//     // log.warn("No room in the queue, running in caller thread {} {} {} {}", workQueue.size(), isShutdown(), isTerminated(), worker.isAlive());
-//      try {
-//        runnable.run();
-//      } finally {
-//        running.decrementAndGet();
-//        synchronized (awaitTerminate) {
-//          awaitTerminate.notifyAll();
-//        }
-//      }
-//    } else {
-//      if (worker == null) {
-//        synchronized (this) {
-//          if (worker == null) {
-//            worker = new Worker();
-//
-//            workerFuture = ParWork.getEXEC().submit(worker);
-//          }
-//        }
-//      }
-//    }
   }
 
   private void runIt(Runnable runnable, boolean acquired, boolean alreadyShutdown) {

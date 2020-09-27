@@ -686,8 +686,6 @@ public class TestRealTimeGet extends TestRTGBase {
           } catch (Throwable e) {
             operations.set(-1L);
             throw new RuntimeException(e);
-          } finally {
-            ParWork.closeMyPerThreadExecutor();
           }
         }
       };
@@ -765,8 +763,6 @@ public class TestRealTimeGet extends TestRTGBase {
           } catch (Throwable e) {
             operations.set(-1L);
             throw new RuntimeException(e);
-          } finally {
-            ParWork.closeMyPerThreadExecutor();
           }
         }
       };

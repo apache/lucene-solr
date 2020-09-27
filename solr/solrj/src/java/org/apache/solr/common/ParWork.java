@@ -48,6 +48,7 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.common.util.SysStats;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +79,9 @@ public class ParWork implements Closeable {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
-          EXEC = (ThreadPoolExecutor) getParExecutorService("RootExec", Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 250), Integer.MAX_VALUE, 30000, new SynchronousQueue<>());
+          EXEC = (ThreadPoolExecutor) getParExecutorService("RootExec",
+              Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 250), Integer.MAX_VALUE, 30000,
+              new BlockingArrayQueue(1024));
           ((ParWorkExecutor)EXEC).enableCloseLock();
         }
       }
@@ -109,21 +112,6 @@ public class ParWork implements Closeable {
 
   public static SysStats getSysStats() {
     return sysStats;
-  }
-
-  public static void closeMyPerThreadExecutor() {
-    closeMyPerThreadExecutor(false);
-  }
-
-  public static void closeMyPerThreadExecutor(boolean unlockClose) {
-    PerThreadExecService exec = (PerThreadExecService) THREAD_LOCAL_EXECUTOR.get();
-    if (exec != null) {
-      if (unlockClose) {
-        exec.closeLock(false);
-      }
-      ExecutorUtil.shutdownAndAwaitTermination(exec);
-      THREAD_LOCAL_EXECUTOR.set(null);
-    }
   }
 
     private static class WorkUnit {
@@ -485,24 +473,33 @@ public class ParWork implements Closeable {
   }
 
   public static ExecutorService getMyPerThreadExecutor() {
-     // if (executor != null) return executor;
-    ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();
-    if (exec == null) {
-      if (log.isDebugEnabled()) {
-        log.debug("Starting a new executor");
-      }
+    Thread thread = Thread.currentThread();
 
-      Integer minThreads;
-      Integer maxThreads;
-      minThreads = 3;
-      maxThreads = PROC_COUNT;
-      exec = getExecutorService(Math.max(minThreads, maxThreads)); // keep alive directly affects how long a worker might
-      ((PerThreadExecService)exec).closeLock(true);
-      // be stuck in poll without an enqueue on shutdown
-      THREAD_LOCAL_EXECUTOR.set(exec);
+    ExecutorService service = null;
+    if (thread instanceof  SolrThread) {
+      service = ((SolrThread) thread).getExecutorService();
     }
 
-    return exec;
+    if (service == null) {
+      ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();
+      if (exec == null) {
+        if (log.isDebugEnabled()) {
+          log.debug("Starting a new executor");
+        }
+
+        Integer minThreads;
+        Integer maxThreads;
+        minThreads = 4;
+        maxThreads = PROC_COUNT / 2;
+        exec = getExecutorService(Math.max(minThreads, maxThreads)); // keep alive directly affects how long a worker might
+       // ((PerThreadExecService)exec).closeLock(true);
+        // be stuck in poll without an enqueue on shutdown
+        THREAD_LOCAL_EXECUTOR.set(exec);
+      }
+      service = exec;
+    }
+
+    return service;
   }
 
   public static ExecutorService getParExecutorService(String name, int corePoolSize, int maxPoolSize, int keepAliveTime, BlockingQueue queue) {
@@ -703,13 +700,44 @@ public class ParWork implements Closeable {
     public abstract Object call() throws Exception;
   }
 
-  public static class SolrFutureTask extends FutureTask {
-    public SolrFutureTask(Callable callable) {
+  public static class SolrFutureTask extends FutureTask implements SolrThread.CreateThread {
+
+    private final boolean callerThreadAllowed;
+    private final SolrThread createThread;
+
+    public SolrFutureTask(Callable callable, boolean callerThreadAllowed) {
       super(callable);
+      this.callerThreadAllowed = callerThreadAllowed;
+      Thread thread = Thread.currentThread();
+      if (thread instanceof  SolrThread) {
+        this.createThread = (SolrThread) Thread.currentThread();
+      } else {
+        this.createThread = null;
+      }
     }
 
     public SolrFutureTask(Runnable runnable, Object value) {
+      this(runnable, value, true);
+    }
+
+    public SolrFutureTask(Runnable runnable, Object value, boolean callerThreadAllowed) {
       super(runnable, value);
+      this.callerThreadAllowed = callerThreadAllowed;
+      Thread thread = Thread.currentThread();
+      if (thread instanceof  SolrThread) {
+        this.createThread = (SolrThread) Thread.currentThread();
+      } else {
+        this.createThread = null;
+      }
+    }
+
+    public boolean isCallerThreadAllowed() {
+      return callerThreadAllowed;
+    }
+
+    @Override
+    public SolrThread getCreateThread() {
+      return createThread;
     }
   }
 

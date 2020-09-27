@@ -920,8 +920,8 @@ public class JavaBinCodec implements PushWriter {
     }
   }
 
-  protected final static ThreadLocal<CharArr> THREAD_LOCAL_ARR = new ThreadLocal<>();
-  protected final static ThreadLocal<ByteBuffer> THREAD_LOCAL_BRR = new ThreadLocal<>();
+  public final static ThreadLocal<CharArr> THREAD_LOCAL_ARR = new ThreadLocal<>();
+  public final static ThreadLocal<ByteBuffer> THREAD_LOCAL_BRR = new ThreadLocal<>();
 
   public static ByteBuffer getByteArr(int sz, boolean resize) {
     ByteBuffer brr = THREAD_LOCAL_BRR.get();

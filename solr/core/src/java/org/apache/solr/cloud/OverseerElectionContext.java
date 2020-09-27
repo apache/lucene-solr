@@ -49,7 +49,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   @Override
   void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
           InterruptedException, IOException {
-    if (isClosed() || !zkClient.isConnected() || overseer.isDone()) {
+    if (isClosed() || overseer.isDone()) {
       return;
     }
 
@@ -77,7 +77,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
         log.info("Bailing on becoming leader, we are closed");
         return;
       }
-      if (!isClosed() && !overseer.getZkController().getCoreContainer().isShutDown() && !overseer.isDone() && (overseer.getUpdaterThread() == null || !overseer.getUpdaterThread().isAlive())) {
+      if (!isClosed() && !overseer.isDone() && (overseer.getUpdaterThread() == null || !overseer.getUpdaterThread().isAlive())) {
         try {
           overseer.start(id, context);
         } finally {
@@ -165,7 +165,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public boolean isClosed() {
-    return isClosed || overseer.getCoreContainer().isShutDown() || zkClient.isClosed() || overseer.getCoreContainer().getZkController().isClosed();
+    return isClosed || !zkClient.isConnected();
   }
 }
 

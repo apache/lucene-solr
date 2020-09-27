@@ -53,6 +53,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DocCollection;
@@ -601,7 +602,7 @@ public class Overseer implements SolrCloseable {
     }
   }
 
-  public static class OverseerThread extends Thread implements Closeable {
+  public static class OverseerThread extends SolrThread implements Closeable {
 
     protected volatile boolean isClosed;
     private final Closeable thread;
@@ -613,11 +614,7 @@ public class Overseer implements SolrCloseable {
 
     @Override
     public void run() {
-      try {
-        super.run();
-      } finally {
-        //ParWork.closeMyPerThreadExecutor(true);
-      }
+      super.run();
     }
 
     @Override
