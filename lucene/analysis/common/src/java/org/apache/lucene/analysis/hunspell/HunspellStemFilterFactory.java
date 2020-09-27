@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ResourceLoader;
-import org.apache.lucene.analysis.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;

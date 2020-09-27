@@ -33,7 +33,7 @@ import java.util.jar.JarOutputStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
-import org.apache.lucene.analysis.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.solr.SolrTestCaseJ4;

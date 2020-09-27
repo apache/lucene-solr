@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.ClasspathResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.util.Version;
 
 /** 

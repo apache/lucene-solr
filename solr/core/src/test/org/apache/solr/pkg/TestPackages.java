@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.lucene.analysis.ResourceLoader;
-import org.apache.lucene.analysis.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;

@@ -32,8 +32,8 @@ import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.analysis.ResourceLoader;
-import org.apache.lucene.analysis.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapaneseTokenizer}.

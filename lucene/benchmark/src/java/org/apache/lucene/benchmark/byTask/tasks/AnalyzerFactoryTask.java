@@ -20,7 +20,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
 import org.apache.lucene.analysis.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.util.FilesystemResourceLoader;
-import org.apache.lucene.analysis.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.benchmark.byTask.PerfRunData;

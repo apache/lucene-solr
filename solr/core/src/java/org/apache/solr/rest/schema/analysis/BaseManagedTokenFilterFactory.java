@@ -18,8 +18,8 @@ package org.apache.solr.rest.schema.analysis;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.analysis.ResourceLoader;
-import org.apache.lucene.analysis.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.ManagedResource;

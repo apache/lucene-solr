@@ -20,9 +20,6 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.apache.lucene.analysis.ResourceLoader;
-import org.apache.lucene.util.SuppressForbidden;
-
 /**
  * Simple {@link ResourceLoader} that uses {@link ClassLoader#getResourceAsStream(String)}
  * and {@link Class#forName(String,boolean,ClassLoader)} to open resources and

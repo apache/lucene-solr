@@ -27,8 +27,8 @@ import morfologik.stemming.DictionaryMetadata;
 import morfologik.stemming.polish.PolishStemmer;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ResourceLoader;
-import org.apache.lucene.analysis.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**

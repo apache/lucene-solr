@@ -35,7 +35,7 @@ import org.apache.lucene.analysis.boost.DelimitedBoostTokenFilterFactory;
 import org.apache.lucene.analysis.miscellaneous.DelimitedTermFrequencyTokenFilterFactory;
 import org.apache.lucene.analysis.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.CharFilterFactory;
-import org.apache.lucene.analysis.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
