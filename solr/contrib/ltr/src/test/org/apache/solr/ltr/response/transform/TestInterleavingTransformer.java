@@ -129,7 +129,7 @@ public class TestInterleavingTransformer extends TestRerankBase {
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq",
-        "{!ltr model=modelA model=originalRanking reRankDocs=10 efi.user_query='w5'}");
+        "{!ltr model=modelA interleaveOriginalRanking=true reRankDocs=10 efi.user_query='w5'}");
 
     /*
     Doc1 = "featureB2=1.0", ScoreA(0)
@@ -144,7 +144,7 @@ public class TestInterleavingTransformer extends TestRerankBase {
    
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
-    String[] expectedInterleavingPicks = new String[]{"modelA", "originalRanking", "originalRanking", "modelA", "originalRanking"};
+    String[] expectedInterleavingPicks = new String[]{"modelA", "OriginalRanking", "OriginalRanking", "modelA", "OriginalRanking"};
     int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
 
     String[] tests = new String[11];
@@ -215,7 +215,7 @@ public class TestInterleavingTransformer extends TestRerankBase {
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
     query.add("rq",
-        "{!ltr model=modelA model=originalRanking reRankDocs=10 efi.user_query='w5'}");
+        "{!ltr model=modelA interleaveOriginalRanking=true reRankDocs=10 efi.user_query='w5'}");
 
     /*
     Doc1 = "featureB2=1.0", ScoreA(0)
@@ -236,7 +236,7 @@ public class TestInterleavingTransformer extends TestRerankBase {
         null,
         "featureA1\\=1.0\\,featureB2\\=1.0",
         null};
-    String[] expectedInterleavingPicks = new String[]{"modelA", "originalRanking", "originalRanking", "modelA", "originalRanking"};
+    String[] expectedInterleavingPicks = new String[]{"modelA", "OriginalRanking", "OriginalRanking", "modelA", "OriginalRanking"};
     int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
 
     String[] tests = new String[16];
