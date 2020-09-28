@@ -40,7 +40,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
@@ -108,9 +107,8 @@ final class DocumentsWriterPerThread implements Accountable {
   private final BufferedUpdates pendingUpdates;
   private final SegmentInfo segmentInfo;     // Current segment we are working on
   private boolean aborted = false;   // True if we aborted
-  private SetOnce<Boolean> flushPending = new SetOnce<>();
   private volatile long lastCommittedBytesUsed;
-  private SetOnce<Boolean> hasFlushed = new SetOnce<>();
+  private volatile State state = State.ACTIVE;
 
   private final FieldInfos.Builder fieldInfos;
   private final InfoStream infoStream;
@@ -169,6 +167,7 @@ final class DocumentsWriterPerThread implements Accountable {
     try {
       testPoint("DocumentsWriterPerThread addDocuments start");
       assert abortingException == null: "DWPT has hit aborting exception but is still indexing";
+      assert state == State.ACTIVE || state == State.FLUSH_PENDING : "Illegal state: " + state + " must be ACTIVE of FLUSH_PENDING";
       if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + deleteNode + " docID=" + numDocsInRAM + " seg=" + segmentInfo.name);
       }
@@ -284,7 +283,7 @@ final class DocumentsWriterPerThread implements Accountable {
 
   /** Flush all pending docs to a new segment */
   FlushedSegment flush(DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
-    assert flushPending.get() == Boolean.TRUE;
+    assert state == State.FLUSHING;
     assert numDocsInRAM > 0;
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
     segmentInfo.setMaxDoc(numDocsInRAM);
@@ -380,7 +379,6 @@ final class DocumentsWriterPerThread implements Accountable {
       throw t;
     } finally {
       maybeAbort("flush", flushNotifications);
-      hasFlushed.set(Boolean.TRUE);
     }
   }
 
@@ -496,6 +494,10 @@ final class DocumentsWriterPerThread implements Accountable {
 
   @Override
   public long ramBytesUsed() {
+    return lastCommittedBytesUsed;
+  }
+
+  private long ramBytesUsedInternal() {
     assert lock.isHeldByCurrentThread();
     return (deleteDocIDs.length  * Integer.BYTES)+ pendingUpdates.ramBytesUsed() + indexingChain.ramBytesUsed();
   }
@@ -513,48 +515,21 @@ final class DocumentsWriterPerThread implements Accountable {
         + numDocsInRAM + ", deleteQueue=" + deleteQueue + ", " + numDeletedDocIds + " deleted docIds" + "]";
   }
 
-
   /**
    * Returns true iff this DWPT is marked as flush pending
    */
   boolean isFlushPending() {
-    return flushPending.get() == Boolean.TRUE;
-  }
-
-  /**
-   * Sets this DWPT as flush pending. This can only be set once.
-   */
-  void setFlushPending() {
-    flushPending.set(Boolean.TRUE);
-  }
-
-
-  /**
-   * Returns the last committed bytes for this DWPT. This method can be called
-   * without acquiring the DWPTs lock.
-   */
-  long getLastCommittedBytesUsed() {
-    return lastCommittedBytesUsed;
-  }
-
-  /**
-   * Commits the current {@link #ramBytesUsed()} and stores it's value for later reuse.
-   * The last committed bytes used can be retrieved via {@link #getLastCommittedBytesUsed()}
-   */
-  void commitLastBytesUsed(long delta) {
-    assert isHeldByCurrentThread();
-    assert getCommitLastBytesUsedDelta() == delta : "delta has changed";
-    lastCommittedBytesUsed += delta;
+    return state == State.FLUSH_PENDING;
   }
 
   /**
    * Calculates the delta between the last committed bytes used and the currently used ram.
-   * @see #commitLastBytesUsed(long)
-   * @return the delta between the current {@link #ramBytesUsed()} and the current {@link #getLastCommittedBytesUsed()}
+   * @return the delta between the current {@link #ramBytesUsed()} and it's previous value
    */
-  long getCommitLastBytesUsedDelta() {
+  long commitLastBytesUsed() {
     assert isHeldByCurrentThread();
-    long delta = ramBytesUsed() - lastCommittedBytesUsed;
+    long delta = ramBytesUsedInternal() - lastCommittedBytesUsed;
+    lastCommittedBytesUsed += delta;
     return delta;
   }
 
@@ -593,9 +568,61 @@ final class DocumentsWriterPerThread implements Accountable {
   }
 
   /**
-   * Returns <code>true</code> iff this DWPT has been flushed
+   * Returns the DWPTs current state.
    */
-  boolean hasFlushed() {
-    return hasFlushed.get() == Boolean.TRUE;
+  State getState() {
+    return state;
   }
+
+  /**
+   * Transitions the DWPT to the given state of fails if the transition is invalid.
+   * @throws IllegalStateException if the given state can not be transitioned to.
+   */
+  synchronized void transitionTo(State state) {
+    if (state.canTransitionFrom(this.state) == false) {
+      throw new IllegalStateException("Can't transition from " + this.state + " to " + state);
+    }
+    assert state.mustHoldLock == false || isHeldByCurrentThread() : "illegal state: " + state + " lock is held: " + isHeldByCurrentThread();
+    this.state = state;
+  }
+
+  /**
+   * Internal DWPT State.
+   */
+  enum State {
+    /**
+     * Default states when a DWPT is initialized and ready to index documents.
+     */
+    ACTIVE(null, true),
+    /**
+     * The DWPT can still index documents but should be moved to FLUSHING state as soon as possible.
+     * Transitions to this state can be done concurrently while another thread is actively indexing into this DWPT.
+     */
+    FLUSH_PENDING(ACTIVE, false),
+    /**
+     * The DWPT should not receive any further documents and is current flushing or queued up for flushing.
+     */
+    FLUSHING(FLUSH_PENDING, true),
+    /**
+     * The DWPT has been flushed and is ready to be garbage collected.
+     */
+    FLUSHED(FLUSHING, false);
+
+    private final State previousState;
+    final boolean mustHoldLock; // only for asserts
+
+    State(State previousState, boolean mustHoldLock) {
+      this.previousState = previousState;
+      this.mustHoldLock = mustHoldLock;
+    }
+
+    /**
+     * Returns true iff we can transition to this state from the given state.
+     */
+    boolean canTransitionFrom(State state) {
+      return state == previousState;
+    }
+
+  }
+
 }
