@@ -16,11 +16,47 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
+
+  protected static ZkTestServer zkServer;
+  private static Path zkDir;
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    zkDir = createTempDir("TestZkMaintenanceUtils");
+    zkServer = new ZkTestServer(zkDir);
+    zkServer.run();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws IOException, InterruptedException {
+
+    if (zkServer != null) {
+      zkServer.shutdown();
+      zkServer = null;
+    }
+    if (null != zkDir) {
+      FileUtils.deleteDirectory(zkDir.toFile());
+      zkDir = null;
+    }
+  }
+
   @Test
   public void testPaths() {
     assertEquals("Unexpected path construction"
@@ -51,5 +87,29 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
         , ""
         , ZkMaintenanceUtils.getZkParent("/leadingslashonly"));
 
+  }
+
+  @Test
+  public void testTraverseZkTree() throws Exception {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+      zkClient.makePath("/testTraverseZkTree/1/1", true, true);
+      zkClient.makePath("/testTraverseZkTree/1/2", false, true);
+      zkClient.makePath("/testTraverseZkTree/2", false, true);
+      assertEquals(Arrays.asList("/testTraverseZkTree", "/testTraverseZkTree/1", "/testTraverseZkTree/1/1", "/testTraverseZkTree/1/2", "/testTraverseZkTree/2"), getTraverseedZNodes(zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_PRE));
+      assertEquals(Arrays.asList("/testTraverseZkTree/1/1", "/testTraverseZkTree/1/2", "/testTraverseZkTree/1", "/testTraverseZkTree/2", "/testTraverseZkTree"), getTraverseedZNodes(zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST));
+
+    }
+  }
+
+  private List<String> getTraverseedZNodes(SolrZkClient zkClient, String path, ZkMaintenanceUtils.VISIT_ORDER visitOrder) throws KeeperException, InterruptedException {
+    List<String> result = new ArrayList<>();
+    ZkMaintenanceUtils.traverseZkTree(zkClient, path, visitOrder, new ZkMaintenanceUtils.ZkVisitor() {
+
+      @Override
+      public void visit(String path) throws InterruptedException, KeeperException {
+        result.add(path);
+      }
+    });
+    return result;
   }
 }

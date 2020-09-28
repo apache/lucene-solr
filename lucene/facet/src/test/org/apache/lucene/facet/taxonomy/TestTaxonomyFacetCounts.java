@@ -698,7 +698,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
               }
               // Add document facet labels
               facetLabels.add(new FacetLabel("dim" + j, doc.dims[j]));
-             }
+            }
           }
           expectedLabels.add(facetLabels);
         }

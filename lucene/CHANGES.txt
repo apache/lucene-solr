@@ -12,6 +12,9 @@ System Requirements
 
 API Changes
 
+* LUCENE-9317: Clean up package name conflicts between core and analyzers-common.
+  See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
+
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been
   removed. (Dawid Weiss)
 
@@ -181,6 +184,8 @@ Other
 
 * LUCENE-9497: Integrate Error Prone, a static analysis tool during compilation (Dawid Weiss, Varun Thacker)
 
+* LUCENE-9544: add regenerate gradle script for nori dictionary (Namgyu Kim)
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes
@@ -188,7 +193,7 @@ API Changes
 
 * LUCENE-9437: Lucene's facet module's DocValuesOrdinalsReader.decode method
   is now public, making it easier for applications to decode facet
-  ordinals into their corresponding labels (Ankur)
+  ordinals into their corresponding labels (Ankur Goel)
 
 * LUCENE-9515: IndexingChain now accepts individual primitives rather than a
   DocumentsWriterPerThread instance in order to create a new DocConsumer.
@@ -206,6 +211,10 @@ New Features
 * LUCENE-9484: Allow sorting an index after it was created. With SortingCodecReader, existing
   unsorted segments can be wrapped and merged into a fresh index using IndexWriter#addIndices
   API. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-9444: Add utility class to retrieve facet labels from the
+  taxonomy index for a facet field so such fields do not also have to
+  be redundantly stored (Ankur Goel)
 
 Improvements
 ---------------------
@@ -237,6 +246,9 @@ Improvements
 
 * LUCENE-9523: In query shapes over shape fields, skip points while traversing the
   BKD tree when the relationship with the document is already known. (Ignacio Vera)
+
+* LUCENE-9539: Use more compact datastructures to represent sorted doc-values in memory when 
+  sorting a segment before flush and in SortingCodecReader. (Simon Willnauer)
 
 Optimizations
 ---------------------
@@ -271,6 +283,13 @@ Documentation
 
 * LUCENE-9424: Add a performance warning to AttributeSource.captureState javadocs (Haoyu Zhai)
 
+Changes in Runtime Behavior
+---------------------
+
+* LUCENE-9539: SortingCodecReader now doesn't cache doc values fields anymore. Previously, SortingCodecReader
+  used to cache all doc values fields after they were loaded into memory. This reader should only be used
+  to sort segments after the fact using IndexWriter#addIndices. (Simon Willnauer) 
+
 
 Other
 ---------------------
@@ -281,6 +300,10 @@ Other
 
 * LUCENE-9512: Move LockFactory stress test to be a unit/integration
   test. (Uwe Schindler, Dawid Weiss, Robert Muir)
+
+Build
+
+* Upgrade forbiddenapis to version 3.1.  (Uwe Schindler)
 
 ======================= Lucene 8.6.2 =======================
 
@@ -371,7 +394,7 @@ Improvements
 * LUCENE-9393: Make FunctionScoreQuery use ScoreMode.COMPLETE for creating the inner query weight when
   ScoreMode.TOP_DOCS is requested. (Tomás Fernández Löbbe)
 
-* LUCENE-9392: Make FacetsConfig.DELIM_CHAR publicly accessible (Ankur Goel))
+* LUCENE-9392: Make FacetsConfig.DELIM_CHAR publicly accessible (Ankur Goel)
 
 * LUCENE-9397: UniformSplit supports encodable fields metadata. (Bruno Roustant)
 

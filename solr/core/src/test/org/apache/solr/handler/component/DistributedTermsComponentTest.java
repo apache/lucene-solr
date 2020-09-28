@@ -51,11 +51,11 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     del("*:*");
 
     index(id, random.nextInt(), "b_t", "snake a,b spider shark snail slug seal", "foo_i_p", "1");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i_p");
+    query("qt", "/terms", "terms.fl", "foo_i_p");
     del("*:*");
 
     // verify point field on empty index
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i_p");
+    query("qt", "/terms", "terms.fl", "foo_i_p");
 
     index(id, random.nextInt(), "b_t", "snake a,b spider shark snail slug seal", "foo_i", "1");
     index(id, random.nextInt(), "b_t", "snake spider shark snail slug", "foo_i", "2", "foo_date_p", "2015-01-03T14:30:00Z");
@@ -70,25 +70,25 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     handle.clear();
     handle.put("terms", UNORDERED);
 
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t");
-    query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.lower", "s");
-    query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.prefix", "sn", "terms.lower", "sn");
-    query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.upper", "sn");
+    query("qt", "/terms",  "terms.fl", "b_t");
+    query("qt", "/terms",  "terms.limit", 5, "terms.fl", "b_t", "terms.lower", "s");
+    query("qt", "/terms",  "terms.limit", 5, "terms.fl", "b_t", "terms.prefix", "sn", "terms.lower", "sn");
+    query("qt", "/terms",  "terms.limit", 5, "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.upper", "sn");
     // terms.sort
-    query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.sort", "index");
-    query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.upper", "sn", "terms.sort", "index");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.sort", "index");
+    query("qt", "/terms",  "terms.limit", 5, "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.sort", "index");
+    query("qt", "/terms",  "terms.limit", 5, "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.upper", "sn", "terms.sort", "index");
+    query("qt", "/terms",  "terms.fl", "b_t", "terms.sort", "index");
     // terms.list
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake,zebra,ant,bad");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.list", "2,3,1");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.stats", "true","terms.list", "2,3,1");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake,zebra", "terms.ttf", "true");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.fl", "c_t", "terms.list", "snake,ant,zebra", "terms.ttf", "true");
+    query("qt", "/terms",  "terms.fl", "b_t", "terms.list", "snake,zebra,ant,bad");
+    query("qt", "/terms",  "terms.fl", "foo_i", "terms.list", "2,3,1");
+    query("qt", "/terms",  "terms.fl", "foo_i", "terms.stats", "true","terms.list", "2,3,1");
+    query("qt", "/terms",  "terms.fl", "b_t", "terms.list", "snake,zebra", "terms.ttf", "true");
+    query("qt", "/terms",  "terms.fl", "b_t", "terms.fl", "c_t", "terms.list", "snake,ant,zebra", "terms.ttf", "true");
 
     // for date point field
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_date_p");
+    query("qt", "/terms",  "terms.fl", "foo_date_p");
     // terms.ttf=true doesn't work for point fields
-    //query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_date_p", "terms.ttf", "true");
+    //query("qt", "/terms",  "terms.fl", "foo_date_p", "terms.ttf", "true");
   }
   
   protected QueryResponse query(Object... q) throws Exception {

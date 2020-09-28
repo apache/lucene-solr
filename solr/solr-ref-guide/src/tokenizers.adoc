@@ -50,7 +50,7 @@ You configure the tokenizer for a text field type in `schema.xml` with a `<token
 ====
 --
 
-The name/class attribute names a factory class that will instantiate a tokenizer object when needed. Tokenizer factory classes implement the `org.apache.lucene.analysis.util.TokenizerFactory`. A TokenizerFactory's `create()` method accepts a Reader and returns a TokenStream. When Solr creates the tokenizer it passes a Reader object that provides the content of the text field.
+The name/class attribute names a factory class that will instantiate a tokenizer object when needed. Tokenizer factory classes implement the `org.apache.lucene.analysis.TokenizerFactory`. A TokenizerFactory's `create()` method accepts a Reader and returns a TokenStream. When Solr creates the tokenizer it passes a Reader object that provides the content of the text field.
 
 Arguments may be passed to tokenizer factories by setting attributes on the `<tokenizer>` element.
 

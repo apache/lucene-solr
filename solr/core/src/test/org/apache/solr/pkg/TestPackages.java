@@ -26,12 +26,12 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -43,7 +43,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -51,7 +50,6 @@ import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -83,6 +81,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
 //@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
+@LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-14901")
 public class TestPackages extends SolrCloudTestCase {
 
   @Before
@@ -653,7 +652,7 @@ public class TestPackages extends SolrCloudTestCase {
     MiniSolrCloudCluster cluster =
             configureCluster(4)
                     .withJettyConfig(jetty -> jetty.enableV2(true))
-                    .addConfig("conf", configset("cloud-managed"))
+                    .addConfig("conf1", configset("schema-package"))
                     .configure();
     try {
       String FILE1 = "/schemapkg/schema-plugins.jar";
@@ -687,57 +686,10 @@ public class TestPackages extends SolrCloudTestCase {
               ));
 
       CollectionAdminRequest
-              .createCollection(COLLECTION_NAME, "conf", 2, 2)
+              .createCollection(COLLECTION_NAME, "conf1", 2, 2)
               .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
-      String addFieldTypeAnalyzerWithClass = "{\n" +
-              "'add-field-type' : {" +
-              "    'name' : 'myNewTextFieldWithAnalyzerClass',\n" +
-              "    'class':'schemapkg:my.pkg.MyTextField',\n" +
-              "    'analyzer' : {\n" +
-              "        'luceneMatchVersion':'5.0.0'" ;
-//          + ",\n" +
-//          "        'class':'schemapkg:my.pkg.MyWhitespaceAnalyzer'\n";
-      String charFilters =
-              "        'charFilters' : [{\n" +
-                      "            'class':'schemapkg:my.pkg.MyPatternReplaceCharFilterFactory',\n" +
-                      "            'replacement':'$1$1',\n" +
-                      "            'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
-                      "        }],\n";
-      String tokenizer =
-              "        'tokenizer' : { 'class':'schemapkg:my.pkg.MyWhitespaceTokenizerFactory' },\n";
-      String filters =
-          "        'filters' : [{ 'class':'solr.DelimitedPayloadTokenFilterFactory', 'encoder' : 'schemapkg:com.o19s.payloads.Base64Encoder'}]\n";
-      String suffix = "    }\n" +
-              "}}";
-      cluster.getSolrClient().request(new SolrRequest(SolrRequest.METHOD.POST, "/schema") {
-
-        @Override
-        public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-          return new RequestWriter.StringPayloadContentWriter(addFieldTypeAnalyzerWithClass + ',' + charFilters + tokenizer + filters + suffix, CommonParams.JSON_MIME);
-        }
-
-        @Override
-        public SolrParams getParams() {
-          return null;
-        }
-
-        @Override
-        public String getCollection() {
-          return COLLECTION_NAME;
-        }
-
-        @Override
-        public SolrResponse createResponse(SolrClient client) {
-          return new SolrResponseBase();
-        }
-
-        @Override
-        public String getRequestType() {
-          return SolrRequestType.UNSPECIFIED.toString();
-        }
-      });
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
               Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
                       ":fieldType:analyzer:tokenizer:_packageinfo_:version","1.0",

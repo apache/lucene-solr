@@ -35,6 +35,7 @@ import java.time.*
 import java.time.format.*
 import java.nio.file.*
 import org.asciidoctor.*
+import groovy.json.StringEscapeUtils
 
 buildscript {
     repositories {
@@ -151,7 +152,7 @@ ext {
       javadocLink: "https://docs.oracle.com/en/java/javase/11/docs/api/",
                       
       solrGuideDraftStatus: propertyOrDefault("solrGuideDraft", "true").toBoolean() ? "DRAFT" : "",
-      solrRootPath: project(':solr').projectDir.toString() + File.separator,
+      solrRootPath: StringEscapeUtils.escapeJava(project(':solr').projectDir.toString() + File.separator),
       
       solrDocsVersion: solrDocsVersion,
       solrGuideVersionPath: solrGuideVersionPath,

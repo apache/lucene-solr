@@ -102,7 +102,7 @@ public abstract class FacetTestCase extends LuceneTestCase {
     List<FacetLabel> facetLabels = new ArrayList<>();
     FacetLabel facetLabel;
     if (dimension != null) {
-      for (facetLabel = facetLabelReader.nextFacetLabel(docId, dimension); facetLabel != null; ){
+      for (facetLabel = facetLabelReader.nextFacetLabel(docId, dimension); facetLabel != null; ) {
         facetLabels.add(facetLabel);
         facetLabel = facetLabelReader.nextFacetLabel(docId, dimension);
       }
