@@ -180,7 +180,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
             setFlushPending(perThread);
           }
         }
-        return checkout(perThread, false);
+        return checkoutFlushableWriter(perThread, false);
       } finally {
         boolean stalled = updateStallState();
         assert assertNumDocsSinceStalled(stalled) && assertMemory();
@@ -188,11 +188,12 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     }
   }
 
-  private DocumentsWriterPerThread checkout(DocumentsWriterPerThread perThread, boolean markPending) {
+  private DocumentsWriterPerThread checkoutFlushableWriter(DocumentsWriterPerThread perThread, boolean markPending) {
     assert Thread.holdsLock(this);
     if (fullFlush) {
       if (perThread.isFlushPending()) {
-        checkoutAndBlock(perThread);
+        checkoutFlushableWriter(perThread);
+        blockedFlushes.add(perThread);
         return nextPendingFlush();
       }
     } else {
@@ -297,13 +298,6 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     } // don't assert on numDocs since we could hit an abort excp. while selecting that dwpt for flushing
   }
 
-  private void moveToFlushing(DocumentsWriterPerThread perThread) {
-    perThread.transitionTo(DocumentsWriterPerThread.State.FLUSHING);
-    final long bytes = perThread.ramBytesUsed();
-    flushBytes += bytes;
-    activeBytes -= bytes;
-    assert assertMemory();
-  }
   
   synchronized void doOnAbort(DocumentsWriterPerThread perThread) {
     try {
@@ -332,37 +326,29 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     }
   }
 
-  /**
-   * To be called only by the owner of this object's monitor lock
-   */
-  private void checkoutAndBlock(DocumentsWriterPerThread perThread) {
-    assert Thread.holdsLock(this);
-    assert perThreadPool.isRegistered(perThread);
-    assert perThread.isHeldByCurrentThread();
-    assert perThread.isFlushPending() : "can not block non-pending threadstate";
-    assert fullFlush : "can not block if fullFlush == false";
-    moveToFlushing(perThread);
-    numPending--; // write access synced
-    blockedFlushes.add(perThread);
-    boolean checkedOut = perThreadPool.checkout(perThread);
-    assert checkedOut;
+  private synchronized DocumentsWriterPerThread checkOutForFlush(DocumentsWriterPerThread perThread) {
+    try {
+      checkoutFlushableWriter(perThread);
+      addFlushingDWPT(perThread);
+      return perThread;
+    } finally {
+      updateStallState();
+    }
   }
 
-  private synchronized DocumentsWriterPerThread checkOutForFlush(DocumentsWriterPerThread perThread) {
+  private void checkoutFlushableWriter(DocumentsWriterPerThread perThread) {
     assert Thread.holdsLock(this);
     assert perThread.isFlushPending();
     assert perThread.isHeldByCurrentThread();
     assert perThreadPool.isRegistered(perThread);
-    try {
-        moveToFlushing(perThread);
-        addFlushingDWPT(perThread);
-        numPending--; // write access synced
-        boolean checkedOut = perThreadPool.checkout(perThread);
-        assert checkedOut;
-        return perThread;
-    } finally {
-      updateStallState();
-    }
+    perThread.transitionTo(DocumentsWriterPerThread.State.FLUSHING);
+    final long bytes = perThread.ramBytesUsed();
+    flushBytes += bytes;
+    activeBytes -= bytes;
+    assert assertMemory();
+    numPending--; // write access synced
+    boolean checkedOut = perThreadPool.checkout(perThread);
+    assert checkedOut;
   }
 
   private void addFlushingDWPT(DocumentsWriterPerThread perThread) {
@@ -714,7 +700,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
         if (perThreadPool.isRegistered(largestNonPendingWriter)) {
           synchronized (this) {
             try {
-              return checkout(largestNonPendingWriter, largestNonPendingWriter.isFlushPending() == false);
+              return checkoutFlushableWriter(largestNonPendingWriter, largestNonPendingWriter.isFlushPending() == false);
             } finally {
               updateStallState();
             }
