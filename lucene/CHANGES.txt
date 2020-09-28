@@ -12,6 +12,9 @@ System Requirements
 
 API Changes
 
+* LUCENE-9317: Clean up package name conflicts between core and analyzers-common.
+  See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
+
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been
   removed. (Dawid Weiss)
 

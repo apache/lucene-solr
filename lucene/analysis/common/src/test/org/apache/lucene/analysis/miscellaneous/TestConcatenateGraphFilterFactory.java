@@ -23,7 +23,7 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.util.Version;
 
 public class TestConcatenateGraphFilterFactory extends BaseTokenStreamFactoryTestCase {
