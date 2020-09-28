@@ -26,7 +26,6 @@ import java.util.List;
 import org.apache.lucene.codecs.VectorWriter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 

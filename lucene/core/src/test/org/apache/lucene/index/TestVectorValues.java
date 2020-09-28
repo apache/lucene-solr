@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.Codec;
@@ -29,6 +30,7 @@ import org.apache.lucene.index.VectorValues.ScoreFunction;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -560,7 +562,6 @@ public class TestVectorValues extends LuceneTestCase {
     return v;
   }
 
-  /*
   public void testCheckIndexIncludesVectors() throws Exception {
     try (Directory dir = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
@@ -578,14 +579,13 @@ public class TestVectorValues extends LuceneTestCase {
       assertEquals(1, status.segmentInfos.size());
       CheckIndex.Status.SegmentInfoStatus segStatus = status.segmentInfos.get(0);
       // total 3 vector values were indexed:
-      assertEquals(3, segStatus.vectorStatus.totalValuevectors);
+      assertEquals(3, segStatus.vectorValuesStatus.totalVectorValues);
       // ... across 2 fields:
-      assertEquals(2, segStatus.vectorStatus.totalValueFields);
+      assertEquals(2, segStatus.vectorValuesStatus.totalVectorFields);
 
       // Make sure CheckIndex in fact declares that it is testing vectors!
       assertTrue(output.toString(IOUtils.UTF_8).contains("test: vectors..."));
     }
   }
-  */
 
 }

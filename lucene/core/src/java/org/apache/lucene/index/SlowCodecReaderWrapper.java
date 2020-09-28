@@ -171,16 +171,17 @@ public final class SlowCodecReaderWrapper {
   private static VectorReader readerToVectorReader(LeafReader reader) {
     return new VectorReader() {
       @Override
-      public void checkIntegrity() throws IOException {
-      }
-
-      @Override
       public VectorValues getVectorValues(String field) throws IOException {
         return reader.getVectorValues(field);
       }
 
       @Override
-      public void close() throws IOException {
+      public void checkIntegrity() {
+        // We already checkIntegrity the entire reader up front
+      }
+
+      @Override
+      public void close() {
       }
 
       @Override

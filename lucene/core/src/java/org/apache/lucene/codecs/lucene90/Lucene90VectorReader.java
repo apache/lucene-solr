@@ -129,7 +129,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
   @Override
   public void checkIntegrity() throws IOException {
-    // nocommit
+    CodecUtil.checksumEntireFile(vectorData);
   }
 
   @Override
