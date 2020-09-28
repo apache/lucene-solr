@@ -251,6 +251,9 @@ Bug Fixes
 * SOLR-14850: Fix ExactStatsCache NullPointerException when shards.tolerant=true.
   (Eugene Tenkaev via ab)
 
+* SOLR-14767: Fix NumberFormatException when integer/long field value is specified as floating number
+  (Apoorv Bhawsar, Munendra S N)
+
 Other Changes
 ---------------------
 
