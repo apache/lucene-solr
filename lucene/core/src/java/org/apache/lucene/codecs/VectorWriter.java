@@ -139,6 +139,8 @@ public abstract class VectorWriter implements Closeable {
 
     private int docId;
     private VectorValuesSub current;
+    // For each doc with a vector, record its ord in the segments being merged. This enables random access into the
+    // unmerged segments using the ords from the merged segment.
     private int[] ordMap;
     private int ord;
 
@@ -151,7 +153,7 @@ public abstract class VectorWriter implements Closeable {
       int totalCost = 0, totalSize = 0;
       for (VectorValuesSub sub : subs) {
         totalCost += sub.values.cost();
-        totalSize += sub.values.size();;
+        totalSize += sub.values.size();
       }
       cost = totalCost;
       size = totalSize;

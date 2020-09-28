@@ -36,6 +36,7 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Reads vectors from the index segments.
@@ -105,24 +106,25 @@ public final class Lucene90VectorReader extends VectorReader {
       long vectorDataLength = meta.readVLong();
       int dimension = meta.readInt();
       int size = meta.readInt();
-      // TODO: don't box all these integers
-      final Map<Integer, Integer> docToOrd = new HashMap<>();
       int[] ordToDoc = new int[size];
       for (int i = 0; i < size; i++) {
         int doc = meta.readVInt();
-        docToOrd.put(doc, i);
         ordToDoc[i] = doc;
       }
       FieldEntry fieldEntry = new FieldEntry(dimension, scoreFunction, maxDoc, vectorDataOffset, vectorDataLength,
-                                              docToOrd, ordToDoc);
+                                              ordToDoc);
       fields.put(info.name, fieldEntry);
     }
   }
 
   @Override
   public long ramBytesUsed() {
-    // nocommit
-    return 0;
+    long totalBytes = RamUsageEstimator.shallowSizeOfInstance(Lucene90VectorReader.class);
+    totalBytes += RamUsageEstimator.sizeOfMap(fields, RamUsageEstimator.shallowSizeOfInstance(FieldEntry.class));
+    for (FieldEntry entry : fields.values()) {
+      totalBytes += RamUsageEstimator.sizeOf(entry.ordToDoc);
+    }
+    return totalBytes;
   }
 
   @Override
@@ -155,7 +157,7 @@ public final class Lucene90VectorReader extends VectorReader {
           numBytes);
     }
     IndexInput bytesSlice = vectorData.slice("vector-data", fieldEntry.vectorDataOffset, fieldEntry.vectorDataLength);
-    return new RandomAccessVectorValues(fieldEntry, bytesSlice);
+    return new OffHeapVectorValues(fieldEntry, bytesSlice);
   }
 
   @Override
@@ -171,19 +173,15 @@ public final class Lucene90VectorReader extends VectorReader {
 
     final long vectorDataOffset;
     final long vectorDataLength;
-    // nocommit: remove
-    final Map<Integer, Integer> docToOrd;
     final int[] ordToDoc;
 
     FieldEntry(int dimension, VectorValues.ScoreFunction scoreFunction, int maxDoc,
-               long vectorDataOffset, long vectorDataLength,
-               Map<Integer, Integer> docToOrd, int[] ordToDoc) {
+               long vectorDataOffset, long vectorDataLength, int[] ordToDoc) {
       this.dimension = dimension;
       this.scoreFunction = scoreFunction;
       this.maxDoc = maxDoc;
       this.vectorDataOffset = vectorDataOffset;
       this.vectorDataLength = vectorDataLength;
-      this.docToOrd = docToOrd;
       this.ordToDoc = ordToDoc;
     }
 
@@ -192,20 +190,22 @@ public final class Lucene90VectorReader extends VectorReader {
     }
   }
 
-  /** Read the vector values from the index input. This allows random access to the underlying vectors data. */
-  private final static class RandomAccessVectorValues extends VectorValues {
+  /** Read the vector values from the index input. This supports both iterated and random access. */
+  private final static class OffHeapVectorValues extends VectorValues {
 
-    final int byteSize;
     final FieldEntry fieldEntry;
     final IndexInput dataIn;
+
     final BytesRef binaryValue;
     final ByteBuffer byteBuffer;
     final FloatBuffer floatBuffer;
+    final int byteSize;
     final float[] value;
 
+    int ord = -1;
     int doc = -1;
 
-    RandomAccessVectorValues(FieldEntry fieldEntry, IndexInput dataIn) {
+    OffHeapVectorValues(FieldEntry fieldEntry, IndexInput dataIn) {
       this.fieldEntry = fieldEntry;
       this.dataIn = dataIn;
       byteSize = Float.BYTES * fieldEntry.dimension;
@@ -217,7 +217,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public VectorValues copy() {
-      return new RandomAccessVectorValues(fieldEntry, dataIn.clone());
+      return new OffHeapVectorValues(fieldEntry, dataIn.clone());
     }
 
     @Override
@@ -265,24 +265,19 @@ public final class Lucene90VectorReader extends VectorReader {
     }
 
     @Override
-    public int nextDoc() throws IOException {
-      // nocommit we can make this better
-      return advance(doc + 1);
+    public int nextDoc() {
+      if (++ord >= size()) {
+        doc = NO_MORE_DOCS;
+      } else {
+        doc = fieldEntry.ordToDoc[ord];
+      }
+      return doc;
     }
 
     @Override
     public int advance(int target) throws IOException {
-      // TODO use log-binary search to scan ahead in ordToDoc
-      while (target <= fieldEntry.maxDoc) {
-        int ord = fieldEntry.docToOrd.getOrDefault(target, -1);
-        if (ord != -1) {
-          dataIn.seek((long) ord * byteSize);
-          doc = target;
-          return doc;
-        }
-        ++target;
-      }
-      return doc = NO_MORE_DOCS;
+      // We could do better by log-binary search in ordToDoc, but this is never used
+      return slowAdvance(target);
     }
 
     @Override

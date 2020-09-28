@@ -31,7 +31,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 
 /** Buffers up pending vector value(s) per doc, then flushes when segment flushes. */
-public class VectorValuesWriter implements Accountable {
+public class VectorValuesWriter {
 
   private final FieldInfo fieldInfo;
   private final Counter iwBytesUsed;
@@ -80,11 +80,6 @@ public class VectorValuesWriter implements Accountable {
       throw new UnsupportedOperationException();
     }
     graphWriter.writeField(fieldInfo, vectorValues);
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return bytesUsed;
   }
 
   private static class BufferedVectorValues extends VectorValues {

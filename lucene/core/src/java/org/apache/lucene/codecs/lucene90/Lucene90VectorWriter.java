@@ -73,6 +73,8 @@ public final class Lucene90VectorWriter extends VectorWriter {
   @Override
   public void writeField(FieldInfo fieldInfo, VectorValues vectors) throws IOException {
     long vectorDataOffset = vectorData.getFilePointer();
+    // nocommit - no copy() needed here. Later we will need it for random access in the graph
+    // TBD: maybe this is a rationale for having a separate RA accessor? Since we can then get rid of copy()?
     VectorValues v2 = vectors.copy();
     // TODO - use a better data structure; a bitset? DocsWithFieldSet is p.p. in o.a.l.index
     List<Integer> docIds = new ArrayList<>();

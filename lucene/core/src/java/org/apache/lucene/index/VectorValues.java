@@ -85,7 +85,8 @@ public abstract class VectorValues extends DocIdSetIterator {
   public abstract TopDocs search(float[] target, int k, int fanout) throws IOException;
 
   /**
-   * @return another vector values that iterates independently over the same underlying vectors
+   * @return another vector values that iterates independently over the same underlying vectors. The iterator state is not copied;
+   * the new iterator will be positioned at the start.
    */
   public abstract VectorValues copy() throws IOException;
 
