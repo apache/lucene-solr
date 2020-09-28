@@ -666,19 +666,18 @@ public class HttpSolrCall {
     }
   }
 
-  private String getQuerySting() {
-    int internalRequestCount = queryParams.getInt(INTERNAL_REQUEST_COUNT, 0);
-    ModifiableSolrParams updatedQueryParams = new ModifiableSolrParams(queryParams);
-    updatedQueryParams.set(INTERNAL_REQUEST_COUNT, internalRequestCount + 1);
-    return updatedQueryParams.toQueryString();
-  }
-
   //TODO using Http2Client
   private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
     HttpRequestBase method;
     HttpEntity httpEntity = null;
+
+    ModifiableSolrParams updatedQueryParams = new ModifiableSolrParams(queryParams);
+    int forwardCount = queryParams.getInt(INTERNAL_REQUEST_COUNT, 0) + 1;
+    updatedQueryParams.set(INTERNAL_REQUEST_COUNT, forwardCount);
+    String queryStr = updatedQueryParams.toQueryString();
+
     try {
-      String urlstr = coreUrl + getQuerySting();
+      String urlstr = coreUrl + queryStr;
 
       boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
       if ("GET".equals(req.getMethod())) {
@@ -746,7 +745,7 @@ public class HttpSolrCall {
     } catch (IOException e) {
       sendError(new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Error trying to proxy request for url: " + coreUrl, e));
+          "Error trying to proxy request for url: " + coreUrl + " with _forwardCount: " + forwardCount, e));
     } finally {
       Utils.consumeFully(httpEntity);
     }
@@ -984,8 +983,8 @@ public class HttpSolrCall {
     if (activeSlices) {
       for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
         final Slice[] activeCollectionSlices = entry.getValue().getActiveSlicesArr();
-        for (Slice s : activeCollectionSlices) {
-          slices.add(s);
+        if (activeCollectionSlices != null) {
+          Collections.addAll(slices, activeCollectionSlices);
         }
       }
     } else {
@@ -1015,9 +1014,7 @@ public class HttpSolrCall {
         getSlicesForCollections(clusterState, activeSlices, false);
       }
     } else {
-      for (Slice s : slices) {
-        activeSlices.add(s);
-      }
+      Collections.addAll(activeSlices, slices);
     }
 
     for (Slice s: activeSlices) {
@@ -1033,16 +1030,18 @@ public class HttpSolrCall {
       collectionsList = new ArrayList<>(collectionsList);
       collectionsList.add(collectionName);
     }
-    String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
-        activeSlices, byCoreName, true);
 
     // Avoid getting into a recursive loop of requests being forwarded by
     // stopping forwarding and erroring out after (totalReplicas) forwards
+    if (queryParams.getInt(INTERNAL_REQUEST_COUNT, 0) > totalReplicas){
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+          "No active replicas found for collection: " + collectionName);
+    }
+
+    String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
+        activeSlices, byCoreName, true);
+
     if (coreUrl == null) {
-      if (queryParams.getInt(INTERNAL_REQUEST_COUNT, 0) > totalReplicas){
-        throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
-            "No active replicas found for collection: " + collectionName);
-      }
       coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
           activeSlices, byCoreName, false);
     }
