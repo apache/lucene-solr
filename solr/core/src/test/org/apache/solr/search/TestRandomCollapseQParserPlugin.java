@@ -219,10 +219,10 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     QueryResponse response = SOLR.query(solrParams);
     // Query name is occurring twice, this should be handled in QueryParsing.toString
-    String expectedParsedFilterString = "CollapsingPostFilter(CollapsingPostFilter[field=id, " +
-        "nullPolicy=" + nullPolicy + ", GroupHeadSelector[selectorText=" + groupHeadSort.substring(1,
+    String expectedParsedFilterString = "CollapsingPostFilter(CollapsingPostFilter(field=id, " +
+        "nullPolicy=" + nullPolicy + ", GroupHeadSelector(selectorText=" + groupHeadSort.substring(1,
         groupHeadSort.length() - 1) + ", type=SORT" +
-        "], hint=" + collapseHint + ", size=" + collapseSize + "])";
+        "), hint=" + collapseHint + ", size=" + collapseSize + "))";
     List<String> expectedParsedFilterQuery = Collections.singletonList(expectedParsedFilterString);
     assertEquals(expectedParsedFilterQuery, response.getDebugMap().get("parsed_filter_queries"));
     assertEquals(Collections.singletonList(filterQuery), response.getDebugMap().get("filter_queries"));
