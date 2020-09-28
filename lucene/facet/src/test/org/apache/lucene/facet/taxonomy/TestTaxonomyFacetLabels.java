@@ -34,9 +34,10 @@ import org.apache.lucene.util.IOUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TestTaxonomyFacetLabels extends FacetTestCase {
@@ -157,13 +158,13 @@ public class TestTaxonomyFacetLabels extends FacetTestCase {
     assertTrue(facetLabels.stream()
         .filter(l -> "Author".equals(l.components[0]))
         .map(l -> l.components[1]).collect(Collectors.toSet())
-        .equals(Set.of("Bob", "Lisa", "Susan", "Frank", "Tom")));
+               .equals(new HashSet<>(Arrays.asList("Bob", "Lisa", "Susan", "Frank", "Tom"))));
 
     assertTrue(facetLabels.stream()
         .filter(l -> "Publish Date".equals(l.components[0]))
         .map(l -> String.join("/", l.components[1], l.components[2], l.components[3]))
         .collect(Collectors.toSet())
-        .equals(Set.of("2010/10/15", "2010/10/20", "2012/1/1", "2012/1/7", "1999/5/5")));
+               .equals(new HashSet<>(Arrays.asList("2010/10/15", "2010/10/20", "2012/1/1", "2012/1/7", "1999/5/5"))));
 
     // Check labels for a specific dimension
     facetLabels = lookupFacetLabels(taxoLabels, fc.getMatchingDocs(), "Publish Date");
@@ -172,7 +173,7 @@ public class TestTaxonomyFacetLabels extends FacetTestCase {
     assertTrue(facetLabels.stream()
         .map(l -> String.join("/", l.components[1], l.components[2], l.components[3]))
         .collect(Collectors.toSet())
-        .equals(Set.of("2010/10/15", "2010/10/20", "2012/1/1", "2012/1/7", "1999/5/5")));
+               .equals(new HashSet<>(Arrays.asList("2010/10/15", "2010/10/20", "2012/1/1", "2012/1/7", "1999/5/5"))));
 
     try {
       facetLabels = lookupFacetLabels(taxoLabels, fc.getMatchingDocs(), null, true);
