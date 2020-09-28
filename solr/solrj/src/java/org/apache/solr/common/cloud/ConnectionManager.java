@@ -342,8 +342,9 @@ public class ConnectionManager implements Watcher, Closeable {
 
 
     client.zkConnManagerCallbackExecutor.shutdown();
-
-    keeper.close();
+    if (keeper != null) {
+      keeper.close();
+    }
     keeper = null;
     client.zkCallbackExecutor.shutdown();
     ExecutorUtil.awaitTermination(client.zkCallbackExecutor);
