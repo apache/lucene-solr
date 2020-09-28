@@ -17,8 +17,11 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.VectorField;
@@ -28,6 +31,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** Test Indexing/IndexWriter with vectors */
 public class TestVectorValues extends LuceneTestCase {
@@ -413,7 +418,7 @@ public class TestVectorValues extends LuceneTestCase {
             VectorValues vectors = ctx.reader().getVectorValues(fieldName);
             if (vectors != null) {
               docCount += vectors.size();
-              while (vectors.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+              while (vectors.nextDoc() != NO_MORE_DOCS) {
                 checksum += vectors.vectorValue()[0];
               }
             }
@@ -424,6 +429,128 @@ public class TestVectorValues extends LuceneTestCase {
       }
     }
   }
+
+  public void testIndexedValueNotAliased() throws Exception {
+    // We copy indexed values (as for BinaryDocValues) so the input float[] can be reused across
+    // calls to IndexWriter.addDocument.
+    String fieldName = "field";
+    float[] v = { 0 };
+    try (Directory dir = newDirectory();
+         IndexWriter iw = new IndexWriter(dir, createIndexWriterConfig())) {
+      Document doc1 = new Document();
+      doc1.add(new VectorField(fieldName, v, VectorValues.ScoreFunction.EUCLIDEAN));
+      v[0] = 1;
+      Document doc2 = new Document();
+      doc2.add(new VectorField(fieldName, v, VectorValues.ScoreFunction.EUCLIDEAN));
+      iw.addDocument(doc1);
+      iw.addDocument(doc2);
+      v[0] = 2;
+      Document doc3 = new Document();
+      doc3.add(new VectorField(fieldName, v, VectorValues.ScoreFunction.EUCLIDEAN));
+      iw.addDocument(doc3);
+      try (IndexReader reader = iw.getReader()) {
+        LeafReader r = reader.leaves().get(0).reader();
+        VectorValues vectorValues = r.getVectorValues(fieldName);
+        vectorValues.nextDoc();
+        assertEquals(1, vectorValues.vectorValue()[0], 0);
+        vectorValues.nextDoc();
+        assertEquals(1, vectorValues.vectorValue()[0], 0);
+        vectorValues.nextDoc();
+        assertEquals(2, vectorValues.vectorValue()[0], 0);
+      }
+    }
+  }
+
+  /**
+   * Index random vectors, sometimes skipping documents, sometimes deleting a document,
+   * sometimes merging, sometimes sorting the index,
+   * and verify that the expected values can be read back consistently.
+   */
+  public void testRandom() throws Exception {
+    IndexWriterConfig iwc = createIndexWriterConfig();
+    if (random().nextBoolean()) {
+      // sort the index by
+    }
+    String fieldName = "field";
+    try (Directory dir = newDirectory();
+         IndexWriter iw = new IndexWriter(dir, iwc)) {
+      int numDoc = atLeast(100);
+      int dimension = atLeast(10);
+      float[] scratch = new float[dimension];
+      int numValues = 0;
+      float[][] values = new float[numDoc][];
+      for (int i = 0; i < numDoc; i++) {
+        if (random().nextInt(7) != 3) {
+          // usually index a vector value for a doc
+          values[i] = randomVector(dimension);
+          ++numValues;
+        }
+        if (random().nextBoolean()) {
+          // sometimes use a shared scratch array
+          System.arraycopy(values[i], 0, scratch, 0, scratch.length);
+          add(iw, fieldName, i, scratch);
+        } else {
+          add(iw, fieldName, i, values[i]);
+        }
+        if (random().nextInt(10) == 2) {
+          // sometimes delete a random document
+          int idToDelete = random().nextInt(i);
+          iw.deleteDocuments(new Term("id", Integer.toString(idToDelete)));
+          // and remember that it was deleted
+          if (values[idToDelete] != null) {
+            values[idToDelete] = null;
+            --numValues;
+          }
+        }
+        if (random().nextInt(10) == 3) {
+          iw.commit();
+        }
+      }
+      boolean merged = false;
+      if (random().nextBoolean()) {
+        iw.forceMerge(1);
+        merged = true;
+      }
+      try (IndexReader reader = iw.getReader()) {
+        int valueCount = 0, totalSize = 0;
+        for (LeafReaderContext ctx : reader.leaves()) {
+          VectorValues vectorValues = ctx.reader().getVectorValues(fieldName);
+          if (vectorValues == null) {
+            continue;
+          }
+          totalSize += vectorValues.size();
+          int docId;
+          while ((docId = vectorValues.nextDoc()) != NO_MORE_DOCS) {
+            float[] v = vectorValues.vectorValue();
+            assertEquals(dimension, v.length);
+            String idString = ctx.reader().document(docId).getField("id").stringValue();
+            int id = Integer.parseInt(idString);
+            if (values[id] == null) {
+              // if we merged, we should not have found a value for this deleted document
+              assertFalse(merged);
+            } else {
+              assertArrayEquals(idString, values[id], v, 0);
+              ++valueCount;
+            }
+          }
+        }
+        assertEquals(numValues, valueCount);
+        if (merged) {
+          assertEquals(numValues, totalSize);
+        }
+      }
+    }
+  }
+
+  private void add(IndexWriter iw, String field, int id, float[] vector) throws IOException {
+    Document doc = new Document();
+    if (vector != null) {
+      doc.add(new VectorField(field, vector, VectorValues.ScoreFunction.EUCLIDEAN));
+    }
+    doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));
+    iw.addDocument(doc);
+  }
+
 
   private float[] randomVector(int dim) {
     float[] v = new float[dim];
