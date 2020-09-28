@@ -51,8 +51,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
     try {
       if (val instanceof CharSequence) return Integer.parseInt( val.toString());
     } catch (NumberFormatException e) {
-      Float v = Float.parseFloat(val.toString());
-      return v.intValue();
+      return (int)Float.parseFloat(val.toString());
     }
     return super.toNativeType(val);
   }
@@ -153,7 +152,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
       try {
         intValue = Integer.parseInt(value.toString());
       } catch (NumberFormatException e) {
-        intValue = (int) Double.parseDouble(value.toString());
+        intValue = (int) Float.parseFloat(value.toString());
       }
     }
     return new IntPoint(field.getName(), intValue);

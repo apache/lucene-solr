@@ -50,8 +50,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
     try {
       if (val instanceof CharSequence) return Long.parseLong(val.toString());
     } catch (NumberFormatException e) {
-      Double v = Double.parseDouble(val.toString());
-      return v.longValue();
+      return (long)Double.parseDouble(val.toString());
     }
     return super.toNativeType(val);
   }
