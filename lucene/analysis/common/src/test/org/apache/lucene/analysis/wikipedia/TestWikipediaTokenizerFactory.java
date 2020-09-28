@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the wikipedia tokenizer is working.

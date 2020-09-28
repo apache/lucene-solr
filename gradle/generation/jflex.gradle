@@ -119,7 +119,7 @@ configure(project(":lucene:analysis:common")) {
     description "Regenerate UAX29URLEmailTokenizerImpl.java"
     group "generation"
 
-    jflexFile = file('src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizerImpl.jflex')
+    jflexFile = file('src/java/org/apache/lucene/analysis/email/UAX29URLEmailTokenizerImpl.jflex')
     skeleton = project(":lucene:core").file("src/data/jflex/skeleton.disable.buffer.expansion.txt")
     heapSize = "12g"
 
@@ -129,7 +129,7 @@ configure(project(":lucene:analysis:common")) {
 
     doLast {
       ant.replace(
-          file: file('src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizerImpl.java'),
+          file: file('src/java/org/apache/lucene/analysis/email/UAX29URLEmailTokenizerImpl.java'),
           encoding: "UTF-8",
           token: "private static final int ZZ_BUFFERSIZE =",
           value: "private int ZZ_BUFFERSIZE ="
@@ -149,7 +149,7 @@ configure(project(":lucene:analysis:common")) {
       def target = file('src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex')
       target.withOutputStream { output ->
         project.exec {
-          executable = "python"
+          executable = project.externalTool("python2")
           workingDir = target.parentFile
           standardOutput = output
           args += [

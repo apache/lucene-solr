@@ -60,10 +60,10 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
@@ -77,7 +77,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -548,7 +547,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             latestVersion, 30);
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
-        req.getCore().getCoreContainer().reload(req.getCore().getName());
+        req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId, false);
         log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
 
@@ -572,21 +571,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       op.getMap(PluginInfo.INVARIANTS, null);
       op.getMap(PluginInfo.APPENDS, null);
       if (op.hasError()) return overlay;
-      if (info.clazz == PluginBag.RuntimeLib.class) {
-        if (!PluginBag.RuntimeLib.isEnabled()) {
-          op.addError("Solr not started with -Denable.runtime.lib=true");
-          return overlay;
-        }
-        try {
-          try (PluginBag.RuntimeLib rtl = new PluginBag.RuntimeLib(req.getCore())) {
-            rtl.init(new PluginInfo(info.tag, op.getDataMap()));
-          }
-        } catch (Exception e) {
-          op.addError(e.getMessage());
-          log.error("can't load this plugin ", e);
-          return overlay;
-        }
-      }
       if (!verifyClass(op, clz, info.clazz)) return overlay;
       if (pluginExists(info, overlay, name)) {
         if (isCeate) {
@@ -960,6 +944,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     @Override
     protected SolrResponse createResponse(SolrClient client) {
       return null;
+    }
+
+    @Override
+    public String getRequestType() {
+      return SolrRequest.SolrRequestType.ADMIN.toString();
     }
   }
 

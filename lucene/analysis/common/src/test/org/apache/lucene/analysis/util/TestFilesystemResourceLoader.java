@@ -25,6 +25,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;

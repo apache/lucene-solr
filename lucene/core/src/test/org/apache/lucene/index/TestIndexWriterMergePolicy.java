@@ -32,32 +32,13 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
-  private static final MergePolicy MERGE_ON_COMMIT_POLICY = new LogDocMergePolicy() {
-    @Override
-    public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
-      // Optimize down to a single segment on commit
-      if (mergeTrigger == MergeTrigger.COMMIT && segmentInfos.size() > 1) {
-        List<SegmentCommitInfo> nonMergingSegments = new ArrayList<>();
-        for (SegmentCommitInfo sci : segmentInfos) {
-          if (mergeContext.getMergingSegments().contains(sci) == false) {
-            nonMergingSegments.add(sci);
-          }
-        }
-        if (nonMergingSegments.size() > 1) {
-          MergeSpecification mergeSpecification = new MergeSpecification();
-          mergeSpecification.add(new OneMerge(nonMergingSegments));
-          return mergeSpecification;
-        }
-      }
-      return null;
-    }
-  };
 
   // Test the normal case
   public void testNormalCase() throws IOException {
@@ -324,7 +305,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     firstWriter.close(); // When this writer closes, it does not merge on commit.
 
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(Integer.MAX_VALUE);
+        .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), MergeTrigger.COMMIT)).setMaxFullFlushMergeWaitMillis(Integer.MAX_VALUE);
 
 
     IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
@@ -369,13 +350,14 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     // TODO: Add more checks for other non-double setters!
   }
 
-  public void testCarryOverNewDeletes() throws IOException, InterruptedException {
+
+  public void testCarryOverNewDeletesOnCommit() throws IOException, InterruptedException {
     try (Directory directory = newDirectory()) {
       boolean useSoftDeletes = random().nextBoolean();
       CountDownLatch waitForMerge = new CountDownLatch(1);
       CountDownLatch waitForUpdate = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
-          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(30 * 1000)
+          .setMergePolicy(new MergeOnXMergePolicy(NoMergePolicy.INSTANCE, MergeTrigger.COMMIT)).setMaxFullFlushMergeWaitMillis(30 * 1000)
           .setSoftDeletesField("soft_delete")
           .setMaxBufferedDocs(Integer.MAX_VALUE)
           .setRAMBufferSizeMB(100)
@@ -443,12 +425,22 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
    * This test makes sure we release the merge readers on abort. MDW will fail if it
    * can't close all files
    */
-  public void testAbortCommitMerge() throws IOException, InterruptedException {
+
+  public void testAbortMergeOnCommit() throws IOException, InterruptedException {
+    abortMergeOnX(false);
+  }
+
+  public void testAbortMergeOnGetReader() throws IOException, InterruptedException {
+    abortMergeOnX(true);
+  }
+
+  void abortMergeOnX(boolean useGetReader) throws IOException, InterruptedException {
     try (Directory directory = newDirectory()) {
       CountDownLatch waitForMerge = new CountDownLatch(1);
       CountDownLatch waitForDeleteAll = new CountDownLatch(1);
       try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
-          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(30 * 1000)
+          .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
+          .setMaxFullFlushMergeWaitMillis(30 * 1000)
           .setMergeScheduler(new SerialMergeScheduler() {
             @Override
             public synchronized void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
@@ -472,10 +464,20 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         writer.flush();
         writer.addDocument(d2);
         Thread t = new Thread(() -> {
+          boolean success = false;
           try {
-            writer.commit();
+            if (useGetReader) {
+              writer.getReader().close();
+            } else {
+              writer.commit();
+            }
+            success = true;
           } catch (IOException e) {
             throw new AssertionError(e);
+          } finally {
+            if (success == false) {
+              waitForMerge.countDown();
+            }
           }
         });
         t.start();
@@ -487,10 +489,100 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     }
   }
 
+  public void testForceMergeWhileGetReader() throws IOException, InterruptedException {
+    try (Directory directory = newDirectory()) {
+      CountDownLatch waitForMerge = new CountDownLatch(1);
+      CountDownLatch waitForForceMergeCalled = new CountDownLatch(1);
+      try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
+          .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(),  MergeTrigger.GET_READER))
+          .setMaxFullFlushMergeWaitMillis(30 * 1000)
+          .setMergeScheduler(new SerialMergeScheduler() {
+            @Override
+            public void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException {
+              waitForMerge.countDown();
+              try {
+                waitForForceMergeCalled.await();
+              } catch (InterruptedException e) {
+                throw new AssertionError(e);
+              }
+              super.merge(mergeSource, trigger);
+            }
+          }))) {
+        Document d1 = new Document();
+        d1.add(new StringField("id", "1", Field.Store.NO));
+        writer.addDocument(d1);
+        writer.flush();
+        Document d2 = new Document();
+        d2.add(new StringField("id", "2", Field.Store.NO));
+        writer.addDocument(d2);
+        Thread t = new Thread(() -> {
+          try (DirectoryReader reader = writer.getReader()){
+            assertEquals(2, reader.maxDoc());
+          } catch (IOException e) {
+            throw new AssertionError(e);
+          }
+        });
+        t.start();
+        waitForMerge.await();
+        Document d3 = new Document();
+        d3.add(new StringField("id", "3", Field.Store.NO));
+        writer.addDocument(d3);
+        waitForForceMergeCalled.countDown();
+        writer.forceMerge(1);
+        t.join();
+      }
+    }
+  }
+
+  public void testFailAfterMergeCommitted() throws IOException {
+    try (Directory directory = newDirectory()) {
+      AtomicBoolean mergeAndFail = new AtomicBoolean(false);
+      try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig()
+          .setMergePolicy(new MergeOnXMergePolicy(NoMergePolicy.INSTANCE,  MergeTrigger.GET_READER))
+          .setMaxFullFlushMergeWaitMillis(30 * 1000)
+          .setMergeScheduler(new SerialMergeScheduler())) {
+        @Override
+        protected void doAfterFlush() throws IOException {
+          if (mergeAndFail.get() && hasPendingMerges()) {
+            executeMerge(MergeTrigger.GET_READER);
+            throw new RuntimeException("boom");
+          }
+        }
+      }) {
+        Document d1 = new Document();
+        d1.add(new StringField("id", "1", Field.Store.NO));
+        writer.addDocument(d1);
+        writer.flush();
+        Document d2 = new Document();
+        d2.add(new StringField("id", "2", Field.Store.NO));
+        writer.addDocument(d2);
+        writer.flush();
+        mergeAndFail.set(true);
+        try (DirectoryReader reader = writer.getReader()){
+          assertNotNull(reader); // make compiler happy and use the reader
+          fail();
+        } catch (RuntimeException e) {
+          assertEquals("boom", e.getMessage());
+        } finally {
+          mergeAndFail.set(false);
+        }
+      }
+    }
+  }
+
+  public void testStressUpdateSameDocumentWithMergeOnGetReader() throws IOException, InterruptedException {
+    stressUpdateSameDocumentWithMergeOnX(true);
+  }
+
   public void testStressUpdateSameDocumentWithMergeOnCommit() throws IOException, InterruptedException {
+    stressUpdateSameDocumentWithMergeOnX(false);
+  }
+
+  void stressUpdateSameDocumentWithMergeOnX(boolean useGetReader) throws IOException, InterruptedException {
     try (Directory directory = newDirectory()) {
       try (RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig()
-          .setMergePolicy(MERGE_ON_COMMIT_POLICY).setMaxCommitMergeWaitMillis(10 + random().nextInt(2000))
+          .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
+          .setMaxFullFlushMergeWaitMillis(10 + random().nextInt(2000))
           .setSoftDeletesField("soft_delete")
           .setMergeScheduler(new ConcurrentMergeScheduler()))) {
         Document d1 = new Document();
@@ -499,13 +591,17 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         writer.commit();
 
         AtomicInteger iters = new AtomicInteger(100 + random().nextInt(TEST_NIGHTLY ? 5000 : 1000));
+        AtomicInteger numFullFlushes = new AtomicInteger(10 + random().nextInt(TEST_NIGHTLY ? 500 : 100));
         AtomicBoolean done = new AtomicBoolean(false);
         Thread[] threads = new Thread[1 + random().nextInt(4)];
         for (int i = 0; i < threads.length; i++) {
           Thread t = new Thread(() -> {
             try {
-              while (iters.decrementAndGet() > 0) {
+              while (iters.decrementAndGet() > 0 || numFullFlushes.get() > 0) {
                 writer.updateDocument(new Term("id", "1"), d1);
+                if (random().nextBoolean()) {
+                  writer.addDocument(new Document());
+                }
               }
             } catch (Exception e) {
               throw new AssertionError(e);
@@ -519,19 +615,89 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         }
         try {
           while (done.get() == false) {
-            if (random().nextBoolean()) {
-              writer.commit();
+            if (useGetReader) {
+              try (DirectoryReader reader = writer.getReader()) {
+                assertEquals(1, new IndexSearcher(reader).search(new TermQuery(new Term("id", "1")), 10).totalHits.value);
+              }
+            } else {
+              if (random().nextBoolean()) {
+                writer.commit();
+              }
+              try (DirectoryReader open = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(directory), "___soft_deletes")) {
+                assertEquals(1, new IndexSearcher(open).search(new TermQuery(new Term("id", "1")), 10).totalHits.value);
+              }
             }
-            try (DirectoryReader open = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(directory), "___soft_deletes")) {
-              assertEquals(1, open.numDocs());
-            }
+            numFullFlushes.decrementAndGet();
           }
         } finally {
+          numFullFlushes.set(0);
           for (Thread t : threads) {
             t.join();
           }
         }
       }
+    }
+  }
+
+  // Test basic semantics of merge on getReader
+  public void testMergeOnGetReader() throws IOException {
+    Directory dir = newDirectory();
+
+    IndexWriter firstWriter = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(NoMergePolicy.INSTANCE));
+    for (int i = 0; i < 5; i++) {
+      TestIndexWriter.addDoc(firstWriter);
+      firstWriter.flush();
+    }
+    DirectoryReader firstReader = DirectoryReader.open(firstWriter);
+    assertEquals(5, firstReader.leaves().size());
+    firstReader.close();
+    firstWriter.close(); // When this writer closes, it does not merge on commit.
+
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), MergeTrigger.GET_READER)).setMaxFullFlushMergeWaitMillis(Integer.MAX_VALUE);
+
+    IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
+
+    try (DirectoryReader unmergedReader =  DirectoryReader.open(dir)) { // No changes. GetReader doesn't trigger a merge.
+      assertEquals(5, unmergedReader.leaves().size());
+    }
+
+    TestIndexWriter.addDoc(writerWithMergePolicy);
+    try (DirectoryReader mergedReader =  writerWithMergePolicy.getReader()) {
+      // Doc added, do merge on getReader.
+      assertEquals(1, mergedReader.leaves().size());
+    }
+
+    writerWithMergePolicy.close();
+    dir.close();
+  }
+
+  private static class MergeOnXMergePolicy extends FilterMergePolicy {
+    private final MergeTrigger trigger;
+
+    private MergeOnXMergePolicy(MergePolicy in, MergeTrigger trigger) {
+      super(in);
+      this.trigger = trigger;
+    }
+
+    @Override
+    public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
+      // Optimize down to a single segment on commit
+      if (mergeTrigger == trigger && segmentInfos.size() > 1) {
+        List<SegmentCommitInfo> nonMergingSegments = new ArrayList<>();
+        for (SegmentCommitInfo sci : segmentInfos) {
+          if (mergeContext.getMergingSegments().contains(sci) == false) {
+            nonMergingSegments.add(sci);
+          }
+        }
+        if (nonMergingSegments.size() > 1) {
+          MergeSpecification mergeSpecification = new MergeSpecification();
+          mergeSpecification.add(new OneMerge(nonMergingSegments));
+          return mergeSpecification;
+        }
+      }
+      return null;
     }
   }
 }

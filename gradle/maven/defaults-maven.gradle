@@ -60,15 +60,12 @@ configure(rootProject) {
         ":solr:core",
         ":solr:solrj",
         ":solr:contrib:analysis-extras",
-        ":solr:contrib:dataimporthandler",
-        ":solr:contrib:dataimporthandler-extras",
         ":solr:contrib:analytics",
         ":solr:contrib:clustering",
         ":solr:contrib:extraction",
         ":solr:contrib:langid",
         ":solr:contrib:jaegertracer-configurator",
         ":solr:contrib:prometheus-exporter",
-        ":solr:contrib:velocity",
         ":solr:test-framework",
     ]
   }

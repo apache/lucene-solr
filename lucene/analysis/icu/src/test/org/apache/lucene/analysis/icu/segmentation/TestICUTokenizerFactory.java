@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
+import org.apache.lucene.util.ClasspathResourceLoader;
 
 /** basic tests for {@link ICUTokenizerFactory} **/
 public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {

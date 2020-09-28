@@ -182,7 +182,7 @@ public class Sort {
       }
     }
 
-    return (changed) ? new Sort(rewrittenSortFields) : this;
+    return changed ? new Sort(rewrittenSortFields) : this;
   }
 
   @Override

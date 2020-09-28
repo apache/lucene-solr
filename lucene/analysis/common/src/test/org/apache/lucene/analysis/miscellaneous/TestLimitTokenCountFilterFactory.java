@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
 import java.io.Reader;
 import java.io.StringReader;

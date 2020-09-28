@@ -19,7 +19,7 @@
 
 configure(allprojects) {
   plugins.withType(JavaPlugin) {
-    test {
+    tasks.withType(Test) {
       filter {
         failOnNoMatchingTests = false
       }

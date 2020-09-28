@@ -19,13 +19,20 @@ package org.apache.solr.pkg;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.solr.client.solrj.*;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -36,7 +43,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -44,7 +50,6 @@ import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -68,14 +73,15 @@ import org.junit.Test;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
-import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
+import static org.apache.solr.filestore.TestDistribPackageStore.checkAllNodesForFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
-import static org.apache.solr.filestore.TestDistribPackageStore.waitForAllNodesHaveFile;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
 //@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
+@LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-14901")
 public class TestPackages extends SolrCloudTestCase {
 
   @Before
@@ -432,14 +438,12 @@ public class TestPackages extends SolrCloudTestCase {
           .setNode(jetty.getNodeName())
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 5);
-      waitForAllNodesHaveFile(cluster,FILE3,
+      checkAllNodesForFile(cluster,FILE3,
           Utils.makeMap(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
           false);
-
     } finally {
       cluster.shutdown();
     }
-
   }
 
   @SuppressWarnings({"unchecked"})
@@ -575,7 +579,7 @@ public class TestPackages extends SolrCloudTestCase {
 
       delVersion.version = "0.12";//correct version. Should succeed
       req.process(cluster.getSolrClient());
-      //Verify with ZK that the data is correcy
+      //Verify with ZK that the data is correct
       TestDistribPackageStore.assertResponseValues(1,
           () -> new MapWriterMap((Map) Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH,
               null, new Stat(), true))),
@@ -583,7 +587,6 @@ public class TestPackages extends SolrCloudTestCase {
               ":packages:test_pkg[0]:version", "0.13",
               ":packages:test_pkg[0]:files[0]", FILE2
           ));
-
 
       //So far we have been verifying the details with  ZK directly
       //use the package read API to verify with each node that it has the correct data
@@ -649,7 +652,7 @@ public class TestPackages extends SolrCloudTestCase {
     MiniSolrCloudCluster cluster =
             configureCluster(4)
                     .withJettyConfig(jetty -> jetty.enableV2(true))
-                    .addConfig("conf", configset("cloud-managed"))
+                    .addConfig("conf1", configset("schema-package"))
                     .configure();
     try {
       String FILE1 = "/schemapkg/schema-plugins.jar";
@@ -658,10 +661,14 @@ public class TestPackages extends SolrCloudTestCase {
       postFileAndWait(cluster, "runtimecode/schema-plugins.jar.bin", FILE1,
               "iSRhrogDyt9P1htmSf/krh1kx9oty3TYyWm4GKHQGlb8a+X4tKCe9kKk+3tGs+bU9zq5JBZ5txNXsn96aZem5A==");
 
+      String FILE2 = "/schemapkg/payload-component.jar";
+      postFileAndWait(cluster, "runtimecode/payload-component.jar.bin", FILE2,
+          "gI6vYUDmSXSXmpNEeK1cwqrp4qTeVQgizGQkd8A4Prx2K8k7c5QlXbcs4lxFAAbbdXz9F4esBqTCiLMjVDHJ5Q==");
+
       Package.AddVersion add = new Package.AddVersion();
       add.version = "1.0";
       add.pkg = "schemapkg";
-      add.files = Arrays.asList(new String[]{FILE1});
+      add.files = Arrays.asList(FILE1,FILE2);
       V2Request req = new V2Request.Builder("/cluster/package")
               .forceV2(true)
               .withMethod(SolrRequest.METHOD.POST)
@@ -679,52 +686,10 @@ public class TestPackages extends SolrCloudTestCase {
               ));
 
       CollectionAdminRequest
-              .createCollection(COLLECTION_NAME, "conf", 2, 2)
+              .createCollection(COLLECTION_NAME, "conf1", 2, 2)
               .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
-      String addFieldTypeAnalyzerWithClass = "{\n" +
-              "'add-field-type' : {" +
-              "    'name' : 'myNewTextFieldWithAnalyzerClass',\n" +
-              "    'class':'schemapkg:my.pkg.MyTextField',\n" +
-              "    'analyzer' : {\n" +
-              "        'luceneMatchVersion':'5.0.0'" ;
-//          + ",\n" +
-//          "        'class':'schemapkg:my.pkg.MyWhitespaceAnalyzer'\n";
-      String charFilters =
-              "        'charFilters' : [{\n" +
-                      "            'class':'schemapkg:my.pkg.MyPatternReplaceCharFilterFactory',\n" +
-                      "            'replacement':'$1$1',\n" +
-                      "            'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
-                      "        }],\n";
-      String tokenizer =
-              "        'tokenizer' : { 'class':'schemapkg:my.pkg.MyWhitespaceTokenizerFactory' },\n";
-      String filters =
-              "        'filters' : [{ 'class':'solr.ASCIIFoldingFilterFactory' }]\n";
-      String suffix = "    }\n" +
-              "}}";
-      cluster.getSolrClient().request(new SolrRequest(SolrRequest.METHOD.POST, "/schema") {
-
-        @Override
-        public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-          return new RequestWriter.StringPayloadContentWriter(addFieldTypeAnalyzerWithClass + ',' + charFilters + tokenizer + filters + suffix, CommonParams.JSON_MIME);
-        }
-
-        @Override
-        public SolrParams getParams() {
-          return null;
-        }
-
-        @Override
-        public String getCollection() {
-          return COLLECTION_NAME;
-        }
-
-        @Override
-        public SolrResponse createResponse(SolrClient client) {
-          return new SolrResponseBase();
-        }
-      });
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
               Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
                       ":fieldType:analyzer:tokenizer:_packageinfo_:version","1.0",
@@ -782,8 +747,8 @@ public class TestPackages extends SolrCloudTestCase {
         fileContent,
         path, sig);// has file, but no signature
 
-    TestDistribPackageStore.waitForAllNodesHaveFile(cluster, path, Utils.makeMap(
-        ":files:" + path + ":sha512",
+    TestDistribPackageStore.checkAllNodesForFile(cluster, path, Utils.makeMap(
+            ":files:" + path + ":sha512",
         sha512
     ), false);
   }

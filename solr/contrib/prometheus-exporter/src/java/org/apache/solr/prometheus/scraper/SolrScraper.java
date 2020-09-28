@@ -21,12 +21,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,7 +41,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsQuery;
 import org.apache.solr.prometheus.exporter.SolrExporter;
@@ -59,7 +57,7 @@ public abstract class SolrScraper implements Closeable {
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final Executor executor;
+  protected final ExecutorService executor;
 
   public abstract Map<String, MetricSamples> metricsForAllHosts(MetricsQuery query) throws IOException;
 
@@ -69,7 +67,7 @@ public abstract class SolrScraper implements Closeable {
   public abstract MetricSamples search(MetricsQuery query) throws IOException;
   public abstract MetricSamples collections(MetricsQuery metricsQuery) throws IOException;
 
-  public SolrScraper(Executor executor) {
+  public SolrScraper(ExecutorService executor) {
     this.executor = executor;
   }
 
@@ -77,17 +75,32 @@ public abstract class SolrScraper implements Closeable {
       Collection<String> items,
       Function<String, MetricSamples> samplesCallable) throws IOException {
 
-    List<CompletableFuture<Pair<String, MetricSamples>>> futures = items.stream()
-        .map(item -> CompletableFuture.supplyAsync(() -> new Pair<>(item, samplesCallable.apply(item)), executor))
-        .collect(Collectors.toList());
-
-    Future<List<Pair<String, MetricSamples>>> allComplete = Async.waitForAllSuccessfulResponses(futures);
+    Map<String, MetricSamples> result = new HashMap<>(); // sync on this when adding to it below
 
     try {
-      return allComplete.get().stream().collect(Collectors.toMap(Pair::first, Pair::second));
-    } catch (InterruptedException | ExecutionException e) {
-      throw new IOException(e);
+      // invoke each samplesCallable with each item and putting the results in the above "result" map.
+      executor.invokeAll(
+          items.stream()
+              .map(item -> (Callable<MetricSamples>) () -> {
+                try {
+                  final MetricSamples samples = samplesCallable.apply(item);
+                  synchronized (result) {
+                    result.put(item, samples);
+                  }
+                } catch (Exception e) {
+                  // do NOT totally fail; just log and move on
+                  log.warn("Error occurred during metrics collection", e);
+                }
+                return null;//not used
+              })
+              .collect(Collectors.toList())
+      );
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
     }
+
+    return result;
   }
 
   protected MetricSamples request(SolrClient client, MetricsQuery query) throws IOException {

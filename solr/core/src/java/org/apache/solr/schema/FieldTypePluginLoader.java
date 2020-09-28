@@ -28,13 +28,13 @@ import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrClassLoader;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.AbstractPluginLoader;

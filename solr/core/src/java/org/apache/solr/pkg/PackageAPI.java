@@ -93,8 +93,7 @@ public class PackageAPI {
 
   private void registerListener(SolrZkClient zkClient)
       throws KeeperException, InterruptedException {
-    String path = SOLR_PKGS_PATH;
-    zkClient.exists(path,
+    zkClient.exists(SOLR_PKGS_PATH,
         new Watcher() {
 
           @Override
@@ -103,32 +102,33 @@ public class PackageAPI {
             if (Event.EventType.None.equals(event.getType())) {
               return;
             }
-            try {
-              synchronized (this) {
-                log.debug("Updating [{}] ... ", path);
-
-                // remake watch
-                final Watcher thisWatch = this;
-                final Stat stat = new Stat();
-                final byte[] data = zkClient.getData(path, thisWatch, stat, true);
-                pkgs = readPkgsFromZk(data, stat);
-                packageLoader.refreshPackageConf();
-              }
-            } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
-              log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
-            } catch (KeeperException e) {
-              log.error("A ZK error has occurred", e);
-              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-            } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.warn("Interrupted", e);
+            synchronized (this) {
+              log.debug("Updating [{}] ... ", SOLR_PKGS_PATH);
+              // remake watch
+              final Watcher thisWatch = this;
+              refreshPackages(thisWatch);
             }
           }
-
         }, true);
   }
 
+  public void refreshPackages(Watcher watcher)  {
+    final Stat stat = new Stat();
+    try {
+      final byte[] data = coreContainer.getZkController().getZkClient().getData(SOLR_PKGS_PATH, watcher, stat, true);
+      pkgs = readPkgsFromZk(data, stat);
+      packageLoader.refreshPackageConf();
+    } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
+      log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
+    } catch (KeeperException e) {
+      log.error("A ZK error has occurred", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+      log.warn("Interrupted", e);
+    }
+  }
 
   private Packages readPkgsFromZk(byte[] data, Stat stat) throws KeeperException, InterruptedException {
 
@@ -282,15 +282,11 @@ public class PackageAPI {
             log.error("Error deserializing packages.json", e);
             packages = new Packages();
           }
-          @SuppressWarnings({"rawtypes"})
-          List list = packages.packages.computeIfAbsent(add.pkg, Utils.NEW_ARRAYLIST_FUN);
-          for (Object o : list) {
-            if (o instanceof PkgVersion) {
-              PkgVersion version = (PkgVersion) o;
-              if (Objects.equals(version.version, add.version)) {
-                payload.addError("Version '" + add.version + "' exists already");
-                return null;
-              }
+          List<PkgVersion> list = packages.packages.computeIfAbsent(add.pkg, o -> new ArrayList<>());
+          for (PkgVersion version : list) {
+            if (Objects.equals(version.version, add.version)) {
+              payload.addError("Version '" + add.version + "' exists already");
+              return null;
             }
           }
           list.add(new PkgVersion(add));
@@ -433,5 +429,22 @@ public class PackageAPI {
     log.error("Error reading package config from zookeeper", SolrZkClient.checkInterrupted(e));
   }
 
-
+  public boolean isJarInuse(String path) {
+    Packages pkg = null;
+    try {
+      pkg = readPkgsFromZk(null, null);
+    } catch (KeeperException.NoNodeException nne) {
+      return false;
+    } catch (InterruptedException | KeeperException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    for (List<PkgVersion> vers : pkg.packages.values()) {
+      for (PkgVersion ver : vers) {
+        if (ver.files.contains(path)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }

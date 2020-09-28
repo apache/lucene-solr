@@ -84,7 +84,7 @@ public final class FieldInfo {
     this.pointIndexDimensionCount = pointIndexDimensionCount;
     this.pointNumBytes = pointNumBytes;
     this.softDeletesField = softDeletesField;
-    assert checkConsistency();
+    this.checkConsistency();
   }
 
   /** 
@@ -179,7 +179,7 @@ public final class FieldInfo {
     if (attributes != null) {
       this.attributes.putAll(attributes);
     }
-    assert checkConsistency();
+    this.checkConsistency();
   }
 
   /** Record that this field is indexed with points, with the
@@ -214,7 +214,7 @@ public final class FieldInfo {
     pointIndexDimensionCount = indexDimensionCount;
     pointNumBytes = numBytes;
 
-    assert checkConsistency();
+    this.checkConsistency();
   }
 
   /** Return point data dimension count */
@@ -241,7 +241,7 @@ public final class FieldInfo {
       throw new IllegalArgumentException("cannot change DocValues type from " + docValuesType + " to " + type + " for field \"" + name + "\"");
     }
     docValuesType = type;
-    assert checkConsistency();
+    this.checkConsistency();
   }
   
   /** Returns IndexOptions for the field, or IndexOptions.NONE if the field is not indexed */
@@ -263,6 +263,7 @@ public final class FieldInfo {
       // cannot store payloads if we don't store positions:
       storePayloads = false;
     }
+    this.checkConsistency();
   }
   
   /**
@@ -276,7 +277,7 @@ public final class FieldInfo {
   /** Sets the docValues generation of this field. */
   void setDocValuesGen(long dvGen) {
     this.dvGen = dvGen;
-    assert checkConsistency();
+    this.checkConsistency();
   }
   
   /**
@@ -289,14 +290,14 @@ public final class FieldInfo {
   
   void setStoreTermVectors() {
     storeTermVector = true;
-    assert checkConsistency();
+    this.checkConsistency();
   }
   
   void setStorePayloads() {
     if (indexOptions != IndexOptions.NONE && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
       storePayloads = true;
     }
-    assert checkConsistency();
+    this.checkConsistency();
   }
 
   /**
@@ -312,6 +313,7 @@ public final class FieldInfo {
       throw new IllegalStateException("cannot omit norms: this field is not indexed");
     }
     omitNorms = true;
+    this.checkConsistency();
   }
   
   /**

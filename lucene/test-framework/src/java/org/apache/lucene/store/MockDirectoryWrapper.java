@@ -249,7 +249,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     maybeYield();
     maybeThrowDeterministicException();
     if (crashed) {
-      throw new IOException("cannot rename after crash");
+      throw new IOException("cannot sync metadata after crash");
     }
     in.syncMetaData();
   }
