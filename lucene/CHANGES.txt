@@ -184,6 +184,8 @@ Other
 
 * LUCENE-9497: Integrate Error Prone, a static analysis tool during compilation (Dawid Weiss, Varun Thacker)
 
+* LUCENE-9544: add regenerate gradle script for nori dictionary (Namgyu Kim)
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes
