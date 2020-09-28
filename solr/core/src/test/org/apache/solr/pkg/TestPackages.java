@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrClient;
@@ -80,6 +81,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
 //@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
+@LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-14901")
 public class TestPackages extends SolrCloudTestCase {
 
   @Before
