@@ -39,10 +39,6 @@ import org.apache.lucene.util.Version;
  *   assertTokenStreamContents(stream, new String[] { "some", "text", "to", "analyze" });
  * </pre>
  */
-// TODO: this has to be here, since the abstract factories are not in lucene-core,
-// so test-framework doesnt know about them...
-// this also means we currently cannot use this in other analysis modules :(
-// TODO: maybe after we improve the abstract factory/SPI apis, they can sit in core and resolve this.
 public abstract class BaseTokenStreamFactoryTestCase extends BaseTokenStreamTestCase {
   
   private AbstractAnalysisFactory analysisFactory(Class<? extends AbstractAnalysisFactory> clazz, Version matchVersion, ResourceLoader loader, String... keysAndValues) throws Exception {
