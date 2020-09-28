@@ -281,6 +281,9 @@ Other Changes
 
 * SOLR-14876: Upgrade to zookeeper 3.6.2 (odidev via Erick Erickson)
 
+* SOLR-12987: Deprecated plugins/features are now logged once and with log category org.apache.solr.DEPRECATED
+  (David Smiley)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
