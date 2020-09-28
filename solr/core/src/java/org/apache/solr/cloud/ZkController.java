@@ -75,6 +75,7 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.SolrShutdownHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -147,7 +148,7 @@ import java.util.function.Supplier;
  * <p>
  * TODO: exceptions during close on attempts to update cloud state
  */
-public class ZkController implements Closeable {
+public class ZkController implements Closeable, Runnable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -176,6 +177,11 @@ public class ZkController implements Closeable {
   public final static String COLLECTION_PARAM_PREFIX = "collection.";
   public final static String CONFIGNAME_PROP = "configName";
   private boolean shudownCalled;
+
+  @Override
+  public void run() {
+    disconnect();
+  }
 
   static class ContextKey {
 
@@ -404,7 +410,10 @@ public class ZkController implements Closeable {
 
   public void start() throws KeeperException {
 
-   // boolean isRegistered = ShutdownMonitor.isRegistered(this);
+    boolean isRegistered = SolrShutdownHandler.isRegistered(this);
+    if (!isRegistered) {
+      SolrShutdownHandler.registerShutdown(this);
+    }
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
     if (zkCredentialsProviderClass != null && zkCredentialsProviderClass.trim().length() > 0) {

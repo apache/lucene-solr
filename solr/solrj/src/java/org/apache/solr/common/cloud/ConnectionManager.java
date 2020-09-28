@@ -338,10 +338,14 @@ public class ConnectionManager implements Watcher, Closeable {
     log.info("Close called on ZK ConnectionManager");
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
-    client.zkCallbackExecutor.shutdown();
+
+
+
     client.zkConnManagerCallbackExecutor.shutdown();
+
     keeper.close();
     keeper = null;
+    client.zkCallbackExecutor.shutdown();
     ExecutorUtil.awaitTermination(client.zkCallbackExecutor);
   //  client.zkConnManagerCallbackExecutor.shutdownNow();
     ExecutorUtil.awaitTermination(client.zkConnManagerCallbackExecutor);

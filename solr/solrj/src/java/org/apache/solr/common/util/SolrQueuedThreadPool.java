@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, ThreadPool.SizedThreadPool, Dumpable, TryExecutor, Closeable, Graceful {
+public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, ThreadPool.SizedThreadPool, Dumpable, TryExecutor, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static Runnable NOOP = () ->
     {
@@ -705,16 +705,6 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     @Override
     public Thread newThread(Runnable runnable) {
         return null;
-    }
-
-    @Override
-    public Future<Void> shutdown() {
-        return new FutureCallback(true);
-    }
-
-    @Override
-    public boolean isShutdown() {
-        return true;
     }
 
     private static class MyRunnable implements Runnable {

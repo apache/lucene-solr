@@ -55,6 +55,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SysStats;
@@ -121,7 +122,7 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static volatile boolean failed = false;
 
-  protected volatile static ExecutorService testExecutor;
+  protected volatile static PerThreadExecService testExecutor;
 
   @Rule
   public TestRule solrTestRules =
@@ -185,6 +186,7 @@ public class SolrTestCase extends LuceneTestCase {
 
     System.setProperty("org.eclipse.jetty.util.log.class", "org.apache.logging.log4j.appserver.jetty.Log4j2Logger");
 
+
     if (!SysStats.getSysStats().isAlive()) {
       SysStats.reStartSysStats();
     }
@@ -197,8 +199,8 @@ public class SolrTestCase extends LuceneTestCase {
 
     testExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), 12, true, false);
     ((PerThreadExecService) testExecutor).closeLock(true);
-    // stop zkserver threads that can linger
-    //interruptThreadsOnTearDown("nioEventLoopGroup", false);
+
+    interruptThreadsOnTearDown("RootExec", false);
 
     sslConfig = buildSSLConfig();
     if (sslConfig != null && sslConfig.isSSLMode()) {
@@ -257,7 +259,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       // can make things quite slow
       System.setProperty("solr.disableDefaultJmxReporter", "true");
-      System.setProperty("solr.skipCommitOnClose", "true");
+      System.setProperty("solr.skipCommitOnClose", "false");
 
       // can generate tons of URL garbage and can happen too often, defaults to false now anyway
       System.setProperty("solr.reloadSPI", "false");
@@ -435,8 +437,8 @@ public class SolrTestCase extends LuceneTestCase {
     try {
 
       SysStats.getSysStats().stopMonitor();
-
-    //  testExecutor.shutdown();
+      testExecutor.closeLock(false);
+      ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
       ParWork.shutdownRootSharedExec();
 
       AlreadyClosedException lastAlreadyClosedExp = CloseTracker.lastAlreadyClosedEx;

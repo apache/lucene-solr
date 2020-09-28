@@ -312,6 +312,8 @@ public class SolrIndexConfig implements MapSerializable {
       iwc.setMergedSegmentWarmer(warmer);
     }
 
+    iwc.setCommitOnClose(false);
+
     return iwc;
   }
 

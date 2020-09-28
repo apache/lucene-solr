@@ -253,8 +253,9 @@ cleanIfReq() {
 #################################
 recompileIfReq() {
   if [[ "$RECOMPILE" = true ]]; then
-    pushd "$VCS_WORK"/solr
-    ./gradlew clean distTar
+    pushd "$VCS_WORK"
+    ./gradlew clean
+    ./gradlew -p solr distTar
     if [[ "$?" -ne 0 ]]; then
       echo "BUILD FAIL - cloud.sh stopping, see above output for details"; popd; exit 7;
     fi
@@ -274,10 +275,10 @@ copyTarball() {
     echo "baz"
     pushd # back to original dir to properly resolve vcs working dir
     echo "foobar:"$(pwd)
-    if [[ ! -f $(ls "$VCS_WORK"/solr/packaging/solr-*.tgz) ]]; then
+    if [[ ! -f $(ls "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz) ]]; then
       echo "No solr tarball found try again with -r"; popd; exit 10;
     fi
-    cp "$VCS_WORK"/solr/packaging/solr-*.tgz ${CLUSTER_WD}
+    cp "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz ${CLUSTER_WD}
     pushd # back into cluster wd to unpack
     tar xzvf solr-*.tgz
     popd
@@ -335,6 +336,41 @@ start(){
     FINAL_COMMAND="${SOLR}/bin/solr ${argsArray[@]}"
     echo ${FINAL_COMMAND}
     ${SOLR}/bin/solr "${argsArray[@]}"
+  done
+
+  SOLR_STOP_WAIT=180
+  SOLR_LOGS_DIR=logs
+  for i in `seq 1 $NUM_NODES`; do
+     if lsof -v 2>&1 | grep -q revision; then
+      echo -n "Waiting up to $SOLR_STOP_WAIT seconds to see Solr running on port $SOLR_PORT"
+      SOLR_PORT="898${i}"
+      (loops=0
+      while true
+      do
+        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN)
+        if [ -z "$running" ]; then
+	        slept=$((loops / 2))
+          if [ $slept -lt $SOLR_STOP_WAIT ]; then
+            sleep 0.5
+            loops=$[$loops+1]
+          else
+            echo -e "Still not seeing Solr listening on $SOLR_PORT after $SOLR_STOP_WAIT seconds!"
+            tail -30 "$SOLR_LOGS_DIR/solr.log"
+            exit # subshell!
+          fi
+        else
+          SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+          echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
+          exit # subshell!
+        fi
+      done) &
+    else
+      echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT."
+      sleep 10
+      SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+      echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
+      return;
+    fi
   done
 
   touch ${CLUSTER_WD}  # make this the most recently updated dir for ls -t

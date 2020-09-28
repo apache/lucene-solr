@@ -569,9 +569,9 @@ public class SolrMetricManager {
    */
   public void registerAll(String registry, MetricSet metrics, boolean force, String... metricPath) {
     MetricRegistry metricRegistry = registry(registry);
- //   try (ParWork work = new ParWork(this)) {
+    try (ParWork work = new ParWork(this)) {
       for (Map.Entry<String,Metric> entry : metrics.getMetrics().entrySet()) {
-     //   work.collect("registerMetric-" + entry.getKey(), () ->{
+        work.collect("registerMetric-" + entry.getKey(), () ->{
           String fullName = mkName(entry.getKey(), metricPath);
           try {
             metricRegistry.register(fullName, entry.getValue());
@@ -583,9 +583,9 @@ public class SolrMetricManager {
               log.warn("Metric already registered: " + fullName);
             }
           }
-    //    });
+        });
       }
- //   }
+    }
   }
 
   /**

@@ -932,9 +932,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       // okay
     } finally {
       if (tpe != null) {
-        if (!tpe.isShutdown()) {
-          ExecutorUtil.shutdownAndAwaitTermination(tpe);
-        }
+//        if (!tpe.isShutdown()) {
+//          ExecutorUtil.shutdownAndAwaitTermination(tpe);
+//        }
       }
     }
 

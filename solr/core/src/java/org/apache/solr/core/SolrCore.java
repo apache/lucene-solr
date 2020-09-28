@@ -824,6 +824,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       try (SolrIndexWriter writer = SolrIndexWriter.buildIndexWriter(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(),
               true, getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec)) {
+        writer.commit();
       } catch (Exception e) {
         ParWork.propagateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);

@@ -1,5 +1,7 @@
 package org.apache.solr.common;
 
+import org.apache.solr.common.util.ExecutorUtil;
+
 import java.util.concurrent.ExecutorService;
 
 public class SolrThread extends Thread {
@@ -22,7 +24,12 @@ public class SolrThread extends Thread {
   }
 
   public void run() {
-    super.run();
+    try {
+      super.run();
+    } finally {
+//      ExecutorUtil.shutdownAndAwaitTermination(executorService);
+//      executorService = null;
+    }
   }
 
   private void setExecutorService(ExecutorService service) {
@@ -33,7 +40,7 @@ public class SolrThread extends Thread {
     Integer minThreads;
     Integer maxThreads;
     minThreads = 4;
-    maxThreads = ParWork.PROC_COUNT / 2;
+    maxThreads = ParWork.PROC_COUNT;
     this.executorService = ParWork.getExecutorService(Math.max(minThreads, maxThreads));
   }
 

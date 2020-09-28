@@ -109,9 +109,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       if (log.isInfoEnabled()) log.info("SolrCoreState ref count has reached 0 - closing IndexWriter");
       if (closer != null) {
         if (log.isDebugEnabled()) log.debug("closing IndexWriter with IndexWriterCloser");
+        indexWriter.commit();
         closer.closeWriter(indexWriter);
       } else if (indexWriter != null) {
         log.debug("closing IndexWriter...");
+        indexWriter.commit();
         indexWriter.close();
       }
       indexWriter = null;
@@ -221,6 +223,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       if (!rollback) {
         try {
           log.debug("Closing old IndexWriter... core=" + coreName);
+          iw.commit();
           iw.close();
         } catch (Exception e) {
           ParWork.propagateInterrupt("Error closing old IndexWriter. core=" + coreName, e);
@@ -355,7 +358,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
           recoveryWaiting.incrementAndGet();
 
-          recoveryLock.lock();
+          recoveryLock.lockInterruptibly();
           // don't use recoveryLock.getQueueLength() for this
           if (recoveryWaiting.decrementAndGet() > 0) {
             // another recovery waiting behind us, let it run now instead of after we finish

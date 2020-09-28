@@ -1740,6 +1740,10 @@ public class ZkStateReader implements SolrCloseable {
   public void waitForState(final String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
       throws InterruptedException, TimeoutException {
 
+    if (this.closed) {
+      throw new AlreadyClosedException();
+    }
+
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
@@ -1787,6 +1791,11 @@ public class ZkStateReader implements SolrCloseable {
   public void waitForState(final String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
       throws InterruptedException, TimeoutException {
     assert collection != null;
+
+    if (this.closed) {
+      throw new AlreadyClosedException();
+    }
+
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();

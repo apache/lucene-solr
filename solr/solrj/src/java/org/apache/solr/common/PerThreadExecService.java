@@ -86,6 +86,7 @@ public class PerThreadExecService extends AbstractExecutorService {
 //    if (closeLock) {
 //      throw new IllegalCallerException();
 //    }
+    closeTracker.close();
     assert ObjectReleaseTracker.release(this);
     this.shutdown = true;
   }
@@ -160,17 +161,15 @@ public class PerThreadExecService extends AbstractExecutorService {
       return;
     }
 
+    if (!checkLoad()) {
+      runIt(runnable, false, false);
+      return;
+    }
 
-      if (!checkLoad()) {
-        runIt(runnable, false, false);
-        return;
-      }
-
-      if (!available.tryAcquire()) {
-        runIt(runnable, false, false);
-        return;
-      }
-
+    if (!available.tryAcquire()) {
+      runIt(runnable, false, false);
+      return;
+    }
 
     Runnable finalRunnable = runnable;
     try {
@@ -223,7 +222,11 @@ public class PerThreadExecService extends AbstractExecutorService {
   }
   
   public void closeLock(boolean lock) {
-    closeLock = lock;
+    if (lock) {
+      closeTracker.enableCloseLock();
+    } else {
+      closeTracker.disableCloseLock();
+    }
   }
 
 }

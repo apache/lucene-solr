@@ -102,7 +102,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     createReplaceNodeRequest(node2bdecommissioned, emptyNode, null).processAsync(asyncId0, cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId0);
     boolean success = false;
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 30; i++) {
       CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
       if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
         success = true;

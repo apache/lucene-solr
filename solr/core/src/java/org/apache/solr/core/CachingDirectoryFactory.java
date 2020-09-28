@@ -195,30 +195,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     synchronized (this) {
       closed = true;
       if (log.isDebugEnabled()) log.debug("Closing {} - {} directories currently being tracked", this.getClass().getSimpleName(), byDirectoryCache.size());
-      TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS,  TimeSource.NANO_TIME); // nocommit sensible timeout control
       Collection<CacheValue> values = new HashSet<>(byDirectoryCache.values());
       for (CacheValue val : values) {
         if (log.isDebugEnabled()) log.debug("Closing {} - currently tracking: {}",
                 this.getClass().getSimpleName(), val);
-        try {
-          // if there are still refs out, we have to wait for them
-          while (val.refCnt != 0) {
-            wait(250);
-
-            if (timeout.hasTimedOut()) {
-              String msg = "Timeout waiting for all directory ref counts to be released - gave up waiting on " + val;
-              log.error(msg);
-              // debug
-              // val.originTrace.printStackTrace();
-              throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-            }
-          }
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt("Interrupted closing directory", e);
-          return;
-        } catch (Exception e) {
-          ParWork.propagateInterrupt("Error closing directory", e);
-        }
       }
 
       values = byDirectoryCache.values();

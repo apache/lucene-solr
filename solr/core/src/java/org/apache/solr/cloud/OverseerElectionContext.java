@@ -77,7 +77,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
         log.info("Bailing on becoming leader, we are closed");
         return;
       }
-      if (!isClosed() && !overseer.isDone() && (overseer.getUpdaterThread() == null || !overseer.getUpdaterThread().isAlive())) {
+      if (!isClosed() && !overseer.getZkController().getCoreContainer().isShutDown() && !overseer.isDone() && (overseer.getUpdaterThread() == null || !overseer.getUpdaterThread().isAlive())) {
         try {
           overseer.start(id, context);
         } finally {
