@@ -193,7 +193,7 @@ API Changes
 
 * LUCENE-9437: Lucene's facet module's DocValuesOrdinalsReader.decode method
   is now public, making it easier for applications to decode facet
-  ordinals into their corresponding labels (Ankur)
+  ordinals into their corresponding labels (Ankur Goel)
 
 * LUCENE-9515: IndexingChain now accepts individual primitives rather than a
   DocumentsWriterPerThread instance in order to create a new DocConsumer.
@@ -211,6 +211,10 @@ New Features
 * LUCENE-9484: Allow sorting an index after it was created. With SortingCodecReader, existing
   unsorted segments can be wrapped and merged into a fresh index using IndexWriter#addIndices
   API. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-9444: Add utility class to retrieve facet labels from the
+  taxonomy index for a facet field so such fields do not also have to
+  be redundantly stored (Ankur Goel)
 
 Improvements
 ---------------------
@@ -390,7 +394,7 @@ Improvements
 * LUCENE-9393: Make FunctionScoreQuery use ScoreMode.COMPLETE for creating the inner query weight when
   ScoreMode.TOP_DOCS is requested. (Tomás Fernández Löbbe)
 
-* LUCENE-9392: Make FacetsConfig.DELIM_CHAR publicly accessible (Ankur Goel))
+* LUCENE-9392: Make FacetsConfig.DELIM_CHAR publicly accessible (Ankur Goel)
 
 * LUCENE-9397: UniformSplit supports encodable fields metadata. (Bruno Roustant)
 
