@@ -25,6 +25,7 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.ClusterPropInfo;
 import org.apache.solr.client.solrj.request.beans.CreateConfigInfo;
+import org.apache.solr.client.solrj.request.beans.RateLimiterMeta;
 import org.apache.solr.cloud.OverseerConfigSetMessageHandler;
 import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.common.MapWriterMap;
@@ -51,6 +52,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
@@ -206,7 +208,7 @@ public class ClusterAPI {
     public void setProperty(PayloadObj<Map<String,String>> obj) throws Exception {
       Map<String,Object> m =  obj.getDataMap();
       m.put("action", CLUSTERPROP.toString());
-      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(),m ), obj.getResponse());
+      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 
     @Command(name = "set-placement-plugin")
@@ -224,6 +226,21 @@ public class ClusterAPI {
             null:
             new MapWriterMap(placementPluginConfig),
             PlacementPluginConfigImpl.PLACEMENT_PLUGIN_CONFIG_KEY);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
+      }
+    }
+
+    @Command(name = "set-ratelimiter")
+    public void setRateLimiters(PayloadObj<RateLimiterMeta> payLoad) {
+      RateLimiterMeta rateLimiterConfig = payLoad.get();
+      ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
+
+      try {
+        clusterProperties.update(rateLimiterConfig == null?
+                null:
+                rateLimiterConfig,
+                RL_CONFIG_KEY);
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }
