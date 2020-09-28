@@ -483,10 +483,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     UpdateRequest updateRequest = (UpdateRequest) request;
     SolrParams params = request.getParams();
     ModifiableSolrParams routableParams = new ModifiableSolrParams();
-    ModifiableSolrParams nonRoutableParams = new ModifiableSolrParams();
 
     if(params != null) {
-      nonRoutableParams.add(params);
       routableParams.add(params);
       for(String param : NON_ROUTABLE_PARAMS) {
         routableParams.remove(param);
@@ -567,11 +565,11 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           throw new SolrServerException(cause);
         }
       }
-      doDeleteQuery(updateRequest, nonRoutableParams, routes, shardResponses, apiFuture, start, isAsyncRequest);
+      doDeleteQuery(updateRequest, routes, shardResponses, apiFuture, start, isAsyncRequest);
     } else {
       updateFuture.whenComplete((result, error) -> {
         if (!updateFuture.isCompletedExceptionally()) {
-          doDeleteQuery(updateRequest, nonRoutableParams, routes, shardResponses, apiFuture, start, isAsyncRequest);
+          doDeleteQuery(updateRequest, routes, shardResponses, apiFuture, start, isAsyncRequest);
         } else {
           apiFuture.completeExceptionally(error);
         }
@@ -698,7 +696,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   private void doDeleteQuery(UpdateRequest updateRequest,
-                             ModifiableSolrParams nonRoutableParams,
                              final Map<String, ? extends LBSolrClient.Req> routes,
                              NamedList<NamedList<?>> shardResponses,
                              CompletableFuture<NamedList<Object>> apiFuture,
@@ -712,16 +709,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       nonRoutableRequest = deleteQueryRequest;
     }
 
-    Set<String> paramNames = nonRoutableParams.getParameterNames();
+    final ModifiableSolrParams params = updateRequest.getParams();
+    final boolean hasNonRoutableParams = params != null &&
+        params.getParameterNames().stream().anyMatch(NON_ROUTABLE_PARAMS::contains);
 
-    Set<String> intersection = new HashSet<>(paramNames);
-    intersection.retainAll(NON_ROUTABLE_PARAMS);
-
-    if (nonRoutableRequest != null || intersection.size() > 0) {
+    if (nonRoutableRequest != null || hasNonRoutableParams) {
       if (nonRoutableRequest == null) {
         nonRoutableRequest = new UpdateRequest();
       }
-      nonRoutableRequest.setParams(nonRoutableParams);
+      nonRoutableRequest.setParams(params);
       nonRoutableRequest.setBasicAuthCredentials(updateRequest.getBasicAuthUser(), updateRequest.getBasicAuthPassword());
       List<String> urlList = new ArrayList<>(routes.keySet());
       Collections.shuffle(urlList, rand);
