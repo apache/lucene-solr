@@ -112,7 +112,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
     }
 
     if (rateLimiterMeta.slotAcquisitionTimeoutInMS != null) {
-      rateLimiterConfig.waitForSlotAcquisition = rateLimiterMeta.slotAcquisitionTimeoutInMS;
+      rateLimiterConfig.waitForSlotAcquisition = rateLimiterMeta.slotAcquisitionTimeoutInMS.longValue();
     }
   }
 }

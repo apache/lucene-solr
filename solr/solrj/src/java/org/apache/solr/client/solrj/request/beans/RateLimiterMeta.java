@@ -39,7 +39,7 @@ public class RateLimiterMeta implements ReflectMapWriter {
   public Boolean slotBorrowingEnabled;
 
   @JsonProperty
-  public Long slotAcquisitionTimeoutInMS;
+  public Integer slotAcquisitionTimeoutInMS;
 
   public RateLimiterMeta copy() {
     RateLimiterMeta result = new RateLimiterMeta();
