@@ -128,6 +128,8 @@ Bug Fixes
 * SOLR-14767: Fix NumberFormatException when integer/long field value is specified as floating number
   (Apoorv Bhawsar, Munendra S N)
 
+* SOLR-14897: Fix unlimited number of forwarding the request from one node to another node. (hossman, Munendra S N)
+
 Other Changes
 ---------------------
 
