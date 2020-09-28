@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.email.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.standard.EmojiTokenizationTestUnicode_11_0;
 import org.apache.lucene.analysis.standard.WordBreakTestUnicode_9_0_0;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
