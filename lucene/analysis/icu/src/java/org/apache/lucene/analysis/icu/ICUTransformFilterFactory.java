@@ -22,7 +22,7 @@ import java.util.Map;
 
 import com.ibm.icu.text.Transliterator;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link ICUTransformFilter}.

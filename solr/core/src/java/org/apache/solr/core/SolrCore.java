@@ -64,7 +64,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.MapMaker;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;

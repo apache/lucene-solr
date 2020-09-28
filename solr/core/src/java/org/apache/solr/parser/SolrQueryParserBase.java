@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import com.google.common.base.Strings;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
