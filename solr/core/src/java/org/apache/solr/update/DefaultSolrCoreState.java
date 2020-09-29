@@ -358,7 +358,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
           recoveryWaiting.incrementAndGet();
 
-          recoveryLock.lockInterruptibly();
+          while (!recoveryLock.tryLock(1, TimeUnit.SECONDS)) {
+            if (closed || prepForClose) {
+              return;
+            }
+          }
           // don't use recoveryLock.getQueueLength() for this
           if (recoveryWaiting.decrementAndGet() > 0) {
             // another recovery waiting behind us, let it run now instead of after we finish
