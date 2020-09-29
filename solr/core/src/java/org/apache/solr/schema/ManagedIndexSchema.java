@@ -1319,7 +1319,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     for (CharFilterFactory next : charFilters) {
       if (next instanceof ResourceLoaderAware) {
         try {
-          ((ResourceLoaderAware) next).inform(resourceLoader);
+          ((ResourceLoaderAware) next).inform(loader);
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
@@ -1329,7 +1329,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     TokenizerFactory tokenizerFactory = chain.getTokenizerFactory();
     if (tokenizerFactory instanceof ResourceLoaderAware) {
       try {
-        ((ResourceLoaderAware) tokenizerFactory).inform(resourceLoader);
+        ((ResourceLoaderAware) tokenizerFactory).inform(loader);
       } catch (IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
@@ -1340,7 +1340,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       if (next instanceof ResourceLoaderAware) {
         SolrResourceLoader.CURRENT_AWARE.set((ResourceLoaderAware) next);
         try {
-          ((ResourceLoaderAware) next).inform(resourceLoader);
+          ((ResourceLoaderAware) next).inform(loader);
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         } finally {
