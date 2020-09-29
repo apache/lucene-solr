@@ -71,6 +71,10 @@ import static org.apache.solr.common.util.Utils.handleExp;
 import static org.apache.solr.common.util.Utils.time;
 import static org.apache.solr.common.util.Utils.timeElapsed;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class PolicyHelper {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

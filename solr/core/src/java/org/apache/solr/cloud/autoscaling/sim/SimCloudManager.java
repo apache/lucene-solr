@@ -109,6 +109,8 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 
 /**
  * Simulated {@link SolrCloudManager}.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SimCloudManager implements SolrCloudManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This suggester simply logs the request but does not produce any suggestions.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class UnsupportedSuggester extends Suggester {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -31,6 +31,8 @@ import org.apache.solr.common.util.TimeSource;
 
 /**
  * Base class for overriding some behavior of {@link SolrCloudManager}.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class DelegatingCloudManager implements SolrCloudManager {
   protected final SolrCloudManager delegate;

@@ -17,6 +17,8 @@
 
 /**
  * Common classes for autoscaling parsing filtering nodes and sorting
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 
 package org.apache.solr.client.solrj.cloud.autoscaling;

@@ -37,6 +37,8 @@ import static java.util.Collections.unmodifiableSet;
 /**
  * A Variable Type used in Autoscaling policy rules. Each variable type may have unique implementation
  * of functionalities
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public interface Variable {
   String NULL = "";

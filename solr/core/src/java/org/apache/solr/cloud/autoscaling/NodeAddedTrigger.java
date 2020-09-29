@@ -51,6 +51,8 @@ import static org.apache.solr.common.params.AutoScalingParams.REPLICA_TYPE;
 
 /**
  * Trigger for the {@link TriggerEventType#NODEADDED} event
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class NodeAddedTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

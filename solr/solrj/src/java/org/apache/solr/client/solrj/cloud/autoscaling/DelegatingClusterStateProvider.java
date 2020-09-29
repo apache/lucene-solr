@@ -28,6 +28,8 @@ import org.apache.solr.common.cloud.DocCollection;
 
 /**
  * Base class for overriding some behavior of {@link ClusterStateProvider}
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class DelegatingClusterStateProvider implements ClusterStateProvider {
   protected ClusterStateProvider delegate;

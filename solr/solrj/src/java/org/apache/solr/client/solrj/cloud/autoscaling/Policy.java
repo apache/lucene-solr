@@ -60,14 +60,16 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.NODE;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.WITH_COLLECTION;
 
-/*The class that reads, parses and applies policies specified in
+/**
+ * The class that reads, parses and applies policies specified in
  * autoscaling.json
  *
  * Create one instance of this class per unique autoscaling.json.
  * This is immutable and is thread-safe
  *
- * Create a fresh new session for each use
+ * Create a fresh new session for each use.
  *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class Policy implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

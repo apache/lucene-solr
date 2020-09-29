@@ -55,6 +55,8 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
  * Represents a set of conditions in the policy
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class Clause implements MapWriter, Comparable<Clause> {
   public static final String NODESET = "nodeset";

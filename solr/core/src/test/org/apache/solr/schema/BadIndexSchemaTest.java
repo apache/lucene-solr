@@ -186,4 +186,9 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   public void testSchemaWithDefaultSearchField() throws Exception {
     doTest("bad-schema-defaultsearchfield.xml", "Setting defaultSearchField in schema not supported since Solr 7");
   }
+
+  public void testDateRangeFieldWithInvalidOptions() throws Exception {
+    doTest("bad-schema-daterangefield-type-options.xml", "FieldType DateRangeField is incompatible with omitNorms=false");
+    doTest("bad-schema-daterangefield-instance-options.xml", "daterange_field of type DateRangeField is incompatible with omitNorms=false");
+  }
 }

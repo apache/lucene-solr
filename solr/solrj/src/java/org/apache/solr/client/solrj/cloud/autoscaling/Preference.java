@@ -30,6 +30,10 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class Preference implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

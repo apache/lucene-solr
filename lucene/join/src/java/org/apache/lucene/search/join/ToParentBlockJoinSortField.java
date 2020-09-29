@@ -35,8 +35,6 @@ import org.apache.lucene.search.comparators.LongComparator;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.NumericUtils;
 
-import static org.apache.lucene.search.join.BlockJoinSelector.toIter;
-
 /**
  * A special sort field that allows sorting parent docs based on nested / child level fields.
  * Based on the sort order it either takes the document with the lowest or highest field value into account.

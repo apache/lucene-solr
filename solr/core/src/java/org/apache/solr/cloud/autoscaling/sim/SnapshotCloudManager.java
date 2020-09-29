@@ -58,6 +58,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Read-only snapshot of another {@link SolrCloudManager}.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SnapshotCloudManager implements SolrCloudManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -18,6 +18,8 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 /**
  * Enum that represents the stages of trigger event processing.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public enum TriggerEventProcessorStage {
   STARTED,

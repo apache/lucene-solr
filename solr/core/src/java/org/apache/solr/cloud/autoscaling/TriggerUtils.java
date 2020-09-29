@@ -23,6 +23,7 @@ import java.util.Set;
 
 /**
  *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class TriggerUtils {
   // validation helper methods

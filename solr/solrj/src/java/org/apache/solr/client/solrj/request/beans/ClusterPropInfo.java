@@ -54,7 +54,7 @@ public class ClusterPropInfo implements ReflectMapWriter {
     public CollectionDefaults collection;
 
     @JsonProperty
-    public CollectionDefaults cluster;
+    public ClusterInfo cluster;
 
   }
 

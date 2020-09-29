@@ -46,6 +46,8 @@ import org.slf4j.LoggerFactory;
  * Simulated {@link NodeStateProvider}.
  * Note: in order to setup node-level metrics use {@link #simSetNodeValues(String, Map)}. However, in order
  * to setup core-level metrics use {@link SimClusterStateProvider#simSetCollectionValue(String, String, Object, boolean, boolean)}.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SimNodeStateProvider implements NodeStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -21,6 +21,10 @@ import java.io.IOException;
 
 import org.apache.solr.common.MapWriter;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 class RangeVal implements MapWriter {
   final Number min, max, actual;
 

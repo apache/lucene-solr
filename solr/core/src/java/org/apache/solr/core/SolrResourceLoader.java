@@ -34,6 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.ImmutableSet;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.codecs.Codec;
@@ -83,27 +85,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private CoreContainer coreContainer;
   private PackageListeningClassLoader schemaLoader ;
 
-  private PackageListeningClassLoader createSchemaLoader() {
-    CoreContainer cc = getCoreContainer();
-    if (cc == null) {
-      //corecontainer not available . can't load from packages
-      return null;
-    }
-    return new PackageListeningClassLoader(cc, this, pkg -> {
-      if (getSolrConfig() == null) return null;
-      return getSolrConfig().maxPackageVersion(pkg);
-    }, () -> {
-      if(getCoreContainer() == null || config == null || coreName == null || coreId==null) return;
-      try (SolrCore c = getCoreContainer().getCore(coreName, coreId)) {
-        if (c != null) {
-          c.fetchLatestSchema();
-        }
-      }
-    });
-  }
-
-
-
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
@@ -115,7 +96,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   // Provide a registry so that managed resources can register themselves while the XML configuration
   // documents are being parsed ... after all are registered, they are asked by the RestManager to
   // initialize themselves. This two-step process is required because not all resources are available
-  // (such as the SolrZkClient) when XML docs are being parsed.    
+  // (such as the SolrZkClient) when XML docs are being parsed.
   private RestManager.Registry managedResourceRegistry;
   /** @see #reloadLuceneSPI() */
   private boolean needToReloadLuceneSPI = false; // requires synchronization
@@ -514,6 +495,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     }
 
     Class<? extends T> clazz = null;
+    clazz = getPackageClass(cname, expectedType);
+    if(clazz != null) return clazz;
     try {
       // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
       final Matcher m = legacyAnalysisPattern.matcher(cname);
@@ -574,6 +557,24 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
         }
       }
     }
+  }
+
+  private  <T> Class<? extends T> getPackageClass(String cname, Class<T> expectedType) {
+    PluginInfo.ClassName cName = PluginInfo.parseClassName(cname);
+    if (cName.pkg == null) return null;
+    ResourceLoaderAware aware = CURRENT_AWARE.get();
+    if (aware != null) {
+      //this is invoked from a component
+      //let's check if it's a schema component
+      @SuppressWarnings("rawtypes")
+      Class type = assertAwareCompatibility(ResourceLoaderAware.class, aware);
+      if (schemaResourceLoaderComponents.contains(type)) {
+        //this is a schema component
+        //lets use schema classloader
+        return getSchemaLoader().findClass(cname, expectedType);
+      }
+    }
+    return null;
   }
 
   static final String[] empty = new String[0];
@@ -716,8 +717,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
         waitingForResources.clear();
       }
 
-      for( ResourceLoaderAware aware : arr) {
-        aware.inform(loader);
+      for (ResourceLoaderAware aware : arr) {
+        CURRENT_AWARE.set(aware);
+        try{
+          aware.inform(loader);
+        } finally {
+          CURRENT_AWARE.remove();
+        }
+
       }
     }
   }
@@ -802,11 +809,21 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     );
   }
 
+  /**If these components are trying to load classes, use schema classloader
+   *
+   */
+  @SuppressWarnings("rawtypes")
+  private static final ImmutableSet<Class> schemaResourceLoaderComponents = ImmutableSet.of(
+      CharFilterFactory.class,
+      TokenFilterFactory.class,
+      TokenizerFactory.class,
+      FieldType.class);
+
   /**
    * Utility function to throw an exception if the class is invalid
    */
   @SuppressWarnings({"rawtypes"})
-  public static void assertAwareCompatibility(Class aware, Object obj) {
+  public static Class assertAwareCompatibility(Class aware, Object obj) {
     Class[] valid = awareCompatibility.get( aware );
     if( valid == null ) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
@@ -814,7 +831,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     }
     for( Class v : valid ) {
       if( v.isInstance( obj ) ) {
-        return;
+        return v;
       }
     }
     StringBuilder builder = new StringBuilder();
@@ -841,6 +858,25 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   }
   public List<SolrInfoBean> getInfoMBeans(){
     return Collections.unmodifiableList(infoMBeans);
+  }
+
+  private PackageListeningClassLoader createSchemaLoader() {
+    CoreContainer cc = getCoreContainer();
+    if (cc == null) {
+      //corecontainer not available . can't load from packages
+      return null;
+    }
+    return new PackageListeningClassLoader(cc, this, pkg -> {
+      if (getSolrConfig() == null) return null;
+      return getSolrConfig().maxPackageVersion(pkg);
+    }, () -> {
+      if(getCoreContainer() == null || config == null || coreName == null || coreId==null) return;
+      try (SolrCore c = getCoreContainer().getCore(coreName, coreId)) {
+        if (c != null) {
+          c.fetchLatestSchema();
+        }
+      }
+    });
   }
 
 
@@ -873,5 +909,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       }
     }
   }
+
+  //This is to verify if this requires to use the schema classloader for classes loaded from packages
+  public static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
 
 }

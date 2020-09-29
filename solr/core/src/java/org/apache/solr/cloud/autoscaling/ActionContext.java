@@ -26,7 +26,9 @@ import org.apache.solr.common.MapWriter;
 /**
  * Provides additional context for the TriggerAction such as the trigger instance on
  * which the action is being executed as well as helper methods to pass computed information along
- * to the next action
+ * to the next action.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class ActionContext implements MapWriter {
 

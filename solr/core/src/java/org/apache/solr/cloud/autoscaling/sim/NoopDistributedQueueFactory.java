@@ -28,6 +28,8 @@ import org.apache.solr.common.util.Pair;
 
 /**
  * A queue factory implementation that does nothing.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class NoopDistributedQueueFactory implements DistributedQueueFactory {
 

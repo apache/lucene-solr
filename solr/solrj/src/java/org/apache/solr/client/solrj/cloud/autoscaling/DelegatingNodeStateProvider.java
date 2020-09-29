@@ -26,6 +26,8 @@ import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 
 /**
  * Base class for overriding some behavior of {@link NodeStateProvider}.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class DelegatingNodeStateProvider implements NodeStateProvider {
   private final NodeStateProvider delegate;

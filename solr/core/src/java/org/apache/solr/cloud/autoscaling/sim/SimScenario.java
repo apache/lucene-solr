@@ -83,6 +83,8 @@ import org.slf4j.LoggerFactory;
 /**
  * This class represents an autoscaling scenario consisting of a series of autoscaling
  * operations on a simulated cluster.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SimScenario implements AutoCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

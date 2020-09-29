@@ -28,6 +28,8 @@ import org.apache.solr.common.util.Pair;
 
 /**
  * This suggester produces a SPLITSHARD request using provided {@link org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint#COLL_SHARD} value.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 class SplitShardSuggester extends Suggester {
 

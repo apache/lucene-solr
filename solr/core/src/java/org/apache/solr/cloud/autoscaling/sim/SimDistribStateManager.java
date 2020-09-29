@@ -66,6 +66,8 @@ import org.slf4j.LoggerFactory;
  * Simulated {@link DistribStateManager} that keeps all data locally in a static structure. Instances of this
  * class are identified by their id in order to simulate the deletion of ephemeral nodes when {@link #close()} is
  * invoked.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SimDistribStateManager implements DistribStateManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

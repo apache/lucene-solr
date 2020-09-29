@@ -42,6 +42,8 @@ import static java.util.stream.Collectors.toList;
 /**
  * Bean representation of <code>autoscaling.json</code>, which parses data
  * lazily.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class AutoScalingConfig implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

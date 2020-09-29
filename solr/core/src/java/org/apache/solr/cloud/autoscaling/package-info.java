@@ -16,6 +16,8 @@
  */
 
 /**
- * Package for classes related to autoscaling
+ * Package for classes related to autoscaling.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 package org.apache.solr.cloud.autoscaling;

@@ -22,6 +22,9 @@ New Features
 
 * SOLR-13751: Add BooleanSimilarityFactory class. (Andy Webb via Christine Poerschke)
 
+* SOLR-11167: Avoid $SOLR_STOP_WAIT use during 'bin/solr start' if $SOLR_START_WAIT is supplied.
+  (Omar Abdelnabi, Christine Poerschke)
+
 Improvements
 ---------------------
 
@@ -49,6 +52,12 @@ Improvements
 * SOLR-14722: Track timeAllowed from earlier in the request lifecycle. (David Smiley)
 
 * SOLR-14799: JWT authentication plugin only requires "sub" claim when principalClaim=sub. (Erik Hatcher)
+
+* SOLR-14802: geodist: Support most (all?) spatial field types as an argument like LLPSF, SRPTFT, and others.
+  (Tom Edge, Craig Wrigglesworth)
+
+* SOLR-14859: DateRangeField now throws errors when invalid field/fieldType options specified; no longer silently accepts incompatible option values
+  (Jason Gerlowski, Chris Hostetter, Munendra S N)
 
 Optimizations
 ---------------------
@@ -103,6 +112,19 @@ Bug Fixes
 * SOLR-14821: {!terms} docValuesTermsFilterTopLevel method now works with single-valued strings (Anatolii Siuniaev
   via Jason Gerlowski)
 
+* SOLR-13181: macro expansion of parameters could result in a StringIndexOutOfBoundsException.
+  Also, params with macros will be processed more strictly by LTR FeatureWeight.
+  (David Smiley, Cesar Rodriguez, Christine Poerschke)
+
+* SOLR-14768: Fix HTTP multipart POST to Solr -- a regression from 8.6.0.
+  Many Jetty classes are not classpath-visible from the Solr webapp.  (David Smiley)
+
+* SOLR-14503: Use specified waitForZk value as connection timeout for zookeeper in SolrDispatcherFilter.
+  Also, consume specified SOLR_WAIT_FOR_ZK in bin/solr.cmd (Colvin Cowie via Munendra S N)
+
+* SOLR-14850: Fix ExactStatsCache NullPointerException when shards.tolerant=true.
+  (Eugene Tenkaev via ab)
+
 Other Changes
 ---------------------
 
@@ -130,11 +152,13 @@ Other Changes
 
 * SOLR-14641: PeerSync, remove canHandleVersionRanges check (Cao Manh Dat)
 
-* SOLR-14579: Comment SolrJ 'Utils' generic map functions 
+* SOLR-14579: Comment SolrJ 'Utils' generic map functions
   (Megan Carey and a lot of education from Uwe Schindler via Erick Erickson)
 
 * SOLR-10471: Update default Zookeeper session timeout to 30s in bin/solr and bin/solr.cmd
   (Michael Braun, Markus Jelsma via Munendra S N)
+
+* SOLR-14876: Upgrade to zookeeper 3.6.2 (odidev via Erick Erickson)
 
 ==================  8.6.2 ==================
 

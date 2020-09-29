@@ -48,6 +48,8 @@ import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
 /**
  * Each instance represents a node in the cluster
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class Row implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

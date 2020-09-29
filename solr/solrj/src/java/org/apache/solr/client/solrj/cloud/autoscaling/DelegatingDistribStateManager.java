@@ -28,6 +28,10 @@ import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.Watcher;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class DelegatingDistribStateManager implements DistribStateManager {
   private final DistribStateManager delegate;
 

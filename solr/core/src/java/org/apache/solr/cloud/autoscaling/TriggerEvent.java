@@ -36,6 +36,8 @@ import org.apache.solr.util.IdUtils;
 
 /**
  * Trigger event.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class TriggerEvent implements MapWriter {
   public static final String IGNORED = "ignored";

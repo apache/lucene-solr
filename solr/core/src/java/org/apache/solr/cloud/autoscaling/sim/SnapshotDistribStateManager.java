@@ -50,6 +50,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Read-only snapshot of another {@link DistribStateManager}
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SnapshotDistribStateManager implements DistribStateManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

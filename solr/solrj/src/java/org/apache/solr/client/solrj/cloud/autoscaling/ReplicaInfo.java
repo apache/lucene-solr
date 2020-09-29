@@ -35,6 +35,10 @@ import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
 import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 public class ReplicaInfo implements MapWriter {
   private final String name;
   private final String core, collection, shard;

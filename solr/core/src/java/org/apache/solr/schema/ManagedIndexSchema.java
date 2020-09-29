@@ -1338,10 +1338,13 @@ public final class ManagedIndexSchema extends IndexSchema {
     TokenFilterFactory[] filters = chain.getTokenFilterFactories();
     for (TokenFilterFactory next : filters) {
       if (next instanceof ResourceLoaderAware) {
+        SolrResourceLoader.CURRENT_AWARE.set((ResourceLoaderAware) next);
         try {
           ((ResourceLoaderAware) next).inform(resourceLoader);
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        } finally {
+          SolrResourceLoader.CURRENT_AWARE.remove();
         }
       }
     }

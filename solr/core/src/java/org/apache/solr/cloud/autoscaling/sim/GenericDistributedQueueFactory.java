@@ -24,6 +24,8 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 
 /**
  * Factory for {@link GenericDistributedQueue}.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class GenericDistributedQueueFactory implements DistributedQueueFactory {
 

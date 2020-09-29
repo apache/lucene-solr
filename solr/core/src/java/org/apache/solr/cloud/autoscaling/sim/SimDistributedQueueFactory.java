@@ -49,6 +49,8 @@ import org.slf4j.LoggerFactory;
  * Simulated {@link DistributedQueueFactory} that keeps all data in memory. Unlike
  * the {@link GenericDistributedQueueFactory} this queue implementation data is not
  * exposed anywhere.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class SimDistributedQueueFactory implements DistributedQueueFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

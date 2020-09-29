@@ -93,10 +93,16 @@ A configset is uploaded in a "trusted" mode if authentication is enabled and the
 
 If you use any of these parameters or features, you must have enabled security features in your Solr installation and you must upload the configset as an authenticated user.
 
-The `upload` command takes one parameter:
+The `upload` command takes the following parameters:
 
 name::
 The configset to be created when the upload is complete. This parameter is required.
+
+overwrite::
+If set to `true`, Solr will overwrite an existing configset with the same name (if false, the request will fail). Default is `false`.
+
+cleanup::
+When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files in ZooKeeper that existed in the old configset but not in the one being uploaded. Default is `false`.
 
 The body of the request should be a zip file that contains the configset. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
 

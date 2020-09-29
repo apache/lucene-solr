@@ -25,6 +25,10 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Utils;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 class ReplicaCount  implements MapWriter {
   long nrt, tlog, pull;
 

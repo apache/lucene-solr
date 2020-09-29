@@ -46,6 +46,8 @@ import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 
 /**
  * A trigger which creates {@link TriggerEventType#SCHEDULED} events as per the configured schedule
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class ScheduledTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

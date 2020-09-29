@@ -24,6 +24,10 @@ import java.util.Set;
 
 import org.apache.solr.common.util.StrUtils;
 
+/**
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
+ */
 class ReplicaVariable extends VariableBase {
 
   public ReplicaVariable(Type type) {

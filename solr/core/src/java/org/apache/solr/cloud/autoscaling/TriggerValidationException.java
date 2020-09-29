@@ -21,6 +21,8 @@ import java.util.Map;
 
 /**
  * This class represents errors found when validating trigger configuration.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class TriggerValidationException extends Exception {
   private final Map<String, String> details = new HashMap<>();

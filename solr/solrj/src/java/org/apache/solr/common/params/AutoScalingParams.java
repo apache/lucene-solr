@@ -18,6 +18,8 @@ package org.apache.solr.common.params;
 
 /**
  * Requests parameters for autoscaling.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public interface AutoScalingParams {
 

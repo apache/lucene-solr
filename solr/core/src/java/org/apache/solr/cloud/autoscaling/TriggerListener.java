@@ -26,6 +26,8 @@ import org.apache.solr.core.SolrResourceLoader;
 /**
  * Implementations of this interface are notified of stages in event processing that they were
  * registered for. Note: instances may be closed and re-created on each auto-scaling config update.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public interface TriggerListener extends Closeable {
 

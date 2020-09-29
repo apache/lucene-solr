@@ -71,7 +71,9 @@ import static org.apache.solr.common.util.ExecutorUtil.awaitTermination;
 
 /**
  * Responsible for scheduling active triggers, starting and stopping them and
- * performing actions when they fire
+ * performing actions when they fire.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 public class ScheduledTriggers implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

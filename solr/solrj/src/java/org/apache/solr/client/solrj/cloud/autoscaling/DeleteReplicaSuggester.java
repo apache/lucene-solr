@@ -27,6 +27,8 @@ import org.apache.solr.common.util.Pair;
 /**
  * This suggester produces a DELETEREPLICA request using provided {@link org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint#COLL_SHARD} and
  * {@link org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint#NUMBER} hints to specify the collection, shard and number of replicas to delete.
+ *
+ * @deprecated to be removed in Solr 9.0 (see SOLR-14656)
  */
 class DeleteReplicaSuggester extends Suggester {
 
