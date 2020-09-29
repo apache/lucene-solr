@@ -20,9 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -68,27 +66,36 @@ public abstract class VectorValues extends DocIdSetIterator {
     throw new UnsupportedOperationException();
   }
 
-  /** Provide random access to vectors by <i>ordinal</i>
-   * This method does not update the state of the iterator. In particular, {@link #vectorValue()} may return a different value.
-   * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
-   */
-  public abstract float[] vectorValue(int targetOrd) throws IOException;
+  public abstract RandomAccess randomAccess();
 
   /**
-   * @return the k nearest neighbors, to the given vector, approximately, along with their (scoreFunction-specific) scores.
-   * Note: scores may be negative. In case ScoreFunction.reversed==true (ie these are distances), the scores here will be the negative
-   * of those returned by the ScoreFunction.
-   * @param target the vector-valued query
-   * @param k the number of docs to return
-   * @param fanout control the accuracy/speed tradeoff - larger values give better recall at higher cost
+   * provides random access to vectors by dense ordinal
    */
-  public abstract TopDocs search(float[] target, int k, int fanout) throws IOException;
+  public interface RandomAccess {
 
-  /**
-   * @return another vector values that iterates independently over the same underlying vectors. The iterator state is not copied;
-   * the new iterator will be positioned at the start.
-   */
-  public abstract VectorValues copy() throws IOException;
+    /**
+     * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
+     * @return the vector value as a floating point array
+     */
+    float[] vectorValue(int targetOrd) throws IOException;
+
+    /**
+     * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
+     * @return the vector value as a byte array; these are the bytes corresponding to the float array
+     * encoded using little-endian byte order.
+     */
+    BytesRef binaryValue(int targetOrd) throws IOException;
+
+    /**
+     * @param target the vector-valued query
+     * @param k      the number of docs to return
+     * @param fanout control the accuracy/speed tradeoff - larger values give better recall at higher cost
+     * @return the k nearest neighbors, to the given vector, approximately, along with their (scoreFunction-specific) scores.
+     * Note: scores may be negative. In case ScoreFunction.reversed==true (ie these are distances), the scores here will be the negative
+     * of those returned by the ScoreFunction.
+     */
+    TopDocs search(float[] target, int k, int fanout) throws IOException;
+  }
 
   /**
    * Score function. This is used during indexing and searching of the vectors to determine the nearest neighbors.
@@ -196,8 +203,6 @@ public abstract class VectorValues extends DocIdSetIterator {
 
   public static VectorValues EMPTY = new VectorValues() {
 
-    private final TopDocs EMPTY_RESULT = new TopDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), new ScoreDoc[0]);
-
     @Override
     public int size() {
       return 0;
@@ -219,13 +224,8 @@ public abstract class VectorValues extends DocIdSetIterator {
     }
 
     @Override
-    public float[] vectorValue(int ord) {
-      throw new IndexOutOfBoundsException("Attempt to get vectors from EMPTY values");
-    }
-
-    @Override
-    public TopDocs search(float[] target, int k, int fanout) {
-      return EMPTY_RESULT;
+    public RandomAccess randomAccess() {
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -246,12 +246,6 @@ public abstract class VectorValues extends DocIdSetIterator {
     @Override
     public long cost() {
       return 0;
-    }
-
-    @Override
-    public VectorValues copy() {
-      // a copy would be indistinguishable
-      return this;
     }
   };
 }

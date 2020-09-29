@@ -24,10 +24,13 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.VectorField;
 import org.apache.lucene.index.VectorValues.ScoreFunction;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.IOUtils;
@@ -471,7 +474,7 @@ public class TestVectorValues extends LuceneTestCase {
   public void testRandom() throws Exception {
     IndexWriterConfig iwc = createIndexWriterConfig();
     if (random().nextBoolean()) {
-      // sort the index by
+      iwc.setIndexSort(new Sort(new SortField("sortkey", SortField.Type.INT)));
     }
     String fieldName = "field";
     try (Directory dir = newDirectory();
@@ -487,7 +490,7 @@ public class TestVectorValues extends LuceneTestCase {
           values[i] = randomVector(dimension);
           ++numValues;
         }
-        if (random().nextBoolean()) {
+        if (random().nextBoolean() && values[i] != null) {
           // sometimes use a shared scratch array
           System.arraycopy(values[i], 0, scratch, 0, scratch.length);
           add(iw, fieldName, i, scratch);
@@ -496,7 +499,7 @@ public class TestVectorValues extends LuceneTestCase {
         }
         if (random().nextInt(10) == 2) {
           // sometimes delete a random document
-          int idToDelete = random().nextInt(i);
+          int idToDelete = random().nextInt(i + 1);
           iw.deleteDocuments(new Term("id", Integer.toString(idToDelete)));
           // and remember that it was deleted
           if (values[idToDelete] != null) {
@@ -508,11 +511,7 @@ public class TestVectorValues extends LuceneTestCase {
           iw.commit();
         }
       }
-      boolean merged = false;
-      if (random().nextBoolean()) {
-        iw.forceMerge(1);
-        merged = true;
-      }
+      iw.forceMerge(1);
       try (IndexReader reader = iw.getReader()) {
         int valueCount = 0, totalSize = 0;
         for (LeafReaderContext ctx : reader.leaves()) {
@@ -527,19 +526,12 @@ public class TestVectorValues extends LuceneTestCase {
             assertEquals(dimension, v.length);
             String idString = ctx.reader().document(docId).getField("id").stringValue();
             int id = Integer.parseInt(idString);
-            if (values[id] == null) {
-              // if we merged, we should not have found a value for this deleted document
-              assertFalse(merged);
-            } else {
-              assertArrayEquals(idString, values[id], v, 0);
-              ++valueCount;
-            }
+            assertArrayEquals(idString, values[id], v, 0);
+            ++valueCount;
           }
         }
         assertEquals(numValues, valueCount);
-        if (merged) {
-          assertEquals(numValues, totalSize);
-        }
+        assertEquals(numValues, totalSize);
       }
     }
   }
@@ -549,10 +541,10 @@ public class TestVectorValues extends LuceneTestCase {
     if (vector != null) {
       doc.add(new VectorField(field, vector, VectorValues.ScoreFunction.EUCLIDEAN));
     }
+    doc.add(new NumericDocValuesField("sortkey", random().nextInt(100)));
     doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));
     iw.addDocument(doc);
   }
-
 
   private float[] randomVector(int dim) {
     float[] v = new float[dim];
@@ -569,7 +561,6 @@ public class TestVectorValues extends LuceneTestCase {
         doc.add(new VectorField("v1", randomVector(3), ScoreFunction.NONE));
         w.addDocument(doc);
 
-        doc.add(new VectorField("v1", randomVector(3), ScoreFunction.NONE));
         doc.add(new VectorField("v2", randomVector(3), ScoreFunction.NONE));
         w.addDocument(doc);
       }

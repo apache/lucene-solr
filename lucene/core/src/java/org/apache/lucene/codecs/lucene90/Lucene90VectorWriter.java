@@ -19,19 +19,14 @@ package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.VectorWriter;
-import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.VectorValues;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -73,14 +68,11 @@ public final class Lucene90VectorWriter extends VectorWriter {
   @Override
   public void writeField(FieldInfo fieldInfo, VectorValues vectors) throws IOException {
     long vectorDataOffset = vectorData.getFilePointer();
-    // nocommit - no copy() needed here. Later we will need it for random access in the graph
-    // TBD: maybe this is a rationale for having a separate RA accessor? Since we can then get rid of copy()?
-    VectorValues v2 = vectors.copy();
     // TODO - use a better data structure; a bitset? DocsWithFieldSet is p.p. in o.a.l.index
     List<Integer> docIds = new ArrayList<>();
     int docV, ord = 0;
-    for (docV = v2.nextDoc(); docV != NO_MORE_DOCS; docV = v2.nextDoc(), ord++) {
-      writeVectorValue(v2);
+    for (docV = vectors.nextDoc(); docV != NO_MORE_DOCS; docV = vectors.nextDoc(), ord++) {
+      writeVectorValue(vectors);
       docIds.add(docV);
       // TODO: write knn graph value
     }

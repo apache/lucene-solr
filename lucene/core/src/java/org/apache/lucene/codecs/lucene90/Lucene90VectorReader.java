@@ -216,11 +216,6 @@ public final class Lucene90VectorReader extends VectorReader {
     }
 
     @Override
-    public VectorValues copy() {
-      return new OffHeapVectorValues(fieldEntry, dataIn.clone());
-    }
-
-    @Override
     public int dimension() {
       return fieldEntry.dimension;
     }
@@ -237,6 +232,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue() throws IOException {
+      dataIn.seek(ord * byteSize);
       dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
       floatBuffer.position(0);
       floatBuffer.get(value, 0, fieldEntry.dimension);
@@ -245,18 +241,9 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public BytesRef binaryValue() throws IOException {
+      dataIn.seek(ord * byteSize);
       dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
       return binaryValue;
-    }
-
-    @Override
-    public float[] vectorValue(int targetOrd) throws IOException {
-      long offset = targetOrd * byteSize;
-      dataIn.seek(offset);
-      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
-      floatBuffer.position(0);
-      floatBuffer.get(value);
-      return value;
     }
 
     @Override
@@ -283,6 +270,51 @@ public final class Lucene90VectorReader extends VectorReader {
     @Override
     public long cost() {
       return fieldEntry.size();
+    }
+
+    @Override
+    public RandomAccess randomAccess() {
+      return new OffHeapRandomAccess(dataIn.clone(), dimension());
+    }
+  }
+
+  static class OffHeapRandomAccess implements VectorValues.RandomAccess {
+
+    final IndexInput dataIn;
+
+    final BytesRef binaryValue;
+    final ByteBuffer byteBuffer;
+    final FloatBuffer floatBuffer;
+    final int byteSize;
+    final float[] value;
+
+    OffHeapRandomAccess(IndexInput dataIn, int dimension) {
+      this.dataIn = dataIn;
+      byteSize = Float.BYTES * dimension;
+      byteBuffer = ByteBuffer.allocate(byteSize);
+      floatBuffer = byteBuffer.asFloatBuffer();
+      value = new float[dimension];
+      binaryValue = new BytesRef(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
+    }
+
+    @Override
+    public float[] vectorValue(int targetOrd) throws IOException {
+      readValue(targetOrd);
+      floatBuffer.position(0);
+      floatBuffer.get(value);
+      return value;
+    }
+
+    @Override
+    public BytesRef binaryValue(int targetOrd) throws IOException {
+      readValue(targetOrd);
+      return binaryValue;
+    }
+
+    private void readValue(int targetOrd) throws  IOException {
+      long offset = targetOrd * byteSize;
+      dataIn.seek(offset);
+      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
     }
 
     @Override

@@ -63,11 +63,10 @@ public class SimpleTextVectorWriter extends VectorWriter {
   @Override
   public void writeField(FieldInfo fieldInfo, VectorValues vectors) throws IOException {
     long vectorDataOffset = vectorData.getFilePointer();
-    VectorValues v2 = vectors.copy();
     List<Integer> docIds = new ArrayList<>();
     int docV, ord = 0;
-    for (docV = v2.nextDoc(); docV != NO_MORE_DOCS; docV = v2.nextDoc(), ord++) {
-      writeVectorValue(v2);
+    for (docV = vectors.nextDoc(); docV != NO_MORE_DOCS; docV = vectors.nextDoc(), ord++) {
+      writeVectorValue(vectors);
       docIds.add(docV);
     }
     long vectorDataLength = vectorData.getFilePointer() - vectorDataOffset;

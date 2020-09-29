@@ -152,23 +152,24 @@ public class SimpleTextVectorReader extends VectorReader {
     }
   }
 
-  private static class SimpleTextVectorValues extends VectorValues {
+  private static class SimpleTextVectorValues extends VectorValues implements VectorValues.RandomAccess {
 
     private final BytesRefBuilder scratch = new BytesRefBuilder();
     private final FieldEntry entry;
     private final IndexInput in;
     private final BytesRef binaryValue;
-    private final float[] value;
+    private final float[][] values;
 
     int curOrd;
 
-    SimpleTextVectorValues(FieldEntry entry, IndexInput in) {
+    SimpleTextVectorValues(FieldEntry entry, IndexInput in) throws IOException {
       this.entry = entry;
       this.in = in;
-      value = new float[entry.dimension];
+      values = new float[entry.size()][entry.dimension];
       binaryValue = new BytesRef(entry.dimension * Float.BYTES);
       binaryValue.length = binaryValue.bytes.length;
       curOrd = -1;
+      readAllVectors();
     }
 
     @Override
@@ -188,28 +189,18 @@ public class SimpleTextVectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue() {
-      return value;
+      return values[curOrd];
     }
 
     @Override
     public BytesRef binaryValue() {
-      ByteBuffer.wrap(binaryValue.bytes).asFloatBuffer().get(value);
+      ByteBuffer.wrap(binaryValue.bytes).asFloatBuffer().get(values[curOrd]);
       return binaryValue;
     }
 
     @Override
-    public float[] vectorValue(int targetOrd) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TopDocs search(float[] target, int k, int fanout) throws IOException {
-      return null;
-    }
-
-    @Override
-    public VectorValues copy() {
-      return new SimpleTextVectorValues(entry, in.clone());
+    public RandomAccess randomAccess() {
+      return this;
     }
 
     @Override
@@ -223,7 +214,6 @@ public class SimpleTextVectorReader extends VectorReader {
     @Override
     public int nextDoc() throws IOException {
       if (++curOrd < entry.size()) {
-        readVector();
         return docID();
       }
       return NO_MORE_DOCS;
@@ -239,7 +229,13 @@ public class SimpleTextVectorReader extends VectorReader {
       return size();
     }
 
-    private void readVector() throws IOException {
+    private void readAllVectors() throws IOException {
+      for (int i = 0; i < values.length; i++) {
+        readVector(values[i]);
+      }
+    }
+
+    private void readVector(float[] value) throws IOException {
       SimpleTextUtil.readLine(in, scratch);
       // skip leading " [" and strip trailing "]"
       String s = new BytesRef(scratch.bytes(), 2, scratch.length() - 3).utf8ToString();
@@ -248,6 +244,21 @@ public class SimpleTextVectorReader extends VectorReader {
       for (int i = 0; i < floatStrings.length; i++) {
         value[i] = Float.parseFloat(floatStrings[i]);
       }
+    }
+
+    @Override
+    public float[] vectorValue(int targetOrd) throws IOException {
+      return values[targetOrd];
+    }
+
+    @Override
+    public BytesRef binaryValue(int targetOrd) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TopDocs search(float[] target, int k, int fanout) throws IOException {
+      throw new UnsupportedOperationException();
     }
   }
 

@@ -72,16 +72,94 @@ public class VectorValuesWriter {
     bytesUsed = newBytesUsed;
   }
 
-  public void flush(Sorter.DocMap sortMap, VectorWriter graphWriter) throws IOException {
+  public void flush(Sorter.DocMap sortMap, VectorWriter vectorWriter) throws IOException {
     VectorValues vectorValues = new BufferedVectorValues(docsWithField, vectors, fieldInfo.getVectorDimension(), fieldInfo.getVectorScoreFunction());
     if (sortMap != null) {
-      // TODO sorted index
-      throw new UnsupportedOperationException();
+      vectorWriter.writeField(fieldInfo, new SortingVectorValues(vectorValues, sortMap));
+    } else {
+      vectorWriter.writeField(fieldInfo, vectorValues);
     }
-    graphWriter.writeField(fieldInfo, vectorValues);
   }
 
-  private static class BufferedVectorValues extends VectorValues {
+  private static class SortingVectorValues extends VectorValues {
+
+    private final VectorValues delegate;
+    private final VectorValues.RandomAccess randomAccess;
+    private final int[] offsets;
+    private int docId = -1;
+
+    SortingVectorValues(VectorValues delegate, Sorter.DocMap sortMap) throws IOException {
+      this.delegate = delegate;
+      randomAccess = delegate.randomAccess();
+      offsets = new int[sortMap.size()];
+      int offset = 1; // 0 means no values for this document
+      int docID;
+      while ((docID = delegate.nextDoc()) != NO_MORE_DOCS) {
+        int newDocID = sortMap.oldToNew(docID);
+        offsets[newDocID] = offset++;
+      }
+    }
+
+    @Override
+    public int docID() {
+      return docId;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      while (docId < offsets.length - 1) {
+        ++docId;
+        if (offsets[docId] != 0) {
+          return docId;
+        }
+      }
+      docId = NO_MORE_DOCS;
+      return docId;
+    }
+
+    @Override
+    public BytesRef binaryValue() throws IOException {
+      int oldOffset = offsets[docId] - 1;
+      return randomAccess.binaryValue(oldOffset);
+    }
+
+    @Override
+    public float[] vectorValue() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int dimension() {
+      return delegate.dimension();
+    }
+
+    @Override
+    public int size() {
+      return delegate.size();
+    }
+
+    @Override
+    public ScoreFunction scoreFunction() {
+      return delegate.scoreFunction();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return size();
+    }
+
+    @Override
+    public RandomAccess randomAccess() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private static class BufferedVectorValues extends VectorValues implements VectorValues.RandomAccess {
 
     final DocsWithFieldSet docsWithField;
 
@@ -91,6 +169,7 @@ public class VectorValuesWriter {
     final int dimension;
 
     final ByteBuffer buffer;
+    final BytesRef binaryValue;
 
     DocIdSetIterator docsWithFieldIter;
     int bufferPos = 0;
@@ -102,12 +181,13 @@ public class VectorValuesWriter {
       this.dimension = dimension;
       this.scoreFunction = scoreFunction;
       buffer = ByteBuffer.allocate(dimension * Float.BYTES);
+      binaryValue = new BytesRef(buffer.array());
       docsWithFieldIter = docsWithField.iterator();
     }
 
     @Override
-    public BufferedVectorValues copy() {
-      return new BufferedVectorValues(docsWithField, vectors, dimension, scoreFunction);
+    public RandomAccess randomAccess() {
+      return this;
     }
 
     @Override
@@ -128,7 +208,14 @@ public class VectorValuesWriter {
     @Override
     public BytesRef binaryValue() {
       buffer.asFloatBuffer().put(value);
-      return new BytesRef(buffer.array());
+      return binaryValue;
+    }
+
+    @Override
+    public BytesRef binaryValue(int targetOrd) {
+      // Note: this will overwrite any value returned by binaryValue(), but in our private usage these never conflict
+      buffer.asFloatBuffer().put(vectors.get(targetOrd));
+      return binaryValue;
     }
 
     @Override

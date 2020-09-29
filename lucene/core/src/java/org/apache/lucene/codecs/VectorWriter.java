@@ -129,10 +129,10 @@ public abstract class VectorWriter implements Closeable {
    * View over multiple VectorValues supporting iterator-style access via DocIdMerger. Maintains a reverse ordinal
    * mapping for documents having values in order to support random access by dense ordinal.
    */
-  private static class VectorValuesMerger extends VectorValues {
+  private static class VectorValuesMerger extends VectorValues implements VectorValues.RandomAccess {
     private final List<VectorValuesSub> subs;
+    private final List<RandomAccess> raSubs;
     private final DocIDMerger<VectorValuesSub> docIdMerger;
-    private final MergeState mergeState;
     private final int[] ordBase;
     private final int cost;
     private final int size;
@@ -147,11 +147,10 @@ public abstract class VectorWriter implements Closeable {
     VectorValuesMerger(List<VectorValuesSub> subs, MergeState mergeState) throws IOException {
       this.subs = subs;
       docIdMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
-      this.mergeState = mergeState;
-
-      int i = 0;
+      raSubs = new ArrayList<>(subs.size());
       int totalCost = 0, totalSize = 0;
       for (VectorValuesSub sub : subs) {
+        raSubs.add(sub.values.randomAccess());
         totalCost += sub.values.cost();
         totalSize += sub.values.size();
       }
@@ -166,14 +165,6 @@ public abstract class VectorWriter implements Closeable {
         lastBase += size;
       }
       docId = -1;
-    }
-
-    public VectorValuesMerger copy() throws IOException {
-      List<VectorValuesSub> subCopies= new ArrayList<>();
-      for (VectorValuesSub sub : subs) {
-        subCopies.add(new VectorValuesSub(sub.segmentIndex, sub.docMap, sub.values.copy()));
-      }
-      return new VectorValuesMerger(subCopies, mergeState);
     }
 
     @Override
@@ -204,6 +195,11 @@ public abstract class VectorWriter implements Closeable {
     }
 
     @Override
+    public RandomAccess randomAccess() {
+      return this;
+    }
+
+    @Override
     public float[] vectorValue(int target) throws IOException {
       int unmappedOrd = ordMap[target];
       int segmentOrd = Arrays.binarySearch(ordBase, unmappedOrd);
@@ -215,7 +211,12 @@ public abstract class VectorWriter implements Closeable {
         // forward over empty segments which will share the same ordBase
         segmentOrd++;
       }
-      return subs.get(segmentOrd).values.vectorValue(unmappedOrd - ordBase[segmentOrd]);
+      return raSubs.get(segmentOrd).vectorValue(unmappedOrd - ordBase[segmentOrd]);
+    }
+
+    @Override
+    public BytesRef binaryValue(int targetOrd) throws IOException {
+      throw new UnsupportedOperationException();
     }
 
     @Override
