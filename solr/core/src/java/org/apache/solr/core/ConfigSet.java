@@ -30,7 +30,7 @@ public class ConfigSet {
   private final String name;
 
   private final SolrConfig solrconfig;
-  private IndexSchema schema;
+  private volatile IndexSchema schema;
 
   private final SchemaSupplier schemaSupplier;
 
