@@ -727,7 +727,11 @@ public class HttpSolrCall {
         // encoding issues with Tomcat
         if (header != null && !header.getName().equalsIgnoreCase(TRANSFER_ENCODING_HEADER)
             && !header.getName().equalsIgnoreCase(CONNECTION_HEADER)) {
-          resp.addHeader(header.getName(), header.getValue());
+          
+          // NOTE: explicitly using 'setHeader' instead of 'addHeader' so that
+          // the remote nodes values for any response headers will overide any that
+          // may have already been set locally (ex: by the local jetty's RewriteHandler config)
+          resp.setHeader(header.getName(), header.getValue());
         }
       }
 
