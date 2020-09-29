@@ -249,7 +249,7 @@ Bug Fixes
   Also, consume specified SOLR_WAIT_FOR_ZK in bin/solr.cmd (Colvin Cowie via Munendra S N)
 
 * SOLR-14850: Fix ExactStatsCache NullPointerException when shards.tolerant=true.
-  (Eugene Tenkaev via ab)
+  (Yevhen Tienkaiev via ab)
 
 Other Changes
 ---------------------
