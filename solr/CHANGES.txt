@@ -256,6 +256,8 @@ Bug Fixes
 
 * SOLR-14897: Fix unlimited number of forwarding the request from one node to another node. (hossman, Munendra S N)
 
+* SOLR-14898: Stop returning duplicate HTTP response headers when requests are forward to another node. (hossman)
+
 Other Changes
 ---------------------
 
