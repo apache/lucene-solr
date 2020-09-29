@@ -122,11 +122,56 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 public class CollapsingQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "collapse";
-  public static final String NULL_COLLAPSE = "collapse";
-  public static final String NULL_IGNORE = "ignore";
-  public static final String NULL_EXPAND = "expand";
   public static final String HINT_TOP_FC = "top_fc";
+
+  /**
+   * @deprecated use {@link NullPolicy} instead.
+   */
+  @Deprecated
+  public static final String NULL_COLLAPSE = "collapse";
+  @Deprecated
+  public static final String NULL_IGNORE = "ignore";
+  @Deprecated
+  public static final String NULL_EXPAND = "expand";
+  @Deprecated
   public static final String HINT_MULTI_DOCVALUES = "multi_docvalues";
+
+  public enum NullPolicy {
+    IGNORE("ignore", 0),
+    COLLAPSE("collapse", 1),
+    EXPAND("expand", 2);
+
+    private final String name;
+    private final int code;
+
+    NullPolicy(String name, int code) {
+      this.name = name;
+      this.code = code;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public int getCode() {
+      return code;
+    }
+
+    public static NullPolicy fromString(String nullPolicy) {
+      if (StringUtils.isEmpty(nullPolicy)) {
+        return DEFAULT_POLICY;
+      }
+      switch (nullPolicy) {
+        case "ignore": return IGNORE;
+        case "collapse": return COLLAPSE;
+        case "expand": return EXPAND;
+        default:
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid nullPolicy: " + nullPolicy);
+      }
+    }
+
+    static NullPolicy DEFAULT_POLICY = IGNORE;
+  }
 
 
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
@@ -188,6 +233,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return 17 * (31 + selectorText.hashCode()) * (31 + type.hashCode());
     }
 
+    @Override
+    public String toString(){
+      return "GroupHeadSelector(selectorText=" + this.selectorText + ", type=" +this.type + ")";
+    }
+
     /**
      * returns a new GroupHeadSelector based on the specified local params
      */
@@ -221,11 +271,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public String hint;
     private boolean needsScores = true;
     private boolean needsScores4Collapsing = false;
-    private int nullPolicy;
+    private NullPolicy nullPolicy;
     private Set<BytesRef> boosted; // ordered by "priority"
-    public static final int NULL_POLICY_IGNORE = 0;
-    public static final int NULL_POLICY_COLLAPSE = 1;
-    public static final int NULL_POLICY_EXPAND = 2;
     private int size;
 
     public String getField(){
@@ -254,7 +301,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int hashCode = classHash();
       hashCode = 31 * hashCode + collapseField.hashCode();
       hashCode = 31 * hashCode + groupHeadSelector.hashCode();
-      hashCode = 31 * hashCode + nullPolicy;
+      hashCode = 31 * hashCode + nullPolicy.hashCode();
       return hashCode;
     }
 
@@ -279,7 +326,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public String toString(String s) {
-      return s;
+      return "CollapsingPostFilter(field=" + this.collapseField +
+          ", nullPolicy=" + this.nullPolicy.getName() + ", " +
+          this.groupHeadSelector +
+          (hint == null ? "": ", hint=" + this.hint) +
+          ", size=" + this.size
+          + ")";
     }
 
     public CollapsingPostFilter(SolrParams localParams, SolrParams params, SolrQueryRequest request) {
@@ -354,16 +406,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      String nPolicy = localParams.get("nullPolicy", NULL_IGNORE);
-      if(nPolicy.equals(NULL_IGNORE)) {
-        this.nullPolicy = NULL_POLICY_IGNORE;
-      } else if (nPolicy.equals(NULL_COLLAPSE)) {
-        this.nullPolicy = NULL_POLICY_COLLAPSE;
-      } else if(nPolicy.equals((NULL_EXPAND))) {
-        this.nullPolicy = NULL_POLICY_EXPAND;
-      } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid nullPolicy:"+nPolicy);
-      }
+      this.nullPolicy = NullPolicy.fromString(localParams.get("nullPolicy"));
     }
 
     @SuppressWarnings({"unchecked"})
@@ -392,7 +435,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         return collectorFactory.getCollector(this.collapseField,
                                              this.groupHeadSelector,
                                              this.sortSpec,
-                                             this.nullPolicy,
+                                             this.nullPolicy.getCode(),
                                              this.hint,
                                              this.needsScores4Collapsing,
                                              this.needsScores,
@@ -552,7 +595,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.ords = new IntIntDynamicMap(valueCount, -1);
       this.scores = new IntFloatDynamicMap(valueCount, -Float.MAX_VALUE);
       this.nullPolicy = nullPolicy;
-      if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      if(nullPolicy == NullPolicy.EXPAND.getCode()) {
         nullScores = new FloatArrayList();
       }
 
@@ -620,13 +663,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           ords.put(ord, globalDoc);
           scores.put(ord, score);
         }
-      } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if(nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         float score = scorer.score();
         if(score > nullScore) {
           nullScore = score;
           nullDoc = globalDoc;
         }
-      } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(nullPolicy == NullPolicy.EXPAND.getCode()) {
         collapsedSet.set(globalDoc);
         nullScores.add(scorer.score());
       }
@@ -716,9 +759,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           dummy.score = scores.get(ord);
         } else if(boosts && mergeBoost.boost(docId)) {
           //Ignore so it doesn't mess up the null scoring.
-        } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+        } else if(this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
           dummy.score = nullScore;
-        } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+        } else if(this.nullPolicy == NullPolicy.EXPAND.getCode()) {
           dummy.score = nullScores.get(++index);
         }
 
@@ -772,7 +815,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.collapsedSet = new FixedBitSet(maxDoc);
       this.nullValue = nullValue;
       this.nullPolicy = nullPolicy;
-      if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      if(nullPolicy == NullPolicy.EXPAND.getCode()) {
         nullScores = new FloatArrayList();
       }
       this.cmap = new IntLongHashMap(size);
@@ -839,13 +882,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           long scoreDoc = (((long)Float.floatToRawIntBits(score))<<32)+globalDoc;
           cmap.indexInsert(idx, collapseValue, scoreDoc);
         }
-      } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if(nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         float score = scorer.score();
         if(score > this.nullScore) {
           this.nullScore = score;
           this.nullDoc = globalDoc;
         }
-      } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(nullPolicy == NullPolicy.EXPAND.getCode()) {
         collapsedSet.set(globalDoc);
         nullScores.add(scorer.score());
       }
@@ -917,9 +960,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           dummy.score = Float.intBitsToFloat((int)(scoreDoc>>32));
         } else if(boosts && mergeBoost.boost(globalDoc)) {
           //Ignore so boosted documents don't mess up the null scoring policies.
-        } else if (nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+        } else if (nullPolicy == NullPolicy.COLLAPSE.getCode()) {
           dummy.score = nullScore;
-        } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+        } else if(nullPolicy == NullPolicy.EXPAND.getCode()) {
           dummy.score = nullScores.get(nullScoreIndex++);
         }
 
@@ -1114,9 +1157,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           } else if (mergeBoost != null && mergeBoost.boost(globalDoc)) {
             //It's an elevated doc so no score is needed
             dummy.score = 0F;
-          } else if (nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+          } else if (nullPolicy == NullPolicy.COLLAPSE.getCode()) {
             dummy.score = nullScore;
-          } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+          } else if(nullPolicy == NullPolicy.EXPAND.getCode()) {
             dummy.score = nullScores.get(nullScoreIndex++);
           }
         }
@@ -1273,9 +1316,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           } else if (mergeBoost != null && mergeBoost.boost(globalDoc)) {
             //Its an elevated doc so no score is needed
             dummy.score = 0F;
-          } else if (nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+          } else if (nullPolicy == NullPolicy.COLLAPSE.getCode()) {
             dummy.score = nullScore;
-          } else if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+          } else if(nullPolicy == NullPolicy.EXPAND.getCode()) {
             dummy.score = nullScores.get(nullScoreIndex++);
           }
         }
@@ -1538,7 +1581,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       if (this.needsScores) {
         this.scores = new IntFloatDynamicMap(valueCount, 0.0f);
-        if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+        if(nullPolicy == NullPolicy.EXPAND.getCode()) {
           nullScores = new FloatArrayList();
         }
       }
@@ -1648,7 +1691,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores.put(ord, scorer.score());
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if(this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         if(comp.test(currentVal, nullVal)) {
           nullVal = currentVal;
           nullDoc = globalDoc;
@@ -1656,7 +1699,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             nullScore = scorer.score();
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(this.nullPolicy == NullPolicy.EXPAND.getCode()) {
         this.collapsedSet.set(globalDoc);
         if(needsScores) {
           nullScores.add(scorer.score());
@@ -1729,7 +1772,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores.put(ord, scorer.score());
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if(this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         if(comp.test(currentVal, nullVal)) {
           nullVal = currentVal;
           nullDoc = globalDoc;
@@ -1737,7 +1780,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             nullScore = scorer.score();
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(this.nullPolicy == NullPolicy.EXPAND.getCode()) {
         this.collapsedSet.set(globalDoc);
         if(needsScores) {
           nullScores.add(scorer.score());
@@ -1807,7 +1850,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores.put(ord, scorer.score());
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if(this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         if(comp.test(currentVal, nullVal)) {
           nullVal = currentVal;
           nullDoc = globalDoc;
@@ -1815,7 +1858,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             nullScore = scorer.score();
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(this.nullPolicy == NullPolicy.EXPAND.getCode()) {
         this.collapsedSet.set(globalDoc);
         if(needsScores) {
           nullScores.add(scorer.score());
@@ -1900,7 +1943,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores.put(ord, score);
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if(this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         if(comp.test(currentVal, nullVal)) {
           nullVal = currentVal;
           nullDoc = globalDoc;
@@ -1911,7 +1954,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             nullScore = score;
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(this.nullPolicy == NullPolicy.EXPAND.getCode()) {
         this.collapsedSet.set(globalDoc);
         if(needsScores) {
           if (!needsScores4Collapsing) {
@@ -2001,7 +2044,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             }
           }
         }
-      } else if (this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         if (-1 == nullDoc) {
           // we've never seen a doc with null collapse key yet, treat it as the null group head for now
           compareState.setNullGroupValues(contextDoc);
@@ -2024,7 +2067,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             }
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(this.nullPolicy == NullPolicy.EXPAND.getCode()) {
         this.collapsedSet.set(globalDoc);
         if (needsScores) {
           if (!needsScores4Collapsing) {
@@ -2094,7 +2137,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       if(needsScores) {
         this.scores = new IntFloatDynamicMap(size, 0.0f);
-        if(nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+        if(nullPolicy == NullPolicy.EXPAND.getCode()) {
           nullScores = new FloatArrayList();
         }
       }
@@ -2236,7 +2279,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores.put(index, scorer.score());
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if(this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         if(comp.test(currentVal, nullCompVal)) {
           nullCompVal = currentVal;
           nullDoc = globalDoc;
@@ -2244,7 +2287,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             nullScore = scorer.score();
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(this.nullPolicy == NullPolicy.EXPAND.getCode()) {
         this.collapsedSet.set(globalDoc);
         if(needsScores) {
           nullScores.add(scorer.score());
@@ -2329,7 +2372,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores.put(index, scorer.score());
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if(this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         if(comp.test(currentVal, nullCompVal)) {
           nullCompVal = currentVal;
           nullDoc = globalDoc;
@@ -2337,7 +2380,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             nullScore = scorer.score();
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(this.nullPolicy == NullPolicy.EXPAND.getCode()) {
         this.collapsedSet.set(globalDoc);
         if(needsScores) {
           nullScores.add(scorer.score());
@@ -2445,7 +2488,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores.put(index, score);
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if(this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         if(comp.test(currentVal, nullCompVal)) {
           nullCompVal = currentVal;
           nullDoc = globalDoc;
@@ -2456,7 +2499,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             nullScore = score;
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(this.nullPolicy == NullPolicy.EXPAND.getCode()) {
         this.collapsedSet.set(globalDoc);
         if(needsScores) {
           if (!needsScores4Collapsing) {
@@ -2556,7 +2599,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             scores.put(index, score);
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_COLLAPSE) {
+      } else if(this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         if (-1 == nullDoc) {
           // we've never seen a doc with null collapse key yet, treat it as the null group head for now
           compareState.setNullGroupValues(contextDoc);
@@ -2579,7 +2622,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             }
           }
         }
-      } else if(this.nullPolicy == CollapsingPostFilter.NULL_POLICY_EXPAND) {
+      } else if(this.nullPolicy == NullPolicy.EXPAND.getCode()) {
         this.collapsedSet.set(globalDoc);
         if (needsScores) {
           if (!needsScores4Collapsing) {
