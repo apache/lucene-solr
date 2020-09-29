@@ -40,6 +40,12 @@ import org.apache.lucene.util.StringHelper;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextVectorWriter.*;
 
+/**
+ * Reads vector values from a simple text format. All vectors are read up front and cached in RAM in order to support
+ * random access.
+ * <b>FOR RECREATIONAL USE ONLY</b>
+ * @lucene.experimental
+ */
 public class SimpleTextVectorReader extends VectorReader {
 
   private static final BytesRef EMPTY = new BytesRef("");

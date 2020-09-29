@@ -386,7 +386,7 @@ public final class FieldInfo {
   }
 
   /**
-   * @return true if any (numeric) vector values exist for this field
+   * Returns whether any (numeric) vector values exist for this field
    */
   public boolean hasVectorValues() {
     return vectorDimension > 0;

@@ -24,12 +24,19 @@ import org.apache.lucene.index.VectorValues;
  */
 public class VectorField extends Field {
 
-  private static FieldType getType(int dimension, VectorValues.ScoreFunction scoreFunction) {
+  private static FieldType getType(float[] v, VectorValues.ScoreFunction scoreFunction) {
+    if (v == null) {
+      throw new IllegalArgumentException("vector value must not be null");
+    }
+    int dimension = v.length;
     if (dimension == 0) {
       throw new IllegalArgumentException("cannot index an empty vector");
     }
     if (dimension > VectorValues.MAX_DIMENSIONS) {
       throw new IllegalArgumentException("cannot index vectors with dimension greater than " + VectorValues.MAX_DIMENSIONS);
+    }
+    if (scoreFunction == null) {
+      throw new IllegalArgumentException("score function must not be null");
     }
     FieldType type = new FieldType();
     type.setVectorDimensionsAndScoreFunction(dimension, scoreFunction);
@@ -37,15 +44,42 @@ public class VectorField extends Field {
     return type;
   }
 
+  /** Creates a numeric vector field. Fields are single-valued: each document has either one value
+   * or no value. Vectors of a single field share the same dimension and score function.
+   *
+   *  @param name field name
+   *  @param vector value
+   *  @param scoreFunction a function defining vector proximity.
+   *  @throws IllegalArgumentException if any parameter is null, or the vector is empty or has dimension &gt; 1024.
+   */
   public VectorField(String name, float[] vector, VectorValues.ScoreFunction scoreFunction) {
-    super(name, getType(vector.length, scoreFunction));
+    super(name, getType(vector, scoreFunction));
     fieldsData = vector;
   }
 
+  /** Creates a numeric vector field with the default EUCLIDEAN (L2) score function. Fields are
+   * single-valued: each document has either one value or no value. Vectors of a single field share
+   * the same dimension and score function.
+   *
+   *  @param name field name
+   *  @param vector value
+   *  @throws IllegalArgumentException if any parameter is null, or the vector is empty or has dimension &gt; 1024.
+   */
+  public VectorField(String name, float[] vector) {
+    this(name, vector, VectorValues.ScoreFunction.EUCLIDEAN);
+  }
+
+  /**
+   * Return the vector value of this field
+   */
   public float[] vectorValue() {
     return (float[]) fieldsData;
   }
 
+  /**
+   * Set the vector value of this field
+   * @param value the value to set; must not be null, and length must match the field type
+   */
   public void setVectorValue(float[] value) {
     if (value.length != type.vectorDimension()) {
       throw new IllegalArgumentException("value length " + value.length + " must match field dimension " + type.vectorDimension());

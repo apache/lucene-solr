@@ -28,13 +28,14 @@ import org.apache.lucene.util.BytesRef;
  */
 public abstract class VectorValues extends DocIdSetIterator {
 
+  /** The maximum length of a vector */
   public static int MAX_DIMENSIONS = 1024;
 
   /** Sole constructor */
   protected VectorValues() {}
 
   /**
-   * @return the dimension of the vectors
+   * Return the dimension of the vectors
    */
   public abstract int dimension();
 
@@ -47,19 +48,19 @@ public abstract class VectorValues extends DocIdSetIterator {
   public abstract int size();
 
   /**
-   * @return the score function used to compare these vectors
+   * Return the score function used to compare these vectors
    */
   public abstract ScoreFunction scoreFunction();
 
   /**
-   * Returns the vector value for the current document ID.
+   * Return the vector value for the current document ID.
    * It is illegal to call this method after the iterator failed to advance.
    * @return the vector value
    */
   public abstract float[] vectorValue() throws IOException;
 
   /**
-   * Returns the binary encoded vector value for the current document ID.
+   * Return the binary encoded vector value for the current document ID.
    * It is illegal to call this method after the iterator failed to advance.
    * @return the binary value
    */
@@ -68,41 +69,44 @@ public abstract class VectorValues extends DocIdSetIterator {
   }
 
   /**
-   * @return a random access interface over this iterator's vectors.
+   * Return a random access interface over this iterator's vectors.
    */
   public abstract RandomAccess randomAccess();
 
   /**
-   * provides random access to vectors by dense ordinal
+   * Provides random access to vectors by dense ordinal
    */
   public interface RandomAccess {
 
     /**
+     * Return the vector value as a floating point array.
      * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
-     * @return the vector value as a floating point array
      */
     float[] vectorValue(int targetOrd) throws IOException;
 
     /**
-     * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
-     * @return the vector value as a byte array; these are the bytes corresponding to the float array
+     * Return the vector value as a byte array; these are the bytes corresponding to the float array
      * encoded using little-endian byte order.
+     * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
      */
     BytesRef binaryValue(int targetOrd) throws IOException;
 
     /**
+     * Return the k nearest neighbor documents as determined by comparison of their vector values
+     * for this field, to the given vector, by the field's score function. If the score function is
+     * reversed, lower values indicate nearer vectors, otherwise higher scores indicate nearer
+     * vectors. Unlike relevance scores, vector scores may be negative.
      * @param target the vector-valued query
      * @param k      the number of docs to return
      * @param fanout control the accuracy/speed tradeoff - larger values give better recall at higher cost
-     * @return the k nearest neighbors, to the given vector, approximately, along with their (scoreFunction-specific) scores.
-     * Note: scores may be negative. In case ScoreFunction.reversed==true (ie these are distances), the scores here will be the negative
-     * of those returned by the ScoreFunction.
+     * @return the k nearest neighbor documents, along with their (scoreFunction-specific) scores.
      */
     TopDocs search(float[] target, int k, int fanout) throws IOException;
   }
 
   /**
    * Score function. This is used during indexing and searching of the vectors to determine the nearest neighbors.
+   * Score values may be negative. By default high scores indicate nearer documents, unless the function is reversed.
    */
   public enum ScoreFunction {
     /** No distance function is used. Note: {@link VectorValues.RandomAccess#search(float[], int, int)}
@@ -110,7 +114,7 @@ public abstract class VectorValues extends DocIdSetIterator {
     NONE(0),
 
     /** Euclidean distance */
-    EUCLIDEAN(1) {
+    EUCLIDEAN(1, true) {
       @Override
       public float score(float[] v1, float[] v2) {
         assert v1.length == v2.length;
@@ -125,12 +129,13 @@ public abstract class VectorValues extends DocIdSetIterator {
     },
 
     /** dot product - note, may be negative; larger values are better */
-    DOT_PRODUCT(2, false) {
+    DOT_PRODUCT(2) {
       @Override
       public float score(float[] a, float[] b) {
         float res = 0f;
         /*
-         If length of vector is larger than 8, we use unrolled dot product to accelerate the calculation
+         * If length of vector is larger than 8, we use unrolled dot product to accelerate the
+         * calculation.
          */
         int i;
         for (i = 0; i < a.length % 8; i++) {
@@ -174,7 +179,7 @@ public abstract class VectorValues extends DocIdSetIterator {
     }
 
     ScoreFunction(int id) {
-      this(id, true);
+      this(id, false);
     }
 
     /**
@@ -205,6 +210,10 @@ public abstract class VectorValues extends DocIdSetIterator {
     return scoreFunction.score(v1, v2);
   }
 
+  /**
+   * Represents the lack of vector values. It is returned by providers that do not
+   * support VectorValues.
+   */
   public static VectorValues EMPTY = new VectorValues() {
 
     @Override

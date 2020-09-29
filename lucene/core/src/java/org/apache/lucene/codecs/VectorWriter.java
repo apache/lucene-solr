@@ -46,6 +46,7 @@ public abstract class VectorWriter implements Closeable {
   /** Called once at the end before close */
   public abstract void finish() throws IOException;
 
+  /** Merge the vector values from multiple segments, for all fields */
   public void merge(MergeState mergeState) throws IOException {
     for (VectorReader reader : mergeState.vectorReaders) {
       if (reader != null) {

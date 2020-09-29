@@ -356,17 +356,13 @@ public class FieldType implements IndexableFieldType  {
     return dimensionNumBytes;
   }
 
-  public void setVectorDimensionsAndScoreFunction(int numDimensions, VectorValues.ScoreFunction distFunc) {
-    if (numDimensions < 0) {
-      throw new IllegalArgumentException("vector numDimensions must be >= 0; got " + numDimensions);
+  void setVectorDimensionsAndScoreFunction(int numDimensions, VectorValues.ScoreFunction distFunc) {
+    if (numDimensions <= 0) {
+      throw new IllegalArgumentException("vector numDimensions must be > 0; got " + numDimensions);
     }
     if (numDimensions > VectorValues.MAX_DIMENSIONS) {
       throw new IllegalArgumentException("vector numDimensions must be <= VectorValues.MAX_DIMENSIONS (=" + VectorValues.MAX_DIMENSIONS + "); got " + numDimensions);
     }
-    if (numDimensions == 0 && distFunc != VectorValues.ScoreFunction.NONE) {
-      throw new IllegalArgumentException("vector distFunc must be NONE when the vector numDimensions = 0; got " + distFunc);
-    }
-
     this.vectorDimension = numDimensions;
     this.vectorScoreFunction = distFunc;
   }

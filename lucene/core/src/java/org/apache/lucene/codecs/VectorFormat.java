@@ -41,6 +41,9 @@ public abstract class VectorFormat {
    */
   public abstract VectorReader fieldsReader(SegmentReadState state) throws IOException;
 
+  /**
+   * EMPTY throws an exception when written. It acts as a sentinel indicating a Codec that does not support vectors.
+   */
   public static VectorFormat EMPTY = new VectorFormat() {
     @Override
     public VectorWriter fieldsWriter(SegmentWriteState state) {

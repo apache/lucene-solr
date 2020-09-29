@@ -28,7 +28,6 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.VectorField;
 import org.apache.lucene.index.VectorValues.ScoreFunction;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
@@ -62,6 +61,31 @@ public class TestVectorValues extends LuceneTestCase {
         w.addDocument(doc);
       }
     }
+  }
+
+  public void testFieldConstructor() {
+    float[] v = new float[1];
+    VectorField field = new VectorField("f", v);
+    assertEquals(1, field.fieldType().vectorDimension());
+    assertEquals(ScoreFunction.EUCLIDEAN, field.fieldType().vectorScoreFunction());
+    assertSame(v, field.vectorValue());
+  }
+
+  public void testFieldConstructorExceptions() {
+    expectThrows(IllegalArgumentException.class, () -> new VectorField(null, new float[1]));
+    expectThrows(IllegalArgumentException.class, () -> new VectorField("f", null));
+    expectThrows(IllegalArgumentException.class, () -> new VectorField("f", new float[1], null));
+    expectThrows(IllegalArgumentException.class, () -> new VectorField("f", new float[0]));
+    expectThrows(IllegalArgumentException.class, () -> new VectorField("f", new float[VectorValues.MAX_DIMENSIONS + 1]));
+  }
+
+  public void testFieldSetValue() {
+    VectorField field = new VectorField("f", new float[1]);
+    float[] v1 = new float[1];
+    field.setVectorValue(v1);
+    assertSame(v1, field.vectorValue());
+    expectThrows(IllegalArgumentException.class, () -> field.setVectorValue(new float[2]));
+    expectThrows(NullPointerException.class, () -> field.setVectorValue(null));
   }
 
   // Illegal schema change tests:
@@ -539,7 +563,7 @@ public class TestVectorValues extends LuceneTestCase {
   private void add(IndexWriter iw, String field, int id, float[] vector) throws IOException {
     Document doc = new Document();
     if (vector != null) {
-      doc.add(new VectorField(field, vector, VectorValues.ScoreFunction.EUCLIDEAN));
+      doc.add(new VectorField(field, vector));
     }
     doc.add(new NumericDocValuesField("sortkey", random().nextInt(100)));
     doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));

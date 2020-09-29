@@ -20,12 +20,12 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.codecs.VectorWriter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 
@@ -51,13 +51,19 @@ public class VectorValuesWriter {
     }
   }
 
+  /**
+   * Adds a value for the given document. Only a single value may be added.
+   * @param docID the value is added to this document
+   * @param vectorValue the value to add
+   * @throws IllegalArgumentException if a value has already been added to the given document
+   */
   public void addValue(int docID, float[] vectorValue) {
     if (docID == lastDocID) {
       throw new IllegalArgumentException("VectorValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
     assert docID > lastDocID;
     docsWithField.add(docID);
-    vectors.add(Arrays.copyOf(vectorValue, vectorValue.length));
+    vectors.add(ArrayUtil.copyOfSubArray(vectorValue, 0, vectorValue.length));
     updateBytesUsed();
     lastDocID = docID;
   }
@@ -72,6 +78,12 @@ public class VectorValuesWriter {
     bytesUsed = newBytesUsed;
   }
 
+  /**
+   * Flush this field's values to storage, sorting the values in accordance with sortMap
+   * @param sortMap specifies the order of documents being flushed, or null if they are to be flushed in docid order
+   * @param vectorWriter the Codec's vector writer that handles the actual encoding and I/O
+   * @throws IOException if there is an error writing the field and its values
+   */
   public void flush(Sorter.DocMap sortMap, VectorWriter vectorWriter) throws IOException {
     VectorValues vectorValues = new BufferedVectorValues(docsWithField, vectors, fieldInfo.getVectorDimension(), fieldInfo.getVectorScoreFunction());
     if (sortMap != null) {

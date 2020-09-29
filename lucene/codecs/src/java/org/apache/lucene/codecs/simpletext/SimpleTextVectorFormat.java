@@ -19,9 +19,6 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.PointsFormat;
-import org.apache.lucene.codecs.PointsReader;
-import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.VectorWriter;

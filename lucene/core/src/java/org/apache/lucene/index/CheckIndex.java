@@ -221,7 +221,7 @@ public final class CheckIndex implements Closeable {
       /** Status of index sort */
       public IndexSortStatus indexSortStatus;
 
-      /** STatus of vectors */
+      /** Status of vectors */
       public VectorValuesStatus vectorValuesStatus;
     }
     
@@ -385,6 +385,9 @@ public final class CheckIndex implements Closeable {
      * Status from testing VectorValues
      */
     public static final class VectorValuesStatus {
+
+      VectorValuesStatus() {
+      }
 
       /** Total number of vector values tested. */
       public long totalVectorValues;
