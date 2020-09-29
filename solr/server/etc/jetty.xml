@@ -191,6 +191,7 @@
     <!-- extra options                                               -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
+    <Set name="stopTimeout">180000</Set>
     <Set name="dumpAfterStart">false</Set>
     <Set name="dumpBeforeStop">false</Set>
 

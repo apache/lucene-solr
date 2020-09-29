@@ -306,7 +306,7 @@ public class JettySolrRunner implements Closeable {
 //      server.manage(qtp);
 //    }
 
-    server.setStopTimeout(60); // will wait gracefull for stoptime / 2, then interrupts
+    server.setStopTimeout(30000); // will wait gracefull for stoptime / 2, then interrupts
     assert config.stopAtShutdown;
     server.setStopAtShutdown(config.stopAtShutdown);
 
@@ -444,9 +444,10 @@ public class JettySolrRunner implements Closeable {
     }
 
     chain = injectJettyHandlers(chain);
-    SolrShutdownHandler shutdownHandler = new SolrShutdownHandler();
-    shutdownHandler.setHandler(chain);
-    chain = shutdownHandler;
+    // no shutdown handler for embedded
+//    SolrShutdownHandler shutdownHandler = new SolrShutdownHandler();
+//    shutdownHandler.setHandler(chain);
+//    chain = shutdownHandler;
     if(config.enableV2) {
       RewriteHandler rwh = new RewriteHandler();
       rwh.setHandler(chain);
