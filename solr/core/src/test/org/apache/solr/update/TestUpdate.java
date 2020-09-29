@@ -238,14 +238,4 @@ public class TestUpdate extends SolrTestCaseJ4 {
     fail();
   }
 
-  @Test // SOLR-14767
-  public void testStringUpdateOnLongAndIntFields() throws Exception {
-    clearIndex();
-
-    addAndGetVersion(sdoc("id","1", "val_is", "42.0", "val_is", 12, "val_i", "12.1", "val_l",
-        "42.0", "val_ll", "12.1", "val_ll", "32"), null);
-    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
-        ,"=={'doc':{'id':'1', 'val_i':12, 'val_is':[42,12], 'val_l':42, 'val_ll':[12,32]}}"
-    );
-  }
 }
