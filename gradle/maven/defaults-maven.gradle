@@ -76,7 +76,28 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
   apply plugin: 'signing'
 
   publishing {
-    // TODO: Add publishing repository details.
+    repositories {
+      // TODO: we should add a separate repository for releases (or, alternatively,
+      // specify a different URL automatically for snapshots and non-snapshot versions.
+      maven {
+        name = "ApacheSnapshots"
+        url = "https://repository.apache.org/content/repositories/snapshots"
+
+        credentials {
+          def nexusUserName = rootProject.propertyOrDefault('nexusUsername', null)
+          def nexusPwd = rootProject.propertyOrDefault('nexusPassword', null)
+          if (nexusUserName && nexusPwd) {
+            username nexusUserName
+            password nexusPwd
+          }
+        }
+      }
+    }
+  }
+
+  // Do not generate gradle metadata files.
+  tasks.withType(GenerateModuleMetadata) {
+    enabled = false
   }
 
   plugins.withType(JavaPlugin) {
@@ -112,19 +133,7 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
         }
 
         publications {
-          // JARS and sources, no javadocs (for local inspection only).
           jars(MavenPublication) {
-            from components.java
-            groupId = project.group
-            artifactId = project.archivesBaseName
-
-            artifact sourcesJar
-
-            pom(configurePom)
-          }
-
-          // Full set of signed artifacts.
-          signed(MavenPublication) {
             from components.java
             groupId = project.group
             artifactId = project.archivesBaseName
@@ -138,7 +147,8 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
       }
 
       signing {
-        sign publishing.publications.signed
+        required { !version.endsWith("SNAPSHOT") }
+        sign publishing.publications.jars
       }
     }
   }
