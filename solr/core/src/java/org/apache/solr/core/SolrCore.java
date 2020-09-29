@@ -3119,7 +3119,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         if (configHandler.getReloadLock().tryLock()) {
 
           try {
-            cc.reload(coreName, coreId);
+            cc.reload(coreName, coreId, false);
           } catch (SolrCoreState.CoreIsClosedException e) {
             /*no problem this core is already closed*/
           } finally {

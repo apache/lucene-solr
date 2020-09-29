@@ -1614,7 +1614,13 @@ public class CoreContainer {
   public void reload(String name) {
     reload(name, null);
   }
-
+  public void reload(String name, UUID coreId, boolean async) {
+    if(async) {
+      runAsync(() -> reload(name, coreId));
+    } else {
+      reload(name, coreId);
+    }
+  }
   /**
    * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to

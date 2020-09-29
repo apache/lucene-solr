@@ -132,7 +132,7 @@ public class SchemaManager {
             latestVersion = ZkController.persistConfigResourceToZooKeeper
                 (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
                  sw.toString().getBytes(StandardCharsets.UTF_8), true);
-            req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
+            req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId, false);
             break;
           } catch (ZkController.ResourceModifiedInZkException e) {
             log.info("Schema was modified by another node. Retrying..");
@@ -142,7 +142,7 @@ public class SchemaManager {
             //only for non cloud stuff
             managedIndexSchema.persistManagedSchema(false);
             core.setLatestSchema(managedIndexSchema);
-            core.getCoreContainer().reload(core.getName(), core.uniqueId);
+            core.getCoreContainer().reload(core.getName(), core.uniqueId, false);
           } catch (SolrException e) {
             log.warn(errorMsg);
             errors = singletonList(errorMsg + e.getMessage());
