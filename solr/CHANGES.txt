@@ -16,6 +16,9 @@ Bug Fixes
 * SOLR-14768: Fix HTTP multipart POST to Solr -- a regression from 8.6.0.
   Many Jetty classes are not classpath-visible from the Solr webapp.  (David Smiley)
 
+* SOLR-14850: Fix ExactStatsCache NullPointerException when shards.tolerant=true.
+  (Eugene Tenkaev via ab)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
