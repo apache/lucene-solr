@@ -167,7 +167,7 @@ final class DocumentsWriterPerThread implements Accountable {
     try {
       testPoint("DocumentsWriterPerThread addDocuments start");
       assert abortingException == null: "DWPT has hit aborting exception but is still indexing";
-      assert state == State.ACTIVE || state == State.FLUSH_PENDING : "Illegal state: " + state + " must be ACTIVE of FLUSH_PENDING";
+      assert state == State.ACTIVE || state == State.FLUSH_PENDING : "Illegal state: " + state + " must be ACTIVE or FLUSH_PENDING";
       if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + deleteNode + " docID=" + numDocsInRAM + " seg=" + segmentInfo.name);
       }
@@ -283,7 +283,7 @@ final class DocumentsWriterPerThread implements Accountable {
 
   /** Flush all pending docs to a new segment */
   FlushedSegment flush(DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
-    assert state == State.FLUSHING;
+    assert state == State.FLUSHING : "expected FLUSHING but was: " + state;
     assert numDocsInRAM > 0;
     assert deleteSlice.isEmpty() : "all deletes must be applied in prepareFlush";
     segmentInfo.setMaxDoc(numDocsInRAM);
@@ -609,7 +609,7 @@ final class DocumentsWriterPerThread implements Accountable {
     FLUSHED(FLUSHING, false);
 
     private final State previousState;
-    final boolean mustHoldLock; // only for asserts
+    private final boolean mustHoldLock; // only for asserts
 
     State(State previousState, boolean mustHoldLock) {
       this.previousState = previousState;
