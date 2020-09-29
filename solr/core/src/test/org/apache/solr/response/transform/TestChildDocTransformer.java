@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import static org.hamcrest.core.StringContains.containsString;
 
+// nocommit - note this test is flakey, I think sometimes does not return a version
 public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
   private static String ID_FIELD = "id";
