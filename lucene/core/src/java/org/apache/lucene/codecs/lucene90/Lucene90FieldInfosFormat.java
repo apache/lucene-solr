@@ -102,9 +102,8 @@ import org.apache.lucene.store.IndexOutput;
  *   <li>VectorDistFunction: a byte containing distance function used for similarity calculation.
  *     <ul>
  *       <li>0: no distance function is defined for this field.</li>
- *       <li>1: MANHATTAN distance. ({@link org.apache.lucene.index.VectorValues.ScoreFunction#MANHATTAN})</li>
- *       <li>2: EUCLIDEAN distance. ({@link org.apache.lucene.index.VectorValues.ScoreFunction#EUCLIDEAN})</li>
- *       <li>3: DOT_PRODUCT score. ({@link org.apache.lucene.index.VectorValues.ScoreFunction#DOT_PRODUCT})</li>
+ *       <li>1: EUCLIDEAN distance. ({@link org.apache.lucene.index.VectorValues.ScoreFunction#EUCLIDEAN})</li>
+ *       <li>2: DOT_PRODUCT score. ({@link org.apache.lucene.index.VectorValues.ScoreFunction#DOT_PRODUCT})</li>
  *     </ul>
  *   </li>
  * </ul>

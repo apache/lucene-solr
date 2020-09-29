@@ -39,8 +39,9 @@ public abstract class VectorValues extends DocIdSetIterator {
   public abstract int dimension();
 
   /**
-   * TODO: should we use cost() for this? We will want to rely on its always being exactly the number
-   * of documents having a value for this field.
+   * TODO: should we use cost() for this? We rely on its always being exactly the number
+   * of documents having a value for this field, which is not guaranteed by the cost() contract,
+   * but in all the implementations so far they are the same.
    * @return the number of vectors returned by this iterator
    */
   public abstract int size();
@@ -53,19 +54,22 @@ public abstract class VectorValues extends DocIdSetIterator {
   /**
    * Returns the vector value for the current document ID.
    * It is illegal to call this method after the iterator failed to advance.
-   * @return vector value
+   * @return the vector value
    */
   public abstract float[] vectorValue() throws IOException;
 
   /**
    * Returns the binary encoded vector value for the current document ID.
    * It is illegal to call this method after the iterator failed to advance.
-   * @return binary value
+   * @return the binary value
    */
   public BytesRef binaryValue() throws IOException {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * @return a random access interface over this iterator's vectors.
+   */
   public abstract RandomAccess randomAccess();
 
   /**
@@ -101,7 +105,7 @@ public abstract class VectorValues extends DocIdSetIterator {
    * Score function. This is used during indexing and searching of the vectors to determine the nearest neighbors.
    */
   public enum ScoreFunction {
-    /** No distance function is used. Note: {@link #search(float[], int, int)}
+    /** No distance function is used. Note: {@link VectorValues.RandomAccess#search(float[], int, int)}
      * is not supported for fields specifying this score function. */
     NONE(0),
 
