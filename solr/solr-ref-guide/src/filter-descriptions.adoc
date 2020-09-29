@@ -50,7 +50,7 @@ You configure each filter with a `<filter>` element in `schema.xml` as a child o
 ====
 --
 
-The name/class attribute names a factory class that will instantiate a filter object as needed. Filter factory classes must implement the `org.apache.lucene.analysis.util.TokenFilterFactory` interface. Like tokenizers, filters are also instances of TokenStream and thus are producers of tokens. Unlike tokenizers, filters also consume tokens from a TokenStream. This allows you to mix and match filters, in any order you prefer, downstream of a tokenizer.
+The name/class attribute names a factory class that will instantiate a filter object as needed. Filter factory classes must implement the `org.apache.lucene.analysis.TokenFilterFactory` interface. Like tokenizers, filters are also instances of TokenStream and thus are producers of tokens. Unlike tokenizers, filters also consume tokens from a TokenStream. This allows you to mix and match filters, in any order you prefer, downstream of a tokenizer.
 
 Arguments may be passed to tokenizer factories to modify their behavior by setting attributes on the `<filter>` element. For example:
 

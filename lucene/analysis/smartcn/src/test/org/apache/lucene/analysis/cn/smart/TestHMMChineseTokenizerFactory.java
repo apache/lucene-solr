@@ -23,7 +23,7 @@ import java.util.HashMap;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 
 /** 
  * Tests for {@link HMMChineseTokenizerFactory}

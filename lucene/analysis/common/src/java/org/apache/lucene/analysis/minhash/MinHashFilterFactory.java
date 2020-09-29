@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.minhash;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * {@link TokenFilterFactory} for {@link MinHashFilter}.
@@ -59,7 +59,7 @@ public class MinHashFilterFactory extends TokenFilterFactory {
   /*
    * (non-Javadoc)
    * 
-   * @see org.apache.lucene.analysis.util.TokenFilterFactory#create(org.apache.lucene.analysis.TokenStream)
+   * @see org.apache.lucene.analysis.TokenFilterFactory#create(org.apache.lucene.analysis.TokenStream)
    */
   @Override
   public TokenStream create(TokenStream input) {
