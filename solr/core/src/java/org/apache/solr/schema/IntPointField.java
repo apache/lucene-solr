@@ -51,7 +51,8 @@ public class IntPointField extends PointField implements IntValueFieldType {
     try {
       if (val instanceof CharSequence) return Integer.parseInt( val.toString());
     } catch (NumberFormatException e) {
-      return (int)Float.parseFloat(val.toString());
+      Float v = Float.parseFloat(val.toString());
+      return v.intValue();
     }
     return super.toNativeType(val);
   }
@@ -145,16 +146,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    int intValue;
-    if (value instanceof Number) {
-      intValue = ((Number) value).intValue();
-    } else {
-      try {
-        intValue = Integer.parseInt(value.toString());
-      } catch (NumberFormatException e) {
-        intValue = (int) Float.parseFloat(value.toString());
-      }
-    }
+    int intValue = (value instanceof Number) ? ((Number) value).intValue() : Integer.parseInt(value.toString());
     return new IntPoint(field.getName(), intValue);
   }
 
