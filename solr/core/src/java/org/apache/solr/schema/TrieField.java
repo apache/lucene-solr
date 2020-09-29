@@ -552,9 +552,16 @@ public class TrieField extends NumericFieldType {
 
     switch (type) {
       case INTEGER:
-        int i = (value instanceof Number)
-          ? ((Number)value).intValue()
-          : Integer.parseInt(value.toString());
+        int i;
+        if (value instanceof Number) {
+          i = ((Number) value).intValue();
+        } else {
+          try {
+            i = Integer.parseInt(value.toString());
+          } catch (NumberFormatException e) {
+            i = (int) Float.parseFloat(value.toString());
+          }
+        }
         f = new LegacyIntField(field.getName(), i, ft);
         break;
       case FLOAT:
@@ -564,9 +571,16 @@ public class TrieField extends NumericFieldType {
         f = new LegacyFloatField(field.getName(), fl, ft);
         break;
       case LONG:
-        long l = (value instanceof Number)
-          ? ((Number)value).longValue()
-          : Long.parseLong(value.toString());
+        long l;
+        if (value instanceof Number) {
+          l = ((Number) value).longValue();
+        } else {
+          try {
+            l = Long.parseLong(value.toString());
+          } catch (NumberFormatException e) {
+            l = (long) Double.parseDouble(value.toString());
+          }
+        }
         f = new LegacyLongField(field.getName(), l, ft);
         break;
       case DOUBLE:
