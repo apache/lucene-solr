@@ -42,9 +42,6 @@ import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.queryparser.charstream.FastCharStream;
 
 public class QueryParser extends SolrQueryParserBase {
-  /** The default operator for parsing queries.
-   */
-  static public enum Operator { OR, AND }
 
   /** default split on whitespace behavior */
   public static final boolean DEFAULT_SPLIT_ON_WHITESPACE = false;
@@ -83,7 +80,7 @@ public class QueryParser extends SolrQueryParserBase {
                                  SynonymQueryStyle synonymQueryStyle)
       throws SyntaxError {
     setAutoGenerateMultiTermSynonymsPhraseQuery(fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries());
-    // Don't auto-quote graph-aware field queries 
+    // Don't auto-quote graph-aware field queries
     boolean treatAsQuoted = getSplitOnWhitespace()
         ? (quoted || fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries()) : quoted;
     return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false,

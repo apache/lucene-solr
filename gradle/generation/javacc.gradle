@@ -340,3 +340,64 @@ class JavaCCTask extends DefaultTask {
     }
   }
 }
+
+configure(project(":solr:core")) {
+  task javaccAQParser(type: JavaCCTask) {
+    description "Regenerate Advanced query parser from solr/aqp/QueryParser.jj"
+    group "generation"
+
+    javaccFile = file('src/java/org/apache/solr/aqp/QueryParser.jj')
+
+    doLast {
+      def separator = System.getProperty('line.separator')
+      def parentDir = javaccFile.parentFile
+
+      [/import java\.io\.StringReader;/,
+       /import java\.util\.ArrayList;/,
+       /import java\.util\.Arrays;/,
+       /import java\.util\.HashSet;/,
+       /import java\.util\.List;/,
+       /import java\.util\.Set;/,
+       /import org\.apache\.lucene\.analysis\.Analyzer;/,
+       /import org\.apache\.solr\.parser\.Operator;/,
+       /import org\.apache\.solr\.parser\.SynonymQueryStyle;/,
+       /import org\.apache\.solr\.parser\.FastCharStream;/,
+       /import org\.apache\.lucene\.search\.BooleanClause;/,
+       /import org\.apache\.lucene\.search\.BooleanQuery;/,
+       /import org\.apache\.lucene\.search\.Query;/,
+       /import org\.apache\.solr\.search\.SyntaxError;/,
+       /import org\.apache\.solr\.search\.QParser;/
+      ].each {
+        ant.replaceregexp(file: file("${parentDir}/QueryParserTokenManager.java"),
+            match: "${it}\\s*${separator}",
+            replace: "",
+            encoding: "UTF-8")
+      }
+      [/import static org\.apache\.solr\.aqp\.TokenMgrError\.LEXICAL_ERROR;/,
+       /import java\.util\.Deque;/,
+       /import java\.util\.ArrayDeque;/
+      ].each {
+        ant.replaceregexp(file: file("${parentDir}/QueryParser.java"),
+            match: "${it}\\s*${separator}",
+            replace: "",
+            encoding: "UTF-8")
+      }
+
+      ant.replace(file: "${parentDir}/QueryParser.java",
+          token: "public QueryParser(CharStream ",
+          value: "protected QueryParser(CharStream ",
+          encoding: "UTF-8")
+
+      ant.replace(file: "${parentDir}/QueryParser.java",
+          token: "public QueryParser(QueryParserTokenManager ",
+          value: "protected QueryParser(QueryParserTokenManager ",
+          encoding: "UTF-8")
+
+      ant.replace(file: "${parentDir}/QueryParser.java",
+          token: "final private LookaheadSuccess jj_ls =",
+          value: "static final private LookaheadSuccess jj_ls =",
+          encoding: "UTF-8")
+      ant.delete(file:"${parentDir}/CharStream.java")
+    }
+  }
+}

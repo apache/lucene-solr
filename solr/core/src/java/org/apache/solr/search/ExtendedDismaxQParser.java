@@ -55,8 +55,9 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.parser.QueryParser;
+import org.apache.solr.parser.Operator;
 import org.apache.solr.parser.SolrQueryParserBase.MagicFieldName;
+import org.apache.solr.parser.SynonymQueryStyle;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -1005,7 +1006,7 @@ public class ExtendedDismaxQParser extends QParser {
       super(parser, defaultField);
       // Respect the q.op parameter before mm will be applied later
       SolrParams defaultParams = SolrParams.wrapDefaults(parser.getLocalParams(), parser.getParams());
-      QueryParser.Operator defaultOp = QueryParsing.parseOP(defaultParams.get(QueryParsing.OP));
+      Operator defaultOp = QueryParsing.parseOP(defaultParams.get(QueryParsing.OP));
       setDefaultOperator(defaultOp);
     }
     

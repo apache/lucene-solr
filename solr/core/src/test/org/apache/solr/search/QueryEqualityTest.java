@@ -639,6 +639,10 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
 
   }
 
+  public void testAdvancedQuery() throws Exception {
+    assertQueryEquals("advanced", "{!advanced}+solr ~rocks", "+solr ~rocks");
+  }
+
   public void testQuerySurround() throws Exception {
     assertQueryEquals("surround", "{!surround}and(apache,solr)",
                       "and(apache,solr)", "apache AND solr");

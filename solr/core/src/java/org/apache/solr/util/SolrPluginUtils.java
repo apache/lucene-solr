@@ -56,7 +56,7 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.highlight.SolrHighlighter;
-import org.apache.solr.parser.QueryParser;
+import org.apache.solr.parser.Operator;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.json.RequestUtil;
@@ -884,7 +884,7 @@ public class SolrPluginUtils {
     public DisjunctionMaxQueryParser(QParser qp, String defaultField) {
       super(qp,defaultField);
       // don't trust that our parent class won't ever change its default
-      setDefaultOperator(QueryParser.Operator.OR);
+      setDefaultOperator(Operator.OR);
     }
 
     /**

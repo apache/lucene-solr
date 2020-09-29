@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SimpleParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.parser.QueryParser;
+import org.apache.solr.parser.Operator;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -155,9 +155,9 @@ public class SimpleQParserPlugin extends QParserPlugin {
       parser = new SolrSimpleQueryParser(req.getSchema().getQueryAnalyzer(), queryFields, enabledOps, this, schema);
 
       // Set the default operator to be either 'AND' or 'OR' for the query.
-      QueryParser.Operator defaultOp = QueryParsing.parseOP(defaultParams.get(QueryParsing.OP));
+      Operator defaultOp = QueryParsing.parseOP(defaultParams.get(QueryParsing.OP));
 
-      if (defaultOp == QueryParser.Operator.AND) {
+      if (defaultOp == Operator.AND) {
         parser.setDefaultOperator(BooleanClause.Occur.MUST);
       }
     }

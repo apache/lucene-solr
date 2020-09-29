@@ -168,7 +168,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
                               1,
                               null,
                               true,
-                              null);
+                              null, null);
   }
 
   private void doTestStopwordsPositions(StopFilter stopfilter, List<Integer> stopwordPositions, final int numberOfTokens) throws IOException {
