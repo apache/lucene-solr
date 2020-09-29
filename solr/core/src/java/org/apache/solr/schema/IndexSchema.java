@@ -199,7 +199,7 @@ public class IndexSchema {
     resourceLoader = this.solrClassLoader instanceof SolrResourceLoader ?
         (ResourceLoader) this.solrClassLoader :
         wrappedResourceLoader(this.solrClassLoader);
-    this.substitutableProperties = substitutableProperties;
+    this.substitutableProperties = substitutableProper`ties;
   }
 
   /**We want resources to be loaded using {@link SolrResourceLoader}
