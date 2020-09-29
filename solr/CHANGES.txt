@@ -19,6 +19,8 @@ Bug Fixes
 * SOLR-14850: Fix ExactStatsCache NullPointerException when shards.tolerant=true.
   (Yevhen Tienkaiev via ab)
 
+* SOLR-14897: Fix unlimited number of forwarding the request from one node to another node. (hossman, Munendra S N)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
