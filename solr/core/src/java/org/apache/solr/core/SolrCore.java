@@ -64,7 +64,6 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.MapMaker;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -76,6 +75,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
@@ -3107,7 +3107,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (configHandler.getReloadLock().tryLock()) {
 
           try {
-            cc.reload(coreName, coreId, false);
+            cc.reload(coreName, coreId);
           } catch (SolrCoreState.CoreIsClosedException e) {
             /*no problem this core is already closed*/
           } finally {
