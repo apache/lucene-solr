@@ -57,6 +57,10 @@ configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
   ext {
     docroot = file("${buildDir}/documentation")
   }
+
+  configurations {
+    docs
+  }
   
   task documentation() {
     group = 'documentation'
@@ -74,6 +78,12 @@ configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
     from('site/html')      // lucene
     from('site/assets')    // solr
     into project.docroot
+  }
+
+  artifacts {
+    docs project.docroot, {
+      builtBy copyDocumentationAssets
+    }
   }
 }
 

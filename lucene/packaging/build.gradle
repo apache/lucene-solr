@@ -43,6 +43,10 @@ def allDepsConf = { Project prj ->
     "dep-full" + prj.path.replace(':', '-')
 }
 
+configurations {
+    docs
+}
+
 for (Project includedProject : includeInBinaries) {
     def confBinaries = binaryArtifactsConf(includedProject)
     def confFull = allDepsConf(includedProject)
@@ -60,6 +64,10 @@ for (Project includedProject : includeInBinaries) {
             exclude group: "org.slf4j"
         })
     }
+}
+
+dependencies {
+    docs project(path: ':lucene', configuration: 'docs')
 }
 
 distributions {
@@ -87,8 +95,8 @@ distributions {
                 include "SYSTEM_REQUIREMENTS.md"
             })
 
-            // Copy files from final destination, even though this isn't a task output
-            from(project(':lucene').docroot, {
+            // Copy files from documentation output to 'docs'
+            from(configurations.docs, {
                 into "docs"
             })
 

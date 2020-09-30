@@ -64,8 +64,8 @@ dependencies {
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
 
-  // Pull the fileset from its final copied location
-  docs files(project(':solr').docroot)
+  // Copy files from documentation output
+  docs project(path: ':solr', configuration: 'docs')
 }
 
 distributions {
