@@ -30,16 +30,17 @@ def includeInBinaries = project(":lucene").subprojects.findAll {subproject ->
     return !(subproject.path in [
         ":lucene:packaging",
         ":lucene:analysis",
+        ":lucene:luke", // nocommit - Encountered duplicate path "luke/lib/log4j-core-2.13.2.jar"
     ])
 }
 
 // Create a configuration to each subproject and add dependency.
 def binaryArtifactsConf = { Project prj ->
-    return "dep-binary-" + prj.path.replace(':', '-')
+    "dep-binary" + prj.path.replace(':', '-')
 }
 
 def allDepsConf = { Project prj ->
-    return "dep-full-" + prj.path.replace(':', '-')
+    "dep-full" + prj.path.replace(':', '-')
 }
 
 for (Project includedProject : includeInBinaries) {
@@ -59,6 +60,17 @@ for (Project includedProject : includeInBinaries) {
             exclude group: "org.slf4j"
         })
     }
+}
+
+configurations {
+    docs
+}
+
+dependencies {
+    // hack: depend on the task outputs to force the task to run...
+    docs files(project(':lucene').tasks.documentation.outputs)
+    // ...but pull the fileset from its final copied location
+    docs files(project(':lucene').docroot)
 }
 
 distributions {
@@ -86,11 +98,16 @@ distributions {
                 include "SYSTEM_REQUIREMENTS.md"
             })
 
+            from(configurations.docs, {
+                into "docs"
+            })
+
             // Put included project's binary artifacts under their corresponding subfolders.
-            for (Project includedProject : includeInBinaries) {
-                def basePath = includedProject.path.replaceFirst("^:lucene", "").replace(':', '/')
+            includeInBinaries.each { includedProject ->
+                def basePath = includedProject.path.replaceFirst("^:lucene:", "").replace(':', '/')
                 def confBinaries = configurations.findByName(binaryArtifactsConf(includedProject))
                 def confFull = configurations.findByName(allDepsConf(includedProject))
+
                 from(confBinaries, {
                     into basePath
                 })

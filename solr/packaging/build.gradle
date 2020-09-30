@@ -38,6 +38,7 @@ configurations {
   contrib
   example
   server
+  docs
 }
 
 dependencies {
@@ -62,6 +63,11 @@ dependencies {
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
+
+  // hack: depend on the task outputs to force the task to run...
+  docs files(project(':solr').tasks.documentation.outputs)
+  // ...but pull the fileset from its final copied location
+  docs files(project(':solr').docroot)
 }
 
 distributions {
@@ -117,7 +123,11 @@ distributions {
         into "server"
       })
 
+      from(configurations.docs, {
+        into "docs"
+      })
       // docs/   - TODO: this is assembled via XSLT... leaving out for now.
+      // -- Is there more to do here?
     }
   }
 }
