@@ -216,7 +216,7 @@ public class Http2SolrClient extends SolrClient {
     }
     // nocommit - look at config again as well
     int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", 12);
-    SolrQueuedThreadPool httpClientExecutor = new SolrQueuedThreadPool("http2Client", Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(16, ParWork.PROC_COUNT / 2)), minThreads,
+    SolrQueuedThreadPool httpClientExecutor = new SolrQueuedThreadPool("http2Client", builder.maxThreadPoolSize, minThreads,
         this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) && this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 3000 : 5000,
         new ArrayBlockingQueue<>(minThreads, true), (int) TimeUnit.SECONDS.toMillis(30), null);
     httpClientExecutor.setLowThreadsThreshold(-1);
@@ -905,11 +905,6 @@ public class Http2SolrClient extends SolrClient {
       }
     }
 
-    int getMaxRequestsQueuedPerDestination() {
-      // comfortably above max outstanding requests
-      return MAX_OUTSTANDING_REQUESTS * 10;
-    }
-
     public synchronized void waitForComplete() {
       if (log.isDebugEnabled()) log.debug("Before wait for outstanding requests registered: {} arrived: {}, {} {}", phaser.getRegisteredParties(), phaser.getArrivedParties(), phaser.getUnarrivedParties(), phaser);
 
@@ -963,6 +958,7 @@ public class Http2SolrClient extends SolrClient {
 
   public static class Builder {
 
+    public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(16, ParWork.PROC_COUNT / 2));
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout = Integer.getInteger("solr.http2solrclient.default.idletimeout", 120000);
@@ -1004,6 +1000,11 @@ public class Http2SolrClient extends SolrClient {
      */
     public Builder maxConnectionsPerHost(int max) {
       this.maxConnectionsPerHost = max;
+      return this;
+    }
+
+    public Builder maxThreadPoolSize(int max) {
+      this.maxThreadPoolSize = max;
       return this;
     }
 

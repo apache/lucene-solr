@@ -104,6 +104,7 @@ public class UpdateShardHandler implements SolrInfoBean {
       updateOnlyClientBuilder
           .connectionTimeout(cfg.getDistributedConnectionTimeout())
           .maxOutstandingAsyncRequests(-1)
+          .maxThreadPoolSize(256)
           .idleTimeout(cfg.getDistributedSocketTimeout());
     }
     updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().build();
@@ -114,7 +115,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
     updateOnlyClient.setQueryParams(queryParams);
 
-    ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
+//    ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
 //    if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
 //      if (log.isDebugEnabled()) {
 //        log.debug("Creating recoveryExecutor with pool size {}", cfg.getMaxRecoveryThreads());
