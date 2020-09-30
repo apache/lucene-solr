@@ -15,28 +15,6 @@
  * limitations under the License.
  */
 
-// TODO 1: the separation of sources between tools and refGuide is awkward; it'd be
-// better to separate the refGuideTools as a plain Java module and then depend on
-// it as a project dependency. This would enable this module to *not* be a java module at all
-// and inherit from base, adding just refGuide-related tasks.
-// OR (better) one could rewrite those tools in Groovy (or Kotlin) and use them directly, without
-// an additional compilation phase.
-
-// TODO 2: property expansion via ant properties is awkward in gradle. We can do cleaner than going
-// through ant -- we could use gradle's expand when copying or at least use some more humane
-// property names.
-
-// TODO 3: currently buildscript dependencies are hardcoded (asciidoctor) because they can't be resolved
-// using Palantir's plugin. This is another reason to switch to gradle-based tools -- then
-// only the build script dependencies would be needed and asciidoctorj would be removed from version
-// properties entirely (it is only used locally in this build file).
-
-import java.time.*
-import java.time.format.*
-import java.nio.file.*
-import org.asciidoctor.*
-import groovy.json.StringEscapeUtils
-
 buildscript {
     repositories {
         mavenCentral()
@@ -50,7 +28,7 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.github.jruby-gradle.base' version '2.0.0-alpha.7'
+    id 'com.github.jruby-gradle.base' version '2.0.0'
 }
 
 // This project does not contribute anything to main dependencies.
@@ -146,13 +124,11 @@ ext {
         htmlLuceneJavadocs = "https://lucene.apache.org/core/${solrGuideVersionPath}_0/"
     }
 
-    // ivy* props will be set in setupLazyProps
-    // (because they need to be computed after evaluation is complete).
     templateProps = [
       javadocLink: "https://docs.oracle.com/en/java/javase/11/docs/api/",
                       
       solrGuideDraftStatus: propertyOrDefault("solrGuideDraft", "true").toBoolean() ? "DRAFT" : "",
-      solrRootPath: StringEscapeUtils.escapeJava(project(':solr').projectDir.toString() + File.separator),
+      solrRootPath: project(':solr').projectDir.toString() + File.separator,
       
       solrDocsVersion: solrDocsVersion,
       solrGuideVersionPath: solrGuideVersionPath,
@@ -163,31 +139,38 @@ ext {
     ]   
 }
 
-task setupLazyProps {
+task prepareSources(type: Sync) {
+    dependsOn configurations.depVer
+    
+    // If replaceable properties change, we have to rerun the task.
+    inputs.properties templateProps
+
+    final def escapedProps = [:] // must be final and only contents may change in doFirst, otherwise it's not picked up by expand.
     doFirst {
+        // Copy over template properties and add dependency versions resolved during execution phase.
+        final def props = templateProps.clone()
+
         // These properties have to be resolved after the configuration phase is complete (palantir's constraint)
-        // so we can't use them as input for caches.
+        // so we can't use them as input for caches. But as this task depends on the configuration, it's used correctly
         [
-                ["ivyCommonsCodec", "commons-codec", "commons-codec"],
-                ["ivyDropwizardMetrics", "io.dropwizard.metrics", "metrics-core"],
-                ["ivyLog4j", "org.apache.logging.log4j", "log4j-core"],
-                ["ivyOpennlpTools", "org.apache.opennlp", "opennlp-tools"],
-                ["ivyTika", "org.apache.tika", "tika-core"],
-                ["ivyZookeeper", "org.apache.zookeeper", "zookeeper"],
+            ["ivyCommonsCodec", "commons-codec", "commons-codec"],
+            ["ivyDropwizardMetrics", "io.dropwizard.metrics", "metrics-core"],
+            ["ivyLog4j", "org.apache.logging.log4j", "log4j-core"],
+            ["ivyOpennlpTools", "org.apache.opennlp", "opennlp-tools"],
+            ["ivyTika", "org.apache.tika", "tika-core"],
+            ["ivyZookeeper", "org.apache.zookeeper", "zookeeper"],
         ].each { p, depGroup, depId ->
-            templateProps[p] = getVersion(depGroup, depId, configurations.depVer)
+            props[p] = getVersion(depGroup, depId, configurations.depVer)
         }
 
         // Emit info about properties for clarity.
-        logger.warn("Building ref guide with:\n" + templateProps.collect({ k, v -> "  ${k} -> ${v}" }).join('\n'))
+        logger.lifecycle('Building ref guide with:\n{}', props.collect({ k, v -> "  ${k} -> ${v}" }).join('\n'))
+
+        // Escape all the properties, so they can be inserted into YAML templates.
+        props.each{ k, v ->
+          escapedProps[k] = v.replace("'","''")
+        }
     }
-}
-
-task prepareSources(type: Sync) {
-    dependsOn setupLazyProps
-
-    // If replaceable properties change, we have to rerun the task.
-    inputs.properties templateProps
 
     from(file("src"), {
        exclude '**/*.template'
@@ -197,7 +180,7 @@ task prepareSources(type: Sync) {
         include '**/*.template'
         rename '(.+)\\.template', '$1'
         filteringCharset = 'UTF-8'
-        expand(templateProps)
+        expand(escapedProps)
     })
 
     into buildContentDir
@@ -211,8 +194,8 @@ task buildNavDataFiles(type: JavaExec) {
     workingDir = buildContentDir
 
     args([
-            "${buildContentDir}",
-            "${mainPage}"
+        "${buildContentDir}",
+        "${mainPage}"
     ])
 
     doFirst {
@@ -259,5 +242,5 @@ task buildSite(type: JavaExec) {
 // Hook up custom tasks with standard tasks.
 check.dependsOn buildSite
 
-// Do not hook site building to assemble, at least for now.
-// assemble.dependsOn buildSite
+// Hook site building to assemble.
+assemble.dependsOn buildSiteJekyll

@@ -88,6 +88,7 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.ClusterAPI;
+import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -720,9 +721,12 @@ public class CoreContainer {
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
-    ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler);
+    containerHandlers.getApiBag().registerObject(new CollectionsAPI(collectionsHandler));
+    configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
+    ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
     containerHandlers.getApiBag().registerObject(clusterAPI);
     containerHandlers.getApiBag().registerObject(clusterAPI.commands);
+    containerHandlers.getApiBag().registerObject(clusterAPI.configSetCommands);
     /*
      * HealthCheckHandler needs to be initialized before InfoHandler, since the later one will call CoreContainer.getHealthCheckHandler().
      * We don't register the handler here because it'll be registered inside InfoHandler
@@ -730,7 +734,6 @@ public class CoreContainer {
     healthCheckHandler = loader.newInstance(cfg.getHealthCheckHandlerClass(), HealthCheckHandler.class, null, new Class<?>[]{CoreContainer.class}, new Object[]{this});
     infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
     coreAdminHandler = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
-    configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
 
     // metricsHistoryHandler uses metricsHandler, so create it first
     metricsHandler = new MetricsHandler(this);
@@ -1586,13 +1589,7 @@ public class CoreContainer {
   public void reload(String name) {
     reload(name, null);
   }
-  public void reload(String name, UUID coreId, boolean async) {
-    if(async) {
-      runAsync(() -> reload(name, coreId));
-    } else {
-      reload(name, coreId);
-    }
-  }
+
   /**
    * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to

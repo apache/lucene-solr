@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 
 /** Fake resource loader for tests: works if you want to fake reading a single file */
 class StringMockResourceLoader implements ResourceLoader {
