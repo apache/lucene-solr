@@ -35,6 +35,19 @@ public class TestApproximatePriorityQueue extends LuceneTestCase {
     assertNull(pq.poll(x -> true));
   }
 
+  public void testPollThenAdd() {
+    ApproximatePriorityQueue<Long> pq = new ApproximatePriorityQueue<>();
+    pq.add(8L, 8L);
+    assertEquals(Long.valueOf(8L), pq.poll(x -> true));
+    assertNull(pq.poll(x -> true));
+    pq.add(0L, 0L);
+    assertEquals(Long.valueOf(0L), pq.poll(x -> true));
+    assertNull(pq.poll(x -> true));
+    pq.add(0L, 0L);
+    assertEquals(Long.valueOf(0L), pq.poll(x -> true));
+    assertNull(pq.poll(x -> true));
+  }
+
   public void testCollision() {
     ApproximatePriorityQueue<Long> pq = new ApproximatePriorityQueue<>();
     pq.add(2L, 2L);
@@ -73,6 +86,21 @@ public class TestApproximatePriorityQueue extends LuceneTestCase {
     assertEquals(Long.valueOf(3L), pq.poll(x -> x % 2 == 1));
     assertNull(pq.poll(x -> x % 2 == 1));
     assertFalse(pq.isEmpty());
+  }
+
+  public void testRemove() {
+    ApproximatePriorityQueue<Long> pq = new ApproximatePriorityQueue<>();
+    pq.add(8L, 8L);
+    pq.add(32L, 32L);
+    pq.add(0L, 0L);
+
+    assertFalse(pq.remove(16L));
+    assertFalse(pq.remove(9L));
+    assertTrue(pq.remove(8L));
+    assertTrue(pq.remove(0L));
+    assertFalse(pq.remove(0L));
+    assertTrue(pq.remove(32L));
+    assertTrue(pq.isEmpty());
   }
 
 }
