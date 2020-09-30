@@ -251,6 +251,10 @@ Bug Fixes
 * SOLR-14850: Fix ExactStatsCache NullPointerException when shards.tolerant=true.
   (Yevhen Tienkaiev via ab)
 
+* SOLR-14897: Fix unlimited number of forwarding the request from one node to another node. (hossman, Munendra S N)
+
+* SOLR-14898: Stop returning duplicate HTTP response headers when requests are forward to another node. (hossman)
+
 Other Changes
 ---------------------
 
@@ -280,6 +284,10 @@ Other Changes
   (Michael Braun, Markus Jelsma via Munendra S N)
 
 * SOLR-14876: Upgrade to zookeeper 3.6.2 (odidev via Erick Erickson)
+
+* SOLR-14333: Implement toString in Collapse filter so that proper parsed queries returned in debug response.
+  Also, Deprecate unused constants NULL_COLLAPSE, NULL_IGNORE, NULL_EXPAND, HINT_MULTI_DOCVALUES in collapse parser.
+  (Guna Sekhar Dora Kovvuru, Munendra S N, Mike Drob)
 
 ==================  8.6.2 ==================
 
