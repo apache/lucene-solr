@@ -70,30 +70,49 @@ public abstract class FacetTestCase extends LuceneTestCase {
    *
    * @param taxoReader {@link TaxonomyReader} used to read taxonomy during search. This instance is expected to be open for reading.
    * @param fc         {@link FacetsCollector} A collector with matching hits.
-   * @return {@code List<List<FacetLabel>} where outer list has one non-null entry per document
+   * @param dimension  facet dimension for which labels are requested. A null value fetches labels for all dimensions.
+   * @return {@code List<List<FacetLabel>} where outer list has one non-null entry per document.
    * and inner list contain all {@link FacetLabel} entries that belong to a document.
    * @throws IOException when a low-level IO issue occurs.
    */
-  public List<List<FacetLabel>> getAllTaxonomyFacetLabels(TaxonomyReader taxoReader, FacetsCollector fc) throws IOException {
+  public List<List<FacetLabel>> getAllTaxonomyFacetLabels(String dimension, TaxonomyReader taxoReader, FacetsCollector fc) throws IOException {
     List<List<FacetLabel>> actualLabels = new ArrayList<>();
     TaxonomyFacetLabels taxoLabels = new TaxonomyFacetLabels(taxoReader, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
-
     for (MatchingDocs m : fc.getMatchingDocs()) {
       FacetLabelReader facetLabelReader = taxoLabels.getFacetLabelReader(m.context);
-
       DocIdSetIterator disi = m.bits.iterator();
       while (disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-        List<FacetLabel> facetLabels = new ArrayList<>();
-        int docId = disi.docID();
-        FacetLabel facetLabel = facetLabelReader.nextFacetLabel(docId);
-        while (facetLabel != null) {
-          facetLabels.add(facetLabel);
-          facetLabel = facetLabelReader.nextFacetLabel(docId);
-        }
-        actualLabels.add(facetLabels);
+        actualLabels.add(allFacetLabels(disi.docID(), dimension, facetLabelReader));
       }
     }
     return actualLabels;
+  }
+
+  /**
+   * Utility method to get all facet labels for an input docId and dimension using the supplied
+   * {@link FacetLabelReader}.
+   *
+   * @param docId docId for which facet labels are needed.
+   * @param dimension Retain facet labels for supplied dimension only. A null value fetches all facet labels.
+   * @param facetLabelReader {@FacetLabelReader} instance use to get facet labels for input docId.
+   * @return {@code List<FacetLabel>} containing matching facet labels.
+   * @throws IOException when a low-level IO issue occurs while reading facet labels.
+   */
+  List<FacetLabel> allFacetLabels(int docId, String dimension, FacetLabelReader facetLabelReader) throws IOException {
+    List<FacetLabel> facetLabels = new ArrayList<>();
+    FacetLabel facetLabel;
+    if (dimension != null) {
+      for (facetLabel = facetLabelReader.nextFacetLabel(docId, dimension); facetLabel != null; ) {
+        facetLabels.add(facetLabel);
+        facetLabel = facetLabelReader.nextFacetLabel(docId, dimension);
+      }
+    } else {
+      for (facetLabel = facetLabelReader.nextFacetLabel(docId); facetLabel != null; ) {
+        facetLabels.add(facetLabel);
+        facetLabel = facetLabelReader.nextFacetLabel(docId);
+      }
+    }
+    return facetLabels;
   }
 
   protected String[] getRandomTokens(int count) {
