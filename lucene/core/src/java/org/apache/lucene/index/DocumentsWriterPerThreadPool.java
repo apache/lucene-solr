@@ -17,15 +17,11 @@
 package org.apache.lucene.index;
 
 import java.io.Closeable;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -49,8 +45,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
 final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerThread>, Closeable {
 
   private final Set<DocumentsWriterPerThread> dwpts = Collections.newSetFromMap(new IdentityHashMap<>());
-  private final PriorityQueue<DocumentsWriterPerThread> freeList = new PriorityQueue<>(Comparator.comparing(DocumentsWriterPerThread::getLastCommittedBytesUsed).reversed());
-  private final Deque<DocumentsWriterPerThread> spare = new ArrayDeque<>();
+  private final ApproximatePriorityQueue<DocumentsWriterPerThread> freeList = new ApproximatePriorityQueue<>();
   private final Supplier<DocumentsWriterPerThread> dwptFactory;
   private int takenWriterPermits = 0;
   private boolean closed;
@@ -115,23 +110,12 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
   DocumentsWriterPerThread getAndLock() {
     synchronized (this) {
       ensureOpen();
-      // We try to optimize for larger segments by picking the largest DWPT. This is especially helpful if the
-      // number of indexing threads is not constant over time.
-      assert spare.isEmpty();
-      while (freeList.isEmpty() == false) {
-        DocumentsWriterPerThread perThread = freeList.poll();
-        if (perThread.tryLock()) {
-          freeList.addAll(spare);
-          spare.clear();
-          return perThread;
-        } else {
-          spare.add(perThread);
-        }
+      DocumentsWriterPerThread dwpt = freeList.poll(DocumentsWriterPerThread::tryLock);
+      if (dwpt == null) {
+        // DWPT is already locked before return by this method:
+        dwpt = newWriter();
       }
-      freeList.addAll(spare);
-      spare.clear();
-      // DWPT is already locked before return by this method:
-      return newWriter();
+      return dwpt;
     }
   }
 
@@ -144,7 +128,7 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
   void marksAsFreeAndUnlock(DocumentsWriterPerThread state) {
     synchronized (this) {
       assert dwpts.contains(state) : "we tried to add a DWPT back to the pool but the pool doesn't know aobut this DWPT";
-      freeList.add(state);
+      freeList.add(state, state.ramBytesUsed());
     }
     state.unlock();
   }
