@@ -93,7 +93,8 @@ distributions {
             })
 
             // Put included project's binary artifacts under their corresponding subfolders.
-            includeInBinaries.each { includedProject ->
+            // This needs to be a for-loop instead of projects.each since the "from" could be resolved at the wrong time
+            for (Project includedProject : includeInBinaries) {
                 def basePath = includedProject.path.replaceFirst("^:lucene:", "").replace(':', '/')
                 def confBinaries = configurations.findByName(binaryArtifactsConf(includedProject))
                 def confFull = configurations.findByName(allDepsConf(includedProject))
