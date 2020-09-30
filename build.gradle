@@ -26,6 +26,7 @@ plugins {
   id "de.undercouch.download" version "4.0.2" apply false
   id "net.ltgt.errorprone" version "1.2.1" apply false
   id "com.palantir.docker" version "0.25.0" apply false
+  id 'org.gradle.crypto.checksum' version '1.1.0'
 }
 
 apply from: file('gradle/defaults.gradle')
@@ -121,8 +122,9 @@ apply from: file('gradle/testing/fail-on-no-tests.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/jar-manifest.gradle')
 
-// Maven publishing.
+// Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')
+apply from: file('gradle/releasing.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')

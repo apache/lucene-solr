@@ -62,17 +62,6 @@ for (Project includedProject : includeInBinaries) {
     }
 }
 
-configurations {
-    docs
-}
-
-dependencies {
-    // hack: depend on the task outputs to force the task to run...
-    docs files(project(':lucene').tasks.documentation.outputs)
-    // ...but pull the fileset from its final copied location
-    docs files(project(':lucene').docroot)
-}
-
 distributions {
     // The "main" distribution is the binary distribution.
     // We should also add 'source' distribution at some point
@@ -98,7 +87,8 @@ distributions {
                 include "SYSTEM_REQUIREMENTS.md"
             })
 
-            from(configurations.docs, {
+            // Copy files from final destination, even though this isn't a task output
+            from(project(':lucene').docroot, {
                 into "docs"
             })
 

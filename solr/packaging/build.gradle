@@ -64,9 +64,7 @@ dependencies {
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
 
-  // hack: depend on the task outputs to force the task to run...
-  docs files(project(':solr').tasks.documentation.outputs)
-  // ...but pull the fileset from its final copied location
+  // Pull the fileset from its final copied location
   docs files(project(':solr').docroot)
 }
 
