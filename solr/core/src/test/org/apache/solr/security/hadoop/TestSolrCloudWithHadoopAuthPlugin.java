@@ -22,10 +22,8 @@ import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.KerberosTestServices;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
@@ -44,7 +42,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
   @BeforeClass
   public static void setupClass() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
-    System.setProperty("solr.disablePublicKeyHandler", "false");
+    disableReuseOfCryptoKeys();
     HdfsTestUtil.checkAssumptions();
 
     setupMiniKdc();

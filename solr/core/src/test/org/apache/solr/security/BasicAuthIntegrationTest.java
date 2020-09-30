@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.io.IOUtils;
@@ -43,7 +42,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -83,7 +81,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
   @Before
   public void setupCluster() throws Exception {
-    System.setProperty("solr.disablePublicKeyHandler", "false");
+    disableReuseOfCryptoKeys();
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     useFactory(null);
     configureCluster(3)

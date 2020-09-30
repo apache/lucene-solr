@@ -59,7 +59,9 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SysStats;
+import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -123,6 +125,17 @@ public class SolrTestCase extends LuceneTestCase {
   private static volatile boolean failed = false;
 
   protected volatile static PerThreadExecService testExecutor;
+
+  private static final CryptoKeys.RSAKeyPair reusedKeys = new CryptoKeys.RSAKeyPair();
+
+  public static void enableReuseOfCryptoKeys() {
+    PublicKeyHandler.REUSABLE_KEYPAIR = reusedKeys;
+  }
+
+  public static void disableReuseOfCryptoKeys() {
+    PublicKeyHandler.REUSABLE_KEYPAIR = null;
+  }
+
 
   @Rule
   public TestRule solrTestRules =
@@ -225,7 +238,7 @@ public class SolrTestCase extends LuceneTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("zookeeper.nio.directBufferBytes", Integer.toString(32 * 1024 * 2));
-    System.setProperty("solr.disablePublicKeyHandler", "true");
+    enableReuseOfCryptoKeys();
 
     if (!TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
@@ -279,7 +292,6 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.http2solrclient.maxpool.size", "12");
       System.setProperty("solr.http2solrclient.pool.keepalive", "1500");
 
-      System.setProperty("solr.disablePublicKeyHandler", "false");
       System.setProperty("solr.dependentupdate.timeout", "1500");
 
      // System.setProperty("lucene.cms.override_core_count", "3");

@@ -362,15 +362,13 @@ public class CoreContainer implements Closeable {
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
     try (ParWork work = new ParWork(this)) {
 
-      if (Boolean.getBoolean("solr.enablePublicKeyHandler")) {
-        work.collect("", () -> {
-          try {
-            containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(cfg.getCloudConfig()));
-          } catch (IOException | InvalidKeySpecException e) {
-            throw new RuntimeException("Bad PublicKeyHandler configuration.", e);
-          }
-        });
-      }
+      work.collect("", () -> {
+        try {
+          containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(cfg.getCloudConfig()));
+        } catch (IOException | InvalidKeySpecException e) {
+          throw new RuntimeException("Bad PublicKeyHandler configuration.", e);
+        }
+      });
 
       work.collect("",() -> {
         updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
@@ -744,11 +742,9 @@ public class CoreContainer implements Closeable {
         hostName = cfg.getNodeName();
 
         if (isZooKeeperAware()) {
-          if (!Boolean.getBoolean("solr.disablePublicKeyHandler")) {
-            pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(), (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
-            // use deprecated API for back-compat, remove in 9.0
-            pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
-          }
+          pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(), (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
+          // use deprecated API for back-compat, remove in 9.0
+          pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
           TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
           packageLoader = new PackageLoader(this);
           containerHandlers.getApiBag().registerObject(packageLoader.getPackageAPI().editAPI);
