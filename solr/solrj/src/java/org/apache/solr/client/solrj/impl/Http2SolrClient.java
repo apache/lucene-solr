@@ -154,9 +154,6 @@ public class Http2SolrClient extends SolrClient {
   private volatile String serverBaseUrl;
   private volatile boolean closeClient;
 
-  private ExecutorService asyncResponseExec = new PerThreadExecService(ParWork.getRootSharedExecutor(), Math.max(16, Runtime.getRuntime().availableProcessors() / 2),
-      true, true);
-
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     assert (closeTracker = new CloseTracker()) != null;
     assert ObjectReleaseTracker.track(this);
@@ -223,7 +220,7 @@ public class Http2SolrClient extends SolrClient {
     int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", 12);
     SolrQueuedThreadPool httpClientExecutor = new SolrQueuedThreadPool("http2Client", builder.maxThreadPoolSize, minThreads,
         this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) && this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 3000 : 5000,
-        new ArrayBlockingQueue<>(minThreads, true), (int) TimeUnit.SECONDS.toMillis(30), null);
+        new ArrayBlockingQueue<>(Math.max(8, minThreads) * 1024), (int) TimeUnit.SECONDS.toMillis(30), null);
     httpClientExecutor.setLowThreadsThreshold(-1);
 
     boolean sslOnJava8OrLower = ssl && !Constants.JRE_IS_MINIMUM_JAVA9;
@@ -241,7 +238,7 @@ public class Http2SolrClient extends SolrClient {
       http2client.setSelectors(2);
       http2client.setIdleTimeout(idleTimeout);
       http2client.setMaxConcurrentPushedStreams(512);
-      http2client.setInputBufferSize(16384);
+      http2client.setInputBufferSize(8192);
       HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
     }
@@ -259,7 +256,8 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setConnectBlocking(false);
       httpClient.setFollowRedirects(false);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
-      httpClient.setMaxRequestsQueuedPerDestination(1024);
+      httpClient.setMaxRequestsQueuedPerDestination(2048);
+      httpClient.setRequestBufferSize(8192);
       httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
       httpClient.setIdleTimeout(idleTimeout);
       httpClient.setTCPNoDelay(true);
@@ -434,7 +432,7 @@ public class Http2SolrClient extends SolrClient {
         public void onHeaders(Response response) {
           super.onHeaders(response);
           InputStreamResponseListener listener = this;
-          asyncResponseExec.execute(() -> {
+          httpClient.getExecutor().execute(() -> {
             if (log.isDebugEnabled()) log.debug("async response ready");
             InputStream is = listener.getInputStream();
             try {
@@ -972,7 +970,7 @@ public class Http2SolrClient extends SolrClient {
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout = Integer.getInteger("solr.http2solrclient.default.idletimeout", 120000);
     private Integer connectionTimeout;
-    private Integer maxConnectionsPerHost = 4;
+    private Integer maxConnectionsPerHost = 1;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
     protected Map<String,String> headers = new ConcurrentHashMap<>();

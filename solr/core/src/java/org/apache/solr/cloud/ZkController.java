@@ -677,20 +677,22 @@ public class ZkController implements Closeable, Runnable {
       closer.collect(cloudSolrClient);
     }
 
-    if (overseer != null) {
-      overseer.closeAndDone();
+    try {
+      if (overseer != null) {
+        overseer.closeAndDone();
+      }
+      ParWork.close(overseerContexts);
+    } finally {
+      IOUtils.closeQuietly(zkStateReader);
+
+      if (closeZkClient) {
+        IOUtils.closeQuietly(zkClient);
+      }
+
+      SolrLifcycleListener.removeShutdown(this);
+
+      assert ObjectReleaseTracker.release(this);
     }
-    ParWork.close(overseerContexts);
-
-    IOUtils.closeQuietly(zkStateReader);
-
-    if (closeZkClient) {
-      IOUtils.closeQuietly(zkClient);
-    }
-
-    SolrLifcycleListener.removeShutdown(this);
-
-    assert ObjectReleaseTracker.release(this);
   }
 
   /**
