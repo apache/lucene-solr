@@ -736,7 +736,7 @@ public class HttpSolrCall {
       try {
         proxyRequest = solrDispatchFilter.httpClient.newRequest(url.toURI())
                 .method(req.getMethod())
-                .version(HttpVersion.HTTP_2);
+                .version(HttpVersion.fromString(req.getProtocol()));
       } catch(IllegalArgumentException e) {
         log.error("Error parsing URI for proxying " + url, e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);

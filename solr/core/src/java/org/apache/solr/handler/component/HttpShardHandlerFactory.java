@@ -299,9 +299,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     if (loadbalancer != null) {
       IOUtils.closeQuietly(loadbalancer);
     }
-    if (defaultClient != null) {
-      defaultClient.close();
-    }
+
     try {
       SolrMetricProducer.super.close();
     } catch (Exception e) {
@@ -310,7 +308,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   public void setHttp2Client(Http2SolrClient solrClient) {
-    this.defaultClient = new Http2SolrClient.Builder().withHttpClient(solrClient).build();
+    this.defaultClient = solrClient;
   }
 
     @Override
