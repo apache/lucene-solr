@@ -238,19 +238,24 @@ public class HttpShardHandler extends ShardHandler {
         responseCancellableMap.remove(rsp);
 
         pending.decrementAndGet();
-        if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
+        if (bailOnError && rsp.getException() != null) {
+          responseCancellableMap.clear();
+          return rsp; // if exception, return immediately
+        }
         // add response to the response list... we do this after the take() and
         // not after the completion of "call" so we know when the last response
         // for a request was received.  Otherwise we might return the same
         // request more than once.
         rsp.getShardRequest().responses.add(rsp);
         if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
+          responseCancellableMap.clear();
           return rsp;
         }
       }
     } catch (InterruptedException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
+    responseCancellableMap.clear();
     return null;
   }
 
