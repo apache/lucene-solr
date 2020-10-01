@@ -723,10 +723,6 @@ public class HttpSolrCall {
       String fhost = req.getHeader(HttpHeader.X_FORWARDED_FOR.toString());
       final URL proxyFromUrl;
       if (fhost != null) {
-        // already proxied, allow this?
-        proxyFromUrl = new URL("http://" + fhost);
-        // OR? action = PASSTHROUGH;
-        // nocommit: look into how much we can proxy around
         // Already proxied
         sendError(404, "No SolrCore found to service request.");
         return RETURN;
@@ -740,7 +736,7 @@ public class HttpSolrCall {
       try {
         proxyRequest = solrDispatchFilter.httpClient.newRequest(url.toURI())
                 .method(req.getMethod())
-                .version(HttpVersion.fromString(req.getProtocol()));
+                .version(HttpVersion.HTTP_2);
       } catch(IllegalArgumentException e) {
         log.error("Error parsing URI for proxying " + url, e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -753,7 +749,7 @@ public class HttpSolrCall {
 
       addProxyHeaders(req, proxyRequest);
 
-      InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream(), 16384, false);
+      InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream(), 8192, false);
 
       if (hasContent(req)) {
         proxyRequest.content(defferedContent);
