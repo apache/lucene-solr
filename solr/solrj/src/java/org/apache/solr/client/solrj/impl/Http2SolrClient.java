@@ -468,6 +468,7 @@ public class Http2SolrClient extends SolrClient {
         }
       });
     } catch (Exception e) {
+      asyncListener.onFailure(e);
       asyncTracker.arrive();
       throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
     }
