@@ -1730,7 +1730,8 @@ public class IndexFetcher {
           } finally {
             if (is != null) {
               while (is.read() != -1) {}
-              IOUtils.closeQuietly(is);
+              // dont close
+              //IOUtils.closeQuietly(is);
             }
           }
         }

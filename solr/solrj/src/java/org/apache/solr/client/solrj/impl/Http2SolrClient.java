@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -61,6 +62,7 @@ import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.client.solrj.util.Constants;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.PerThreadExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -71,6 +73,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrInternalHttpClient;
@@ -151,6 +154,9 @@ public class Http2SolrClient extends SolrClient {
    */
   private volatile String serverBaseUrl;
   private volatile boolean closeClient;
+
+  private ExecutorService asyncResponseExec = new PerThreadExecService(ParWork.getRootSharedExecutor(), Math.max(16, Runtime.getRuntime().availableProcessors() / 2),
+      true, true);
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     assert (closeTracker = new CloseTracker()) != null;
@@ -271,6 +277,9 @@ public class Http2SolrClient extends SolrClient {
   public void close() {
     assert closeTracker.close();
     asyncTracker.close();
+
+    ExecutorUtil.shutdownAndAwaitTermination(asyncResponseExec);
+
     if (closeClient) {
       try {
         httpClient.stop();
@@ -428,7 +437,7 @@ public class Http2SolrClient extends SolrClient {
         public void onHeaders(Response response) {
           super.onHeaders(response);
           InputStreamResponseListener listener = this;
-          httpClient.getExecutor().execute(() -> {
+          asyncResponseExec.execute(() -> {
             if (log.isDebugEnabled()) log.debug("async response ready");
             InputStream is = listener.getInputStream();
             try {

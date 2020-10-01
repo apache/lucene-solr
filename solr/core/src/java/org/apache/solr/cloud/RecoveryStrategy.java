@@ -993,10 +993,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
-    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
+    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "30000"));
     // nocommit
     try (Http2SolrClient client = new Http2SolrClient.Builder(leaderBaseUrl).withHttpClient(core.getCoreContainer().getUpdateShardHandler().
-        getTheSharedHttpClient()).idleTimeout(readTimeout).connectionTimeout(1000).markInternalRequest().build()) {
+        getTheSharedHttpClient()).idleTimeout(readTimeout).connectionTimeout(3000).markInternalRequest().build()) {
       prepCmd.setBasePath(leaderBaseUrl);
       log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
       Cancellable result = client.asyncRequest(prepCmd, null, new NamedListAsyncListener());
