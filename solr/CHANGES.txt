@@ -170,6 +170,9 @@ Other Changes
   Also, Deprecate unused constants NULL_COLLAPSE, NULL_IGNORE, NULL_EXPAND, HINT_MULTI_DOCVALUES in collapse parser.
   (Guna Sekhar Dora Kovvuru, Munendra S N, Mike Drob)
 
+* SOLR-12987: Deprecated plugins/features are now logged once and with log category org.apache.solr.DEPRECATED
+  (David Smiley)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
