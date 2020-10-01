@@ -749,9 +749,6 @@ public abstract class LBSolrClient extends SolrClient {
   @Override
   public void close() {
     this.closed = true;
-    if (aliveCheckExecutor != null) {
-      aliveCheckExecutor.shutdownNow();
-    }
     ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
     assert ObjectReleaseTracker.release(this);
   }

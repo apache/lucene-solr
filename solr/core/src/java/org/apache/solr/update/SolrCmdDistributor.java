@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -62,6 +63,7 @@ public class SolrCmdDistributor implements Closeable {
   private final Set<Error> allErrors = ConcurrentHashMap.newKeySet();
   
   private final Http2SolrClient solrClient;
+  private volatile boolean closed;
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
@@ -76,6 +78,7 @@ public class SolrCmdDistributor implements Closeable {
   }
   
   public void close() {
+    this.closed = true;
     solrClient.close();
     assert ObjectReleaseTracker.release(this);
   }
@@ -247,11 +250,18 @@ public class SolrCmdDistributor implements Closeable {
           }
 
           boolean retry = false;
-          if (checkRetry(error)) {
+          if (t instanceof RejectedExecutionException || checkRetry(error)) {
             retry = true;
           }
 
           if (retry) {
+            if (t instanceof RejectedExecutionException) {
+              try {
+                Thread.sleep(1000);
+              } catch (InterruptedException e) {
+                ParWork.propagateInterrupt(e);
+              }
+            }
             log.info("Retrying distrib update on error: {}", t.getMessage());
             submit(req);
             return;
