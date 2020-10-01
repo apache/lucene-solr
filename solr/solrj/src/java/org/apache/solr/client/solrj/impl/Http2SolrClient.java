@@ -165,7 +165,7 @@ public class Http2SolrClient extends SolrClient {
     }
     Integer moar = -1;
     if (builder.maxOutstandingAsyncRequests != null) moar = builder.maxOutstandingAsyncRequests;
-    asyncTracker = new AsyncTracker(moar);
+    asyncTracker = new AsyncTracker(-1); // nocommit
     this.headers = builder.headers;
     this.strictEventOrdering = builder.strictEventOrdering;
 
