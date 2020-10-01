@@ -31,6 +31,7 @@ import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.CollectionUtil;
 
 /** A conjunction of DocIdSetIterators.
+ * Requires that all of its sub-iterators must be on the same document all the time.
  * This iterates over the doc ids that are present in each given DocIdSetIterator.
  * <br>Public only for use in {@link org.apache.lucene.search.spans}.
  * @lucene.internal
@@ -140,6 +141,13 @@ public final class ConjunctionDISI extends DocIdSetIterator {
   private static DocIdSetIterator createConjunction(
       List<DocIdSetIterator> allIterators,
       List<TwoPhaseIterator> twoPhaseIterators) {
+
+    // assert that all sub-iterators are on the same doc ID
+    int curDoc = allIterators.size() > 0 ? allIterators.get(0).docID() : twoPhaseIterators.get(0).approximation.docID();
+    boolean iteratorsOnTheSameDoc = allIterators.stream().allMatch(it -> it.docID() == curDoc);
+    iteratorsOnTheSameDoc = iteratorsOnTheSameDoc && twoPhaseIterators.stream().allMatch(it -> it.approximation().docID() == curDoc);
+    assert iteratorsOnTheSameDoc : "Sub-iterators of ConjunctionDISI are not the same document!";
+
     long minCost = allIterators.stream().mapToLong(DocIdSetIterator::cost).min().getAsLong();
     List<BitSetIterator> bitSetIterators = new ArrayList<>();
     List<DocIdSetIterator> iterators = new ArrayList<>();
@@ -177,6 +185,7 @@ public final class ConjunctionDISI extends DocIdSetIterator {
 
   private ConjunctionDISI(List<? extends DocIdSetIterator> iterators) {
     assert iterators.size() >= 2;
+
     // Sort the array the first time to allow the least frequent DocsEnum to
     // lead the matching.
     CollectionUtil.timSort(iterators, new Comparator<DocIdSetIterator>() {
@@ -227,6 +236,7 @@ public final class ConjunctionDISI extends DocIdSetIterator {
 
   @Override
   public int advance(int target) throws IOException {
+    assertItersOnSameDoc();
     return doNext(lead1.advance(target));
   }
 
@@ -237,12 +247,23 @@ public final class ConjunctionDISI extends DocIdSetIterator {
 
   @Override
   public int nextDoc() throws IOException {
+    assertItersOnSameDoc();
     return doNext(lead1.nextDoc());
   }
 
   @Override
   public long cost() {
     return lead1.cost(); // overestimate
+  }
+
+  // assert that all sub-iterators are on the same doc ID
+  private void assertItersOnSameDoc() {
+    int curDoc = lead1.docID();
+    boolean iteratorsOnTheSameDoc = (lead2.docID() == curDoc);
+    for (DocIdSetIterator itr : others) {
+      iteratorsOnTheSameDoc = iteratorsOnTheSameDoc && (itr.docID() == curDoc);
+    }
+    assert iteratorsOnTheSameDoc : "Sub-iterators of ConjunctionDISI are not the same document!";
   }
 
   /** Conjunction between a {@link DocIdSetIterator} and one or more {@link BitSetIterator}s. */
@@ -256,6 +277,7 @@ public final class ConjunctionDISI extends DocIdSetIterator {
     BitSetConjunctionDISI(DocIdSetIterator lead, Collection<BitSetIterator> bitSetIterators) {
       this.lead = lead;
       assert bitSetIterators.size() > 0;
+
       this.bitSetIterators = bitSetIterators.toArray(new BitSetIterator[0]);
       // Put the least costly iterators first so that we exit as soon as possible
       ArrayUtil.timSort(this.bitSetIterators, (a, b) -> Long.compare(a.cost(), b.cost()));
@@ -276,11 +298,13 @@ public final class ConjunctionDISI extends DocIdSetIterator {
 
     @Override
     public int nextDoc() throws IOException {
+      assertItersOnSameDoc();
       return doNext(lead.nextDoc());
     }
 
     @Override
     public int advance(int target) throws IOException {
+      assertItersOnSameDoc();
       return doNext(lead.advance(target));
     }
 
@@ -304,6 +328,16 @@ public final class ConjunctionDISI extends DocIdSetIterator {
     @Override
     public long cost() {
       return lead.cost();
+    }
+
+    // assert that all sub-iterators are on the same doc ID
+    private void assertItersOnSameDoc() {
+      int curDoc = lead.docID();
+      boolean iteratorsOnTheSameDoc = true;
+      for (DocIdSetIterator itr : bitSetIterators) {
+        iteratorsOnTheSameDoc = iteratorsOnTheSameDoc && (itr.docID() == curDoc);
+      }
+      assert iteratorsOnTheSameDoc : "Sub-iterators of ConjunctionDISI are not the same document!";
     }
 
   }
