@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.client.solrj.util.Constants;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.PerThreadExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -44,7 +43,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrInternalHttpClient;
@@ -102,7 +100,6 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -120,7 +117,6 @@ import java.util.concurrent.TimeoutException;
  */
 public class Http2SolrClient extends SolrClient {
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
-  private static final int MAX_OUTSTANDING_REQUESTS = 1000;
 
   private static volatile SSLConfig defaultSSLConfig;
 
@@ -220,7 +216,7 @@ public class Http2SolrClient extends SolrClient {
     int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", 12);
     SolrQueuedThreadPool httpClientExecutor = new SolrQueuedThreadPool("http2Client", builder.maxThreadPoolSize, minThreads,
         this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) && this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 3000 : 5000,
-        new ArrayBlockingQueue<>(Math.max(8, minThreads) * 1024), (int) TimeUnit.SECONDS.toMillis(30), null);
+        new ArrayBlockingQueue<>(256), (int) TimeUnit.SECONDS.toMillis(30), null);
     httpClientExecutor.setLowThreadsThreshold(-1);
 
     boolean sslOnJava8OrLower = ssl && !Constants.JRE_IS_MINIMUM_JAVA9;
@@ -256,7 +252,7 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setConnectBlocking(false);
       httpClient.setFollowRedirects(false);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
-      httpClient.setMaxRequestsQueuedPerDestination(2048);
+      httpClient.setMaxRequestsQueuedPerDestination(4096);
       httpClient.setRequestBufferSize(8192);
       httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
       httpClient.setIdleTimeout(idleTimeout);
