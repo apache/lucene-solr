@@ -51,7 +51,6 @@ import com.codahale.metrics.Meter;
 import org.apache.commons.lang3.concurrent.ConcurrentUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
@@ -372,9 +371,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * for an existing log whenever the core or update handler changes.
    */
   public synchronized void init(UpdateHandler uhandler, SolrCore core) {
-    if (isClosed) {
-      throw new AlreadyClosedException();
-    }
     if (dataDir != null) {
       assert ObjectReleaseTracker.release(this);
     }
@@ -504,9 +500,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * change the implementation of the transaction log.
    */
   public TransactionLog newTransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting, byte[] buffer) {
-    if (isClosed) {
-      throw new AlreadyClosedException();
-    }
     return new TransactionLog(tlogFile, globalStrings, openExisting);
   }
 
@@ -1520,7 +1513,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         bufferLock.unlock();
       }
     }
-
+    try {
+      this.close();
+    } catch (IOException e) {
+      log.error("Exception closing metric producer", e);
+    }
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -1903,7 +1900,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     @Override
     public void run() {
-      if (UpdateLog.this.isClosed) throw new AlreadyClosedException();
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
       params.set(DistributedUpdateProcessor.LOG_REPLAY, "true");
