@@ -278,7 +278,14 @@ public class SolrCmdDistributor implements Closeable {
       if (e instanceof SolrException) {
         error.statusCode = ((SolrException) e).code();
       }
-      if (checkRetry(error)) {
+      if (e instanceof RejectedExecutionException || checkRetry(error)) {
+        if (e instanceof RejectedExecutionException) {
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException e1) {
+            ParWork.propagateInterrupt(e1);
+          }
+        }
         submit(req);
       } else {
         allErrors.add(error);

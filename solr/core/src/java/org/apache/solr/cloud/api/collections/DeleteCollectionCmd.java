@@ -139,12 +139,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection");
       }
 
-      if (failedReplicas.size() > 0) {
-        skipFinalStateWork = true;
-
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully delete collection");
-      }
-
     } finally {
       if (!skipFinalStateWork) {
         log.info("Send DELETE operation to Overseer collection={}", collection);
