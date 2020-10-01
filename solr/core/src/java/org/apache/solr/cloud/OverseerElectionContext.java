@@ -56,21 +56,25 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
     // TODO: the idea here is that we could clear the Overseer queue
     // if we knew we are the first Overseer in a cluster startup
     // needs more testing in real world vs tests
-    if (!weAreReplacement) {
-      // kills the queues
-      ZkDistributedQueue queue = new ZkDistributedQueue(
-          overseer.getZkController().getZkStateReader().getZkClient(),
-          "/overseer/queue", new Stats(), 0, new ConnectionManager.IsClosed() {
-        public boolean isClosed() {
-          return overseer.isClosed() || overseer.getZkController()
-              .getCoreContainer().isShutDown();
-        }
-      });
-      clearQueue(queue);
-      clearQueue(Overseer.getInternalWorkQueue(zkClient, new Stats()));
-    }
+//    if (!weAreReplacement) {
+//      // kills the queues
+//      ZkDistributedQueue queue = new ZkDistributedQueue(
+//          overseer.getZkController().getZkStateReader().getZkClient(),
+//          "/overseer/queue", new Stats(), 0, new ConnectionManager.IsClosed() {
+//        public boolean isClosed() {
+//          return overseer.isClosed() || overseer.getZkController()
+//              .getCoreContainer().isShutDown();
+//        }
+//      });
+//      clearQueue(queue);
+//      clearQueue(Overseer.getInternalWorkQueue(zkClient, new Stats()));
+//    }
+
+    log.info("Running the leader process for Overseer");
 
     super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
+
+    log.info("Registered as Overseer leader, starting Overseer ...");
 
     synchronized (this) {
       if (isClosed()) {
