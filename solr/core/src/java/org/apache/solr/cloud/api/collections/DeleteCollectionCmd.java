@@ -126,20 +126,12 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       params.set(CoreAdminParams.DELETE_DATA_DIR, true);
       params.set(CoreAdminParams.DELETE_METRICS_HISTORY, deleteHistory);
 
-
-
-      String asyncId = message.getStr(ASYNC);
-
-      if (asyncId != null) {
-        skipFinalStateWork = true;
-      }
-
       Set<String> okayExceptions = new HashSet<>(1);
       okayExceptions.add(NonExistentCoreException.class.getName());
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
       @SuppressWarnings({"unchecked"})
-      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
+      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, null, okayExceptions);
 
       if (failedReplicas == null) {
         skipFinalStateWork = true;
