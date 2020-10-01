@@ -59,6 +59,8 @@ Improvements
 * SOLR-14859: DateRangeField now throws errors when invalid field/fieldType options specified; no longer silently accepts incompatible option values
   (Jason Gerlowski, Chris Hostetter, Munendra S N)
 
+* SOLR-14905: Update commons-io version to 2.8.0 due to security vulnerability. (Nazerke Seidan via Bruno Roustant)
+
 Optimizations
 ---------------------
 
