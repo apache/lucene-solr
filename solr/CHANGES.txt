@@ -23,6 +23,10 @@ Bug Fixes
 
 * SOLR-14898: Stop returning duplicate HTTP response headers when requests are forward to another node. (hossman)
 
+* SOLR-14835: Solr 8.6.x log starts with "XmlConfiguration Ignored arg" warning from Jetty. This incorrect message
+  is caused by a bug in Jetty 9.4.27 and can be safely ignored (the configuration is still correctly processed).
+  (Colving Cowie, ab)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
