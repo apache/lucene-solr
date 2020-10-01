@@ -73,6 +73,7 @@ import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.LIST
  * A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests.
  */
 public class ConfigSetsHandler extends RequestHandlerBase implements PermissionNameProvider {
+  final public static Boolean DISABLE_CREATE_AUTH_CHECKS = Boolean.getBoolean("solr.disableConfigSetsCreateAuthChecks"); // this is for back compat only
   final public static String DEFAULT_CONFIGSET_NAME = "_default";
   final public static String AUTOCREATED_CONFIGSET_SUFFIX = ".AUTOCREATED";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -192,7 +193,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     } else {
       filesToDelete = Collections.emptySet();
     }
-    createBaseZnode(zkClient, overwritesExisting, isTrusted(req), cleanup, configPathInZk);
+    createBaseZnode(zkClient, overwritesExisting, isTrusted(req, coreContainer.getAuthenticationPlugin()), cleanup, configPathInZk);
 
     ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
     ZipEntry zipEntry = null;
@@ -259,9 +260,19 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
    * Fail if an untrusted request tries to update a trusted ConfigSet
    */
   private void ensureOverwritingUntrustedConfigSet(SolrZkClient zkClient, String configSetZkPath) {
+    boolean isCurrentlyTrusted = isCurrentlyTrusted(zkClient, configSetZkPath);
+    if (isCurrentlyTrusted) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Trying to make an unstrusted ConfigSet update on a trusted configSet");
+    }
+  }
+
+  private static boolean isCurrentlyTrusted(SolrZkClient zkClient, String configSetZkPath) {
     byte[] configSetNodeContent;
     try {
       configSetNodeContent = zkClient.getData(configSetZkPath, null, null, true);
+      if (configSetNodeContent == null || configSetNodeContent.length == 0) {
+        return true;
+      }
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Exception while fetching current configSet at " + configSetZkPath, e);
     } catch (InterruptedException e) {
@@ -270,21 +281,15 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
     @SuppressWarnings("unchecked")
     Map<Object, Object> contentMap = (Map<Object, Object>) Utils.fromJSON(configSetNodeContent);
-    boolean isCurrentlyTrusted = (boolean) contentMap.getOrDefault("trusted", true);
-    if (isCurrentlyTrusted) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Trying to make an unstrusted ConfigSet update on a trusted configSet");
-    }
+    return (boolean) contentMap.getOrDefault("trusted", true);
   }
 
-  boolean isTrusted(SolrQueryRequest req) {
-    AuthenticationPlugin authcPlugin = coreContainer.getAuthenticationPlugin();
-    if (log.isInfoEnabled()) {
-      log.info("Trying to upload a configset. authcPlugin: {}, user principal: {}",
-          authcPlugin, req.getUserPrincipal());
-    }
-    if (authcPlugin != null && req.getUserPrincipal() != null) {
+  static boolean isTrusted(SolrQueryRequest req, AuthenticationPlugin authPlugin) {
+    if (authPlugin != null && req.getUserPrincipal() != null) {
+      log.debug("Trusted configset request");
       return true;
     }
+    log.debug("Untrusted configset request");
     return false;
   }
 
@@ -361,8 +366,29 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       @Override
       public Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
         String baseConfigSetName = req.getParams().get(BASE_CONFIGSET, DEFAULT_CONFIGSET_NAME);
+        String newConfigSetName = req.getParams().get(NAME);
+        if (newConfigSetName == null || newConfigSetName.length() == 0) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet name not specified");
+        }
+
+        ZkConfigManager zkConfigManager = new ZkConfigManager(h.coreContainer.getZkController().getZkStateReader().getZkClient());
+        if (zkConfigManager.configExists(newConfigSetName)) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet already exists: " + newConfigSetName);
+        }
+
+        // is there a base config that already exists
+        if (!zkConfigManager.configExists(baseConfigSetName)) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+                  "Base ConfigSet does not exist: " + baseConfigSetName);
+        }
+
         Map<String, Object> props = CollectionsHandler.copy(req.getParams().required(), null, NAME);
         props.put(BASE_CONFIGSET, baseConfigSetName);
+        if (!DISABLE_CREATE_AUTH_CHECKS &&
+                !isTrusted(req, h.coreContainer.getAuthenticationPlugin()) &&
+                isCurrentlyTrusted(h.coreContainer.getZkController().getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" +  baseConfigSetName)) {
+          throw new SolrException(ErrorCode.UNAUTHORIZED, "Can't create a configset with an unauthenticated request from a trusted " + BASE_CONFIGSET);
+        }
         return copyPropertiesWithPrefix(req.getParams(), props, PROPERTY_PREFIX + ".");
       }
     },
