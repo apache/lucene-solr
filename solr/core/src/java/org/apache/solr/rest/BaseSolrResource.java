@@ -15,37 +15,29 @@
  * limitations under the License.
  */
 package org.apache.solr.rest;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.servlet.ResponseUtils;
-import org.restlet.data.MediaType;
-import org.restlet.data.Method;
-import org.restlet.data.Status;
-import org.restlet.representation.OutputRepresentation;
-import org.restlet.resource.ResourceException;
-import org.restlet.resource.ServerResource;
 import org.slf4j.Logger;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
 
 /**
  * Base class of all Solr Restlet server resource classes.
  */
-public abstract class BaseSolrResource extends ServerResource {
+public abstract class BaseSolrResource {
   protected static final String SHOW_DEFAULTS = "showDefaults";
   public static final String UPDATE_TIMEOUT_SECS = "updateTimeoutSecs";
 
@@ -56,6 +48,7 @@ public abstract class BaseSolrResource extends ServerResource {
   private QueryResponseWriter responseWriter;
   private String contentType;
   private int updateTimeoutSecs = -1;
+  private int statusCode = -1;
 
   public SolrCore getSolrCore() { return solrCore; }
   public IndexSchema getSchema() { return schema; }
@@ -80,85 +73,46 @@ public abstract class BaseSolrResource extends ServerResource {
    * method annotated to associate it with GET, etc., but rather will
    * send an error response.
    */
-  @Override
-  public void doInit() throws ResourceException {
-    super.doInit();
-    setNegotiated(false); // Turn off content negotiation for now
-    if (isExisting()) {
-      try {
-        SolrRequestInfo solrRequestInfo = SolrRequestInfo.getRequestInfo();
-        if (null == solrRequestInfo) {
-          final String message = "No handler or core found in " + getRequest().getOriginalRef().getPath();
-          doError(Status.CLIENT_ERROR_BAD_REQUEST, message);
-          setExisting(false);
-        } else {
-          solrRequest = solrRequestInfo.getReq();
-          if (null == solrRequest) {
-            final String message = "No handler or core found in " + getRequest().getOriginalRef().getPath();
-            doError(Status.CLIENT_ERROR_BAD_REQUEST, message);
-            setExisting(false);
-          } else {
-            solrResponse = solrRequestInfo.getRsp();
-            solrCore = solrRequest.getCore();
-            schema = solrRequest.getSchema();
-            String responseWriterName = solrRequest.getParams().get(CommonParams.WT);
-            if (null == responseWriterName) {
-              responseWriterName = JSON; // Default to json writer
-            }
-            String indent = solrRequest.getParams().get("indent");
-            if (null == indent || ! ("off".equals(indent) || "false".equals(indent))) {
-              // indent by default
-              ModifiableSolrParams newParams = new ModifiableSolrParams(solrRequest.getParams());
-              newParams.remove(indent);
-              newParams.add("indent", "on");
-              solrRequest.setParams(newParams);
-            }
-            responseWriter = solrCore.getQueryResponseWriter(responseWriterName);
-            contentType = responseWriter.getContentType(solrRequest, solrResponse);
-            final String path = getRequest().getRootRef().getPath();
-            if ( ! RestManager.SCHEMA_BASE_PATH.equals(path)) {
-              // don't set webapp property on the request when context and core/collection are excluded 
-              final int cutoffPoint = path.indexOf("/", 1);
-              final String firstPathElement = -1 == cutoffPoint ? path : path.substring(0, cutoffPoint);
-              solrRequest.getContext().put("webapp", firstPathElement); // Context path
-            }
-            SolrCore.preDecorateResponse(solrRequest, solrResponse);
-
-            // client application can set a timeout for update requests
-            String updateTimeoutSecsParam = getSolrRequest().getParams().get(UPDATE_TIMEOUT_SECS);
-            if (updateTimeoutSecsParam != null)
-              updateTimeoutSecs = Integer.parseInt(updateTimeoutSecsParam);
-          }
-        }
-      } catch (Throwable t) {
-        if (t instanceof OutOfMemoryError) {
-          throw (OutOfMemoryError) t;
-        }
-        setExisting(false);
-        throw new ResourceException(t);
+  public void doInit(SolrQueryRequest solrRequest, SolrQueryResponse solrResponse) {
+    try {
+      this.solrRequest = solrRequest;
+      this.solrResponse = solrResponse;
+      solrCore = solrRequest.getCore();
+      schema = solrRequest.getSchema();
+      String responseWriterName = solrRequest.getParams().get(CommonParams.WT);
+      if (null == responseWriterName) {
+        responseWriterName = JSON; // Default to json writer
       }
-    }
-  }
-
-  /**
-   * This class serves as an adapter between Restlet and Solr's response writers. 
-   */
-  public class SolrOutputRepresentation extends OutputRepresentation {
-    
-    public SolrOutputRepresentation() {
-      // No normalization, in case of a custom media type
-      super(MediaType.valueOf(contentType));
-      // TODO: For now, don't send the Vary: header, but revisit if/when content negotiation is added
-      getDimensions().clear();
-    }
-    
-    
-    /** Called by Restlet to get the response body */
-    @Override
-    public void write(OutputStream outputStream) throws IOException {
-      if (getRequest().getMethod() != Method.HEAD) {
-        QueryResponseWriterUtil.writeQueryResponse(outputStream, responseWriter, solrRequest, solrResponse, contentType);
+      String indent = solrRequest.getParams().get("indent");
+      if (null == indent || ! ("off".equals(indent) || "false".equals(indent))) {
+        // indent by default
+        ModifiableSolrParams newParams = new ModifiableSolrParams(solrRequest.getParams());
+        newParams.remove(indent);
+        newParams.add("indent", "on");
+        solrRequest.setParams(newParams);
       }
+      responseWriter = solrCore.getQueryResponseWriter(responseWriterName);
+      contentType = responseWriter.getContentType(solrRequest, solrResponse);
+      final String path = solrRequest.getPath();
+      if ( ! RestManager.SCHEMA_BASE_PATH.equals(path)) {
+        // don't set webapp property on the request when context and core/collection are excluded
+        final int cutoffPoint = path.indexOf("/", 1);
+        final String firstPathElement = -1 == cutoffPoint ? path : path.substring(0, cutoffPoint);
+        solrRequest.getContext().put("webapp", firstPathElement); // Context path
+      }
+
+      // now that we're wired into the HttpSolrCall framework, the response is already decorated.
+      //SolrCore.preDecorateResponse(solrRequest, solrResponse);
+
+      // client application can set a timeout for update requests
+      String updateTimeoutSecsParam = solrRequest.getParams().get(UPDATE_TIMEOUT_SECS);
+      if (updateTimeoutSecsParam != null)
+        updateTimeoutSecs = Integer.parseInt(updateTimeoutSecsParam);
+    } catch (Throwable t) {
+      if (t instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError) t;
+      }
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, t);
     }
   }
 
@@ -171,7 +125,8 @@ public abstract class BaseSolrResource extends ServerResource {
     handleException(log);
     
     // TODO: should status=0 (success?) be left as-is in the response header?
-    SolrCore.postDecorateResponse(null, solrRequest, solrResponse);
+    // SolrCore.postDecorateResponse(null, solrRequest, solrResponse);
+
     addDeprecatedWarning();
 
     if (log.isInfoEnabled() && solrResponse.getToLog().size() > 0) {
@@ -181,7 +136,6 @@ public abstract class BaseSolrResource extends ServerResource {
 
   protected void addDeprecatedWarning(){
     solrResponse.add("warn","This API is deprecated");
-
   }
 
   /**
@@ -197,8 +151,7 @@ public abstract class BaseSolrResource extends ServerResource {
     if (null != exception) {
       @SuppressWarnings({"rawtypes"})
       NamedList info = new SimpleOrderedMap();
-      int code = ResponseUtils.getErrorInfo(exception, info, log);
-      setStatus(Status.valueOf(code));
+      this.statusCode = ResponseUtils.getErrorInfo(exception, info, log);
       getSolrResponse().add("error", info);
       String message = (String)info.get("msg");
       if (null != message && ! message.trim().isEmpty()) {

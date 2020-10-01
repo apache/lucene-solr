@@ -95,6 +95,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.rest.RestManager;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -413,18 +414,11 @@ public class HttpSolrCall {
         //may be a restlet path
         // Handle /schema/* paths via Restlet
         if (path.equals("/schema") || path.startsWith("/schema/")) {
-          solrReq = parser.parse(core, path, req);
-          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
-          mustClearSolrRequestInfo = true;
-          if (path.equals(req.getServletPath())) {
-            // avoid endless loop - pass through to Restlet via webapp
-            action = PASSTHROUGH;
-          } else {
-            // forward rewritten URI (without path prefix and core/collection name) to Restlet
-            action = FORWARD;
+          RestManager restManager = core.getRestManager();
+          if (restManager == null) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "No RestManager found for core: "+core.getName());
           }
-          SolrRequestInfo.getRequestInfo().setAction(action);
-          return;
+          handler = restManager.getRequestHandler(path);
         }
       }
 

@@ -787,7 +787,8 @@ public class SolrRequestParsers {
         }
 
         if (restletPath) {
-          return parseQueryString(req.getQueryString());
+          return raw.parseParamsAndFillStreams(req, streams);
+          //return parseQueryString(req.getQueryString());
         }
 
         if ("PUT".equals(method) || "DELETE".equals(method)) {
