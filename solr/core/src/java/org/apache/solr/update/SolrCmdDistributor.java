@@ -61,29 +61,22 @@ public class SolrCmdDistributor implements Closeable {
 
   private final Set<Error> allErrors = ConcurrentHashMap.newKeySet();
   
-  public static interface AbortCheck {
-    public boolean abortCheck();
-  }
-  
   private final Http2SolrClient solrClient;
-
-  Http2SolrClient.AsyncTracker tracker = new Http2SolrClient.AsyncTracker(-1);
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
-    this.solrClient = updateShardHandler.getTheSharedHttpClient();
-    // nocommit set inorder matters
+    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).build();
   }
 
   public void finish() {
     assert !finished : "lifecycle sanity check";
   //  nonCommitTracker.waitForComplete();
-    tracker.waitForComplete();
+    solrClient.waitForOutstandingRequests();
     finished = true;
   }
   
   public void close() {
-    tracker.close();
+    solrClient.close();
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -200,7 +193,7 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   public void blockAndDoRetries() {
-    tracker.waitForComplete();
+    solrClient.waitForOutstandingRequests();
   }
   
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
@@ -237,45 +230,38 @@ public class SolrCmdDistributor implements Closeable {
     }
 
     try {
-      tracker.register();
       solrClient.asyncRequest(req.uReq, null, new AsyncListener<>() {
         @Override
         public void onSuccess(NamedList result) {
           if (log.isTraceEnabled()) log.trace("Success for distrib update {}", result);
-          tracker.arrive();
         }
 
         @Override
         public void onFailure(Throwable t) {
           log.error("Exception sending dist update", t);
-          try {
-            Error error = new Error();
-            error.t = t;
-            error.req = req;
-            if (t instanceof SolrException) {
-              error.statusCode = ((SolrException) t).code();
-            }
+          Error error = new Error();
+          error.t = t;
+          error.req = req;
+          if (t instanceof SolrException) {
+            error.statusCode = ((SolrException) t).code();
+          }
 
-            boolean retry = false;
-            if (checkRetry(error)) {
-              retry = true;
-            }
+          boolean retry = false;
+          if (checkRetry(error)) {
+            retry = true;
+          }
 
-            if (retry) {
-              log.info("Retrying distrib update on error: {}", t.getMessage());
-              submit(req);
-              return;
-            } else {
-              allErrors.add(error);
-            }
-          } finally {
-            tracker.arrive();
+          if (retry) {
+            log.info("Retrying distrib update on error: {}", t.getMessage());
+            submit(req);
+            return;
+          } else {
+            allErrors.add(error);
           }
         }
       });
     } catch (Exception e) {
       log.error("Exception sending dist update", e);
-      tracker.arrive();
       Error error = new Error();
       error.t = e;
       error.req = req;
