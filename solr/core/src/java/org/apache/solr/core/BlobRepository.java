@@ -213,18 +213,12 @@ public class BlobRepository {
   ByteBuffer fetchFromUrl(String key, String url) {
     Http2SolrClient httpClient = coreContainer
         .getUpdateShardHandler().getTheSharedHttpClient();
-    HttpGet httpGet = new HttpGet(url);
     ByteBuffer b;
-    HttpResponse response = null;
-    HttpEntity entity = null;
+
     try {
 
       b = ByteBuffer.wrap(Http2SolrClient.GET(url, httpClient).bytes);
-      entity = response.getEntity();
-      int statusCode = response.getStatusLine().getStatusCode();
-      if (statusCode != 200) {
-        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
-      }
+
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       if (e instanceof SolrException) {
@@ -232,8 +226,6 @@ public class BlobRepository {
       } else {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "could not load : " + key, e);
       }
-    } finally {
-      Utils.consumeFully(entity);
     }
     return b;
   }

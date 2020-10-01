@@ -41,7 +41,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
-@Ignore // nocommit debug
+@Ignore // nocommit debug, again not finding config overlay after setting, it is a timing issue?
 public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
 
   public TestCryptoKeys() {
@@ -72,7 +72,7 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     result = cryptoKeys.verify( pk1sig,samplefile);
     assertNull(result);
 
-    zk.mkdir("/keys/exe");
+    zk.mkdirs("/keys/exe");
     zk.create("/keys/exe/pubk1.der", readFile("cryptokeys/pubk1.der"), CreateMode.PERSISTENT, true);
     zk.create("/keys/exe/pubk2.der", readFile("cryptokeys/pubk2.der"), CreateMode.PERSISTENT, true);
     Map<String, byte[]> trustedKeys = CloudUtil.getTrustedKeys(zk, "exe");
@@ -103,7 +103,9 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     String baseURL = randomClient.getBaseURL();
     baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
 
-    TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient));
+    try (Http2SolrClient client = getHttpSolrClient(baseURL, randomClient)) {
+      TestBlobHandler.createSystemCollection(client);
+    }
 
     ByteBuffer jar = TestDynamicLoading.getFileContent("runtimecode/runtimelibs.jar.bin");
     String blobName = "signedjar";

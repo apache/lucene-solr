@@ -41,7 +41,6 @@ import org.junit.After;
 import org.junit.Ignore;
 
 /** @see SolrIndexConfigTest */
-@Ignore // nocommit debug leaks
 public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   
   private static AtomicInteger docIdCounter = new AtomicInteger(42);
@@ -185,10 +184,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     assertEquals(-1, solrConfig.indexConfig.maxBufferedDocs);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, 
                  iwc.getMaxBufferedDocs());
-    assertEquals(-1, solrConfig.indexConfig.ramBufferSizeMB, 0.0D);
-    assertEquals(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, 
-                 iwc.getRAMBufferSizeMB(), 0.0D);
-
+    assertEquals(100, solrConfig.indexConfig.ramBufferSizeMB, 0.0D);
 
     LogMergePolicy logMP = assertAndCast(mpClass, iwc.getMergePolicy());
 

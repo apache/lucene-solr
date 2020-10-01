@@ -41,7 +41,6 @@ import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit something flakey (random fail) around url: Caused by: java.lang.IllegalArgumentException: Invalid URI host: null (authority: null)
 public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

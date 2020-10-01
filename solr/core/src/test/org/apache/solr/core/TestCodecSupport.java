@@ -39,7 +39,7 @@ import org.junit.Ignore;
 
 import javax.xml.xpath.XPathExpressionException;
 
-@Ignore // nocommit debug
+//@Ignore // nocommit debug
 public class TestCodecSupport extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -194,7 +194,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertTrue("Unexpected Exception message: " + thrown.getMessage(),
         thrown.getMessage().contains("Invalid compressionMode: ''"));
   }
-  
+
+  @Nightly // non nightly changes this
   public void testCompressionModeDefault()
       throws IOException, XPathExpressionException {
     assertEquals("Default Solr compression mode changed. Is this expected?", 

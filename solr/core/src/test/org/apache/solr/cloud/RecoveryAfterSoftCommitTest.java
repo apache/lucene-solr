@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -30,6 +31,7 @@ import org.junit.Test;
 // See SOLR-6640
 @SolrTestCaseJ4.SuppressSSL
 @Ignore // nocommit debug
+@LuceneTestCase.Nightly
 public class RecoveryAfterSoftCommitTest extends SolrCloudBridgeTestCase {
   private static final int MAX_BUFFERED_DOCS = 2, ULOG_NUM_RECORDS_TO_KEEP = 2;
 

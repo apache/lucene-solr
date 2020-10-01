@@ -40,7 +40,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit flakey test, race
 public class TestDynamicURP extends SolrCloudTestCase {
 
 

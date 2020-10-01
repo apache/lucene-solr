@@ -604,7 +604,7 @@ public class Http2SolrClient extends SolrClient {
       if (System.getProperty("solr.v2RealPath") == null) {
         basePath = changeV2RequestEndpoint(basePath);
       } else {
-        basePath = serverBaseUrl + "/____v2";
+        basePath = solrRequest.getBasePath() == null ? serverBaseUrl  : solrRequest.getBasePath() + "/____v2";
       }
     }
 
@@ -641,10 +641,12 @@ public class Http2SolrClient extends SolrClient {
       HttpMethod method = SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
 
       if (contentWriter != null) {
-        Request req = httpClient
-            .newRequest(url + wparams.toQueryString())
-            .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-            .method(method);
+        Request req;
+        try {
+          req = httpClient.newRequest(url + wparams.toQueryString()).idleTimeout(idleTimeout, TimeUnit.MILLISECONDS).method(method);
+        } catch (IllegalArgumentException e) {
+          throw new SolrServerException("Illegal url for request url=" + url, e);
+        }
         for (Map.Entry<String,String> entry : headers.entrySet()) {
           req.header(entry.getKey(), entry.getValue());
         }

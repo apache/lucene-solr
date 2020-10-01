@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
 
-@Ignore // nocommit debug - flakey test
 public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

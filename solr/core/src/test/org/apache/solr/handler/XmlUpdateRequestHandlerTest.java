@@ -154,7 +154,6 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit strange flakey: java.lang.AssertionError: Expected [delete{,id=150,commitWithin=-1}] but found [delete{,id=150,query=`id:150`,commitWithin=-1}]
   public void testReadDelete() throws Exception {
       String xml =
         "<update>" +

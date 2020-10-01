@@ -266,6 +266,10 @@ class SolrCores implements Closeable {
   }
 
   protected SolrCore remove(String name) {
+    if (name == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot unload non-existent core [null]");
+    }
+
     SolrCore ret = cores.remove(name);
     // It could have been a newly-created core. It could have been a transient core. The newly-created cores
     // in particular should be checked. It could have been a dynamic core.

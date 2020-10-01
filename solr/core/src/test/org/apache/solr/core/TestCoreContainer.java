@@ -144,7 +144,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit error situation has changed: junit.framework.AssertionFailedError: Unexpected exception type, expected SolrException but got java.lang.NullPointerException
   public void testNoCores() throws Exception {
 
     CoreContainer cores = init(CONFIGSETS_SOLR_XML);

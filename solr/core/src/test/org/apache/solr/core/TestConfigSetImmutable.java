@@ -37,7 +37,6 @@ import org.junit.Test;
  * the known APIs, i.e. SolrConfigHandler and SchemaHandler.
  */
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
-@Ignore // nocommit debug this later
 public class TestConfigSetImmutable extends RestTestBase {
 
   private static final String collection = "collection1";

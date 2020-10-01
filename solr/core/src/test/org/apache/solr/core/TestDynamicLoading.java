@@ -39,12 +39,13 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
-@Ignore // nocommit debug
+//@Ignore // nocommit debug, perhaps timing? We add a config overlay and then don't find it
 public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void enableRuntimeLib() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
   }
 
   @Test
