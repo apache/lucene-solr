@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -83,7 +84,7 @@ public abstract class LBSolrClient extends SolrClient {
   private volatile ServerWrapper[] aliveServerList = EMPTY_SERVER_WRAPPER;
 
 
-  private volatile ScheduledExecutorService aliveCheckExecutor;
+  private volatile ScheduledThreadPoolExecutor aliveCheckExecutor;
 
   private int interval = Integer.getInteger("solr.lbclient.live_check_interval", CHECK_INTERVAL);
   private final AtomicInteger counter = new AtomicInteger(-1);
@@ -471,8 +472,10 @@ public abstract class LBSolrClient extends SolrClient {
     if (aliveCheckExecutor == null) {
       synchronized (this) {
         if (aliveCheckExecutor == null) {
-          aliveCheckExecutor = Executors.newSingleThreadScheduledExecutor(
+          aliveCheckExecutor = new ScheduledThreadPoolExecutor(1,
               new SolrNamedThreadFactory("aliveCheckExecutor"));
+          aliveCheckExecutor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+          aliveCheckExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
           aliveCheckExecutor.scheduleAtFixedRate(
               getAliveCheckRunner(new WeakReference<>(this)),
               this.interval, this.interval, TimeUnit.MILLISECONDS);
@@ -746,6 +749,9 @@ public abstract class LBSolrClient extends SolrClient {
   @Override
   public void close() {
     this.closed = true;
+    if (aliveCheckExecutor != null) {
+      aliveCheckExecutor.shutdownNow();
+    }
     ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
     assert ObjectReleaseTracker.release(this);
   }

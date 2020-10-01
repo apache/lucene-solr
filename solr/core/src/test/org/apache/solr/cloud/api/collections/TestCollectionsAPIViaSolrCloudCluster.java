@@ -112,11 +112,12 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
       CollectionAdminRequest.deleteCollection("foobar432").process(cluster.getSolrClient());
       fail("expected exception");
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("Could not find collection"));
+      assertTrue(e.getMessage(), e.getMessage().contains("Could not find collection"));
     }
   }
 
   @Test
+  @Nightly // slow
   public void testCollectionCreateSearchDelete() throws Exception {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();

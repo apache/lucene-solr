@@ -276,7 +276,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("solr.defaultCollectionActiveWait", "10");
 
-      System.setProperty("solr.http2solrclient.maxpool.size", "12");
+      System.setProperty("solr.http2solrclient.maxpool.size", "16");
       System.setProperty("solr.http2solrclient.pool.keepalive", "1500");
 
       System.setProperty("solr.disablePublicKeyHandler", "false");
@@ -288,8 +288,10 @@ public class SolrTestCase extends LuceneTestCase {
       // unlimited - System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
       System.setProperty("solr.minContainerThreads", "8");
-      System.setProperty("solr.rootSharedThreadPoolCoreSize", "16");
+      System.setProperty("solr.rootSharedThreadPoolCoreSize", "10");
       System.setProperty("solr.minHttp2ClientThreads", "6");
+      System.setProperty("solr.containerThreadsIdleTimeout", "1000");
+
 
 
       ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_SECONDS = 1;
@@ -297,7 +299,7 @@ public class SolrTestCase extends LuceneTestCase {
       ScheduledTriggers.DEFAULT_TRIGGER_CORE_POOL_SIZE = 2;
 
       System.setProperty("solr.tests.maxBufferedDocs", "1000000");
-      System.setProperty("solr.tests.ramPerThreadHardLimitMB", "30");
+      System.setProperty("solr.tests.ramPerThreadHardLimitMB", "90");
 
       System.setProperty("solr.tests.ramBufferSizeMB", "100");
 

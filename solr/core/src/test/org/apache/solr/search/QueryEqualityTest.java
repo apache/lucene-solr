@@ -24,6 +24,7 @@ import java.util.Set;
 import junit.framework.AssertionFailedError;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -44,6 +45,7 @@ import org.junit.BeforeClass;
  * @see QParserPlugin#standardPlugins
  * @see QueryUtils
  **/
+@LuceneTestCase.Nightly // 10 seconds+ to run all these, don't need to do that every time for non Nightly
 public class QueryEqualityTest extends SolrTestCaseJ4 {
 
   @BeforeClass

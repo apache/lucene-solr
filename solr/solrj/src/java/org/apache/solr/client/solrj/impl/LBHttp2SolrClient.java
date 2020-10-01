@@ -123,13 +123,13 @@ public class LBHttp2SolrClient extends LBSolrClient {
           }
           try {
             MDC.put("LBSolrClient.url", url);
-            synchronized (cancelled) {
-              if (cancelled.get()) {
-                return;
-              }
-              Cancellable cancellable = doRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
-              currentCancellable.set(cancellable);
+
+            if (cancelled.get()) {
+              return;
             }
+            Cancellable cancellable = doRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
+            currentCancellable.set(cancellable);
+
           } finally {
             MDC.remove("LBSolrClient.url");
           }
@@ -145,12 +145,12 @@ public class LBHttp2SolrClient extends LBSolrClient {
       asyncListener.onFailure(e);
     }
     return () -> {
-      synchronized (cancelled) {
-        cancelled.set(true);
-        if (currentCancellable.get() != null) {
-          currentCancellable.get().cancel();
-        }
+
+      cancelled.set(true);
+      if (currentCancellable.get() != null) {
+        currentCancellable.get().cancel();
       }
+
     };
   }
 

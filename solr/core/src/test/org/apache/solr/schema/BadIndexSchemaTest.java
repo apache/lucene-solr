@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.Ignore;
 
-@Ignore // nocommit debug
 public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
 
   private void doTest(final String schema, final String errString) 

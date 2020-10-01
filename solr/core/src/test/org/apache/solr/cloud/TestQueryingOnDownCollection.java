@@ -83,33 +83,25 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     // assert all nodes as active
     assertEquals(3, cluster.getSolrClient().getClusterStateProvider().getLiveNodes().size());
 
-    SolrClient client = cluster.getJettySolrRunner(0).newClient();
+    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
 
-    SolrRequest req = new QueryRequest(new SolrQuery("*:*").setRows(0)).setBasicAuthCredentials(USERNAME, PASSWORD);
+      SolrRequest req = new QueryRequest(new SolrQuery("*:*").setRows(0)).setBasicAuthCredentials(USERNAME, PASSWORD);
 
-    // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the nodes run out 
-    // of serviceable threads and they crash, even for other collections hosted on the nodes).
-    SolrException error = expectThrows(SolrException.class,
-        "Request should fail after trying all replica nodes once",
-        () -> client.request(req, COLLECTION_NAME)
-    );
+      // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the nodes run out
+      // of serviceable threads and they crash, even for other collections hosted on the nodes).
+      SolrException error = expectThrows(SolrException.class, "Request should fail after trying all replica nodes once", () -> client.request(req, COLLECTION_NAME));
 
-    client.close();
-
-    assertEquals(404, error.code());
+      assertEquals(404, error.code());
+    }
 
     // run same set of tests on v2 client which uses V2HttpCall
-    Http2SolrClient v2Client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
-        .build();
+    try (Http2SolrClient v2Client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl())
+        .build()) {
+      SolrRequest req = new QueryRequest(new SolrQuery("*:*").setRows(0)).setBasicAuthCredentials(USERNAME, PASSWORD);
+      SolrException error = expectThrows(SolrException.class, "Request should fail after trying all replica nodes once", () -> v2Client.request(req, COLLECTION_NAME));
 
-    error = expectThrows(SolrException.class,
-        "Request should fail after trying all replica nodes once",
-        () -> v2Client.request(req, COLLECTION_NAME)
-    );
-
-    v2Client.close();
-
-    assertEquals(404, error.code());
+      assertEquals(404, error.code());
+    }
   }
 
   private void downAllReplicas() throws Exception {

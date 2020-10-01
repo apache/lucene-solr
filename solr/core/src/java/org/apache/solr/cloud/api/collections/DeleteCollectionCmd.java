@@ -44,6 +44,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -126,20 +127,30 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       params.set(CoreAdminParams.DELETE_METRICS_HISTORY, deleteHistory);
 
 
-      // nocommit
-      //String asyncId = message.getStr(ASYNC);
+
+      String asyncId = message.getStr(ASYNC);
+
+      if (asyncId != null) {
+        skipFinalStateWork = true;
+      }
 
       Set<String> okayExceptions = new HashSet<>(1);
       okayExceptions.add(NonExistentCoreException.class.getName());
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
       @SuppressWarnings({"unchecked"})
-      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, null, okayExceptions);
+      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
 
       if (failedReplicas == null) {
         skipFinalStateWork = true;
 
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection");
+      }
+
+      if (failedReplicas.size() > 0) {
+        skipFinalStateWork = true;
+
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully delete collection");
       }
 
     } finally {
