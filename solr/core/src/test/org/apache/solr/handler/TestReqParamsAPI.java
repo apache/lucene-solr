@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -40,6 +41,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
+@LuceneTestCase.Nightly // slow
 public class TestReqParamsAPI extends SolrCloudTestCase {
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 

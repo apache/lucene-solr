@@ -659,14 +659,14 @@ public class IndexSchema {
 
       //                      /schema/defaultSearchField/text()
 
-      TinyTextualElement.TinyTextualElementText node2 = (TinyTextualElement.TinyTextualElementText) defaultSearchFieldExp.evaluate(document, XPathConstants.NODE);
+      Object node2 = defaultSearchFieldExp.evaluate(document, XPathConstants.NODE);
       if (node2 != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting defaultSearchField in schema not supported since Solr 7");
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
 
-      node2 = (TinyTextualElement.TinyTextualElementText) solrQueryParserDefaultOpExp.evaluate(document, XPathConstants.NODE);
+      node2 = solrQueryParserDefaultOpExp.evaluate(document, XPathConstants.NODE);
       if (node2 != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting default operator in schema (solrQueryParser/@defaultOperator) not supported");
       }
