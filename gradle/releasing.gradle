@@ -17,15 +17,21 @@
 
 allprojects {
     plugins.withType(DistributionPlugin) {
-        // TODO generate sha512 checksums
+        def checksum = {
+            outputs.files.each { File file ->
+                ant.checksum(file: file, algorithm: 'SHA-512', todir: file.parent, format: 'MD5SUM', fileext: '.sha512')
+            }
+        }
 
         distZip {
             dependsOn project.parent.tasks.documentation
+            doLast checksum
         }
 
         distTar {
             compression = Compression.GZIP
             dependsOn project.parent.tasks.documentation
+            doLast checksum
         }
 
         installDist {
