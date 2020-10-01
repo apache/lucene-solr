@@ -100,7 +100,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
     public SolrQueuedThreadPool(String name) {
         this(name, Integer.MAX_VALUE, Integer.getInteger("solr.minContainerThreads", 250),
-            Integer.getInteger("solr.containerThreadsIdleTimeout", 30000), 0, // no reserved executor threads - we can process requests after shutdown or some race - we try to limit without threadpool limits no anyway
+            Integer.getInteger("solr.containerThreadsIdleTimeout", 30000), -1,
                 null, -1, null,
                 new  SolrNamedThreadFactory(name));
         this.name = name;
