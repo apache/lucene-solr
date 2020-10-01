@@ -177,6 +177,7 @@ public class ZkController implements Closeable, Runnable {
   public final static String CONFIGNAME_PROP = "configName";
   private boolean shudownCalled;
   private volatile boolean dcCalled;
+  private volatile boolean started;
 
   @Override
   public void run() {
@@ -412,7 +413,10 @@ public class ZkController implements Closeable, Runnable {
     }
   }
 
-  public void start() throws KeeperException {
+  public void start() {
+    if (started) throw new IllegalStateException("Already started");
+
+    started = true;
 
     boolean isRegistered = SolrLifcycleListener.isRegistered(this);
     if (!isRegistered) {

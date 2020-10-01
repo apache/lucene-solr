@@ -893,13 +893,25 @@ public class ZkStateReader implements SolrCloseable {
     log.info("Closing ZkStateReader");
     assert closeTracker.close();
     this.closed = true;
-    ExecutorUtil.shutdownAndAwaitTermination(notifications);
+    if (notifications != null) {
+      notifications.shutdown();
+    }
+
     try {
       if (closeClient) {
         IOUtils.closeQuietly(zkClient);
       }
 
-      waitLatches.forEach(c -> { for (int i = 0; i < c.getCount(); i++) c.countDown(); });
+      //waitLatches.forEach(c -> { for (int i = 0; i < c.getCount(); i++) c.countDown(); });
+
+      if (notifications != null) {
+        try {
+          boolean success = notifications.awaitTermination(3, TimeUnit.SECONDS);
+          if (!success) notifications.shutdownNow();
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+        }
+      }
 
     } finally {
       assert ObjectReleaseTracker.release(this);
