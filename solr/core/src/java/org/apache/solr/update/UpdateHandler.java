@@ -100,7 +100,7 @@ UpdateHandler implements SolrInfoBean, Closeable {
   @Override
   public void close() throws IOException {
     this.closed = true;
-    if (ulog != null) ulog.close();
+    if (ulog != null) ulog.close(true);
     assert ObjectReleaseTracker.release(this);
   }
 

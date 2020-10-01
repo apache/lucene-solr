@@ -120,7 +120,6 @@ public final class CommitTracker implements Runnable, Closeable {
         // okay
       }
       pending = null;
-      scheduler.shutdownNow();
       ParWork.close(scheduler);
     } finally {
       lock.unlock();
