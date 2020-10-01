@@ -14,9 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.tools.ant.taskdefs.condition.Os
 import org.apache.tools.ant.filters.*
-import java.nio.file.Files
 
 apply plugin: 'java-library'
 
