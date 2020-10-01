@@ -86,7 +86,7 @@ public class PerThreadExecService extends AbstractExecutorService {
 //    if (closeLock) {
 //      throw new IllegalCallerException();
 //    }
-    closeTracker.close();
+    assert closeTracker.close();
     assert ObjectReleaseTracker.release(this);
     this.shutdown = true;
   }

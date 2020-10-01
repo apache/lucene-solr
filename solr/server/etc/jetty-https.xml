@@ -55,10 +55,10 @@
               <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
                 <Arg name="config"><Ref refid="sslHttpConfig"/></Arg>
                 <Set name="maxConcurrentStreams">512</Set>
-                <Set name="inputBufferSize">16384</Set>
+                <Set name="inputBufferSize">8192</Set>
                 <Set name="rateControlFactory">
                   <New class="org.eclipse.jetty.http2.parser.WindowRateControl$Factory">
-                    <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="1000000"/></Arg>
+                    <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="1000"/></Arg>
                   </New>
                 </Set>
               </New>
@@ -75,6 +75,11 @@
         <Set name="idleTimeout"><Property name="solr.jetty.https.timeout" default="120000"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="solr.jetty.ssl.acceptorPriorityDelta" default="0"/></Set>
         <Set name="acceptQueueSize"><Property name="solr.jetty.https.acceptQueueSize" default="0"/></Set>
+        <Call name="addLifeCycleListener">
+          <Arg>
+            <New class="org.apache.solr.servlet.SolrConnectorListener"/>
+          </Arg>
+        </Call>
       </New>
     </Arg>
   </Call>

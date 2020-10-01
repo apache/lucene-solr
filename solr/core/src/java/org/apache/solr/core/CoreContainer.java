@@ -1043,7 +1043,7 @@ public class CoreContainer implements Closeable {
 
     log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
 
-    if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null) {
+    if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null && !zkSys.getZkController().isDcCalled()) {
       zkSys.zkController.disconnect();
     }
 
@@ -1144,7 +1144,7 @@ public class CoreContainer implements Closeable {
 
       closer.collect(loader);
     }
-
+    log.info("CoreContainer closed");
     assert ObjectReleaseTracker.release(this);
   }
 

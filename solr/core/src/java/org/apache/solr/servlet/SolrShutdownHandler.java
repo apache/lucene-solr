@@ -40,9 +40,9 @@ public class SolrShutdownHandler extends HandlerWrapper implements Graceful {
 
     @Override
     public Future<Void> shutdown() {
-        log.error("GRACEFUL SHUTDOWN CALLED");
-//        return new FutureCallback(true);
-        return new VoidShutdownFuture();
+        log.error("SHUTDOWN MONITOR HOOK CALLED");
+        return new FutureCallback(true);
+        //return new VoidShutdownFuture();
     }
 
     @Override

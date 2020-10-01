@@ -75,6 +75,7 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.SolrLifcycleListener;
 import org.apache.solr.servlet.SolrShutdownHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
@@ -175,10 +176,15 @@ public class ZkController implements Closeable, Runnable {
   public final static String COLLECTION_PARAM_PREFIX = "collection.";
   public final static String CONFIGNAME_PROP = "configName";
   private boolean shudownCalled;
+  private volatile boolean dcCalled;
 
   @Override
   public void run() {
     disconnect();
+  }
+
+  public boolean isDcCalled() {
+    return dcCalled;
   }
 
   static class ContextKey {
@@ -408,9 +414,9 @@ public class ZkController implements Closeable, Runnable {
 
   public void start() throws KeeperException {
 
-    boolean isRegistered = SolrShutdownHandler.isRegistered(this);
+    boolean isRegistered = SolrLifcycleListener.isRegistered(this);
     if (!isRegistered) {
-      SolrShutdownHandler.registerShutdown(this);
+      SolrLifcycleListener.registerShutdown(this);
     }
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
@@ -622,6 +628,8 @@ public class ZkController implements Closeable, Runnable {
   }
 
   public void disconnect() {
+    log.info("disconnect");
+    this.dcCalled = true;
     try (ParWork closer = new ParWork(this, true)) {
       closer.collect( "replicateFromLeaders", replicateFromLeaders);
 
@@ -681,7 +689,7 @@ public class ZkController implements Closeable, Runnable {
       IOUtils.closeQuietly(zkClient);
     }
 
-    SolrShutdownHandler.removeShutdown(this);
+    SolrLifcycleListener.removeShutdown(this);
 
     assert ObjectReleaseTracker.release(this);
   }
