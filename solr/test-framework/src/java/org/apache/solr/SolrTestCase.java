@@ -197,7 +197,7 @@ public class SolrTestCase extends LuceneTestCase {
     testStartTime = System.nanoTime();
 
 
-    testExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), 12, true, false);
+    testExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), 60, true, false);
     ((PerThreadExecService) testExecutor).closeLock(true);
 
     interruptThreadsOnTearDown("RootExec", false);

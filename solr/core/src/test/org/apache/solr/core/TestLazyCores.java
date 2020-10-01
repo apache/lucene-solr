@@ -99,7 +99,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
   
   @Test
-  //@Ignore // nocommit harden
+  @Ignore // nocommit harden
   public void testLazyLoad() throws Exception {
     CoreContainer cc = init();
     try {

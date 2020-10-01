@@ -151,7 +151,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
      * @param resource resource of the request for example "/collections" or "/cores/core-name"
      */
     public Builder(String resource) {
-      if (!resource.startsWith("/")) resource = "/" + resource;
+      if (!resource.startsWith("/") && !resource.equals("")) resource = "/" + resource;
       this.resource = resource;
     }
 

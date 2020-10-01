@@ -784,7 +784,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     success.add(key, value);
   }
 
-  private static NamedList<Object> waitForCoreAdminAsyncCallToComplete(String nodeName, String requestId, String adminPath, ZkStateReader zkStateReader, HttpShardHandlerFactory shardHandlerFactory, Overseer overseer) throws KeeperException, InterruptedException {
+  private static NamedList<Object> waitForCoreAdminAsyncCallToComplete(String nodeName, String requestId, String adminPath, ZkStateReader zkStateReader, HttpShardHandlerFactory shardHandlerFactory,
+      Overseer overseer) throws KeeperException, InterruptedException {
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REQUESTSTATUS.toString());
@@ -792,94 +793,96 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     int counter = 0;
     ShardRequest sreq;
 
-      sreq = new ShardRequest();
-      params.set("qt", adminPath);
-      sreq.purpose = 1;
-      String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
-      sreq.shards = new String[]{replica};
-      sreq.actualShards = sreq.shards;
-      sreq.params = params;
-      CountDownLatch latch = new CountDownLatch(1);
+    sreq = new ShardRequest();
+    params.set("qt", adminPath);
+    sreq.purpose = 1;
+    String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
+    sreq.shards = new String[] {replica};
+    sreq.actualShards = sreq.shards;
+    sreq.params = params;
+    CountDownLatch latch = new CountDownLatch(1);
 
-      // mn- from DistributedMap
-      final String asyncPathToWaitOn = Overseer.OVERSEER_ASYNC_IDS + "/mn-" + requestId;
+    // mn- from DistributedMap
+    final String asyncPathToWaitOn = Overseer.OVERSEER_ASYNC_IDS + "/mn-" + requestId;
 
-      Watcher waitForAsyncId = new Watcher() {
-        @Override
-        public void process(WatchedEvent event) {
-          if (Watcher.Event.EventType.None.equals(event.getType())) {
-            return;
-          }
-          if (event.getType().equals(Watcher.Event.EventType.NodeCreated)) {
-            latch.countDown();
-          } else if (event.getType().equals(Event.EventType.NodeDeleted)) {
-            // no-op: gets deleted below once we're done with it
-            return;
-          }
-
-          Stat rstats2 = null;
-          try {
-            rstats2 = zkStateReader.getZkClient().exists(asyncPathToWaitOn, this);
-          } catch (KeeperException e) {
-            log.error("ZooKeeper exception", e);
-            return;
-          } catch (InterruptedException e) {
-            log.info("interrupted");
-            return;
-          }
-          if (rstats2 != null) {
-            latch.countDown();
-          }
-
+    Watcher waitForAsyncId = new Watcher() {
+      @Override
+      public void process(WatchedEvent event) {
+        if (Watcher.Event.EventType.None.equals(event.getType())) {
+          return;
         }
-      };
+        if (event.getType().equals(Watcher.Event.EventType.NodeCreated)) {
+          latch.countDown();
+        } else if (event.getType().equals(Event.EventType.NodeDeleted)) {
+          latch.countDown();
+          return;
+        }
 
-      Stat rstats = zkStateReader.getZkClient().exists(asyncPathToWaitOn, waitForAsyncId);
+        Stat rstats2 = null;
+        try {
+          rstats2 = zkStateReader.getZkClient().exists(asyncPathToWaitOn, this);
+        } catch (KeeperException e) {
+          log.error("ZooKeeper exception", e);
+          return;
+        } catch (InterruptedException e) {
+          log.info("interrupted");
+          return;
+        }
+        if (rstats2 != null) {
+          latch.countDown();
+        }
 
-      if (rstats != null) {
-        latch.countDown();
+      }
+    };
+
+    Stat rstats = zkStateReader.getZkClient().exists(asyncPathToWaitOn, waitForAsyncId);
+
+    if (rstats != null) {
+      latch.countDown();
+    }
+
+    boolean success = latch.await(15, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
+    if (!success) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting to see async zk node " + asyncPathToWaitOn);
+    }
+
+    shardHandler.submit(sreq, replica, sreq.params);
+
+    ShardResponse srsp;
+
+    srsp = shardHandler.takeCompletedOrError();
+    if (srsp != null) {
+      NamedList<Object> results = new NamedList<>();
+      processResponse(results, srsp, Collections.emptySet());
+      if (srsp.getSolrResponse().getResponse() == null) {
+        NamedList<Object> response = new NamedList<>();
+        response.add("STATUS", "failed");
+        return response;
       }
 
-      latch.await(15, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
+      String r = (String) srsp.getSolrResponse().getResponse().get("STATUS");
+      if (r.equals("running")) {
+        if (log.isDebugEnabled()) log.debug("The task is still RUNNING, continuing to wait.");
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Task is still running even after reporting complete requestId: " + requestId + "" + srsp.getSolrResponse().getResponse().get("STATUS") + "retried " + counter + "times");
+      } else if (r.equals("completed")) {
+        // we're done with this entry in the DistributeMap
+        overseer.getCoreContainer().getZkController().clearAsyncId(requestId);
+        if (log.isDebugEnabled()) log.debug("The task is COMPLETED, returning");
+        return srsp.getSolrResponse().getResponse();
+      } else if (r.equals("failed")) {
+        // TODO: Improve this. Get more information.
+        if (log.isDebugEnabled()) log.debug("The task is FAILED, returning");
 
-      shardHandler.submit(sreq, replica, sreq.params);
-
-      ShardResponse srsp;
-
-      srsp = shardHandler.takeCompletedOrError();
-      if (srsp != null) {
-        NamedList<Object> results = new NamedList<>();
-        processResponse(results, srsp, Collections.emptySet());
-        if (srsp.getSolrResponse().getResponse() == null) {
-          NamedList<Object> response = new NamedList<>();
-          response.add("STATUS", "failed");
-          return response;
-        }
-
-        String r = (String) srsp.getSolrResponse().getResponse().get("STATUS");
-        if (r.equals("running")) {
-          if (log.isDebugEnabled())  log.debug("The task is still RUNNING, continuing to wait.");
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Task is still running even after reporting complete requestId: " + requestId + "" + srsp.getSolrResponse().getResponse().get("STATUS") +
-                  "retried " + counter + "times");
-        } else if (r.equals("completed")) {
-          // we're done with this entry in the DistributeMap
-          overseer.getCoreContainer().getZkController().clearAsyncId(requestId);
-          if (log.isDebugEnabled()) log.debug("The task is COMPLETED, returning");
-          return srsp.getSolrResponse().getResponse();
-        } else if (r.equals("failed")) {
-          // TODO: Improve this. Get more information.
-          if (log.isDebugEnabled()) log.debug("The task is FAILED, returning");
-
-        } else if (r.equals("notfound")) {
-          if (log.isDebugEnabled()) log.debug("The task is notfound, retry");
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid status request for requestId: " + requestId + "" + srsp.getSolrResponse().getResponse().get("STATUS") +
-                  "retried " + counter + "times");
-        } else {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid status request " + srsp.getSolrResponse().getResponse().get("STATUS"));
-        }
+      } else if (r.equals("notfound")) {
+        if (log.isDebugEnabled()) log.debug("The task is notfound, retry");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid status request for requestId: " + requestId + "" + srsp.getSolrResponse().getResponse().get("STATUS") + "retried " + counter + "times");
+      } else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid status request " + srsp.getSolrResponse().getResponse().get("STATUS"));
       }
+    }
 
-    throw new SolrException(ErrorCode.SERVER_ERROR, "No response on request for async status");
+    throw new SolrException(ErrorCode.SERVER_ERROR, "No response on request for async status url="+ replica + " params=" + sreq.params);
   }
 
   @Override

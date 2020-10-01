@@ -100,9 +100,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   protected volatile URLClassLoader resourceClassLoader;
   private final Path instanceDir;
 
-  private final Set<SolrCoreAware> waitingForCore = ConcurrentHashMap.newKeySet(5000);
-  private final Set<SolrInfoBean> infoMBeans = ConcurrentHashMap.newKeySet(5000);
-  private final Set<ResourceLoaderAware> waitingForResources = ConcurrentHashMap.newKeySet(5000);
+  private final Set<SolrCoreAware> waitingForCore = ConcurrentHashMap.newKeySet(256);
+  private final Set<SolrInfoBean> infoMBeans = ConcurrentHashMap.newKeySet(256);
+  private final Set<ResourceLoaderAware> waitingForResources = ConcurrentHashMap.newKeySet(256);
 
   // Provide a registry so that managed resources can register themselves while the XML configuration
   // documents are being parsed ... after all are registered, they are asked by the RestManager to

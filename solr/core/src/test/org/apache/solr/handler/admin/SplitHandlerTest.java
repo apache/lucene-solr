@@ -227,6 +227,7 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Nightly // slow
   public void testHistogramBuilding() throws Exception {
     List<Prefix> prefixes = SplitByPrefixTest.findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = SplitByPrefixTest.removeDups(prefixes);

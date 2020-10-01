@@ -1166,24 +1166,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       final DocCollection collection = clusterState.getCollectionOrNull(coreDescriptor.getCloudDescriptor().getCollectionName());
       if (collection != null) {
-
-        if (coreContainer.getZkController().getZkClient().isConnected()) {
-          // make sure we see our shard first - these tries to cover a surprising race where we don't find our shard in the clusterstate
-          // in the below bufferUpdatesIfConstructing call
-
-          try {
-            coreContainer.getZkController().getZkStateReader().waitForState(coreDescriptor.getCollectionName(),
-                10, TimeUnit.SECONDS, (l,c) -> c != null && c.getSlice(coreDescriptor.getCloudDescriptor().getShardId()) != null);
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          } catch (TimeoutException e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
-        }
-
         final Slice slice = collection.getSlice(coreDescriptor.getCloudDescriptor().getShardId());
-        if (slice.getState() == Slice.State.CONSTRUCTION) {
+        if (slice != null && slice.getState() == Slice.State.CONSTRUCTION) {
           // set update log to buffer before publishing the core
           assert getUpdateHandler().getUpdateLog() != null;
           getUpdateHandler().getUpdateLog().bufferUpdates();

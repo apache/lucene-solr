@@ -97,7 +97,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     final Transformer t = getTransformer(request);
     
     // capture the output of the XMLWriter
-    final CharArrayWriter w = new CharArrayWriter(64);
+    final CharArrayWriter w = new CharArrayWriter(256);
     XMLWriter.writeResponse(w,request,response);
     
     // and write transformed result to our writer

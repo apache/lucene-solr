@@ -42,52 +42,54 @@ public class SolrShutdownHandler extends HandlerWrapper implements Graceful {
     public Future<Void> shutdown() {
         log.error("GRACEFUL SHUTDOWN CALLED");
 //        return new FutureCallback(true);
-        return new Future<Void>() {
-            @Override
-            public boolean cancel(boolean b) {
-                return false;
-            }
-
-            @Override
-            public boolean isCancelled() {
-                return false;
-            }
-
-            @Override
-            public synchronized boolean isDone() {
-                return false;
-            }
-
-            @Override
-            public synchronized Void get() throws InterruptedException, ExecutionException {
-                synchronized (SolrShutdownHandler.class) {
-                    try (ParWork work = new ParWork(this)) {
-                        for (Runnable run : shutdowns) {
-                            work.collect("shutdown", () -> run.run());
-                        }
-                    }
-                }
-                return null;
-            }
-
-            @Override
-            public synchronized Void get(long l, TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException {
-                synchronized (SolrShutdownHandler.class) {
-                    try (ParWork work = new ParWork(this)) {
-                        for (Runnable run : shutdowns) {
-                            work.collect("shutdown", () -> run.run());
-                        }
-                    }
-                    shutdowns.clear();
-                }
-
-                return null;
-            }
-        };
+        return new VoidShutdownFuture();
     }
 
     @Override
     public boolean isShutdown() {
         return true;
+    }
+
+    private static class VoidShutdownFuture implements Future<Void> {
+        @Override
+        public boolean cancel(boolean b) {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public synchronized boolean isDone() {
+            return false;
+        }
+
+        @Override
+        public synchronized Void get() throws InterruptedException, ExecutionException {
+            synchronized (SolrShutdownHandler.class) {
+                try (ParWork work = new ParWork(this)) {
+                    for (Runnable run : shutdowns) {
+                        work.collect("shutdown", () -> run.run());
+                    }
+                }
+                shutdowns.clear();
+            }
+            return null;
+        }
+
+        @Override
+        public synchronized Void get(long l, TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException {
+            synchronized (SolrShutdownHandler.class) {
+                try (ParWork work = new ParWork(this)) {
+                    for (Runnable run : shutdowns) {
+                        work.collect("shutdown", () -> run.run());
+                    }
+                }
+                shutdowns.clear();
+            }
+            return null;
+        }
     }
 }

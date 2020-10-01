@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,7 +75,7 @@ public class HttpShardHandler extends ShardHandler {
   private Map<ShardResponse,Cancellable> responseCancellableMap;
   private BlockingQueue<ShardResponse> responses;
   private AtomicInteger pending;
-  private Map<String, List<String>> shardToURLs;
+  private final Map<String, List<String>> shardToURLs;
   private LBHttp2SolrClient lbClient;
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
@@ -82,7 +83,7 @@ public class HttpShardHandler extends ShardHandler {
     this.lbClient = httpShardHandlerFactory.loadbalancer;
     this.pending = new AtomicInteger(0);
     this.responses = new LinkedBlockingQueue<>();
-    this.responseCancellableMap = new HashMap<>();
+    this.responseCancellableMap = new ConcurrentHashMap<>();
 
     // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
     // This is primarily to keep track of what order we should use to query the replicas of a shard

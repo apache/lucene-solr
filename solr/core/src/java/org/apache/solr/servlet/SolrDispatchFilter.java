@@ -80,6 +80,7 @@ import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
@@ -235,13 +236,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
     final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
     try {
-      metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), false, "buffers");
-      metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), false, "classes");
-      // nocommit - yuck
-      //metricManager.registerAll(registryName, new OperatingSystemMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "os");
-      metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), false, "gc");
-      metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), false, "memory");
-      metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), false, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+      metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), true, "buffers");
+      metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), true, "classes");
+      metricManager.registerAll(registryName, new OperatingSystemMetricSet(), true, "os");
+      metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), true, "gc");
+      metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), true, "memory");
+      metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
       MetricsMap sysprops = new MetricsMap((detailed, map) -> {
         System.getProperties().forEach((k, v) -> {
           if (!hiddenSysProps.contains(k)) {

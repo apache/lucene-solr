@@ -80,11 +80,19 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
           coreContainer.waitForLoadingCore(cname, 30000);
           try (SolrCore core2 = coreContainer.getCore(cname)) {
             if (core2 == null) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
+              Thread.sleep(2000); // nocommit - wait better
+              try (SolrCore core3 = coreContainer.getCore(cname)) {
+                if (core3 == null) {
+                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
+                }
+                collectionName = core2.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+                cloudDescriptor = core2.getCoreDescriptor()
+                    .getCloudDescriptor();
+              }
+            } else {
+              collectionName = core2.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+              cloudDescriptor = core2.getCoreDescriptor().getCloudDescriptor();
             }
-            collectionName = core2.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-            cloudDescriptor = core2.getCoreDescriptor()
-                .getCloudDescriptor();
           }
         }
       } else {

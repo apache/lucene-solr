@@ -228,12 +228,12 @@ public class Http2SolrClient extends SolrClient {
       } else {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
-      SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(1);
+      SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(2);
       httpClient = new HttpClient(transport, sslContextFactory);
     } else {
       log.debug("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
-      http2client.setSelectors(1);
+      http2client.setSelectors(2);
       http2client.setIdleTimeout(idleTimeout);
       http2client.setMaxConcurrentPushedStreams(512);
       http2client.setInputBufferSize(16384);
@@ -254,7 +254,7 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setConnectBlocking(false);
       httpClient.setFollowRedirects(false);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
-      httpClient.setMaxRequestsQueuedPerDestination(100000);
+      httpClient.setMaxRequestsQueuedPerDestination(1024);
       httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
       httpClient.setIdleTimeout(idleTimeout);
       httpClient.setTCPNoDelay(true);
@@ -577,7 +577,7 @@ public class Http2SolrClient extends SolrClient {
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
     Collection<ContentStream> streams = contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
     String path = requestWriter.getPath(solrRequest);
-    if (path == null || !path.startsWith("/")) {
+    if (path == null) {
       path = DEFAULT_PATH;
     }
 
@@ -768,7 +768,7 @@ public class Http2SolrClient extends SolrClient {
           break;
         default:
           if (processor == null || mimeType == null) {
-            throw new RemoteSolrException(serverBaseUrl, httpStatus, "non ok status: " + httpStatus
+            throw new RemoteSolrException(response.getRequest().getURI().toString(), httpStatus, "non ok status: " + httpStatus
                 + ", message:" + response.getReason(),
                 null);
           }

@@ -61,13 +61,13 @@ public final class QueryResponseWriterUtil {
           // See SOLR-8669.
         }
       };
-      Writer writer = buildWriter(out, ContentStreamBase.getCharsetFromContentType(contentType));
+      FastWriter writer = buildWriter(out, ContentStreamBase.getCharsetFromContentType(contentType));
       responseWriter.write(writer, solrRequest, solrResponse);
       writer.flush();
     }
   }
   
-  private static Writer buildWriter(OutputStream outputStream, String charset) throws UnsupportedEncodingException {
+  private static FastWriter buildWriter(OutputStream outputStream, String charset) throws UnsupportedEncodingException {
     Writer writer = (charset == null) ? new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)
         : new OutputStreamWriter(outputStream, charset);
     

@@ -94,8 +94,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit: investigate
-  // commented out on: 01-Apr-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void deleteLiveReplicaTest() throws Exception {
 
     final String collectionName = "delLiveColl";
@@ -130,13 +128,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     
     CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
         .process(cluster.getSolrClient());
-    waitForState("Expected replica " + replica.getName() + " to have been removed", collectionName, (n, c) -> {
-      Slice testShard = c.getSlice(shard.getName());
-      return testShard.getReplica(replica.getName()) == null;
-    });
     
-    // the core should no longer have a watch collection state since it was removed
-    // the core should no longer have a watch collection state since it was removed
+    // the core should no longer have a watch collection state since it was removed    // the core should no longer have a watch collection state since it was removed
     TimeOut timeOut = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     timeOut.waitFor("Waiting for core's watcher to be removed", () -> {
         final long postDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
@@ -207,7 +200,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit: investigate
   public void deleteReplicaFromClusterState() throws Exception {
     final String collectionName = "deleteFromClusterStateCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)

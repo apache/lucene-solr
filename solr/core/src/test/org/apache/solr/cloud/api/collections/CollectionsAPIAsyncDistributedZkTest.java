@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -76,7 +77,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
+  @Ignore // nocommit perhaps due to async on search side? An async call returns no response while splitting: No response on request for async status
   public void testSolrJAPICalls() throws Exception {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();
@@ -86,9 +87,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection("testasynccollectioncreation", 1, 1);
 
-    // nocommit need to get abort for prep recovery back
-//    state = CollectionAdminRequest.createCollection("testasynccollectioncreation", "conf1", 1, 1).processAndWait(client, MAX_TIMEOUT_SECONDS);
-//    assertSame("Recreating a collection with the same should have failed.", RequestStatusState.FAILED, state);
+    state = CollectionAdminRequest.createCollection("testasynccollectioncreation", "conf1", 1, 1).processAndWait(client, MAX_TIMEOUT_SECONDS);
+    assertSame("Recreating a collection with the same should have failed.", RequestStatusState.FAILED, state);
 
     state = CollectionAdminRequest.addReplicaToShard("testasynccollectioncreation", "shard1").processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("Add replica did not complete", RequestStatusState.COMPLETED, state);
@@ -214,7 +214,6 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
   }
 
-  @Ignore // nocommit debug
   public void testAsyncIdRaceCondition() throws Exception {
 
     SolrClient[] clients = new SolrClient[cluster.getJettySolrRunners().size()];
@@ -252,7 +251,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
               if (log.isInfoEnabled()) {
                 log.info("{} - Reloading Collection.", Thread.currentThread().getName());
               }
-              reloadCollectionRequest.processAsync("repeatedId", clients[random().nextInt(clients.length)]);
+              reloadCollectionRequest.processAsync("repeatedId", clients[LuceneTestCase.random().nextInt(clients.length)]);
               numSuccess.incrementAndGet();
             } catch (SolrServerException e) {
               if (log.isInfoEnabled()) {

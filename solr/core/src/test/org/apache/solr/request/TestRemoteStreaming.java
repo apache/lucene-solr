@@ -95,13 +95,10 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     Object obj = new URL(getUrl).getContent();
     if (obj instanceof InputStream) {
       InputStream inputStream = (InputStream) obj;
-      try {
-        StringWriter strWriter = new StringWriter();
-        IOUtils.copy(new InputStreamReader(inputStream, StandardCharsets.UTF_8),strWriter);
-        return strWriter.toString();
-      } finally {
-        IOUtils.closeQuietly(inputStream);
-      }
+
+      StringWriter strWriter = new StringWriter();
+      IOUtils.copy(new InputStreamReader(inputStream, StandardCharsets.UTF_8), strWriter);
+      return strWriter.toString();
     }
     return null;
   }

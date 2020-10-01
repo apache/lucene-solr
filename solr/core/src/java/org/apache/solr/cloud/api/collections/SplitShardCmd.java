@@ -298,7 +298,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         String subShardName = subShardNames.get(i);
         DocRouter.Range subRange = subRanges.get(i);
 
-        log.debug("Creating slice {} of collection {} on {}", subSlice, collectionName, nodeName);
+        log.info("Creating slice {} of collection {} on {}", subSlice, collectionName, nodeName);
 
         Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD.toLower());

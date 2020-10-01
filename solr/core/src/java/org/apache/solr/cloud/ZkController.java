@@ -86,8 +86,6 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-import org.eclipse.jetty.server.ShutdownMonitor;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -682,6 +680,8 @@ public class ZkController implements Closeable, Runnable {
     if (closeZkClient) {
       IOUtils.closeQuietly(zkClient);
     }
+
+    SolrShutdownHandler.removeShutdown(this);
 
     assert ObjectReleaseTracker.release(this);
   }
@@ -1554,7 +1554,7 @@ public class ZkController implements Closeable, Runnable {
       // the watcher is added to a set so multiple calls of this method will left only one watcher
 
       // nocommit
-      //registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), cloudDesc.getCoreNodeName(), desc.getName());
+      registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), cloudDesc.getCoreNodeName(), desc.getName());
 
       // check replica's existence in clusterstate first
       try {

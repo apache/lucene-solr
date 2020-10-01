@@ -699,9 +699,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /**
    * test faceting with deep paging
    */
-  @Ignore // nocommit debug - flakey test, everytime I start fixing things, I notice this can fail
+  @Nightly // slow
   public void testFacetingWithRandomSorts() throws Exception {
-    final int numDocs = TestUtil.nextInt(random(), TEST_NIGHTLY ? 1000 : 100, TEST_NIGHTLY ? 3000 : 500);
+    final int numDocs = TestUtil.nextInt(random(), 1000, 3000);
     String[] fieldsToFacetOn = { "int", "long", "str" };
     String[] facetMethods = { "enum", "fc", "fcs" };
 
