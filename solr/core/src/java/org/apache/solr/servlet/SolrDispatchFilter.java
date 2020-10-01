@@ -111,6 +111,18 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory);
   }
 
+  private static class LiveThread extends Thread {
+    @Override
+    public void run() {
+      try {
+        Thread.sleep(Integer.MAX_VALUE);
+      } catch (InterruptedException e) {
+        // okay, stop
+      }
+    }
+  }
+
+  private final Thread liveThread = new LiveThread();
   protected volatile CoreContainer cores;
   protected final CountDownLatch init = new CountDownLatch(1);
 
@@ -140,6 +152,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
   
   public SolrDispatchFilter() {
+    liveThread.start();
   }
 
   public static final String PROPERTIES_ATTRIBUTE = "solr.properties";
@@ -382,7 +395,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } finally {
       if (cc != null) {
         httpClient = null;
-        // we may have already shutdown via shutdown hook
         IOUtils.closeQuietly(cc);
         if (zkClient != null) {
           zkClient.disableCloseLock();
@@ -390,6 +402,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ParWork.close(zkClient);
       }
       GlobalTracer.get().close();
+      liveThread.interrupt();
     }
   }
 
