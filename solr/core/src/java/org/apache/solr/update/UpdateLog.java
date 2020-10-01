@@ -103,8 +103,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   private final Lock tlogLock = new ReentrantLock(true);
 
-  private final Lock bufferLock = new ReentrantLock(true);
-
   // TODO: hack
   public FileSystem getFs() {
     return null;
@@ -587,7 +585,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     // TODO: we currently need to log to maintain correct versioning, rtg, etc
     // if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) return;
 
-    bufferLock.lock();
+    tlogLock.lock();
     try {
       if ((cmd.getFlags() & UpdateCommand.BUFFERING) != 0) {
         ensureBufferTlog();
@@ -595,7 +593,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         return;
       }
     } finally {
-      bufferLock.unlock();
+      tlogLock.unlock();
     }
     long pos = -1;
     long prevPointer;
@@ -666,13 +664,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     BytesRef br = cmd.getIndexedId();
 
     if ((cmd.getFlags() & UpdateCommand.BUFFERING) != 0) {
-      bufferLock.lock();
+      tlogLock.lock();
       try {
         ensureBufferTlog();
         bufferTlog.writeDelete(cmd);
         return;
       } finally {
-        bufferLock.unlock();
+        tlogLock.unlock();
       }
     }
     tlogLock.lock();
@@ -703,22 +701,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   public void deleteByQuery(DeleteUpdateCommand cmd) {
     long pos = -1;
-    bufferLock.lock();
+    tlogLock.lock();
     try {
       if ((cmd.getFlags() & UpdateCommand.BUFFERING) != 0) {
         ensureBufferTlog();
         bufferTlog.writeDeleteByQuery(cmd);
         return;
       }
-    } finally {
-      bufferLock.unlock();
-    }
-    tlogLock.lock();
-      try {
-        if (!updateFromOldTlogs(cmd)) {
-          ensureLog();
-          pos = tlog.writeDeleteByQuery(cmd);
-        }
+
+      if (!updateFromOldTlogs(cmd)) {
+        ensureLog();
+        pos = tlog.writeDeleteByQuery(cmd);
+      }
 
       // skip purge our caches in case of tlog replica
       if ((cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) == 0) {
@@ -733,7 +727,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           int hash = System.identityHashCode(map);
           log.trace("TLOG: added deleteByQuery {} to {} {} map = {}.", cmd.query, tlog, ptr, hash);
         }
-
 
       }
     } finally {
@@ -1287,7 +1280,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public void copyOverBufferingUpdates(CommitUpdateCommand cuc) {
     versionInfo.blockUpdates();
     try {
-      bufferLock.lock();
+      tlogLock.lock();
       try {
         state = State.ACTIVE;
         if (bufferTlog == null) {
@@ -1298,7 +1291,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         copyOverOldUpdates(cuc.getVersion(), bufferTlog);
         dropBufferTlog();
       } finally {
-        bufferLock.unlock();
+        tlogLock.unlock();
       }
     } finally {
       versionInfo.unblockUpdates();
@@ -1503,14 +1496,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     if (bufferTlog != null) {
-      bufferLock.lock();
+      tlogLock.lock();
       try {
         // should not delete bufferTlog on close, existing bufferTlog is a sign for skip peerSync
         bufferTlog.deleteOnClose = false;
         bufferTlog.decref();
         bufferTlog.forceClose();
       } finally {
-        bufferLock.unlock();
+        tlogLock.unlock();
       }
     }
     try {
@@ -1742,14 +1735,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     } finally {
       tlogLock.unlock();
     }
-    bufferLock.lock();
+    tlogLock.lock();
     try {
       if (bufferTlog != null) {
         bufferTlog.incref();
         logList.addFirst(bufferTlog);
       }
     } finally {
-      bufferLock.unlock();
+      tlogLock.unlock();
     }
 
     // TODO: what if I hand out a list of updates, then do an update, then hand out another list (and
@@ -1807,14 +1800,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   private void dropBufferTlog() {
-    bufferLock.lock();
+    tlogLock.lock();
     try {
       if (bufferTlog != null) {
         bufferTlog.decref();
         bufferTlog = null;
       }
     } finally {
-      bufferLock.unlock();
+      tlogLock.unlock();
     }
   }
 
@@ -1832,7 +1825,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       cancelApplyBufferUpdate = false;
       if (state != State.BUFFERING) return null;
 
-      bufferLock.lock();
+      tlogLock.lock();
       try {
         // handle case when no updates were received.
         if (bufferTlog == null) {
@@ -1841,7 +1834,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
         bufferTlog.incref();
       } finally {
-        bufferLock.unlock();
+        tlogLock.unlock();
       }
 
       state = State.APPLYING_BUFFERED;
