@@ -27,7 +27,6 @@ import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.response.SolrQueryResponse;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.handler.admin.TestCollectionAPIs.compareOutput;
 
@@ -58,9 +57,6 @@ public class TestConfigsApi extends SolrTestCaseJ4 {
 //      for (Api api : handler.getApis()) apiBag.register(api, EMPTY_MAP);
       compareOutput(apiBag, "/cluster/configs/sample", DELETE, null, null,
           "{name :sample, operation:delete}");
-
-      compareOutput(apiBag, "/cluster/configs", POST, "{create:{name : newconf, baseConfigSet: sample }}", null,
-          "{operation:create, name :newconf,  baseConfigSet: sample, immutable: false }");
     }
   }
 }

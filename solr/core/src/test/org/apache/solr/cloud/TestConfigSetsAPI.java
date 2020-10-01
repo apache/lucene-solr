@@ -35,6 +35,7 @@ import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -68,6 +69,7 @@ import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -136,51 +138,84 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   @Test
   public void testCreateErrors() throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    zkConfigManager.uploadConfigDir(configset("configset-2"), "configSet");
+    try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
+      zkConfigManager.uploadConfigDir(configset("configset-2"), "configSet");
 
-    // no action
-    CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
-    createNoAction.setAction(null);
-    verifyException(solrClient, createNoAction, "action");
+      // no action
+      CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
+      createNoAction.setAction(null);
+      verifyException(solrClient, createNoAction, "action");
 
-    // no ConfigSet name
-    CreateNoErrorChecking create = new CreateNoErrorChecking();
-    verifyException(solrClient, create, NAME);
+      // no ConfigSet name
+      CreateNoErrorChecking create = new CreateNoErrorChecking();
+      verifyException(solrClient, create, NAME);
 
-    // set ConfigSet
-    create.setConfigSetName("configSetName");
+      // set ConfigSet
+      create.setConfigSetName("configSetName");
 
-    // ConfigSet already exists
-    Create alreadyExists = new Create();
-    alreadyExists.setConfigSetName("configSet").setBaseConfigSetName("baseConfigSet");
-    verifyException(solrClient, alreadyExists, "ConfigSet already exists");
+      // ConfigSet already exists
+      Create alreadyExists = new Create();
+      alreadyExists.setConfigSetName("configSet").setBaseConfigSetName("baseConfigSet");
+      verifyException(solrClient, alreadyExists, "ConfigSet already exists");
 
-    // Base ConfigSet does not exist
-    Create baseConfigNoExists = new Create();
-    baseConfigNoExists.setConfigSetName("newConfigSet").setBaseConfigSetName("baseConfigSet");
-    verifyException(solrClient, baseConfigNoExists, "Base ConfigSet does not exist");
-
-    solrClient.close();
+      // Base ConfigSet does not exist
+      Create baseConfigNoExists = new Create();
+      baseConfigNoExists.setConfigSetName("newConfigSet").setBaseConfigSetName("baseConfigSet");
+      verifyException(solrClient, baseConfigNoExists, "Base ConfigSet does not exist");
+    }
   }
 
   @Test
   public void testCreate() throws Exception {
     // no old, no new
-    verifyCreate(null, "configSet1", null, null);
+    verifyCreate(null, "configSet1", null, null, "solr");
 
     // no old, new
     verifyCreate("baseConfigSet2", "configSet2",
-        null, ImmutableMap.<String, String>of("immutable", "true", "key1", "value1"));
+        null, ImmutableMap.<String, String>of("immutable", "true", "key1", "value1"), "solr");
 
     // old, no new
     verifyCreate("baseConfigSet3", "configSet3",
-        ImmutableMap.<String, String>of("immutable", "false", "key2", "value2"), null);
+        ImmutableMap.<String, String>of("immutable", "false", "key2", "value2"), null, "solr");
 
     // old, new
     verifyCreate("baseConfigSet4", "configSet4",
         ImmutableMap.<String, String>of("immutable", "true", "onlyOld", "onlyOldValue"),
-        ImmutableMap.<String, String>of("immutable", "false", "onlyNew", "onlyNewValue"));
+        ImmutableMap.<String, String>of("immutable", "false", "onlyNew", "onlyNewValue"), "solr");
+  }
+
+  @Test
+  public void testCreateWithTrust() throws Exception {
+    String configsetName = "regular";
+    String configsetSuffix = "testCreateWithTrust";
+    String configsetSuffix2 = "testCreateWithTrust2";
+    uploadConfigSetWithAssertions(configsetName, configsetSuffix, "solr");
+    uploadConfigSetWithAssertions(configsetName, configsetSuffix2, null);
+    try (SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
+            AbstractZkTestCase.TIMEOUT, 45000, null)) {
+      assertTrue(isTrusted(zkClient, configsetName, configsetSuffix));
+      assertFalse(isTrusted(zkClient, configsetName, configsetSuffix2));
+      try {
+        ignoreException("unauthenticated request");
+        // trusted -> unstrusted
+        createConfigSet(configsetName + configsetSuffix, "foo", Collections.emptyMap(), cluster.getSolrClient(), null);
+        fail("Expecting exception");
+      } catch (SolrException e) {
+        assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e.code());
+        unIgnoreException("unauthenticated request");
+      }
+      // trusted -> trusted
+      verifyCreate(configsetName + configsetSuffix, "foo2", Collections.emptyMap(), Collections.emptyMap(), "solr");
+      assertTrue(isTrusted(zkClient, "foo2", ""));
+
+      // unstrusted -> unstrusted
+      verifyCreate(configsetName + configsetSuffix2, "bar", Collections.emptyMap(), Collections.emptyMap(), null);
+      assertFalse(isTrusted(zkClient, "bar", ""));
+
+      // unstrusted -> trusted
+      verifyCreate(configsetName + configsetSuffix2, "bar2", Collections.emptyMap(), Collections.emptyMap(), "solr");
+      assertFalse(isTrusted(zkClient, "bar2", ""));
+    }
   }
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps) throws Exception {
@@ -196,33 +231,40 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private void verifyCreate(String baseConfigSetName, String configSetName,
-      Map<String, String> oldProps, Map<String, String> newProps) throws Exception {
+      Map<String, String> oldProps, Map<String, String> newProps, String username) throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    setupBaseConfigSet(baseConfigSetName, oldProps);
+    try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
+      setupBaseConfigSet(baseConfigSetName, oldProps);
 
-    SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
-    try {
-      ZkConfigManager configManager = new ZkConfigManager(zkClient);
-      assertFalse(configManager.configExists(configSetName));
+      SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
+              AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
+      try {
+        ZkConfigManager configManager = new ZkConfigManager(zkClient);
+        assertFalse(configManager.configExists(configSetName));
 
-      Create create = new Create();
-      create.setBaseConfigSetName(baseConfigSetName).setConfigSetName(configSetName);
-      if (newProps != null) {
-        Properties p = new Properties();
-        p.putAll(newProps);
-        create.setNewConfigSetProperties(p);
+        ConfigSetAdminResponse response = createConfigSet(baseConfigSetName, configSetName, newProps, solrClient, username);
+        assertNotNull(response.getResponse());
+        assertTrue(configManager.configExists(configSetName));
+
+        verifyProperties(configSetName, oldProps, newProps, zkClient);
+      } finally {
+        zkClient.close();
       }
-      ConfigSetAdminResponse response = create.process(solrClient);
-      assertNotNull(response.getResponse());
-      assertTrue(configManager.configExists(configSetName));
-
-      verifyProperties(configSetName, oldProps, newProps, zkClient);
-    } finally {
-      zkClient.close();
     }
-    solrClient.close();
+  }
+
+  private ConfigSetAdminResponse createConfigSet(String baseConfigSetName, String configSetName, Map<String, String> newProps, SolrClient solrClient, String username) throws SolrServerException, IOException {
+    Create create = new Create();
+    create.setBaseConfigSetName(baseConfigSetName).setConfigSetName(configSetName);
+    if (newProps != null) {
+      Properties p = new Properties();
+      p.putAll(newProps);
+      create.setNewConfigSetProperties(p);
+    }
+    if (username != null) {
+      create.addHeader("user", username);
+    }
+    return create.process(solrClient);
   }
 
   @SuppressWarnings({"rawtypes"})
