@@ -70,11 +70,13 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
   $scope.toggleHealthcheck = function() {
     if ($scope.healthcheckStatus) {
       Ping.disable(
+        {core: $routeParams.core},
         function(data) {$scope.healthcheckStatus = false},
         function(error) {$scope.healthcheckMessage = error}
       );
     } else {
       Ping.enable(
+        {core: $routeParams.core},
         function(data) {$scope.healthcheckStatus = true},
         function(error) {$scope.healthcheckMessage = error}
       );
