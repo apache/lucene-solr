@@ -263,6 +263,8 @@ public class CoreContainer implements Closeable {
 
   private enum CoreInitFailedAction {fromleader, none}
 
+  private final Thread liveThread = new LiveThread();
+
   /**
    * This method instantiates a new instance of {@linkplain BackupRepository}.
    *
@@ -332,6 +334,7 @@ public class CoreContainer implements Closeable {
   public CoreContainer(SolrZkClient zkClient, NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
     assert ObjectReleaseTracker.track(this);
     assert (closeTracker = new CloseTracker()) != null;
+    liveThread.start();
     this.containerProperties = new Properties(config.getSolrProperties());
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
@@ -1146,6 +1149,7 @@ public class CoreContainer implements Closeable {
     }
     log.info("CoreContainer closed");
     assert ObjectReleaseTracker.release(this);
+    liveThread.interrupt();
   }
 
   public void shutdown() {
@@ -2172,6 +2176,17 @@ public class CoreContainer implements Closeable {
     @Override
     public Lookup<AuthSchemeProvider> getAuthSchemeRegistry() {
       return builder.getAuthSchemeRegistryProvider().getAuthSchemeRegistry();
+    }
+  }
+
+  private static class LiveThread extends Thread {
+    @Override
+    public void run() {
+      try {
+        Thread.sleep(Integer.MAX_VALUE);
+      } catch (InterruptedException e) {
+        // okay, stop
+      }
     }
   }
 
