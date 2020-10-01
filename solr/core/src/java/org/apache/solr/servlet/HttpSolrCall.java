@@ -721,13 +721,10 @@ public class HttpSolrCall {
       log.info("proxy to:" + coreUrl + "?" + req.getQueryString());
       // nocommit - dont proxy around too much
       String fhost = req.getHeader(HttpHeader.X_FORWARDED_FOR.toString());
-      final URL proxyFromUrl;
       if (fhost != null) {
         // Already proxied
         sendError(404, "No SolrCore found to service request.");
         return RETURN;
-      } else {
-        proxyFromUrl = null;
       }
 
       //System.out.println("protocol:" + req.getProtocol());
@@ -749,9 +746,9 @@ public class HttpSolrCall {
 
       addProxyHeaders(req, proxyRequest);
 
-      InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream(), 8192, false);
 
       if (hasContent(req)) {
+        InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream(), 16384, false);
         proxyRequest.content(defferedContent);
       }
 
