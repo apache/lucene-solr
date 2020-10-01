@@ -126,9 +126,10 @@ final class DocumentsWriterPerThreadPool implements Iterable<DocumentsWriterPerT
   }
 
   void marksAsFreeAndUnlock(DocumentsWriterPerThread state) {
+    final long ramBytesUsed = state.ramBytesUsed();
     synchronized (this) {
       assert dwpts.contains(state) : "we tried to add a DWPT back to the pool but the pool doesn't know aobut this DWPT";
-      freeList.add(state, state.ramBytesUsed());
+      freeList.add(state, ramBytesUsed);
     }
     state.unlock();
   }
