@@ -67,7 +67,7 @@ public class SolrCmdDistributor implements Closeable {
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
-    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).build();
+    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).maxRequestsQueuedPerDestination(8192).build();
   }
 
   public void finish() {
@@ -286,6 +286,7 @@ public class SolrCmdDistributor implements Closeable {
             ParWork.propagateInterrupt(e1);
           }
         }
+        log.info("Retrying distrib update on error: {}", e.getMessage());
         submit(req);
       } else {
         allErrors.add(error);

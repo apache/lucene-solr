@@ -234,7 +234,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected volatile String[] tlogFiles;
   protected volatile File tlogDir;
   protected volatile Collection<String> globalStrings;
-  private final Object gsLock = new Object();
+  private final ReentrantLock gsLock = new ReentrantLock(true);
 
   protected volatile String dataDir;
   protected volatile String lastDataDir;
@@ -592,13 +592,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         bufferTlog.write(cmd);
         return;
       }
-    } finally {
-      tlogLock.unlock();
-    }
-    long pos = -1;
-    long prevPointer;
-    tlogLock.lock();
-    try {
+      long pos = -1;
+      long prevPointer;
 
       prevPointer = getPrevPointerForUpdate(cmd);
 
@@ -662,19 +657,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   public void delete(DeleteUpdateCommand cmd) {
     BytesRef br = cmd.getIndexedId();
-
-    if ((cmd.getFlags() & UpdateCommand.BUFFERING) != 0) {
+    try {
       tlogLock.lock();
-      try {
+      if ((cmd.getFlags() & UpdateCommand.BUFFERING) != 0) {
         ensureBufferTlog();
         bufferTlog.writeDelete(cmd);
         return;
-      } finally {
-        tlogLock.unlock();
       }
-    }
-    tlogLock.lock();
-    try {
       long pos = -1;
       if (!updateFromOldTlogs(cmd)) {
         ensureLog();
@@ -891,8 +880,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     tlogLock.lock();
     try {
       if (prevTlog != null) {
-        synchronized (gsLock) {
+        gsLock.lock();
+        try {
           globalStrings = prevTlog.getGlobalStrings();
+        } finally {
+          gsLock.unlock();
         }
 
         // since document additions can happen concurrently with commit, create
@@ -1167,12 +1159,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       entry = oldDeletes.get(indexedId);
 
+      if (entry != null) {
+        return entry.version;
+      }
+
     } finally {
       tlogLock.unlock();
-    }
-
-    if (entry != null) {
-      return entry.version;
     }
 
     return null;
@@ -1423,8 +1415,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected void ensureBufferTlog() {
     if (bufferTlog != null) return;
     String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, BUFFER_TLOG_NAME, System.nanoTime());
-    synchronized (gsLock) {
+    gsLock.lock();
+    try {
       bufferTlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false, new byte[4096]);
+    } finally {
+      gsLock.unlock();
     }
     bufferTlog.isBuffer = true;
   }
@@ -1444,11 +1439,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     if (tlog == null) {
       tlogLock.lock();
       try {
-        synchronized (gsLock) {
+        gsLock.lock();
+        try {
           if (tlog == null) {
             String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
             tlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false, new byte[4096]);
           }
+        } finally {
+          gsLock.unlock();
         }
       } finally {
         tlogLock.unlock();
