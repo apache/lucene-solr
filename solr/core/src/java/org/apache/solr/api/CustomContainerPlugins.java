@@ -180,9 +180,10 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       Object instance = newApiInfo.getInstance();
       if (instance instanceof ClusterSingleton) {
         ClusterSingleton singleton = (ClusterSingleton) instance;
-        coreContainer.getClusterSingletons().put(singleton.getName(), singleton);
+        coreContainer.getClusterSingletons().getSingletons().put(singleton.getName(), singleton);
         // easy check to see if we should immediately start this singleton
-        if (coreContainer.getClusterEventProducer().isRunning()) {
+        if (coreContainer.getClusterEventProducer() != null &&
+            coreContainer.getClusterEventProducer().isRunning()) {
           try {
             singleton.start();
           } catch (Exception exc) {
@@ -206,7 +207,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       if (instance instanceof ClusterSingleton) {
         ClusterSingleton singleton = (ClusterSingleton) instance;
         singleton.stop();
-        coreContainer.getClusterSingletons().remove(singleton.getName());
+        coreContainer.getClusterSingletons().getSingletons().remove(singleton.getName());
       }
       if (instance instanceof ClusterEventListener) {
         coreContainer.getClusterEventProducer().unregisterListener((ClusterEventListener) instance);
@@ -322,7 +323,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       }
 
       try {
-        List<Api> apis = AnnotatedApi.getApis(klas, null);
+        List<Api> apis = AnnotatedApi.getApis(klas, null, false);
         for (Object api : apis) {
           EndPoint endPoint = ((AnnotatedApi) api).getEndPoint();
           if (endPoint.path().length > 1 || endPoint.method().length > 1) {
@@ -374,7 +375,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
         }
       }
       this.holders = new ArrayList<>();
-      for (Api api : AnnotatedApi.getApis(instance)) {
+      for (Api api : AnnotatedApi.getApis(instance.getClass(), instance, false)) {
         holders.add(new ApiHolder((AnnotatedApi) api));
       }
     }

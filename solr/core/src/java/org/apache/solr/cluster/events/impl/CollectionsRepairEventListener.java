@@ -19,7 +19,6 @@ package org.apache.solr.cluster.events.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,7 +59,7 @@ public class CollectionsRepairEventListener implements ClusterEventListener {
   private final SolrClient solrClient;
   private final SolrCloudManager solrCloudManager;
 
-  private boolean running = false;
+  private volatile boolean running = false;
 
   public CollectionsRepairEventListener(CoreContainer cc) {
     this.solrClient = cc.getSolrClientCache().getCloudSolrClient(cc.getZkController().getZkClient().getZkServerAddress());

@@ -85,9 +85,18 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
   }
 
   public static List<Api> getApis(Object obj) {
-    return getApis(obj.getClass(), obj);
+    return getApis(obj.getClass(), obj, true);
   }
-  public static List<Api> getApis(Class<? extends Object> theClass , Object obj)  {
+
+  /**
+   * Get a list of Api-s supported by this class.
+   * @param theClass class
+   * @param obj object of this class (may be null)
+   * @param required if true then an exception is thrown if no Api-s can be retrieved, if false
+   *                then absence of Api-s is silently ignored.
+   * @return list of discovered Api-s
+   */
+  public static List<Api> getApis(Class<? extends Object> theClass , Object obj, boolean required)  {
     Class<?> klas = null;
     try {
       klas = MethodHandles.publicLookup().accessClass(theClass);
@@ -122,7 +131,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
         SpecProvider specProvider = readSpec(endPoint, Collections.singletonList(m));
         apis.add(new AnnotatedApi(specProvider, endPoint, Collections.singletonMap("", cmd), null));
       }
-      if (apis.isEmpty()) {
+      if (required && apis.isEmpty()) {
         throw new RuntimeException("Invalid Class : " + klas.getName() + " No @EndPoints");
       }
 

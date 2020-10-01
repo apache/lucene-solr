@@ -17,13 +17,7 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -118,7 +112,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   private static SolrZkClient zkClient;
 
-
   private volatile boolean testDone = false;
 
   private final List<ZkController> zkControllers = Collections.synchronizedList(new ArrayList<>());
@@ -128,7 +121,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private final List<HttpShardHandlerFactory> httpShardHandlerFactorys = Collections.synchronizedList(new ArrayList<>());
   private final List<UpdateShardHandler> updateShardHandlers = Collections.synchronizedList(new ArrayList<>());
   private final List<CloudSolrClient> solrClients = Collections.synchronizedList(new ArrayList<>());
-
   private static final String COLLECTION = SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 
   public static class MockZKController{
@@ -307,6 +299,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     testDone = false;
+
     super.setUp();
   }
 
@@ -323,6 +316,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
 
     server = null;
+
   }
 
   @After
@@ -1429,7 +1423,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
     when(mockAlwaysUpCoreContainer.isShutDown()).thenReturn(testDone);  // Allow retry on session expiry
     when(mockAlwaysUpCoreContainer.getResourceLoader()).thenReturn(new SolrResourceLoader());
-    FieldSetter.setField(mockAlwaysUpCoreContainer, CoreContainer.class.getDeclaredField("containerSingletons"), Collections.emptyMap());
+    CoreContainer.ClusterSingletons singletons = new CoreContainer.ClusterSingletons();
+    // don't wait for all singletons
+    singletons.setReady();
+    FieldSetter.setField(mockAlwaysUpCoreContainer, CoreContainer.class.getDeclaredField("clusterSingletons"), singletons);
     ClusterEventProducerImpl clusterEventProducer = new ClusterEventProducerImpl(mockAlwaysUpCoreContainer);
     when(mockAlwaysUpCoreContainer.getClusterEventProducer()).thenReturn(clusterEventProducer);
     FieldSetter.setField(zkController, ZkController.class.getDeclaredField("zkClient"), zkClient);
@@ -1437,6 +1434,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getCoreContainer()).thenReturn(mockAlwaysUpCoreContainer);
     when(zkController.getZkClient()).thenReturn(zkClient);
     when(zkController.getZkStateReader()).thenReturn(reader);
+    // primitive support for CC.runAsync
+    doAnswer(invocable -> {
+      Runnable r = invocable.getArgument(0);
+      Thread t = new Thread(r);
+      t.start();
+      return null;
+    }).when(mockAlwaysUpCoreContainer).runAsync(any(Runnable.class));
 
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt())).thenCallRealMethod();
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt(), anyBoolean())).thenCallRealMethod();

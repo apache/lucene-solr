@@ -16,16 +16,12 @@
  */
 package org.apache.solr.cluster.events.impl;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -53,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * (not in parallel) and in arbitrary order. This means that if any listener blocks the
  * processing other listeners may be invoked much later or not at all.</p>
  */
-public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSingleton, Closeable {
+public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSingleton {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<ClusterEvent.EventType, Set<ClusterEventListener>> listeners = new HashMap<>();
@@ -62,7 +58,7 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
   private CloudCollectionsListener cloudCollectionsListener;
   private ClusterPropertiesListener clusterPropertiesListener;
   private ZkController zkController;
-  private boolean running;
+  private volatile boolean running;
 
   private final Set<ClusterEvent.EventType> supportedEvents =
       new HashSet<>(Arrays.asList(
@@ -72,8 +68,6 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
           ClusterEvent.EventType.COLLECTIONS_REMOVED,
           ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED
       ));
-
-  private volatile boolean isClosed = false;
 
   public ClusterEventProducerImpl(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
@@ -96,7 +90,7 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
     // register liveNodesListener
     liveNodesListener = (oldNodes, newNodes) -> {
       // already closed but still registered
-      if (isClosed) {
+      if (!running) {
         // remove the listener
         return true;
       }
@@ -196,6 +190,8 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
 
     // XXX register collection state listener?
     // XXX not sure how to efficiently monitor for REPLICA_DOWN events
+
+    running = true;
   }
 
   @Override
@@ -236,13 +232,6 @@ public class ClusterEventProducerImpl implements ClusterEventProducer, ClusterSi
       throw new Exception(e);
     }
     ClusterEventProducer.super.registerListener(listener, eventTypes);
-  }
-
-  @Override
-  public void close() throws IOException {
-    stop();
-    isClosed = true;
-    listeners.clear();
   }
 
   @Override

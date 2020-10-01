@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 import org.apache.lucene.util.Version;
@@ -782,34 +784,48 @@ public class Overseer implements SolrCloseable {
    * Start {@link ClusterSingleton} plugins when we become the leader.
    */
   public void startClusterSingletons() {
-    Map<String, ClusterSingleton> singletons = getCoreContainer().getClusterSingletons();
-    if (singletons == null) {
-      return;
-    }
-    if (isClosed()) {
-      return;
-    }
-    singletons.forEach((name, singleton) -> {
-      try {
-        singleton.start();
-        if (singleton instanceof ClusterEventListener) {
-          getCoreContainer().getClusterEventProducer().registerListener((ClusterEventListener) singleton);
-        }
-      } catch (Exception e) {
-        log.warn("Exception starting ClusterSingleton {}: {}", singleton, e);
+    CoreContainer.ClusterSingletons singletons = getCoreContainer().getClusterSingletons();
+    final Runnable initializer = () -> {
+      if (isClosed()) {
+        return;
       }
-    });
+      try {
+        singletons.waitUntilReady(60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        log.warn("Interrupted initialization of ClusterSingleton-s");
+        return;
+      } catch (TimeoutException te) {
+        log.warn("Timed out during initialization of ClusterSingleton-s");
+        return;
+      }
+      singletons.getSingletons().forEach((name, singleton) -> {
+        try {
+          singleton.start();
+          if (singleton instanceof ClusterEventListener) {
+            getCoreContainer().getClusterEventProducer().registerListener((ClusterEventListener) singleton);
+          }
+        } catch (Exception e) {
+          log.warn("Exception starting ClusterSingleton {}: {}", singleton, e);
+        }
+      });
+    };
+    if (singletons.isReady()) {
+      // wait until all singleton-s are ready for the first startup
+      getCoreContainer().runAsync(initializer);
+    } else {
+      initializer.run();
+    }
   }
 
   /**
    * Stop {@link ClusterSingleton} plugins when we lose leadership.
    */
   private void stopClusterSingletons() {
-    Map<String, ClusterSingleton> singletons = getCoreContainer().getClusterSingletons();
+    CoreContainer.ClusterSingletons singletons = getCoreContainer().getClusterSingletons();
     if (singletons == null) {
       return;
     }
-    singletons.forEach((name, singleton) -> {
+    singletons.getSingletons().forEach((name, singleton) -> {
       if (singleton instanceof ClusterEventListener) {
         getCoreContainer().getClusterEventProducer().unregisterListener((ClusterEventListener) singleton);
       }
@@ -856,10 +872,13 @@ public class Overseer implements SolrCloseable {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);
     }
+    // stop singletons only on the leader
+    if (!this.closed) {
+      stopClusterSingletons();
+    }
     this.closed = true;
     doClose();
 
-    stopClusterSingletons();
 
     assert ObjectReleaseTracker.release(this);
   }

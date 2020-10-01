@@ -19,39 +19,64 @@ package org.apache.solr.cluster.events;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.beans.PluginMeta;
+import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.util.Utils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 /**
  *
  */
 public class ClusterEventProducerTest extends SolrCloudTestCase {
 
-  private static AllEventsListener eventsListener = new AllEventsListener();
+  private AllEventsListener eventsListener;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(3)
         .addConfig("conf", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
-    cluster.getOpenOverseer().getCoreContainer().getClusterEventProducer().registerListener(eventsListener);
   }
 
   @Before
   public void setUp() throws Exception  {
+    System.setProperty("enable.packages", "true");
     super.setUp();
     cluster.deleteAllCollections();
+    eventsListener = new AllEventsListener();
+    cluster.getOpenOverseer().getCoreContainer().getClusterEventProducer().registerListener(eventsListener);
+  }
+
+  @After
+  public void teardown() {
+    System.clearProperty("enable.packages");
+    if (eventsListener != null) {
+      cluster.getOpenOverseer().getCoreContainer().getClusterEventProducer().unregisterListener(eventsListener);
+    }
   }
 
   @Test
-  public void testNodesEvent() throws Exception {
+  public void testEvents() throws Exception {
 
     // NODES_DOWN
 
@@ -148,5 +173,101 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     assertEquals("new properties should not have 'ext.foo' property: " + propertiesChanged.getNewClusterProperties(),
         null, propertiesChanged.getNewClusterProperties().get("ext.foo"));
 
+  }
+
+  private static CountDownLatch dummyEventLatch = new CountDownLatch(1);
+  private static ClusterEvent lastEvent = null;
+
+  public static class DummyEventListener implements ClusterEventListener {
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    boolean running = false;
+    @Override
+    public void onEvent(ClusterEvent event) {
+      if (!running) {
+        log.debug("skipped event, not running: {}", event);
+        return;
+      }
+      if (event.getType() == ClusterEvent.EventType.COLLECTIONS_ADDED ||
+          event.getType() == ClusterEvent.EventType.COLLECTIONS_REMOVED) {
+        log.debug("recorded event {}", Utils.toJSONString(event));
+        lastEvent = event;
+        dummyEventLatch.countDown();
+      } else {
+        log.debug("skipped event, wrong type: {}", event.getType());
+      }
+    }
+
+    @Override
+    public String getName() {
+      return "dummy";
+    }
+
+    @Override
+    public void start() throws Exception {
+      log.debug("starting {}", Integer.toHexString(hashCode()));
+      running = true;
+    }
+
+    @Override
+    public boolean isRunning() {
+      return running;
+    }
+
+    @Override
+    public void stop() {
+      log.debug("stopping {}", Integer.toHexString(hashCode()));
+      running = false;
+    }
+  }
+
+  @Test
+  public void testListenerPlugins() throws Exception {
+    PluginMeta plugin = new PluginMeta();
+    plugin.name = "testplugin";
+    plugin.klass = DummyEventListener.class.getName();
+    V2Request req = new V2Request.Builder("/cluster/plugin")
+        .forceV2(true)
+        .withMethod(POST)
+        .withPayload(singletonMap("add", plugin))
+        .build();
+    V2Response rsp = req.process(cluster.getSolrClient());
+    //just check if the plugin is indeed registered
+    V2Request readPluginState = new V2Request.Builder("/cluster/plugin")
+        .forceV2(true)
+        .withMethod(GET)
+        .build();
+    rsp = readPluginState.process(cluster.getSolrClient());
+    assertEquals(DummyEventListener.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
+
+    String collection = "testListenerPlugins_collection";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf", 1, 1);
+    cluster.getSolrClient().request(create);
+    cluster.waitForActiveCollection(collection, 1, 1);
+    boolean await = dummyEventLatch.await(30, TimeUnit.SECONDS);
+    if (!await) {
+      fail("Timed out waiting for COLLECTIONS_ADDED event, " + collection);
+    }
+    assertNotNull("lastEvent should be COLLECTIONS_ADDED", lastEvent);
+    assertEquals("lastEvent should be COLLECTIONS_ADDED", ClusterEvent.EventType.COLLECTIONS_ADDED, lastEvent.getType());
+    // verify timestamp
+    Instant now = Instant.now();
+    assertTrue("timestamp of the event is in the future", now.isAfter(lastEvent.getTimestamp()));
+    assertEquals(collection, ((CollectionsAddedEvent)lastEvent).getCollectionNames().next());
+
+    dummyEventLatch = new CountDownLatch(1);
+    lastEvent = null;
+
+    CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection(collection);
+    cluster.getSolrClient().request(delete);
+    await = dummyEventLatch.await(30, TimeUnit.SECONDS);
+    if (!await) {
+      fail("Timed out waiting for COLLECTIONS_REMOVED event, " + collection);
+    }
+    assertNotNull("lastEvent should be COLLECTIONS_REMOVED", lastEvent);
+    assertEquals("lastEvent should be COLLECTIONS_REMOVED", ClusterEvent.EventType.COLLECTIONS_REMOVED, lastEvent.getType());
+    // verify timestamp
+    now = Instant.now();
+    assertTrue("timestamp of the event is in the future", now.isAfter(lastEvent.getTimestamp()));
+    assertEquals(collection, ((CollectionsRemovedEvent)lastEvent).getCollectionNames().next());
   }
 }

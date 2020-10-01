@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cluster.events;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -30,4 +31,9 @@ public interface ClusterPropertiesChangedEvent extends ClusterEvent {
 
   Map<String, Object> getNewClusterProperties();
 
+  @Override
+  default void writeMap(EntryWriter ew) throws IOException {
+    ClusterEvent.super.writeMap(ew);
+    ew.put("newClusterProperties", getNewClusterProperties());
+  }
 }

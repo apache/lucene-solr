@@ -51,7 +51,7 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 public class ContainerPluginsApi {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String PLUGINS = "plugins";
+  public static final String PLUGINS = "plugin";
   private final Supplier<SolrZkClient> zkClientSupplier;
   private final CoreContainer coreContainer;
   public final Read readAPI = new Read();
@@ -64,7 +64,7 @@ public class ContainerPluginsApi {
 
   public class Read {
     @EndPoint(method = METHOD.GET,
-        path = "/cluster/plugins",
+        path = "/cluster/plugin",
         permission = PermissionNameProvider.Name.COLL_READ_PERM)
     public void list(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
       rsp.add(PLUGINS, plugins(zkClientSupplier));
@@ -72,7 +72,7 @@ public class ContainerPluginsApi {
   }
 
   @EndPoint(method = METHOD.POST,
-      path = "/cluster/plugins",
+      path = "/cluster/plugin",
       permission = PermissionNameProvider.Name.COLL_EDIT_PERM)
   public class Edit {
 

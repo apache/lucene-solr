@@ -92,8 +92,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       expectError(req, cluster.getSolrClient(), errPath, "No method with @Command in class");
 
       //test with an invalid class
-      plugin.klass = C1.class.getName();
-      expectError(req, cluster.getSolrClient(), errPath, "No @EndPoints");
+//      plugin.klass = C1.class.getName();
+//      expectError(req, cluster.getSolrClient(), errPath, "No @EndPoints");
 
       //test with a valid class. This should succeed now
       plugin.klass = C3.class.getName();
