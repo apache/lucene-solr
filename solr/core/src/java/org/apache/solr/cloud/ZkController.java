@@ -645,7 +645,6 @@ public class ZkController implements Closeable, Runnable {
           return "PublishDown";
 
         });
-        closer.addCollect();
         closer.collect("removeEphemeralLiveNode", () -> {
           try {
             removeEphemeralLiveNode();
@@ -2948,17 +2947,14 @@ public class ZkController implements Closeable, Runnable {
       return;
     }
 
-//    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
-//        ZkStateReader.NODE_NAME_PROP, nodeName);
-//    try {
-//      overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
-//    } catch (AlreadyClosedException e) {
-//      log.info("Not publishing node as DOWN because a resource required to do so is already closed.");
-//      return;
-//    } catch (InterruptedException e) {
-//      ParWork.propegateInterrupt(e);
-//      return;
-//    }
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
+        ZkStateReader.NODE_NAME_PROP, nodeName);
+    try {
+      overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
+    } catch (AlreadyClosedException e) {
+      log.info("Not publishing node as DOWN because a resource required to do so is already closed.");
+      return;
+    }
 //    Collection<SolrCore> cores = cc.getCores();
 //    for (SolrCore core : cores) {
 //      CoreDescriptor desc = core.getCoreDescriptor();
