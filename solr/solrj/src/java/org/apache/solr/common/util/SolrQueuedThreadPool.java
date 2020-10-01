@@ -146,10 +146,10 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
         setIdleTimeout(idleTimeout);
         setReservedThreads(reservedThreads);
         setLowThreadsThreshold(-1);
-        setStopTimeout(5000);
+        setStopTimeout(180000);
         if (queue == null)
         {
-            int capacity = Math.max(_minThreads, 8) * 2048;
+            int capacity = Math.max(_minThreads, 8) * 1024;
             queue = new BlockingArrayQueue<>(capacity, capacity);
         }
         _jobs = queue;
