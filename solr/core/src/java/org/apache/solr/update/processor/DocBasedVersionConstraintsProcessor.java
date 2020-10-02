@@ -27,6 +27,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiPredicate;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -68,12 +69,16 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   private final DistributedUpdateProcessor.DistribPhase phase;
   private final boolean useFieldCache;
 
+  @SuppressWarnings({"rawtypes"})
+  private final BiPredicate<Comparable, Comparable> acceptUpdatePredicate;
+
   private long oldSolrVersion;  // current _version_ of the doc in the index/update log
 
   public DocBasedVersionConstraintsProcessor(List<String> versionFields,
                                              boolean ignoreOldUpdates,
                                              List<String> deleteVersionParamNames,
                                              boolean supportMissingVersionOnOldDocs,
+                                             boolean rejectSameVersion,
                                              boolean useFieldCache,
                                              NamedList<Object> tombstoneConfig,
                                              SolrQueryRequest req,
@@ -96,6 +101,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
 
     this.phase = DistributedUpdateProcessor.DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
     this.tombstoneConfig = tombstoneConfig;
+
+    this.acceptUpdatePredicate = rejectSameVersion ? this::rejectSameVersionUpdates : this::allowSameVersionUpdates;
   }
 
   private static DistributedUpdateProcessor getDistributedUpdateProcessor(UpdateRequestProcessor next) {
@@ -328,7 +335,19 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   @SuppressWarnings({"unchecked"})
   protected boolean newUpdateComparePasses(@SuppressWarnings({"rawtypes"})Comparable newUserVersion,
                                            @SuppressWarnings({"rawtypes"})Comparable oldUserVersion, String userVersionFieldName) {
+    return acceptUpdatePredicate.test(newUserVersion, oldUserVersion);
+  }
+
+  @SuppressWarnings({"unchecked"})
+  private boolean rejectSameVersionUpdates(@SuppressWarnings({"rawtypes"})Comparable newUserVersion,
+                                           @SuppressWarnings({"rawtypes"})Comparable oldUserVersion) {
     return oldUserVersion.compareTo(newUserVersion) < 0;
+  }
+
+  @SuppressWarnings({"unchecked"})
+  private boolean allowSameVersionUpdates(@SuppressWarnings({"rawtypes"})Comparable newUserVersion,
+                                          @SuppressWarnings({"rawtypes"})Comparable oldUserVersion) {
+    return oldUserVersion.compareTo(newUserVersion) <= 0;
   }
 
   private static Object[] getObjectValues(LeafReaderContext segmentContext,
