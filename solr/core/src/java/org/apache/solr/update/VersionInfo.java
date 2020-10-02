@@ -198,10 +198,11 @@ public class VersionInfo {
     // Make sure high bits are moved down, since only the low bits will matter.
     // int h = hash + (hash >>> 8) + (hash >>> 16) + (hash >>> 24);
     // Assume good hash codes for now.
-    int slot = hash & (buckets.length - 1);
+    int slot;
     buckUpdateLock.readLock().lock();
     VersionBucket bucket;
     try {
+      slot = hash & (buckets.length - 1);
       bucket = buckets[slot];
     } finally {
       buckUpdateLock.readLock().unlock();

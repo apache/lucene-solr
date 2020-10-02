@@ -638,7 +638,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    *        not an in-place update at all, and don't bother about the prevPointer value at
    *        all (which is -1 as a dummy value).)
    */
-  private synchronized long getPrevPointerForUpdate(AddUpdateCommand cmd) {
+  private long getPrevPointerForUpdate(AddUpdateCommand cmd) {
     // note: sync required to ensure maps aren't changed out form under us
     if (cmd.isInPlaceUpdate()) {
       BytesRef indexedId = cmd.getIndexedId();
@@ -736,29 +736,31 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     // We must cause a new IndexReader to be opened before anything looks at these caches again
     // so that a cache miss will read fresh data.
     RefCounted<SolrIndexSearcher> holder = null;
+    tlogLock.lock();
     try {
-      holder = uhandler.core.openNewSearcher(true, true);
-
-    } catch (Exception e) {
-      ParWork.propagateInterrupt(e, true);
-      SolrException.log(log, "Error opening realtime searcher", e);
-      return null;
-    } finally {
-      tlogLock.lock();
       try {
+        holder = uhandler.core.openNewSearcher(true, true);
+
+      } catch (Exception e) {
+        ParWork.propagateInterrupt(e, true);
+        SolrException.log(log, "Error opening realtime searcher", e);
+        return null;
+      } finally {
+
         if (map != null) map.clear();
         if (prevMap != null) prevMap.clear();
         if (prevMap2 != null) prevMap2.clear();
-      } finally {
-        tlogLock.unlock();
-      }
-      if (!returnSearcher && holder != null) holder.decref();
-    }
 
-    if (returnSearcher) {
-      return holder;
+        if (!returnSearcher && holder != null) holder.decref();
+      }
+
+      if (returnSearcher) {
+        return holder;
+      }
+      return null;
+    } finally {
+      tlogLock.unlock();
     }
-    return null;
   }
 
   /** currently for testing only */
