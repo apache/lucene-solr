@@ -1569,6 +1569,7 @@ public class ZkStateReader implements SolrCloseable {
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat);
+        if (data == null) return null;
         ClusterState state = ClusterState.createFromJson(stat.getVersion(), data, Collections.emptySet());
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();

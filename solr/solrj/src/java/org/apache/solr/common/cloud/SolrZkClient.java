@@ -294,6 +294,7 @@ public class SolrZkClient implements Closeable {
   public byte[] getData(final String path, final Watcher watcher, final Stat stat)
       throws KeeperException, InterruptedException {
       ZooKeeper keeper = connManager.getKeeper();
+      if (keeper == null) return null;
       return keeper.getData(path, wrapWatcher(watcher), stat);
   }
 
