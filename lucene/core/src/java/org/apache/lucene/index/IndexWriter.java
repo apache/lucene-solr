@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntConsumer;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -1072,7 +1073,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       config.getFlushPolicy().init(config);
       bufferedUpdatesStream = new BufferedUpdatesStream(infoStream);
-      docWriter = new DocumentsWriter(flushNotifications, segmentInfos.getIndexCreatedVersionMajor(), pendingNumDocs,
+      final IntConsumer reserveDocs = numDocs -> {
+        if (numDocs > 0) {
+          reserveDocs(numDocs);
+        } else {
+          adjustPendingNumDocs(numDocs);
+        }
+      };
+      docWriter = new DocumentsWriter(flushNotifications, segmentInfos.getIndexCreatedVersionMajor(), reserveDocs,
           enableTestPoints, this::newSegmentName,
           config, directoryOrig, directory, globalFieldNumberMap);
       readerPool = new ReaderPool(directory, directoryOrig, segmentInfos, globalFieldNumberMap,
@@ -5461,6 +5469,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private void tooManyDocs(long addedNumDocs) {
     assert addedNumDocs >= 0;
     throw new IllegalArgumentException("number of documents in the index cannot exceed " + actualMaxDocs + " (current document count is " + pendingNumDocs.get() + "; added numDocs is " + addedNumDocs + ")");
+  }
+
+  /**
+   * Returns the number of documents in the index including documents are being added (i.e., reserved).
+   */
+  public long getPendingNumDocs() {
+    return pendingNumDocs.get();
   }
 
   /** Returns the highest <a href="#sequence_number">sequence number</a> across

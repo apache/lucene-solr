@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.IntConsumer;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
@@ -83,7 +83,7 @@ final class DocumentsWriterPerThread implements Accountable {
    *  discarding any docs added since last flush. */
   void abort() throws IOException{
     aborted = true;
-    pendingNumDocs.addAndGet(-numDocsInRAM);
+    reserveDocs.accept(-numDocsInRAM);
     try {
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "now abort");
@@ -118,7 +118,7 @@ final class DocumentsWriterPerThread implements Accountable {
   final DocumentsWriterDeleteQueue deleteQueue;
   private final DeleteSlice deleteSlice;
   private final NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
-  private final AtomicLong pendingNumDocs;
+  private final IntConsumer reserveDocs;
   private final LiveIndexWriterConfig indexWriterConfig;
   private final boolean enableTestPoints;
   private final ReentrantLock lock = new ReentrantLock();
@@ -127,13 +127,13 @@ final class DocumentsWriterPerThread implements Accountable {
 
   DocumentsWriterPerThread(int indexVersionCreated, String segmentName, Directory directoryOrig, Directory directory,
                            LiveIndexWriterConfig indexWriterConfig, DocumentsWriterDeleteQueue deleteQueue,
-                           FieldInfos.Builder fieldInfos, AtomicLong pendingNumDocs, boolean enableTestPoints) {
+                           FieldInfos.Builder fieldInfos, IntConsumer reserveDocs, boolean enableTestPoints) {
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
     this.indexWriterConfig = indexWriterConfig;
     this.infoStream = indexWriterConfig.getInfoStream();
     this.codec = indexWriterConfig.getCodec();
-    this.pendingNumDocs = pendingNumDocs;
+    this.reserveDocs = reserveDocs;
     pendingUpdates = new BufferedUpdates(segmentName);
     this.deleteQueue = Objects.requireNonNull(deleteQueue);
     assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
@@ -155,16 +155,6 @@ final class DocumentsWriterPerThread implements Accountable {
     }
   }
 
-  /** Anything that will add N docs to the index should reserve first to
-   *  make sure it's allowed. */
-  private void reserveOneDoc() {
-    if (pendingNumDocs.incrementAndGet() > IndexWriter.getActualMaxDocs()) {
-      // Reserve failed: put the one doc back and throw exc:
-      pendingNumDocs.decrementAndGet();
-      throw new IllegalArgumentException("number of documents in the index cannot exceed " + IndexWriter.getActualMaxDocs());
-    }
-  }
-
   long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, DocumentsWriterDeleteQueue.Node<?> deleteNode, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     try {
       testPoint("DocumentsWriterPerThread addDocuments start");
@@ -182,7 +172,7 @@ final class DocumentsWriterPerThread implements Accountable {
           // document, so the counter will be "wrong" in that case, but
           // it's very hard to fix (we can't easily distinguish aborting
           // vs non-aborting exceptions):
-          reserveOneDoc();
+          reserveDocs.accept(1);
           indexingChain.processDocument(numDocsInRAM++, doc);
         }
         allDocsIndexed = true;

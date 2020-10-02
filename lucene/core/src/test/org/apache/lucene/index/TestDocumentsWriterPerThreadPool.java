@@ -32,7 +32,7 @@ public class TestDocumentsWriterPerThreadPool extends LuceneTestCase {
     try (Directory directory = newDirectory()) {
       DocumentsWriterPerThreadPool pool = new DocumentsWriterPerThreadPool(() ->
           new DocumentsWriterPerThread(Version.LATEST.major, "", directory, directory,
-              newIndexWriterConfig(), new DocumentsWriterDeleteQueue(null), null, new AtomicLong(), false));
+              newIndexWriterConfig(), new DocumentsWriterDeleteQueue(null), null, n -> {}, false));
 
       DocumentsWriterPerThread first = pool.getAndLock();
       assertEquals(1, pool.size());
@@ -62,7 +62,7 @@ public class TestDocumentsWriterPerThreadPool extends LuceneTestCase {
     try (Directory directory = newDirectory()) {
       DocumentsWriterPerThreadPool pool = new DocumentsWriterPerThreadPool(() ->
           new DocumentsWriterPerThread(Version.LATEST.major, "", directory, directory,
-              newIndexWriterConfig(), new DocumentsWriterDeleteQueue(null), null, new AtomicLong(), false));
+              newIndexWriterConfig(), new DocumentsWriterDeleteQueue(null), null, n -> {}, false));
 
       DocumentsWriterPerThread first = pool.getAndLock();
       pool.lockNewWriters();
