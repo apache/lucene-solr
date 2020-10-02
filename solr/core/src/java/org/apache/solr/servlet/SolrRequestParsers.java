@@ -62,7 +62,6 @@ import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.MultiParts;
 import org.eclipse.jetty.server.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -593,7 +592,7 @@ public class SolrRequestParsers {
       return params;
     }
 
-    boolean isMultipart(HttpServletRequest req) {
+    static boolean isMultipart(HttpServletRequest req) {
       // Jetty utilities
       return MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(req.getContentType(), null));
     }
@@ -618,11 +617,9 @@ public class SolrRequestParsers {
   }
 
 
-  /** Clean up any tmp files created by MultiPartInputStream. */
+  /** Clean up any files created by MultiPartInputStream. */
   static void cleanupMultipartFiles(HttpServletRequest request) {
-    // See Jetty MultiPartCleanerListener from which we drew inspiration
-    MultiParts multiParts = (MultiParts) request.getAttribute(Request.MULTIPARTS);
-    if (multiParts == null || multiParts.getContext() != request.getServletContext()) {
+    if (!MultipartRequestParser.isMultipart(request)) {
       return;
     }
 
@@ -630,9 +627,10 @@ public class SolrRequestParsers {
 
     Collection<Part> parts;
     try {
-      parts = multiParts.getParts();
-    } catch (IOException e) {
-      log.warn("Errors deleting multipart tmp files", e);
+      parts = request.getParts();
+    } catch (Exception e) {
+      assert false : e.toString();
+      log.error("Couldn't get multipart parts in order to delete them", e);
       return;
     }
 
@@ -812,7 +810,7 @@ public class SolrRequestParsers {
         return formdata.parseParamsAndFillStreams(req, streams, input);
       }
 
-      if (multipart.isMultipart(req)) {
+      if (MultipartRequestParser.isMultipart(req)) {
         return multipart.parseParamsAndFillStreams(req, streams);
       }
 

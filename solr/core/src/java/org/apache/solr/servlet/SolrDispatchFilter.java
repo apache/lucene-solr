@@ -64,6 +64,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -187,9 +188,22 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       coresInit = createCoreContainer(solrHomePath, extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
-      RateLimitManager.Builder builder = new RateLimitManager.Builder(config);
+
+      SolrZkClient zkClient = null;
+      ZkController zkController = coresInit.getZkController();
+
+      if (zkController != null) {
+        zkClient = zkController.getZkClient();
+      }
+
+      RateLimitManager.Builder builder = new RateLimitManager.Builder(zkClient);
 
       this.rateLimitManager = builder.build();
+
+      if (zkController != null) {
+        zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
+      }
+
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
       }
@@ -228,7 +242,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           }
         });
       });
-      metricManager.registerGauge(null, registryName, sysprops, metricTag, true, "properties", "system");
+      metricManager.registerGauge(null, registryName, sysprops, metricTag, SolrMetricManager.ResolutionStrategy.IGNORE, "properties", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }
@@ -296,7 +310,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!StringUtils.isEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
       startUpZkTimeOut *= 1000;
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut)) {
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut, startUpZkTimeOut)) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);

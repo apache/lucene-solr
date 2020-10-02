@@ -421,7 +421,7 @@ public abstract class MergePolicy {
     /**
      * Called just before the merge is applied to IndexWriter's SegmentInfos
      */
-    void onMergeComplete() {
+    void onMergeComplete() throws IOException {
     }
 
     /**
@@ -558,7 +558,7 @@ public abstract class MergePolicy {
   /**
    * Creates a new merge policy instance.
    */
-  public MergePolicy() {
+  protected MergePolicy() {
     this(DEFAULT_NO_CFS_RATIO, DEFAULT_MAX_CFS_SEGMENT_SIZE);
   }
   
@@ -623,19 +623,20 @@ public abstract class MergePolicy {
   /**
    * Identifies merges that we want to execute (synchronously) on commit. By default, this will do no merging on commit.
    * If you implement this method in your {@code MergePolicy} you must also set a non-zero timeout using
-   * {@link IndexWriterConfig#setMaxCommitMergeWaitMillis}.
+   * {@link IndexWriterConfig#setMaxFullFlushMergeWaitMillis}.
    *
-   * Any merges returned here will make {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} block until
-   * the merges complete or until {@link IndexWriterConfig#getMaxCommitMergeWaitMillis()} has elapsed. This may be
-   * used to merge small segments that have just been flushed as part of the commit, reducing the number of segments in
-   * the commit. If a merge does not complete in the allotted time, it will continue to execute, and eventually finish and
-   * apply to future commits, but will not be reflected in the current commit.
+   * Any merges returned here will make {@link IndexWriter#commit()}, {@link IndexWriter#prepareCommit()}
+   * or {@link IndexWriter#getReader(boolean, boolean)} block until
+   * the merges complete or until {@link IndexWriterConfig#getMaxFullFlushMergeWaitMillis()} has elapsed. This may be
+   * used to merge small segments that have just been flushed, reducing the number of segments in
+   * the point in time snapshot. If a merge does not complete in the allotted time, it will continue to execute, and eventually finish and
+   * apply to future point in time snapshot, but will not be reflected in the current one.
    *
    * If a {@link OneMerge} in the returned {@link MergeSpecification} includes a segment already included in a registered
    * merge, then {@link IndexWriter#commit()} or {@link IndexWriter#prepareCommit()} will throw a {@link IllegalStateException}.
    * Use {@link MergeContext#getMergingSegments()} to determine which segments are currently registered to merge.
    *
-   * @param mergeTrigger the event that triggered the merge (COMMIT or FULL_FLUSH).
+   * @param mergeTrigger the event that triggered the merge (COMMIT or GET_READER).
    * @param segmentInfos the total set of segments in the index (while preparing the commit)
    * @param mergeContext the MergeContext to find the merges on, which should be used to determine which segments are
  *                     already in a registered merge (see {@link MergeContext#getMergingSegments()}).

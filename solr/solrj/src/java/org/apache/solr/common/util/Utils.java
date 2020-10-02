@@ -52,7 +52,6 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -94,19 +93,9 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+
 public class Utils {
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_LINKED_HASHMAP_FUN = o -> new LinkedHashMap<>();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_ATOMICLONG_FUN = o -> new AtomicLong();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_ARRAYLIST_FUN = o -> new ArrayList<>();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_SYNCHRONIZED_ARRAYLIST_FUN = o -> Collections.synchronizedList(new ArrayList<>());
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @SuppressWarnings({"rawtypes"})
@@ -236,7 +225,7 @@ public class Utils {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     public void handleUnknownClass(Object o) {
       if (o instanceof MapWriter) {
         Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
@@ -404,7 +393,6 @@ public class Utils {
     return getObjectByPath(root, onlyPrimitive, parts);
   }
 
-  @SuppressWarnings({"unchecked"})
   public static boolean setObjectByPath(Object root, String hierarchy, Object value) {
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return setObjectByPath(root, parts, value);
@@ -693,7 +681,7 @@ public class Utils {
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public static boolean mergeJson(Map<String, Object> sink, Map<String, Object> input) {
     boolean isModified = false;
     for (Map.Entry<String, Object> e : input.entrySet()) {
@@ -728,13 +716,16 @@ public class Utils {
   }
 
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
+    return getBaseUrlForNodeName(nodeName, urlScheme, false);
+  }
+  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme,  boolean isV2) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
     final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
+    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2? "api": path)));
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -880,7 +871,7 @@ public class Utils {
               l.add((ew, inst) -> ew.put(fname, (float) mh.invoke(inst)));
             } else {
               MethodHandle mh = lookup.findGetter(c, field.getName(), field.getType());
-              l.add((ew, inst) -> ew.put(fname, mh.invoke(inst)));
+              l.add((ew, inst) -> ew.putIfNotNull(fname, mh.invoke(inst)));
             }
           } catch (NoSuchFieldException e) {
             //this is unlikely

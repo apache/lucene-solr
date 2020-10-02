@@ -179,7 +179,7 @@ public class TestQualityRun extends BenchmarkTestCase {
     String algLines[] = {
         "# ----- properties ",
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
-        "analyzer=org.apache.lucene.analysis.standard.ClassicAnalyzer",
+        "analyzer=org.apache.lucene.analysis.classic.ClassicAnalyzer",
         "docs.file=" + getWorkDirResourcePath("reuters.578.lines.txt.bz2"),
         "content.source.log.step=2500",
         "doc.term.vector=false",

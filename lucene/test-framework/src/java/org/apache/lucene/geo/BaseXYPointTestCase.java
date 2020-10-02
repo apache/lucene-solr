@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
@@ -1190,7 +1191,8 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     // Else seeds may not reproduce:
     iwc.setMergeScheduler(new SerialMergeScheduler());
     int pointsInLeaf = 2 + random().nextInt(4);
-    iwc.setCodec(new FilterCodec("Lucene86", TestUtil.getDefaultCodec()) {
+    Codec in = TestUtil.getDefaultCodec();
+    iwc.setCodec(new FilterCodec(in.getName(), in) {
       @Override
       public PointsFormat pointsFormat() {
         return new PointsFormat() {

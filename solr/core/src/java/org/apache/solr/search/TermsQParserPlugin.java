@@ -205,8 +205,8 @@ public class TermsQParserPlugin extends QParserPlugin {
           if (! matchesAtLeastOneTerm) {
             return null;
           }
-          
-          SortedSetDocValues segmentDocValues = context.reader().getSortedSetDocValues(fieldName);
+
+          SortedSetDocValues segmentDocValues = DocValues.getSortedSet(context.reader(), fieldName);
           if (segmentDocValues == null) {
             return null;
           }

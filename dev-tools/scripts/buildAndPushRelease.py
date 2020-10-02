@@ -23,7 +23,6 @@ import os
 import sys
 import subprocess
 from subprocess import TimeoutExpired
-from scriptutil import check_ant
 import textwrap
 import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
@@ -108,37 +107,26 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   print('  Check DOAP files')
   checkDOAPfiles(version)
 
-  print('  ant -Dtests.badapples=false clean test validate documentation-lint')
-  run('ant -Dtests.badapples=false clean test validate documentation-lint')
+  print('  ./gradlew -Dtests.badapples=false clean check')
+  run('./gradlew -Dtests.badapples=false clean check')
 
   open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
-  print('  lucene prepare-release')
-  os.chdir('lucene')
-  cmd = 'ant -Dversion=%s' % version
+  print('  prepare-release')
+  cmd = './gradlew -Dversion=%s clean' % version
+  # TODO cd lucene ; ant dist-all?
+  # TODO cd solr ; ant package?
   if gpgKeyID is not None:
-    cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
-  else:
-    cmd += ' prepare-release-no-sign'
+    # TODO sign
+    # cmd += ' -Psigning.keyId=%s publishSignedPublicationToMavenLocal' % gpgKeyID
+    pass
+  cmd += ' mavenLocal'
 
   if gpgPassword is not None:
     runAndSendGPGPassword(cmd, gpgPassword)
   else:
     run(cmd)
   
-  print('  solr prepare-release')
-  os.chdir('../solr')
-  cmd = 'ant -Dversion=%s' % version
-  if gpgKeyID is not None:
-    cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
-  else:
-    cmd += ' prepare-release-no-sign'
-
-  if gpgPassword is not None:
-    runAndSendGPGPassword(cmd, gpgPassword)
-  else:
-    run(cmd)
-    
   print('  done!')
   print()
   return rev
@@ -287,7 +275,6 @@ def parse_config():
 def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
   if os.system('git --version >/dev/null 2>/dev/null'):
     raise RuntimeError('"git --version" returned a non-zero exit code.')
-  check_ant()
 
 def check_key_in_keys(gpgKeyID, local_keys):
   if gpgKeyID is not None:

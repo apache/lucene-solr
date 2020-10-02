@@ -268,7 +268,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     List errorList = (List)((Map)details.get(0)).get("errorMessages");
     assertEquals(1, errorList.size());
     assertTrue (((String)errorList.get(0)).contains
-        ("A SPI class of type org.apache.lucene.analysis.util.TokenizerFactory with name 'bogus' does not exist."));
+        ("A SPI class of type org.apache.lucene.analysis.TokenizerFactory with name 'bogus' does not exist."));
   }
 
   public void testAddFieldMatchingExistingDynamicField() throws Exception {

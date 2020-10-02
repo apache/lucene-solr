@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import org.apache.http.HttpEntity;
@@ -82,8 +81,8 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
   }
 
   @Override
-  public SolrHttpClientBuilder getHttpClientBuilder(Optional<SolrHttpClientBuilder> builder) {
-    return builder.isPresent() ? getBuilder(builder.get()) : getBuilder();
+  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
+    return builder == null ? getBuilder() : getBuilder(builder);
   }
 
   private SPNEGOAuthentication createSPNEGOAuthentication() {

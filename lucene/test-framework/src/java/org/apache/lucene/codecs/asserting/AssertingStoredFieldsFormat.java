@@ -161,5 +161,15 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
       in.close();
       in.close(); // close again
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return in.ramBytesUsed();
+    }
+
+    @Override
+    public Collection<Accountable> getChildResources() {
+      return in.getChildResources();
+    }
   }
 }

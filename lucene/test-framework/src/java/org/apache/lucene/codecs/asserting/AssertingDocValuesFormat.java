@@ -274,7 +274,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert field.getDocValuesType() == DocValuesType.SORTED_NUMERIC;
       SortedNumericDocValues values = in.getSortedNumeric(field);
       assert values != null;
-      return new AssertingLeafReader.AssertingSortedNumericDocValues(values, maxDoc);
+      return AssertingLeafReader.AssertingSortedNumericDocValues.create(values, maxDoc);
     }
     
     @Override
@@ -285,7 +285,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert field.getDocValuesType() == DocValuesType.SORTED_SET;
       SortedSetDocValues values = in.getSortedSet(field);
       assert values != null;
-      return new AssertingLeafReader.AssertingSortedSetDocValues(values, maxDoc);
+      return AssertingLeafReader.AssertingSortedSetDocValues.create(values, maxDoc);
     }
     
     @Override

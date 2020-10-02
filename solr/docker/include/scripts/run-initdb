@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# Run the init-solr-home script and source any '.sh' scripts in
+# /docker-entrypoint-initdb.d.
+# This script is sourced by some of the solr-* commands, so that
+# you can run eg:
+#
+#   mkdir initdb; echo "echo hi" > initdb/hi.sh
+#   docker run -v $PWD/initdb:/docker-entrypoint-initdb.d solr
+#
+# and have your script execute before Solr starts.
+#
+# Note: scripts can modify the environment, which will affect
+# subsequent scripts and ultimately Solr. That allows you to set
+# environment variables from your scripts (though you usually just
+# use "docker run -e"). If this is undesirable in your use-case,
+# have your scripts execute a sub-shell.
+
+set -e
+
+# execute files in /docker-entrypoint-initdb.d before starting solr
+while read -r f; do
+    case "$f" in
+        *.sh)     echo "$0: running $f"; . "$f" ;;
+        *)        echo "$0: ignoring $f" ;;
+    esac
+    echo
+done < <(find /docker-entrypoint-initdb.d/ -mindepth 1 -type f | sort -n)

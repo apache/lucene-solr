@@ -105,105 +105,97 @@ The resulting document in our collection will be:
 
 === Updating Child Documents
 
-Solr supports modifying, adding and removing child documents as part of atomic updates. +
-Schema and configuration requirements are detailed in
-<<updating-parts-of-documents#field-storage, Field Storage>> and <<indexing-nested-documents#schema-configuration, Indexing Nested Documents>>. +
-Under the hood, Solr retrieves the whole nested structure, deletes the old documents,
-and reindexes the structure after applying the atomic update. +
-Syntactically, nested/partial updates are very similar to a regular atomic update,
-as demonstrated by the examples below.
+Solr supports modifying, adding and removing child documents as part of atomic updates.  Syntactically, updates changing the children of a document are very similar to a regular atomic updates of simle fields, as demonstrated by the examples below.
 
-[NOTE]
+Schema and configuration requirements for updating child documents the same <<updating-parts-of-documents#field-storage,Field Storage>> requirements for atomic updates mentioned above, combined with the <<indexing-nested-documents#schema-configuration,schema configuration rules for Indexing Nested Documents>> -- notably:
+* The `\_root_` field must configured with `stored="true"` or `docValues="true"`
+* The `\_nest_path_` field must exist (it is implicitly `docValues="true"`)
+
+Under the hood, When Solr processes atomic updates on nested documents, it retrieves the entire block structure (up to and including the common "Root" document), reindexes the structure after applying the atomic update, and deletes the old documents.
+
+[IMPORTANT]
 ====
-.\_route_ Parameter
-To ensure each nested update is routed to its respective shard,
-`\_route_` parameter must be set to the root document's ID when the
-update does not have that root document.
+.Routing Updates using child document Ids in SolrCloud
+
+When SolrCloud recieves document updates, the <<shards-and-indexing-data-in-solrcloud#document-routing,document routing>> rules for the collection is used to determine which shard should process the update based on the `id` of the document.
+
+When sending an update that specifies the `id` of a _child document_ this will not work by default: the correct shard to send the document to is based on the `id` of the "Root" document for the block the child document is in, *not* the `id` of the child document being updated.
+
+Solr offers two solutions to address this:
+
+* Clients may specify a <<shards-and-indexing-data-in-solrcloud#document-routing,`\_route_` parameter>>, with the `id` of the Root document as the parameter value, on each update to tell Solr which shard should process the update.
+* Clients can use the (default) `compositeId` router's "prefix routing" feature when indexing all documents to ensure that all child/descendent documents in a Block use the same `id` prefix as the Root level document.  This will cause Solr's default routing logic to automatically send child document updates to the correct shard.
+
+All of the examples below use `id` prefixes, so no `\_route_` param will be neccessary for these examples.
 ====
 
-If the following document exists in our collection:
+For the upcoming examples, we'll assume an index containing the same documents covered in <<indexing-nested-documents#example-indexing-syntax,Indexing Nested Documents>>:
 
-[source,json]
+include::indexing-nested-documents.adoc[tag=sample-indexing-deeply-nested-documents]
+
+==== Modifying Child Document Fields
+
+All of the <<#atomic-updates,Atomic Update operations>> mentioned above are supported for "real" fields of Child Documents:
+
+[source,bash]
 ----
+curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
- "id":"mydoc",
- "product":"T-Shirt",
- "stock": {
-           "id":"mydoc2",
-           "color":"red",
-           "size": ["L"]
-           }
-}
+  "id": "P11!S31",
+  "price_i": { "inc": 73 },
+  "color_s": { "set": "GREY" }
+} ]'
 ----
 
-And we apply the following update command:
+==== Replacing all child documents 
 
-[source,json]
+As with normal (multiValued) fields, the `set` keyword can be used to replace all child documents in a psuedo-field:
+
+[source,bash]
 ----
+curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
- "id":"mydoc",
- "stock": {
-           "add":
-                 {
-                  "id":"mydoc3",
-                  "color":"blue",
-                  "size": ["M"]
-                 }
-          }
-}
+  "id": "P22!S22",
+  "manuals": { "set": [ { "id": "P22!D77",
+                          "name_s": "Why Red Pens Are the Best",
+                          "content_t": "... correcting papers ...",
+                        },
+                        { "id": "P22!D88",
+                          "name_s": "How to get Red ink stains out of fabric",
+                          "content_t": "... vinegar ...",
+                        } ] }
+                     
+} ]'
 ----
 
-The resulting document in our collection will be:
+==== Adding a child document
 
-[source,json]
+As with normal (multiValued) fields, the `add` keyword can be used to add additional child documents to a psuedo-field:
+
+[source,bash]
 ----
+curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
- "id":"mydoc",
- "product":"T-Shirt",
- "stock": [{
-            "id":"mydoc2",
-            "color":"red",
-            "size": ["L"]
-           },
-           {
-            "id":"mydoc3",
-            "color":"blue",
-            "size": ["M"]
-           }]
-}
+  "id": "P11!S21",
+  "manuals": { "add": { "id": "P11!D99",
+                        "name_s": "Why Red Staplers Are the Best",
+                        "content_t": "Once upon a time, Mike Judge ...",
+                      } }
+} ]'
 ----
 
-Documents inside nested structures can also be updated.
-These type of updates require setting the `\_route_` set to the root document's ID
 
-If we send this update, setting `\_route_`=mydoc
+==== Removing a child document
 
-[source,json]
+As with normal (multiValued) fields, the `remove` keyword can be used to remove a child document (by `id`) from it's psuedo-field:
+
+[source,bash]
 ----
+curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
- "id":"mydoc2",
- "size": {"add": ["S"]}
-}
-----
-
-The resulting document in our collection will be:
-
-[source,json]
-----
-{
- "id":"mydoc",
- "product":"T-Shirt",
- "stock": [{
-            "id":"mydoc2",
-            "color":"red",
-            "size": ["L", "S"]
-           },
-           {
-            "id":"mydoc3",
-            "color":"blue",
-            "size": ["M"]
-           }]
-}
+  "id": "P11!S21",
+  "manuals": { "remove": { "id": "P11!D41" } }
+} ]'
 ----
 
 
