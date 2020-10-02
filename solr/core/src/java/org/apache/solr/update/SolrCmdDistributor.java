@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -67,7 +68,7 @@ public class SolrCmdDistributor implements Closeable {
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
-    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).strictEventOrdering(true).build();
+    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).strictEventOrdering(true).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
   }
 
   public void finish() {
