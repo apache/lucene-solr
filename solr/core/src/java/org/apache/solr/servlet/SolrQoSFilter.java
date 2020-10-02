@@ -45,7 +45,6 @@ public class SolrQoSFilter extends QoSFilter {
   protected volatile int _origMaxRequests;
 
   private static SysStats sysStats = ParWork.getSysStats();
-  private QoSFilter internQosFilter;
   private volatile long lastUpdate;
 
   @Override
@@ -55,12 +54,6 @@ public class SolrQoSFilter extends QoSFilter {
     super.setMaxRequests(_origMaxRequests);
     super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 20000));
     super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 500));
-
-    internQosFilter = new QoSFilter();
-    internQosFilter.init(filterConfig);
-    internQosFilter.setMaxRequests(10000);
-    internQosFilter.setSuspendMs(30000);
-    internQosFilter.setWaitMs(50);
   }
 
   @Override
@@ -91,7 +84,7 @@ public class SolrQoSFilter extends QoSFilter {
         if (sLoad > 1.3) {
           int cMax = getMaxRequests();
           if (cMax > 5) {
-            int max = Math.max(5, (int) ((double) cMax * 0.95D));
+            int max = Math.max(5, (int) ((double) cMax * 0.60D));
             log.warn("System load is {}, set max concurrent requests to {}", sLoad, max);
             updateMaxRequests(max);
           }
@@ -107,13 +100,12 @@ public class SolrQoSFilter extends QoSFilter {
 
     } else {
       if (log.isDebugEnabled()) log.debug("internal request, allow");
-     // chain.doFilter(req, response);
-      internQosFilter.doFilter(req, response, chain);
+      chain.doFilter(req, response);
     }
   }
 
   private void updateMaxRequests(int max) {
-    if (System.currentTimeMillis() - lastUpdate < 10000)  {
+    if (System.currentTimeMillis() - lastUpdate < 3000)  {
       lastUpdate = System.currentTimeMillis();
       setMaxRequests(max);
     }
