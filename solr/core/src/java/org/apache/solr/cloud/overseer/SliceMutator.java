@@ -177,6 +177,8 @@ public class SliceMutator {
       } else if (coreNodeName.equals(replica.getName())) {
         if (log.isDebugEnabled()) log.debug("Set leader");
         replica = new ReplicaMutator(cloudManager).setLeader(replica);
+        replica = new ReplicaMutator(cloudManager).setState(replica, Replica.State.ACTIVE.toString());
+
       }
 
       newReplicas.put(replica.getName(), replica);
