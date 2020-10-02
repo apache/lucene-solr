@@ -39,6 +39,7 @@ import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
@@ -60,6 +61,8 @@ import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES
 public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
+  private RestManager.Registry managedResourceRegistry;
+  private RestManager restManager;
 
   private static final Map<String, String> level2;
 
@@ -257,6 +260,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     String prefix =  parts.get(0);
     if(subPaths.contains(prefix)) return this;
 
+    if(managedResourceRegistry != null) return restManager.getRequestHandler();
+
     return null;
   }
 
@@ -273,6 +278,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   @Override
   public void inform(SolrCore core) {
     isImmutableConfigSet = SolrConfigHandler.getImmutable(core);
+    this.managedResourceRegistry = core.getResourceLoader().getManagedResourceRegistry();
+    this.restManager = core.getRestManager();
   }
 
   @Override

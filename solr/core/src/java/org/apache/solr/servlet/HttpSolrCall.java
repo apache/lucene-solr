@@ -409,19 +409,6 @@ public class HttpSolrCall {
   protected void extractHandlerFromURLPath(SolrRequestParsers parser) throws Exception {
     if (handler == null && path.length() > 1) { // don't match "" or "/" as valid path
       handler = core.getRequestHandler(path);
-
-      if (handler == null) {
-        //may be a restlet path
-        // Handle /schema/* paths via Restlet
-        if (path.equals("/schema") || path.startsWith("/schema/")) {
-          RestManager restManager = core.getRestManager();
-          if (restManager == null) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "No RestManager found for core: "+core.getName());
-          }
-          handler = restManager.getRequestHandler(path);
-        }
-      }
-
       // no handler yet but <requestDispatcher> allows us to handle /select with a 'qt' param
       if (handler == null && parser.isHandleSelect()) {
         if ("/select".equals(path) || "/select/".equals(path)) {

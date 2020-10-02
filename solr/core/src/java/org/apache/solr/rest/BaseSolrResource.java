@@ -35,7 +35,8 @@ import java.net.URLDecoder;
 import static org.apache.solr.common.params.CommonParams.JSON;
 
 /**
- * Base class of all Solr Restlet server resource classes.
+ * Base class for delegating REST-oriented requests to ManagedResources. ManagedResources are heavy-weight and
+ * should not be created for every request, so this class serves as a gateway between a REST call and the resource.
  */
 public abstract class BaseSolrResource {
   protected static final String SHOW_DEFAULTS = "showDefaults";
@@ -66,12 +67,6 @@ public abstract class BaseSolrResource {
    * from the SolrRequestInfo thread local, then gets the SolrCore
    * and IndexSchema and sets up the response.
    * writer.
-   * <p>
-   * If an error occurs during initialization, setExisting(false) is
-   * called and an error status code and message is set; in this case,
-   * Restlet will not continue servicing the request (by calling the
-   * method annotated to associate it with GET, etc., but rather will
-   * send an error response.
    */
   public void doInit(SolrQueryRequest solrRequest, SolrQueryResponse solrResponse) {
     try {
@@ -101,9 +96,6 @@ public abstract class BaseSolrResource {
         solrRequest.getContext().put("webapp", firstPathElement); // Context path
       }
 
-      // now that we're wired into the HttpSolrCall framework, the response is already decorated.
-      //SolrCore.preDecorateResponse(solrRequest, solrResponse);
-
       // client application can set a timeout for update requests
       String updateTimeoutSecsParam = solrRequest.getParams().get(UPDATE_TIMEOUT_SECS);
       if (updateTimeoutSecsParam != null)
@@ -123,9 +115,6 @@ public abstract class BaseSolrResource {
   protected void handlePostExecution(Logger log) {
     
     handleException(log);
-    
-    // TODO: should status=0 (success?) be left as-is in the response header?
-    // SolrCore.postDecorateResponse(null, solrRequest, solrResponse);
 
     addDeprecatedWarning();
 

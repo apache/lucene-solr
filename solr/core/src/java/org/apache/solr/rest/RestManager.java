@@ -156,6 +156,10 @@ public class RestManager {
       return Pattern.compile(builder.toString());
     }
 
+    public boolean isPathRegistered(String s) {
+      return registered.containsKey(s);
+    }
+
 
     /**
      * Get a view of the currently registered resources. 
@@ -253,15 +257,14 @@ public class RestManager {
   }
   
   /**
-   * The Restlet router needs a lightweight extension of ServerResource to delegate a request
-   * to. ManagedResource implementations are heavy-weight objects that live for the duration of
-   * a SolrCore, so this class acts as the proxy between Restlet and a ManagedResource when
-   * doing request processing.
-   *
+   * Request handling needs a lightweight object to delegate a request to.
+   * ManagedResource implementations are heavy-weight objects that live for the duration of
+   * a SolrCore, so this class acts as the proxy between the request handler and a
+   * ManagedResource when doing request processing.
    */
   public static class ManagedEndpoint extends BaseSolrResource {
     /**
-     * Determines the ManagedResource resourceId from the Restlet request.
+     * Determines the ManagedResource resourceId from the request path.
      */
     public static String resolveResourceId(final String path)  {
       String resourceId;
@@ -609,8 +612,7 @@ public class RestManager {
 
   /**
    * If not already registered, registers the given {@link ManagedResource} subclass
-   * at the given resourceId, creates an instance, and attaches it to the appropriate
-   * Restlet router.  Returns the corresponding instance.
+   * at the given resourceId, creates an instance. Returns the corresponding instance.
    */
   public synchronized ManagedResource addManagedResource(String resourceId, Class<? extends ManagedResource> clazz) {
     final ManagedResource res;
@@ -624,9 +626,7 @@ public class RestManager {
     return res;
   }
 
-  // used internally to create and attach a ManagedResource to the Restlet router
-  // the registry also uses this method directly, which is slightly hacky but necessary
-  // in order to support dynamic adding of new fieldTypes using the managed-schema API
+  // cache a mapping of path to ManagedResource
   private synchronized ManagedResource addRegisteredResource(ManagedResourceRegistration reg) {
     String resourceId = reg.resourceId;
     ManagedResource res = createManagedResource(reg);
@@ -704,7 +704,7 @@ public class RestManager {
     }
   }
 
-  public SolrRequestHandler getRequestHandler(String path) {
+  public SolrRequestHandler getRequestHandler() {
     return handler;
   }
 
