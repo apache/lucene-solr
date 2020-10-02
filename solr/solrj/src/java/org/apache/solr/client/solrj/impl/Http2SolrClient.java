@@ -217,7 +217,7 @@ public class Http2SolrClient extends SolrClient {
     int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", 12);
     SolrQueuedThreadPool httpClientExecutor = new SolrQueuedThreadPool("http2Client", builder.maxThreadPoolSize, minThreads,
         this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) && this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 3000 : 5000,
-        new ArrayBlockingQueue<>(256), (int) TimeUnit.SECONDS.toMillis(30), null);
+        null, -1, null);
     httpClientExecutor.setLowThreadsThreshold(-1);
 
     boolean sslOnJava8OrLower = ssl && !Constants.JRE_IS_MINIMUM_JAVA9;
@@ -227,12 +227,12 @@ public class Http2SolrClient extends SolrClient {
       } else {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
-      SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(3);
+      SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(2);
       httpClient = new HttpClient(transport, sslContextFactory);
     } else {
       log.debug("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
-      http2client.setSelectors(3);
+      http2client.setSelectors(2);
       http2client.setIdleTimeout(idleTimeout);
       http2client.setMaxConcurrentPushedStreams(512);
       http2client.setInputBufferSize(8192);
@@ -964,7 +964,7 @@ public class Http2SolrClient extends SolrClient {
 
   public static class Builder {
 
-    public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(256, ParWork.PROC_COUNT));
+    public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(64, ParWork.PROC_COUNT));
     public int maxRequestsQueuedPerDestination = 2048;
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;

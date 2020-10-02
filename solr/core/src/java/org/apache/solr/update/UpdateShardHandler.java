@@ -105,7 +105,7 @@ public class UpdateShardHandler implements SolrInfoBean {
           .connectionTimeout(cfg.getDistributedConnectionTimeout())
           .idleTimeout(cfg.getDistributedSocketTimeout());
     }
-    updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().maxThreadPoolSize(256).maxRequestsQueuedPerDestination(8192).build();
+    updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().maxThreadPoolSize(64).maxRequestsQueuedPerDestination(12000).build();
     updateOnlyClient.enableCloseLock();
    // updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
     Set<String> queryParams = new HashSet<>(2);
@@ -120,7 +120,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 //      }
 //      recoveryExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(cfg.getMaxRecoveryThreads(), recoveryThreadFactory);
 //    } else {
-      log.debug("Creating recoveryExecutor with unbounded pool");
+
       recoveryExecutor = ParWork.getRootSharedExecutor();
  //   }
   }
