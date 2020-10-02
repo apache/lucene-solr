@@ -70,6 +70,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -249,6 +250,7 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setExecutor(httpClientExecutor);
       httpClient.manage(httpClientExecutor);
       httpClient.setStrictEventOrdering(strictEventOrdering);
+      httpClient.setSocketAddressResolver(new SocketAddressResolver.Sync());
       httpClient.setConnectBlocking(false);
       httpClient.setFollowRedirects(false);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
