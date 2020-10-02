@@ -22,6 +22,10 @@ New Features
 
 * SOLR-13751: Add BooleanSimilarityFactory class. (Andy Webb via Christine Poerschke)
 
+* SOLR-14875: Make SolrEventListeners load from packages (noble)
+
+* SOLR-10391: ConfigSet handler now supports overrides on existing configsets. (Tomás Fernández Löbbe)
+
 * SOLR-11167: Avoid $SOLR_STOP_WAIT use during 'bin/solr start' if $SOLR_START_WAIT is supplied.
   (Omar Abdelnabi, Christine Poerschke)
 
