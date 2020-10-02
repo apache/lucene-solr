@@ -32,7 +32,7 @@ import org.junit.Test;
 
 public class DeleteStatusTest extends SolrCloudTestCase {
 
-  public static final int MAX_WAIT_TIMEOUT = 5;
+  public static final int MAX_WAIT_TIMEOUT = 15;
 
   @BeforeClass
   public static void createCluster() throws Exception {
