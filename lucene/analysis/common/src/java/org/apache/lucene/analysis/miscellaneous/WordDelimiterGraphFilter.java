@@ -447,26 +447,18 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
   private class PositionSorter extends InPlaceMergeSorter {
     @Override
     protected int compare(int i, int j) {
-      // smaller start position
-      int iPosStart = bufferedParts[4*i];
-      int jPosStart = bufferedParts[4*j];
-      int cmp = Integer.compare(iPosStart, jPosStart);
-      if (cmp != 0) {
-        return cmp;
-      }
-
-      // longest pos length:
-      int iPosEnd = bufferedParts[4*i+1];
-      int jPosEnd = bufferedParts[4*j+1];
-      cmp = Integer.compare(jPosEnd, iPosEnd);
-      if (cmp != 0) {
-        return cmp;
-      }
-
       // smaller start offset
-      int iOff = bufferedParts[4*i + 2];
-      int jOff = bufferedParts[4*j + 2];
-      return Integer.compare(iOff, jOff);
+      int iOff = bufferedParts[4 * i + 2];
+      int jOff = bufferedParts[4 * j + 2];
+      int cmp = Integer.compare(iOff, jOff);
+      if (cmp != 0) {
+        return cmp;
+      }
+
+      // longer end offset
+      iOff = bufferedParts[4 * i + 3];
+      jOff = bufferedParts[4 * j + 3];
+      return Integer.compare(jOff, iOff);
     }
 
     @Override
