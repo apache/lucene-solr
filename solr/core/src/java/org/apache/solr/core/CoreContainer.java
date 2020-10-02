@@ -1407,16 +1407,12 @@ public class CoreContainer implements Closeable {
         solrCores.removeCoreDescriptor(dcore);
       }
       final SolrException solrException = new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
-      if (core != null && !core.isClosed())
-        ParWork.close(core);
       throw solrException;
     } catch (Throwable t) {
       log.error("Unable to create SolrCore", t);
       SolrException e = new SolrException(ErrorCode.SERVER_ERROR, "JVM Error creating core [" + dcore.getName() + "]: " + t.getMessage(), t);
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       solrCores.removeCoreDescriptor(dcore);
-      if (core != null && !core.isClosed())
-        IOUtils.closeQuietly(core);
       throw t;
     } finally {
       MDCLoggingContext.clear();
