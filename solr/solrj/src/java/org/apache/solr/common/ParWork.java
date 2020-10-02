@@ -80,7 +80,7 @@ public class ParWork implements Closeable {
       synchronized (ParWork.class) {
         if (EXEC == null) {
           EXEC = (ThreadPoolExecutor) getParExecutorService("RootExec",
-              Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 250), Integer.MAX_VALUE, 30000,
+              Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 250), Integer.MAX_VALUE, 5000,
               new SynchronousQueue());
           ((ParWorkExecutor)EXEC).enableCloseLock();
         }
