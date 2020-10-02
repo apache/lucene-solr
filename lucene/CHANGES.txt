@@ -73,6 +73,9 @@ Improvements
 * LUCENE-9539: Use more compact datastructures to represent sorted doc-values in memory when 
   sorting a segment before flush and in SortingCodecReader. (Simon Willnauer)
 
+* LUCENE-9458: WordDelimiterGraphFilter should order tokens at the same position by endOffset to
+  emit longer tokens first.  The same graph is produced. (David Smiley)
+
 Optimizations
 ---------------------
 
