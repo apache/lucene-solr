@@ -71,6 +71,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
@@ -623,15 +624,22 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
     if (collectService != null) {
       scheduledFuture.cancel(false);
-      collectService.shutdownNow();
+      collectService.shutdown();
+      try {
+        boolean success = collectService.awaitTermination(1, TimeUnit.SECONDS);
+        if (!success) {
+          collectService.shutdownNow();
+        }
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+      }
     }
 
     try (ParWork closer = new ParWork(this)) {
       closer.collect(knownDbs.values());
       closer.collect(solrClient);
-      closer.collect(factory);
     }
-    knownDbs.clear();
+    IOUtils.closeQuietly(factory);
     assert ObjectReleaseTracker.release(this);
   }
 

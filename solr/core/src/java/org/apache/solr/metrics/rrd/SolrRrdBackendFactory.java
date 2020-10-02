@@ -467,16 +467,24 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     }
     closed = true;
 
-    scheduledFuture.cancel(true);
-
-    syncService.shutdownNow();
-
-    try (ParWork closer = new ParWork(this)) {
-      closer.collect(backends.values());
-      closer.collect();
-      closer.collect(syncService);
+    if (scheduledFuture != null) {
+      scheduledFuture.cancel(false);
     }
-    backends.clear();
+    if (syncService != null) {
+      syncService.shutdown();
+      try {
+        boolean success = syncService.awaitTermination(1, TimeUnit.SECONDS);
+        if (!success) {
+          syncService.shutdownNow();
+        }
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+      }
+    }
+
+    try (ParWork closer = new ParWork(this, true)) {
+      closer.collect(backends.values());
+    }
     syncService = null;
     assert ObjectReleaseTracker.release(this);
   }
