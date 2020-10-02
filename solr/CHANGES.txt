@@ -187,6 +187,8 @@ Improvements
 * SOLR-14859: DateRangeField now throws errors when invalid field/fieldType options specified; no longer silently accepts incompatible option values
   (Jason Gerlowski, Chris Hostetter, Munendra S N)
 
+* SOLR-14905: Update commons-io version to 2.8.0 due to security vulnerability. (Nazerke Seidan via Bruno Roustant)
+
 Optimizations
 ---------------------
 
@@ -289,6 +291,9 @@ Other Changes
   Also, Deprecate unused constants NULL_COLLAPSE, NULL_IGNORE, NULL_EXPAND, HINT_MULTI_DOCVALUES in collapse parser.
   (Guna Sekhar Dora Kovvuru, Munendra S N, Mike Drob)
 
+* SOLR-12987: Deprecated plugins/features are now logged once and with log category org.apache.solr.DEPRECATED
+  (David Smiley)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -296,6 +301,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Bug Fixes
 ---------------------
 * SOLR-14751: Zookeeper Admin screen not working for old ZK versions (janhoy)
+
+* SOLR-14663: Copy ConfigSet root data from base ConfigSet when using CREATE command (Andras Salamon, Tomás Fernández Löbbe)
 
 ==================  8.6.1 ==================
 

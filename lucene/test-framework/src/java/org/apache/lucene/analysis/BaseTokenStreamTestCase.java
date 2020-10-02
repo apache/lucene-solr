@@ -392,6 +392,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], boolean graphOffsetsAreCorrect, byte[][] payloads) throws IOException {
     assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), null, null, graphOffsetsAreCorrect, payloads);
     checkResetException(a, input);
+    checkAnalysisConsistency(random(), a, true, input, graphOffsetsAreCorrect);
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output) throws IOException {
@@ -422,7 +423,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     assertAnalyzesTo(a, input, output, startOffsets, endOffsets, null, posIncrements, null);
   }
 
-  static void checkResetException(Analyzer a, String input) throws IOException {
+  public static void checkResetException(Analyzer a, String input) throws IOException {
     TokenStream ts = a.tokenStream("bogus", input);
     try {
       if (ts.incrementToken()) {
