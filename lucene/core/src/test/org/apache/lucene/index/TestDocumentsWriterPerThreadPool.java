@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -31,7 +32,7 @@ public class TestDocumentsWriterPerThreadPool extends LuceneTestCase {
     try (Directory directory = newDirectory()) {
       DocumentsWriterPerThreadPool pool = new DocumentsWriterPerThreadPool(() ->
           new DocumentsWriterPerThread(Version.LATEST.major, "", directory, directory,
-              newIndexWriterConfig(), new DocumentsWriterDeleteQueue(null), null, n -> {}, false));
+              newIndexWriterConfig(), new DocumentsWriterDeleteQueue(null), null, new AtomicLong(), false));
 
       DocumentsWriterPerThread first = pool.getAndLock();
       assertEquals(1, pool.size());
@@ -61,7 +62,7 @@ public class TestDocumentsWriterPerThreadPool extends LuceneTestCase {
     try (Directory directory = newDirectory()) {
       DocumentsWriterPerThreadPool pool = new DocumentsWriterPerThreadPool(() ->
           new DocumentsWriterPerThread(Version.LATEST.major, "", directory, directory,
-              newIndexWriterConfig(), new DocumentsWriterDeleteQueue(null), null, n -> {}, false));
+              newIndexWriterConfig(), new DocumentsWriterDeleteQueue(null), null, new AtomicLong(), false));
 
       DocumentsWriterPerThread first = pool.getAndLock();
       pool.lockNewWriters();

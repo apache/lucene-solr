@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntConsumer;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -1073,14 +1072,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       config.getFlushPolicy().init(config);
       bufferedUpdatesStream = new BufferedUpdatesStream(infoStream);
-      final IntConsumer reserveDocs = numDocs -> {
-        if (numDocs > 0) {
-          reserveDocs(numDocs);
-        } else {
-          adjustPendingNumDocs(numDocs);
-        }
-      };
-      docWriter = new DocumentsWriter(flushNotifications, segmentInfos.getIndexCreatedVersionMajor(), reserveDocs,
+      docWriter = new DocumentsWriter(flushNotifications, segmentInfos.getIndexCreatedVersionMajor(), pendingNumDocs,
           enableTestPoints, this::newSegmentName,
           config, directoryOrig, directory, globalFieldNumberMap);
       readerPool = new ReaderPool(directory, directoryOrig, segmentInfos, globalFieldNumberMap,

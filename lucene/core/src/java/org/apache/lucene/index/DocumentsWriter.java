@@ -26,7 +26,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntConsumer;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
@@ -101,7 +101,7 @@ import org.apache.lucene.util.InfoStream;
  */
 
 final class DocumentsWriter implements Closeable, Accountable {
-  private final IntConsumer reserveDocs;
+  private final AtomicLong pendingNumDocs;
 
   private final FlushNotifications flushNotifications;
 
@@ -127,7 +127,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   final DocumentsWriterPerThreadPool perThreadPool;
   final DocumentsWriterFlushControl flushControl;
 
-  DocumentsWriter(FlushNotifications flushNotifications, int indexCreatedVersionMajor, IntConsumer reserveDocs, boolean enableTestPoints,
+  DocumentsWriter(FlushNotifications flushNotifications, int indexCreatedVersionMajor, AtomicLong pendingNumDocs, boolean enableTestPoints,
                   Supplier<String> segmentNameSupplier, LiveIndexWriterConfig config, Directory directoryOrig, Directory directory,
                   FieldInfos.FieldNumbers globalFieldNumberMap) {
     this.config = config;
@@ -138,9 +138,9 @@ final class DocumentsWriter implements Closeable, Accountable {
       return new DocumentsWriterPerThread(indexCreatedVersionMajor,
           segmentNameSupplier.get(), directoryOrig,
           directory, config, deleteQueue, infos,
-          reserveDocs, enableTestPoints);
+          pendingNumDocs, enableTestPoints);
     });
-    this.reserveDocs = reserveDocs;
+    this.pendingNumDocs = pendingNumDocs;
     flushControl = new DocumentsWriterFlushControl(this, config);
     this.flushNotifications = flushNotifications;
   }
@@ -262,7 +262,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     // Make sure we move all pending tickets into the flush queue:
     ticketQueue.forcePurge(ticket -> {
       if (ticket.getFlushedSegment() != null) {
-        reserveDocs.accept(-ticket.getFlushedSegment().segmentInfo.info.maxDoc());
+        pendingNumDocs.addAndGet(-ticket.getFlushedSegment().segmentInfo.info.maxDoc());
       }
     });
     List<DocumentsWriterPerThread> writers = new ArrayList<>();
