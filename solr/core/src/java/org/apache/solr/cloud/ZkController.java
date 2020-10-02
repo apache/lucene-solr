@@ -1620,7 +1620,7 @@ public class ZkController implements Closeable, Runnable {
 //          Replica.State.ACTIVE));
 
       //  there should be no stale leader state at this point, dont hit zk directly
-      String leaderUrl = zkStateReader.getLeaderUrl(collection, shardId, 15000);
+      String leaderUrl = zkStateReader.getLeaderUrl(collection, shardId, 60000);
 
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
       log.info("We are {} and leader is {}", ourUrl, leaderUrl);
