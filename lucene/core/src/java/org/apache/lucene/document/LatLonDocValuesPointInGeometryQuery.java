@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.document;
 
-import java.io.IOException;
-
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.GeoUtils;
+import org.apache.lucene.geo.LatLonGeometry;
+import org.apache.lucene.geo.Line;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -33,26 +34,65 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 
-/** Distance query for {@link LatLonDocValuesField}. */
-final class LatLonDocValuesDistanceQuery extends Query {
+import java.io.IOException;
+import java.util.Arrays;
+
+/** Geometry query for {@link LatLonDocValuesField}. */
+public class LatLonDocValuesPointInGeometryQuery extends Query {
 
   private final String field;
-  private final double latitude, longitude;
-  private final double radiusMeters;
+  private final LatLonGeometry[] geometries;
 
-  LatLonDocValuesDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
-    if (Double.isFinite(radiusMeters) == false || radiusMeters < 0) {
-      throw new IllegalArgumentException("radiusMeters: '" + radiusMeters + "' is invalid");
-    }
-    GeoUtils.checkLatitude(latitude);
-    GeoUtils.checkLongitude(longitude);
+
+  LatLonDocValuesPointInGeometryQuery(String field, LatLonGeometry... geometries) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
     }
+    if (geometries == null) {
+      throw new IllegalArgumentException("geometries must not be null");
+    }
+    if (geometries.length == 0) {
+      throw new IllegalArgumentException("geometries must not be empty");
+    }
+    for (int i = 0; i < geometries.length; i++) {
+      if (geometries[i] == null) {
+        throw new IllegalArgumentException("geometries[" + i + "] must not be null");
+      }
+      if (geometries[i] instanceof Line) {
+        throw new IllegalArgumentException("LatLonDocValuesPointInGeometryQuery does not support queries with line geometries");
+      }
+    }
     this.field = field;
-    this.latitude = latitude;
-    this.longitude = longitude;
-    this.radiusMeters = radiusMeters;
+    this.geometries = geometries;
+  }
+
+  @Override
+  public String toString(String field) {
+    StringBuilder sb = new StringBuilder();
+    if (!this.field.equals(field)) {
+      sb.append(this.field);
+      sb.append(':');
+    }
+    sb.append("geometries(").append(Arrays.toString(geometries));
+    return sb.append(")").toString();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (sameClassAs(obj) == false) {
+      return false;
+    }
+    LatLonDocValuesPointInGeometryQuery other = (LatLonDocValuesPointInGeometryQuery) obj;
+    return field.equals(other.field) &&
+           Arrays.equals(geometries, other.geometries);
+  }
+
+  @Override
+  public int hashCode() {
+    int h = classHash();
+    h = 31 * h + field.hashCode();
+    h = 31 * h + Arrays.hashCode(geometries);
+    return h;
   }
 
   @Override
@@ -63,48 +103,12 @@ final class LatLonDocValuesDistanceQuery extends Query {
   }
 
   @Override
-  public String toString(String field) {
-    StringBuilder sb = new StringBuilder();
-    if (!this.field.equals(field)) {
-      sb.append(this.field);
-      sb.append(':');
-    }
-    sb.append(latitude);
-    sb.append(",");
-    sb.append(longitude);
-    sb.append(" +/- ");
-    sb.append(radiusMeters);
-    sb.append(" meters");
-    return sb.toString();
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (sameClassAs(obj) == false) {
-      return false;
-    }
-    LatLonDocValuesDistanceQuery other = (LatLonDocValuesDistanceQuery) obj;
-    return field.equals(other.field) &&
-        Double.doubleToLongBits(latitude) == Double.doubleToLongBits(other.latitude) &&
-        Double.doubleToLongBits(longitude) == Double.doubleToLongBits(other.longitude) &&
-        Double.doubleToLongBits(radiusMeters) == Double.doubleToLongBits(other.radiusMeters);
-  }
-
-  @Override
-  public int hashCode() {
-    int h = classHash();
-    h = 31 * h + field.hashCode();
-    h = 31 * h + Double.hashCode(latitude);
-    h = 31 * h + Double.hashCode(longitude);
-    h = 31 * h + Double.hashCode(radiusMeters);
-    return h;
-  }
-
-  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+
     return new ConstantScoreWeight(this, boost) {
 
-      private final GeoEncodingUtils.DistancePredicate distancePredicate = GeoEncodingUtils.createDistancePredicate(latitude, longitude, radiusMeters);
+      final Component2D tree = LatLonGeometry.create(geometries);
+      final GeoEncodingUtils.Component2DPredicate component2DPredicate = GeoEncodingUtils.createComponentPredicate(tree);
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -121,7 +125,7 @@ final class LatLonDocValuesDistanceQuery extends Query {
               final long value = values.nextValue();
               final int lat = (int) (value >>> 32);
               final int lon = (int) (value & 0xFFFFFFFF);
-              if (distancePredicate.test(lat, lon)) {
+              if (component2DPredicate.test(lat, lon)) {
                 return true;
               }
             }
@@ -130,9 +134,8 @@ final class LatLonDocValuesDistanceQuery extends Query {
 
           @Override
           public float matchCost() {
-            return 100f; // TODO: what should it be?
+            return 1000f; // TODO: what should it be?
           }
-
         };
         return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
@@ -144,5 +147,4 @@ final class LatLonDocValuesDistanceQuery extends Query {
 
     };
   }
-
 }
