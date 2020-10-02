@@ -348,10 +348,10 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     /**
-     * Will attempt to call {@link #invoke(String, String, SolrParams)} up to five times, retrying on any IO Exceptions
+     * Will attempt to call {@link #invoke(String, String, SolrParams)}, retrying on any IO Exceptions
      */
     public SimpleSolrResponse invokeWithRetry(String solrNode, String path, SolrParams params) throws InterruptedException, IOException, SolrServerException {
-      int retries = 3;
+      int retries = 2;
       int cnt = 0;
 
       while (cnt++ < retries) {
