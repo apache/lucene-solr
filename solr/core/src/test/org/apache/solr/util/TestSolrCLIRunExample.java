@@ -359,7 +359,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         assertEquals("it should be ok "+tool+" "+Arrays.toString(toolArgs),0, status);
       } catch (Exception e) {
         log.error("RunExampleTool failed due to: {}; stdout from tool prior to failure: {}"
-            , e , baos.toString(StandardCharsets.UTF_8.name())); // logOk
+            , e , baos.toString(StandardCharsets.UTF_8.name())); // nowarn
         throw e;
       }
   
