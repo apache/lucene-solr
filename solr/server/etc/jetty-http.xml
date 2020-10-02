@@ -49,7 +49,7 @@
         <Set name="port"><Property name="jetty.port" default="8983" /></Set>
         <Set name="idleTimeout"><Property name="solr.jetty.http.idleTimeout" default="120000"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="solr.jetty.http.acceptorPriorityDelta" default="0"/></Set>
-        <Set name="acceptQueueSize"><Property name="solr.jetty.http.acceptQueueSize" default="0"/></Set>
+        <Set name="acceptQueueSize"><Property name="solr.jetty.http.acceptQueueSize" default="4096"/></Set>
         <Call name="addLifeCycleListener">
           <Arg>
             <New class="org.apache.solr.servlet.SolrLifcycleListener"/>
