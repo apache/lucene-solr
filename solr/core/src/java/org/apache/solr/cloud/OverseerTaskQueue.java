@@ -305,15 +305,8 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   public String getTailId() throws KeeperException, InterruptedException {
     // TODO: could we use getChildren here?  Unsure what freshness guarantee the caller needs.
-    updateLock.lockInterruptibly();
-    TreeSet<String> orderedChildren;
-    try {
-       orderedChildren = new TreeSet<>(knownChildren);
-    } finally {
-      if (updateLock.isHeldByCurrentThread()) {
-        updateLock.unlock();
-      }
-    }
+    TreeSet<String> orderedChildren = fetchZkChildren(null);
+
     for (String headNode : orderedChildren.descendingSet())
       if (headNode != null) {
         try {

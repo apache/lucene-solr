@@ -1925,6 +1925,8 @@ public class ZkController implements Closeable, Runnable {
       throw new AlreadyClosedException();
     }
 
+    // nocommit TODO if we publish anything but ACTIVE, cancel any possible election
+
     try {
       String collection = cd.getCloudDescriptor().getCollectionName();
 
@@ -2957,8 +2959,8 @@ public class ZkController implements Closeable, Runnable {
         ZkStateReader.NODE_NAME_PROP, nodeName);
     try {
       overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
-    } catch (AlreadyClosedException e) {
-      log.info("Not publishing node as DOWN because a resource required to do so is already closed.");
+    } catch (AlreadyClosedException | InterruptedException e) {
+      ParWork.propagateInterrupt("Not publishing node as DOWN because a resource required to do so is already closed.", null, true);
       return;
     }
 //    Collection<SolrCore> cores = cc.getCores();
