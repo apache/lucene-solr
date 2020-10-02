@@ -24,6 +24,7 @@ import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -91,12 +92,28 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     return ShapeTestUtil.nextPolygon();
   }
 
-  /** Whether this impl supports polygons. */
-  protected boolean supportsPolygons() {
-    return true;
+  protected XYGeometry[] nextGeometry() {
+    final int len = random().nextInt(4) + 1;
+    XYGeometry[] geometries = new XYGeometry[len];
+    for (int i = 0; i < len; i++) {
+      switch (2) {
+        case 0:
+          geometries[i] = new XYPoint(nextX(), nextY());
+          break;
+        case 1:
+          geometries[i] = nextBox();
+          break;
+        default:
+          geometries[i] = nextPolygon();
+          break;
+      }
+    }
+    return geometries;
   }
 
-  /** Valid values that should not cause exception */
+  /**
+   * Valid values that should not cause exception
+   */
   public void testIndexExtremeValues() {
     Document document = new Document();
     addPointToDoc("foo", document, Float.MAX_VALUE, Float.MAX_VALUE);
@@ -104,8 +121,10 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     addPointToDoc("foo", document, -Float.MAX_VALUE, Float.MAX_VALUE);
     addPointToDoc("foo", document, -Float.MAX_VALUE, -Float.MAX_VALUE);
   }
-  
-  /** NaN: illegal */
+
+  /**
+   * NaN: illegal
+   */
   public void testIndexNaNValues() {
     Document document = new Document();
     IllegalArgumentException expected;
@@ -114,14 +133,16 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
       addPointToDoc("foo", document, Float.NaN, 50.0f);
     });
     assertTrue(expected.getMessage().contains("invalid value"));
-    
+
     expected = expectThrows(IllegalArgumentException.class, () -> {
       addPointToDoc("foo", document, 50.0f, Float.NaN);
     });
     assertTrue(expected.getMessage().contains("invalid value"));
   }
-  
-  /** Inf: illegal */
+
+  /**
+   * Inf: illegal
+   */
   public void testIndexInfValues() {
     Document document = new Document();
     IllegalArgumentException expected;
@@ -146,8 +167,10 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     });
     assertTrue(expected.getMessage().contains("invalid value"));
   }
-  
-  /** Add a single point and search for it in a box */
+
+  /**
+   * Add a single point and search for it in a box
+   */
   public void testBoxBasics() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -156,7 +179,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Document document = new Document();
     addPointToDoc("field", document, 18.313694f, -65.227444f);
     writer.addDocument(document);
-    
+
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
@@ -167,7 +190,9 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     dir.close();
   }
 
-  /** null field name not allowed */
+  /**
+   * null field name not allowed
+   */
   public void testBoxNull() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       newRectQuery(null, 18, 19, -66, -65);
@@ -178,11 +203,13 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
   // box should not accept invalid x/y
   public void testBoxInvalidCoordinates() throws Exception {
     expectThrows(Exception.class, () -> {
-      newRectQuery("field", Float.NaN, Float.NaN,Float.NaN, Float.NaN);
+      newRectQuery("field", Float.NaN, Float.NaN, Float.NaN, Float.NaN);
     });
   }
 
-  /** test we can search for a point */
+  /**
+   * test we can search for a point
+   */
   public void testDistanceBasics() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -191,7 +218,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Document document = new Document();
     addPointToDoc("field", document, 18.313694f, -65.227444f);
     writer.addDocument(document);
-    
+
     // search within 50km and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
@@ -201,31 +228,39 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-  
-  /** null field name not allowed */
+
+  /**
+   * null field name not allowed
+   */
   public void testDistanceNull() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       newDistanceQuery(null, 18, -65, 50_000);
     });
     assertTrue(expected.getMessage().contains("field must not be null"));
   }
-  
-  /** distance query should not accept invalid x/y as origin */
+
+  /**
+   * distance query should not accept invalid x/y as origin
+   */
   public void testDistanceIllegal() throws Exception {
     expectThrows(Exception.class, () -> {
       newDistanceQuery("field", Float.NaN, Float.NaN, 120000);
     });
   }
 
-  /** negative distance queries are not allowed */
+  /**
+   * negative distance queries are not allowed
+   */
   public void testDistanceNegative() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       newDistanceQuery("field", 18, 19, -1);
     });
     assertTrue(expected.getMessage().contains("radius"));
   }
-  
-  /** NaN distance queries are not allowed */
+
+  /**
+   * NaN distance queries are not allowed
+   */
   public void testDistanceNaN() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       newDistanceQuery("field", 18, 19, Float.NaN);
@@ -233,27 +268,30 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     assertTrue(expected.getMessage().contains("radius"));
     assertTrue(expected.getMessage().contains("NaN"));
   }
-  
-  /** Inf distance queries are not allowed */
+
+  /**
+   * Inf distance queries are not allowed
+   */
   public void testDistanceInf() {
     IllegalArgumentException expected;
-    
+
     expected = expectThrows(IllegalArgumentException.class, () -> {
       newDistanceQuery("field", 18, 19, Float.POSITIVE_INFINITY);
     });
     assertTrue(expected.getMessage(), expected.getMessage().contains("radius"));
     assertTrue(expected.getMessage(), expected.getMessage().contains("finite"));
-    
+
     expected = expectThrows(IllegalArgumentException.class, () -> {
       newDistanceQuery("field", 18, 19, Float.NEGATIVE_INFINITY);
     });
     assertTrue(expected.getMessage(), expected.getMessage().contains("radius"));
     assertTrue(expected.getMessage(), expected.getMessage().contains("bigger than 0"));
   }
-  
-  /** test we can search for a polygon */
+
+  /**
+   * test we can search for a polygon
+   */
   public void testPolygonBasics() throws Exception {
-    assumeTrue("Impl does not support polygons", supportsPolygons());
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
@@ -261,22 +299,23 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Document document = new Document();
     addPointToDoc("field", document, 18.313694f, -65.227444f);
     writer.addDocument(document);
-    
+
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
     assertEquals(1, searcher.count(newPolygonQuery("field", new XYPolygon(
-                                                   new float[] { 18, 18, 19, 19, 18 },
-                                                   new float[] { -66, -65, -65, -66, -66 }))));
+            new float[]{18, 18, 19, 19, 18},
+            new float[]{-66, -65, -65, -66, -66}))));
 
     reader.close();
     writer.close();
     dir.close();
   }
-  
-  /** test we can search for a polygon with a hole (but still includes the doc) */
+
+  /**
+   * test we can search for a polygon with a hole (but still includes the doc)
+   */
   public void testPolygonHole() throws Exception {
-    assumeTrue("Impl does not support polygons", supportsPolygons());
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
@@ -284,24 +323,25 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Document document = new Document();
     addPointToDoc("field", document, 18.313694f, -65.227444f);
     writer.addDocument(document);
-    
+
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    XYPolygon inner = new XYPolygon(new float[] { 18.5f, 18.5f, 18.7f, 18.7f, 18.5f },
-                                new float[] { -65.7f, -65.4f, -65.4f, -65.7f, -65.7f });
-    XYPolygon outer = new XYPolygon(new float[] { 18, 18, 19, 19, 18 },
-                                new float[] { -66, -65, -65, -66, -66 }, inner);
+    XYPolygon inner = new XYPolygon(new float[]{18.5f, 18.5f, 18.7f, 18.7f, 18.5f},
+            new float[]{-65.7f, -65.4f, -65.4f, -65.7f, -65.7f});
+    XYPolygon outer = new XYPolygon(new float[]{18, 18, 19, 19, 18},
+            new float[]{-66, -65, -65, -66, -66}, inner);
     assertEquals(1, searcher.count(newPolygonQuery("field", outer)));
 
     reader.close();
     writer.close();
     dir.close();
   }
-  
-  /** test we can search for a polygon with a hole (that excludes the doc) */
+
+  /**
+   * test we can search for a polygon with a hole (that excludes the doc)
+   */
   public void testPolygonHoleExcludes() throws Exception {
-    assumeTrue("Impl does not support polygons", supportsPolygons());
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
@@ -309,24 +349,25 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Document document = new Document();
     addPointToDoc("field", document, 18.313694f, -65.227444f);
     writer.addDocument(document);
-    
+
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    XYPolygon inner = new XYPolygon(new float[] { 18.2f, 18.2f, 18.4f, 18.4f, 18.2f },
-                                new float[] { -65.3f, -65.2f, -65.2f, -65.3f, -65.3f });
-    XYPolygon outer = new XYPolygon(new float[] { 18, 18, 19, 19, 18 },
-                                new float[] { -66, -65, -65, -66, -66 }, inner);
+    XYPolygon inner = new XYPolygon(new float[]{18.2f, 18.2f, 18.4f, 18.4f, 18.2f},
+            new float[]{-65.3f, -65.2f, -65.2f, -65.3f, -65.3f});
+    XYPolygon outer = new XYPolygon(new float[]{18, 18, 19, 19, 18},
+            new float[]{-66, -65, -65, -66, -66}, inner);
     assertEquals(0, searcher.count(newPolygonQuery("field", outer)));
 
     reader.close();
     writer.close();
     dir.close();
   }
-  
-  /** test we can search for a multi-polygon */
+
+  /**
+   * test we can search for a multi-polygon
+   */
   public void testMultiPolygonBasics() throws Exception {
-    assumeTrue("Impl does not support polygons", supportsPolygons());
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
@@ -334,28 +375,29 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Document document = new Document();
     addPointToDoc("field", document, 18.313694f, -65.227444f);
     writer.addDocument(document);
-    
+
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    XYPolygon a = new XYPolygon(new float[] { 28, 28, 29, 29, 28 },
-                           new float[] { -56, -55, -55, -56, -56 });
-    XYPolygon b = new XYPolygon(new float[] { 18, 18, 19, 19, 18 },
-                            new float[] { -66, -65, -65, -66, -66 });
+    XYPolygon a = new XYPolygon(new float[]{28, 28, 29, 29, 28},
+            new float[]{-56, -55, -55, -56, -56});
+    XYPolygon b = new XYPolygon(new float[]{18, 18, 19, 19, 18},
+            new float[]{-66, -65, -65, -66, -66});
     assertEquals(1, searcher.count(newPolygonQuery("field", a, b)));
 
     reader.close();
     writer.close();
     dir.close();
   }
-  
-  /** null field name not allowed */
+
+  /**
+   * null field name not allowed
+   */
   public void testPolygonNullField() {
-    assumeTrue("Impl does not support polygons", supportsPolygons());
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       newPolygonQuery(null, new XYPolygon(
-          new float[] { 18, 18, 19, 19, 18 },
-          new float[] { -66, -65, -65, -66, -66 }));
+              new float[]{18, 18, 19, 19, 18},
+              new float[]{-66, -65, -65, -66, -66}));
     });
     assertTrue(expected.getMessage().contains("field must not be null"));
   }
@@ -382,9 +424,9 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     int numPoints = atLeast(1000);
     int cardinality = TestUtil.nextInt(random(), 2, 20);
 
-    float[] diffXs  = new float[cardinality];
+    float[] diffXs = new float[cardinality];
     float[] diffYs = new float[cardinality];
-    for (int i = 0; i< cardinality; i++) {
+    for (int i = 0; i < cardinality; i++) {
       diffXs[i] = nextX();
       diffYs[i] = nextY();
     }
@@ -407,7 +449,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
 
     boolean haveRealDoc = false;
 
-    for(int docID=0;docID<numPoints;docID++) {
+    for (int docID = 0; docID < numPoints; docID++) {
       int x = random().nextInt(20);
       if (x == 17) {
         // Some docs don't have a point:
@@ -426,7 +468,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
             break;
           }
         }
-            
+
         // Fully identical point:
         ys[docID] = xs[oldDocID];
         if (VERBOSE) {
@@ -453,7 +495,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
 
     boolean haveRealDoc = false;
 
-    for(int docID=0;docID<numPoints;docID++) {
+    for (int docID = 0; docID < numPoints; docID++) {
       int x = random().nextInt(20);
       if (x == 17) {
         // Some docs don't have a point:
@@ -472,7 +514,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
             break;
           }
         }
-            
+
         // Fully identical point:
         ys[docID] = ys[oldDocID];
         if (VERBOSE) {
@@ -494,8 +536,8 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
   public void testMultiValued() throws Exception {
     int numPoints = atLeast(1000);
     // Every doc has 2 points:
-    float[] xs = new float[2*numPoints];
-    float[] ys = new float[2*numPoints];
+    float[] xs = new float[2 * numPoints];
+    float[] ys = new float[2 * numPoints];
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
 
@@ -505,20 +547,20 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     iwc.setMergeScheduler(new SerialMergeScheduler());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
-    for (int id=0;id<numPoints;id++) {
+    for (int id = 0; id < numPoints; id++) {
       Document doc = new Document();
-      xs[2*id] = nextX();
-      ys[2*id] = nextY();
-      doc.add(newStringField("id", ""+id, Field.Store.YES));
-      addPointToDoc(FIELD_NAME, doc, xs[2*id], ys[2*id]);
-      xs[2*id+1] = nextX();
-      ys[2*id+1] = nextY();
-      addPointToDoc(FIELD_NAME, doc, xs[2*id+1], ys[2*id+1]);
+      xs[2 * id] = nextX();
+      ys[2 * id] = nextY();
+      doc.add(newStringField("id", "" + id, Field.Store.YES));
+      addPointToDoc(FIELD_NAME, doc, xs[2 * id], ys[2 * id]);
+      xs[2 * id + 1] = nextX();
+      ys[2 * id + 1] = nextY();
+      addPointToDoc(FIELD_NAME, doc, xs[2 * id + 1], ys[2 * id + 1]);
 
       if (VERBOSE) {
         System.out.println("id=" + id);
-        System.out.println("  x=" + xs[2*id] + " y=" + ys[2*id]);
-        System.out.println("  x=" + xs[2*id+1] + " y=" + ys[2*id+1]);
+        System.out.println("  x=" + xs[2 * id] + " y=" + ys[2 * id]);
+        System.out.println("  x=" + xs[2 * id + 1] + " y=" + ys[2 * id + 1]);
       }
       w.addDocument(doc);
     }
@@ -533,7 +575,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     int iters = atLeast(25);
-    for (int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
       XYRectangle rect = nextBox();
 
       if (VERBOSE) {
@@ -542,35 +584,16 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
 
       Query query = newRectQuery(FIELD_NAME, rect.minX, rect.maxX, rect.minY, rect.maxY);
 
-      final FixedBitSet hits = new FixedBitSet(r.maxDoc());
-      s.search(query, new SimpleCollector() {
-
-          private int docBase;
-
-          @Override
-          public ScoreMode scoreMode() {
-            return ScoreMode.COMPLETE_NO_SCORES;
-          }
-
-          @Override
-          protected void doSetNextReader(LeafReaderContext context) throws IOException {
-            docBase = context.docBase;
-          }
-
-          @Override
-          public void collect(int doc) {
-            hits.set(docBase+doc);
-          }
-        });
+      final FixedBitSet hits = searchIndex(s, query, r.maxDoc());
 
       boolean fail = false;
 
-      for(int docID=0;docID<ys.length/2;docID++) {
-        float yDoc1 = ys[2*docID];
-        float xDoc1 = xs[2*docID];
-        float yDoc2 = ys[2*docID+1];
-        float xDoc2 = xs[2*docID+1];
-        
+      for (int docID = 0; docID < ys.length / 2; docID++) {
+        float yDoc1 = ys[2 * docID];
+        float xDoc1 = xs[2 * docID];
+        float yDoc2 = ys[2 * docID + 1];
+        float xDoc2 = xs[2 * docID + 1];
+
         boolean result1 = rectContainsPoint(rect, xDoc1, yDoc1);
         boolean result2 = rectContainsPoint(rect, xDoc2, yDoc2);
 
@@ -626,7 +649,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
 
     boolean haveRealDoc = false;
 
-    for (int id=0;id<numPoints;id++) {
+    for (int id = 0; id < numPoints; id++) {
       int x = random().nextInt(20);
       if (x == 17) {
         // Some docs don't have a point:
@@ -645,7 +668,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
             break;
           }
         }
-            
+
         if (x == 0) {
           // Identical x to old point
           ys[id] = ys[oldID];
@@ -691,6 +714,8 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
 
   protected abstract Query newPolygonQuery(String field, XYPolygon... polygon);
 
+  protected abstract Query newGeometryQuery(String field, XYGeometry... geometries);
+
   static final boolean rectContainsPoint(XYRectangle rect, double x, double y) {
     if (y < rect.minY || y > rect.maxY) {
       return false;
@@ -708,9 +733,8 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     // NaN means missing for the doc!!!!!
     verifyRandomRectangles(xs, ys);
     verifyRandomDistances(xs, ys);
-    if (supportsPolygons()) {
-      verifyRandomPolygons(xs, ys);
-    }
+    verifyRandomPolygons(xs, ys);
+    verifyRandomGeometries(xs, ys);
   }
 
   protected void verifyRandomRectangles(float[] xs, float[] ys) throws Exception {
@@ -719,8 +743,8 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     iwc.setMergeScheduler(new SerialMergeScheduler());
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
-    if (mbd != -1 && mbd < xs.length/100) {
-      iwc.setMaxBufferedDocs(xs.length/100);
+    if (mbd != -1 && mbd < xs.length / 100) {
+      iwc.setMaxBufferedDocs(xs.length / 100);
     }
     Directory dir;
     if (xs.length > 100000) {
@@ -732,27 +756,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Set<Integer> deleted = new HashSet<>();
     // RandomIndexWriter is too slow here:
     IndexWriter w = new IndexWriter(dir, iwc);
-    for(int id=0;id<xs.length;id++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", ""+id, Field.Store.NO));
-      doc.add(new NumericDocValuesField("id", id));
-      if (Float.isNaN(xs[id]) == false && Float.isNaN(ys[id]) == false ) {
-        addPointToDoc(FIELD_NAME, doc, xs[id], ys[id]);
-      }
-      w.addDocument(doc);
-      if (id > 0 && random().nextInt(100) == 42) {
-        int idToDelete = random().nextInt(id);
-        w.deleteDocuments(new Term("id", ""+idToDelete));
-        deleted.add(idToDelete);
-        if (VERBOSE) {
-          System.out.println("  delete id=" + idToDelete);
-        }
-      }
-    }
-
-    if (random().nextBoolean()) {
-      w.forceMerge(1);
-    }
+    indexPoints(xs, ys, deleted, w);
     final IndexReader r = DirectoryReader.open(w);
     w.close();
 
@@ -763,12 +767,12 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
     int maxDoc = s.getIndexReader().maxDoc();
 
-    for (int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " s=" + s);
       }
-      
+
       XYRectangle rect = nextBox();
 
       Query query = newRectQuery(FIELD_NAME, rect.minX, rect.maxX, rect.minY, rect.maxY);
@@ -777,30 +781,11 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
         System.out.println("  query=" + query);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-          private int docBase;
-
-          @Override
-          public ScoreMode scoreMode() {
-            return ScoreMode.COMPLETE_NO_SCORES;
-          }
-
-          @Override
-          protected void doSetNextReader(LeafReaderContext context) {
-            docBase = context.docBase;
-          }
-
-          @Override
-          public void collect(int doc) {
-            hits.set(docBase+doc);
-          }
-        });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
-      for(int docID=0;docID<maxDoc;docID++) {
+      for (int docID = 0; docID < maxDoc; docID++) {
         assertEquals(docID, docIDToID.nextDoc());
         int id = (int) docIDToID.longValue();
         boolean expected;
@@ -814,24 +799,8 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
         }
 
         if (hits.get(docID) != expected) {
-          StringBuilder b = new StringBuilder();
-          b.append("docID=(").append(docID).append(")\n");
-
-          if (expected) {
-            b.append("FAIL: id=").append(id).append(" should match but did not\n");
-          } else {
-            b.append("FAIL: id=").append(id).append(" should not match but did\n");
-          }
-          b.append("  box=").append(rect).append("\n");
-          b.append("  query=").append(query).append(" docID=").append(docID).append("\n");
-          b.append("  x=").append(xs[id]).append(" y=").append(ys[id]).append("\n");
-          b.append("  deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
-          if (true) {
-            fail("wrong hit (first of possibly more):\n\n" + b);
-          } else {
-            System.out.println(b.toString());
-            fail = true;
-          }
+          buildError(docID, expected, id, xs, ys, query, liveDocs, (b) -> b.append("  rect=").append(rect));
+          fail = true;
         }
       }
       if (fail) {
@@ -848,8 +817,8 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     iwc.setMergeScheduler(new SerialMergeScheduler());
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
-    if (mbd != -1 && mbd < xs.length/100) {
-      iwc.setMaxBufferedDocs(xs.length/100);
+    if (mbd != -1 && mbd < xs.length / 100) {
+      iwc.setMaxBufferedDocs(xs.length / 100);
     }
     Directory dir;
     if (xs.length > 100000) {
@@ -861,27 +830,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Set<Integer> deleted = new HashSet<>();
     // RandomIndexWriter is too slow here:
     IndexWriter w = new IndexWriter(dir, iwc);
-    for(int id=0;id<xs.length;id++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", ""+id, Field.Store.NO));
-      doc.add(new NumericDocValuesField("id", id));
-      if (Float.isNaN(xs[id]) == false && Float.isNaN(ys[id]) == false) {
-        addPointToDoc(FIELD_NAME, doc, xs[id], ys[id]);
-      }
-      w.addDocument(doc);
-      if (id > 0 && random().nextInt(100) == 42) {
-        int idToDelete = random().nextInt(id);
-        w.deleteDocuments(new Term("id", ""+idToDelete));
-        deleted.add(idToDelete);
-        if (VERBOSE) {
-          System.out.println("  delete id=" + idToDelete);
-        }
-      }
-    }
-
-    if (random().nextBoolean()) {
-      w.forceMerge(1);
-    }
+    indexPoints(xs, ys, deleted, w);
     final IndexReader r = DirectoryReader.open(w);
     w.close();
 
@@ -892,7 +841,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
     int maxDoc = s.getIndexReader().maxDoc();
 
-    for (int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " s=" + s);
@@ -916,30 +865,11 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
         System.out.println("  query=" + query);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-          private int docBase;
-
-          @Override
-          public ScoreMode scoreMode() {
-            return ScoreMode.COMPLETE_NO_SCORES;
-          }
-
-          @Override
-          protected void doSetNextReader(LeafReaderContext context) throws IOException {
-            docBase = context.docBase;
-          }
-
-          @Override
-          public void collect(int doc) {
-            hits.set(docBase+doc);
-          }
-        });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
-      for(int docID=0;docID<maxDoc;docID++) {
+      for (int docID = 0; docID < maxDoc; docID++) {
         assertEquals(docID, docIDToID.nextDoc());
         int id = (int) docIDToID.longValue();
         boolean expected;
@@ -953,26 +883,15 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
         }
 
         if (hits.get(docID) != expected) {
-          StringBuilder b = new StringBuilder();
-
-          if (expected) {
-            b.append("FAIL: id=").append(id).append(" should match but did not\n");
-          } else {
-            b.append("FAIL: id=").append(id).append(" should not match but did\n");
-          }
-          b.append("  query=").append(query).append(" docID=").append(docID).append("\n");
-          b.append("  x=").append(xs[id]).append(" y=").append(ys[id]).append("\n");
-          b.append("  deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
-          if (Double.isNaN(xs[id]) == false) {
-            double distance = cartesianDistance(centerX, centerY, xs[id], ys[id]);
-            b.append("  centerX=").append(centerX).append(" centerY=").append(centerY).append(" distance=").append(distance).append(" vs radius=").append(radius);
-          }
-          if (true) {
-            fail("wrong hit (first of possibly more):\n\n" + b);
-          } else {
-            System.out.println(b.toString());
-            fail = true;
-          }
+          Consumer<StringBuilder> explain = (b) -> {
+            if (Double.isNaN(xs[id]) == false) {
+              double distance = cartesianDistance(centerX, centerY, xs[id], ys[id]);
+              b.append("  centerX=").append(centerX).append(" centerY=").append(centerY).append(" distance=")
+                      .append(distance).append(" vs radius=").append(radius);
+            }
+          };
+          buildError(docID, expected, id, xs, ys, query, liveDocs, explain);
+          fail = true;
         }
       }
       if (fail) {
@@ -1002,27 +921,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     Set<Integer> deleted = new HashSet<>();
     // RandomIndexWriter is too slow here:
     IndexWriter w = new IndexWriter(dir, iwc);
-    for(int id=0;id<xs.length;id++) {
-      Document doc = new Document();
-      doc.add(newStringField("id", ""+id, Field.Store.NO));
-      doc.add(new NumericDocValuesField("id", id));
-      if (Float.isNaN(xs[id]) == false && Float.isNaN(ys[id]) == false) {
-        addPointToDoc(FIELD_NAME, doc, xs[id], ys[id]);
-      }
-      w.addDocument(doc);
-      if (id > 0 && random().nextInt(100) == 42) {
-        int idToDelete = random().nextInt(id);
-        w.deleteDocuments(new Term("id", ""+idToDelete));
-        deleted.add(idToDelete);
-        if (VERBOSE) {
-          System.out.println("  delete id=" + idToDelete);
-        }
-      }
-    }
-
-    if (random().nextBoolean()) {
-      w.forceMerge(1);
-    }
+    indexPoints(xs, ys, deleted, w);
     final IndexReader r = DirectoryReader.open(w);
     w.close();
 
@@ -1048,26 +947,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
         System.out.println("  query=" + query);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-          private int docBase;
-
-          @Override
-          public ScoreMode scoreMode() {
-            return ScoreMode.COMPLETE_NO_SCORES;
-          }
-
-          @Override
-          protected void doSetNextReader(LeafReaderContext context) throws IOException {
-            docBase = context.docBase;
-          }
-
-          @Override
-          public void collect(int doc) {
-            hits.set(docBase+doc);
-          }
-        });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
@@ -1085,23 +965,8 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
         }
 
         if (hits.get(docID) != expected) {
-          StringBuilder b = new StringBuilder();
-
-          if (expected) {
-            b.append("FAIL: id=").append(id).append(" should match but did not\n");
-          } else {
-            b.append("FAIL: id=").append(id).append(" should not match but did\n");
-          }
-          b.append("  query=").append(query).append(" docID=").append(docID).append("\n");
-          b.append("  x=").append(xs[id]).append(" y=").append(ys[id]).append("\n");
-          b.append("  deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
-          b.append("  polygon=").append(polygon);
-          if (true) {
-            fail("wrong hit (first of possibly more):\n\n" + b);
-          } else {
-            System.out.println(b.toString());
-            fail = true;
-          }
+          buildError(docID, expected, id, xs, ys, query, liveDocs, (b) ->  b.append("  polygon=").append(polygon));
+          fail = true;
         }
       }
       if (fail) {
@@ -1110,6 +975,149 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     }
 
     IOUtils.close(r, dir);
+  }
+
+  protected void verifyRandomGeometries(float[] xs, float[] ys) throws Exception {
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    // Else seeds may not reproduce:
+    iwc.setMergeScheduler(new SerialMergeScheduler());
+    // Else we can get O(N^2) merging:
+    int mbd = iwc.getMaxBufferedDocs();
+    if (mbd != -1 && mbd < xs.length/100) {
+      iwc.setMaxBufferedDocs(xs.length/100);
+    }
+    Directory dir;
+    if (xs.length > 100000) {
+      dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
+    } else {
+      dir = newDirectory();
+    }
+
+    Set<Integer> deleted = new HashSet<>();
+    // RandomIndexWriter is too slow here:
+    IndexWriter w = new IndexWriter(dir, iwc);
+    indexPoints(xs, ys, deleted, w);
+    final IndexReader r = DirectoryReader.open(w);
+    w.close();
+
+    // We can't wrap with "exotic" readers because points needs to work:
+    IndexSearcher s = newSearcher(r);
+
+    final int iters = atLeast(75);
+
+    Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
+    int maxDoc = s.getIndexReader().maxDoc();
+
+    for (int iter=0;iter<iters;iter++) {
+
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter + " s=" + s);
+      }
+
+      // geometries
+      XYGeometry[] geometries = nextGeometry();
+      Query query = newGeometryQuery(FIELD_NAME, geometries);
+      Component2D component2D = XYGeometry.create(geometries);
+
+      if (VERBOSE) {
+        System.out.println("  query=" + query);
+      }
+
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
+
+      boolean fail = false;
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+      for(int docID=0;docID<maxDoc;docID++) {
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
+        boolean expected;
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          // document is deleted
+          expected = false;
+        } else if (Float.isNaN(xs[id]) || Float.isNaN(ys[id])) {
+          expected = false;
+        } else {
+          expected = component2D.contains(xs[id], ys[id]);
+        }
+
+        if (hits.get(docID) != expected) {
+          buildError(docID, expected, id, xs, ys, query, liveDocs, (b) ->  b.append("  geometry=").append(Arrays.toString(geometries)));
+          fail = true;
+        }
+      }
+      if (fail) {
+        fail("some hits were wrong");
+      }
+    }
+
+    IOUtils.close(r, dir);
+  }
+
+  private void indexPoints(float[] xs, float[] ys, Set<Integer> deleted, IndexWriter w) throws IOException {
+    for(int id=0;id<xs.length;id++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+id, Field.Store.NO));
+      doc.add(new NumericDocValuesField("id", id));
+      if (Float.isNaN(xs[id]) == false && Float.isNaN(ys[id]) == false) {
+        addPointToDoc(FIELD_NAME, doc, xs[id], ys[id]);
+      }
+      w.addDocument(doc);
+      if (id > 0 && random().nextInt(100) == 42) {
+        int idToDelete = random().nextInt(id);
+        w.deleteDocuments(new Term("id", ""+idToDelete));
+        deleted.add(idToDelete);
+        if (VERBOSE) {
+          System.out.println("  delete id=" + idToDelete);
+        }
+      }
+    }
+
+    if (random().nextBoolean()) {
+      w.forceMerge(1);
+    }
+  }
+
+  private FixedBitSet searchIndex(IndexSearcher s, Query query, int maxDoc) throws IOException {
+    final FixedBitSet hits = new FixedBitSet(maxDoc);
+    s.search(query, new SimpleCollector() {
+
+      private int docBase;
+
+      @Override
+      public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE_NO_SCORES;
+      }
+
+      @Override
+      protected void doSetNextReader(LeafReaderContext context)  {
+        docBase = context.docBase;
+      }
+
+      @Override
+      public void collect(int doc) {
+        hits.set(docBase+doc);
+      }
+    });
+    return hits;
+  }
+
+  private void buildError(int docID, boolean expected, int id, float[] xs, float[] ys, Query query,
+                          Bits liveDocs, Consumer<StringBuilder> explain) {
+    StringBuilder b = new StringBuilder();
+    if (expected) {
+      b.append("FAIL: id=").append(id).append(" should match but did not\n");
+    } else {
+      b.append("FAIL: id=").append(id).append(" should not match but did\n");
+    }
+    b.append("  query=").append(query).append(" docID=").append(docID).append("\n");
+    b.append("  x=").append(xs[id]).append(" y=").append(ys[id]).append("\n");
+    b.append("  deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
+    explain.accept(b);
+    if (true) {
+      fail("wrong hit (first of possibly more):\n\n" + b);
+    } else {
+      System.out.println(b.toString());
+    }
   }
 
   public void testRectBoundariesAreInclusive() throws Exception {
@@ -1263,7 +1271,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     dir.close();
   }
 
-  public void testEquals()  {
+  public void testEquals() {
     Query q1, q2;
 
     XYRectangle rect = nextBox();
@@ -1292,12 +1300,10 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     ys[3] = rect.maxY;
     xs[4] = rect.minX;
     ys[4] = rect.minY;
-    if (supportsPolygons()) {
-      q1 = newPolygonQuery("field", new XYPolygon(xs, ys));
-      q2 = newPolygonQuery("field", new XYPolygon(xs, ys));
-      assertEquals(q1, q2);
-      assertFalse(q1.equals(newPolygonQuery("field2", new XYPolygon(xs, ys))));
-    }
+    q1 = newPolygonQuery("field", new XYPolygon(xs, ys));
+    q2 = newPolygonQuery("field", new XYPolygon(xs, ys));
+    assertEquals(q1, q2);
+    assertFalse(q1.equals(newPolygonQuery("field2", new XYPolygon(xs, ys))));
   }
 
   /** return topdocs over a small set of points in field "point" */
@@ -1385,7 +1391,6 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
   }
 
   public void testSmallSetPoly() throws Exception {
-    assumeTrue("Impl does not support polygons", supportsPolygons());
     TopDocs td = searchSmallSet(newPolygonQuery("point",
         new XYPolygon(
         new float[]{33.073130f, 32.9942669f, 32.938386f, 33.0374494f,
@@ -1397,7 +1402,6 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
   }
 
   public void testSmallSetPolyWholeSpace() throws Exception {
-    assumeTrue("Impl does not support polygons", supportsPolygons());
     TopDocs td = searchSmallSet(newPolygonQuery("point",
                       new XYPolygon(
                       new float[] {-Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE},
