@@ -4239,7 +4239,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IOUtils.close(w, dir);
   }
 
-  public void testSimplePendingNumDocs() throws Exception {
+  public void testPendingNumDocs() throws Exception {
     try (Directory dir = newDirectory()) {
       int numDocs = random().nextInt(100);
       try (IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
