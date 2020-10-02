@@ -1070,6 +1070,7 @@ public class SolrZkClient implements Closeable {
 
     @Override
     public void process(final WatchedEvent event) {
+      if (event.getType() == Event.EventType.None) return;
       if (log.isDebugEnabled()) log.debug("Submitting job to respond to event {}", event);
       try {
         executorService.submit(() -> watcher.process(event));
