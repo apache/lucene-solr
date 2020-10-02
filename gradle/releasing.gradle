@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,11 +16,25 @@
  * limitations under the License.
  */
 
+import org.apache.commons.codec.digest.DigestUtils
+import org.apache.commons.codec.digest.MessageDigestAlgorithms
+
+// We're using commons-codec for computing checksums.
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'commons-codec:commons-codec:1.13'
+    }
+}
+
 allprojects {
     plugins.withType(DistributionPlugin) {
         def checksum = {
             outputs.files.each { File file ->
-                ant.checksum(file: file, algorithm: 'SHA-512', todir: file.parent, format: 'MD5SUM', fileext: '.sha512')
+                new File(file.parent, file.name + ".sha512").text = new DigestUtils(MessageDigestAlgorithms.SHA_512).digestAsHex(file).trim() + "  " + file.name
             }
         }
 
