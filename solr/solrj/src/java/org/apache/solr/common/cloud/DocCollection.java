@@ -84,7 +84,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
     super(props==null ? props = new HashMap<>() : props);
-    this.znodeVersion = zkVersion == -1 ? 1 : zkVersion;
+    this.znodeVersion = zkVersion == -1 ? 0 : zkVersion;
     this.name = name;
 
     this.slices = slices;
