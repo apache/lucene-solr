@@ -28,9 +28,10 @@ description = 'Lucene distribution packaging'
 // By default everything is included, unless explicitly excluded.
 def includeInBinaries = project(":lucene").subprojects.findAll {subproject ->
     return !(subproject.path in [
+        // Exclude packaging, not relevant to binary distribution.
         ":lucene:packaging",
-        ":lucene:analysis",
-        ":lucene:luke", // nocommit - Encountered duplicate path "luke/lib/log4j-core-2.13.2.jar"
+        // Exclude parent container project fo analysis modules (no artifacts).
+        ":lucene:analysis"
     ])
 }
 
@@ -55,8 +56,8 @@ for (Project includedProject : includeInBinaries) {
     dependencies { DependencyHandler handler ->
         // Just project binaries.
         handler.add(confBinaries, project(path: includedProject.path, configuration: "packaging"))
-        // All project dependencies, including transitive dependencies.
-        handler.add(confFull, project(path: includedProject.path), {
+        // All project dependencies, including transitive dependencies from the runtime configuration.
+        handler.add(confFull, project(path: includedProject.path, configuration: "runtimeElements"), {
             exclude group: "org.apache.lucene"
 
             // Exclude these from all projects.
