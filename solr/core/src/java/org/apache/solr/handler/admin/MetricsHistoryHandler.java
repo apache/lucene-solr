@@ -622,7 +622,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     }
 
     if (collectService != null) {
-      scheduledFuture.cancel(true);
+      scheduledFuture.cancel(false);
       collectService.shutdownNow();
     }
 
@@ -630,7 +630,6 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
       closer.collect(knownDbs.values());
       closer.collect(solrClient);
       closer.collect(factory);
-      closer.collect(collectService);
     }
     knownDbs.clear();
     assert ObjectReleaseTracker.release(this);
