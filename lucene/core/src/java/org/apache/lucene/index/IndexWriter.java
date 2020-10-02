@@ -5465,6 +5465,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
   /**
    * Returns the number of documents in the index including documents are being added (i.e., reserved).
+   * @lucene.experimental
    */
   public long getPendingNumDocs() {
     return pendingNumDocs.get();
