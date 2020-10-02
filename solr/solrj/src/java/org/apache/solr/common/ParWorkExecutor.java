@@ -17,6 +17,7 @@
 package org.apache.solr.common;
 
 import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +31,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ParWorkExecutor extends ThreadPoolExecutor {
+public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
-  public static final int KEEP_ALIVE_TIME = 30000;
+  public static final int KEEP_ALIVE_TIME = 5000;
 
   private static AtomicInteger threadNumber = new AtomicInteger(0);
 
