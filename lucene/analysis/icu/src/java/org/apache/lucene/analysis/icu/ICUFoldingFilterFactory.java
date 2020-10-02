@@ -23,7 +23,7 @@ import com.ibm.icu.text.FilteredNormalizer2;
 import com.ibm.icu.text.Normalizer2;
 import com.ibm.icu.text.UnicodeSet;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link ICUFoldingFilter}.

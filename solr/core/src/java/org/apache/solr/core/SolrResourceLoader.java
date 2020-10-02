@@ -48,12 +48,12 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -62,6 +62,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
@@ -529,8 +530,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
         // print warning if class is deprecated
         if (clazz.isAnnotationPresent(Deprecated.class)) {
-          log.warn("Solr loaded a deprecated plugin/analysis class [{}]. Please consult documentation how to replace it accordingly.",
-              cname);
+          DeprecationLog.log(cname,
+            "Solr loaded a deprecated plugin/analysis class [" + cname + "]. Please consult documentation how to replace it accordingly.");
         }
       }
     }

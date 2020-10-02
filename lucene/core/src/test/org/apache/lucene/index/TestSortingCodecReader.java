@@ -115,14 +115,18 @@ public class TestSortingCodecReader extends LuceneTestCase {
         for (int i = 0; i < numDocs; i++) {
           int docId = docIds.get(i);
           Document doc = new Document();
-          doc.add(new NumericDocValuesField("foo", random().nextInt(20)));
           doc.add(new StringField("id", Integer.toString(docId), Field.Store.YES));
           doc.add(new LongPoint("id", docId));
-          doc.add(new TextField("text_field", RandomStrings.randomRealisticUnicodeOfLength(random(), 25), Field.Store.YES));
+          String s = RandomStrings.randomRealisticUnicodeOfLength(random(), 25);
+          doc.add(new TextField("text_field", s, Field.Store.YES));
+          doc.add(new BinaryDocValuesField("text_field", new BytesRef(s)));
+          doc.add(new TextField("another_text_field", s, Field.Store.YES));
+          doc.add(new BinaryDocValuesField("another_text_field", new BytesRef(s)));
           doc.add(new SortedNumericDocValuesField("sorted_numeric_dv", docId));
           doc.add(new SortedDocValuesField("binary_sorted_dv", new BytesRef(Integer.toString(docId))));
           doc.add(new BinaryDocValuesField("binary_dv", new BytesRef(Integer.toString(docId))));
           doc.add(new SortedSetDocValuesField("sorted_set_dv", new BytesRef(Integer.toString(docId))));
+          doc.add(new NumericDocValuesField("foo", random().nextInt(20)));
 
           FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
           ft.setStoreTermVectors(true);
