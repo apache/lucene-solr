@@ -53,7 +53,7 @@ public final class StartupLoggingUtils {
     }
   }
 
-  public static String getLoggerImplStr() {
+  public static String getLoggerImplStr() { //nowarn
     return binder.getLoggerFactoryClassStr();
   }
 

@@ -437,7 +437,7 @@ public class IndexFetcher {
 
       if (log.isInfoEnabled()) {
         log.info("Follower's generation: {}", commit.getGeneration());
-        log.info("Follower's version: {}", IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); // logOK
+        log.info("Follower's version: {}", IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); // nowarn
       }
 
       if (latestVersion == 0L) {
@@ -1249,7 +1249,7 @@ public class IndexFetcher {
       try {
         if (log.isInfoEnabled()) {
           log.info("From dir files: {}", Arrays.asList(tmpIdxDir.listAll()));
-          log.info("To dir files: {}", Arrays.asList(indexDir.listAll())); //logOk
+          log.info("To dir files: {}", Arrays.asList(indexDir.listAll())); //nowarn
         }
       } catch (IOException e) {
         throw new RuntimeException(e);
