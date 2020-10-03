@@ -163,7 +163,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       if (attributeXmls.length > 0) {
         if (attributeXmls.length > 1) {
           log.warn("More than one attribute file found, first one will be used: {}"
-              , Arrays.toString(attributeXmls)); // logOk
+              , Arrays.toString(attributeXmls)); // nowarn
         }
 
         withContextClassLoader(core.getResourceLoader().getClassLoader(), () -> {
