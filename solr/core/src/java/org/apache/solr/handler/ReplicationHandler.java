@@ -1606,7 +1606,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           }
           fos.write(buf, 0, read);
           fos.flush();
-          log.debug("Wrote {} bytes for file {}", offset + read, fileName); // logOK
+          log.debug("Wrote {} bytes for file {}", offset + read, fileName); // nowarn
 
           //Pause if necessary
           maxBytesBeforePause += read;
