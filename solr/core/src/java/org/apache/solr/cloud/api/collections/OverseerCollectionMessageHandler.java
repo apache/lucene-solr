@@ -636,7 +636,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     AtomicReference<Map<String, Replica>> result = new AtomicReference<>();
     AtomicReference<String> errorMessage = new AtomicReference<>();
     try {
-      zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (n, c) -> { // TODO config timeout up for prod, down for non nightly tests
+      zkStateReader.waitForState(collectionName, 60, TimeUnit.SECONDS, (n, c) -> { // TODO config timeout up for prod, down for non nightly tests
         if (c == null)
           return false;
         Map<String, Replica> r = new HashMap<>();
