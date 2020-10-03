@@ -21,10 +21,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.slf4j.Logger;
@@ -240,29 +237,19 @@ public class RestManager {
   }  
 
   /**
-   * Locates the RestManager using ThreadLocal SolrRequestInfo.
-   */
-  public static RestManager getRestManager(SolrRequestInfo solrRequestInfo) {
-    if (solrRequestInfo == null)
-      throw new SolrException(ErrorCode.SERVER_ERROR, "No SolrRequestInfo in this Thread!");
-
-    SolrQueryRequest req = solrRequestInfo.getReq();
-    RestManager restManager = 
-        (req != null) ? req.getCore().getRestManager() : null;
-    
-    if (restManager == null)
-      throw new SolrException(ErrorCode.SERVER_ERROR, "No RestManager found!");
-
-    return restManager;
-  }
-  
-  /**
    * Request handling needs a lightweight object to delegate a request to.
    * ManagedResource implementations are heavy-weight objects that live for the duration of
    * a SolrCore, so this class acts as the proxy between the request handler and a
    * ManagedResource when doing request processing.
    */
   public static class ManagedEndpoint extends BaseSolrResource {
+
+    final RestManager restManager;
+
+    public ManagedEndpoint(RestManager restManager) {
+      this.restManager = restManager;
+    }
+
     /**
      * Determines the ManagedResource resourceId from the request path.
      */
@@ -302,12 +289,7 @@ public class RestManager {
       super.doInit(solrRequest, solrResponse);
 
       final String resourceId = resolveResourceId(solrRequest.getPath());
-
-      // supports a request for a registered resource or its child
-      RestManager restManager = 
-          RestManager.getRestManager(SolrRequestInfo.getRequestInfo());
-      
-      managedResource = restManager.getManagedResourceOrNull(resourceId);      
+      managedResource = restManager.getManagedResourceOrNull(resourceId);
       if (managedResource == null) {
         // see if we have a registered endpoint one-level up ...
         int lastSlashAt = resourceId.lastIndexOf('/');
@@ -381,7 +363,6 @@ public class RestManager {
         }
       } else {
         try {
-          RestManager restManager = RestManager.getRestManager(SolrRequestInfo.getRequestInfo());
           restManager.deleteManagedResource(managedResource);
         } catch (Exception e) {
           getSolrResponse().setException(e);        
@@ -566,7 +547,6 @@ public class RestManager {
   protected Map<String,ManagedResource> managed = new TreeMap<>();
   protected RestManagerManagedResource endpoint;
   protected SolrResourceLoader loader;
-  protected SolrRequestHandler handler;
 
   /**
    * Initializes the RestManager with the storageIO being optionally created outside of this implementation
@@ -585,7 +565,6 @@ public class RestManager {
     
     this.storageIO = storageIO;
     this.loader = loader;
-    this.handler = new ManagedResourceRequestHandler();
 
     registry = loader.getManagedResourceRegistry();
     
@@ -704,48 +683,4 @@ public class RestManager {
     }
   }
 
-  public SolrRequestHandler getRequestHandler() {
-    return handler;
-  }
-
-  private class ManagedResourceRequestHandler implements SolrRequestHandler {
-
-    @SuppressWarnings("rawtypes")
-    @Override
-    public void init(NamedList args) {
-
-    }
-
-    @Override
-    public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-      RestManager.ManagedEndpoint me = new RestManager.ManagedEndpoint();
-      me.doInit(req, rsp);
-      me.delegateRequestToManagedResource();
-    }
-
-    @Override
-    public String getName() {
-      return null;
-    }
-
-    @Override
-    public String getDescription() {
-      return null;
-    }
-
-    @Override
-    public Category getCategory() {
-      return null;
-    }
-
-    @Override
-    public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-
-    }
-
-    @Override
-    public SolrMetricsContext getSolrMetricsContext() {
-      return null;
-    }
-  }
 }

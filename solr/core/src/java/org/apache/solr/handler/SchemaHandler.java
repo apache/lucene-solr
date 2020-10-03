@@ -35,6 +35,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -61,8 +62,7 @@ import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES
 public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
-  private RestManager.Registry managedResourceRegistry;
-  private RestManager restManager;
+  private SolrRequestHandler managedResourceRequestHandler;
 
   private static final Map<String, String> level2;
 
@@ -260,7 +260,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     String prefix =  parts.get(0);
     if(subPaths.contains(prefix)) return this;
 
-    if(managedResourceRegistry != null) return restManager.getRequestHandler();
+    if(managedResourceRequestHandler != null) return managedResourceRequestHandler;
 
     return null;
   }
@@ -278,8 +278,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   @Override
   public void inform(SolrCore core) {
     isImmutableConfigSet = SolrConfigHandler.getImmutable(core);
-    this.managedResourceRegistry = core.getResourceLoader().getManagedResourceRegistry();
-    this.restManager = core.getRestManager();
+    this.managedResourceRequestHandler =  new ManagedResourceRequestHandler(core.getRestManager());
   }
 
   @Override
@@ -296,5 +295,52 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  private  class ManagedResourceRequestHandler implements SolrRequestHandler {
+
+    private final RestManager restManager;
+
+    private ManagedResourceRequestHandler(RestManager restManager) {
+      this.restManager = restManager;
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Override
+    public void init(NamedList args) {
+
+    }
+
+    @Override
+    public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+      RestManager.ManagedEndpoint me = new RestManager.ManagedEndpoint(restManager);
+      me.doInit(req, rsp);
+      me.delegateRequestToManagedResource();
+    }
+
+    @Override
+    public String getName() {
+      return null;
+    }
+
+    @Override
+    public String getDescription() {
+      return null;
+    }
+
+    @Override
+    public Category getCategory() {
+      return null;
+    }
+
+    @Override
+    public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+
+    }
+
+    @Override
+    public SolrMetricsContext getSolrMetricsContext() {
+      return null;
+    }
   }
 }
