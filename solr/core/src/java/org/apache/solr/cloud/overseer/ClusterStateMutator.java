@@ -112,7 +112,7 @@ public class ClusterStateMutator {
     }
 
     DocCollection newCollection = new DocCollection(cName,
-            slices, collectionProps, router, 1);
+            slices, collectionProps, router, 0);
 
     return new ZkWriteCommand(cName, newCollection);
   }
