@@ -2959,7 +2959,7 @@ public class ZkController implements Closeable, Runnable {
         ZkStateReader.NODE_NAME_PROP, nodeName);
     try {
       overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
-    } catch (AlreadyClosedException | InterruptedException e) {
+    } catch (AlreadyClosedException e) {
       ParWork.propagateInterrupt("Not publishing node as DOWN because a resource required to do so is already closed.", null, true);
       return;
     }

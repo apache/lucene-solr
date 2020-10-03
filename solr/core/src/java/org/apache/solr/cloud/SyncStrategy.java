@@ -51,19 +51,12 @@ public class SyncStrategy implements Closeable {
   private volatile boolean isClosed;
 
   private volatile ZkController zkController;
-
-  private static class RecoveryRequest {
-    ZkNodeProps leaderProps;
-    String baseUrl;
-    String coreName;
-  }
   
   public SyncStrategy(CoreContainer cc) {
     // don't track currently - can be left open by a late election,
     // but currently holds no resources to release anyway
     // assert ObjectReleaseTracker.track(this);
-    UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
-    shardHandler = ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler();
+    shardHandler = cc.getShardHandlerFactory().getShardHandler();
   }
   
   private static class ShardCoreRequest extends ShardRequest {

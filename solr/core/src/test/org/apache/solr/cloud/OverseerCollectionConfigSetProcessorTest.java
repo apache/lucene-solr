@@ -442,7 +442,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
             try {
               handleCreateCollMessage(invocation.getArgument(0));
               stateUpdateQueueMock.offer(invocation.getArgument(0));
-            } catch (KeeperException | InterruptedException e) {
+            } catch (KeeperException e) {
               throw new RuntimeException(e);
             }
             return null;
