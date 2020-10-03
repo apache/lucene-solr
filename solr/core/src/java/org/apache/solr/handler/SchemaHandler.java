@@ -35,7 +35,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -109,6 +108,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     switch (ctx.getHttpMethod()) {
       case "GET":
         return PermissionNameProvider.Name.SCHEMA_READ_PERM;
+      case "PUT":
+      case "DELETE":
       case "POST":
         return PermissionNameProvider.Name.SCHEMA_EDIT_PERM;
       default:
@@ -297,7 +298,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     return Boolean.TRUE;
   }
 
-  private  class ManagedResourceRequestHandler implements SolrRequestHandler {
+  private  class ManagedResourceRequestHandler extends RequestHandlerBase implements PermissionNameProvider {
+
 
     private final RestManager restManager;
 
@@ -305,17 +307,16 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
       this.restManager = restManager;
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void init(NamedList args) {
-
-    }
-
-    @Override
-    public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
       RestManager.ManagedEndpoint me = new RestManager.ManagedEndpoint(restManager);
       me.doInit(req, rsp);
       me.delegateRequestToManagedResource();
+    }
+
+    @Override
+    public Name getPermissionName(AuthorizationContext ctx) {
+      return SchemaHandler.this.getPermissionName(ctx);
     }
 
     @Override
@@ -325,21 +326,6 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     @Override
     public String getDescription() {
-      return null;
-    }
-
-    @Override
-    public Category getCategory() {
-      return null;
-    }
-
-    @Override
-    public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-
-    }
-
-    @Override
-    public SolrMetricsContext getSolrMetricsContext() {
       return null;
     }
   }

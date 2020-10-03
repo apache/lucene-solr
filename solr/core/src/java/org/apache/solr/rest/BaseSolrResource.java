@@ -74,18 +74,7 @@ public abstract class BaseSolrResource {
       this.solrResponse = solrResponse;
       solrCore = solrRequest.getCore();
       schema = solrRequest.getSchema();
-      String responseWriterName = solrRequest.getParams().get(CommonParams.WT);
-      if (null == responseWriterName) {
-        responseWriterName = JSON; // Default to json writer
-      }
-      String indent = solrRequest.getParams().get("indent");
-      if (null == indent || ! ("off".equals(indent) || "false".equals(indent))) {
-        // indent by default
-        ModifiableSolrParams newParams = new ModifiableSolrParams(solrRequest.getParams());
-        newParams.remove(indent);
-        newParams.add("indent", "on");
-        solrRequest.setParams(newParams);
-      }
+      String responseWriterName = solrRequest.getParams().get(CommonParams.WT, JSON);
       responseWriter = solrCore.getQueryResponseWriter(responseWriterName);
       contentType = responseWriter.getContentType(solrRequest, solrResponse);
       final String path = solrRequest.getPath();

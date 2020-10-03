@@ -153,10 +153,6 @@ public class RestManager {
       return Pattern.compile(builder.toString());
     }
 
-    public boolean isPathRegistered(String s) {
-      return registered.containsKey(s);
-    }
-
 
     /**
      * Get a view of the currently registered resources. 
