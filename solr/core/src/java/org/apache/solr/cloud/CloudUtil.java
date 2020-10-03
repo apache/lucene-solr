@@ -93,7 +93,7 @@ public class CloudUtil {
             }
             log.error("{}",
                 new SolrException(ErrorCode.SERVER_ERROR, "Will not load SolrCore " + desc.getName()
-                    + " because it has been replaced due to failover.")); // logOk
+                    + " because it has been replaced due to failover.")); // nowarn
             throw new SolrException(ErrorCode.SERVER_ERROR,
                 "Will not load SolrCore " + desc.getName()
                     + " because it has been replaced due to failover.");

@@ -752,7 +752,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
           break;
         } catch (NumberFormatException | AssertionError notYet) {
           if (log.isInfoEnabled()) {
-            log.info("{}th attempt failure on {} details are {}", retries + 1, notYet, followerDetails); // logOk
+            log.info("{}th attempt failure on {} details are {}", retries + 1, notYet, followerDetails); // nowarn
           }
           if (retries>9) {
             log.error("giving up: ", notYet);
