@@ -1421,7 +1421,7 @@ public final class JapaneseTokenizer extends Tokenizer {
     int left = lattice.nodeLeft[node];
     int right = lattice.nodeRight[node];
     Type type = lattice.nodeDicType[node];
-    if (!discardPunctuation || !isPunctuation(fragment[left])) {
+    if (!discardPunctuation || !isAllCharPunctuation(fragment, left, right - left)) {
       if (type == Type.USER) {
         // The code below are based on backtrace().
         //
@@ -1855,7 +1855,7 @@ public final class JapaneseTokenizer extends Tokenizer {
           }
           backCount += unigramTokenCount;
 
-        } else if (!discardPunctuation || length == 0 || !isPunctuation(fragment[offset])) {
+        } else if (!discardPunctuation || length == 0 || !isAllCharPunctuation(fragment, offset, length)) {
           pending.add(new Token(backID,
                                 fragment,
                                 offset,
@@ -1916,5 +1916,14 @@ public final class JapaneseTokenizer extends Tokenizer {
       default:
         return false;
     }
+  }
+
+  private static boolean isAllCharPunctuation(char[] ch, int offset, int length) {
+    for (int i = offset; i < offset + length; i++) {
+      if (!isPunctuation(ch[i])) {
+        return false;
+      }
+    }
+    return true;
   }
 }

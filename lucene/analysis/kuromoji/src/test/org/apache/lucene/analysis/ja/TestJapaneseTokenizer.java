@@ -918,4 +918,53 @@ public class
     assertAnalyzesTo(extendedModeAnalyzerNoCompound, "株式会社とアカデミア",
         new String[]{"株式", "会社", "と", "ア", "カ", "デ", "ミ", "ア"});
   }
+
+  public void testDiscardPunctuationStartingPunctuationToken1() throws Exception {
+    assertAnalyzesTo(analyzerNoPunct, "（株）巴商会",
+        new String[] { "（株）", "巴商会" },
+        new int[] { 0, 3 },
+        new int[] { 3, 6 }
+    );
+  }
+
+  public void testDiscardPunctuationStartingPunctuationToken2() throws Exception {
+    assertAnalyzesTo(extendedModeAnalyzerNoPunct, "（株）巴商会",
+        new String[] { "（株）", "巴商会" },
+        new int[] { 0, 3 },
+        new int[] { 3, 6 },
+        new int[] { 1, 1 }
+    );
+  }
+
+  public void testDiscardPunctuationStartingPunctuationToken3() throws Exception {
+    assertAnalyzesTo(analyzerNoPunct, "（）巴商会",
+        new String[] { "巴商会" },
+        new int[] { 2 },
+        new int[] { 5 }
+    );
+  }
+
+  public void testDiscardPunctuationStartingPunctuationToken4() throws Exception {
+    JapaneseTokenizer t = makeTokenizer(true, Mode.NORMAL);
+    Analyzer a = makeAnalyzer(t);
+    t.setNBestCost(0);
+    assertAnalyzesTo(a, "（株）巴商会",
+        new String[] { "（株）", "巴商会" }
+    );
+  }
+
+  public void testDiscardPunctuationStartingPunctuationToken5() throws Exception {
+    JapaneseTokenizer t = makeTokenizer(true, Mode.NORMAL);
+    Analyzer a = makeAnalyzer(t);
+    t.setNBestCost(1000);
+    assertAnalyzesTo(a, "（株）巴商会",
+        new String[] { "（株）","株", "巴商会" },
+        new int[] { 0, 1, 3 },
+        new int[] { 3, 2, 6 },
+        null,
+        new int[] { 1, 1, 1 },
+        new int[] { 3, 1, 1 },
+        false
+    );
+  }
 }
