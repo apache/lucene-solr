@@ -208,8 +208,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
           success = result.isSuccess();
         } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          ParWork.propagateInterrupt("Exception while trying to sync", e);
+          result = PeerSync.PeerSyncResult.failure();
         }
         if (isClosed()) {
           return;
