@@ -1147,6 +1147,10 @@ IF "%SOLR_MODE%"=="solrcloud" (
 
   set "CLOUD_MODE_OPTS=-DzkClientTimeout=!ZK_CLIENT_TIMEOUT!"
 
+  IF NOT "%SOLR_WAIT_FOR_ZK%"=="" (
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DwaitForZk=%SOLR_WAIT_FOR_ZK%"
+  )
+
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
   ) ELSE (

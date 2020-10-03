@@ -26,7 +26,7 @@ import org.apache.commons.codec.language.Metaphone;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
+import org.apache.lucene.util.ClasspathResourceLoader;
 
 public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   

@@ -17,7 +17,7 @@
 package org.apache.lucene.analysis.snowball;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.util.Version;
 import org.tartarus.snowball.ext.EnglishStemmer;
