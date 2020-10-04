@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.solr.cluster.api.HashRange;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
