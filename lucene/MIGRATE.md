@@ -2,7 +2,8 @@
 
 ## ICUCollationKeyAnalyzer is renamed (LUCENE-9558)
 
-o.a.l.collation.ICUCollationAnalyzer and its dependant classes are renamed to o.a.l.a.icu.ICUCollationKeyAnalyzer
+o.a.l.collation.ICUCollationAnalyzer is renamed to o.a.l.a.icu.ICUCollationKeyAnalyzer.
+Also, its dependant classes are renamed in the same way.
 
 ## Base and concrete analysis factories are moved / package renamed (LUCENE-9317)
 
