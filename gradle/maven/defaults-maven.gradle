@@ -250,6 +250,17 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
             artifact javadocJar
 
             pom(configurePom)
+
+            pom({
+              // LUCENE-9561:
+              // Remove dependencyManagement section created by a combination of
+              // Palantir and the publishing plugin.
+              //
+              // https://github.com/palantir/gradle-consistent-versions/issues/550
+              withXml {
+                asNode().dependencyManagement.replaceNode {}
+              }
+            })
           }
         }
       }
