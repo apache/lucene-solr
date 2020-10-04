@@ -16,9 +16,11 @@
  */
 package org.apache.solr.rest;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -28,10 +30,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.servlet.ResponseUtils;
 import org.slf4j.Logger;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-
 import static org.apache.solr.common.params.CommonParams.JSON;
 
 /**
