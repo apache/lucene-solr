@@ -632,9 +632,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private void printTrackingMaps() {
     if (log.isDebugEnabled()) {
       log.debug("RunningTasks: {}", runningTasks);
-      log.debug("BlockedTasks: {}", blockedTasks.keySet()); // logOk
-      log.debug("CompletedTasks: {}", completedTasks.keySet()); // logOk
-      log.debug("RunningZKTasks: {}", runningZKTasks); // logOk
+      log.debug("BlockedTasks: {}", blockedTasks.keySet()); // nowarn
+      log.debug("CompletedTasks: {}", completedTasks.keySet()); // nowarn
+      log.debug("RunningZKTasks: {}", runningZKTasks); // nowarn
     }
   }
 
