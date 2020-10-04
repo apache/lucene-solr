@@ -69,7 +69,7 @@ configure(rootProject) {
         ":solr:test-framework",
     ]
 
-    apacheNexusUrl = "https://repository.apache.org/content/repositories/snapshots"
+    apacheNexusSnapshots = "https://repository.apache.org/content/repositories/snapshots"
   }
 }
 
@@ -81,7 +81,7 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
     repositories {
       maven {
         name = "ApacheSnapshots"
-        url = "https://repository.apache.org/content/repositories/snapshots"
+        url = apacheNexusSnapshots
 
         credentials {
           def nexusUserName = rootProject.propertyOrDefault('asfNexusUsername', null)
@@ -257,7 +257,7 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
       // Add aliases of convention tasks with shorter names.
       task mavenToApacheSnapshots() {
         group "Publishing"
-        description "Publish Maven JARs and POMs to Apache Snapshots repository: ${apacheNexusUrl}"
+        description "Publish Maven JARs and POMs to Apache Snapshots repository: ${apacheNexusSnapshots}"
 
         dependsOn "publishJarsPublicationToApacheSnapshotsRepository"
       }
