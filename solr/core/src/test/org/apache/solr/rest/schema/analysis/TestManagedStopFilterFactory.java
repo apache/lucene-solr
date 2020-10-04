@@ -29,7 +29,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.restlet.ext.servlet.ServerServlet;
 
 /**
  * Test the REST API for managing stop words, which is pretty basic:
@@ -50,9 +49,6 @@ public class TestManagedStopFilterFactory extends RestTestBase {
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
-    extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");

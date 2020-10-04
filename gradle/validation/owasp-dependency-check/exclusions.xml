@@ -88,36 +88,6 @@
   </suppress>
   <suppress>
     <notes><![CDATA[
-   file name: org.restlet.ext.servlet-2.3.0.jar
-   ]]></notes>
-    <packageUrl regex="true">^pkg:maven/org\.restlet\.jee/org\.restlet\.ext\.servlet@.*$</packageUrl>
-    <cpe>cpe:/a:restlet:restlet_framework</cpe>
-  </suppress>
-  <suppress>
-    <notes><![CDATA[
-   file name: org.restlet.ext.servlet-2.3.0.jar
-   ]]></notes>
-    <packageUrl regex="true">^pkg:maven/org\.restlet\.jee/org\.restlet\.ext\.servlet@.*$</packageUrl>
-    <cpe>cpe:/a:restlet:restlet</cpe>
-  </suppress>
-  <suppress>
-    <notes><![CDATA[
-   file name: org.restlet-2.3.0.jar
-   We don't use class SimpleXMLProvider
-   ]]></notes>
-    <packageUrl regex="true">^pkg:maven/org\.restlet\.jee/org\.restlet@.*$</packageUrl>
-    <cve>CVE-2017-14868</cve>
-  </suppress>
-  <suppress>
-    <notes><![CDATA[
-   file name: org.restlet-2.3.0.jar
-   We don't use class XmlRepresentation
-   ]]></notes>
-    <packageUrl regex="true">^pkg:maven/org\.restlet\.jee/org\.restlet@.*$</packageUrl>
-    <cve>CVE-2017-14949</cve>
-  </suppress>
-  <suppress>
-    <notes><![CDATA[
    file name: solr-webapp-9.0.0-SNAPSHOT.war: jquery-2.1.3.min.js
    This is already being fixed in SOLR-14209 so muting the warning
    ]]></notes>

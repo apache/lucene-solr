@@ -37,7 +37,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.restlet.ext.servlet.ServerServlet;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 
@@ -55,9 +54,6 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
-    extraServlets.put(solrRestApi, "/schema/*");
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
