@@ -473,7 +473,7 @@ public abstract class LBSolrClient extends SolrClient {
       synchronized (this) {
         if (aliveCheckExecutor == null) {
           aliveCheckExecutor = new ScheduledThreadPoolExecutor(1,
-              new SolrNamedThreadFactory("aliveCheckExecutor"));
+              new SolrNamedThreadFactory("aliveCheckExecutor", true));
           aliveCheckExecutor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
           aliveCheckExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
           aliveCheckExecutor.scheduleAtFixedRate(
@@ -749,7 +749,9 @@ public abstract class LBSolrClient extends SolrClient {
   @Override
   public void close() {
     this.closed = true;
-    ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
+    if (aliveCheckExecutor != null) {
+      aliveCheckExecutor.shutdown();
+    }
     assert ObjectReleaseTracker.release(this);
   }
 }

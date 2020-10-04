@@ -164,9 +164,9 @@ public class Http2SolrClient extends SolrClient {
       }
       this.serverBaseUrl = serverBaseUrl;
     }
-    Integer moar = -1;
+    Integer moar = 1000;
     if (builder.maxOutstandingAsyncRequests != null) moar = builder.maxOutstandingAsyncRequests;
-    asyncTracker = new AsyncTracker(-1); // nocommit
+    asyncTracker = new AsyncTracker(moar); // nocommit
     this.headers = builder.headers;
     this.strictEventOrdering = builder.strictEventOrdering;
 
@@ -542,8 +542,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   private void decorateRequest(Request req, SolrRequest solrRequest) {
-    req.header(HttpHeader.ACCEPT_ENCODING, null);
-    req.timeout(idleTimeout, TimeUnit.MILLISECONDS);
+    req.header(HttpHeader.ACCEPT_ENCODING, null).idleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
     if (solrRequest.getUserPrincipal() != null) {
       req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
     }

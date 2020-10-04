@@ -58,6 +58,9 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final Http2SolrClient updateOnlyClient;
 
+  private final Http2SolrClient recoveryOnlyClient;
+
+
   private final CloseableHttpClient defaultClient;
 
   private ExecutorService recoveryExecutor;
@@ -105,13 +108,23 @@ public class UpdateShardHandler implements SolrInfoBean {
           .connectionTimeout(cfg.getDistributedConnectionTimeout())
           .idleTimeout(cfg.getDistributedSocketTimeout());
     }
-    updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().maxThreadPoolSize(ParWork.PROC_COUNT).maxRequestsQueuedPerDestination(16000).build();
+    updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().maxThreadPoolSize(ParWork.PROC_COUNT)
+        .maxRequestsQueuedPerDestination(16000).strictEventOrdering(true).build();
     updateOnlyClient.enableCloseLock();
    // updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
     Set<String> queryParams = new HashSet<>(2);
     queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
     queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
     updateOnlyClient.setQueryParams(queryParams);
+
+
+    Http2SolrClient.Builder recoveryOnlyClientBuilder = new Http2SolrClient.Builder();
+    if (cfg != null) {
+      recoveryOnlyClientBuilder.connectionTimeout(5000).idleTimeout(30000);
+    }
+
+    recoveryOnlyClient = recoveryOnlyClientBuilder.markInternalRequest().maxThreadPoolSize(ParWork.PROC_COUNT).build();
+    recoveryOnlyClient.enableCloseLock();
 
 //    ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
 //    if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
@@ -191,6 +204,10 @@ public class UpdateShardHandler implements SolrInfoBean {
     return updateOnlyClient;
   }
 
+  public Http2SolrClient getRecoveryOnlyClient() {
+    return recoveryOnlyClient;
+  }
+
   public PoolingHttpClientConnectionManager getDefaultConnectionManager() {
     return defaultConnectionManager;
   }
@@ -206,13 +223,14 @@ public class UpdateShardHandler implements SolrInfoBean {
   public void close() {
     assert closeTracker.close();
     if (updateOnlyClient != null) updateOnlyClient.disableCloseLock();
+    if (recoveryOnlyClient != null) recoveryOnlyClient.disableCloseLock();
     try (ParWork closer = new ParWork(this, true)) {
       closer.collect("", () -> {
         HttpClientUtil.close(defaultClient);
         return defaultClient;
       });
       closer.addCollect();
-
+      closer.collect(recoveryOnlyClient);
       closer.collect(updateOnlyClient);
       closer.collect(defaultConnectionManager);
       closer.collect("SolrInfoBean", () -> {

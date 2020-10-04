@@ -16,19 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
@@ -53,7 +40,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -70,13 +56,25 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
-import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class may change in future and customisations are not supported between versions in terms of API or back compat
@@ -325,7 +323,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    Http2SolrClient client = core.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient();
+    Http2SolrClient client = core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyClient();
     UpdateRequest ureq = new UpdateRequest();
     ureq.setBasePath(leaderUrl);
     ureq.setParams(new ModifiableSolrParams());
@@ -629,7 +627,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
                                                                                             // though
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
-        final Replica leader = pingLeader(ourUrl, this.coreDescriptor, true);
+        final Replica leader = getLeader(ourUrl, this.coreDescriptor, true);
         if (isClosed()) {
           log.info("RecoveryStrategy has been closed");
           break;
@@ -842,15 +840,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
     log.info("Finished recovery process, successful=[{}]", successfulRecovery);
   }
 
-  private final Replica pingLeader(String ourUrl, CoreDescriptor coreDesc, boolean mayPutReplicaAsDown)
+  private final Replica getLeader(String ourUrl, CoreDescriptor coreDesc, boolean mayPutReplicaAsDown)
       throws Exception {
     int numTried = 0;
     while (true) {
       CloudDescriptor cloudDesc = coreDesc.getCloudDescriptor();
       DocCollection docCollection = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName());
-      if (!isClosed() && mayPutReplicaAsDown && numTried == 1 &&
-          docCollection.getReplica(coreDesc.getCloudDescriptor().getCoreNodeName())
-              .getState() == Replica.State.ACTIVE) {
+      if (!isClosed() && mayPutReplicaAsDown && numTried == 1 && docCollection.getReplica(coreDesc.getCloudDescriptor().getCoreNodeName()).getState() == Replica.State.ACTIVE) {
         // this operation may take a long time, by putting replica into DOWN state, client won't query this replica
         //zkController.publish(coreDesc, Replica.State.DOWN);
         // We should be in recovery and ignored by queries
@@ -865,10 +861,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       Replica leaderReplica = null;
 
-
       try {
-        leaderReplica = zkStateReader.getLeaderRetry(
-            cloudDesc.getCollectionName(), cloudDesc.getShardId(), 5000);
+        leaderReplica = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 5000);
       } catch (SolrException e) {
         Thread.sleep(500);
         log.info("Could not find leader, looping again ...", e);
@@ -876,38 +870,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
 
       return leaderReplica;
-//      try {
-//        try (Http2SolrClient httpSolrClient = buildRecoverySolrClient(leaderReplica.getCoreUrl())) {
-//          SolrPing req = new SolrPing();
-//          req.setBasePath(leaderReplica.getCoreUrl());
-//          SolrPingResponse resp = req.process(httpSolrClient, null);
-//          return leaderReplica;
-//        }
-//      } catch (IOException e) {
-//        // let the recovery throttle handle pauses
-//        log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getCoreUrl(), e);
-//      } catch (Exception e) {
-//        ParWork.propagateInterrupt("Failed to connect leader " + leaderReplica.getCoreUrl() + " on recovery, try again", e);
-//        if (e.getCause() instanceof IOException) {
-//          log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getCoreUrl());
-//        } else {
-//          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-//        }
-//      }
     }
   }
 
   public static Runnable testing_beforeReplayBufferingUpdates;
-
-    /** Builds a new HttpSolrClient for use in recovery.  Caller must close */
-    private final Http2SolrClient buildRecoverySolrClient(final String leaderUrl) {
-      return new Http2SolrClient.Builder(leaderUrl)
-          .connectionTimeout(2000)
-          .idleTimeout(5000)
-          .withHttpClient(cc.getUpdateShardHandler().getTheSharedHttpClient())
-          .markInternalRequest().build();
-    }
-
 
     final private Future<RecoveryInfo> replay(SolrCore core)
       throws InterruptedException, ExecutionException {
@@ -996,7 +962,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "30000"));
     // nocommit
     try (Http2SolrClient client = new Http2SolrClient.Builder(leaderBaseUrl).withHttpClient(core.getCoreContainer().getUpdateShardHandler().
-        getTheSharedHttpClient()).idleTimeout(readTimeout).connectionTimeout(3000).markInternalRequest().build()) {
+        getRecoveryOnlyClient()).idleTimeout(readTimeout).connectionTimeout(3000).markInternalRequest().build()) {
       prepCmd.setBasePath(leaderBaseUrl);
       log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
       Cancellable result = client.asyncRequest(prepCmd, null, new NamedListAsyncListener());

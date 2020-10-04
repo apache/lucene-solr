@@ -394,8 +394,8 @@ public class CoreContainer implements Closeable {
     containerProperties.putAll(cfg.getSolrProperties());
 
 
-    solrCoreLoadExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), Math.max(12, Runtime.getRuntime().availableProcessors() / 2),
-        true, true);
+    solrCoreLoadExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), Math.max(32, Runtime.getRuntime().availableProcessors()),
+        false, false);
 //    if (solrCoreLoadExecutor == null) {
 //      synchronized (CoreContainer.class) {
 //        if (solrCoreLoadExecutor == null) {
