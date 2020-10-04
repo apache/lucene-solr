@@ -751,11 +751,7 @@ There are a great deal of other parameters available to help you control how Sol
 
 ==== Range Facets
 
-For numerics or dates, it's often desirable to partition the facet counts into ranges rather than discrete values. A prime example of numeric range faceting, using the example techproducts data from our previous exercise, is `price`.  In the `/browse` UI, it looks like this:
-
-.Range facets
-image::images/solr-tutorial/tutorial-range-facet.png[Solr Quick Start: Range facets]
-
+For numerics or dates, it's often desirable to partition the facet counts into ranges rather than discrete values. A prime example of numeric range faceting, using the example techproducts data from our previous exercise, is `price`.
 The films data includes the release date for films, and we could use that to create date range facets, which are another common use for range facets.
 
 The Solr Admin UI doesn't yet support range facet options, so you will need to use curl or similar command line tool for the following examples.
@@ -955,13 +951,6 @@ Jump ahead to the overall <<Wrapping Up,wrap up>> when you're ready to stop Solr
 Solr has sophisticated geospatial support, including searching within a specified distance range of a given location (or within a bounding box), sorting by distance, or even boosting results by the distance.
 
 Some of the example techproducts documents we indexed in Exercise 1 have locations associated with them to illustrate the spatial capabilities. To reindex this data, see <<index-the-techproducts-data,Exercise 1>>.
-
-Spatial queries can be combined with any other types of queries, such as in this example of querying for "ipod" within 10 kilometers from San Francisco:
-
-.Spatial queries and results
-image::images/solr-tutorial/tutorial-spatial.png[Solr Quick Start: spatial search]
-
-This is from Solr's example search UI (called `/browse`), which has a nice feature to show a map for each item and allow easy selection of the location to search near. You can see this yourself by going to <http://localhost:8983/solr/techproducts/browse?q=ipod&pt=37.7752%2C-122.4232&d=10&sfield=store&fq=%7B%21bbox%7D&queryOpts=spatial&queryOpts=spatial> in a browser.
 
 To learn more about Solr's spatial capabilities, see the section <<spatial-search.adoc#spatial-search,Spatial Search>>.
 
