@@ -24,13 +24,18 @@ configure(rootProject) {
     mavenLocalDir = file("${buildDir}/maven-local")
   }
 
-  task mavenLocal() {
+  task mavenToLocalFolder() {
     group "Publishing"
     description "Publish Maven JARs and POMs locally to " + mavenLocalDir
 
     doLast {
       logger.lifecycle "Local maven artifacts (poms, jars) created at: ${mavenLocalDir}"
     }
+  }
+
+  task mavenToLocalRepo() {
+    group "Publishing"
+    description "Publish Maven JARs and POMs to current user's local maven repository."
   }
 
   task mavenLocalClean(type: Delete) {
@@ -48,11 +53,15 @@ configure(rootProject) {
         }
       }
 
+      tasks.matching { it.name == "publishJarsPublicationToMavenLocal" }.all { task ->
+        mavenToLocalRepo.dependsOn task
+      }
+
       tasks.matching { it.name == "publishJarsPublicationToBuildRepository" }.all { task ->
-        // Clean prior to republishing to local build repository.
+        // Clean local repo prior to republishing artifacts.
         task.dependsOn mavenLocalClean
         // Attach to root project's mavenLocal task.
-        mavenLocal.dependsOn task
+        mavenToLocalFolder.dependsOn task
       }
     }
   }
