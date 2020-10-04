@@ -16,16 +16,16 @@
  */
 package org.apache.solr.rest;
 
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.Arrays;
+
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.rest.schema.analysis.ManagedWordSetResource;
 import org.junit.Test;
-
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.Arrays;
 
 /**
  * Tests {@link RestManager} functionality, including resource registration,
