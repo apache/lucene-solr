@@ -16,17 +16,6 @@
  */
 package org.apache.solr.rest;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
@@ -49,6 +38,16 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 /**
