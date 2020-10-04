@@ -116,8 +116,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   /**
    * Enum to define action that needs to be processed.
-   * PASSTHROUGH: Pass through to Restlet via webapp.
-   * FORWARD: Forward rewritten URI (without path prefix and core/collection name) to Restlet
+   * PASSTHROUGH: Pass through to another filter via webapp.
+   * FORWARD: Forward rewritten URI (without path prefix and core/collection name) to another filter in the chain
    * RETURN: Returns the control, and no further specific processing is needed.
    *  This is generally when an error is set and returned.
    * RETRY:Retry the request. In cases when a core isn't found to work with, this is set.

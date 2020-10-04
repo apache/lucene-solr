@@ -546,18 +546,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================
-==     Restlet Notice                                                  ==
-=========================================================================
-
-Copyright (C) 2005-2014 Restlet S.A.S.
-
-Restlet is a registered trademark of Restlet S.A.S.
-
-This product contains software developed by the Restlet project.
-
-See http://www.restlet.org/
-
-=========================================================================
 ==     Protocol Buffers Notice                                         ==
 =========================================================================
 

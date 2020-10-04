@@ -180,6 +180,8 @@ Other Changes
 * SOLR-14910: Use in-line tags for logger declarations in Gradle ValidateLogCalls that are non-standard,
               change //logok to //nowarn (Erick Erickson)
 
+* SOLR-14659: Remove restlet as dependency for the ManagedResource API (Timothy Potter, noble)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
