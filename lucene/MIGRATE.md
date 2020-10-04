@@ -1,5 +1,9 @@
 # Apache Lucene Migration Guide
 
+## ICUCollationKeyAnalyzer is renamed (LUCENE-9558)
+
+o.a.l.collation.ICUCollationAnalyzer and its dependant classes are renamed to o.a.l.a.icu.ICUCollationKeyAnalyzer
+
 ## Base and concrete analysis factories are moved / package renamed (LUCENE-9317)
 
 1. Base analysis factories are moved to `lucene-core`, also their package names are renamed.
