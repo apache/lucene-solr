@@ -70,6 +70,10 @@ public class TestGermanLightStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "sängerinnen", "sängerinnen");
+    //LUCENE-9410
+    checkOneTerm(analyzer, "schlummert", "schlummern");
+    checkOneTerm(analyzer, "grüßend", "grüßen");
+    checkOneTerm(analyzer, "gegrüßt", "grüßen");
     a.close();
   }
   
