@@ -393,6 +393,7 @@ public class TestConjunctionDISI extends LuceneTestCase {
   }
 
   public void testIllegalAdvancementOfSubIteratorsTripsAssertion() throws IOException {
+    assumeTrue("Assertions must be enabled for this test!", LuceneTestCase.assertsAreEnabled);
     int maxDoc = 100;
     final int numIterators = TestUtil.nextInt(random(), 2, 5);
     FixedBitSet set = randomSet(maxDoc);
@@ -405,6 +406,6 @@ public class TestConjunctionDISI extends LuceneTestCase {
     int idx = TestUtil.nextInt(random() , 0, iterators.length-1);
     iterators[idx].nextDoc(); // illegally advancing one of the sub-iterators outside of the conjunction iterator
     AssertionError ex = expectThrows(AssertionError.class, () -> conjunction.nextDoc());
-    assertEquals(ex.getMessage(), "Sub-iterators of ConjunctionDISI are not the same document!");
+    assertEquals("Sub-iterators of ConjunctionDISI are not on the same document!", ex.getMessage());
   }
 }

@@ -147,7 +147,7 @@ public final class ConjunctionDISI extends DocIdSetIterator {
     boolean iteratorsOnTheSameDoc = allIterators.stream().allMatch(it -> it.docID() == curDoc);
     iteratorsOnTheSameDoc = iteratorsOnTheSameDoc && twoPhaseIterators.stream().allMatch(it -> it.approximation().docID() == curDoc);
     if (iteratorsOnTheSameDoc == false) {
-      throw new IllegalArgumentException("Sub-iterators of ConjunctionDISI are not the same document!");
+      throw new IllegalArgumentException("Sub-iterators of ConjunctionDISI are not on the same document!");
     }
 
     long minCost = allIterators.stream().mapToLong(DocIdSetIterator::cost).min().getAsLong();
@@ -238,7 +238,7 @@ public final class ConjunctionDISI extends DocIdSetIterator {
 
   @Override
   public int advance(int target) throws IOException {
-    assert assertItersOnSameDoc() : "Sub-iterators of ConjunctionDISI are not the same document!";
+    assert assertItersOnSameDoc() : "Sub-iterators of ConjunctionDISI are not one the same document!";
     return doNext(lead1.advance(target));
   }
 
@@ -249,7 +249,7 @@ public final class ConjunctionDISI extends DocIdSetIterator {
 
   @Override
   public int nextDoc() throws IOException {
-    assert assertItersOnSameDoc() : "Sub-iterators of ConjunctionDISI are not the same document!";
+    assert assertItersOnSameDoc() : "Sub-iterators of ConjunctionDISI are not on the same document!";
     return doNext(lead1.nextDoc());
   }
 
@@ -300,13 +300,13 @@ public final class ConjunctionDISI extends DocIdSetIterator {
 
     @Override
     public int nextDoc() throws IOException {
-      assert assertItersOnSameDoc() : "Sub-iterators of ConjunctionDISI are not the same document!";
+      assert assertItersOnSameDoc() : "Sub-iterators of ConjunctionDISI are not on the same document!";
       return doNext(lead.nextDoc());
     }
 
     @Override
     public int advance(int target) throws IOException {
-      assert assertItersOnSameDoc() : "Sub-iterators of ConjunctionDISI are not the same document!";
+      assert assertItersOnSameDoc() : "Sub-iterators of ConjunctionDISI are not on the same document!";
       return doNext(lead.advance(target));
     }
 
