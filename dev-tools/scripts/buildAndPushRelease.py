@@ -195,7 +195,7 @@ def pushLocal(version, root, rev, rcNum, localDir):
   print('    zip...')
   if os.path.exists('lucene.tar.bz2'):
     os.remove('lucene.tar.bz2')
-  run('tar cjf lucene.tar.bz2 *')  # what are we actually zipping here? the release zip?
+  run('tar cjf lucene.tar.bz2 *')
 
   os.chdir('%s/%s/lucene' % (localDir, dir))
   print('    unzip...')
@@ -208,7 +208,7 @@ def pushLocal(version, root, rev, rcNum, localDir):
   print('    zip...')
   if os.path.exists('solr.tar.bz2'):
     os.remove('solr.tar.bz2')
-  run('tar cjf solr.tar.bz2 *')  # what are we actually zipping here? the release zip?
+  run('tar cjf solr.tar.bz2 *')
   print('    unzip...')
   os.chdir('%s/%s/solr' % (localDir, dir))
   run('tar xjf "%s/solr.tar.bz2"' % solr_dist_dir)
