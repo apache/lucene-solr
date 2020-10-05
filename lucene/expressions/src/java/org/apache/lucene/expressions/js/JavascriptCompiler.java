@@ -18,8 +18,11 @@ package org.apache.lucene.expressions.js;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -85,7 +88,34 @@ public final class JavascriptCompiler {
     }
   }
   
-  private static final int CLASSFILE_VERSION = Opcodes.V1_8;
+  /** Method handle to invoke Java 15's way to define hidden classes.
+   * The method handle uses a private lookup of {@link JavascriptCompiler} to define
+   * classes (this ensures we can create classes in our package without extra permissions).
+   * The classes are initialized and have no strong relationship to our classloader.
+   * This ensures they can be unloaded.
+   * Signature of MH:
+   * {@code static Lookup defineHiddenClass(byte[] bc) throws IllegalAccessException}
+   * The MH is {@code null} if an earlier JDK is used. 
+   * @see "https://openjdk.java.net/jeps/371"
+   */
+  private static final MethodHandle MH_defineHiddenClass;
+  static {
+    final Lookup publicLookup = MethodHandles.publicLookup();
+    MethodHandle mh;
+    try {
+      final Object emptyOptions = Array.newInstance(
+          publicLookup.findClass(Lookup.class.getName().concat("$ClassOption")), 0);
+      mh = publicLookup.findVirtual(Lookup.class, "defineHiddenClass",
+          MethodType.methodType(Lookup.class, byte[].class, boolean.class, emptyOptions.getClass()));
+      mh = mh.bindTo(MethodHandles.lookup()); // private lookup of JavascriptCompiler!
+      mh = MethodHandles.insertArguments(mh.asFixedArity(), 1, true, emptyOptions);
+    } catch (ReflectiveOperationException e) {
+      mh = null;
+    }
+    MH_defineHiddenClass = mh;
+  }
+  
+  private static final int CLASSFILE_VERSION = Opcodes.V11;
   
   // We use the same class name for all generated classes as they all have their own class loader.
   // The source code is displayed as "source file name" in stack trace.
@@ -191,9 +221,10 @@ public final class JavascriptCompiler {
 
     try {
       generateClass(getAntlrParseTree(), classWriter, externalsMap);
-
-      final Class<? extends Expression> evaluatorClass = new Loader(parent)
-        .define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
+      
+      final Class<? extends Expression> evaluatorClass = defineClass(parent, classWriter.toByteArray());
+      // System.err.println("Expression class name: " + evaluatorClass.getName());
+      
       final Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
 
       return constructor.newInstance(sourceText, externalsMap.keySet().toArray(new String[externalsMap.size()]));
@@ -205,6 +236,24 @@ public final class JavascriptCompiler {
     } catch (ReflectiveOperationException exception) {
       throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
     }
+  }
+
+  private Class<? extends Expression> defineClass(ClassLoader parent, byte[] bc) throws IllegalAccessException {
+    // if we are on Java 15+ and the classloader is our own classloader, we can create an
+    // anonymous hidden class (JEP-371):
+    if (MH_defineHiddenClass != null && parent == getClass().getClassLoader()) {
+      final Lookup hiddenLookup;
+      try {
+        hiddenLookup = (Lookup) MH_defineHiddenClass.invokeExact(bc);
+      } catch (IllegalAccessException | Error | RuntimeException e) {
+        throw e;
+      } catch (Throwable t) {
+        throw new AssertionError(t); // should never be thrown by MH, just trick compiler
+      }
+      return hiddenLookup.lookupClass().asSubclass(Expression.class);
+    }
+    
+    return new Loader(parent).define(COMPILED_EXPRESSION_CLASS, bc);
   }
 
   /**
