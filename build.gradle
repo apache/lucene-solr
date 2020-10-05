@@ -85,6 +85,7 @@ ext {
   // version unification control. These are not our main dependencies.
   scriptDepVersions = [
       "apache-rat": "0.11",
+      "commons-codec": "1.13",
       "ecj": "3.19.0",
       "javacc": "7.0.4",
       "jflex": "1.7.0",
