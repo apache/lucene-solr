@@ -203,16 +203,10 @@ public abstract class Weight implements SegmentCacheable {
     public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
       collector.setScorer(scorer);
       DocIdSetIterator scorerIterator = twoPhase == null ? iterator : twoPhase.approximation();
-
-      DocIdSetIterator filteredIterator = scorerIterator;
-      if (scorerIterator.docID() == -1) {
-        DocIdSetIterator collectorIterator = collector.competitiveIterator();
-        if (collectorIterator != null) {
-          // filter scorerIterator to keep only competitive docs as defined by collector
-          filteredIterator = ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
-        }
-      }
-
+      DocIdSetIterator collectorIterator = collector.competitiveIterator();
+      // if possible filter scorerIterator to keep only competitive docs as defined by collector
+      DocIdSetIterator filteredIterator = collectorIterator == null ? scorerIterator :
+          ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
       if (filteredIterator.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
         scoreAll(collector, filteredIterator, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;

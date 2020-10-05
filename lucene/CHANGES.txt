@@ -142,9 +142,6 @@ Improvements
 
 Bug fixes
 
-* LUCENE-9555: For sort optimization, create conjunction between scorerIterator
-  and collectorIterator only if scorerIterator has not been advanced yet. (Mayya Sharipova)
-
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
