@@ -167,6 +167,9 @@ public class TestFrenchLightStemFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "disposition", "dispos");
     checkOneTerm(analyzer, "dispose", "dispos");
 
+    //LUCENE-9410
+    checkOneTerm(analyzer, "maux", "mal");
+
     // SOLR-3463 : abusive compression of repeated characters in numbers
     // Trailing repeated char elision :
     checkOneTerm(analyzer, "1234555", "1234555");
