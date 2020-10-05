@@ -71,7 +71,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
 
     conf = newWriterConfig();
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
-    lmp.setMaxMergeMBForForcedMerge((min + 1) / (1 << 20));
+    lmp.setMaxMergeMBForForcedMerge(min / (1 << 20));
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
