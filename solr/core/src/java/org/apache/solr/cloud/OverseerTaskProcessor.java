@@ -251,13 +251,13 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             continue;
           }
           OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
-//          OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
-//          if (lock == null) {
-//            log.debug("Exclusivity check failed for [{}]", message.toString());
-//            // we may end crossing the size of the MAX_BLOCKED_TASKS. They are fine
-//            if (blockedTasks.size() < MAX_BLOCKED_TASKS) blockedTasks.put(head.getId(), head);
-//            continue;
-//          }
+          OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
+          if (lock == null) {
+            log.debug("Exclusivity check failed for [{}]", message.toString());
+            // we may end crossing the size of the MAX_BLOCKED_TASKS. They are fine
+            if (blockedTasks.size() < MAX_BLOCKED_TASKS) blockedTasks.put(head.getId(), head);
+            continue;
+          }
           try {
             markTaskAsRunning(head, asyncId);
             if (log.isDebugEnabled()) {
@@ -273,7 +273,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
           }
           if (log.isDebugEnabled()) log.debug(messageHandler.getName() + ": Get the message id:" + head.getId() + " message:" + message.toString());
-          Runner runner = new Runner(messageHandler, message, operation, head, null);
+          Runner runner = new Runner(messageHandler, message, operation, head, lock);
           taskFutures.put(runner, ParWork.getRootSharedExecutor().submit(runner));
         }
 
@@ -420,6 +420,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   protected class Runner implements Runnable {
     final ZkNodeProps message;
     final String operation;
+    private final OverseerMessageHandler.Lock lock;
     volatile OverseerSolrResponse response;
     final QueueEvent head;
     final OverseerMessageHandler messageHandler;
@@ -429,6 +430,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       this.operation = operation;
       this.head = head;
       this.messageHandler = messageHandler;
+      this.lock = lock;
     }
 
 
@@ -486,6 +488,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           return;
         }
         log.error("Exception running task", e);
+      } finally {
+        lock.unlock();
       }
 
       if (log.isDebugEnabled()) {

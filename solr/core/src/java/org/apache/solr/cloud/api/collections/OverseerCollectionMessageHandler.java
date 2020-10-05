@@ -906,7 +906,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private LockTree.Session lockSession;
 
   @Override
-  public synchronized Lock lockTask(ZkNodeProps message, OverseerTaskProcessor.TaskBatch taskBatch) {
+  public Lock lockTask(ZkNodeProps message, OverseerTaskProcessor.TaskBatch taskBatch) {
     if (lockSession == null || sessionId != taskBatch.getId()) {
       //this is always called in the same thread.
       //Each batch is supposed to have a new taskBatch

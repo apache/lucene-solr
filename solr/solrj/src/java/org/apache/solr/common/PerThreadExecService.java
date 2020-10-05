@@ -25,7 +25,7 @@ public class PerThreadExecService extends AbstractExecutorService {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int MAX_AVAILABLE = Math.max(ParWork.PROC_COUNT / 4, 2);
+  private static final int MAX_AVAILABLE = Math.max(ParWork.PROC_COUNT / 2, 3);
   private final Semaphore available = new Semaphore(MAX_AVAILABLE, false);
 
   private final ExecutorService service;
