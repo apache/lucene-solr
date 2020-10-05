@@ -164,7 +164,7 @@ public class Http2SolrClient extends SolrClient {
       }
       this.serverBaseUrl = serverBaseUrl;
     }
-    Integer moar = 1000;
+    Integer moar = 5000;
     if (builder.maxOutstandingAsyncRequests != null) moar = builder.maxOutstandingAsyncRequests;
     asyncTracker = new AsyncTracker(moar); // nocommit
     this.headers = builder.headers;
@@ -963,7 +963,7 @@ public class Http2SolrClient extends SolrClient {
 
   public static class Builder {
 
-    public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(64, ParWork.PROC_COUNT));
+    public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(32, ParWork.PROC_COUNT));
     public int maxRequestsQueuedPerDestination = 2048;
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
