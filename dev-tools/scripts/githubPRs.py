@@ -55,7 +55,7 @@ def make_html(dict):
     print ("ERROR: Cannot generate HTML. Please install jinja2")
     sys.exit(1)
   global conf
-  template = Environment(loader=BaseLoader).from_string("""
+  template = Environment(loader=BaseLoader, autoescape=True).from_string("""
   <h1>Lucene/Solr Github PR report</h1>
 
   <p>Number of open Pull Requests: {{ open_count }}</p>
