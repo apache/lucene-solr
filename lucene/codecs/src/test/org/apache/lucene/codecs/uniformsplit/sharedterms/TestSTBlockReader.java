@@ -205,7 +205,7 @@ public class TestSTBlockReader extends LuceneTestCase {
         0,
         0,
         0,
-         VectorValues.ScoreFunction.NONE,
+        VectorValues.ScoreFunction.NONE,
         false
     );
   }

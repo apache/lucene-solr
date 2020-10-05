@@ -139,7 +139,7 @@ public class Lucene84Codec extends Codec {
 
   @Override
   public VectorFormat vectorFormat() {
-    return null;
+    return VectorFormat.EMPTY;
   }
 
   /** Returns the postings format that should be used for writing

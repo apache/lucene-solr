@@ -232,8 +232,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue() throws IOException {
-      dataIn.seek(ord * byteSize);
-      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
+      binaryValue();
       floatBuffer.position(0);
       floatBuffer.get(value, 0, fieldEntry.dimension);
       return value;

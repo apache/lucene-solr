@@ -24,7 +24,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Access to per-document vector value.
+ * This class provides access to per-document floating point vector values indexed as {@link
+ * org.apache.lucene.document.VectorField}.
  */
 public abstract class VectorValues extends DocIdSetIterator {
 
@@ -214,7 +215,7 @@ public abstract class VectorValues extends DocIdSetIterator {
    * Represents the lack of vector values. It is returned by providers that do not
    * support VectorValues.
    */
-  public static VectorValues EMPTY = new VectorValues() {
+  public static final VectorValues EMPTY = new VectorValues() {
 
     @Override
     public int size() {
@@ -233,7 +234,7 @@ public abstract class VectorValues extends DocIdSetIterator {
 
     @Override
     public float[] vectorValue() {
-      throw new IndexOutOfBoundsException("Attempt to get vectors from EMPTY values");
+      throw new IllegalStateException("Attempt to get vectors from EMPTY values (which was not advanced)");
     }
 
     @Override
@@ -243,17 +244,17 @@ public abstract class VectorValues extends DocIdSetIterator {
 
     @Override
     public int docID() {
-      return -1;
+      throw new IllegalStateException("VectorValues is EMPTY, and not positioned on a doc");
     }
 
     @Override
     public int nextDoc() {
-      return -1;
+      return NO_MORE_DOCS;
     }
 
     @Override
     public int advance(int target) {
-      return -1;
+      return NO_MORE_DOCS;
     }
 
     @Override

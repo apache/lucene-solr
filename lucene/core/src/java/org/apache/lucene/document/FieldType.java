@@ -300,6 +300,7 @@ public class FieldType implements IndexableFieldType  {
    * Enables points indexing with selectable dimension indexing.
    */
   public void setDimensions(int dimensionCount, int indexDimensionCount, int dimensionNumBytes) {
+    checkIfFrozen();
     if (dimensionCount < 0) {
       throw new IllegalArgumentException("dimensionCount must be >= 0; got " + dimensionCount);
     }
@@ -357,6 +358,7 @@ public class FieldType implements IndexableFieldType  {
   }
 
   void setVectorDimensionsAndScoreFunction(int numDimensions, VectorValues.ScoreFunction distFunc) {
+    checkIfFrozen();
     if (numDimensions <= 0) {
       throw new IllegalArgumentException("vector numDimensions must be > 0; got " + numDimensions);
     }

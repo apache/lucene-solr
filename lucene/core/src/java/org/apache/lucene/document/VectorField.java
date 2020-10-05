@@ -19,8 +19,15 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.index.VectorValues;
 
-/**
- * Per-document vector value; {@code float} array.
+/** A field that contains a single floating-point numeric vector (or none) for each document.
+ * Vectors are dense - that is, every dimension of a vector contains an explicit value, stored
+ * packed into an array (of type float[]) whose length is the vector dimension. Values can be
+ * retrieved using {@link VectorValues}, which is a forward-only docID-based iterator and also
+ * offers random-access by dense ordinal (not docId). {@link VectorValues.ScoreFunction}s may be
+ * used to compare vectors at query time (for example as part of result ranking). A VectorField may
+ * be associated with a score function that defines the metric used for nearest-neighbor search
+ * among vectors of that field, but at the moment this association is purely nominal: it is intended
+ * for future use by the to-be-implemented nearest neighbors search.
  */
 public class VectorField extends Field {
 

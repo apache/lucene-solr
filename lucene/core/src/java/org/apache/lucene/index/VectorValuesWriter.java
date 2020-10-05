@@ -28,9 +28,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** Buffers up pending vector value(s) per doc, then flushes when segment flushes. */
-public class VectorValuesWriter {
+class VectorValuesWriter {
 
   private final FieldInfo fieldInfo;
   private final Counter iwBytesUsed;
@@ -61,6 +62,10 @@ public class VectorValuesWriter {
     if (docID == lastDocID) {
       throw new IllegalArgumentException("VectorValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
+    if (vectorValue.length != fieldInfo.getVectorDimension()) {
+      throw new IllegalArgumentException("Attempt to index a vector of dimension " + vectorValue.length +
+          " but \"" + fieldInfo.name + "\" has dimension " + fieldInfo.getVectorDimension());
+    }
     assert docID > lastDocID;
     docsWithField.add(docID);
     vectors.add(ArrayUtil.copyOfSubArray(vectorValue, 0, vectorValue.length));
@@ -70,7 +75,7 @@ public class VectorValuesWriter {
 
   private void updateBytesUsed() {
     final long newBytesUsed = docsWithField.ramBytesUsed()
-            + vectors.size() * 5 // pointer plus array overhead for each array??
+            + vectors.size() * (RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER)
             + vectors.size() * vectors.get(0).length * Float.BYTES;
     if (iwBytesUsed != null) {
       iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
@@ -104,7 +109,7 @@ public class VectorValuesWriter {
       this.delegate = delegate;
       randomAccess = delegate.randomAccess();
       offsets = new int[sortMap.size()];
-      int offset = 1; // 0 means no values for this document
+      int offset = 1; // 0 means no vector for this (field, document)
       int docID;
       while ((docID = delegate.nextDoc()) != NO_MORE_DOCS) {
         int newDocID = sortMap.oldToNew(docID);

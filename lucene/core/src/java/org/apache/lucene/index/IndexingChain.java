@@ -781,7 +781,7 @@ final class IndexingChain implements Accountable {
   }
 
   /** Called from processDocument to index one field's vector value */
-  private void indexVector(int docID, PerField fp, IndexableField field) throws IOException {
+  private void indexVector(int docID, PerField fp, IndexableField field) {
     int dimension = field.fieldType().vectorDimension();
     VectorValues.ScoreFunction scoreFunction = field.fieldType().vectorScoreFunction();
 

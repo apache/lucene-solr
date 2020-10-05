@@ -48,7 +48,9 @@ public abstract class VectorWriter implements Closeable {
 
   /** Merge the vector values from multiple segments, for all fields */
   public void merge(MergeState mergeState) throws IOException {
-    for (VectorReader reader : mergeState.vectorReaders) {
+    for (int i = 0; i < mergeState.fieldInfos.length; i++) {
+      VectorReader reader = mergeState.vectorReaders[i];
+      assert reader != null || mergeState.fieldInfos[i].hasVectorValues() == false;
       if (reader != null) {
         reader.checkIntegrity();
       }
@@ -119,7 +121,7 @@ public abstract class VectorWriter implements Closeable {
     public int nextDoc() throws IOException {
       int docId = values.nextDoc();
       if (docId != NO_MORE_DOCS) {
-        // Note: this does count deleted docs  since they are present in the to-be-merged segment
+        // Note: this does count deleted docs since they are present in the to-be-merged segment
         ++count;
       }
       return docId;

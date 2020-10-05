@@ -44,7 +44,7 @@ public abstract class VectorFormat {
   /**
    * EMPTY throws an exception when written. It acts as a sentinel indicating a Codec that does not support vectors.
    */
-  public static VectorFormat EMPTY = new VectorFormat() {
+  public static final VectorFormat EMPTY = new VectorFormat() {
     @Override
     public VectorWriter fieldsWriter(SegmentWriteState state) {
       throw new UnsupportedOperationException("Attempt to write EMPTY VectorValues: maybe you forgot to use codec=Lucene90");
