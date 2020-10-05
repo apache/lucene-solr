@@ -30,7 +30,7 @@ def includeInBinaries = project(":lucene").subprojects.findAll {subproject ->
     return !(subproject.path in [
         // Exclude packaging, not relevant to binary distribution.
         ":lucene:packaging",
-        // Exclude parent container project fo analysis modules (no artifacts).
+        // Exclude parent container project of analysis modules (no artifacts).
         ":lucene:analysis"
     ])
 }
@@ -96,9 +96,15 @@ distributions {
                 include "SYSTEM_REQUIREMENTS.md"
             })
 
+            // A couple more missing README files
+            from(project(':lucene:analysis').projectDir) {
+                include "README.txt"
+                into 'analysis'
+            }
+
             // Copy files from documentation output to 'docs'
             from(configurations.docs, {
-                into "docs"
+                into 'docs'
             })
 
             // Put included project's binary artifacts under their corresponding subfolders.
@@ -135,6 +141,10 @@ configure(project(":lucene").subprojects) {
         task assemblePackaging(type: Sync) {
             from(projectDir, {
                 include "README.*"
+            })
+
+            from(project.file('docs'), {
+                into 'docs'
             })
 
             from(tasks.findByName("jar"))
