@@ -120,7 +120,7 @@ def prepare(root, version, gpgKeyID, gpgPassword):
     # TODO sign
     # cmd += ' -Psigning.keyId=%s publishSignedPublicationToMavenLocal' % gpgKeyID
     pass
-  cmd += ' mavenLocal'
+  cmd += ' mavenToLocalFolder'
 
   if gpgPassword is not None:
     runAndSendGPGPassword(cmd, gpgPassword)
