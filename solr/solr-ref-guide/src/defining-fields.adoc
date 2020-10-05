@@ -46,9 +46,7 @@ Fields can have many of the same properties as field types. Properties from the 
 
 // TODO: SOLR-10655 BEGIN: refactor this into a 'field-default-properties.include.adoc' file for reuse
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,40,20,20",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Property |Description |Values |Implicit Default
 |indexed |If true, the value of the field can be used in queries to retrieve matching documents. |true or false |true

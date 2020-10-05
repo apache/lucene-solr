@@ -68,9 +68,7 @@ image::images/getting-assistance/Assistance.png[image]
 
 These icons include the following links.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="25,75",options="header"]
+[%autowidth.spread,width="100%",options="header"]
 |===
 |Link |Description
 |Documentation |Navigates to the Apache Solr documentation hosted on https://lucene.apache.org/solr/.
