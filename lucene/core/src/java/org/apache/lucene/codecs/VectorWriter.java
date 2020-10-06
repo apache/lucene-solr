@@ -70,6 +70,7 @@ public abstract class VectorWriter implements Closeable {
     List<VectorValuesSub> subs = new ArrayList<>();
     int dimension = -1;
     VectorValues.ScoreFunction scoreFunction = null;
+    int nonEmptySegmentIndex = 0;
     for (int i = 0; i < mergeState.vectorReaders.length; i++) {
       VectorReader vectorReader = mergeState.vectorReaders[i];
       if (vectorReader != null) {
@@ -88,14 +89,16 @@ public abstract class VectorWriter implements Closeable {
           }
           VectorValues values = vectorReader.getVectorValues(mergeFieldInfo.name);
           if (values != null) {
-            subs.add(new VectorValuesSub(i, mergeState.docMaps[i], values));
+            subs.add(new VectorValuesSub(nonEmptySegmentIndex++, mergeState.docMaps[i], values));
           }
         }
       }
     }
     // Create a new VectorValues by iterating over the sub vectors, mapping the resulting
     // docids using docMaps in the mergeState.
-    writeField(mergeFieldInfo, new VectorValuesMerger(subs, mergeState));
+    if (subs.size() > 0) {
+      writeField(mergeFieldInfo, new VectorValuesMerger(subs, mergeState));
+    }
     if (mergeState.infoStream.isEnabled("VV")) {
       mergeState.infoStream.message("VV", "merge done " + mergeState.segmentInfo);
     }
@@ -132,9 +135,8 @@ public abstract class VectorWriter implements Closeable {
    * View over multiple VectorValues supporting iterator-style access via DocIdMerger. Maintains a reverse ordinal
    * mapping for documents having values in order to support random access by dense ordinal.
    */
-  private static class VectorValuesMerger extends VectorValues implements VectorValues.RandomAccess {
+  private static class VectorValuesMerger extends VectorValues {
     private final List<VectorValuesSub> subs;
-    private final List<RandomAccess> raSubs;
     private final DocIDMerger<VectorValuesSub> docIdMerger;
     private final int[] ordBase;
     private final int cost;
@@ -150,10 +152,8 @@ public abstract class VectorWriter implements Closeable {
     VectorValuesMerger(List<VectorValuesSub> subs, MergeState mergeState) throws IOException {
       this.subs = subs;
       docIdMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
-      raSubs = new ArrayList<>(subs.size());
       int totalCost = 0, totalSize = 0;
       for (VectorValuesSub sub : subs) {
-        raSubs.add(sub.values.randomAccess());
         totalCost += sub.values.cost();
         totalSize += sub.values.size();
       }
@@ -182,7 +182,7 @@ public abstract class VectorWriter implements Closeable {
         docId = NO_MORE_DOCS;
       } else {
         docId = current.mappedDocID;
-        ordMap[ord++] = current.count;
+        ordMap[ord++] = ordBase[current.segmentIndex] + current.count - 1;
       }
       return docId;
     }
@@ -199,36 +199,11 @@ public abstract class VectorWriter implements Closeable {
 
     @Override
     public RandomAccess randomAccess() {
-      return this;
-    }
-
-    @Override
-    public float[] vectorValue(int target) throws IOException {
-      int unmappedOrd = ordMap[target];
-      int segmentOrd = Arrays.binarySearch(ordBase, unmappedOrd);
-      if (segmentOrd < 0) {
-        // get the index of the greatest lower bound
-        segmentOrd = -2 - segmentOrd;
-      }
-      while(segmentOrd < ordBase.length - 1 && ordBase[segmentOrd + 1] == ordBase[segmentOrd]) {
-        // forward over empty segments which will share the same ordBase
-        segmentOrd++;
-      }
-      return raSubs.get(segmentOrd).vectorValue(unmappedOrd - ordBase[segmentOrd]);
-    }
-
-    @Override
-    public BytesRef binaryValue(int targetOrd) throws IOException {
-      throw new UnsupportedOperationException();
+      return new MergerRandomAccess();
     }
 
     @Override
     public int advance(int target) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TopDocs search(float[] target, int k, int fanout) throws IOException {
       throw new UnsupportedOperationException();
     }
 
@@ -250,6 +225,59 @@ public abstract class VectorWriter implements Closeable {
     @Override
     public VectorValues.ScoreFunction scoreFunction() {
       return subs.get(0).values.scoreFunction();
+    }
+
+    class MergerRandomAccess implements VectorValues.RandomAccess {
+
+      private final List<RandomAccess> raSubs;
+
+      MergerRandomAccess() {
+        raSubs = new ArrayList<>(subs.size());
+        for (VectorValuesSub sub : subs) {
+          raSubs.add(sub.values.randomAccess());
+        }
+      }
+
+      @Override
+      public int size() {
+        return size;
+      }
+
+      @Override
+      public int dimension() {
+        return VectorValuesMerger.this.dimension();
+      }
+
+      @Override
+      public ScoreFunction scoreFunction() {
+        return VectorValuesMerger.this.scoreFunction();
+      }
+
+      @Override
+      public float[] vectorValue(int target) throws IOException {
+        int unmappedOrd = ordMap[target];
+        int segmentOrd = Arrays.binarySearch(ordBase, unmappedOrd);
+        if (segmentOrd < 0) {
+          // get the index of the greatest lower bound
+          segmentOrd = -2 - segmentOrd;
+        }
+        while(segmentOrd < ordBase.length - 1 && ordBase[segmentOrd + 1] == ordBase[segmentOrd]) {
+          // forward over empty segments which will share the same ordBase
+          segmentOrd++;
+        }
+        return raSubs.get(segmentOrd).vectorValue(unmappedOrd - ordBase[segmentOrd]);
+      }
+
+      @Override
+      public BytesRef binaryValue(int targetOrd) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public TopDocs search(float[] target, int k, int fanout) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
     }
   }
 }

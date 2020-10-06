@@ -56,6 +56,7 @@ public abstract class VectorValues extends DocIdSetIterator {
   /**
    * Return the vector value for the current document ID.
    * It is illegal to call this method after the iterator failed to advance.
+   * The returned array may be re-used and modified as the iterator advances.
    * @return the vector value
    */
   public abstract float[] vectorValue() throws IOException;
@@ -63,6 +64,7 @@ public abstract class VectorValues extends DocIdSetIterator {
   /**
    * Return the binary encoded vector value for the current document ID.
    * It is illegal to call this method after the iterator failed to advance.
+   * The returned storage may be re-used and modified as the iterator advances.
    * @return the binary value
    */
   public BytesRef binaryValue() throws IOException {
@@ -70,24 +72,42 @@ public abstract class VectorValues extends DocIdSetIterator {
   }
 
   /**
-   * Return a random access interface over this iterator's vectors.
+   * Return a random access interface over this iterator's vectors. Calling the RandomAccess methods will
+   * have no effect on the progress of the iteration or the values returned by this iterator. Successive calls
+   * will retrieve independent copies that do not overwrite each others' returned values.
    */
   public abstract RandomAccess randomAccess();
 
   /**
-   * Provides random access to vectors by dense ordinal
+   * Provides random access to vectors by dense ordinal.
    */
   public interface RandomAccess {
 
     /**
-     * Return the vector value as a floating point array.
+     * Return the number of vector values
+     */
+    int size();
+
+    /**
+     * Return the dimension of the returned vector values
+     */
+    int dimension();
+
+    /**
+     * Return the score function used to compare these vectors
+     */
+    ScoreFunction scoreFunction();
+
+    /**
+     * Return the vector value indexed at the given ordinal. The provided floating point array
+     * may be shared and overwritten by subsequent calls to this method.
      * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
      */
     float[] vectorValue(int targetOrd) throws IOException;
 
     /**
-     * Return the vector value as a byte array; these are the bytes corresponding to the float array
-     * encoded using little-endian byte order.
+     * Return the vector indexed at the given ordinal value as an array of bytes in a BytesRef;
+     * these are the bytes corresponding to the float array, encoded using little-endian byte order.
      * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
      */
     BytesRef binaryValue(int targetOrd) throws IOException;

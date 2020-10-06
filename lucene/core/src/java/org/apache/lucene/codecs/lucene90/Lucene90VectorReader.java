@@ -273,53 +273,68 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public RandomAccess randomAccess() {
-      return new OffHeapRandomAccess(dataIn.clone(), dimension());
+      return new OffHeapRandomAccess(dataIn.clone());
+    }
+
+
+    class OffHeapRandomAccess implements VectorValues.RandomAccess {
+
+      final IndexInput dataIn;
+
+      final BytesRef binaryValue;
+      final ByteBuffer byteBuffer;
+      final FloatBuffer floatBuffer;
+      final int byteSize;
+      final float[] value;
+
+      OffHeapRandomAccess(IndexInput dataIn) {
+        this.dataIn = dataIn;
+        byteSize = Float.BYTES * dimension();
+        byteBuffer = ByteBuffer.allocate(byteSize);
+        floatBuffer = byteBuffer.asFloatBuffer();
+        value = new float[dimension()];
+        binaryValue = new BytesRef(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
+      }
+
+      @Override
+      public int size() {
+        return fieldEntry.size();
+      }
+
+      @Override
+      public int dimension() {
+        return fieldEntry.dimension;
+      }
+
+      @Override
+      public VectorValues.ScoreFunction scoreFunction() {
+        return fieldEntry.scoreFunction;
+      }
+
+      @Override
+      public float[] vectorValue(int targetOrd) throws IOException {
+        readValue(targetOrd);
+        floatBuffer.position(0);
+        floatBuffer.get(value);
+        return value;
+      }
+
+      @Override
+      public BytesRef binaryValue(int targetOrd) throws IOException {
+        readValue(targetOrd);
+        return binaryValue;
+      }
+
+      private void readValue(int targetOrd) throws IOException {
+        long offset = targetOrd * byteSize;
+        dataIn.seek(offset);
+        dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
+      }
+
+      @Override
+      public TopDocs search(float[] vector, int topK, int fanout) throws IOException {
+        throw new UnsupportedOperationException();
+      }
     }
   }
-
-  static class OffHeapRandomAccess implements VectorValues.RandomAccess {
-
-    final IndexInput dataIn;
-
-    final BytesRef binaryValue;
-    final ByteBuffer byteBuffer;
-    final FloatBuffer floatBuffer;
-    final int byteSize;
-    final float[] value;
-
-    OffHeapRandomAccess(IndexInput dataIn, int dimension) {
-      this.dataIn = dataIn;
-      byteSize = Float.BYTES * dimension;
-      byteBuffer = ByteBuffer.allocate(byteSize);
-      floatBuffer = byteBuffer.asFloatBuffer();
-      value = new float[dimension];
-      binaryValue = new BytesRef(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
-    }
-
-    @Override
-    public float[] vectorValue(int targetOrd) throws IOException {
-      readValue(targetOrd);
-      floatBuffer.position(0);
-      floatBuffer.get(value);
-      return value;
-    }
-
-    @Override
-    public BytesRef binaryValue(int targetOrd) throws IOException {
-      readValue(targetOrd);
-      return binaryValue;
-    }
-
-    private void readValue(int targetOrd) throws  IOException {
-      long offset = targetOrd * byteSize;
-      dataIn.seek(offset);
-      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
-    }
-
-    @Override
-    public TopDocs search(float[] vector, int topK, int fanout) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-  }
-
 }

@@ -102,19 +102,31 @@ class VectorValuesWriter {
 
     private final VectorValues delegate;
     private final VectorValues.RandomAccess randomAccess;
-    private final int[] offsets;
+    private final int[] docIdOffsets;
+    private final int[] ordMap;
     private int docId = -1;
 
     SortingVectorValues(VectorValues delegate, Sorter.DocMap sortMap) throws IOException {
       this.delegate = delegate;
       randomAccess = delegate.randomAccess();
-      offsets = new int[sortMap.size()];
+      docIdOffsets = new int[sortMap.size()];
+
       int offset = 1; // 0 means no vector for this (field, document)
       int docID;
       while ((docID = delegate.nextDoc()) != NO_MORE_DOCS) {
         int newDocID = sortMap.oldToNew(docID);
-        offsets[newDocID] = offset++;
+        docIdOffsets[newDocID] = offset++;
       }
+
+      // set up ordMap to map from new dense ordinal to old dense ordinal
+      ordMap = new int[offset - 1];
+      int ord = 0;
+      for (int docIdOffset : docIdOffsets) {
+        if (docIdOffset != 0) {
+          ordMap[ord++] = docIdOffset - 1;
+        }
+      }
+      assert ord == ordMap.length;
     }
 
     @Override
@@ -124,9 +136,9 @@ class VectorValuesWriter {
 
     @Override
     public int nextDoc() throws IOException {
-      while (docId < offsets.length - 1) {
+      while (docId < docIdOffsets.length - 1) {
         ++docId;
-        if (offsets[docId] != 0) {
+        if (docIdOffsets[docId] != 0) {
           return docId;
         }
       }
@@ -136,8 +148,7 @@ class VectorValuesWriter {
 
     @Override
     public BytesRef binaryValue() throws IOException {
-      int oldOffset = offsets[docId] - 1;
-      return randomAccess.binaryValue(oldOffset);
+      return randomAccess.binaryValue(docIdOffsets[docId] - 1);
     }
 
     @Override
@@ -172,7 +183,39 @@ class VectorValuesWriter {
 
     @Override
     public RandomAccess randomAccess() {
-      throw new UnsupportedOperationException();
+      RandomAccess ra = delegate.randomAccess();
+      return new RandomAccess() {
+
+        @Override
+        public int size() {
+          return delegate.size();
+        }
+
+        @Override
+        public int dimension() {
+          return delegate.dimension();
+        }
+
+        @Override
+        public ScoreFunction scoreFunction() {
+          return delegate.scoreFunction();
+        }
+
+        @Override
+        public float[] vectorValue(int targetOrd) throws IOException {
+          return ra.vectorValue(ordMap[targetOrd]);
+        }
+
+        @Override
+        public BytesRef binaryValue(int targetOrd) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public TopDocs search(float[] target, int k, int fanout) {
+          throw new UnsupportedOperationException();
+        }
+      };
     }
   }
 
@@ -187,10 +230,11 @@ class VectorValuesWriter {
 
     final ByteBuffer buffer;
     final BytesRef binaryValue;
+    final ByteBuffer raBuffer;
+    final BytesRef raBinaryValue;
 
     DocIdSetIterator docsWithFieldIter;
-    int bufferPos = 0;
-    float[] value;
+    int ord = -1;
 
     BufferedVectorValues(DocsWithFieldSet docsWithField, List<float[]> vectorsArray, int dimension, VectorValues.ScoreFunction scoreFunction) {
       this.docsWithField = docsWithField;
@@ -199,6 +243,8 @@ class VectorValuesWriter {
       this.scoreFunction = scoreFunction;
       buffer = ByteBuffer.allocate(dimension * Float.BYTES);
       binaryValue = new BytesRef(buffer.array());
+      raBuffer = ByteBuffer.allocate(dimension * Float.BYTES);
+      raBinaryValue = new BytesRef(raBuffer.array());
       docsWithFieldIter = docsWithField.iterator();
     }
 
@@ -224,20 +270,19 @@ class VectorValuesWriter {
 
     @Override
     public BytesRef binaryValue() {
-      buffer.asFloatBuffer().put(value);
+      buffer.asFloatBuffer().put(vectorValue());
       return binaryValue;
     }
 
     @Override
     public BytesRef binaryValue(int targetOrd) {
-      // Note: this will overwrite any value returned by binaryValue(), but in our private usage these never conflict
-      buffer.asFloatBuffer().put(vectors.get(targetOrd));
-      return binaryValue;
+      raBuffer.asFloatBuffer().put(vectors.get(targetOrd));
+      return raBinaryValue;
     }
 
     @Override
     public float[] vectorValue() {
-      return value;
+      return vectors.get(ord);
     }
 
     @Override
@@ -254,7 +299,7 @@ class VectorValuesWriter {
     public int nextDoc() throws IOException {
       int docID = docsWithFieldIter.nextDoc();
       if (docID != NO_MORE_DOCS) {
-        value = vectors.get(bufferPos++);
+        ++ord;
       }
       return docID;
     }

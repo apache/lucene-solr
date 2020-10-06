@@ -490,6 +490,38 @@ public class TestVectorValues extends LuceneTestCase {
     }
   }
 
+  public void testSortedIndex() throws Exception {
+    IndexWriterConfig iwc = createIndexWriterConfig();
+    iwc.setIndexSort(new Sort(new SortField("sortkey", SortField.Type.INT)));
+    String fieldName = "field";
+    try (Directory dir = newDirectory();
+         IndexWriter iw = new IndexWriter(dir, iwc)) {
+      add(iw, fieldName, 1, 1, new float[]{1});
+      add(iw, fieldName, 4, 4, new float[]{4});
+      add(iw, fieldName, 3, 3, null);
+      add(iw, fieldName, 2, 2, new float[]{2});
+      try (IndexReader reader = iw.getReader()) {
+        LeafReader leaf = reader.leaves().get(0).reader();
+
+        VectorValues vectorValues = leaf.getVectorValues(fieldName);
+        assertEquals(1, vectorValues.dimension());
+        assertEquals(3, vectorValues.size());
+        assertEquals("1", leaf.document(vectorValues.nextDoc()).get("id"));
+        assertEquals(1f, vectorValues.vectorValue()[0], 0);
+        assertEquals("2", leaf.document(vectorValues.nextDoc()).get("id"));
+        assertEquals(2f, vectorValues.vectorValue()[0], 0);
+        assertEquals("4", leaf.document(vectorValues.nextDoc()).get("id"));
+        assertEquals(4f, vectorValues.vectorValue()[0], 0);
+        assertEquals(NO_MORE_DOCS, vectorValues.nextDoc());
+
+        VectorValues.RandomAccess ra = vectorValues.randomAccess();
+        assertEquals(1f, ra.vectorValue(0)[0], 0);
+        assertEquals(2f, ra.vectorValue(1)[0], 0);
+        assertEquals(4f, ra.vectorValue(2)[0], 0);
+      }
+    }
+  }
+
   /**
    * Index random vectors, sometimes skipping documents, sometimes deleting a document,
    * sometimes merging, sometimes sorting the index,
@@ -561,11 +593,15 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   private void add(IndexWriter iw, String field, int id, float[] vector) throws IOException {
+    add(iw, field, id, random().nextInt(100), vector);
+  }
+
+  private void add(IndexWriter iw, String field, int id, int sortkey, float[] vector) throws IOException {
     Document doc = new Document();
     if (vector != null) {
       doc.add(new VectorField(field, vector));
     }
-    doc.add(new NumericDocValuesField("sortkey", random().nextInt(100)));
+    doc.add(new NumericDocValuesField("sortkey", sortkey));
     doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));
     iw.addDocument(doc);
   }
