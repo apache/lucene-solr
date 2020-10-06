@@ -286,18 +286,13 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     Object val = values.findRecursive("metrics", key1);
     assertNotNull(val);
     assertTrue(val instanceof MapWriter);
-    Map<String, Object> map = new HashMap<>();
-    ((MapWriter) val).toMap(map);
-    assertTrue(map.size() >= 2);
+    assertTrue(((MapWriter)val)._size() >= 2);
 
     String key2 = "solr.core.collection1:CACHE.core.fieldCache:entries_count";
     resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, key2), resp);
-    values = resp.getValues();
-    map = new HashMap<>();
-    values.toMap(map);
-    val = Utils.getObjectByPath(map, true, "metrics/" + key2);
+    val = resp.getValues()._get("metrics/" + key2, null);
     assertNotNull(val);
     assertTrue(val instanceof Number);
 
@@ -305,10 +300,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, key3), resp);
-    values = resp.getValues();
-    map = new HashMap<>();
-    values.toMap(map);
-    val = Utils.getObjectByPath(map, true, "metrics/" + key3);
+
+    val = resp.getValues()._get( "metrics/" + key3, null);
     assertNotNull(val);
     assertTrue(val instanceof Number);
     assertEquals(3, ((Number) val).intValue());
@@ -317,25 +310,20 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, key1, MetricsHandler.KEY_PARAM, key2, MetricsHandler.KEY_PARAM, key3), resp);
-    values = resp.getValues();
-    map = new HashMap<>();
-    values.toMap(map);
-    val = Utils.getObjectByPath(map, false, "metrics/" + key1);
+
+    val = resp.getValues()._get( "metrics/" + key1, null);
     assertNotNull(val);
-    val = Utils.getObjectByPath(map, true, "metrics/" + key2);
+    val = resp.getValues()._get( "metrics/" + key2,null);
     assertNotNull(val);
-    val = Utils.getObjectByPath(map, true, "metrics/" + key3);
+    val = resp.getValues()._get( "metrics/" + key3, null);
     assertNotNull(val);
 
     String key4 = "solr.core.collection1:QUERY./select.requestTimes:1minRate";
     resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, key4), resp);
-    values = resp.getValues();
-    map = new HashMap<>();
-    values.toMap(map);
     // the key contains a slash, need explicit list of path elements
-    val = Utils.getObjectByPath(map, true, Arrays.asList("metrics", key4));
+    val = resp.getValues()._get(Arrays.asList("metrics", key4), null);
     assertNotNull(val);
     assertTrue(val instanceof Number);
 
