@@ -36,6 +36,7 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommonTestInjection;
@@ -117,12 +118,10 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     List<MetricFilter> metricFilters = metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
     Set<String> requestedRegistries = parseRegistries(params);
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList response = new SimpleOrderedMap();
+    NamedList<Object> response = new SimpleOrderedMap<>();
     for (String registryName : requestedRegistries) {
       MetricRegistry registry = metricManager.registry(registryName);
-      @SuppressWarnings({"rawtypes"})
-      SimpleOrderedMap result = new SimpleOrderedMap();
+      SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
       MetricUtils.toMaps(registry, metricFilters, mustMatchFilter, propertyFilter, false,
           false, compact, false, (k, v) -> result.add(k, v));
       if (result.size() > 0) {
@@ -134,8 +133,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleKeyRequest(String[] keys, BiConsumer<String, Object> consumer) throws Exception {
-    SimpleOrderedMap result = new SimpleOrderedMap();
-    SimpleOrderedMap errors = new SimpleOrderedMap();
+    SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
+    SimpleOrderedMap<Object> errors = new SimpleOrderedMap<>();
     for (String key : keys) {
       if (key == null || key.isEmpty()) {
         continue;
@@ -173,6 +172,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       MetricUtils.convertMetric(key, m, propertyFilter, false, true, true, false, ":", (k, v) -> {
         if ((v instanceof Map) && propertyName != null) {
           ((Map)v).forEach((k1, v1) -> result.add(k + ":" + k1, v1));
+        } else if ((v instanceof MapWriter) && propertyName != null) {
+          ((MapWriter) v)._forEachEntry((k1, v1) -> result.add(k + ":" + k1, v1));
         } else {
           result.add(k, v);
         }

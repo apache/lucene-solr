@@ -31,6 +31,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
 import org.junit.Test;
@@ -49,7 +50,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     // obtain timer metrics
     Map<String,Object> map = new HashMap<>();
     MetricUtils.convertTimer("", timer, MetricUtils.PropertyFilter.ALL, false, false, ".", (k, v) -> {
-      map.putAll((Map<String,Object>)v);
+      ((MapWriter) v).toMap(map);
     });
     @SuppressWarnings({"rawtypes"})
     NamedList lst = new NamedList(map);
@@ -106,7 +107,10 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
         MetricUtils.PropertyFilter.ALL, false, false, false, false, (k, o) -> {
       @SuppressWarnings({"rawtypes"})
-      Map v = (Map)o;
+      Map<String, Object> v = new HashMap<>();
+      if (o != null) {
+        ((MapWriter) o).toMap(v);
+      }
       if (k.startsWith("counter")) {
         assertEquals(1L, v.get("count"));
       } else if (k.startsWith("gauge")) {
@@ -139,7 +143,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
         assertEquals(0D, v.get("max"));
         assertEquals(0D, v.get("mean"));
       } else if (k.startsWith("memory.expected.error")) {
-        assertNull(v);
+        assertTrue(v.isEmpty());
       }
     });
     // test compact format
@@ -152,25 +156,25 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
             assertTrue(o instanceof String);
             assertEquals("foobar", o);
           } else if (k.startsWith("timer")) {
-            assertTrue(o instanceof Map);
-            @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            assertTrue(o instanceof MapWriter);
+            Map<String, Object> v = new HashMap<>();
+            ((MapWriter) o).toMap(v);
             assertEquals(1L, v.get("count"));
             assertTrue(((Number)v.get("min_ms")).intValue() > 100);
           } else if (k.startsWith("meter")) {
-            assertTrue(o instanceof Map);
-            @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            assertTrue(o instanceof MapWriter);
+            Map<String, Object> v = new HashMap<>();
+            ((MapWriter) o).toMap(v);
             assertEquals(1L, v.get("count"));
           } else if (k.startsWith("histogram")) {
-            assertTrue(o instanceof Map);
-            @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            assertTrue(o instanceof MapWriter);
+            Map<String, Object> v = new HashMap<>();
+            ((MapWriter) o).toMap(v);
             assertEquals(1L, v.get("count"));
           } else if (k.startsWith("aggregate1")) {
-            assertTrue(o instanceof Map);
-            @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            assertTrue(o instanceof MapWriter);
+            Map<String, Object> v = new HashMap<>();
+            ((MapWriter) o).toMap(v);
             assertEquals(4, v.get("count"));
             Map<String, Object> values = (Map<String, Object>)v.get("values");
             assertNotNull(values);
@@ -182,9 +186,9 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
             assertEquals(-2, update.get("value"));
             assertEquals(2, update.get("updateCount"));
           } else if (k.startsWith("aggregate2")) {
-            assertTrue(o instanceof Map);
-            @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            assertTrue(o instanceof MapWriter);
+            Map<String, Object> v = new HashMap<>();
+            ((MapWriter) o).toMap(v);
             assertEquals(2, v.get("count"));
             Map<String, Object> values = (Map<String, Object>)v.get("values");
             assertNotNull(values);
@@ -198,8 +202,9 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
           } else if (k.startsWith("memory.expected.error")) {
             assertNull(o);
           } else {
-            @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            assertTrue(o instanceof MapWriter);
+            Map<String, Object> v = new HashMap<>();
+            ((MapWriter) o).toMap(v);
             assertEquals(1L, v.get("count"));
           }
         });

@@ -20,14 +20,13 @@ import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.PlatformManagedObject;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -46,6 +45,8 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
@@ -169,20 +170,42 @@ public class MetricUtils {
    * @param o an instance of converted metric, either a Map or a flat Object
    */
   static void toSolrInputDocument(String prefix, SolrInputDocument doc, Object o) {
-    if (!(o instanceof Map)) {
+    final BiConsumer<Object, Object> consumer = (k, v) -> {
+      if ((v instanceof Map) || (v instanceof MapWriter) || (v instanceof IteratorWriter)) {
+        toSolrInputDocument(k.toString(), doc, v);
+      } else {
+        String key = prefix != null ? prefix + "." + k : k.toString();
+        doc.addField(key, v);
+      }
+    };
+    if (o instanceof MapWriter) {
+      @SuppressWarnings({"unchecked"})
+      MapWriter writer = (MapWriter) o;
+      writer._forEachEntry(consumer);
+    } else if (o instanceof Map) {
+      @SuppressWarnings({"unchecked"})
+      Map<String, Object> map = (Map<String, Object>) o;
+      for (Map.Entry<String, Object> entry : map.entrySet()) {
+        consumer.accept(entry.getKey(), entry.getValue());
+      }
+    } else if (o instanceof IteratorWriter) {
+      @SuppressWarnings({"unchecked"})
+      IteratorWriter writer = (IteratorWriter) o;
+      final String name = prefix != null ? prefix : "value";
+      try {
+        writer.writeIter(new IteratorWriter.ItemWriter() {
+          @Override
+          public IteratorWriter.ItemWriter add(Object o) throws IOException {
+            consumer.accept(name, o);
+            return this;
+          }
+        });
+      } catch (IOException e) {
+        throw new RuntimeException("this should never happen", e);
+      }
+    } else {
       String key = prefix != null ? prefix : VALUE;
       doc.addField(key, o);
-      return;
-    }
-    @SuppressWarnings({"unchecked"})
-    Map<String, Object> map = (Map<String, Object>)o;
-    for (Map.Entry<String, Object> entry : map.entrySet()) {
-      if (entry.getValue() instanceof Map) { // flatten recursively
-        toSolrInputDocument(entry.getKey(), doc, entry.getValue());
-      } else {
-        String key = prefix != null ? prefix + "." + entry.getKey() : entry.getKey();
-        doc.addField(key, entry.getValue());
-      }
     }
   }
 
@@ -316,31 +339,30 @@ public class MetricUtils {
         consumer.accept(name + separator + MEAN, metric.getMean());
       }
     } else {
-      Map<String, Object> response = new LinkedHashMap<>();
-      BiConsumer<String, Object> filter = (k, v) -> {
-        if (propertyFilter.accept(k)) {
-          response.put(k, v);
+      MapWriter writer = ew -> {
+        BiConsumer<String, Object> filter = (k, v) -> {
+          if (propertyFilter.accept(k)) {
+            ew.putNoEx(k, v);
+          }
+        };
+        filter.accept("count", metric.size());
+        filter.accept(MAX, metric.getMax());
+        filter.accept(MIN, metric.getMin());
+        filter.accept(MEAN, metric.getMean());
+        filter.accept(STDDEV, metric.getStdDev());
+        filter.accept(SUM, metric.getSum());
+        if (!(metric.isEmpty() || skipAggregateValues)) {
+          ew.putNoEx(VALUES, (MapWriter) ew1 -> {
+            metric.getValues().forEach((k, v) -> {
+              ew1.putNoEx(k, (MapWriter) ew2 -> {
+                ew2.putNoEx("value", v.value);
+                ew2.putNoEx("updateCount", v.updateCount.get());
+              });
+            });
+          });
         }
       };
-      filter.accept("count", metric.size());
-      filter.accept(MAX, metric.getMax());
-      filter.accept(MIN, metric.getMin());
-      filter.accept(MEAN, metric.getMean());
-      filter.accept(STDDEV, metric.getStdDev());
-      filter.accept(SUM, metric.getSum());
-      if (!(metric.isEmpty() || skipAggregateValues)) {
-        Map<String, Object> values = new LinkedHashMap<>();
-        response.put(VALUES, values);
-        metric.getValues().forEach((k, v) -> {
-          Map<String, Object> map = new LinkedHashMap<>();
-          map.put("value", v.value);
-          map.put("updateCount", v.updateCount.get());
-          values.put(k, map);
-        });
-      }
-      if (!response.isEmpty()) {
-        consumer.accept(name, response);
-      }
+      consumer.accept(name, writer);
     }
   }
 
@@ -362,16 +384,15 @@ public class MetricUtils {
         consumer.accept(name + separator + MEAN, snapshot.getMean());
       }
     } else {
-      Map<String, Object> response = new LinkedHashMap<>();
-      String prop = "count";
-      if (propertyFilter.accept(prop)) {
-        response.put(prop, histogram.getCount());
-      }
-      // non-time based values
-      addSnapshot(response, snapshot, propertyFilter, false);
-      if (!response.isEmpty()) {
-        consumer.accept(name, response);
-      }
+      MapWriter writer = ew -> {
+        String prop = "count";
+        if (propertyFilter.accept(prop)) {
+          ew.putNoEx(prop, histogram.getCount());
+        }
+        // non-time based values
+        addSnapshot(ew, snapshot, propertyFilter, false);
+      };
+      consumer.accept(name, writer);
     }
   }
 
@@ -385,10 +406,10 @@ public class MetricUtils {
   }
 
   // some snapshots represent time in ns, other snapshots represent raw values (eg. chunk size)
-  static void addSnapshot(Map<String, Object> response, Snapshot snapshot, PropertyFilter propertyFilter, boolean ms) {
+  static void addSnapshot(MapWriter.EntryWriter ew, Snapshot snapshot, PropertyFilter propertyFilter, boolean ms) {
     BiConsumer<String, Object> filter = (k, v) -> {
       if (propertyFilter.accept(k)) {
-        response.put(k, v);
+        ew.putNoEx(k, v);
       }
     };
     filter.accept((ms ? MIN_MS: MIN), nsToMs(ms, snapshot.getMin()));
@@ -420,24 +441,23 @@ public class MetricUtils {
         consumer.accept(name + separator + prop, timer.getMeanRate());
       }
     } else {
-      Map<String, Object> response = new LinkedHashMap<>();
-      BiConsumer<String,Object> filter = (k, v) -> {
-        if (propertyFilter.accept(k)) {
-          response.put(k, v);
+      MapWriter writer = ew -> {
+        BiConsumer<String,Object> filter = (k, v) -> {
+          if (propertyFilter.accept(k)) {
+            ew.putNoEx(k, v);
+          }
+        };
+        filter.accept("count", timer.getCount());
+        filter.accept("meanRate", timer.getMeanRate());
+        filter.accept("1minRate", timer.getOneMinuteRate());
+        filter.accept("5minRate", timer.getFiveMinuteRate());
+        filter.accept("15minRate", timer.getFifteenMinuteRate());
+        if (!skipHistograms) {
+          // time-based values in nanoseconds
+          addSnapshot(ew, timer.getSnapshot(), propertyFilter, true);
         }
       };
-      filter.accept("count", timer.getCount());
-      filter.accept("meanRate", timer.getMeanRate());
-      filter.accept("1minRate", timer.getOneMinuteRate());
-      filter.accept("5minRate", timer.getFiveMinuteRate());
-      filter.accept("15minRate", timer.getFifteenMinuteRate());
-      if (!skipHistograms) {
-        // time-based values in nanoseconds
-        addSnapshot(response, timer.getSnapshot(), propertyFilter, true);
-      }
-      if (!response.isEmpty()) {
-        consumer.accept(name, response);
-      }
+      consumer.accept(name, writer);
     }
   }
 
@@ -456,20 +476,19 @@ public class MetricUtils {
         consumer.accept(name + separator + "count", meter.getCount());
       }
     } else {
-      Map<String, Object> response = new LinkedHashMap<>();
-      BiConsumer<String, Object> filter = (k, v) -> {
-        if (propertyFilter.accept(k)) {
-          response.put(k, v);
-        }
+      MapWriter writer = ew -> {
+        BiConsumer<String, Object> filter = (k, v) -> {
+          if (propertyFilter.accept(k)) {
+            ew.putNoEx(k, v);
+          }
+        };
+        filter.accept("count", meter.getCount());
+        filter.accept("meanRate", meter.getMeanRate());
+        filter.accept("1minRate", meter.getOneMinuteRate());
+        filter.accept("5minRate", meter.getFiveMinuteRate());
+        filter.accept("15minRate", meter.getFifteenMinuteRate());
       };
-      filter.accept("count", meter.getCount());
-      filter.accept("meanRate", meter.getMeanRate());
-      filter.accept("1minRate", meter.getOneMinuteRate());
-      filter.accept("5minRate", meter.getFiveMinuteRate());
-      filter.accept("15minRate", meter.getFifteenMinuteRate());
-      if (!response.isEmpty()) {
-        consumer.accept(name, response);
-      }
+      consumer.accept(name, writer);
     }
   }
 
@@ -499,15 +518,18 @@ public class MetricUtils {
             }
           }
         } else {
-          Map<String, Object> val = new HashMap<>();
-          for (Map.Entry<?, ?> entry : ((Map<?, ?>)o).entrySet()) {
-            String prop = entry.getKey().toString();
-            if (propertyFilter.accept(prop)) {
-              val.put(prop, entry.getValue());
+          boolean notEmpty = ((Map<?, ?>)o).entrySet().stream()
+              .anyMatch(entry -> propertyFilter.accept(entry.getKey().toString()));
+          MapWriter writer = ew -> {
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>)o).entrySet()) {
+              String prop = entry.getKey().toString();
+              if (propertyFilter.accept(prop)) {
+                ew.putNoEx(prop, entry.getValue());
+              }
             }
-          }
-          if (!val.isEmpty()) {
-            consumer.accept(name, val);
+          };
+          if (notEmpty) {
+            consumer.accept(name, writer);
           }
         }
       } else {
@@ -515,21 +537,24 @@ public class MetricUtils {
       }
     } else {
       Object o = gauge.getValue();
-      Map<String, Object> response = new LinkedHashMap<>();
       if (o instanceof Map) {
-        for (Map.Entry<?, ?> entry : ((Map<?, ?>)o).entrySet()) {
-          String prop = entry.getKey().toString();
-          if (propertyFilter.accept(prop)) {
-            response.put(prop, entry.getValue());
-          }
-        }
-        if (!response.isEmpty()) {
-          consumer.accept(name, Collections.singletonMap("value", response));
+        boolean notEmpty = ((Map<?, ?>)o).entrySet().stream()
+            .anyMatch(entry -> propertyFilter.accept(entry.getKey().toString()));
+        if (notEmpty) {
+          consumer.accept(name, (MapWriter) ew -> {
+            ew.putNoEx("value", (MapWriter) ew1 -> {
+              for (Map.Entry<?, ?> entry : ((Map<?, ?>)o).entrySet()) {
+                String prop = entry.getKey().toString();
+                if (propertyFilter.accept(prop)) {
+                  ew1.put(prop, entry.getValue());
+                }
+              }
+            });
+          });
         }
       } else {
         if (propertyFilter.accept("value")) {
-          response.put("value", o);
-          consumer.accept(name, response);
+          consumer.accept(name, (MapWriter) ew -> ew.putNoEx("value", o));
         }
       }
     }
@@ -547,9 +572,7 @@ public class MetricUtils {
       consumer.accept(name, counter.getCount());
     } else {
       if (propertyFilter.accept("count")) {
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("count", counter.getCount());
-        consumer.accept(name, response);
+        consumer.accept(name, (MapWriter) ew -> ew.putNoEx("count", counter.getCount()));
       }
     }
   }
