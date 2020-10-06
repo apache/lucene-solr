@@ -204,21 +204,21 @@ public abstract class Weight implements SegmentCacheable {
       collector.setScorer(scorer);
       DocIdSetIterator scorerIterator = twoPhase == null ? iterator : twoPhase.approximation();
       DocIdSetIterator collectorIterator = collector.competitiveIterator();
-      DocIdSetIterator filteredIterator;
-      if (collectorIterator == null) {
-        filteredIterator = scorerIterator;
-      } else {
-        if (scorerIterator.docID() != -1) {
-          // Wrap ScorerIterator to start from -1 for conjunction 
-          scorerIterator = new RangeDISIWrapper(scorerIterator, max);
-        }
-        // filter scorerIterator to keep only competitive docs as defined by collector
-        filteredIterator = ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
-      }
+      DocIdSetIterator filteredIterator = scorerIterator;
       if (filteredIterator.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
+        if (collectorIterator != null) {
+          filteredIterator = ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
+        }
         scoreAll(collector, filteredIterator, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;
       } else {
+        if (collectorIterator != null) {
+          if (scorerIterator.docID() != -1) {
+            // here we assume that the initial version of collectorIterator matches all docs and can advance exactly to the desired docID
+            collectorIterator.advance(scorerIterator.docID());
+          }
+          filteredIterator = ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
+        }
         int doc = filteredIterator.docID();
         if (doc < min) {
           doc = filteredIterator.advance(min);
@@ -274,45 +274,5 @@ public abstract class Weight implements SegmentCacheable {
     }
   }
 
-  /**
-   * Wraps an internal docIdSetIterator for it to start with docID = -1
-   */
-  protected static class RangeDISIWrapper extends DocIdSetIterator {
-    private final DocIdSetIterator in;
-    private final int min;
-    private final int max;
-    private int docID = -1;
-
-    public RangeDISIWrapper(DocIdSetIterator in, int max) {
-      this.in = in;
-      this.min = in.docID();
-      this.max = max;
-    }
-
-    @Override
-    public int docID() {
-      return docID;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return advance(docID + 1);
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      target = Math.max(min, target);
-      if (target >= max) {
-        return docID = NO_MORE_DOCS;
-      }
-      return docID = in.advance(target);
-    }
-
-    @Override
-    public long cost() {
-      return Math.min(max - min, in.cost());
-    }
-
-  }
 
 }
