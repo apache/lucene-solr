@@ -313,7 +313,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     val = resp.getValues()._get( "metrics/" + key1, null);
     assertNotNull(val);
-    val = resp.getValues()._get( "metrics/" + key2,null);
+    val = resp.getValues()._get( "metrics/" + key2, null);
     assertNotNull(val);
     val = resp.getValues()._get( "metrics/" + key3, null);
     assertNotNull(val);
