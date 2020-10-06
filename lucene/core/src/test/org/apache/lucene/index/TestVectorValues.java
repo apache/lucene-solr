@@ -420,7 +420,7 @@ public class TestVectorValues extends LuceneTestCase {
     ScoreFunction[] fieldScoreFunctions = new ScoreFunction[numFields];
     for (int i = 0; i < numFields; i++) {
       fieldDims[i] = random().nextInt(20) + 1;
-      fieldScoreFunctions[i] = ScoreFunction.fromId(random().nextInt(ScoreFunction.values().length));
+      fieldScoreFunctions[i] = ScoreFunction.values()[random().nextInt(ScoreFunction.values().length)];
     }
     try (Directory dir = newDirectory();
          RandomIndexWriter w = new RandomIndexWriter(random(), dir, createIndexWriterConfig())) {
@@ -637,6 +637,14 @@ public class TestVectorValues extends LuceneTestCase {
       // Make sure CheckIndex in fact declares that it is testing vectors!
       assertTrue(output.toString(IOUtils.UTF_8).contains("test: vectors..."));
     }
+  }
+
+  public void testScoreFunctionIdentifiers() throws Exception {
+    // make sure we don't accidentally mess up score function identifiers by re-ordering their enumerators
+    assertEquals(0, ScoreFunction.NONE.ordinal());
+    assertEquals(1, ScoreFunction.EUCLIDEAN.ordinal());
+    assertEquals(2, ScoreFunction.DOT_PRODUCT.ordinal());
+    assertEquals(3, ScoreFunction.values().length);
   }
 
 }

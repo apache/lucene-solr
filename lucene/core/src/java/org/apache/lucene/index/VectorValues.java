@@ -55,16 +55,17 @@ public abstract class VectorValues extends DocIdSetIterator {
 
   /**
    * Return the vector value for the current document ID.
-   * It is illegal to call this method after the iterator failed to advance.
-   * The returned array may be re-used and modified as the iterator advances.
+   * It is illegal to call this method when the iterator is not positioned: before advancing, or after failing to advance.
+   * The returned array may be shared across calls, re-used, and modified as the iterator advances.
    * @return the vector value
    */
   public abstract float[] vectorValue() throws IOException;
 
   /**
-   * Return the binary encoded vector value for the current document ID.
-   * It is illegal to call this method after the iterator failed to advance.
-   * The returned storage may be re-used and modified as the iterator advances.
+   * Return the binary encoded vector value for the current document ID. These are the bytes corresponding to the float array
+   * in IEEE 754 standard encoding, encoded using little-endian byte order.
+   * It is illegal to call this method when the iterator is not positioned: before advancing, or after failing to advance.
+   * The returned storage may be shared across calls, re-used and modified as the iterator advances.
    * @return the binary value
    */
   public BytesRef binaryValue() throws IOException {
@@ -99,15 +100,17 @@ public abstract class VectorValues extends DocIdSetIterator {
     ScoreFunction scoreFunction();
 
     /**
-     * Return the vector value indexed at the given ordinal. The provided floating point array
-     * may be shared and overwritten by subsequent calls to this method.
+     * Return the vector value indexed at the given ordinal. The provided floating point array may
+     * be shared and overwritten by subsequent calls to this method and {@link binaryValue(int)}.
      * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
      */
     float[] vectorValue(int targetOrd) throws IOException;
 
     /**
      * Return the vector indexed at the given ordinal value as an array of bytes in a BytesRef;
-     * these are the bytes corresponding to the float array, encoded using little-endian byte order.
+     * these are the bytes corresponding to the float array in IEEE 754 standard encoding, encoded
+     * using little-endian byte order. The provided bytes may be shared and overwritten by subsequent
+     * calls to this method and {@link vectorValue(int)}.
      * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
      */
     BytesRef binaryValue(int targetOrd) throws IOException;
@@ -132,10 +135,10 @@ public abstract class VectorValues extends DocIdSetIterator {
   public enum ScoreFunction {
     /** No distance function is used. Note: {@link VectorValues.RandomAccess#search(float[], int, int)}
      * is not supported for fields specifying this score function. */
-    NONE(0),
+    NONE,
 
     /** Euclidean distance */
-    EUCLIDEAN(1, true) {
+    EUCLIDEAN(true) {
       @Override
       public float score(float[] v1, float[] v2) {
         assert v1.length == v2.length;
@@ -150,7 +153,7 @@ public abstract class VectorValues extends DocIdSetIterator {
     },
 
     /** dot product - note, may be negative; larger values are better */
-    DOT_PRODUCT(2) {
+    DOT_PRODUCT() {
       @Override
       public float score(float[] a, float[] b) {
         float res = 0f;
@@ -187,20 +190,16 @@ public abstract class VectorValues extends DocIdSetIterator {
         return res;
       }
     };
-    
-    /** ID for each enum value; this is persisted to the index and cannot be changed after indexing. */
-    final public int id;
 
     /** If reversed, smaller values are better */
     final public boolean reversed;
 
-    ScoreFunction(int id, boolean reversed) {
-      this.id = id;
+    ScoreFunction(boolean reversed) {
       this.reversed = reversed;
     }
 
-    ScoreFunction(int id) {
-      this(id, false);
+    ScoreFunction() {
+      this(false);
     }
 
     /**
@@ -210,17 +209,6 @@ public abstract class VectorValues extends DocIdSetIterator {
       throw new UnsupportedOperationException();
     }
 
-    /**
-     * Returns the distance function that is specified by the id.
-     */
-    public static ScoreFunction fromId(int id) {
-      for (ScoreFunction d : ScoreFunction.values()) {
-        if (d.id == id) {
-          return d;
-        }
-      }
-      throw new IllegalArgumentException("no such distance function with id " + id);
-    }
   }
 
    /**

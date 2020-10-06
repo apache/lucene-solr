@@ -101,7 +101,11 @@ public final class Lucene90VectorReader extends VectorReader {
       if (info == null) {
         throw new CorruptIndexException("Invalid field number: " + fieldNumber, meta);
       }
-      VectorValues.ScoreFunction scoreFunction = VectorValues.ScoreFunction.fromId(meta.readInt());
+      int scoreFunctionId = meta.readInt();
+      if (scoreFunctionId < 0 || scoreFunctionId >= VectorValues.ScoreFunction.values().length) {
+        throw new CorruptIndexException("Invalid score function id: " + scoreFunctionId, meta);
+      }
+      VectorValues.ScoreFunction scoreFunction = VectorValues.ScoreFunction.values()[scoreFunctionId];
       long vectorDataOffset = meta.readVLong();
       long vectorDataLength = meta.readVLong();
       int dimension = meta.readInt();

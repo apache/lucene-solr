@@ -235,24 +235,11 @@ public final class Lucene90FieldInfosFormat extends FieldInfosFormat {
     }
   }
 
-  private static byte scoreFunctionByte(VectorValues.ScoreFunction scoreFunction) {
-    switch (scoreFunction) {
-      case NONE:
-      case EUCLIDEAN:
-      case DOT_PRODUCT:
-        return (byte) scoreFunction.id;
-      default:
-        // BUG
-        throw new AssertionError("unhandled ScoreFunction: " + scoreFunction);
-    }
-  }
-
   private static VectorValues.ScoreFunction getDistFunc(IndexInput input, byte b) throws IOException {
-    try {
-      return VectorValues.ScoreFunction.fromId(b);
-    } catch (IllegalArgumentException e) {
+    if (b < 0 || b >= VectorValues.ScoreFunction.values().length) {
       throw new CorruptIndexException("invalid distance function: " + b, input);
     }
+    return VectorValues.ScoreFunction.values()[b];
   }
 
   static {
@@ -328,7 +315,7 @@ public final class Lucene90FieldInfosFormat extends FieldInfosFormat {
           output.writeVInt(fi.getPointNumBytes());
         }
         output.writeVInt(fi.getVectorDimension());
-        output.writeByte(scoreFunctionByte(fi.getVectorScoreFunction()));
+        output.writeByte((byte) fi.getVectorScoreFunction().ordinal());
       }
       CodecUtil.writeFooter(output);
     }
