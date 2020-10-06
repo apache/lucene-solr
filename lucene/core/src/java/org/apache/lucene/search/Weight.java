@@ -210,7 +210,7 @@ public abstract class Weight implements SegmentCacheable {
       } else {
         if (scorerIterator.docID() != -1) {
           // Wrap ScorerIterator to start from -1 for conjunction 
-          scorerIterator = new RangeDISIWrapper(scorerIterator, scorerIterator.docID(), max);
+          scorerIterator = new RangeDISIWrapper(scorerIterator, max);
         }
         // filter scorerIterator to keep only competitive docs as defined by collector
         filteredIterator = ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
@@ -283,9 +283,9 @@ public abstract class Weight implements SegmentCacheable {
     private final int max;
     private int docID = -1;
 
-    public RangeDISIWrapper(DocIdSetIterator in, int min, int max) {
+    public RangeDISIWrapper(DocIdSetIterator in, int max) {
       this.in = in;
-      this.min = min;
+      this.min = in.docID();
       this.max = max;
     }
 
