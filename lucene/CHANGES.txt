@@ -65,6 +65,9 @@ API Changes
   in Lucenes IndexWriter. The interface is not sufficient to efficiently
   replace the functionality with reasonable efforts. (Simon Willnauer)
 
+* LUCENE-9317 LUCENE-9558: Clean up package name conflicts between modules.
+  See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
+
 Improvements
 
 * LUCENE-9463: Query match region retrieval component, passage scoring and formatting
@@ -181,6 +184,8 @@ Other
 
 * LUCENE-9497: Integrate Error Prone, a static analysis tool during compilation (Dawid Weiss, Varun Thacker)
 
+* LUCENE-9544: add regenerate gradle script for nori dictionary (Namgyu Kim)
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes
@@ -188,7 +193,7 @@ API Changes
 
 * LUCENE-9437: Lucene's facet module's DocValuesOrdinalsReader.decode method
   is now public, making it easier for applications to decode facet
-  ordinals into their corresponding labels (Ankur)
+  ordinals into their corresponding labels (Ankur Goel)
 
 * LUCENE-9515: IndexingChain now accepts individual primitives rather than a
   DocumentsWriterPerThread instance in order to create a new DocConsumer.
@@ -206,6 +211,10 @@ New Features
 * LUCENE-9484: Allow sorting an index after it was created. With SortingCodecReader, existing
   unsorted segments can be wrapped and merged into a fresh index using IndexWriter#addIndices
   API. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-9444: Add utility class to retrieve facet labels from the
+  taxonomy index for a facet field so such fields do not also have to
+  be redundantly stored (Ankur Goel)
 
 Improvements
 ---------------------
@@ -241,6 +250,9 @@ Improvements
 * LUCENE-9539: Use more compact datastructures to represent sorted doc-values in memory when 
   sorting a segment before flush and in SortingCodecReader. (Simon Willnauer)
 
+* LUCENE-9458: WordDelimiterGraphFilter should order tokens at the same position by endOffset to
+  emit longer tokens first.  The same graph is produced. (David Smiley)
+
 Optimizations
 ---------------------
 
@@ -268,6 +280,8 @@ Bug Fixes
 
 * LUCENE-9501: Fix a bug in IndexSortSortedNumericDocValuesRangeQuery where it could violate the
   DocIdSetIterator contract. (Julie Tibshirani)
+
+* LUCENE-9401: Include field in ComplexPhraseQuery's toString() (Thomas Hecker via Munendra S N)
 
 Documentation
 ---------------------
@@ -385,7 +399,7 @@ Improvements
 * LUCENE-9393: Make FunctionScoreQuery use ScoreMode.COMPLETE for creating the inner query weight when
   ScoreMode.TOP_DOCS is requested. (Tomás Fernández Löbbe)
 
-* LUCENE-9392: Make FacetsConfig.DELIM_CHAR publicly accessible (Ankur Goel))
+* LUCENE-9392: Make FacetsConfig.DELIM_CHAR publicly accessible (Ankur Goel)
 
 * LUCENE-9397: UniformSplit supports encodable fields metadata. (Bruno Roustant)
 

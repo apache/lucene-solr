@@ -27,7 +27,7 @@ import java.util.Set;
 
 import org.apache.solr.common.util.SuppressForbidden;
 import org.noggit.JSONParser;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;

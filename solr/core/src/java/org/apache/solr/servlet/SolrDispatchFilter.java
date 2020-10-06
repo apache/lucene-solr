@@ -64,6 +64,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -119,8 +120,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   /**
    * Enum to define action that needs to be processed.
-   * PASSTHROUGH: Pass through to Restlet via webapp.
-   * FORWARD: Forward rewritten URI (without path prefix and core/collection name) to Restlet
+   * PASSTHROUGH: Pass through to another filter via webapp.
+   * FORWARD: Forward rewritten URI (without path prefix and core/collection name) to another filter in the chain
    * RETURN: Returns the control, and no further specific processing is needed.
    *  This is generally when an error is set and returned.
    * RETRY:Retry the request. In cases when a core isn't found to work with, this is set.
@@ -187,9 +188,22 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       coresInit = createCoreContainer(solrHomePath, extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
-      RateLimitManager.Builder builder = new RateLimitManager.Builder(config);
+
+      SolrZkClient zkClient = null;
+      ZkController zkController = coresInit.getZkController();
+
+      if (zkController != null) {
+        zkClient = zkController.getZkClient();
+      }
+
+      RateLimitManager.Builder builder = new RateLimitManager.Builder(zkClient);
 
       this.rateLimitManager = builder.build();
+
+      if (zkController != null) {
+        zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
+      }
+
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
       }

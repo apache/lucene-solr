@@ -31,37 +31,27 @@ pronounced under high stress in production workloads. The current implementation
 resources for indexing.
 
 == Rate Limiter Configurations
-The default rate limiter is search rate limiter. Accordingly, it can be configured in `web.xml` under `initParams` for
-`SolrRequestFilter`.
+The default rate limiter is search rate limiter. Accordingly, it can be configured using the following command:
 
-[source,xml]
-----
-<filter-name>SolrRequestFilter</filter-name>
-----
+ curl -X POST -H 'Content-type:application/json' -d '{
+   "set-ratelimiter": {
+     "enabled": true,
+     "guaranteedSlots":5,
+     "allowedRequests":20,
+     "slotBorrowingEnabled":true,
+     "slotAcquisitionTimeoutInMS":70
+   }
+ }' http://localhost:8983/api/cluster
 
 === Enable Query Rate Limiter
 Controls enabling of query rate limiter. Default value is `false`.
 
-[source,xml]
-----
-<param-name>isQueryRateLimiterEnabled</param-name>
-----
-[source,xml]
-----
-<param-value>true</param-value>
-----
+  "enabled": true
 
 === Maximum Number Of Concurrent Requests
 Allows setting maximum concurrent search requests at a given point in time. Default value is number of cores * 3.
 
-[source,xml]
-----
-<param-name>maxQueryRequests</param-name>
-----
-[source,xml]
-----
-<param-value>15</param-value>
-----
+ "allowedRequests":20
 
 === Request Slot Allocation Wait Time
 Wait time in ms for which a request will wait for a slot to be available when all slots are full,
@@ -69,14 +59,8 @@ before the request is put into the wait queue. This allows requests to have a ch
 the unavailability of the request slots for this rate limiter is a transient phenomenon. Default value
 is -1, indicating no wait. 0 will represent the same -- no wait. Note that higher request allocation times
 can lead to larger queue times and can potentially lead to longer wait times for queries.
-[source,xml]
-----
-<param-name>queryWaitForSlotAllocationInMS</param-name>
-----
-[source,xml]
-----
-<param-value>100</param-value>
-----
+
+ "slotAcquisitionTimeoutInMS":70
 
 === Slot Borrowing Enabled
 If slot borrowing (described below) is enabled or not. Default value is false.
@@ -84,14 +68,7 @@ If slot borrowing (described below) is enabled or not. Default value is false.
 NOTE: This feature is experimental and can cause slots to be blocked if the
 borrowing request is long lived.
 
-[source,xml]
-----
-<param-name>queryAllowSlotBorrowing</param-name>
-----
-[source,xml]
-----
-<param-value>true</param-value>
-----
+ "slotBorrowingEnabled":true,
 
 === Guaranteed Slots
 The number of guaranteed slots that the query rate limiter will reserve irrespective
@@ -102,14 +79,7 @@ borrow slots from its quota. Default value is allowed number of concurrent reque
 NOTE: This feature is experimental and can cause slots to be blocked if the
 borrowing request is long lived.
 
-[source,xml]
-----
-<param-name>queryGuaranteedSlots</param-name>
-----
-[source,xml]
-----
-<param-value>200</param-value>
-----
+ "guaranteedSlots":5,
 
 == Salient Points
 

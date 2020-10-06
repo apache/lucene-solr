@@ -196,6 +196,7 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     assertSameScores(bq1.build(), bq2.build());
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9566")
   public void testExclusion() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();

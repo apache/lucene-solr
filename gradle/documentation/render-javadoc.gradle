@@ -101,8 +101,7 @@ configure(project(":lucene:analysis:common")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing javadocs
     javadocMissingLevel = "class"
-    // TODO: clean up split packages
-    javadocMissingIgnore = [ "org.apache.lucene.analysis.standard" ]
+    javadocMissingIgnore = [ "org.apache.lucene.analysis.classic", "org.apache.lucene.analysis.email" ]
   }
 }
 
@@ -144,16 +143,6 @@ configure([
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing @param tags
     javadocMissingLevel = "method"
-  }
-}
-
-configure(project(":lucene:analysis:icu")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.lucene.collation",
-        "org.apache.lucene.collation.tokenattributes"
-    ]
   }
 }
 
@@ -236,7 +225,6 @@ configure(project(":lucene:core")) {
     // some packages are fixed already
     javadocMissingMethod = [
         "org.apache.lucene.util.automaton",
-        "org.apache.lucene.analysis",
         "org.apache.lucene.analysis.standard",
         "org.apache.lucene.analysis.tokenattributes",
         "org.apache.lucene.document",
