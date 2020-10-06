@@ -228,14 +228,16 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         public DocIdSetIterator competitiveIterator() {
             if (enableSkipping == false) return null;
             return new DocIdSetIterator() {
+                private int docID = -1;
+
                 @Override
                 public int nextDoc() throws IOException {
-                    return competitiveIterator.nextDoc();
+                    return advance(docID + 1);
                 }
 
                 @Override
                 public int docID() {
-                    return competitiveIterator.docID();
+                    return docID;
                 }
 
                 @Override
@@ -245,7 +247,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
                 @Override
                 public int advance(int target) throws IOException {
-                    return competitiveIterator.advance(target);
+                    return docID = competitiveIterator.advance(target);
                 }
             };
         }
