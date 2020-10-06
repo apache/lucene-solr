@@ -204,9 +204,17 @@ public abstract class Weight implements SegmentCacheable {
       collector.setScorer(scorer);
       DocIdSetIterator scorerIterator = twoPhase == null ? iterator : twoPhase.approximation();
       DocIdSetIterator collectorIterator = collector.competitiveIterator();
-      // if possible filter scorerIterator to keep only competitive docs as defined by collector
-      DocIdSetIterator filteredIterator = collectorIterator == null ? scorerIterator :
-          ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
+      DocIdSetIterator filteredIterator;
+      if (collectorIterator == null) {
+        filteredIterator = scorerIterator;
+      } else {
+        if (scorerIterator.docID() != -1) {
+          // Wrap ScorerIterator to start from -1 for conjunction 
+          scorerIterator = new RangeDISIWrapper(scorerIterator, max);
+        }
+        // filter scorerIterator to keep only competitive docs as defined by collector
+        filteredIterator = ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
+      }
       if (filteredIterator.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
         scoreAll(collector, filteredIterator, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;
@@ -264,6 +272,47 @@ public abstract class Weight implements SegmentCacheable {
         }
       }
     }
+  }
+
+  /**
+   * Wraps an internal docIdSetIterator for it to start with docID = -1
+   */
+  protected static class RangeDISIWrapper extends DocIdSetIterator {
+    private final DocIdSetIterator in;
+    private final int min;
+    private final int max;
+    private int docID = -1;
+
+    public RangeDISIWrapper(DocIdSetIterator in, int max) {
+      this.in = in;
+      this.min = in.docID();
+      this.max = max;
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return advance(docID + 1);
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      target = Math.max(min, target);
+      if (target >= max) {
+        return docID = NO_MORE_DOCS;
+      }
+      return docID = in.advance(target);
+    }
+
+    @Override
+    public long cost() {
+      return Math.min(max - min, in.cost());
+    }
+
   }
 
 }
