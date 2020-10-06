@@ -1,0 +1,26 @@
+
+def resources = scriptResources(buildscript)
+ 
+allprojects { prj ->
+  plugins.withType(JavaPlugin) {
+    prj.apply plugin: 'com.diffplug.spotless'
+
+    spotless {
+      java {
+        licenseHeaderFile file("${resources}/asl-header.txt")
+        lineEndings 'UNIX'
+        endWithNewline()
+        googleJavaFormat('1.9')
+      }
+
+      check.dependsOn(spotlessCheck)
+    }
+
+    task tidy() {
+      description "Applies automatic format to Java sources."
+      group "Verification"
+
+      dependsOn spotlessApply
+    }
+  }
+}
