@@ -7,10 +7,15 @@ allprojects { prj ->
 
     spotless {
       java {
-        licenseHeaderFile file("${resources}/asl-header.txt")
+        licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
         lineEndings 'UNIX'
         endWithNewline()
         googleJavaFormat('1.9')
+
+        // Known problematic files.
+        targetExclude "**/HTMLStripCharFilter.java", "**/UAX29URLEmailTokenizerImpl.java", 
+           "**/PatternParser.java", "**/BuildNavDataFiles.java", "**/CheckLinksAndAnchors.java",
+           "**/TestSubQueryTransformer.java"
       }
 
       check.dependsOn(spotlessCheck)
