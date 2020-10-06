@@ -247,12 +247,11 @@ public abstract class Weight implements SegmentCacheable {
         }
         return currentDoc;
       } else {
-        final DocIdSetIterator approximation = twoPhase.approximation();
         while (currentDoc < end) {
           if ((acceptDocs == null || acceptDocs.get(currentDoc)) && twoPhase.matches()) {
             collector.collect(currentDoc);
           }
-          currentDoc = approximation.nextDoc();
+          currentDoc = iterator.nextDoc();
         }
         return currentDoc;
       }
@@ -271,8 +270,7 @@ public abstract class Weight implements SegmentCacheable {
         }
       } else {
         // The scorer has an approximation, so run the approximation first, then check acceptDocs, then confirm
-        final DocIdSetIterator approximation = twoPhase.approximation();
-        for (int doc = approximation.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = approximation.nextDoc()) {
+        for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
           if ((acceptDocs == null || acceptDocs.get(doc)) && twoPhase.matches()) {
             collector.collect(doc);
           }
