@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -113,7 +114,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return;
     }
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
-    MetricUtils.PropertyFilter propertyFilter = parsePropertyFilter(params);
+    Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
     List<MetricType> metricTypes = parseMetricTypes(params);
     List<MetricFilter> metricFilters = metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
     Set<String> requestedRegistries = parseRegistries(params);
@@ -157,7 +158,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
         errors.add(key, "metric '" + metricName + "' not found");
         continue;
       }
-      MetricUtils.PropertyFilter propertyFilter = MetricUtils.PropertyFilter.ALL;
+      Predicate<CharSequence> propertyFilter = MetricUtils.ALL_PROPERTIES;
       if (propertyName != null) {
         propertyFilter = (name) -> name.equals(propertyName);
         // use escaped versions
@@ -230,10 +231,10 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return mustMatchFilter;
   }
 
-  private MetricUtils.PropertyFilter parsePropertyFilter(SolrParams params) {
+  private Predicate<CharSequence> parsePropertyFilter(SolrParams params) {
     String[] props = params.getParams(PROPERTY_PARAM);
     if (props == null || props.length == 0) {
-      return MetricUtils.PropertyFilter.ALL;
+      return MetricUtils.ALL_PROPERTIES;
     }
     final Set<String> filter = new HashSet<>();
     for (String prop : props) {
@@ -242,7 +243,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       }
     }
     if (filter.isEmpty()) {
-      return MetricUtils.PropertyFilter.ALL;
+      return MetricUtils.ALL_PROPERTIES;
     } else {
       return (name) -> filter.contains(name);
     }

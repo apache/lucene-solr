@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -45,12 +46,14 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.AggregateMetric;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +91,7 @@ public class MetricUtils {
 
   /**
    * This filter can limit what properties of a metric are returned.
+   * @deprecated use {@link Predicate<CharSequence>} instead.
    */
   public interface PropertyFilter {
     PropertyFilter ALL = (name) -> true;
@@ -98,7 +102,13 @@ public class MetricUtils {
      * @return true if this property should be returned, false otherwise.
      */
     boolean accept(String name);
+
+    static Predicate<CharSequence> toPredicate(PropertyFilter filter) {
+      return (name) -> filter.accept(name.toString());
+    }
   }
+
+  public static final Predicate<CharSequence> ALL_PROPERTIES = (name) -> true;
 
   /**
    * Adds metrics from a Timer to a NamedList, using well-known back-compat names.
@@ -146,9 +156,37 @@ public class MetricUtils {
    * @param metadata optional metadata. If not null and not empty then this map will be added under a
    *                 {@code _metadata_} key.
    * @param consumer consumer that accepts produced {@link SolrInputDocument}-s
+   * @deprecated use {@link #toSolrInputDocuments(MetricRegistry, List, MetricFilter, Predicate, boolean, boolean, boolean, Map, Consumer)} instead.
    */
   public static void toSolrInputDocuments(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
                                           MetricFilter mustMatchFilter, PropertyFilter propertyFilter, boolean skipHistograms,
+                                          boolean skipAggregateValues, boolean compact,
+                                          Map<String, Object> metadata, Consumer<SolrInputDocument> consumer) {
+    toSolrInputDocuments(registry, shouldMatchFilters, mustMatchFilter,
+        PropertyFilter.toPredicate(propertyFilter), skipHistograms,
+        skipAggregateValues, compact, metadata, consumer);
+  }
+  /**
+   * Provides a representation of the given metric registry as {@link SolrInputDocument}-s.
+   Only those metrics
+   * are converted which match at least one of the given MetricFilter instances.
+   *
+   * @param registry      the {@link MetricRegistry} to be converted
+   * @param shouldMatchFilters a list of {@link MetricFilter} instances.
+   *                           A metric must match <em>any one</em> of the filters from this list to be
+   *                           included in the output
+   * @param mustMatchFilter a {@link MetricFilter}.
+   *                        A metric <em>must</em> match this filter to be included in the output.
+   * @param propertyFilter limit what properties of a metric are returned
+   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
+   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
+   * @param compact use compact representation for counters and gauges.
+   * @param metadata optional metadata. If not null and not empty then this map will be added under a
+   *                 {@code _metadata_} key.
+   * @param consumer consumer that accepts produced {@link SolrInputDocument}-s
+   */
+  public static void toSolrInputDocuments(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
+                                          MetricFilter mustMatchFilter, Predicate<CharSequence> propertyFilter, boolean skipHistograms,
                                           boolean skipAggregateValues, boolean compact,
                                           Map<String, Object> metadata, Consumer<SolrInputDocument> consumer) {
     boolean addMetadata = metadata != null && !metadata.isEmpty();
@@ -221,9 +259,32 @@ public class MetricUtils {
    * @param simple use simplified representation for complex metrics - instead of a (name, map)
    *             only the selected (name "." key, value) pairs will be produced.
    * @param consumer consumer that accepts produced objects
+   * @deprecated use {@link #toMaps(MetricRegistry, List, MetricFilter, Predicate, boolean, boolean, boolean, boolean, BiConsumer)} instead.
    */
   public static void toMaps(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
-                     MetricFilter mustMatchFilter, PropertyFilter propertyFilter,
+                            MetricFilter mustMatchFilter, PropertyFilter propertyFilter,
+                            boolean skipHistograms, boolean skipAggregateValues,
+                            boolean compact, boolean simple,
+                            BiConsumer<String, Object> consumer) {
+    toMaps(registry, shouldMatchFilters, mustMatchFilter,
+        PropertyFilter.toPredicate(propertyFilter), skipHistograms,
+        skipAggregateValues, compact, simple, consumer);
+  }
+  /**
+   * Convert selected metrics to maps or to flattened objects.
+   * @param registry source of metrics
+   * @param shouldMatchFilters metrics must match any of these filters
+   * @param mustMatchFilter metrics must match this filter
+   * @param propertyFilter limit what properties of a metric are returned
+   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
+   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
+   * @param compact use compact representation for counters and gauges.
+   * @param simple use simplified representation for complex metrics - instead of a (name, map)
+   *             only the selected (name "." key, value) pairs will be produced.
+   * @param consumer consumer that accepts produced objects
+   */
+  public static void toMaps(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
+                     MetricFilter mustMatchFilter, Predicate<CharSequence> propertyFilter,
                      boolean skipHistograms, boolean skipAggregateValues,
                      boolean compact, boolean simple,
                      BiConsumer<String, Object> consumer) {
@@ -286,8 +347,26 @@ public class MetricUtils {
    * @param simple use simplified representation for complex metrics - instead of a (name, map)
    *             only the selected (name "." key, value) pairs will be produced.
    * @param consumer consumer that accepts produced objects
+   * @deprecated use {@link #convertMetric(String, Metric, Predicate, boolean, boolean, boolean, boolean, String, BiConsumer)} instead.
    */
   public static void convertMetric(String n, Metric metric, PropertyFilter propertyFilter, boolean skipHistograms, boolean skipAggregateValues,
+                                   boolean compact, boolean simple, String separator, BiConsumer<String, Object> consumer) {
+    convertMetric(n, metric, PropertyFilter.toPredicate(propertyFilter),
+        skipHistograms, skipAggregateValues, compact, simple, separator, consumer);
+  }
+  /**
+   * Convert a single instance of metric into a map or flattened object.
+   * @param n metric name
+   * @param metric metric instance
+   * @param propertyFilter limit what properties of a metric are returned
+   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
+   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
+   * @param compact use compact representation for counters and gauges.
+   * @param simple use simplified representation for complex metrics - instead of a (name, map)
+   *             only the selected (name "." key, value) pairs will be produced.
+   * @param consumer consumer that accepts produced objects
+   */
+  public static void convertMetric(String n, Metric metric, Predicate<CharSequence> propertyFilter, boolean skipHistograms, boolean skipAggregateValues,
                               boolean compact, boolean simple, String separator, BiConsumer<String, Object> consumer) {
     if (metric instanceof Counter) {
       Counter counter = (Counter) metric;
@@ -295,8 +374,16 @@ public class MetricUtils {
     } else if (metric instanceof Gauge) {
       @SuppressWarnings({"rawtypes"})
       Gauge gauge = (Gauge) metric;
+      // unwrap if needed
+      if (gauge instanceof SolrMetricManager.GaugeWrapper) {
+        gauge = ((SolrMetricManager.GaugeWrapper) gauge).getGauge();
+      }
       try {
-        convertGauge(n, gauge, propertyFilter, simple, compact, separator, consumer);
+        if (gauge instanceof MapWriter) {
+          convertMapWriter(n, (MapWriter) gauge, propertyFilter, simple, compact, separator, consumer);
+        } else {
+          convertGauge(n, gauge, propertyFilter, simple, compact, separator, consumer);
+        }
       } catch (InternalError ie) {
         if (n.startsWith("memory.") && ie.getMessage().contains("Memory Pool not found")) {
           log.warn("Error converting gauge '{}', possible JDK bug: SOLR-10362", n, ie);
@@ -332,16 +419,16 @@ public class MetricUtils {
    * @param consumer consumer that accepts produced objects
    */
   static void convertAggregateMetric(String name, AggregateMetric metric,
-      PropertyFilter propertyFilter,
+      Predicate<CharSequence> propertyFilter,
       boolean skipAggregateValues, boolean simple, String separator, BiConsumer<String, Object> consumer) {
     if (simple) {
-      if (propertyFilter.accept(MEAN)) {
+      if (propertyFilter.test(MEAN)) {
         consumer.accept(name + separator + MEAN, metric.getMean());
       }
     } else {
       MapWriter writer = ew -> {
         BiConsumer<String, Object> filter = (k, v) -> {
-          if (propertyFilter.accept(k)) {
+          if (propertyFilter.test(k)) {
             ew.putNoEx(k, v);
           }
         };
@@ -362,7 +449,9 @@ public class MetricUtils {
           });
         }
       };
-      consumer.accept(name, writer);
+      if (writer._size() > 0) {
+        consumer.accept(name, writer);
+      }
     }
   }
 
@@ -376,17 +465,17 @@ public class MetricUtils {
    *             only the selected (name "." key, value) pairs will be produced.
    * @param consumer consumer that accepts produced objects
    */
-  static void convertHistogram(String name, Histogram histogram, PropertyFilter propertyFilter,
+  static void convertHistogram(String name, Histogram histogram, Predicate<CharSequence> propertyFilter,
                                               boolean simple, String separator, BiConsumer<String, Object> consumer) {
     Snapshot snapshot = histogram.getSnapshot();
     if (simple) {
-      if (propertyFilter.accept(MEAN)) {
+      if (propertyFilter.test(MEAN)) {
         consumer.accept(name + separator + MEAN, snapshot.getMean());
       }
     } else {
       MapWriter writer = ew -> {
         String prop = "count";
-        if (propertyFilter.accept(prop)) {
+        if (propertyFilter.test(prop)) {
           ew.putNoEx(prop, histogram.getCount());
         }
         // non-time based values
@@ -406,9 +495,9 @@ public class MetricUtils {
   }
 
   // some snapshots represent time in ns, other snapshots represent raw values (eg. chunk size)
-  static void addSnapshot(MapWriter.EntryWriter ew, Snapshot snapshot, PropertyFilter propertyFilter, boolean ms) {
+  static void addSnapshot(MapWriter.EntryWriter ew, Snapshot snapshot, Predicate<CharSequence> propertyFilter, boolean ms) {
     BiConsumer<String, Object> filter = (k, v) -> {
-      if (propertyFilter.accept(k)) {
+      if (propertyFilter.test(k)) {
         ew.putNoEx(k, v);
       }
     };
@@ -432,18 +521,34 @@ public class MetricUtils {
    * @param simple use simplified representation for complex metrics - instead of a (name, map)
    *             only the selected (name "." key, value) pairs will be produced.
    * @param consumer consumer that accepts produced objects
+   * @deprecated use {@link #convertTimer(String, Timer, Predicate, boolean, boolean, String, BiConsumer)} instead.
    */
   public static void convertTimer(String name, Timer timer, PropertyFilter propertyFilter, boolean skipHistograms,
+                                  boolean simple, String separator, BiConsumer<String, Object> consumer) {
+    convertTimer(name, timer, PropertyFilter.toPredicate(propertyFilter),
+        skipHistograms, simple, separator, consumer);
+  }
+  /**
+   * Convert a {@link Timer} to a map.
+   * @param name metric name
+   * @param timer timer instance
+   * @param propertyFilter limit what properties of a metric are returned
+   * @param skipHistograms if true then discard the histogram part of the timer.
+   * @param simple use simplified representation for complex metrics - instead of a (name, map)
+   *             only the selected (name "." key, value) pairs will be produced.
+   * @param consumer consumer that accepts produced objects
+   */
+  public static void convertTimer(String name, Timer timer, Predicate<CharSequence> propertyFilter, boolean skipHistograms,
                                                 boolean simple, String separator, BiConsumer<String, Object> consumer) {
     if (simple) {
       String prop = "meanRate";
-      if (propertyFilter.accept(prop)) {
+      if (propertyFilter.test(prop)) {
         consumer.accept(name + separator + prop, timer.getMeanRate());
       }
     } else {
       MapWriter writer = ew -> {
         BiConsumer<String,Object> filter = (k, v) -> {
-          if (propertyFilter.accept(k)) {
+          if (propertyFilter.test(k)) {
             ew.putNoEx(k, v);
           }
         };
@@ -457,7 +562,9 @@ public class MetricUtils {
           addSnapshot(ew, timer.getSnapshot(), propertyFilter, true);
         }
       };
-      consumer.accept(name, writer);
+      if (writer._size() > 0) {
+        consumer.accept(name, writer);
+      }
     }
   }
 
@@ -470,15 +577,15 @@ public class MetricUtils {
    *             only the selected (name "." key, value) pairs will be produced.
    * @param consumer consumer that accepts produced objects
    */
-  static void convertMeter(String name, Meter meter, PropertyFilter propertyFilter, boolean simple, String separator, BiConsumer<String, Object> consumer) {
+  static void convertMeter(String name, Meter meter, Predicate<CharSequence> propertyFilter, boolean simple, String separator, BiConsumer<String, Object> consumer) {
     if (simple) {
-      if (propertyFilter.accept("count")) {
+      if (propertyFilter.test("count")) {
         consumer.accept(name + separator + "count", meter.getCount());
       }
     } else {
       MapWriter writer = ew -> {
         BiConsumer<String, Object> filter = (k, v) -> {
-          if (propertyFilter.accept(k)) {
+          if (propertyFilter.test(k)) {
             ew.putNoEx(k, v);
           }
         };
@@ -488,10 +595,31 @@ public class MetricUtils {
         filter.accept("5minRate", meter.getFiveMinuteRate());
         filter.accept("15minRate", meter.getFifteenMinuteRate());
       };
-      consumer.accept(name, writer);
+      if (writer._size() > 0) {
+        consumer.accept(name, writer);
+      }
     }
   }
 
+  static void convertMapWriter(String name, MapWriter metric,
+                               Predicate<CharSequence> propertyFilter, boolean simple, boolean compact,
+                               String separator, BiConsumer<String, Object> consumer) {
+    ConditionalKeyMapWriter filteredMetric = new ConditionalKeyMapWriter(metric, propertyFilter);
+    if (compact || simple) {
+      if (simple) {
+        filteredMetric._forEachEntry((k, v) ->
+            consumer.accept(name + separator + k, v));
+      } else {
+        if (filteredMetric._size() > 0) {
+          consumer.accept(name, filteredMetric);
+        }
+      }
+    } else {
+      if (filteredMetric._size() > 0) {
+        consumer.accept(name, (MapWriter) ew -> ew.putNoEx("value", filteredMetric));
+      }
+    }
+  }
   /**
    * Convert a {@link Gauge}.
    * @param name metric name
@@ -505,7 +633,7 @@ public class MetricUtils {
    */
   static void convertGauge(String name,
                            @SuppressWarnings({"rawtypes"})Gauge gauge,
-                           PropertyFilter propertyFilter, boolean simple, boolean compact,
+                           Predicate<CharSequence> propertyFilter, boolean simple, boolean compact,
                            String separator, BiConsumer<String, Object> consumer) {
     if (compact || simple) {
       Object o = gauge.getValue();
@@ -513,17 +641,17 @@ public class MetricUtils {
         if (simple) {
           for (Map.Entry<?, ?> entry : ((Map<?, ?>)o).entrySet()) {
             String prop = entry.getKey().toString();
-            if (propertyFilter.accept(prop)) {
+            if (propertyFilter.test(prop)) {
               consumer.accept(name + separator + prop, entry.getValue());
             }
           }
         } else {
           boolean notEmpty = ((Map<?, ?>)o).entrySet().stream()
-              .anyMatch(entry -> propertyFilter.accept(entry.getKey().toString()));
+              .anyMatch(entry -> propertyFilter.test(entry.getKey().toString()));
           MapWriter writer = ew -> {
             for (Map.Entry<?, ?> entry : ((Map<?, ?>)o).entrySet()) {
               String prop = entry.getKey().toString();
-              if (propertyFilter.accept(prop)) {
+              if (propertyFilter.test(prop)) {
                 ew.putNoEx(prop, entry.getValue());
               }
             }
@@ -539,13 +667,13 @@ public class MetricUtils {
       Object o = gauge.getValue();
       if (o instanceof Map) {
         boolean notEmpty = ((Map<?, ?>)o).entrySet().stream()
-            .anyMatch(entry -> propertyFilter.accept(entry.getKey().toString()));
+            .anyMatch(entry -> propertyFilter.test(entry.getKey().toString()));
         if (notEmpty) {
           consumer.accept(name, (MapWriter) ew -> {
             ew.putNoEx("value", (MapWriter) ew1 -> {
               for (Map.Entry<?, ?> entry : ((Map<?, ?>)o).entrySet()) {
                 String prop = entry.getKey().toString();
-                if (propertyFilter.accept(prop)) {
+                if (propertyFilter.test(prop)) {
                   ew1.put(prop, entry.getValue());
                 }
               }
@@ -553,7 +681,7 @@ public class MetricUtils {
           });
         }
       } else {
-        if (propertyFilter.accept("value")) {
+        if (propertyFilter.test("value")) {
           consumer.accept(name, (MapWriter) ew -> ew.putNoEx("value", o));
         }
       }
@@ -567,11 +695,11 @@ public class MetricUtils {
    * @param compact if true then only return {@link Counter#getCount()}. If false
    *                then return a map with a "count" field.
    */
-  static void convertCounter(String name, Counter counter, PropertyFilter propertyFilter, boolean compact, BiConsumer<String, Object> consumer) {
+  static void convertCounter(String name, Counter counter, Predicate<CharSequence> propertyFilter, boolean compact, BiConsumer<String, Object> consumer) {
     if (compact) {
       consumer.accept(name, counter.getCount());
     } else {
-      if (propertyFilter.accept("count")) {
+      if (propertyFilter.test("count")) {
         consumer.accept(name, (MapWriter) ew -> ew.putNoEx("count", counter.getCount()));
       }
     }

@@ -235,10 +235,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "gc");
       metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "memory");
       metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
-      MetricsMap sysprops = new MetricsMap((detailed, map) -> {
+      MetricsMap sysprops = new MetricsMap(map -> {
         System.getProperties().forEach((k, v) -> {
           if (!hiddenSysProps.contains(k)) {
-            map.put(String.valueOf(k), v);
+            map.putNoEx(String.valueOf(k), v);
           }
         });
       });

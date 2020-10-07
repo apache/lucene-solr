@@ -34,6 +34,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.Test;
 
 public class MetricUtilsTest extends SolrTestCaseJ4 {
@@ -104,6 +106,19 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     registry.register("gauge", gauge);
     Gauge<Long> error = () -> {throw new InternalError("Memory Pool not found error");};
     registry.register("memory.expected.error", error);
+
+    MetricsMap metricsMapWithMap = new MetricsMap((detailed, map) -> {
+      map.put("foo", "bar");
+    });
+    registry.register("mapWithMap", metricsMapWithMap);
+    MetricsMap metricsMap = new MetricsMap(map -> {
+      map.putNoEx("foo", "bar");
+    });
+    registry.register("map", metricsMap);
+
+    SolrMetricManager.GaugeWrapper<MapWriter> gaugeWrapper = new SolrMetricManager.GaugeWrapper(metricsMap, "foo-tag");
+    registry.register("wrappedGauge", gaugeWrapper);
+
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
         MetricUtils.PropertyFilter.ALL, false, false, false, false, (k, o) -> {
       @SuppressWarnings({"rawtypes"})
@@ -144,6 +159,10 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
         assertEquals(0D, v.get("mean"));
       } else if (k.startsWith("memory.expected.error")) {
         assertTrue(v.isEmpty());
+      } else if (k.startsWith("map") || k.startsWith("wrapped")) {
+        assertNotNull(v.toString(), v.get("value"));
+        assertTrue(v.toString(), v.get("value") instanceof Map);
+        assertEquals(v.toString(), "bar", ((Map) v.get("value")).get("foo"));
       }
     });
     // test compact format
@@ -201,6 +220,11 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
             assertEquals(1, update.get("updateCount"));
           } else if (k.startsWith("memory.expected.error")) {
             assertNull(o);
+          } else if (k.startsWith("map") || k.startsWith("wrapped")) {
+            assertTrue(o instanceof MapWriter);
+            MapWriter writer = (MapWriter) o;
+            assertEquals(1, writer._size());
+            assertEquals("bar", writer._get("foo", null));
           } else {
             assertTrue(o instanceof MapWriter);
             Map<String, Object> v = new HashMap<>();
