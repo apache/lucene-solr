@@ -91,8 +91,9 @@ public class MetricUtils {
 
   /**
    * This filter can limit what properties of a metric are returned.
-   * @deprecated use {@link Predicate<CharSequence>} instead.
+   * @deprecated use {@link Predicate} instead.
    */
+  @Deprecated(since = "8.7")
   public interface PropertyFilter {
     PropertyFilter ALL = (name) -> true;
 
@@ -158,6 +159,7 @@ public class MetricUtils {
    * @param consumer consumer that accepts produced {@link SolrInputDocument}-s
    * @deprecated use {@link #toSolrInputDocuments(MetricRegistry, List, MetricFilter, Predicate, boolean, boolean, boolean, Map, Consumer)} instead.
    */
+  @Deprecated(since = "8.7")
   public static void toSolrInputDocuments(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
                                           MetricFilter mustMatchFilter, PropertyFilter propertyFilter, boolean skipHistograms,
                                           boolean skipAggregateValues, boolean compact,
@@ -261,6 +263,7 @@ public class MetricUtils {
    * @param consumer consumer that accepts produced objects
    * @deprecated use {@link #toMaps(MetricRegistry, List, MetricFilter, Predicate, boolean, boolean, boolean, boolean, BiConsumer)} instead.
    */
+  @Deprecated(since = "8.7")
   public static void toMaps(MetricRegistry registry, List<MetricFilter> shouldMatchFilters,
                             MetricFilter mustMatchFilter, PropertyFilter propertyFilter,
                             boolean skipHistograms, boolean skipAggregateValues,
@@ -349,6 +352,7 @@ public class MetricUtils {
    * @param consumer consumer that accepts produced objects
    * @deprecated use {@link #convertMetric(String, Metric, Predicate, boolean, boolean, boolean, boolean, String, BiConsumer)} instead.
    */
+  @Deprecated(since = "8.7")
   public static void convertMetric(String n, Metric metric, PropertyFilter propertyFilter, boolean skipHistograms, boolean skipAggregateValues,
                                    boolean compact, boolean simple, String separator, BiConsumer<String, Object> consumer) {
     convertMetric(n, metric, PropertyFilter.toPredicate(propertyFilter),
@@ -523,6 +527,7 @@ public class MetricUtils {
    * @param consumer consumer that accepts produced objects
    * @deprecated use {@link #convertTimer(String, Timer, Predicate, boolean, boolean, String, BiConsumer)} instead.
    */
+  @Deprecated(since = "8.7")
   public static void convertTimer(String name, Timer timer, PropertyFilter propertyFilter, boolean skipHistograms,
                                   boolean simple, String separator, BiConsumer<String, Object> consumer) {
     convertTimer(name, timer, PropertyFilter.toPredicate(propertyFilter),

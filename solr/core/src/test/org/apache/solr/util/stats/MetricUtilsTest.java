@@ -51,7 +51,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     }
     // obtain timer metrics
     Map<String,Object> map = new HashMap<>();
-    MetricUtils.convertTimer("", timer, MetricUtils.PropertyFilter.ALL, false, false, ".", (k, v) -> {
+    MetricUtils.convertTimer("", timer, MetricUtils.ALL_PROPERTIES, false, false, ".", (k, v) -> {
       ((MapWriter) v).toMap(map);
     });
     @SuppressWarnings({"rawtypes"})
@@ -116,11 +116,11 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     });
     registry.register("map", metricsMap);
 
-    SolrMetricManager.GaugeWrapper<MapWriter> gaugeWrapper = new SolrMetricManager.GaugeWrapper(metricsMap, "foo-tag");
+    SolrMetricManager.GaugeWrapper<Map<String,Object>> gaugeWrapper = new SolrMetricManager.GaugeWrapper<>(metricsMap, "foo-tag");
     registry.register("wrappedGauge", gaugeWrapper);
 
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
-        MetricUtils.PropertyFilter.ALL, false, false, false, false, (k, o) -> {
+        MetricUtils.ALL_PROPERTIES, false, false, false, false, (k, o) -> {
       @SuppressWarnings({"rawtypes"})
       Map<String, Object> v = new HashMap<>();
       if (o != null) {
@@ -167,7 +167,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     });
     // test compact format
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
-        MetricUtils.PropertyFilter.ALL, false, false, true, false, (k, o) -> {
+        MetricUtils.ALL_PROPERTIES, false, false, true, false, (k, o) -> {
           if (k.startsWith("counter")) {
             assertTrue(o instanceof Long);
             assertEquals(1L, o);

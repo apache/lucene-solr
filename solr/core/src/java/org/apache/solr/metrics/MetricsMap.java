@@ -70,6 +70,7 @@ public class MetricsMap implements Gauge<Map<String,Object>>, MapWriter, Dynamic
    * @param mapInitializer function to populate the Map result.
    * @deprecated use {@link #MetricsMap(MapWriter)} instead.
    */
+  @Deprecated(since = "8.7")
   public MetricsMap(BiConsumer<Boolean, Map<String,Object>> mapInitializer) {
     this.mapInitializer = mapInitializer;
   }
