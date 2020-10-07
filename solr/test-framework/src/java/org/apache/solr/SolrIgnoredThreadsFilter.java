@@ -57,6 +57,12 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
+    // load balancer scheduled executor can be slow to shutdown fully
+    if (threadName.startsWith("aliveCheckExecutor-")) {
+      return true;
+    }
+
+
 //    if (threadName.startsWith("SessionTracker") || threadName.startsWith("ProcessThread")) { // zk thread that will stop in a moment.
 //      return true;
 //    }

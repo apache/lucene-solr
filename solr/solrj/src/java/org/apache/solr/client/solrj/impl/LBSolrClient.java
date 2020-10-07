@@ -751,15 +751,6 @@ public abstract class LBSolrClient extends SolrClient {
     this.closed = true;
     if (aliveCheckExecutor != null) {
       aliveCheckExecutor.shutdown();
-      boolean success = false;
-      try {
-         success = aliveCheckExecutor.awaitTermination(1, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-      }
-      if (!success) {
-        aliveCheckExecutor.shutdownNow();
-      }
     }
     assert ObjectReleaseTracker.release(this);
   }
