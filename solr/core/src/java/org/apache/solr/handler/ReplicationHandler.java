@@ -70,6 +70,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.lucene.util.Version;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -930,10 +931,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
         true, "indexPath", getCategory().toString(), scope);
     solrMetricsContext.gauge(this, () -> isLeader,
-         true, "isMaster", getCategory().toString(), scope);
+         true, "isLeader", getCategory().toString(), scope);
     solrMetricsContext.gauge(this, () -> isFollower,
-         true, "isSlave", getCategory().toString(), scope);
-    final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
+         true, "isFollower", getCategory().toString(), scope);
+    final MetricsMap fetcherMap = new MetricsMap(map -> {
       IndexFetcher fetcher = currentIndexFetcher;
       if (fetcher != null) {
         map.put(LEGACY_LEADER_URL, fetcher.getLeaderUrl());
@@ -1149,10 +1150,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private void addVal(Map<String, Object> map, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
+  private void addVal(MapWriter.EntryWriter ew, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
     Object val = formatVal(key, props, clzz);
     if (val != null) {
-      map.put(key, val);
+      ew.putNoEx(key, val);
     }
   }
 

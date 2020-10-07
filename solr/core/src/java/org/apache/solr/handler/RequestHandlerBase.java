@@ -159,8 +159,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     numClientErrors = solrMetricsContext.meter(this, "clientErrors", getCategory().toString(), scope);
     numTimeouts = solrMetricsContext.meter(this, "timeouts", getCategory().toString(), scope);
     requests = solrMetricsContext.counter(this, "requests", getCategory().toString(), scope);
-    MetricsMap metricsMap = new MetricsMap((detail, map) ->
-        shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
+    MetricsMap metricsMap = new MetricsMap(map ->
+        shardPurposes.forEach((k, v) -> map.putNoEx(k, v.getCount())));
     solrMetricsContext.gauge(this, metricsMap, true, "shardRequests", getCategory().toString(), scope);
     requestTimes = solrMetricsContext.timer(this, "requestTimes", getCategory().toString(), scope);
     distribRequestTimes = solrMetricsContext.timer(this, "requestTimes", getCategory().toString(), scope, "distrib");
