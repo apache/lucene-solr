@@ -23,6 +23,11 @@ The recommended way to configure and use request handlers is with path based nam
 
 A single unified update request handler supports XML, CSV, JSON, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the <<content-streams.adoc#content-streams,ContentStream>>.
 
+If you need to pre-process documents after they are loaded but before they are indexed (or even checked against the schema),
+Solr has document-preprocessing plugins for Update Request Handlers,
+called <<update-request-processors.adoc#update-request-processors,Update Request Processors>>,
+which allow for default and custom configuration chains.
+
 == UpdateRequestHandler Configuration
 
 The default configuration file has the update request handler configured by default.
