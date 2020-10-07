@@ -126,12 +126,14 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       params.set(CoreAdminParams.DELETE_DATA_DIR, true);
       params.set(CoreAdminParams.DELETE_METRICS_HISTORY, deleteHistory);
 
+      String asyncId = message.getStr(ASYNC);
+
       Set<String> okayExceptions = new HashSet<>(1);
       okayExceptions.add(NonExistentCoreException.class.getName());
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
       @SuppressWarnings({"unchecked"})
-      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, null, okayExceptions);
+      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
 
       if (failedReplicas == null) {
         skipFinalStateWork = true;
@@ -147,9 +149,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
         // wait for a while until we don't see the collection
         zkStateReader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
+        zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
       }
-
-      zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
 
       // we can delete any remaining unique aliases
       if (!aliasReferences.isEmpty()) {
