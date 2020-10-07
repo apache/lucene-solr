@@ -47,8 +47,6 @@
     <dependency org="org.apache.commons" name="commons-math3" rev="${/org.apache.commons/commons-math3}" conf="compile"/>
     <dependency org="org.ow2.asm" name="asm" rev="${/org.ow2.asm/asm}" conf="compile"/>
     <dependency org="org.ow2.asm" name="asm-commons" rev="${/org.ow2.asm/asm-commons}" conf="compile"/>
-    <dependency org="org.restlet.jee" name="org.restlet" rev="${/org.restlet.jee/org.restlet}" conf="compile"/>
-    <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="${/org.restlet.jee/org.restlet.ext.servlet}" conf="compile"/>
     <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile"/>
     <dependency org="io.sgr" name="s2-geometry-library-java" rev="${/io.sgr/s2-geometry-library-java}" conf="compile"/>
 
