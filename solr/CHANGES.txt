@@ -128,6 +128,10 @@ Other Changes
 
 * SOLR-14659: Remove restlet as dependency for the ManagedResource API (Timothy Potter, noble)
 
+* SOLR-14829: Cleanup the documentation for Request Handlers and Search Components (Alexandre Rafalovitch)
+
+* SOLR-10370: ReplicationHandler should fetch index at fixed delay instead of fixed rate (Cao Manh Dat)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -190,6 +194,8 @@ Improvements
   (Jason Gerlowski, Chris Hostetter, Munendra S N)
 
 * SOLR-14905: Update commons-io version to 2.8.0 due to security vulnerability. (Nazerke Seidan via Bruno Roustant)
+
+* SOLR-14691: Metrics reporting should avoid creating objects. (ab, Noble Paul)
 
 Optimizations
 ---------------------

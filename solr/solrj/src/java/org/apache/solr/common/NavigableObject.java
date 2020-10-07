@@ -86,4 +86,10 @@ public interface NavigableObject {
     Object v = Utils.getObjectByPath(this, false, path);
     return v == null ? def : String.valueOf(v);
   }
+
+  default int _size() {
+    int[] size = new int[1];
+    _forEachEntry((k, v) -> size[0]++);
+    return size[0];
+  }
 }
