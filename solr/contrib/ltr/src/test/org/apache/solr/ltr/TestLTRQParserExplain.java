@@ -253,7 +253,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
     query.setQuery("title:bloomberg");
     query.setParam("debugQuery", "on");
     query.add("rows", "10");
-    query.add("rq", "{!ltr reRankDocs=10 model=modelA interleaveOriginalRanking=true}");
+    query.add("rq", "{!ltr reRankDocs=10 model=modelA model=originalRanking}");
     query.add("fl", "*,score");
 
     /*

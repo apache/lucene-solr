@@ -161,7 +161,7 @@ public class TestLTRWithSort extends TestRerankBase {
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:a1");
     query.add("rows", "10");
-    query.add("rq", "{!ltr reRankDocs=4 model=powpularityS-model interleaveOriginalRanking=true}");
+    query.add("rq", "{!ltr reRankDocs=4 model=powpularityS-model model=originalRanking}");
     query.add("fl", "*,score");
     query.add("sort", "description desc");
 
