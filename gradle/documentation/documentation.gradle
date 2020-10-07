@@ -105,7 +105,14 @@ configure(project(':solr')) {
   task documentationOnline() {
     group = 'documentation'
     description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
-    dependsOn 'copyOnlineDocumentationAssets','createOnlineDocumentationIndex'
+    dependsOn 'copyOnlineDocumentationAssets','createOnlineDocumentationIndex','copyChangesToHtmlForOnline'
+  }
+  
+  task copyChangesToHtmlForOnline(type: Copy) {
+    from project.docroot
+    into project.docrootOnline
+    include 'changes/**'
+    dependsOn 'changesToHtml'
   }
   
   task copyOnlineDocumentationAssets(type: Copy) {

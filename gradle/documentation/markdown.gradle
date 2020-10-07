@@ -65,7 +65,7 @@ configure(project(':lucene')) {
     dependsOn copyDocumentationAssets,markdownToHtml
 
     outputFile = file("${project.docroot}/index.html")
-    templateFile = file('site/xsl/index.template.md')
+    templateFile = file('site/index.template.md')
     
     def defaultCodecFile = project(':lucene:core').file('src/java/org/apache/lucene/codecs/Codec.java')
     inputs.file(defaultCodecFile)
