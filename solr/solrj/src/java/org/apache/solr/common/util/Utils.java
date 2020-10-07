@@ -234,13 +234,14 @@ public class Utils {
         startObject();
         final boolean[] first = new boolean[1];
         first[0] = true;
+        int sz = mapWriter._size();
         mapWriter._forEachEntry((k, v) -> {
           if (first[0]) {
             first[0] = false;
           } else {
             writeValueSeparator();
           }
-          indent();
+          if (sz > 1) indent();
           writeString(k.toString());
           writeNameSeparator();
           write(v);
