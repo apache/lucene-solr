@@ -126,6 +126,8 @@ Other Changes
 
 * SOLR-14036: Remove distrib=false from /terms handler's default parameters (David Smiley, Munendra S N)
 
+* SOLR-14659: Remove restlet as dependency for the ManagedResource API (Timothy Potter, noble)
+
 * SOLR-14829: Cleanup the documentation for Request Handlers and Search Components (Alexandre Rafalovitch)
 
 * SOLR-10370: ReplicationHandler should fetch index at fixed delay instead of fixed rate (Cao Manh Dat)
@@ -302,8 +304,6 @@ Other Changes
 
 * SOLR-14910: Use in-line tags for logger declarations in Gradle ValidateLogCalls that are non-standard,
               change //logok to //nowarn (Erick Erickson)
-
-* SOLR-14659: Remove restlet as dependency for the ManagedResource API (Timothy Potter, noble)
 
 ==================  8.6.2 ==================
 
