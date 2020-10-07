@@ -62,7 +62,7 @@ public class MetricsMap implements Gauge<Map<String,Object>>, MapWriter, Dynamic
 
   private BiConsumer<Boolean, Map<String, Object>> mapInitializer;
   private MapWriter initializer;
-  private Map<String, String> jmxAttributes = new HashMap<>();
+  private Map<String, String> jmxAttributes;
   private volatile Map<String,Object> cachedValue;
 
   /**
@@ -101,13 +101,22 @@ public class MetricsMap implements Gauge<Map<String,Object>>, MapWriter, Dynamic
     return getValue().toString();
   }
 
+  // lazy init
+  private synchronized void initJmxAttributes() {
+    if (jmxAttributes == null) {
+      jmxAttributes = new HashMap<>();
+    }
+  }
+
   @Override
   public Object getAttribute(String attribute) throws AttributeNotFoundException, MBeanException, ReflectionException {
     Object val;
     // jmxAttributes override any real values
-    val = jmxAttributes.get(attribute);
-    if (val != null) {
-      return val;
+    if (jmxAttributes != null) {
+      val = jmxAttributes.get(attribute);
+      if (val != null) {
+        return val;
+      }
     }
     Map<String,Object> stats = null;
     if (useCachedStatsBetweenGetMBeanInfoCalls) {
@@ -137,6 +146,7 @@ public class MetricsMap implements Gauge<Map<String,Object>>, MapWriter, Dynamic
 
   @Override
   public void setAttribute(Attribute attribute) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException {
+    initJmxAttributes();
     jmxAttributes.put(attribute.getName(), String.valueOf(attribute.getValue()));
   }
 
@@ -170,13 +180,15 @@ public class MetricsMap implements Gauge<Map<String,Object>>, MapWriter, Dynamic
     if (useCachedStatsBetweenGetMBeanInfoCalls) {
       cachedValue = stats;
     }
-    jmxAttributes.forEach((k, v) -> {
-      attrInfoList.add(new MBeanAttributeInfo(k, String.class.getName(),
-          null, true, false, false));
-    });
+    if (jmxAttributes != null) {
+      jmxAttributes.forEach((k, v) -> {
+        attrInfoList.add(new MBeanAttributeInfo(k, String.class.getName(),
+            null, true, false, false));
+      });
+    }
     try {
       stats.forEach((k, v) -> {
-        if (jmxAttributes.containsKey(k)) {
+        if (jmxAttributes != null && jmxAttributes.containsKey(k)) {
           return;
         }
         @SuppressWarnings({"rawtypes"})
