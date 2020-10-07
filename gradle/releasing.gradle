@@ -38,13 +38,11 @@ allprojects {
         }
 
         distZip {
-            dependsOn project.parent.tasks.documentation
             doLast checksum
         }
 
         distTar {
             compression = Compression.GZIP
-            dependsOn project.parent.tasks.documentation
             doLast checksum
         }
 
