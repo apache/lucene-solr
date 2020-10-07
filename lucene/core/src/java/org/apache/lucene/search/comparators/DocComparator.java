@@ -40,8 +40,11 @@ public class DocComparator extends FieldComparator<Integer> {
     /** Creates a new comparator based on document ids for {@code numHits} */
     public DocComparator(int numHits, boolean reverse, int sortPost) {
         this.docIDs = new int[numHits];
+        // Temporarily disable sort optimization for 8.7 release
+        this.enableSkipping = false;
+        // TODO: enable sort optimization after 8.7 release
         // skipping functionality is enabled if we are sorting by _doc in asc order as a primary sort
-        this.enableSkipping = (reverse == false && sortPost == 0);
+        // this.enableSkipping = (reverse == false && sortPost == 0);
     }
 
     @Override
