@@ -115,6 +115,14 @@ public interface MapWriter extends MapSerializable , NavigableObject {
       return this;
     }
 
+    default EntryWriter putIfNotNullNoEx(CharSequence k, Object v) {
+      if (v != null) {
+        putNoEx(k, v);
+      }
+      return this;
+
+    }
+
     default EntryWriter putStringIfNotNull(CharSequence k, Object v) throws IOException {
       if(v != null) put(k,String.valueOf(v));
       return this;

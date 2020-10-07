@@ -1112,10 +1112,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   private void addVal(MapWriter.EntryWriter ew, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
-    Object val = formatVal(key, props, clzz);
-    if (val != null) {
-      ew.putNoEx(key, val);
-    }
+    ew.putIfNotNullNoEx(key, formatVal(key, props, clzz));
   }
 
   private Object formatVal(String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
