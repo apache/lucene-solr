@@ -719,14 +719,21 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       }
 
       for (ResourceLoaderAware aware : arr) {
-        CURRENT_AWARE.set(aware);
-        try{
-          aware.inform(loader);
-        } finally {
-          CURRENT_AWARE.remove();
-        }
+        informAware(loader, aware);
 
       }
+    }
+  }
+
+  /**
+   * Set the current {@link ResourceLoaderAware} object in thread local so that appropriate classloader can be used for package loaded classes
+   */
+  public static void informAware(ResourceLoader loader, ResourceLoaderAware aware) throws IOException {
+    CURRENT_AWARE.set(aware);
+    try{
+      aware.inform(loader);
+    } finally {
+      CURRENT_AWARE.remove();
     }
   }
 
@@ -912,6 +919,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   }
 
   //This is to verify if this requires to use the schema classloader for classes loaded from packages
-  public static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
+  private static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
 
 }
