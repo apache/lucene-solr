@@ -60,7 +60,7 @@ import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
-@Ignore // nocommit improve
+@Ignore // nocommit fix
 public class TestDistribPackageStore extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -203,7 +203,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     }
     @Override
     public NavigableObject call() throws Exception {
-      try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
+      try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newHttp1Client()) {
         return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), this.url, JAVABINCONSUMER);
       }
     }
@@ -258,7 +258,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster) throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
+    try(HttpSolrClient client = (HttpSolrClient) jetty.newHttp1Client()) {
       PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()), client);
       Object resp = Utils.executeGET(client.getHttpClient(), jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true", null);
       log.info("sync resp: "+jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true"+" ,is: "+resp);

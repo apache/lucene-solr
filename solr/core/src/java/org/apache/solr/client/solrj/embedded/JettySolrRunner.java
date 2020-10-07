@@ -48,6 +48,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -838,6 +839,11 @@ public class JettySolrRunner implements Closeable {
   public SolrClient newClient() {
     return new Http2SolrClient.Builder(getBaseUrl().toString()).
             withHttpClient(getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient()).build();
+  }
+
+  public SolrClient newHttp1Client() {
+    return new HttpSolrClient.Builder(getBaseUrl()).
+        withHttpClient(getCoreContainer().getUpdateShardHandler().getDefaultHttpClient()).build();
   }
 
   public SolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {

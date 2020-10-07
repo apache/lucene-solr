@@ -77,3 +77,6 @@ include "solr:docker:package"
 
 include "solr:benchmark"
 
+
+include "solr:benchmark"
+
