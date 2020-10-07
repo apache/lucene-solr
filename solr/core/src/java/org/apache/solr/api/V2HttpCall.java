@@ -339,12 +339,7 @@ public class V2HttpCall extends HttpSolrCall {
 
   @Override
   protected void handleAdmin(SolrQueryResponse solrResp) {
-    try {
-      api.call(this.solrReq, solrResp);
-    } catch (Exception e) {
-      ParWork.propagateInterrupt(e);
-      solrResp.setException(e);
-    }
+    api.call(this.solrReq, solrResp);
   }
 
   @Override

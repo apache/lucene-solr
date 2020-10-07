@@ -818,7 +818,7 @@ public class Http2SolrClient extends SolrClient {
       }
 
       Object error = rsp == null ? null : rsp.get("error");
-      if (error != null && (String.valueOf(getObjectByPath(error, true, errPath)).endsWith("ExceptionWithErrObject"))) {
+      if (error != null) {
         throw RemoteExecutionException.create(serverBaseUrl, rsp);
       }
       if (httpStatus != HttpStatus.SC_OK && !isV2Api) {

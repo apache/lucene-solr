@@ -63,7 +63,7 @@ public abstract class BaseHttpSolrClient extends SolrClient {
         Number code = (Number) getObjectByPath(errObj, true, Collections.singletonList("code"));
         String msg = (String) getObjectByPath(errObj, true, Collections.singletonList("msg"));
         return new RemoteExecutionException(host, code == null ? ErrorCode.UNKNOWN.code : code.intValue(),
-            msg == null ? "Unknown Error" : msg, errResponse);
+            msg == null ? errObj.toString() : msg, errResponse);
 
       } else {
         throw new RuntimeException("No error");
