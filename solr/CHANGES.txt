@@ -130,6 +130,8 @@ Other Changes
 
 * SOLR-14829: Cleanup the documentation for Request Handlers and Search Components (Alexandre Rafalovitch)
 
+* SOLR-10370: ReplicationHandler should fetch index at fixed delay instead of fixed rate (Cao Manh Dat)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
