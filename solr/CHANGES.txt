@@ -195,6 +195,8 @@ Improvements
 
 * SOLR-14905: Update commons-io version to 2.8.0 due to security vulnerability. (Nazerke Seidan via Bruno Roustant)
 
+* SOLR-14691: Metrics reporting should avoid creating objects. (ab, Noble Paul)
+
 Optimizations
 ---------------------
 

@@ -28,6 +28,7 @@ import javax.management.ReflectionException;
 import javax.management.openmbean.OpenMBeanAttributeInfoSupport;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ import java.util.function.BiConsumer;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,18 +53,33 @@ import org.slf4j.LoggerFactory;
  * {@link javax.management.openmbean.OpenType#ALLOWED_CLASSNAMES_LIST}, otherwise only their toString()
  * representation will be shown in JConsole.</p>
  */
-public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
+public class MetricsMap implements Gauge<Map<String,Object>>, MapWriter, DynamicMBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // set to true to use cached statistics between getMBeanInfo calls to work
   // around over calling getStatistics on MBeanInfos when iterating over all attributes (SOLR-6586)
   private final boolean useCachedStatsBetweenGetMBeanInfoCalls = Boolean.getBoolean("useCachedStatsBetweenGetMBeanInfoCalls");
 
-  private BiConsumer<Boolean, Map<String, Object>> initializer;
-  private Map<String, String> jmxAttributes = new HashMap<>();
+  private BiConsumer<Boolean, Map<String, Object>> mapInitializer;
+  private MapWriter initializer;
+  private Map<String, String> jmxAttributes;
   private volatile Map<String,Object> cachedValue;
 
-  public MetricsMap(BiConsumer<Boolean, Map<String,Object>> initializer) {
+  /**
+   * Create an instance that reports values to a Map.
+   * @param mapInitializer function to populate the Map result.
+   * @deprecated use {@link #MetricsMap(MapWriter)} instead.
+   */
+  @Deprecated(since = "8.7")
+  public MetricsMap(BiConsumer<Boolean, Map<String,Object>> mapInitializer) {
+    this.mapInitializer = mapInitializer;
+  }
+
+  /**
+   * Create an instance that reports values to a MapWriter.
+   * @param initializer function to populate the MapWriter result.
+   */
+  public MetricsMap(MapWriter initializer) {
     this.initializer = initializer;
   }
 
@@ -73,7 +90,11 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
 
   public Map<String,Object> getValue(boolean detailed) {
     Map<String,Object> map = new HashMap<>();
-    initializer.accept(detailed, map);
+    if (mapInitializer != null) {
+      mapInitializer.accept(detailed, map);
+    } else {
+      initializer.toMap(map);
+    }
     return map;
   }
 
@@ -81,13 +102,22 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
     return getValue().toString();
   }
 
+  // lazy init
+  private synchronized void initJmxAttributes() {
+    if (jmxAttributes == null) {
+      jmxAttributes = new HashMap<>();
+    }
+  }
+
   @Override
   public Object getAttribute(String attribute) throws AttributeNotFoundException, MBeanException, ReflectionException {
     Object val;
     // jmxAttributes override any real values
-    val = jmxAttributes.get(attribute);
-    if (val != null) {
-      return val;
+    if (jmxAttributes != null) {
+      val = jmxAttributes.get(attribute);
+      if (val != null) {
+        return val;
+      }
     }
     Map<String,Object> stats = null;
     if (useCachedStatsBetweenGetMBeanInfoCalls) {
@@ -117,6 +147,7 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
 
   @Override
   public void setAttribute(Attribute attribute) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException {
+    initJmxAttributes();
     jmxAttributes.put(attribute.getName(), String.valueOf(attribute.getValue()));
   }
 
@@ -150,13 +181,15 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
     if (useCachedStatsBetweenGetMBeanInfoCalls) {
       cachedValue = stats;
     }
-    jmxAttributes.forEach((k, v) -> {
-      attrInfoList.add(new MBeanAttributeInfo(k, String.class.getName(),
-          null, true, false, false));
-    });
+    if (jmxAttributes != null) {
+      jmxAttributes.forEach((k, v) -> {
+        attrInfoList.add(new MBeanAttributeInfo(k, String.class.getName(),
+            null, true, false, false));
+      });
+    }
     try {
       stats.forEach((k, v) -> {
-        if (jmxAttributes.containsKey(k)) {
+        if (jmxAttributes != null && jmxAttributes.containsKey(k)) {
           return;
         }
         @SuppressWarnings({"rawtypes"})
@@ -196,5 +229,15 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
       throw new RuntimeException(e);
     }
     return null;
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    if (mapInitializer != null) {
+      Map<String, Object> value = getValue();
+      value.forEach((k, v) -> ew.putNoEx(k, v));
+    } else {
+      initializer.writeMap(ew);
+    }
   }
 }
