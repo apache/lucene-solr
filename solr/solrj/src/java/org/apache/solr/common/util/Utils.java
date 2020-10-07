@@ -800,7 +800,7 @@ public class Utils {
     int statusCode = rsp.getStatusLine().getStatusCode();
     if (statusCode != 200) {
       try {
-        log.error("Failed a request to: {}, status: {}, body: {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // logOk
+        log.error("Failed a request to: {}, status: {}, body: {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // nowarn
       } catch (IOException e) {
         log.error("could not print error", e);
       }

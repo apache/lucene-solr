@@ -5463,6 +5463,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     throw new IllegalArgumentException("number of documents in the index cannot exceed " + actualMaxDocs + " (current document count is " + pendingNumDocs.get() + "; added numDocs is " + addedNumDocs + ")");
   }
 
+  /**
+   * Returns the number of documents in the index including documents are being added (i.e., reserved).
+   * @lucene.experimental
+   */
+  public long getPendingNumDocs() {
+    return pendingNumDocs.get();
+  }
+
   /** Returns the highest <a href="#sequence_number">sequence number</a> across
    *  all completed operations, or 0 if no operations have finished yet.  Still
    *  in-flight operations (in other threads) are not counted until they finish.

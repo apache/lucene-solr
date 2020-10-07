@@ -1,5 +1,28 @@
 # Apache Lucene Migration Guide
 
+## ICUCollationKeyAnalyzer is renamed (LUCENE-9558)
+
+o.a.l.collation.ICUCollationAnalyzer is renamed to o.a.l.a.icu.ICUCollationKeyAnalyzer.
+Also, its dependant classes are renamed in the same way.
+
+## Base and concrete analysis factories are moved / package renamed (LUCENE-9317)
+
+1. Base analysis factories are moved to `lucene-core`, also their package names are renamed.
+
+- o.a.l.a.util.TokenizerFactory (lucene-analyzers-common) is moved to o.a.l.a.TokenizerFactory (lucene-core)
+- o.a.l.a.util.CharFilterFactory (lucene-analyzers-common) is moved to o.a.l.a.CharFilterFactory (lucene-core)
+- o.a.l.a.util.TokenFilterFactory (lucene-analyzers-common) is moved to o.a.l.a.TokenFilterFactory (lucene-core)
+
+The service provider files placed in `META-INF/services` for custom analysis factories should be renamed as follows:
+
+- META-INF/services/org.apache.lucene.analysis.TokenizerFactory
+- META-INF/services/org.apache.lucene.analysis.CharFilterFactory
+- META-INF/services/org.apache.lucene.analysis.TokenFilterFactory
+
+2. o.a.l.a.standard.StandardTokenizerFactory is moved to `lucene-core` module.
+
+3. o.a.l.a.standard package in `lucene-analyzers-common` module is split into o.a.l.a.classic and o.a.l.a.email.
+
 ## RegExpQuery now rejects invalid backslashes (LUCENE-9370)
 
 We now follow the [Java rules](https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html#bs) for accepting backslashes. 

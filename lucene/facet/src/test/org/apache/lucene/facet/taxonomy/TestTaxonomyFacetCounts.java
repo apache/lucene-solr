@@ -20,8 +20,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.HashSet; 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -678,13 +679,16 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
 
       // Slow, yet hopefully bug-free, faceting:
       @SuppressWarnings({"rawtypes","unchecked"}) Map<String,Integer>[] expectedCounts = new HashMap[numDims];
+      List<List<FacetLabel>> expectedLabels = new ArrayList<>();
+
       for(int i=0;i<numDims;i++) {
         expectedCounts[i] = new HashMap<>();
       }
 
-      for(TestDoc doc : testDocs) {
+      for (TestDoc doc : testDocs) {
         if (doc.content.equals(searchToken)) {
-          for(int j=0;j<numDims;j++) {
+          List<FacetLabel> facetLabels = new ArrayList<>();
+          for (int j = 0; j < numDims; j++) {
             if (doc.dims[j] != null) {
               Integer v = expectedCounts[j].get(doc.dims[j]);
               if (v == null) {
@@ -692,8 +696,11 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
               } else {
                 expectedCounts[j].put(doc.dims[j], v.intValue() + 1);
               }
+              // Add document facet labels
+              facetLabels.add(new FacetLabel("dim" + j, doc.dims[j]));
             }
           }
+          expectedLabels.add(facetLabels);
         }
       }
 
@@ -720,10 +727,49 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
       sortTies(actual);
 
       assertEquals(expected, actual);
+
+      // Test facet labels for each matching test doc
+      List<List<FacetLabel>> actualLabels = getAllTaxonomyFacetLabels(null, tr, fc);
+      assertEquals(expectedLabels.size(), actualLabels.size());
+      assertTrue(sortedFacetLabels(expectedLabels).equals(sortedFacetLabels(actualLabels)));
+
+      // Test facet labels for each matching test doc, given a specific dimension chosen randomly
+      final String dimension = "dim" + random().nextInt(numDims);
+      expectedLabels.forEach(list -> list.removeIf(f -> f.components[0].equals(dimension) == false));
+
+      actualLabels = getAllTaxonomyFacetLabels(dimension, tr, fc);
+      assertTrue(sortedFacetLabels(expectedLabels).equals(sortedFacetLabels(actualLabels)));
     }
 
     w.close();
     IOUtils.close(tw, searcher.getIndexReader(), tr, indexDir, taxoDir);
+  }
+
+  private static List<List<FacetLabel>> sortedFacetLabels(List<List<FacetLabel>> allFacetLabels) {
+    // Sort each inner list since there is no guaranteed order in which
+    // FacetLabels are expected to be retrieved for each document.
+    for (List<FacetLabel> facetLabels : allFacetLabels) {
+      Collections.sort(facetLabels);
+    }
+
+    Collections.sort(allFacetLabels, (o1, o2) -> {
+      int diff = o1.size() - o2.size();
+      if (diff != 0) {
+        return diff;
+      }
+
+      // the lists are equal in size and sorted
+      for (int i = 0; i < o1.size(); i++) {
+        int comp = o1.get(i).compareTo(o2.get(i));
+        if (comp != 0) {
+          return comp;
+        }
+      }
+      // all elements are equal
+      return 0;
+    });
+
+    return allFacetLabels;
   }
 
   private static Facets getAllFacets(String indexFieldName, IndexSearcher searcher, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
