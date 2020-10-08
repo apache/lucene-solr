@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cluster.events;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -30,10 +29,4 @@ public interface NodesUpEvent extends ClusterEvent {
   }
 
   Iterator<String> getNodeNames();
-
-  @Override
-  default void writeMap(EntryWriter ew) throws IOException {
-    ClusterEvent.super.writeMap(ew);
-    ew.put("nodeNames", getNodeNames());
-  }
 }

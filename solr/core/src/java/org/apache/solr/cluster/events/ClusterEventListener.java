@@ -16,15 +16,13 @@
  */
 package org.apache.solr.cluster.events;
 
-import org.apache.solr.cloud.ClusterSingleton;
-
 /**
  * Components that want to be notified of cluster-wide events should use this.
  *
  * XXX should this work only for ClusterSingleton-s? some types of events may be
  * XXX difficult (or pointless) to propagate to every node.
  */
-public interface ClusterEventListener extends ClusterSingleton {
+public interface ClusterEventListener {
 
   /**
    * Handle the event. Implementations should be non-blocking - if any long

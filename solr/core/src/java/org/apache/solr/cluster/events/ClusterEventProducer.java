@@ -16,30 +16,10 @@
  */
 package org.apache.solr.cluster.events;
 
-import org.apache.solr.cloud.ClusterSingleton;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Component that produces {@link ClusterEvent} instances.
  */
-public interface ClusterEventProducer extends ClusterSingleton {
-
-  String PLUGIN_NAME = "clusterEventProducer";
-
-  default String getName() {
-    return PLUGIN_NAME;
-  }
-
-  /**
-   * Returns a modifiable map of event types and listeners to process events
-   * of a given type.
-   */
-  Map<ClusterEvent.EventType, Set<ClusterEventListener>> getEventListeners();
+public interface ClusterEventProducer {
 
   /**
    * Register an event listener for processing the specified event types.
@@ -48,27 +28,13 @@ public interface ClusterEventProducer extends ClusterSingleton {
    * @param eventTypes non-empty array of event types that this listener
    *                   is being registered for. If this is null or empty then all types will be used.
    */
-  default void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) throws Exception {
-    Objects.requireNonNull(listener);
-    if (eventTypes == null || eventTypes.length == 0) {
-      eventTypes = ClusterEvent.EventType.values();
-    }
-    for (ClusterEvent.EventType type : eventTypes) {
-      Set<ClusterEventListener> perType = getEventListeners().computeIfAbsent(type, t -> ConcurrentHashMap.newKeySet());
-      perType.add(listener);
-    }
-  }
+  void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) throws Exception;
 
   /**
-   * Unregister an event listener.
+   * Unregister an event listener for all event types.
    * @param listener non-null listener.
    */
-  default void unregisterListener(ClusterEventListener listener) {
-    Objects.requireNonNull(listener);
-    getEventListeners().forEach((type, listeners) -> {
-      listeners.remove(listener);
-    });
-  }
+  void unregisterListener(ClusterEventListener listener);
 
   /**
    * Unregister an event listener for specified event types.
@@ -76,25 +42,22 @@ public interface ClusterEventProducer extends ClusterSingleton {
    * @param eventTypes event types from which the listener will be unregistered. If this
    *                   is null or empty then all event types will be used
    */
-  default void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
-    Objects.requireNonNull(listener);
-    if (eventTypes == null || eventTypes.length == 0) {
-      eventTypes = ClusterEvent.EventType.values();
-    }
-    for (ClusterEvent.EventType type : eventTypes) {
-      getEventListeners()
-          .getOrDefault(type, Collections.emptySet())
-          .remove(listener);
-    }
-  }
+  void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes);
 
-  /**
-   * Fire an event. This method will call registered listeners that subscribed to the
-   * type of event being passed.
-   * @param event cluster event
-   */
-  default void fireEvent(ClusterEvent event) {
-    getEventListeners().getOrDefault(event.getType(), Collections.emptySet())
-        .forEach(listener -> listener.onEvent(event));
-  }
+  static ClusterEventProducer NO_OP_PRODUCER = new ClusterEventProducer() {
+    @Override
+    public void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) throws Exception {
+
+    }
+
+    @Override
+    public void unregisterListener(ClusterEventListener listener) {
+
+    }
+
+    @Override
+    public void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
+
+    }
+  };
 }

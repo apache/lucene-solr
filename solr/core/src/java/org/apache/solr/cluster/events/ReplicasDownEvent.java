@@ -18,7 +18,6 @@ package org.apache.solr.cluster.events;
 
 import org.apache.solr.common.cloud.Replica;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -32,10 +31,4 @@ public interface ReplicasDownEvent extends ClusterEvent {
   }
 
   Iterator<Replica> getReplicas();
-
-  @Override
-  default void writeMap(EntryWriter ew) throws IOException {
-    ClusterEvent.super.writeMap(ew);
-    ew.put("replicas", getReplicas());
-  }
 }

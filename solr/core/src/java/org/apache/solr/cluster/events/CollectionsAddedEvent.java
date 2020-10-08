@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cluster.events;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -31,9 +30,4 @@ public interface CollectionsAddedEvent extends ClusterEvent {
 
   Iterator<String> getCollectionNames();
 
-  @Override
-  default void writeMap(EntryWriter ew) throws IOException {
-    ClusterEvent.super.writeMap(ew);
-    ew.put("collectionNames", getCollectionNames());
-  }
 }

@@ -16,15 +16,12 @@
  */
 package org.apache.solr.cluster.events;
 
-import org.apache.solr.common.MapWriter;
-
-import java.io.IOException;
 import java.time.Instant;
 
 /**
  * Cluster-level event.
  */
-public interface ClusterEvent extends MapWriter {
+public interface ClusterEvent {
 
   enum EventType {
     /** One or more nodes went down. */
@@ -49,9 +46,4 @@ public interface ClusterEvent extends MapWriter {
   /** Get event timestamp. This is the instant when the event was generated (not necessarily when
    * the underlying condition first occurred). */
   Instant getTimestamp();
-
-  default void writeMap(EntryWriter ew) throws IOException {
-    ew.put("type", getType());
-    ew.put("timestamp", getTimestamp().toEpochMilli());
-  }
 }
