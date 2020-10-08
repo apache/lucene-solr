@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import com.google.common.collect.ImmutableList;
+import org.apache.curator.shaded.com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -120,7 +120,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - this will cause zk shard terms to keep trying to save and fail on bad version and retry over and over ... investigate
   public void deleteCollectionOnlyInZk() throws Exception {
     final String collectionName = "onlyinzk";
 

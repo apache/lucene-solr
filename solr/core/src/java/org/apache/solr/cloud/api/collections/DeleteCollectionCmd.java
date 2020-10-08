@@ -135,12 +135,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       if (!zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection");
       }
-      try {
-
-        zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
-      } catch (Exception e) {
-        log.error("Exception while trying to remove collection zknode", e);
-      }
 
       @SuppressWarnings({"unchecked"})
       List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
