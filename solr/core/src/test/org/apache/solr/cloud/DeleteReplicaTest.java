@@ -161,6 +161,11 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     Replica newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
+    if (leader.equals(newLeader)) {
+      Thread.sleep(500);
+      newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "shard1");
+    }
+
     assertFalse(leader.equals(newLeader));
 
     //Confirm that the instance and data directory were deleted by default
