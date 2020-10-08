@@ -175,9 +175,11 @@ def attemptDownload(urlString, fileName):
     if not success:
       os.remove(fileName)
 
-version_prop_re = re.compile('version\.base=(.*)')
+version_prop_re = re.compile(r'baseVersion\s*=\s*([\'"])(.*)\1')
 def find_current_version():
-  return version_prop_re.search(open('lucene/version.properties').read()).group(1).strip()
+  script_path = os.path.dirname(os.path.realpath(__file__))
+  top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
+  return version_prop_re.search(open('%s/build.gradle' % top_level_dir).read()).group(2).strip()
 
 if __name__ == '__main__':
   print('This is only a support module, it cannot be run')

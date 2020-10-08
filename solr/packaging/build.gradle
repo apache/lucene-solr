@@ -23,7 +23,7 @@ plugins {
   id 'distribution'
 }
 
-description = 'Solr packaging'
+description = 'Solr distribution packaging'
 
 ext {
   distDir = file("$buildDir/solr-${version}")
@@ -38,6 +38,7 @@ configurations {
   contrib
   example
   server
+  docsOnline
 }
 
 dependencies {
@@ -62,12 +63,17 @@ dependencies {
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
+
+  // Copy files from documentation output
+  docsOnline project(path: ':solr', configuration: 'docsOnline')
 }
 
 distributions {
   main {
     distributionBaseName = 'solr'
     contents {
+      // TODO: This is missing module README files, as compared to 8x
+
       // Manually correct posix permissions (matters when packaging on Windows).
       filesMatching([
           "**/*.sh",
@@ -76,8 +82,8 @@ distributions {
           "**/bin/solr",
           "**/bin/init.d/solr",
           "**/bin/solr-exporter",
-      ]) {
-        setMode 0755
+      ]) { copy ->
+        copy.setMode(0755)
       }
 
       from(project(":solr").projectDir, {
@@ -115,13 +121,11 @@ distributions {
         into "server"
       })
 
-      // docs/   - TODO: this is assembled via XSLT... leaving out for now.
+      from(configurations.docsOnline, {
+        into "docs"
+      })
     }
   }
-}
-
-distTar {
-  compression = Compression.GZIP
 }
 
 installDist {

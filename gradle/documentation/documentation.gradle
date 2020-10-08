@@ -57,6 +57,10 @@ configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
   ext {
     docroot = file("${buildDir}/documentation")
   }
+
+  configurations {
+    docs
+  }
   
   task documentation() {
     group = 'documentation'
@@ -75,6 +79,12 @@ configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
     from('site/assets')    // solr
     into project.docroot
   }
+
+  artifacts {
+    docs project.docroot, {
+      builtBy documentation
+    }
+  }
 }
 
 configure(project(':solr')) {
@@ -83,14 +93,37 @@ configure(project(':solr')) {
     docrootOnline = file("${buildDir}/docs-online")
   }
 
+  configurations {
+    docsOnline
+  }
+  
   documentation {
     // for Solr we also have a page shipped with zip/tgz that just points to online web pages:
-    dependsOn 'copyOnlineDocumentationAssets','createOnlineDocumentationIndex'
+    dependsOn 'documentationOnline'
+  }
+  
+  task documentationOnline() {
+    group = 'documentation'
+    description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
+    dependsOn 'copyOnlineDocumentationAssets','createOnlineDocumentationIndex','copyChangesToHtmlForOnline'
+  }
+  
+  task copyChangesToHtmlForOnline(type: Copy) {
+    from project.docroot
+    into project.docrootOnline
+    include 'changes/**'
+    dependsOn 'changesToHtml'
   }
   
   task copyOnlineDocumentationAssets(type: Copy) {
     includeEmptyDirs = false
     from('site/assets')
     into project.docrootOnline
+  }
+
+  artifacts {
+    docsOnline project.docrootOnline, {
+      builtBy documentationOnline
+    }
   }
 }

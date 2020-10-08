@@ -105,17 +105,16 @@ def add_constant(new_version, deprecate):
   changed = update_file(filename, matcher, Edit())
   print('done' if changed else 'uptodate')
 
-version_prop_re = re.compile('version\.base=(.*)')
 def update_build_version(new_version):
-  print('  changing version.base...', end='', flush=True)
-  filename = 'lucene/version.properties'
+  print('  changing baseVersion...', end='', flush=True)
+  filename = 'build.gradle'
   def edit(buffer, match, line):
     if new_version.dot in line:
       return None
-    buffer.append('version.base=' + new_version.dot + '\n')
+    buffer.append('  baseVersion = \'' + new_version.dot + '\'\n')
     return True 
 
-  changed = update_file(filename, version_prop_re, edit)
+  changed = update_file(filename, scriptutil.version_prop_re, edit)
   print('done' if changed else 'uptodate')
 
 def update_latest_constant(new_version):
@@ -178,7 +177,7 @@ def check_solr_version_tests():
   print('ok')
 
 def read_config(current_version):
-  parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, lucene/version.properties and solrconfig.xml files')
+  parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, build.gradle and solrconfig.xml files')
   parser.add_argument('version', type=Version.parse)
   newconf = parser.parse_args()
 
@@ -203,7 +202,7 @@ def get_solr_init_changes():
     ''')
   
 def main():
-  if not os.path.exists('lucene/version.properties'):
+  if not os.path.exists('build.gradle'):
     sys.exit("Tool must be run from the root of a source checkout.")
   current_version = Version.parse(find_current_version())
   newconf = read_config(current_version)
