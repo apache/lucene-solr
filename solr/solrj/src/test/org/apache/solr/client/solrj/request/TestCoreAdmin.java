@@ -24,12 +24,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -49,7 +47,6 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -60,7 +57,6 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
-@Ignore // nocommit debug
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

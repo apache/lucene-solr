@@ -18,25 +18,21 @@
 package org.apache.solr.client.solrj.request.json;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
-import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
-import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
+import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit - somehow this test can hit zk session expiration issues that prevent the cores in the collection from being created
-// in cluster setup - which is strange ...
 public class DirectJsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION_NAME = "techproducts";

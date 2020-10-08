@@ -1877,7 +1877,7 @@ public class CoreContainer implements Closeable {
         cd.setProperty("name", toName);
         solrCores.addCoreDescriptor(cd);
         core.setName(toName);
-        registerCore(cd, core, true, false);
+        registerCore(cd, core, isZooKeeperAware(), false);
         SolrCore old = solrCores.remove(name);
 
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());

@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,7 +152,6 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ needs more investigation, fails due to the Ping handler being disabled or misconfigured
   public void testWaitForStateWatcherIsRetainedOnPredicateFailure() throws Exception {
 
     CloudHttp2SolrClient client = cluster.getSolrClient();

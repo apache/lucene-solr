@@ -167,7 +167,6 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   }
   
   @Test
-  @Ignore // nocommit - hang *deletebyquery* prob
   public void testAddDelete() throws Exception {
     try (SolrClient client = getSolrClient(jetty)) {
 

@@ -106,10 +106,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
+  //@BeforeClass
+  //public static void beforeTest() throws Exception {
+  //  createAndStartJetty(legacyExampleCollection1SolrHome());
+  //}
 
   @Before
   public void emptyCollection() throws Exception {

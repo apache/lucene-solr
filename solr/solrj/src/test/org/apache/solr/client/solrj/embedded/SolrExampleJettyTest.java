@@ -51,13 +51,6 @@ import java.util.stream.IntStream;
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleJettyTest extends SolrExampleTests {
 
-  private static JettySolrRunner jetty;
-
-  @BeforeClass
-  public static void beforeSolrExampleJettyTest() throws Exception {
-    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
-
   @Test
   @Ignore // nocommit ~ debug
   public void testBadSetup() {
@@ -67,7 +60,6 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   }
 
   @Test
-  @Ignore // nocommit flakey test, can hit 404 instead of 200 (very rare to hit)
   public void testArbitraryJsonIndexing() throws Exception  {
     Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.deleteByQuery("*:*");
@@ -120,9 +112,10 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   }
 
-  @Ignore
+  @Nightly
+  @Test
   public void testUtf8QueryPerf() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient(jetty);
+    Http2SolrClient client = (Http2SolrClient)getSolrClient(jetty);
     client.deleteByQuery("*:*");
     client.commit();
     List<SolrInputDocument> docs = new ArrayList<>();
@@ -165,7 +158,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   }
 
 
-  private void runQueries(HttpSolrClient client, int count, boolean warmup) throws SolrServerException, IOException {
+  private void runQueries(Http2SolrClient client, int count, boolean warmup) throws SolrServerException, IOException {
     long start = System.nanoTime();
     for (int i = 0; i < count; i++) {
       client.query(new SolrQuery("*:*"));
