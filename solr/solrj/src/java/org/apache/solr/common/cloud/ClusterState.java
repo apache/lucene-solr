@@ -48,7 +48,7 @@ public class ClusterState implements JSONWriter.Writable {
   // nocommit
   public ClusterState(Set<String> liveNodes,
       Map<String, DocCollection> collectionStates) {
-    this(-1, liveNodes, collectionStates);
+    this(0, liveNodes, collectionStates);
   }
   
   /**

@@ -73,7 +73,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Boolean readOnly;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, -1);
+    this(name, slices, props, router, 0);
   }
 
   /**

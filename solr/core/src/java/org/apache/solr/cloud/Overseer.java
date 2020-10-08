@@ -240,14 +240,13 @@ public class Overseer implements SolrCloseable {
               // the state queue, items would have been left in the
               // work queue so let's process those first
               byte[] data = fallbackQueue.peek();
-              clusterState = getZkStateReader().getClusterState();
               while (fallbackQueueSize > 0 && data != null) {
                 final ZkNodeProps message = ZkNodeProps.load(data);
                 if (log.isDebugEnabled()) log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
                 try {
-                  processQueueItem(message, getZkStateReader().getClusterState(), zkStateWriter, false, null);
+                  processQueueItem(message, clusterState, zkStateWriter, false, null);
                 } catch (InterruptedException | AlreadyClosedException e) {
                   ParWork.propagateInterrupt(e);
                   return;
