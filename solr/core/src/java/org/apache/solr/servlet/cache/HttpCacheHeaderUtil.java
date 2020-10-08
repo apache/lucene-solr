@@ -16,26 +16,28 @@
  */
 package org.apache.solr.servlet.cache;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import org.apache.commons.codec.binary.Base64;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.lucene.util.WeakIdentityMap;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrConfig.HttpCachingConfig.LastModFrom;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.SolrIndexSearcher;
+
+import org.apache.commons.codec.binary.Base64;
 
 public final class HttpCacheHeaderUtil {
   
@@ -88,7 +90,7 @@ public final class HttpCacheHeaderUtil {
     final long currentIndexVersion
       = solrReq.getSearcher().getIndexReader().getVersion();
 
-    EtagCacheVal etagCache = etagCoreCache.get(core.getName());
+    EtagCacheVal etagCache = etagCoreCache.get(core.uniqueId);
     if (null == etagCache) {
       final String etagSeed
         = core.getSolrConfig().getHttpCachingConfig().getEtagSeed();
