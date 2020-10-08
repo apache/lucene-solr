@@ -78,7 +78,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
 //@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
-//@LuceneTestCase.Nightly // nocommit debug - can be slow
+@LuceneTestCase.Nightly // nocommit debug - can be slow
 public class TestPackages extends SolrCloudTestCase {
 
   @Before
