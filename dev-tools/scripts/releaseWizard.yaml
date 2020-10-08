@@ -674,7 +674,7 @@ groups:
         stdout: true
       - !Command
         cmd: "{{ gradle_cmd }} documentation"
-    post_description: Check that both tests pass. If they fail, commit fixes for the failures before proceeding.
+    post_description: Check that the task passed. If it failed, commit fixes for the failures before proceeding.
   - !Todo
     id: clear_gradle_cache
     title: Clear the gradle cache
@@ -1056,7 +1056,7 @@ groups:
         logfile: checkout-release-tag.log
         tee: true
       - !Command
-        cmd: "{{ gradle_cmd }} documentation -Dversion={{ release_version }}"
+        cmd: "{{ gradle_cmd }} documentation -Dversion.release={{ release_version }}"
         comment: Build documentation
       - !Command
         cmd: svn -m "Add docs, changes and javadocs for Lucene {{ release_version }}"  import {{ git_checkout_folder }}/lucene/build/docs  https://svn.apache.org/repos/infra/websites/production/lucene/content/core/{{ version }}
