@@ -33,9 +33,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
-import org.apache.solr.cloud.ClusterSingleton;
-import org.apache.solr.cluster.events.ClusterEvent;
-import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -71,7 +68,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     refresh();
     return false;
   }
-
   public CustomContainerPlugins(CoreContainer coreContainer, ApiBag apiBag) {
     this.coreContainer = coreContainer;
     this.containerApiBag = apiBag;
@@ -80,10 +76,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     currentPlugins.forEach(ew.getBiConsumer());
-  }
-
-  public synchronized ApiInfo getPlugin(String name) {
-    return currentPlugins.get(name);
   }
 
   public synchronized void refresh() {
@@ -115,7 +107,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       if (e.getValue() == Diff.REMOVED) {
         ApiInfo apiInfo = currentPlugins.remove(e.getKey());
         if (apiInfo == null) continue;
-        handleClusterSingleton(null, apiInfo);
         for (ApiHolder holder : apiInfo.holders) {
           Api old = containerApiBag.unregister(holder.api.getEndPoint().method()[0],
               getActualPath(apiInfo, holder.api.getEndPoint().path()[0]));
@@ -145,7 +136,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
             containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
           currentPlugins.put(e.getKey(), apiInfo);
-          handleClusterSingleton(apiInfo, null);
         } else {
           //this plugin is being updated
           ApiInfo old = currentPlugins.put(e.getKey(), apiInfo);
@@ -153,7 +143,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
             //register all new paths
             containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
-          handleClusterSingleton(apiInfo, old);
           if (old != null) {
             //this is an update of the plugin. But, it is possible that
             // some paths are remved in the newer version of the plugin
@@ -171,47 +160,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
         }
       }
 
-    }
-  }
-
-  private void handleClusterSingleton(ApiInfo newApiInfo, ApiInfo oldApiInfo) {
-    if (newApiInfo != null) {
-      // register new api
-      Object instance = newApiInfo.getInstance();
-      if (instance instanceof ClusterSingleton) {
-        ClusterSingleton singleton = (ClusterSingleton) instance;
-        coreContainer.getClusterSingletons().getSingletons().put(singleton.getName(), singleton);
-        // easy check to see if we should immediately start this singleton
-        if (coreContainer.getClusterEventProducer() != null &&
-            coreContainer.getClusterEventProducer().isRunning()) {
-          try {
-            singleton.start();
-          } catch (Exception exc) {
-            log.warn("Exception starting ClusterSingleton {}: {}", newApiInfo, exc);
-          }
-        }
-      }
-      if (instance instanceof ClusterEventListener) {
-        // XXX nocommit obtain a list of supported event types from the config
-        ClusterEvent.EventType[] types = ClusterEvent.EventType.values();
-        try {
-          coreContainer.getClusterEventProducer().registerListener((ClusterEventListener) instance, types);
-        } catch (Exception exc) {
-          log.warn("Exception adding ClusterEventListener {}: {}", newApiInfo, exc);
-        }
-      }
-    }
-    if (oldApiInfo != null) {
-      // stop & unregister the old api
-      Object instance = oldApiInfo.getInstance();
-      if (instance instanceof ClusterSingleton) {
-        ClusterSingleton singleton = (ClusterSingleton) instance;
-        singleton.stop();
-        coreContainer.getClusterSingletons().getSingletons().remove(singleton.getName());
-      }
-      if (instance instanceof ClusterEventListener) {
-        coreContainer.getClusterEventProducer().unregisterListener((ClusterEventListener) instance);
-      }
     }
   }
 
@@ -274,9 +222,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       return null;
     }
 
-    public Object getInstance() {
-      return instance;
-    }
 
     @SuppressWarnings({"unchecked","rawtypes"})
     public ApiInfo(PluginMeta info, List<String> errs) {
@@ -323,14 +268,14 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       }
 
       try {
-        List<Api> apis = AnnotatedApi.getApis(klas, null, false);
+        List<Api> apis = AnnotatedApi.getApis(klas, null);
         for (Object api : apis) {
           EndPoint endPoint = ((AnnotatedApi) api).getEndPoint();
           if (endPoint.path().length > 1 || endPoint.method().length > 1) {
             errs.add("Only one HTTP method and url supported for each API");
           }
           if (endPoint.method().length != 1 || endPoint.path().length != 1) {
-            errs.add("The @EndPoint must have exactly one method and path attributes");
+            errs.add("The @EndPint must have exactly one method and path attributes");
           }
           List<String> pathSegments = StrUtils.splitSmart(endPoint.path()[0], '/', true);
           PathTrie.replaceTemplates(pathSegments, getTemplateVars(info));
@@ -375,7 +320,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
         }
       }
       this.holders = new ArrayList<>();
-      for (Api api : AnnotatedApi.getApis(instance.getClass(), instance, false)) {
+      for (Api api : AnnotatedApi.getApis(instance)) {
         holders.add(new ApiHolder((AnnotatedApi) api));
       }
     }
