@@ -17,12 +17,12 @@
 package org.apache.solr.cloud;
 
 /**
- * Intended for {@link org.apache.solr.core.CoreContainer} plugins that should be
- * enabled only one instance per cluster.
- * <p>Components that implement this interface are always in one of two states:
+ * Intended for plugins that should be enabled only one instance per cluster.
+ * <p>Components that implement this interface are always in one of these states:
  * <ul>
  *   <li>STOPPED - the default state. The component is idle and does not perform
  *   any functions. It should also avoid holding any resources.</li>
+ *   <li>STARTING - </li>
  *   <li>RUNNING - the component is active.</li>
  * </ul>
  * <p>Components must be prepared to change these states multiple times in their
@@ -33,28 +33,39 @@ package org.apache.solr.cloud;
  */
 public interface ClusterSingleton {
 
+  enum State {
+    /** Component is idle. */
+    STOPPED,
+    /** Component is starting. */
+    STARTING,
+    /** Component is active. */
+    RUNNING,
+    /** Component is stopping. */
+    STOPPING
+  }
+
   /**
    * Unique name of this singleton. Used for registration.
    */
   String getName();
 
   /**
-   * Start the operation of the component. On return the component is assumed
-   * to be in the RUNNING state.
+   * Start the operation of the component. Initially this method should set
+   * the state to STARTING, and on success it should set the state to RUNNING.
    * @throws Exception on startup errors. The component should revert to the
    * STOPPED state.
    */
   void start() throws Exception;
 
   /**
-   * Returns true if the component is in the RUNNING state, false otherwise.
+   * Returns the current state of the component.
    */
-  boolean isRunning();
+  State getState();
 
   /**
-   * Stop the operation of the component. On return the component is assumed
-   * to be in the STOPPED state. Components should also avoid holding any resources
-   * in the STOPPED state.
+   * Stop the operation of the component. Initially this method should set
+   * the state to STOPPING, and on return it should set the state to STOPPED.
+   * Components should also avoid holding any resource when in STOPPED state.
    */
   void stop();
 }

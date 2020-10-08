@@ -74,10 +74,6 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cluster.events.ClusterEvent;
-import org.apache.solr.cluster.events.ClusterEventListener;
-import org.apache.solr.cluster.events.ClusterEventProducer;
-import org.apache.solr.cluster.events.impl.ClusterEventProducerImpl;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -203,45 +199,6 @@ public class CoreContainer {
     }
   }
 
-  /**
-   * This class helps in handling the initial registration of plugin-based listeners,
-   * when both the final {@link ClusterEventProducer} implementation and listeners
-   * are configured using plugins.
-   */
-  public static class InitialClusterEventProducer implements ClusterEventProducer {
-    Map<ClusterEvent.EventType, Set<ClusterEventListener>> initialListeners = new HashMap<>();
-
-    @Override
-    public Map<ClusterEvent.EventType, Set<ClusterEventListener>> getEventListeners() {
-      return initialListeners;
-    }
-
-    public void transferListeners(ClusterEventProducer target) {
-      initialListeners.forEach((type, listeners) -> {
-        listeners.forEach(listener -> {
-          try {
-            target.registerListener(listener, type);
-          } catch (Exception e) {
-            log.warn("Unable to register event listener for type {}: {}", type, e);
-          }
-        });
-      });
-    }
-
-    @Override
-    public void start() throws Exception {
-    }
-
-    @Override
-    public boolean isRunning() {
-      return false;
-    }
-
-    @Override
-    public void stop() {
-    }
-  }
-
   private volatile PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
   /**
@@ -316,8 +273,6 @@ public class CoreContainer {
   protected volatile MetricsCollectorHandler metricsCollectorHandler;
 
   private volatile SolrClientCache solrClientCache;
-
-  private volatile ClusterEventProducer clusterEventProducer = new InitialClusterEventProducer();
 
   private final ObjectCache objectCache = new ObjectCache();
 
@@ -979,17 +934,6 @@ public class CoreContainer {
           clusterSingletons.singletonMap.put(handlerName, (ClusterSingleton) handler);
         }
       });
-      // create the ClusterEventProducer
-      InitialClusterEventProducer initialClusterEventProducer = (InitialClusterEventProducer) clusterEventProducer;
-      CustomContainerPlugins.ApiInfo clusterEventProducerInfo = customContainerPlugins.getPlugin(ClusterEventProducer.PLUGIN_NAME);
-      if (clusterEventProducerInfo != null) {
-        clusterEventProducer = (ClusterEventProducer) clusterEventProducerInfo.getInstance();
-      } else {
-        clusterEventProducer = new ClusterEventProducerImpl(this);
-        clusterSingletons.singletonMap.put(ClusterEventProducer.PLUGIN_NAME, clusterEventProducer);
-      }
-      // transfer those listeners that were already registered to the initial impl
-      initialClusterEventProducer.transferListeners(clusterEventProducer);
 
       clusterSingletons.setReady();
       zkSys.getZkController().checkOverseerDesignate();
@@ -2193,10 +2137,6 @@ public class CoreContainer {
 
   public ClusterSingletons getClusterSingletons() {
     return clusterSingletons;
-  }
-
-  public ClusterEventProducer getClusterEventProducer() {
-    return clusterEventProducer;
   }
 
   static {

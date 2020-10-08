@@ -34,8 +34,6 @@ import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.cloud.ClusterSingleton;
-import org.apache.solr.cluster.events.ClusterEvent;
-import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -181,23 +179,15 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       if (instance instanceof ClusterSingleton) {
         ClusterSingleton singleton = (ClusterSingleton) instance;
         coreContainer.getClusterSingletons().getSingletons().put(singleton.getName(), singleton);
-        // easy check to see if we should immediately start this singleton
-        if (coreContainer.getClusterEventProducer() != null &&
-            coreContainer.getClusterEventProducer().isRunning()) {
+        // check to see if we should immediately start this singleton
+        if (coreContainer.getZkController() != null &&
+            coreContainer.getZkController().getOverseer() != null &&
+            !coreContainer.getZkController().getOverseer().isClosed()) {
           try {
             singleton.start();
           } catch (Exception exc) {
             log.warn("Exception starting ClusterSingleton {}: {}", newApiInfo, exc);
           }
-        }
-      }
-      if (instance instanceof ClusterEventListener) {
-        // XXX nocommit obtain a list of supported event types from the config
-        ClusterEvent.EventType[] types = ClusterEvent.EventType.values();
-        try {
-          coreContainer.getClusterEventProducer().registerListener((ClusterEventListener) instance, types);
-        } catch (Exception exc) {
-          log.warn("Exception adding ClusterEventListener {}: {}", newApiInfo, exc);
         }
       }
     }
@@ -208,9 +198,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
         ClusterSingleton singleton = (ClusterSingleton) instance;
         singleton.stop();
         coreContainer.getClusterSingletons().getSingletons().remove(singleton.getName());
-      }
-      if (instance instanceof ClusterEventListener) {
-        coreContainer.getClusterEventProducer().unregisterListener((ClusterEventListener) instance);
       }
     }
   }

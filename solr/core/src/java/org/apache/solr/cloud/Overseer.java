@@ -49,7 +49,6 @@ import org.apache.solr.cloud.overseer.ReplicaMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
-import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
@@ -801,9 +800,6 @@ public class Overseer implements SolrCloseable {
       singletons.getSingletons().forEach((name, singleton) -> {
         try {
           singleton.start();
-          if (singleton instanceof ClusterEventListener) {
-            getCoreContainer().getClusterEventProducer().registerListener((ClusterEventListener) singleton);
-          }
         } catch (Exception e) {
           log.warn("Exception starting ClusterSingleton {}: {}", singleton, e);
         }
@@ -826,9 +822,6 @@ public class Overseer implements SolrCloseable {
       return;
     }
     singletons.getSingletons().forEach((name, singleton) -> {
-      if (singleton instanceof ClusterEventListener) {
-        getCoreContainer().getClusterEventProducer().unregisterListener((ClusterEventListener) singleton);
-      }
       singleton.stop();
     });
   }
