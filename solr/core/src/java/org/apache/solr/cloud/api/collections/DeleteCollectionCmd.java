@@ -142,14 +142,23 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
     } finally {
-      if (!skipFinalStateWork) {
+      try {
         log.info("Send DELETE operation to Overseer collection={}", collection);
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
         ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
-        // wait for a while until we don't see the collection
-        zkStateReader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
+        if (!skipFinalStateWork) {
+          // wait for a while until we don't see the collection
+          zkStateReader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
+        }
+      } catch (Exception e) {
+        log.error("Exception while removing collection", e);
+      }
+
+      try {
         zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+      } catch (Exception e) {
+        log.error("Exception while trying to remove collection zknode", e);
       }
 
       // we can delete any remaining unique aliases
