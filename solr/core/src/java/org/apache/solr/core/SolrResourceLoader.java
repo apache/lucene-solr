@@ -62,6 +62,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
@@ -529,8 +530,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
         // print warning if class is deprecated
         if (clazz.isAnnotationPresent(Deprecated.class)) {
-          log.warn("Solr loaded a deprecated plugin/analysis class [{}]. Please consult documentation how to replace it accordingly.",
-              cname);
+          DeprecationLog.log(cname,
+            "Solr loaded a deprecated plugin/analysis class [" + cname + "]. Please consult documentation how to replace it accordingly.");
         }
       }
     }
@@ -693,14 +694,21 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       }
 
       for (ResourceLoaderAware aware : arr) {
-        CURRENT_AWARE.set(aware);
-        try{
-          aware.inform(loader);
-        } finally {
-          CURRENT_AWARE.remove();
-        }
+        informAware(loader, aware);
 
       }
+    }
+  }
+
+  /**
+   * Set the current {@link ResourceLoaderAware} object in thread local so that appropriate classloader can be used for package loaded classes
+   */
+  public static void informAware(ResourceLoader loader, ResourceLoaderAware aware) throws IOException {
+    CURRENT_AWARE.set(aware);
+    try{
+      aware.inform(loader);
+    } finally {
+      CURRENT_AWARE.remove();
     }
   }
 
@@ -882,6 +890,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   }
 
   //This is to verify if this requires to use the schema classloader for classes loaded from packages
-  public static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
+  private static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
 
 }

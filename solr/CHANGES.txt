@@ -126,6 +126,10 @@ Other Changes
 
 * SOLR-14036: Remove distrib=false from /terms handler's default parameters (David Smiley, Munendra S N)
 
+* SOLR-14829: Cleanup the documentation for Request Handlers and Search Components (Alexandre Rafalovitch)
+
+* SOLR-10370: ReplicationHandler should fetch index at fixed delay instead of fixed rate (Cao Manh Dat)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -186,6 +190,10 @@ Improvements
 
 * SOLR-14859: DateRangeField now throws errors when invalid field/fieldType options specified; no longer silently accepts incompatible option values
   (Jason Gerlowski, Chris Hostetter, Munendra S N)
+
+* SOLR-14905: Update commons-io version to 2.8.0 due to security vulnerability. (Nazerke Seidan via Bruno Roustant)
+
+* SOLR-14691: Metrics reporting should avoid creating objects. (ab, Noble Paul)
 
 Optimizations
 ---------------------
@@ -251,6 +259,10 @@ Bug Fixes
 * SOLR-14850: Fix ExactStatsCache NullPointerException when shards.tolerant=true.
   (Yevhen Tienkaiev via ab)
 
+* SOLR-14897: Fix unlimited number of forwarding the request from one node to another node. (hossman, Munendra S N)
+
+* SOLR-14898: Stop returning duplicate HTTP response headers when requests are forward to another node. (hossman)
+
 Other Changes
 ---------------------
 
@@ -281,6 +293,18 @@ Other Changes
 
 * SOLR-14876: Upgrade to zookeeper 3.6.2 (odidev via Erick Erickson)
 
+* SOLR-14333: Implement toString in Collapse filter so that proper parsed queries returned in debug response.
+  Also, Deprecate unused constants NULL_COLLAPSE, NULL_IGNORE, NULL_EXPAND, HINT_MULTI_DOCVALUES in collapse parser.
+  (Guna Sekhar Dora Kovvuru, Munendra S N, Mike Drob)
+
+* SOLR-12987: Deprecated plugins/features are now logged once and with log category org.apache.solr.DEPRECATED
+  (David Smiley)
+
+* SOLR-14910: Use in-line tags for logger declarations in Gradle ValidateLogCalls that are non-standard,
+              change //logok to //nowarn (Erick Erickson)
+
+* SOLR-14659: Remove restlet as dependency for the ManagedResource API (Timothy Potter, noble)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -288,6 +312,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Bug Fixes
 ---------------------
 * SOLR-14751: Zookeeper Admin screen not working for old ZK versions (janhoy)
+
+* SOLR-14663: Copy ConfigSet root data from base ConfigSet when using CREATE command (Andras Salamon, Tomás Fernández Löbbe)
 
 ==================  8.6.1 ==================
 

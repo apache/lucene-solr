@@ -22,7 +22,7 @@ In a sense, this search component provides fast field-faceting over the whole in
 
 == Configuring the Terms Component
 
-Terms Component is one of  <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-components,the default search components>>
+Terms Component is one of  <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#defining-search-components,the default search components>>
 and does not need to be defined in `solrconfig.xml`.
 
 The definition is equivalent to:

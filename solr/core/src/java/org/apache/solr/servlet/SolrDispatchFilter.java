@@ -120,8 +120,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   /**
    * Enum to define action that needs to be processed.
-   * PASSTHROUGH: Pass through to Restlet via webapp.
-   * FORWARD: Forward rewritten URI (without path prefix and core/collection name) to Restlet
+   * PASSTHROUGH: Pass through to another filter via webapp.
+   * FORWARD: Forward rewritten URI (without path prefix and core/collection name) to another filter in the chain
    * RETURN: Returns the control, and no further specific processing is needed.
    *  This is generally when an error is set and returned.
    * RETRY:Retry the request. In cases when a core isn't found to work with, this is set.
@@ -235,10 +235,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "gc");
       metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "memory");
       metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
-      MetricsMap sysprops = new MetricsMap((detailed, map) -> {
+      MetricsMap sysprops = new MetricsMap(map -> {
         System.getProperties().forEach((k, v) -> {
           if (!hiddenSysProps.contains(k)) {
-            map.put(String.valueOf(k), v);
+            map.putNoEx(String.valueOf(k), v);
           }
         });
       });
