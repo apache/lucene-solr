@@ -17,3 +17,5 @@ if ("${project.version}" == "${project.baseVersion}") { // compare as strings be
   println "Run `gradlew documentation` from `src.tgz` package to build docs locally."
 }
 %>
+
+Review the [changes](changes/Changes.html) in Apache Solr ${project.version}.
