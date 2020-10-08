@@ -89,6 +89,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    useFactory(null);
     // we don't want this test to have zk timeouts
     System.setProperty("zkClientTimeout", "60000");
     if (TEST_NIGHTLY) {
@@ -358,8 +359,9 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
       assertTrue("Could not find expected core.properties file", Files.exists(instancedir.resolve("core.properties")));
 
       Path expected = Paths.get(jetty.getSolrHome()).toAbsolutePath().resolve(core.getName());
-
-      assertTrue("Expected: " + expected + "\nFrom core stats: " + instancedir, Files.isSameFile(expected, instancedir));
+      if (Files.exists(expected) && Files.exists(instancedir)) {
+        assertTrue("Expected: " + expected + "\nFrom core stats: " + instancedir, Files.isSameFile(expected, instancedir));
+      }
     }
   }
 

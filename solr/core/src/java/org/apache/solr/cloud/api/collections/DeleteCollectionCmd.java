@@ -163,6 +163,13 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         log.error("Exception while removing collection", e);
       }
 
+      // make sure it's gone again after cores have been removed
+      try {
+        zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+      } catch (Exception e) {
+        log.error("Exception while trying to remove collection zknode", e);
+      }
+
       // we can delete any remaining unique aliases
       if (!aliasReferences.isEmpty()) {
         ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> {
