@@ -193,7 +193,7 @@ Improvements
 
 * SOLR-14905: Update commons-io version to 2.8.0 due to security vulnerability. (Nazerke Seidan via Bruno Roustant)
 
-* SOLR-14691: Metrics reporting should avoid creating objects. (ab, Noble Paul)
+* SOLR-14691: Metrics reporting should avoid creating objects. (ab, noble)
 
 Optimizations
 ---------------------
@@ -211,6 +211,8 @@ Optimizations
 
 * SOLR-14658: SolrJ's CollectionAdminRequest.collectionStatus(collection) would internally get 
   all collection statuses instead of just the specified collection. (Andy Vuong)
+
+* SOLR-14576 : Do not use SolrCore as keys in a WeakHashMap (noble)
 
 Bug Fixes
 ---------------------
