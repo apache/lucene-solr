@@ -249,14 +249,17 @@ public class ZkStateWriter {
             try {
               stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), false);
             } catch (KeeperException.BadVersionException bve) {
-              // this is a tragic error, we must disallow usage of this instance
-              log.warn(
-                  "Tried to update the cluster state using version={} but we where rejected, found {}",
-                  c.getZNodeVersion(), stat.getVersion(), bve);
-              throw bve;
-           //   lastUpdatedTime = -1;
-//              failedUpdates.put(name, c);
-//              continue;
+
+              if (c.getZNodeVersion() == 1 && stat.getVersion() == 0) {
+                // need to figure out how this case happens
+                stat = reader.getZkClient().setData(path, data, 0, false);
+              } else {
+                // this is a tragic error, we must disallow usage of this instance
+                log.warn(
+                    "Tried to update the cluster state using version={} but we where rejected, found {}",
+                    c.getZNodeVersion(), stat.getVersion(), bve);
+                throw bve;
+              }
             }
 
         } catch (InterruptedException | AlreadyClosedException e) {
