@@ -587,7 +587,7 @@ public class MiniSolrCloudCluster {
 
   public void uploadConfigSet(Path configDir, String configName)
           throws IOException, KeeperException, InterruptedException {
-    ZkConfigManager manager = new ZkConfigManager(zkServer.getZkClient(), "");
+    ZkConfigManager manager = zkStateReader.getConfigManager();
     manager.uploadConfigDir(configDir, configName);
   }
 

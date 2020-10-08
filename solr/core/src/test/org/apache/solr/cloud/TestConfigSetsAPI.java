@@ -100,7 +100,6 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 /**
  * Simple ConfigSets API tests on user errors and simple success cases.
  */
-//@Ignore // nocommit thread leaks
 public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -124,7 +123,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testCreateErrors() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
@@ -320,7 +318,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testUploadDisabled() throws Exception {
     SolrZkClient zkClient = zkClient();
     for (boolean enabled : new boolean[]{true, false}) {
@@ -336,7 +333,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testUpload() throws Exception {
     String suffix = "-untrusted";
     uploadConfigSetWithAssertions("regular", suffix, null, null);

@@ -179,6 +179,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     while ((zipEntry = zis.getNextEntry()) != null) {
       String filePathInZk = configPathInZk + "/" + zipEntry.getName();
       if (zipEntry.isDirectory()) {
+        if (filePathInZk.endsWith("/")) {
+          filePathInZk = filePathInZk.substring(0, filePathInZk.length()-1);
+        }
         zkClient.mkdir(filePathInZk);
       } else {
         createZkNodeIfNotExistsAndSetData(zkClient, filePathInZk,

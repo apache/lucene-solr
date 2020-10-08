@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -25,7 +24,6 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -41,7 +39,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debugo
+@Ignore // nocommit, TJP: this code is closing client objects it doesn't own, so test may be testing unsupported behavior in ref branch?
 public class SearchHandlerTest extends SolrTestCaseJ4 
 {
   @BeforeClass
@@ -229,7 +227,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       // create collection
       String collectionName = "testRequireZkConnectedDistribCollection";
       String configName = collectionName + "Config";
-      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
+      miniCluster.uploadConfigSet(TEST_PATH().resolve("collection1").resolve("conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 1)
           .process(miniCluster.getSolrClient());

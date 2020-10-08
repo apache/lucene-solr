@@ -24,7 +24,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -35,9 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
-@Ignore // nocommit debug flakey - I seem to remember fixing an issue with this before, but not the detail...
 public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   protected int NUM_SERVERS = 5;
   protected int NUM_SHARDS = 2;
@@ -186,7 +183,8 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
       // create collection
       String collectionName = "testSolrCloudCollection";
       String configName = "solrCloudCollectionConfig";
-      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
+      miniCluster.uploadConfigSet(configset("cloud-minimal"), configName);
+
       CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
           .process(miniCluster.getSolrClient());
 

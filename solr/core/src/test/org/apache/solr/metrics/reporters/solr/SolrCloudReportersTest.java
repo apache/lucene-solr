@@ -58,12 +58,10 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
   @Ignore // nocommit remove silly sleep
   public void testExplicitConfiguration() throws Exception {
     String solrXml = IOUtils.toString(SolrCloudReportersTest.class.getResourceAsStream("/solr/solr-solrreporter.xml"), "UTF-8");
-    configureCluster(2)
-        .withSolrXml(solrXml).configure();
-    cluster.uploadConfigSet(Paths.get(TEST_PATH().toString(), "configsets", "minimal", "conf"), "test");
+    configureCluster(2).withSolrXml(solrXml).addConfig("test", configset("cloud-minimal")).configure();
 
     CollectionAdminRequest.createCollection("test_collection", "test", 2, 2)
-        .setMaxShardsPerNode(4)
+        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("test_collection", 2, 4);
     
