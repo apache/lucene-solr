@@ -85,6 +85,7 @@ ext {
   // version unification control. These are not our main dependencies.
   scriptDepVersions = [
       "apache-rat": "0.11",
+      "commons-codec": "1.13",
       "ecj": "3.19.0",
       "javacc": "7.0.4",
       "jflex": "1.7.0",
@@ -121,8 +122,9 @@ apply from: file('gradle/testing/fail-on-no-tests.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/jar-manifest.gradle')
 
-// Maven publishing.
+// Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')
+apply from: file('gradle/releasing.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')

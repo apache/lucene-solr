@@ -20,7 +20,7 @@
  * <p>
  * The benchmark contribution contains tools for benchmarking Lucene using standard, freely available corpora.
  * <p>
- * ANT will download the corpus automatically, place it in a temp directory and then unpack it to the 
+ * Gradle will download the corpus automatically, place it in a temp directory and then unpack it to the
  * working.dir directory specified in the build. The temp directory and working directory can be safely 
  * removed after a run. However, the next time the task is run, it will need to download the files again.
  * <p>

@@ -37,7 +37,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import defaultdict
 from collections import namedtuple
-from scriptutil import download
+import scriptutil
 
 import checkJavadocLinks
 
@@ -322,13 +322,13 @@ def checkSigs(project, urlString, version, tmpDir, isSigned, keysFile):
 
   for artifact, urlString in artifacts:
     print('  download %s...' % artifact)
-    download(artifact, urlString, tmpDir, force_clean=FORCE_CLEAN)
+    scriptutil.download(artifact, urlString, tmpDir, force_clean=FORCE_CLEAN)
     verifyDigests(artifact, urlString, tmpDir)
 
     if isSigned:
       print('    verify sig')
       # Test sig (this is done with a clean brand-new GPG world)
-      download(artifact + '.asc', urlString + '.asc', tmpDir, force_clean=FORCE_CLEAN)
+      scriptutil.download(artifact + '.asc', urlString + '.asc', tmpDir, force_clean=FORCE_CLEAN)
       sigFile = '%s/%s.asc' % (tmpDir, artifact)
       artifactFile = '%s/%s' % (tmpDir, artifact)
       logFile = '%s/%s.%s.gpg.verify.log' % (tmpDir, project, artifact)
@@ -623,7 +623,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
     # TODO: clean this up to not be a list of modules that we must maintain
     extras = ('analysis', 'backward-codecs', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'luke', 'memory', 'misc', 'monitor', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial-extras', 'spatial3d', 'suggest', 'test-framework', 'licenses')
     if isSrc:
-      extras += ('build.gradle', 'build.xml', 'common-build.xml', 'module-build.xml', 'top-level-ivy-settings.xml', 'default-nested-ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'version.properties', 'tools', 'site', 'dev-docs')
+      extras += ('build.gradle', 'build.xml', 'common-build.xml', 'module-build.xml', 'top-level-ivy-settings.xml', 'default-nested-ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'tools', 'site', 'dev-docs')
   else:
     extras = ()
 
@@ -941,7 +941,7 @@ def getBinaryDistFiles(project, tmpDir, version, baseURL):
   if not os.path.exists('%s/%s' % (tmpDir, distribution)):
     distURL = '%s/%s/%s' % (baseURL, project, distribution)
     print('    download %s...' % distribution, end=' ')
-    download(distribution, distURL, tmpDir, force_clean=FORCE_CLEAN)
+    scriptutil.download(distribution, distURL, tmpDir, force_clean=FORCE_CLEAN)
   destDir = '%s/unpack-%s-getBinaryDistFiles' % (tmpDir, project)
   if os.path.exists(destDir):
     shutil.rmtree(destDir)
@@ -1170,7 +1170,7 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         crawl(downloadedFiles, subURL, path, exclusions)
       else:
         if not os.path.exists(path) or FORCE_CLEAN:
-          download(text, subURL, targetDir, quiet=True, force_clean=FORCE_CLEAN)
+          scriptutil.download(text, subURL, targetDir, quiet=True, force_clean=FORCE_CLEAN)
         downloadedFiles.append(path)
         sys.stdout.write('.')
 
@@ -1371,22 +1371,11 @@ def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
   else:
     print('    success!')
 
-def getScriptVersion():
-  topLevelDir = '../..'                       # Assumption: this script is in dev-tools/scripts/ of a checkout
-  m = re.compile(r'(.*)/').match(sys.argv[0]) # Get this script's directory
-  if m is not None and m.group(1) != '.':
-    origCwd = os.getcwd()
-    os.chdir(m.group(1))
-    os.chdir('../..')
-    topLevelDir = os.getcwd()
-    os.chdir(origCwd)
-  reBaseVersion = re.compile(r'version\.base\s*=\s*(\d+\.\d+)')
-  return reBaseVersion.search(open('%s/lucene/version.properties' % topLevelDir).read()).group(1)
 
 def main():
   c = parse_config()
 
-  scriptVersion = getScriptVersion()
+  scriptVersion = scriptutil.find_current_version()
   if not c.version.startswith(scriptVersion + '.'):
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
@@ -1435,7 +1424,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   else:
     keysFileURL = "https://archive.apache.org/dist/lucene/KEYS"
     print("    Downloading online KEYS file %s" % keysFileURL)
-    download('KEYS', keysFileURL, tmpDir, force_clean=FORCE_CLEAN)
+    scriptutil.download('KEYS', keysFileURL, tmpDir, force_clean=FORCE_CLEAN)
     keysFile = '%s/KEYS' % (tmpDir)
 
   if is_port_in_use(8983):
