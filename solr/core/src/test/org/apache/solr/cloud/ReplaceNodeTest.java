@@ -185,8 +185,8 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
 
     if (tryAgain) {
-      collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
       Thread.sleep(1000);
+      collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
     }
 
     replicas = collection.getReplicas(emptyNode);
