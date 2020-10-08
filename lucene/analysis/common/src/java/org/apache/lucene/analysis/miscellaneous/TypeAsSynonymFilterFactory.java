@@ -18,12 +18,15 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link TypeAsSynonymFilter}.
+ *
+ * <p>In Solr this might be used as such
  * <pre class="prettyprint">
  * &lt;fieldType name="text_type_as_synonym" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -46,10 +49,17 @@ public class TypeAsSynonymFilterFactory extends TokenFilterFactory {
   public static final String NAME = "typeAsSynonym";
 
   private final String prefix;
+  private Set<String> ignore = null;
+  private final int synFlagMask;
 
   public TypeAsSynonymFilterFactory(Map<String,String> args) {
     super(args);
     prefix = get(args, "prefix");  // default value is null
+    String ignoreList = get(args, "ignore");
+    synFlagMask = getInt(args,"synFlagsMask", ~0);
+    if (ignoreList != null) {
+      ignore = Set.of(ignoreList.split(","));
+    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -62,6 +72,6 @@ public class TypeAsSynonymFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenStream create(TokenStream input) {
-    return new TypeAsSynonymFilter(input, prefix);
+    return new TypeAsSynonymFilter(input, prefix, ignore, synFlagMask);
   }
 }
