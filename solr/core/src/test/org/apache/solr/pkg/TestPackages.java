@@ -78,7 +78,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
 //@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
-@LuceneTestCase.Nightly // nocommit debug - can be slow
+//@LuceneTestCase.Nightly // nocommit debug - can be slow
 public class TestPackages extends SolrCloudTestCase {
 
   @Before
@@ -446,7 +446,7 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer parser, Map expected) throws Exception {
-    try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()){
+    try(HttpSolrClient client = (HttpSolrClient) jetty.newHttp1Client()){
       TestDistribPackageStore.assertResponseValues(10,
           () -> {
             Object o = Utils.executeGET(client.getHttpClient(),
@@ -591,7 +591,7 @@ public class TestPackages extends SolrCloudTestCase {
         TestDistribPackageStore.assertResponseValues(10, new Callable<NavigableObject>() {
           @Override
           public NavigableObject call() throws Exception {
-            try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
+            try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newHttp1Client()) {
               return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), path, Utils.JAVABINCONSUMER);
             }
           }
