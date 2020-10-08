@@ -77,7 +77,10 @@ A `false` value makes the results of a collection creation predictable and gives
 This parameter is ignored if `createNodeSet` is not also specified.
 
 `collection.configName`::
-Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection. If not provided, Solr will use the configuration of `_default` configset to create a new (and mutable) configset named `<collectionName>.AUTOCREATED` and will use it for the new collection. When such a collection (that uses a copy of the _default configset) is deleted, the autocreated configset is not deleted by default.
+Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection.
++
+If not provided, Solr will use the configuration of `_default` configset to create a new (and mutable) configset named `<collectionName>.AUTOCREATED` and will use it for the new collection.
+When such a collection is deleted, its autocreated configset will be deleted by default when it is not in use by any other collection.
 
 `router.field`::
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected.

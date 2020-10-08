@@ -166,7 +166,6 @@ final class SegmentCoreReaders {
   @SuppressWarnings("try")
   void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
-      Throwable th = null;
       try (Closeable finalizer = this::notifyCoreClosedListeners){
         IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
                       cfsReader, normsProducer, pointsReader);

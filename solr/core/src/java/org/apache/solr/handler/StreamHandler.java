@@ -138,7 +138,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         streamFactory.withFunctionName(pluginInfo.name,
             () -> holder.getClazz());
       } else {
-        Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
+        Class<? extends Expressible> clazz = core.getResourceLoader().findClass(pluginInfo.className, Expressible.class);
         streamFactory.withFunctionName(pluginInfo.name, clazz);
       }
     }
@@ -158,7 +158,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
 
     @Override
-    protected Object initNewInstance(PackageLoader.Package.Version newest) {
+    protected Object initNewInstance(PackageLoader.Package.Version newest, SolrCore core) {
       return clazz = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
     }
 

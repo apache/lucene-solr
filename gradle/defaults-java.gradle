@@ -19,12 +19,12 @@
 
 allprojects {
   plugins.withType(JavaPlugin) {
-    sourceCompatibility = "11"
-    targetCompatibility = "11"
+    sourceCompatibility = rootProject.minJavaVersion
+    targetCompatibility = rootProject.minJavaVersion
 
     // Use 'release' flag instead of 'source' and 'target'
     tasks.withType(JavaCompile) {
-      options.compilerArgs += ["--release", "11"]
+      options.compilerArgs += ["--release", rootProject.minJavaVersion.toString()]
     }
 
     // Configure warnings.
@@ -42,7 +42,6 @@ allprojects {
         "-Xlint:finally",
         "-Xlint:options",
         "-Xlint:overrides",
-        "-Xlint:path",
         "-Xlint:processing",
         "-Xlint:rawtypes",
         "-Xlint:static",
@@ -53,8 +52,11 @@ allprojects {
         "-Xdoclint:-missing",
         "-Xdoclint:-accessibility",
         "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
-        "-Werror",
       ]
+
+      if (propertyOrDefault("javac.failOnWarnings", true).toBoolean()) {
+        options.compilerArgs += "-Werror"
+      }
     }
   }
 }

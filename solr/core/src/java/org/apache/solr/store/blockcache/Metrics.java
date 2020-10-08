@@ -59,7 +59,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    metricsMap = new MetricsMap((detailed, map) -> {
+    metricsMap = new MetricsMap(map -> {
       long now = System.nanoTime();
       long delta = Math.max(now - previous, 1);
       double seconds = delta / 1000000000.0;

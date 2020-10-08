@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+rootProject.name = "lucene-solr"
+
+includeBuild("dev-tools/missing-doclet")
 
 include "lucene:analysis:common"
 include "lucene:analysis:icu"
@@ -53,15 +56,12 @@ include "solr:solrj"
 include "solr:core"
 include "solr:server"
 include "solr:contrib:analysis-extras"
-include "solr:contrib:dataimporthandler"
-include "solr:contrib:dataimporthandler-extras"
 include "solr:contrib:analytics"
 include "solr:contrib:clustering"
 include "solr:contrib:extraction"
 include "solr:contrib:langid"
 include "solr:contrib:jaegertracer-configurator"
 include "solr:contrib:prometheus-exporter"
-include "solr:contrib:velocity"
 include "solr:contrib:ltr"
 include "solr:webapp"
 include "solr:test-framework"
@@ -69,3 +69,5 @@ include "solr:solr-ref-guide"
 include "solr:example"
 
 include "solr:packaging"
+include "solr:docker"
+include "solr:docker:package"

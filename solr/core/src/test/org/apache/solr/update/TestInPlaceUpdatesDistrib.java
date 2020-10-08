@@ -85,8 +85,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // asserting inplace updates happen by checking the internal [docid]
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
 
-    randomizeUpdateLogImpl();
-
     initCore(configString, schemaString);
     
     // sanity check that autocommits are disabled
@@ -945,7 +943,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     if (log.isInfoEnabled()) {
       log.info("Non leader 0: {}", ((HttpSolrClient) NONLEADERS.get(0)).getBaseURL());
-      log.info("Non leader 1: {}", ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL()); // logOk
+      log.info("Non leader 1: {}", ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL()); // nowarn
     }
     
     SolrDocument doc0 = NONLEADERS.get(0).getById(String.valueOf(0), params("distrib", "false"));
@@ -1036,7 +1034,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       if (log.isInfoEnabled()) {
         log.info("Testing client (Fetch missing test): {}", ((HttpSolrClient) client).getBaseURL());
         log.info("Version at {} is: {}"
-            , ((HttpSolrClient) client).getBaseURL(), getReplicaValue(client, 1, "_version_")); // logOk
+            , ((HttpSolrClient) client).getBaseURL(), getReplicaValue(client, 1, "_version_")); // nowarn
       }
       assertReplicaValue(client, 1, "inplace_updatable_float", (newinplace_updatable_float + 2.0f),
           "inplace_updatable_float didn't match for replica at client: " + ((HttpSolrClient) client).getBaseURL());
@@ -1346,7 +1344,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       if (log.isInfoEnabled()) {
         log.info("Testing client (testDBQUsingUpdatedFieldFromDroppedUpdate): {}", ((HttpSolrClient) client).getBaseURL());
         log.info("Version at {} is: {}", ((HttpSolrClient) client).getBaseURL(),
-            getReplicaValue(client, 1, "_version_")); // logOk
+            getReplicaValue(client, 1, "_version_")); // nowarn
       }
       assertNull(client.getById("1", params("distrib", "false")));
     }

@@ -697,7 +697,7 @@ public class IndexSearcher {
           throw new RuntimeException(e);
         }
       }
-      return collectorManager.reduce(collectors);
+      return collectorManager.reduce(collectedCollectors);
     }
   }
 

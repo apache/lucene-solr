@@ -30,6 +30,7 @@ public class ConfigSet {
   private final String name;
 
   private final SolrConfig solrconfig;
+  private volatile IndexSchema schema;
 
   private final SchemaSupplier schemaSupplier;
 
@@ -40,10 +41,11 @@ public class ConfigSet {
 
   @SuppressWarnings({"rawtypes"})
   public ConfigSet(String name, SolrConfig solrConfig, SchemaSupplier indexSchemaSupplier,
-      NamedList properties, boolean trusted) {
+                   NamedList properties, boolean trusted) {
     this.name = name;
     this.solrconfig = solrConfig;
     this.schemaSupplier = indexSchemaSupplier;
+    schema = schemaSupplier.get(true);
     this.properties = properties;
     this.trusted = trusted;
   }
@@ -61,17 +63,18 @@ public class ConfigSet {
    * @param forceFetch get a fresh value and not cached value
    */
   public IndexSchema getIndexSchema(boolean forceFetch) {
-    return schemaSupplier.get(forceFetch);
+    if(forceFetch)  schema = schemaSupplier.get(true);
+    return schema;
   }
   public IndexSchema getIndexSchema() {
-    return schemaSupplier.get(false);
+    return schema;
   }
 
   @SuppressWarnings({"rawtypes"})
   public NamedList getProperties() {
     return properties;
   }
-  
+
   public boolean isTrusted() {
     return trusted;
   }
@@ -82,7 +85,7 @@ public class ConfigSet {
    * So, we may not be able to update the core if we the schema classes are updated
    * */
   interface SchemaSupplier {
-     IndexSchema get(boolean forceFetch);
+    IndexSchema get(boolean forceFetch);
 
   }
 }

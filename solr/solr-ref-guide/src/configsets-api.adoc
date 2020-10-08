@@ -19,7 +19,7 @@
 
 The Configsets API enables you to upload new configsets to ZooKeeper, create, and delete configsets when Solr is running SolrCloud mode.
 
-Configsets are a collection of configuration files such as `solrconfig.xml`, `synonyms.txt`, the schema, language-specific files, DIH-related configuration, and other collection-level configuration files (everything that normally lives in the `conf` directory). Solr ships with two example configsets (`_default` and `sample_techproducts_configs`) which can be used when creating collections. Using the same concept, you can create your own configsets and make them available when creating collections.
+Configsets are a collection of configuration files such as `solrconfig.xml`, `synonyms.txt`, the schema, language-specific files, and other collection-level configuration files (everything that normally lives in the `conf` directory). Solr ships with two example configsets (`_default` and `sample_techproducts_configs`) which can be used when creating collections. Using the same concept, you can create your own configsets and make them available when creating collections.
 
 This API provides a way to upload configuration files to ZooKeeper and share the same set of configuration files between two or more collections.
 
@@ -86,17 +86,22 @@ This functionality is enabled by default, but can be disabled via a runtime para
 
 A configset is uploaded in a "trusted" mode if authentication is enabled and the upload operation is performed as an authenticated request. Without authentication, a configset is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" configset, the following functionality will not work:
 
-* If specified in the configset, the DataImportHandler's ScriptTransformer will not initialize.
 * The XSLT transformer (`tr` parameter) cannot be used at request processing time.
 * If specified in the configset, the StatelessScriptUpdateProcessor will not initialize.
 * Collections won't initialize if <lib> directives are used in the configset. (Note: Libraries added to Solr's classpath don't need the <lib> directive)
 
 If you use any of these parameters or features, you must have enabled security features in your Solr installation and you must upload the configset as an authenticated user.
 
-The `upload` command takes one parameter:
+The `upload` command takes the following parameters:
 
-name::
+`name`::
 The configset to be created when the upload is complete. This parameter is required.
+
+`overwrite`::
+If set to `true`, Solr will overwrite an existing configset with the same name (if false, the request will fail). Default is `false`.
+
+`cleanup`::
+When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files in ZooKeeper that existed in the old configset but not in the one being uploaded. Default is `false`.
 
 The body of the request should be a zip file that contains the configset. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
 
@@ -127,13 +132,13 @@ If you have not yet uploaded any configsets, see the <<Upload a Configset>> comm
 
 The following parameters are supported when creating a configset.
 
-name::
+`name`::
 The configset to be created. This parameter is required.
 
-baseConfigSet::
+`baseConfigSet`::
 The name of the configset to copy as a base. This defaults to `_default`
 
-configSetProp._property_=_value_::
+`configSetProp._property_=_value_`::
 A configset property from the base configset to override in the copied configset.
 
 For example, to create a configset named "myConfigset" based on a previously defined "predefinedTemplate" configset, overriding the immutable property to false.
@@ -187,7 +192,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
 
 The `delete` command removes a configset. It does not remove any collections that were created with the configset.
 
-name::
+`name`::
 The configset to be deleted. This parameter is required.
 
 To delete a configset named "myConfigSet":
