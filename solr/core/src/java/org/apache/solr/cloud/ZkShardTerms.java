@@ -306,7 +306,7 @@ public class ZkShardTerms implements AutoCloseable{
    * @return true if terms is saved successfully to ZK, false if otherwise
    * @throws KeeperException.NoNodeException correspond ZK term node is not created
    */
-  private boolean saveTerms(ShardTerms newTerms) throws KeeperException.NoNodeException {
+  private synchronized boolean saveTerms(ShardTerms newTerms) throws KeeperException.NoNodeException {
     log.info("Save terms={}", newTerms);
     byte[] znodeData = Utils.toJSON(newTerms);
     try {
@@ -380,7 +380,7 @@ public class ZkShardTerms implements AutoCloseable{
     boolean isChanged = false;
     for (;;)  {
       ShardTerms terms = this.terms.get();
-      if (terms == null || newTerms.getVersion() != terms.getVersion())  {
+      if (terms == null || newTerms.getVersion() > terms.getVersion())  {
         if (this.terms.compareAndSet(terms, newTerms))  {
           isChanged = true;
           break;
