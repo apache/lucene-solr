@@ -315,10 +315,6 @@ public class ZkShardTerms implements AutoCloseable{
       log.info("Successful update of terms at {} to {}", znodePath, newTerms);
       return true;
     } catch (KeeperException.BadVersionException e) {
-      if (isClosed.get()) {
-        return false;
-      }
-
       log.info("Failed to save terms, version is not a match, retrying");
       // TODO: wait till next version shows up
     } catch (KeeperException.NoNodeException e) {
