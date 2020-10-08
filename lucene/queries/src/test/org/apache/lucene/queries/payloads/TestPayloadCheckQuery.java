@@ -63,7 +63,7 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
           return new TokenStreamComponents(tokenizer, new SimplePayloadFilter(tokenizer));
         }
     };
-  
+
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(simplePayloadAnalyzer)
@@ -78,7 +78,7 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     searcher = newSearcher(reader);
     writer.close();
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     reader.close();
@@ -87,11 +87,11 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     reader = null;
     directory = null;
   }
-  
+
   private void checkHits(Query query, int[] results) throws IOException {
     CheckHits.checkHits(random(), query, "field", searcher, results);
   }
-  
+
   public void testSpanPayloadCheck() throws Exception {
     SpanQuery term1 = new SpanTermQuery(new Term("field", "five"));
     BytesRef pay = new BytesRef("pos: " + 5);
@@ -189,6 +189,8 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     query = new SpanPayloadCheckQuery(oneThousHunThree, payloads);
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
   }
+
+  // NOCOMMIT: needs test for operations ("gt, gte, lt, lte, eq")
 
   public void testEquality() {
     SpanQuery sq1 = new SpanTermQuery(new Term("field", "one"));

@@ -48,10 +48,10 @@ public class TestPayloadCheckQParserPlugin extends SolrTestCaseJ4 {
         // "{!payload_check f=vals_dpi payloads='1 2.0'}A B",  // ideally this should pass, but IntegerEncoder can't handle "2.0"
         "{!payload_check f=vals_dpi payloads='1 2 3'}A B C",
         "{!payload_check f=vals_dpf payloads='1 2'}one two",
+        "{!payload_check f=vals_dpf payloads='1 2' op='eq'}one two",
         "{!payload_check f=vals_dpf payloads='1 2.0'}one two", // shows that FloatEncoder can handle "1"
-        // TODO: why does this fail?
-       
-        "{!payload_check f=vals_dpf payloads='1' op='gt' threshold='0.75'}one"
+        "{!payload_check f=vals_dpf payloads='0.75' op='gt'}one",
+        "{!payload_check f=vals_dpf payloads='0.75 1.5' op='gt'}one two",
     };
 
     String[] should_not_matches = new String[] {
@@ -61,7 +61,8 @@ public class TestPayloadCheckQParserPlugin extends SolrTestCaseJ4 {
         "{!payload_check f=vals_dpi payloads='1 2'}A B C",
         "{!payload_check f=vals_dpf payloads='1 2.0'}two three",
         "{!payload_check f=vals_dps payloads='VERB NOUN'}cat jumped",
-        "{!payload_check f=vals_dpf payloads='1' op='gt' threshold='1.25'}one"
+        "{!payload_check f=vals_dpf payloads='1.25' op='gt'}one",
+        "{!payload_check f=vals_dpf payloads='0.75 3' op='gt'}one two",
     };
 
     for(String should_match : should_matches) {

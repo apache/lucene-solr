@@ -49,14 +49,13 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
 
     return new QParser(qstr, localParams, params, req) {
       @Override
-      public Query parse() throws SyntaxError {
+      public Query parse() {
         String field = localParams.get(QueryParsing.F);
         String value = localParams.get(QueryParsing.V);
         String p = localParams.get("payloads");
         // payloads and op parameter are probably mutually exclusive. we could consider making a different query
         // not a span payload check query, but something that just operates on payloads without the span?
         String op = localParams.get("op");
-        float threshold = Float.valueOf(localParams.get("threshold","0.0"));
 
         if (field == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'f' not specified");
@@ -72,7 +71,7 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
 
         FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
         Analyzer analyzer = ft.getQueryAnalyzer();
-        SpanQuery query = null;
+        SpanQuery query;
         try {
           query = PayloadUtils.createSpanQuery(field, value, analyzer);
         } catch (IOException e) {
@@ -107,7 +106,6 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
         SpanPayloadCheckQuery q = new SpanPayloadCheckQuery(query, payloads);
         if (op != null) {
           q.setOp(op);
-          q.setThreshold(threshold);
         }
         return q;
       }

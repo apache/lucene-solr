@@ -16,11 +16,6 @@
  */
 package org.apache.lucene.queries.payloads;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -42,6 +37,11 @@ import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 /**
  * Only return those matches that have a specific payload at the given position.
  */
@@ -49,9 +49,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   protected final List<BytesRef> payloadToMatch;
   protected final SpanQuery match;
-
   protected String op = null;
-  protected float threshold = 0.75f;
 
   public String getOp() {
     return op;
@@ -60,14 +58,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   public void setOp(String op) {
     this.op = op;
   }
-  public float getThreshold() {
-    return threshold;
-  }
 
-  public void setThreshold(float threshold) {
-    this.threshold = threshold;
-  }
-  
   /**
    * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
    * @param payloadToMatch The {@link java.util.List} of payloads to match
@@ -124,7 +115,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     @Override
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
       // create the correct checker for the operation.
-      final PayloadChecker collector = checkerForOp(op, threshold);
+      final PayloadChecker collector = checkerForOp(op);
       Spans matchSpans = matchWeight.getSpans(context, requiredPostings.atLeast(Postings.PAYLOADS));
       return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
         @Override
@@ -136,24 +127,24 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       };
     }
 
-    private PayloadChecker checkerForOp(String operation, Float threshold) {
-      PayloadChecker implCollector = null;
+    private PayloadChecker checkerForOp(String operation) {
       if (operation == null) {
-        return new PayloadChecker();
-      } else if ("gt".equalsIgnoreCase(operation)) {
-        implCollector = new GTPayloadChecker();
-      } else if ("gte".equalsIgnoreCase(operation)) {
-        implCollector = new GTEPayloadChecker();
-      } else if ("lt".equalsIgnoreCase(operation)) {
-        implCollector = new LTPayloadChecker();
-      } else if ("lte".equalsIgnoreCase(operation)) {
-        implCollector = new LTEPayloadChecker();
-      } else {
-        return new PayloadChecker();
+        return new EQPayloadChecker(null);
       }
-      implCollector.op = op;
-      implCollector.threshold = threshold;
-      return implCollector;
+      switch (operation) {
+        case "gt":
+          return new GTPayloadChecker(operation);
+        case "gte":
+          return new GTEPayloadChecker(operation);
+        case "lt":
+          return new LTPayloadChecker(operation);
+        case "lte":
+          return new LTEPayloadChecker(operation);
+        case "eq":
+          return new EQPayloadChecker(operation);
+        default:
+          throw new IllegalArgumentException("Unknown operation :" + operation);
+      }
     }
 
     @Override
@@ -162,7 +153,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
         return null;
 
       Terms terms = context.reader().terms(field);
-      if (terms != null && terms.hasPositions() == false) {
+      if (terms != null && !terms.hasPositions()) {
         throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
       }
 
@@ -182,10 +173,13 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   }
 
   private abstract class FloatPayloadChecker extends PayloadChecker {
+    public FloatPayloadChecker(String op) {
+      super(op);
+    }
+
     @Override
     protected boolean comparePayload(BytesRef source, BytesRef payload) {
-      float val = decodeFloat(payload.bytes, payload.offset);
-      return floatCompare(val, threshold);
+      return floatCompare(decodeFloat(payload.bytes, payload.offset), decodeFloat(source.bytes, source.offset));
     }
     private float decodeFloat(byte[] bytes, int offset) {
       return Float.intBitsToFloat(((bytes[offset] & 0xFF) << 24) | ((bytes[offset + 1] & 0xFF) << 16)
@@ -193,42 +187,76 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
     protected abstract boolean floatCompare(float val, float threshold);
   }
-  
+
   private class LTPayloadChecker extends FloatPayloadChecker {
+    public LTPayloadChecker(String op) {
+      super(op);
+    }
+
     @Override
     protected boolean floatCompare(float val, float thresh) {
-      return (val < thresh);      
+      return (val < thresh);
     }
   }
 
   private class LTEPayloadChecker extends FloatPayloadChecker {
+    public LTEPayloadChecker(String op) {
+      super(op);
+    }
+
     @Override
     protected boolean floatCompare(float val, float thresh) {
-      return (val <= thresh);      
+      return (val <= thresh);
     }
   }
 
   private class GTPayloadChecker extends FloatPayloadChecker {
+    public GTPayloadChecker(String op) {
+      super(op);
+    }
+
     @Override
     protected boolean floatCompare(float val, float thresh) {
-      return (val > thresh);      
+      return (val > thresh);
     }
   }
 
   private class GTEPayloadChecker extends FloatPayloadChecker {
+    public GTEPayloadChecker(String op) {
+      super(op);
+    }
+
     @Override
     protected boolean floatCompare(float val, float thresh) {
-      return (val >= thresh);      
+      return (val >= thresh);
     }
   }
-  
-  private class PayloadChecker implements SpanCollector {
+  private class EQPayloadChecker extends FloatPayloadChecker {
+    public EQPayloadChecker(String op) {
+      super(op);
+    }
+
+    @Override
+    protected boolean floatCompare(float val, float thresh) {
+      return false; // never used
+    }
+
+    @Override
+    protected boolean comparePayload(BytesRef source, BytesRef payload) {
+        return source.bytesEquals(payload);
+    }
+  }
+
+  private abstract class PayloadChecker implements SpanCollector {
 
     int upto = 0;
     boolean matches = true;
     // The checking operation lt,gt,lte,gte , null is eq
-    String op = null;
-    float threshold = 0.75f;
+    String op;
+
+    public PayloadChecker(String op) {
+      this.op = op;
+    }
 
     @Override
     public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
@@ -253,11 +281,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       upto++;
     }
 
-    protected boolean comparePayload(BytesRef source, BytesRef payload) {
-      //BytesRef upper = new BytesRef(payload.utf8ToString().toUpperCase());
-      //System.out.println("Compare: " + source.utf8ToString() + " TO " + upper.utf8ToString());
-      return source.bytesEquals(payload);
-    }
+    protected abstract  boolean comparePayload(BytesRef source, BytesRef payload);
 
     AcceptStatus match() {
       return matches && upto == payloadToMatch.size() ? AcceptStatus.YES : AcceptStatus.NO;
@@ -284,11 +308,14 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     return buffer.toString();
   }
 
+  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass") // because actually it does even if ides are easily confused
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
-           payloadToMatch.equals(((SpanPayloadCheckQuery) other).payloadToMatch) &&
-           match.equals(((SpanPayloadCheckQuery) other).match);
+        payloadToMatch.equals(((SpanPayloadCheckQuery) other).payloadToMatch) &&
+        match.equals(((SpanPayloadCheckQuery) other).match) &&
+        (op == null && (((SpanPayloadCheckQuery) other).op == null) ||
+            (op != null && op.equals(((SpanPayloadCheckQuery) other).op)));
   }
 
   @Override
@@ -297,7 +324,6 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     result = 31 * result + Objects.hashCode(match);
     result = 31 * result + Objects.hashCode(payloadToMatch);
     result = 31 * result + Objects.hashCode(op);
-    result = 31 * result + Objects.hashCode(threshold);
     return result;
   }
 }
