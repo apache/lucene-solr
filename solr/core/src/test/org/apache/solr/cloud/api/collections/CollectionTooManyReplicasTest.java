@@ -175,6 +175,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly // TODO: investigate why this can be 15s +
   public void testDownedShards() throws Exception {
     String collectionName = "TooManyReplicasWhenAddingDownedNode";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardstart", 1)
