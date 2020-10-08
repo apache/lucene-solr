@@ -65,6 +65,7 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.common.AlreadyClosedException;
@@ -1051,8 +1052,8 @@ public class CoreContainer implements Closeable {
 
       ZkController zkController = getZkController();
       if (zkController != null) {
-        // OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
-        // overseerCollectionQueue.allowOverseerPendingTasksToComplete();
+         OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
+         overseerCollectionQueue.allowOverseerPendingTasksToComplete();
       }
 
       closer.collect("replayUpdateExec", () -> {

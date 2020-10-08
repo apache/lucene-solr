@@ -132,13 +132,21 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       okayExceptions.add(NonExistentCoreException.class.getName());
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
+      if (!zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection");
+      }
+      try {
+
+        zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+      } catch (Exception e) {
+        log.error("Exception while trying to remove collection zknode", e);
+      }
+
       @SuppressWarnings({"unchecked"})
       List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
 
       if (failedReplicas == null) {
         skipFinalStateWork = true;
-
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection");
       }
 
     } finally {
@@ -153,12 +161,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       } catch (Exception e) {
         log.error("Exception while removing collection", e);
-      }
-
-      try {
-        zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
-      } catch (Exception e) {
-        log.error("Exception while trying to remove collection zknode", e);
       }
 
       // we can delete any remaining unique aliases
