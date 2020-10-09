@@ -310,6 +310,12 @@ Build
 
 * Upgrade forbiddenapis to version 3.1.  (Uwe Schindler)
 
+======================= Lucene 8.6.3 =======================
+
+Bug Fixes
+---------------------
+(No changes)
+
 ======================= Lucene 8.6.2 =======================
 
 Bug Fixes
