@@ -82,7 +82,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.disablePublicKeyHandler", "false");
+    disableReuseOfCryptoKeys();
   }
 
   @Override

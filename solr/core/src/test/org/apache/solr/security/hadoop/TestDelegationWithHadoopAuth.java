@@ -21,12 +21,9 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -58,7 +55,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    System.setProperty("solr.disablePublicKeyHandler", "false");
+    disableReuseOfCryptoKeys();
     HdfsTestUtil.checkAssumptions();
 
     configureCluster(NUM_SERVERS)// nodes

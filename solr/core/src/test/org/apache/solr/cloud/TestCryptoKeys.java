@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
@@ -51,13 +50,13 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.disablePublicKeyHandler", "false");
+    disableReuseOfCryptoKeys();
   }
 
   @Test
   public void test() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
-    System.setProperty("solr.disablePublicKeyHandler", "true");
+    disableReuseOfCryptoKeys();
     setupRestTestHarnesses();
     String pk1sig = "G8LEW7uJ1is81Aqqfl3Sld3qDtOxPuVFeTLJHFJWecgDvUkmJNFXmf7nkHOVlXnDWahp1vqZf0W02VHXg37lBw==";
     String pk2sig = "pCyBQycB/0YvLVZfKLDIIqG1tFwM/awqzkp2QNpO7R3ThTqmmrj11wEJFDRLkY79efuFuQPHt40EE7jrOKoj9jLNELsfEqvU3jw9sZKiDONY+rV9Bj9QPeW8Pgt+F9Y1";

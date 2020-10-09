@@ -32,11 +32,13 @@ import java.security.spec.InvalidKeySpecException;
 public class PublicKeyHandler extends RequestHandlerBase {
   public static final String PATH = "/admin/info/key";
 
+  //This is an optimization for tests only
+  public static volatile CryptoKeys.RSAKeyPair REUSABLE_KEYPAIR ;
   final CryptoKeys.RSAKeyPair keyPair;
 
   @VisibleForTesting
-  public PublicKeyHandler() {
-    keyPair = new CryptoKeys.RSAKeyPair();
+  public PublicKeyHandler() throws IOException, InvalidKeySpecException {
+    keyPair = createKeyPair(null);
   }
 
   public PublicKeyHandler(CloudConfig config) throws IOException, InvalidKeySpecException {
@@ -44,6 +46,8 @@ public class PublicKeyHandler extends RequestHandlerBase {
   }
 
   private CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config) throws IOException, InvalidKeySpecException {
+    CryptoKeys.RSAKeyPair reused = REUSABLE_KEYPAIR;
+    if(reused != null) return reused;
     if (config == null) {
       return new CryptoKeys.RSAKeyPair();
     }

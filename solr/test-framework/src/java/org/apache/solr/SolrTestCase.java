@@ -18,6 +18,7 @@
 package org.apache.solr;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -27,6 +28,7 @@ import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Path;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
@@ -52,6 +54,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.PerThreadExecService;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CloseTracker;
@@ -59,7 +62,9 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SysStats;
+import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -123,6 +128,33 @@ public class SolrTestCase extends LuceneTestCase {
   private static volatile boolean failed = false;
 
   protected volatile static PerThreadExecService testExecutor;
+
+  private static final CryptoKeys.RSAKeyPair reusedKeys = getRsaKeyPair();
+
+  private static CryptoKeys.RSAKeyPair getRsaKeyPair() {
+    String publicKey = System.getProperty("pkiHandlerPublicKeyPath");
+    String privateKey = System.getProperty("pkiHandlerPrivateKeyPath");
+    // If both properties unset, then we fall back to generating a new key pair
+    if (StringUtils.isEmpty(publicKey) && StringUtils.isEmpty(privateKey)) {
+      return new CryptoKeys.RSAKeyPair();
+    }
+
+    try {
+      return new CryptoKeys.RSAKeyPair(new URL(privateKey), new URL(publicKey));
+    } catch (Exception e) {
+      log.error("Error in pblic key/private key URLs", e);
+    }
+    return new CryptoKeys.RSAKeyPair();
+  }
+
+  public static void enableReuseOfCryptoKeys() {
+    PublicKeyHandler.REUSABLE_KEYPAIR = reusedKeys;
+  }
+
+  public static void disableReuseOfCryptoKeys() {
+    PublicKeyHandler.REUSABLE_KEYPAIR = null;
+  }
+
 
   @Rule
   public TestRule solrTestRules =
@@ -225,7 +257,7 @@ public class SolrTestCase extends LuceneTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("zookeeper.nio.directBufferBytes", Integer.toString(32 * 1024 * 2));
-    System.setProperty("solr.disablePublicKeyHandler", "true");
+    enableReuseOfCryptoKeys();
 
     if (!TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
@@ -279,7 +311,6 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.http2solrclient.maxpool.size", "16");
       System.setProperty("solr.http2solrclient.pool.keepalive", "1500");
 
-      System.setProperty("solr.disablePublicKeyHandler", "false");
       System.setProperty("solr.dependentupdate.timeout", "1500");
 
      // System.setProperty("lucene.cms.override_core_count", "3");

@@ -40,11 +40,12 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.security.PublicKeyHandler;
+import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.TimeOut;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
@@ -74,7 +75,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeSolrCloudAuthTestCase() {
-    System.setProperty("solr.disablePublicKeyHandler", "false");
+   enableReuseOfCryptoKeys();
   }
   /**
    * Used to check metric counts for PKI auth

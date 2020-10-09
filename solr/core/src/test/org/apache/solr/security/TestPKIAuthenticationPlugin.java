@@ -19,8 +19,10 @@ package org.apache.solr.security;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.security.Principal;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,7 +51,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
     Map<String, PublicKey> remoteKeys = new ConcurrentHashMap<>();
 
-    public MockPKIAuthenticationPlugin(CoreContainer cores, String node) {
+    public MockPKIAuthenticationPlugin(CoreContainer cores, String node) throws IOException, InvalidKeySpecException {
       super(cores, node, new PublicKeyHandler());
     }
 

@@ -55,7 +55,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   @BeforeClass
   public static void setupClass() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
-    System.setProperty("solr.disablePublicKeyHandler", "false");
+    disableReuseOfCryptoKeys();
     HdfsTestUtil.checkAssumptions();
 
     InetAddress loopback = InetAddress.getLoopbackAddress();
