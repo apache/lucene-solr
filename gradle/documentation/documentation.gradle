@@ -23,7 +23,7 @@ configure(rootProject) {
     luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', {
       if (project.version != project.baseVersion) {
         // non-release build
-        new File(project('lucene:documentation').buildDir, 'site').toURI().toASCIIString()
+        new File(project('lucene:documentation').buildDir, 'site').toURI().toASCIIString().minus(~'/$')
       } else {
         // release build
         "https://lucene.apache.org/core/${urlVersion}"
@@ -33,7 +33,7 @@ configure(rootProject) {
     solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
       if (project.version != project.baseVersion) {
         // non-release build
-        new File(project('solr:documentation').buildDir, 'site').toURI().toASCIIString()
+        new File(project('solr:documentation').buildDir, 'site').toURI().toASCIIString().minus(~'/$')
       } else {
         // release build
         "https://lucene.apache.org/solr/${urlVersion}"
