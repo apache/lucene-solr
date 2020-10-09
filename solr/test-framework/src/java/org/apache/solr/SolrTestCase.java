@@ -18,6 +18,7 @@
 package org.apache.solr;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -27,6 +28,7 @@ import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Path;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
@@ -52,6 +54,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.PerThreadExecService;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CloseTracker;
@@ -126,7 +129,23 @@ public class SolrTestCase extends LuceneTestCase {
 
   protected volatile static PerThreadExecService testExecutor;
 
-  private static final CryptoKeys.RSAKeyPair reusedKeys = new CryptoKeys.RSAKeyPair();
+  private static final CryptoKeys.RSAKeyPair reusedKeys = getRsaKeyPair();
+
+  private static CryptoKeys.RSAKeyPair getRsaKeyPair() {
+    String publicKey = System.getProperty("pkiHandlerPublicKeyPath");
+    String privateKey = System.getProperty("pkiHandlerPrivateKeyPath");
+    // If both properties unset, then we fall back to generating a new key pair
+    if (StringUtils.isEmpty(publicKey) && StringUtils.isEmpty(privateKey)) {
+      return new CryptoKeys.RSAKeyPair();
+    }
+
+    try {
+      return new CryptoKeys.RSAKeyPair(new URL(privateKey), new URL(publicKey));
+    } catch (Exception e) {
+      log.error("Error in pblic key/private key URLs", e);
+    }
+    return new CryptoKeys.RSAKeyPair();
+  }
 
   public static void enableReuseOfCryptoKeys() {
     PublicKeyHandler.REUSABLE_KEYPAIR = reusedKeys;
