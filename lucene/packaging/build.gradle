@@ -68,7 +68,7 @@ for (Project includedProject : includeInBinaries) {
 }
 
 dependencies {
-    docs project(path: ':lucene', configuration: 'docs')
+    docs project(path: ':lucene:documentation', configuration: 'site')
 }
 
 distributions {
@@ -141,10 +141,6 @@ configure(project(":lucene").subprojects) {
         task assemblePackaging(type: Sync) {
             from(projectDir, {
                 include "README.*"
-            })
-
-            from(project.file('docs'), {
-                into 'docs'
             })
 
             from(tasks.findByName("jar"))

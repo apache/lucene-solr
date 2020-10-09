@@ -47,8 +47,8 @@ configure(rootProject) {
     group = 'documentation'
     description = 'Generate all documentation'
 
-    dependsOn ':lucene:documentation'
-    dependsOn ':solr:documentation'
+    dependsOn ':lucene:documentation:assemble'
+    dependsOn ':solr:documentation:assemble'
   }
 }
 
@@ -61,16 +61,6 @@ configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path ==
 
     markdown = file("src/markdown")
     assets = file("src/assets")
-  }
-
-  configurations {
-    site
-  }
-
-  artifacts {
-    site project.docroot, {
-      builtBy 'documentation'
-    }
   }
 
   task documentation() {
@@ -91,7 +81,54 @@ configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path ==
   }
   
   assemble {
-    dependsOn 'documentation'
+    dependsOn documentation
+  }
+
+  configurations {
+    site
+  }
+  
+  artifacts {
+    site project.docroot, {
+      builtBy documentation
+    }
+  }
+
+}
+
+configure(project(':solr:documentation')) {
+
+  task documentationMinimal() {
+    group = 'documentation'
+    description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
+    dependsOn 'copyMiniDocumentationAssets','createMiniDocumentationIndex','copyChangesToHtmlForMiniSite'
+  }
+
+  task copyChangesToHtmlForMiniSite(type: Copy) {
+    from project.docroot
+    into project.docrootMinimal
+    include 'changes/**'
+    dependsOn 'changesToHtml'
+  }
+
+  task copyMiniDocumentationAssets(type: Copy) {
+    includeEmptyDirs = false
+    from('src/assets')
+    into project.docrootMinimal
+  }
+
+  assemble {
+    dependsOn documentationMinimal
+  }
+
+  configurations {
+    minimalSite
+  }
+  
+  artifacts {
+    minimalSite project.docrootMinimal, {
+      builtBy documentationMinimal
+    }
   }
 
 }

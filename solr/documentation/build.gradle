@@ -15,41 +15,4 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'distribution'
-}
-
 description = 'Solr HTML documentation'
-
-configurations {
-  minimalSite
-}
-
-assemble {
-  dependsOn 'documentationMinimal'
-}
-
-artifacts {
-  minimalSite project.docrootMinimal, {
-    builtBy 'documentationMinimal'
-  }
-}
-
-task documentationMinimal() {
-  group = 'documentation'
-  description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
-  dependsOn 'copyMiniDocumentationAssets','createMiniDocumentationIndex','copyChangesToHtmlForMiniSite'
-}
-
-task copyChangesToHtmlForMiniSite(type: Copy) {
-  from project.docroot
-  into project.docrootMinimal
-  include 'changes/**'
-  dependsOn 'changesToHtml'
-}
-
-task copyMiniDocumentationAssets(type: Copy) {
-  includeEmptyDirs = false
-  from('src/assets')
-  into project.docrootMinimal
-}

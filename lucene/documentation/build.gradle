@@ -15,8 +15,4 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'distribution'
-}
-
 description = 'Lucene HTML documentation'
