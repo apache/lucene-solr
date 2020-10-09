@@ -147,7 +147,7 @@ curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H '
 } ]'
 ----
 
-==== Replacing all child documents 
+==== Replacing All Child Documents
 
 As with normal (multiValued) fields, the `set` keyword can be used to replace all child documents in a psuedo-field:
 
@@ -164,11 +164,11 @@ curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H '
                           "name_s": "How to get Red ink stains out of fabric",
                           "content_t": "... vinegar ...",
                         } ] }
-                     
+
 } ]'
 ----
 
-==== Adding a child document
+==== Adding a Child Document
 
 As with normal (multiValued) fields, the `add` keyword can be used to add additional child documents to a psuedo-field:
 
@@ -185,7 +185,7 @@ curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H '
 ----
 
 
-==== Removing a child document
+==== Removing a Child Document
 
 As with normal (multiValued) fields, the `remove` keyword can be used to remove a child document (by `id`) from it's psuedo-field:
 

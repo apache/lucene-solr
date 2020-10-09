@@ -351,7 +351,7 @@ http://_leader_host:port_/solr/_core_name_/replication?command=restorestatus
 +
 This command is used to check the status of a restore operation. This command takes no parameters.
 +
-The status value can be "In Progress" , "success" or "failed". If it failed then an "exception" will also be sent in the response.
+The status value can be "In Progress", "success", or "failed". If it failed then an "exception" will also be sent in the response.
 
 `deletebackup`::
 Delete any backup created using the `backup` command.

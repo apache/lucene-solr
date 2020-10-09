@@ -184,9 +184,9 @@ A common mistake is to try and use a `which` parameter that is more restrictive 
 q={!parent which="title:join"}comments:support
 ----
 
-This type of query will frequenly not work the way you might expect.  Since the `which` param only identifies _some_ of the "parent" documents, the resulting query can match "parent" documents it should not, because it will mistakenly identify all documents which do _not_ match the `which="title:join"` Block Mask as children of the next "parent" document in the index (that does match this Mask).
+This type of query will frequently not work the way you might expect.  Since the `which` param only identifies _some_ of the "parent" documents, the resulting query can match "parent" documents it should not, because it will mistakenly identify all documents which do _not_ match the `which="title:join"` Block Mask as children of the next "parent" document in the index (that does match this Mask).
 
-A similar problematic situation can arise when mixing parent/child documents with "simple" documents that have no children _and do not match the query used to identify 'parent' documents_.  For example, if we add the following document to our existing parent/child example documents...
+A similar problematic situation can arise when mixing parent/child documents with "simple" documents that have no children _and do not match the query used to identify 'parent' documents_.  For example, if we add the following document to our existing parent/child example documents:
 
 [source,xml]
 ----
@@ -237,21 +237,21 @@ Comma separated list of tags for excluding queries from parameters above. See ex
 {!bool filter=foo should=bar}
 ----
 
-Parameters might also be multivalue references. The former example above is equivlent to 
+Parameters might also be multivalue references. The former example above is equivalent to:
 
 [source,text]
 ----
 q={!bool must=$ref}&ref=foo&ref=bar
 ----
 
-Referred queries might be excuded via tags. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>.
+Referred queries might be excluded via tags. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>.
 
 [source,text]
 ----
 q={!bool must=$ref excludeTags=t2}&ref={!tag=t1}foo&ref={!tag=t2}bar
 ----
 
-Since the later query is excluded via `t2`, the resulting query is equivalent to 
+Since the later query is excluded via `t2`, the resulting query is equivalent to:
 
 [source,text]
 ----
@@ -633,7 +633,7 @@ The upper bound for the hash range for the query
 
 === Hash Range Cache Config
 
-The hash range query parser uses a special cache to improve the speedup of the queries.  The following should be added to the solrconfig.xml for the various fields that you want to perform the hash range query on.  Note the name of the cache should be the field name prefixed by "hash_".
+The hash range query parser uses a special cache to improve the speedup of the queries. The following should be added to the `solrconfig.xml` for the various fields that you want to perform the hash range query on.  Note the name of the cache should be the field name prefixed by "hash_".
 
 [source,xml]
 ----
@@ -851,7 +851,7 @@ This parameter improves the performance of the cross-collection join, but it dep
 If this parameter is not specified, the cross collection join query will try to determine the correct value automatically.
 
 `ttl`::
-The length of time that a cross colleciton join query in the cache will be considered valid, in seconds.
+The length of time that a cross collection join query in the cache will be considered valid, in seconds.
 Defaults to `3600` (one hour).
 The cross collection join query will not be aware of changes to the remote collection, so if the remote collection is updated, cached cross collection queries may give inaccurate results.
 After the `ttl` period has expired, the cross collection join query will re-execute the join against the remote collection.
@@ -894,7 +894,7 @@ Details about using the `LTRQParserPlugin` can be found in the <<learning-to-ran
 
 == Max Score Query Parser
 
-The `MaxScoreQParser` extends the `LuceneQParser` but returns the Max score from the clauses. It does this by wrapping all `SHOULD` clauses in a `DisjunctionMaxQuery` with tie=1.0. Any `MUST` or `PROHIBITED` clauses are passed through as-is. Non-boolean queries, e.g., NumericRange falls-through to the `LuceneQParser` parser behavior.
+The `MaxScoreQParser` extends the `LuceneQParser` but returns the Max score from the clauses. It does this by wrapping all `SHOULD` clauses in a `DisjunctionMaxQuery` with `tie=1.0`. Any `MUST` or `PROHIBITED` clauses are passed through as-is. Non-boolean queries, e.g., NumericRange falls-through to the `LuceneQParser` parser behavior.
 
 Example:
 

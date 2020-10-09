@@ -68,7 +68,7 @@ If you are using SolrCloud, you must upload `security.json` to ZooKeeper. You ca
 
 [source,bash]
 ----
-bin/solr zk cp file:path_to_local_security.json zk:/security.json -z localhost:9983
+$ bin/solr zk cp file:path_to_local_security.json zk:/security.json -z localhost:9983
 ----
 
 NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.

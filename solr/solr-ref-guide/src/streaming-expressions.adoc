@@ -17,7 +17,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Streaming Expressions provide a simple yet powerful stream processing language for Solr Cloud.
+Streaming Expressions provide a simple yet powerful stream processing language for SolrCloud.
 
 Streaming expressions are a suite of functions that can be combined to perform many different parallel computing tasks. These functions are the basis for the <<parallel-sql-interface.adoc#parallel-sql-interface,Parallel SQL Interface>>.
 

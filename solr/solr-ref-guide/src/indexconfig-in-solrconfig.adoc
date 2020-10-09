@@ -111,8 +111,11 @@ Conversely, keeping more segments can accelerate indexing, because merges happen
 
 When a document is deleted or updated, the document is marked as deleted but it not removed from the index until the segment is merged. There are two parameters that can can be adjusted when using the default TieredMergePolicy that influence the number of deleted documents in an index.
 
-* `forceMergeDeletesPctAllowed (default 10.0)`. When the external expungeDeletes command is issued, any segment that has more than this percent deleted documents will be merged into a new segment and the data associated with the deleted documents will be purged. A value of 0.0 will make expungeDeletes behave essentially identically to `optimize`.
-* `deletesPctAllowed (default 33.0)`. During normal segment merging, a "best effort" is made to insure that the total percentage of deleted documents in the index is below this threshold.  Valid settings are between 20% and 50%. 33% was chosen as the default because as this setting approaches 20%, considerable load is added to the system.
+`forceMergeDeletesPctAllowed`::
+(default 10.0) When the external expungeDeletes command is issued, any segment that has more than this percent deleted documents will be merged into a new segment and the data associated with the deleted documents will be purged. A value of 0.0 will make expungeDeletes behave essentially identically to `optimize`.
+
+`deletesPctAllowed`::
+(default 33.0). During normal segment merging, a "best effort" is made to insure that the total percentage of deleted documents in the index is below this threshold.  Valid settings are between 20% and 50%. 33% was chosen as the default because as this setting approaches 20%, considerable load is added to the system.
 
 === Customizing Merge Policies
 
