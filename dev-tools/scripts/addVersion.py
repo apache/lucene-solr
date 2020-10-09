@@ -162,18 +162,12 @@ def update_solrconfig(filename, matcher, new_version):
 
 def check_lucene_version_tests():
   print('  checking lucene version tests...', end='', flush=True)
-  base_dir = os.getcwd()
-  os.chdir('lucene/core') 
-  run('ant test -Dtestcase=TestVersion')
-  os.chdir(base_dir)
+  run('./gradlew -p lucene/core test --tests TestVersion')
   print('ok')
 
 def check_solr_version_tests():
   print('  checking solr version tests...', end='', flush=True)
-  base_dir = os.getcwd()
-  os.chdir('solr/core') 
-  run('ant test -Dtestcase=TestLuceneMatchVersion')
-  os.chdir(base_dir)
+  run('./gradlew -p solr/core test --tests TestLuceneMatchVersion')
   print('ok')
 
 def read_config(current_version):
