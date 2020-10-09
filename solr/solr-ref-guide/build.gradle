@@ -103,6 +103,7 @@ sourceSets {
 
 ext {
     buildContentDir = file("${buildDir}/content")
+    htmlOutputDir = file("${buildDir}/html-site")
     mainPage = "index"
 
     // the "MAJOR.MINOR" version of solr this guide is about (guides aren't specific to BUGFIX releases)
@@ -114,8 +115,8 @@ ext {
     solrGuideVersionPath = "${solrDocsVersion}".replaceAll(/^(\d+)\.(\d+)$/, "\$1_\$2")
 
     if (project.hasProperty("local.javadocs")) {
-        htmlSolrJavadocs = "link:../../docs/"
-        htmlLuceneJavadocs = "link:../../../../lucene/build/docs/"
+        htmlSolrJavadocs = 'link:' + htmlOutputDir.toPath().relativize(project(':solr:documentation').docroot.toPath()).toString().replace(File.separator, '/')
+        htmlLuceneJavadocs = 'link:' + htmlOutputDir.toPath().relativize(project(':lucene:documentation').docroot.toPath()).toString().replace(File.separator, '/')
     } else {
         // when linking to javadocs of code releases, which always use paths like "MAJOR_MINOR_BUGFIX"
         // (even when 'BUGFIX' = 0), we link to the javadocs for the "MAJOR.MINOR.0" release
@@ -213,7 +214,7 @@ task buildSiteJekyll(type: com.github.jrubygradle.JRubyExec) {
     dependsOn buildNavDataFiles
 
     inputs.dir buildContentDir
-    outputs.dir file("${buildDir}/html-site")
+    outputs.dir htmlOutputDir
 
     script 'jekyll'
     scriptArgs 'build' //, '--verbose'
@@ -231,7 +232,7 @@ task buildSite(type: JavaExec) {
     workingDir = buildContentDir
 
     args([
-            file("${buildDir}/html-site"),
+            htmlOutputDir as String,
     ])
 
     if (project.hasProperty("local.javadocs")) {

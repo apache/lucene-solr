@@ -40,7 +40,7 @@ buildscript {
   }
 }
 
-configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
+configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path == ':solr:documentation' }) {
   task markdownToHtml(type: Copy) {
     dependsOn copyDocumentationAssets
     
@@ -52,9 +52,9 @@ configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
   }
 }
 
-configure(project(':lucene')) {
+configure(project(':lucene:documentation')) {
   markdownToHtml {
-    from('.') {
+    from(project.parent.projectDir) {
       include 'MIGRATE.md'
       include 'JRE_VERSION_MIGRATION.md'
       include 'SYSTEM_REQUIREMENTS.md'
@@ -62,10 +62,10 @@ configure(project(':lucene')) {
   }
   
   task createDocumentationIndex(type: MarkdownTemplateTask) {
-    dependsOn copyDocumentationAssets,markdownToHtml
+    dependsOn markdownToHtml
 
     outputFile = file("${project.docroot}/index.html")
-    templateFile = file('site/index.template.md')
+    templateFile = file("${project.markdownSrc}/index.template.md")
     
     def defaultCodecFile = project(':lucene:core').file('src/java/org/apache/lucene/codecs/Codec.java')
     inputs.file(defaultCodecFile)
@@ -87,19 +87,19 @@ configure(project(':lucene')) {
   }
 }
 
-configure(project(':solr')) {
+configure(project(':solr:documentation')) {
   markdownToHtml {
-    from('site') {
+    from(project.markdownSrc) {
       include '**/*.md'
       exclude '**/*.template.md'
     }
   }
   
   task createDocumentationIndex(type: MarkdownTemplateTask) {
-    dependsOn copyDocumentationAssets,markdownToHtml
+    dependsOn markdownToHtml
   
     outputFile = file("${project.docroot}/index.html")
-    templateFile = file('site/index.template.md')
+    templateFile = file("${project.markdownSrc}/index.template.md")
     
     // list all properties used by the template here to allow uptodate checks to be correct:
     inputs.property('version', project.version)
@@ -109,11 +109,9 @@ configure(project(':solr')) {
     withProjectList()
   }
   
-  task createOnlineDocumentationIndex(type: MarkdownTemplateTask) {
-    dependsOn copyOnlineDocumentationAssets
-  
-    outputFile = file("${project.docrootOnline}/index.html")
-    templateFile = file('site/online-link.template.md')
+  task createMiniDocumentationIndex(type: MarkdownTemplateTask) {
+    outputFile = file("${project.docrootMinimal}/index.html")
+    templateFile = file("${project.markdownSrc}/online-link.template.md")
 
     // list all properties used by the template here to allow uptodate checks to be correct:
     inputs.property('version', project.version)
@@ -161,6 +159,9 @@ class MarkdownFilter extends FilterReader {
 // produces Markdown, which is converted to HTML
 class MarkdownTemplateTask extends DefaultTask {
 
+  @Internal
+  Project productProject = project.parent
+
   @InputFile
   File templateFile
 
@@ -174,7 +175,7 @@ class MarkdownTemplateTask extends DefaultTask {
   /** adds a property "projectList" containing all subprojects with javadocs as markdown bullet list */
   void withProjectList() {
     binding.put('projectList', project.providers.provider{
-      def projects = project.subprojects.findAll{ it.tasks.findByName('renderSiteJavadoc')?.enabled }
+      def projects = productProject.subprojects.findAll{ it.tasks.findByName('renderSiteJavadoc')?.enabled }
         .sort(false, Comparator.comparing{ (it.name != 'core') as Boolean }
           .thenComparing(Comparator.comparing{ (it.name != 'solrj') as Boolean })
           .thenComparing(Comparator.comparing{ (it.name == 'test-framework') as Boolean })
