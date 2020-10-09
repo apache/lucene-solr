@@ -432,14 +432,14 @@ public class Overseer implements SolrCloseable {
       ClusterState state;
       LinkedHashMap<String,ClusterState.CollectionRef> collStates;
       ClusterState prevState = null;
-      if (itemsQueued.sum() == 1) {
-        log.info("First queue item for Overseer, pull cluster state ...");
-        zkClient.printLayout();
-        zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
-        prevState = state = reader.getClusterState();
-      } else {
+//      if (itemsQueued.sum() == 1) {
+//        log.info("First queue item for Overseer, pull cluster state ...");
+//        zkClient.printLayout();
+//        zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
+//        prevState = state = reader.getClusterState();
+//      } else {
         state = clusterState;
-      }
+//      }
       collStates = new LinkedHashMap<>(state.getCollectionStates());
       for (DocCollection docCollection : updatesToWrite.values()) {
         Map<String,Slice> slicesMap = docCollection.getSlicesMap();
