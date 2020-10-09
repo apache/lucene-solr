@@ -19,12 +19,16 @@
 // under the License.
 
 Solr supports indexing nested documents, described here, and ways to <<searching-nested-documents.adoc#searching-nested-documents,search and retrieve>> them very efficiently.
+
 By way of examples: nested documents in Solr can be used to bind a blog post (parent document) with comments (child documents) -- or as a way to model major product lines as parent documents, with multiple types of child documents representing individual SKUs (with unique sizes / colors) and supporting documention (either directly nested under the products, or under individual SKUs.
+
 The "top most" parent with all children is referred to as a "root level" document or "block document" and it explains some of the nomenclature of related features.
+
 At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships,
  and the `<<transforming-result-documents.adoc#child-childdoctransformerfactory,[child]>>` Document Transformer can attach child (or other "descendent") documents to the result documents.
 In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent "<<other-parsers#join-query-parser,query time join>>",
  since the relationships are already stored in the index and do not need to be computed.
+
 However, nested documents are less flexible than query time joins as it imposes rules that some applications may not be able to accept.
 Nested documents may be indexed via either the XML or JSON data syntax, and is also supported by <<using-solrj.adoc#using-solrj,SolrJ>> with javabin.
 
@@ -32,7 +36,7 @@ Nested documents may be indexed via either the XML or JSON data syntax, and is a
 [CAUTION]
 ====
 .Re-Indexing Considerations
-With the exception of in-place updates, <<#maintaining-integrity-with-updates-and-deletes,blocks of nested documents must be updated/deleted together>>.  Modifying or replacing individual child documents requires re-indexing of the entire block (either explicitly/externally, or under the covers inside of Solr).  For some applications this may result in a lot of extra indexing overhead and may not be worth the performance gains at query time.
+With the exception of in-place updates, <<#maintaining-integrity-with-updates-and-deletes,blocks of nested documents must be updated/deleted together>>.  Modifying or replacing individual child documents requires reindexing of the entire block (either explicitly/externally, or under the covers inside of Solr).  For some applications this may result in a lot of extra indexing overhead and may not be worth the performance gains at query time.
 ====
 
 [#example-indexing-syntax]
@@ -248,13 +252,13 @@ There are several additional schema considerations that should be considered for
 
 [TIP]
 ====
-When using Solr Cloud it is a _VERY_ good idea to use <<shards-and-indexing-data-in-solrcloud#document-routing,prefix based compositeIds>> with a common prefix for all documents in the block.  This makes it much easier to apply <<updating-parts-of-documents#updating-child-documents,atomic updates to individual child documents>>
+When using SolrCloud it is a _VERY_ good idea to use <<shards-and-indexing-data-in-solrcloud#document-routing,prefix based compositeIds>> with a common prefix for all documents in the block.  This makes it much easier to apply <<updating-parts-of-documents#updating-child-documents,atomic updates to individual child documents>>
 ====
 
 
 == Maintaining Integrity with Updates and Deletes
 
-Blocks of nested documents can be modified simply by adding/replacing the root document with more or fewer child/descendent documents as an application desires.  This can either be done explicitly/externaly by an indexing client completely re-indexing the root level document, or internally by Solr when a client uses <<updating-parts-of-documents#updating-child-documents,atomic updates>> to modify child documents.  This aspect isn't different than updating any normal document except that Solr takes care to ensure that all related child documents of the existing version get deleted.
+Blocks of nested documents can be modified simply by adding/replacing the root document with more or fewer child/descendent documents as an application desires.  This can either be done explicitly/externaly by an indexing client completely reindexing the root level document, or internally by Solr when a client uses <<updating-parts-of-documents#updating-child-documents,atomic updates>> to modify child documents.  This aspect isn't different than updating any normal document except that Solr takes care to ensure that all related child documents of the existing version get deleted.
 
 Clients should however be very careful to *never* add a root document that has the same `id` of a child document -- or vice-versa.  Solr does not prevent clients from attempting this, but *_it will violate integrity assumptions that Solr expects._*
 
