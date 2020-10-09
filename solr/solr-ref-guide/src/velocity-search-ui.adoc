@@ -18,6 +18,13 @@
 
 Solr includes a sample search UI based on the <<response-writers.adoc#velocity-writer,VelocityResponseWriter>> (also known as Solritas) that demonstrates several useful features, such as searching, faceting, highlighting, autocomplete, and geospatial searching.
 
+[WARNING]
+====
+The VelocityResponseWriter and associated /browse UI is deprecated and will be removed in 9.0.
+
+The functionality has been replaced by a 3rd party plugin available at https://github.com/erikhatcher/solritas.
+====
+
 When using the `sample_techproducts_configs` configset, you can access the Velocity sample Search UI: `\http://localhost:8983/solr/techproducts/browse`
 
 .The Velocity Search UI

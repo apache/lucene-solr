@@ -18,9 +18,11 @@
 
 The VelocityResponseWriter is an optional plugin available in the `contrib/velocity` directory. It powers the /browse user interfaces when using some example configurations such as "techproducts" and "example/files".
 
-[IMPORTANT]
+[WARNING]
 ====
-The VelocityResponseWriter has been deprecated and may be removed in a future version of Solr.
+The VelocityResponseWriter and associated /browse UI is deprecated and will be removed in 9.0.
+
+The functionality has been replaced by a 3rd party plugin available at https://github.com/erikhatcher/solritas.
 ====
 
 Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion), and must be registered in `solrconfig.xml` like this:

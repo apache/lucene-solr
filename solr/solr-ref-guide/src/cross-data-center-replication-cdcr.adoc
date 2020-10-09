@@ -22,7 +22,7 @@ Cross Data Center Replication (CDCR) allows you to create multiple SolrCloud dat
 [WARNING]
 .CDCR is deprecated
 ====
-This feature (in its current form) is deprecated and will likely be removed in 9.0.
+This feature (in its current form) is deprecated and will be removed in 9.0.
 
 Anyone currently using CDCR should consider migrating away from it.
 There are several open issues which make CDCR complex to maintain and generally unstable.

@@ -21,7 +21,8 @@ A Response Writer generates the formatted response of a search.
 
 Solr supports a variety of Response Writers to ensure that query responses can be parsed by the appropriate language or application.
 
-The `wt` parameter selects the Response Writer to be used. The list below describe shows the most common settings for the `wt` parameter, with links to further sections that discuss them in more detail.
+The `wt` parameter selects the Response Writer to be used.
+The list below shows the most common settings for the `wt` parameter, with links to the sections that discuss them in more detail.
 
 * <<CSV Response Writer,csv>>
 * <<GeoJSON Response Writer,geojson>>
@@ -300,6 +301,8 @@ MA147LL/A,"electronics,music",Apple 60 GB iPod with Video Playback Black,10,399.
 
 [[velocity-writer]]
 == Velocity Response Writer
+
+_Deprecated_
 
 The `VelocityResponseWriter` processes the Solr response and request context through Apache Velocity templating.
 
