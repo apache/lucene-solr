@@ -67,7 +67,7 @@ configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path ==
     group = 'documentation'
     description = "Generate ${project.name.capitalize()} documentation"
 
-    dependsOn parent.subprojects.collect { prj ->
+    dependsOn project.parent.subprojects.collect { prj ->
       prj.tasks.matching { it.name == 'renderSiteJavadoc' }
     }
     dependsOn 'changesToHtml','copyDocumentationAssets',

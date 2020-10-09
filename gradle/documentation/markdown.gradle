@@ -54,7 +54,7 @@ configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path ==
 
 configure(project(':lucene:documentation')) {
   markdownToHtml {
-    from(parent.projectDir) {
+    from(project.parent.projectDir) {
       include 'MIGRATE.md'
       include 'JRE_VERSION_MIGRATION.md'
       include 'SYSTEM_REQUIREMENTS.md'
@@ -159,6 +159,9 @@ class MarkdownFilter extends FilterReader {
 // produces Markdown, which is converted to HTML
 class MarkdownTemplateTask extends DefaultTask {
 
+  @Internal
+  Project productProject = project.parent
+
   @InputFile
   File templateFile
 
@@ -172,7 +175,7 @@ class MarkdownTemplateTask extends DefaultTask {
   /** adds a property "projectList" containing all subprojects with javadocs as markdown bullet list */
   void withProjectList() {
     binding.put('projectList', project.providers.provider{
-      def projects = project.parent.subprojects.findAll{ it.tasks.findByName('renderSiteJavadoc')?.enabled }
+      def projects = productProject.subprojects.findAll{ it.tasks.findByName('renderSiteJavadoc')?.enabled }
         .sort(false, Comparator.comparing{ (it.name != 'core') as Boolean }
           .thenComparing(Comparator.comparing{ (it.name != 'solrj') as Boolean })
           .thenComparing(Comparator.comparing{ (it.name == 'test-framework') as Boolean })
