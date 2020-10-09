@@ -20,13 +20,13 @@ configure(rootProject) {
     group 'Verification'
     description 'Check broken links in the entire documentation'
 
-    dependsOn ':lucene:checkBrokenLinks'
-    dependsOn ':solr:checkBrokenLinks'
+    dependsOn ':lucene:documentation:checkBrokenLinks'
+    dependsOn ':solr:documentation:checkBrokenLinks'
   }
 }
 
-configure(subprojects.findAll { it.path in [':lucene', ':solr'] }) {
-  task checkBrokenLinks(type: CheckBrokenLinksTask, 'dependsOn': 'documentation:assemble')
+configure(subprojects.findAll { it.path in [':lucene:documentation', ':solr:documentation'] }) {
+  task checkBrokenLinks(type: CheckBrokenLinksTask, 'dependsOn': 'documentation')
   check.dependsOn checkBrokenLinks
 }
 
