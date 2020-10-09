@@ -101,7 +101,7 @@ public abstract class VectorValues extends DocIdSetIterator {
 
     /**
      * Return the vector value indexed at the given ordinal. The provided floating point array may
-     * be shared and overwritten by subsequent calls to this method and {@link binaryValue(int)}.
+     * be shared and overwritten by subsequent calls to this method and {@link #binaryValue(int)}.
      * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
      */
     float[] vectorValue(int targetOrd) throws IOException;
@@ -110,7 +110,7 @@ public abstract class VectorValues extends DocIdSetIterator {
      * Return the vector indexed at the given ordinal value as an array of bytes in a BytesRef;
      * these are the bytes corresponding to the float array in IEEE 754 standard encoding, encoded
      * using little-endian byte order. The provided bytes may be shared and overwritten by subsequent
-     * calls to this method and {@link vectorValue(int)}.
+     * calls to this method and {@link #vectorValue(int)}.
      * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
      */
     BytesRef binaryValue(int targetOrd) throws IOException;
