@@ -1325,7 +1325,7 @@ public class ZkStateReader implements SolrCloseable {
             event, coll, liveNodes.size());
       }
 
-      if (!isClosed()) {
+      if (!closed) {
         refreshAndWatch();
       }
 

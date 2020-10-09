@@ -148,7 +148,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
       if(taskId != null) {
         // Put the tasks into the maps for tracking
-        if (getRequestStatusMap(RUNNING).containsKey(taskId) || getRequestStatusMap(COMPLETED).containsKey(taskId) || getRequestStatusMap(FAILED).containsKey(taskId)) {
+        if (getRequestStatusMap(RUNNING).containsKey(taskId) || getRequestStatusMap(COMPLETED).containsKey(taskId)) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
               "Duplicate request with the same requestid found.");
         }
