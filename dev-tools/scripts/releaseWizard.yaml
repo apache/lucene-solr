@@ -1739,14 +1739,3 @@ groups:
         cmd: |
           svn rm -m "Stop mirroring old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
         logfile: svn-rm-lucene.log
-  - !Todo
-    id: update_wiki
-    title: Update old WIKI
-    description: |
-      The Solr WIKI has a page for every version which is often linked to from WIKI pages to 
-      indicate differences between versions, example: http://wiki.apache.org/solr/Solr4.3. 
-
-      Do the following:
-
-      . Update the page for the released version with release date and link to release statement
-      . Create a new placeholder page for the "next" version, if it does not exist
