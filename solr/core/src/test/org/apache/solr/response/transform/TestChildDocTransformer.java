@@ -32,7 +32,7 @@ import org.junit.Test;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-// nocommit - note this test is flakey, I think sometimes does not return a version
+// nocommit - note this test is flakey, I think sometimes does not return a version - testParentFilter and testAllParams
 public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
   private static String ID_FIELD = "id";
@@ -50,6 +50,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
+  // nocommit - note this test is flakey, I think sometimes does not return a version - testParentFilter and testAllParams
   public void testParentFilter() throws Exception {
     for(int i=0; i<titleVals.length; i++) {
       titleVals[i] = TestUtil.randomSimpleString(random(), 1, 20);
@@ -62,6 +63,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
+  // nocommit - note this test is flakey, I think sometimes does not return a version - testParentFilter and testAllParams
   public void testAllParams() throws Exception {
     createSimpleIndex();
     testChildDoctransformerJSON();
