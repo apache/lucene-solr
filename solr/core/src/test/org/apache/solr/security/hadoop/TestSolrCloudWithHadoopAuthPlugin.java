@@ -122,13 +122,13 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
         NUM_SHARDS, REPLICATION_FACTOR);
     create.process(solrClient);
     // The metrics counter for wrong credentials here really just means  
-    assertAuthMetricsMinimums(6, 3, 0, 3, 0, 0);
+    assertAuthMetricsMinimums(4, 2, 0, 2, 0, 0);
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
     solrClient.add(collectionName, doc);
     solrClient.commit(collectionName);
-    assertAuthMetricsMinimums(10, 5, 0, 5, 0, 0);
+    assertAuthMetricsMinimums(8, 4, 0, 4, 0, 0);
 
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*");

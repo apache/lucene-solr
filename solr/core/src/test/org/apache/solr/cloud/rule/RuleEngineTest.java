@@ -31,7 +31,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;

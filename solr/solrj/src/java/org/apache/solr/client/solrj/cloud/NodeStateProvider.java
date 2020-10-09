@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.common.SolrCloseable;
 
 /**

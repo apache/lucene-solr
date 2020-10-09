@@ -18,7 +18,6 @@
 package org.apache.solr;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -28,12 +27,10 @@ import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Path;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -48,7 +45,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.cloud.autoscaling.ScheduledTriggers;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.PerThreadExecService;
@@ -322,13 +318,6 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("solr.rootSharedThreadPoolCoreSize", "10");
       System.setProperty("solr.minHttp2ClientThreads", "6");
       System.setProperty("solr.containerThreadsIdleTimeout", "1000");
-
-
-
-      ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_SECONDS = 1;
-      ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS =1;
-      ScheduledTriggers.DEFAULT_TRIGGER_CORE_POOL_SIZE = 2;
-
       System.setProperty("solr.tests.maxBufferedDocs", "1000000");
       System.setProperty("solr.tests.ramPerThreadHardLimitMB", "90");
 

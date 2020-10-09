@@ -19,7 +19,6 @@ package org.apache.solr;
 import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
-import org.apache.solr.cloud.autoscaling.ScheduledTrigger;
 
 
 /**
