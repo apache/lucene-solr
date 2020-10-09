@@ -28,8 +28,9 @@ description = 'Lucene distribution packaging'
 // By default everything is included, unless explicitly excluded.
 def includeInBinaries = project(":lucene").subprojects.findAll {subproject ->
     return !(subproject.path in [
-        // Exclude packaging, not relevant to binary distribution.
+        // Exclude packaging & documentation, not relevant to binary distribution.
         ":lucene:packaging",
+        ":lucene:documentation",
         // Exclude parent container project of analysis modules (no artifacts).
         ":lucene:analysis"
     ])
@@ -68,7 +69,7 @@ for (Project includedProject : includeInBinaries) {
 }
 
 dependencies {
-    docs project(path: ':lucene', configuration: 'docs')
+    docs project(path: ':lucene:documentation', configuration: 'site')
 }
 
 distributions {
@@ -141,10 +142,6 @@ configure(project(":lucene").subprojects) {
         task assemblePackaging(type: Sync) {
             from(projectDir, {
                 include "README.*"
-            })
-
-            from(project.file('docs'), {
-                into 'docs'
             })
 
             from(tasks.findByName("jar"))
