@@ -164,10 +164,7 @@ def update_backcompat_tests(types, index_version, current_version):
 
 def check_backcompat_tests():
   print('  checking backcompat tests...', end='', flush=True)
-  olddir = os.getcwd()
-  os.chdir('lucene/backward-codecs')
-  scriptutil.run('ant test -Dtestcase=TestBackwardsCompatibility')
-  os.chdir(olddir)
+  scriptutil.run('./gradlew -p lucene/backward-codecs test --tests TestBackwardsCompatibility')
   print('ok')
 
 def download_from_mirror(version, remotename, localname):
