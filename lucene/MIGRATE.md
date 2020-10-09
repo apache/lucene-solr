@@ -1,5 +1,11 @@
 # Apache Lucene Migration Guide
 
+## JapanesePartOfSpeechStopFilterFactory loads default stop tags if "tags" argument not specified (LUCENE-9567)
+
+Previously, JapanesePartOfSpeechStopFilterFactory added no filter if `args` didn't include "tags". Now, it will load 
+the default stop tags returned by `JapaneseAnalyzer.getDefaultStopTags()` (i.e. the tags from`stoptags.txt` in the 
+`lucene-analyzers-kuromoji` jar.)
+
 ## ICUCollationKeyAnalyzer is renamed (LUCENE-9558)
 
 o.a.l.collation.ICUCollationAnalyzer is renamed to o.a.l.a.icu.ICUCollationKeyAnalyzer.
