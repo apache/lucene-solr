@@ -118,15 +118,11 @@ If your cluster is running 8.6.0 and *not using an explicit autoscaling policy*,
 +
 Replace `localhost:8983` with your Solr endpoint.
 +
-```
+[source,text]
 curl -X POST -H 'Content-type:application/json'  -d '{set-cluster-policy : [], set-cluster-preferences : []}' http://localhost:8983/api/cluster/autoscaling
-```
 +
-<<<<<<< HEAD
 For more details on autoscaling policies, see the section <<solrcloud-autoscaling-overview.adoc#cluster-policy,Cluster Policy>>.
 +
-=======
->>>>>>> 7b1663e97ad... Ref Guide: update for 8.7 release notes; bring notes from 8.6.1 forward to keep branch_8x and master at least sort of in sync
 This information is only relevant for users upgrading from 8.6.0. If upgrading from an earlier version to 8.6.1+, this warning can be ignored.
 
 === Solr 8.6
