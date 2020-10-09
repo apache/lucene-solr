@@ -38,7 +38,7 @@ configurations {
   contrib
   example
   server
-  docsOnline
+  docs
 }
 
 dependencies {
@@ -65,7 +65,7 @@ dependencies {
   server project(path: ":solr:server", configuration: "packaging")
 
   // Copy files from documentation output
-  docsOnline project(path: ':solr', configuration: 'docsOnline')
+  docs project(path: ':solr:documentation', configuration: 'minimalSite')
 }
 
 distributions {
@@ -121,7 +121,7 @@ distributions {
         into "server"
       })
 
-      from(configurations.docsOnline, {
+      from(configurations.docs, {
         into "docs"
       })
     }
