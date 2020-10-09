@@ -27,7 +27,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
@@ -607,21 +610,36 @@ public class MiniSolrCloudCluster {
     ZkStateReader reader = solrClient.getZkStateReader();
 
     reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
-    for (String collection : reader.getClusterState().getCollectionsMap().keySet()) {
+    Map<String,Exception> errors = new HashMap<>();
+    final Set<String> collections = reader.getClusterState().getCollectionsMap().keySet();
+    collections.parallelStream().forEach(collection -> {
       try {
         CollectionAdminRequest.deleteCollection(collection).process(solrClient);
       } catch (BaseHttpSolrClient.RemoteSolrException e) {
         if (!e.getMessage().contains("Could not find")) {
-          throw e;
+          errors.put(collection, e);
         }
+      } catch (Exception e) {
+        errors.put(collection, e);
       }
+    });
+
+    if (!errors.isEmpty()) {
+      errors.forEach((k,v) -> {
+        log.error("Failed to delete collection {}", k, v);
+      });
+      throw errors.values().iterator().next();
     }
 
     // TODO timeouts
 
-    for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
-      reader.waitForState(collection, 10, TimeUnit.SECONDS,
-              (collectionState) -> collectionState == null ? true : false);
+    for (String collection : collections) {
+      try {
+        reader.waitForState(collection, 10, TimeUnit.SECONDS, Objects::isNull);
+      } catch (TimeoutException timeoutException) {
+        log.error("Wait to see collection {} deleted in client state timed out!", collection, timeoutException);
+        throw timeoutException;
+      }
     }
 
     // may be deleted, but may not be gone yet - we only wait to not see it in ZK, not for core unloads
