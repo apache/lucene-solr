@@ -59,7 +59,7 @@ configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path ==
     docroot = file("${buildDir}/site")
     docrootMinimal = file("${buildDir}/minimalSite")
 
-    markdown = file("src/markdown")
+    markdownSrc = file("src/markdown")
     assets = file("src/assets")
   }
 
@@ -76,7 +76,7 @@ configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path ==
 
   task copyDocumentationAssets(type: Copy) {
     includeEmptyDirs = false
-    from('src/assets')
+    from(project.assets)
     into project.docroot
   }
   
