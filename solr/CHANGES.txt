@@ -186,6 +186,14 @@ Other Changes
 
 * SOLR-14659: Remove restlet as dependency for the ManagedResource API (Timothy Potter, noble)
 
+==================  8.6.3 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+(No changes)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
