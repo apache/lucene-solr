@@ -38,6 +38,96 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
 
+=== Solr 8.7
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote87[8.7 Release Notes^]
+for an overview of the main new features of Solr 8.7.
+
+When upgrading to 8.6.x users should be aware of the following major changes from 8.6.
+
+*Autoscaling*
+
+* If upgrading from **8.6.0**, please see the <<Solr 8.6.1,8.6.1 Upgrade notes>> below for information on performance degradations introduced in 8.6.0 that require some intervention to resolve.
+If you are already on 8.6.1 or higher, you can ignore these instructions.
+
+*Deprecations*
+
+* The autoscaling framework is now formally deprecated and will be removed in Solr 9.0.
+The Solr community is working on a plugin to replace this functionality, with the goal for it to be ready by the time 9.0 is released.
+
+*Legacy Scaling (non-SolrCloud) Terminology Updated*
+
+* Solr has replaced the terms "master" and "slave" in the codebase and all documentation with "leader" and "follower".
++
+This impacts the functionality described in the section <<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>.
+This functionality has only changed in terms of parameter names changed, and we do not expect any back-compatibility issues on upgrade to 8.7 or even 9.0 later.
++
+However, users should update their `solrconfig.xml` files after completing the upgrade on all nodes of a cluster.
+Comparing your configuration to the updated configuration examples in <<index-replication.adoc#index-replication,Index Replication>> will show examples of what needs to change, but here are the main changes:
++
+. On the replication leader, in the definition of the `/replication` request handler:
+.. Replace "master" with "leader".
+.. Replace "slave" with "follower" if the former term is used in the name of any follower `solrconfig.xml` file definitions.
+This file can be named anything, so you can change it to whatever you'd like to call it if you'd like.
+.. Replace "slave" with "follower" if the former term is used in a replication repeater configuration.
+. On the replication follower, in the definition of the `/replication` request handler:
+.. Replace "masterUrl" with "leaderUrl".
+.. Replace "slave" with "follower" if the former term is used in a repeater configuration.
+
+*JSON Facets*
+
+* Performance enhancements for the `relatedness()` statistics function are included with 8.7.
+These yield the highest benefits with high-cardinality fields and can be disabled if working with lower cardinality fields with a new `sweep_collection` parameter.
+See the section <<json-facet-api.adoc#relatedness-options,relatedness() Options>> for details.
+
+*solr.in.sh / solr.in.cmd*
+
+* Solr has relied on the `SOLR_STOP_WAIT` parameter defined in `solr.in.sh` or `solr.in.cmd` to determine how long to wait on _startup_. A new parameter `SOLR_START_WAIT` allows defining how long Solr should wait for start up to complete.
++
+If the time set by this parameter is exceeded, Solr will exit the startup process and return the last few lines of the `solr.log` file to the terminal.
++
+By default, this parameter is set to the same value as `SOLR_STOP_WAIT`.
+
+* The default ZooKeeper client timeout (`ZK_CLIENT_TIMEOUT`) is now 30 seconds (`30000` milliseconds) instead of 15.
+
+*Configsets*
+
+* It's now possible to overwrite an existing configset when uploading changes by supplying the `overwrite=true` parameter to the <<configsets-api.adoc#configsets-upload,Configset API>>.
++
+A related parameter is `cleanup=true`, which allows deleting any files from the old configset that are left behind after the overwrite.
++
+The default for both of these parameters is `false`.
+
+* When deleting a collection that has an automatically created configset (i.e., the configset was copied from the `_default` collection when the collection was created), the configset will also be deleted if it is not in use by any other collection.
+
+*Logging*
+
+* A request ID (`rid`) is now logged for all distributed search requests (in SolrCloud) which can be used to correlate query events across the system.
+A parameter `disableRequestId=true` can be added to disable this if desired.
+
+=== Solr 8.6.1
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote861[8.6.1 Release Notes^]
+for an overview of the fixes included in Solr 8.6.1.
+
+When upgrading to 8.6.1 users should be aware of the following major changes from 8.6.0.
+
+*Autoscaling*
+
+* As mentioned in the 8.6 upgrade notes, a default autoscaling policy was provided starting in 8.6.0.
+This default autoscaling policy resulted in increasingly slow collection creation calls in large clusters (50+ collections).
++
+In 8.6.1 the default autoscaling policy has been removed, and clusters will not use autoscaling unless a policy has explicitly been created.
+If your cluster is running 8.6.0 and *not using an explicit autoscaling policy*, upgrade to 8.6.1 and remove the default cluster policy and preferences via the following command.
++
+Replace `localhost:8983` with your Solr endpoint.
++
+```
+curl -X POST -H 'Content-type:application/json'  -d '{set-cluster-policy : [], set-cluster-preferences : []}' http://localhost:8983/api/cluster/autoscaling
+```
++
+This information is only relevant for users upgrading from 8.6.0. If upgrading from an earlier version to 8.6.1+, this warning can be ignored.
+
 === Solr 8.6
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote86[8.6 Release Notes^]
