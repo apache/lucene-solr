@@ -20,7 +20,7 @@ The following table lists the field types that are available in Solr and are rec
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-== Recommended field types
+== Recommended Field Types
 
 [cols="25,75",options="header"]
 |===
@@ -82,7 +82,7 @@ Configuration and usage of PreAnalyzedField is documented in the section  <<work
 *Note*: configuring a UUIDField instance with a default value of `NEW` is not advisable for most users when using SolrCloud (and not possible if the UUID value is configured as the unique key field) since the result will be that each replica of each document will get a unique UUID value. Using <<update-request-processors.adoc#update-request-processors,UUIDUpdateProcessorFactory>> to generate UUID values when documents are added is recommended instead.
 |===
 
-== Deprecated field types
+== Deprecated Field Types
 
 NOTE: All Trie* numeric and date field types have been deprecated in favor of *Point field types.
       Point field types are better at range queries (speed, memory, disk), however simple field:value queries underperform
