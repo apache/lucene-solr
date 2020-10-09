@@ -24,24 +24,23 @@ Raw content is stored in Asciidoc (`.adoc`) formatted files in the `src/` direct
 These files are processed with AsciiDoctor.
 
 * HTML is generated using Jekyll with these key dependencies:
-** `Ruby` (v2.3 or higher)
+** `Ruby` (v2.5 or higher)
 ** The following gems must be installed:
-*** `jekyll`: v3.5, not v4.x.
-Use `gem install jekyll --force --version 3.5.0` to force install of v3.5.0.
+*** `jekyll`: v4.0 or higher; latest version (4.1.1) is fine. The build *will not work* with earlier versions.
+Use `gem install jekyll`.
 *** `jekyll-asciidoc`: v2.1 or higher; latest version (3.0.0) is fine.
 Use `gem install jekyll-asciidoc` to install.
-*** `slim`: v3.0 or higher; latest version (4.0.1) is fine.
+*** `slim`: v3.0 or higher; latest version (4.1.0) is fine.
 Use `gem install slim` to install.
 *** `tilt`: v1.0 or higher; latest version (2.0.10) is fine.
 Use `gem install tilt` to install.
-*** `concurrent-ruby`: v1.0 or higher; latest version (1.1.5) is fine.
+*** `concurrent-ruby`: v1.0 or higher; latest version (1.1.7) is fine.
 Use `gem install concurrent-ruby` to install.
 
 NOTE: The above should install the correct version of the asciidoctor gem implicitly on a new system, but will not upgrade an existing version.
 If you experience problems building that seem unrelated to your changes, check that asciidoctor is at least v2.0.10 or higher.
 This is usually only a problem if you have previously built the ref guide prior to October 2019 or used asciidoctor for some other reason.
 `gem info asciidoctor` will show you what version(s) you have installed.
-
 
 == Building the Guide
 For details on building the ref guide, see `ant -p`.

@@ -7,7 +7,7 @@
 #
 
 # Gems that are included for building the site. jekyll-asciidoc allows Jekyll to use Asciidoctor for variables and settings
-gems: [jekyll-asciidoc]
+plugins: [jekyll-asciidoc]
 
 destination: ../html-site
 
@@ -94,5 +94,5 @@ asciidoctor:
     attribute-missing: "warn"
     icons: "font"
     source-highlighter: "rouge"
-    rouge-theme: "thankful-eyes"
+    rouge-css: "style"
     stem:
