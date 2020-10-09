@@ -27,13 +27,13 @@ configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path ==
 // compile changes.txt into an html file
 class ChangesToHtmlTask extends DefaultTask {
 
-  @Input
+  @Internal
   String productName = project.parent.name
 
-  @Input
+  @InputFile
   File changesFile = project.parent.file("CHANGES.txt")
 
-  @Input
+  @InputFile
   File changesDoapFile = project.rootProject.file("dev-tools/doap/${productName}.rdf")
 
   @InputDirectory
