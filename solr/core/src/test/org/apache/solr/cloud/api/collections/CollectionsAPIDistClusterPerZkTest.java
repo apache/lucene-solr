@@ -331,10 +331,9 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit have to fix reload again, ug, its a pain, I don't recall the exact incantation
   public void testCollectionReload() throws Exception {
     final String collectionName = "reloaded_collection";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).setMaxShardsPerNode(10).process(cluster.getSolrClient());
 
     // get core open times
     Map<String, Long> urlToTimeBefore = new HashMap<>();
