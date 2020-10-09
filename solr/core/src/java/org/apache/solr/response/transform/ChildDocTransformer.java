@@ -32,6 +32,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitSet;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -89,6 +90,7 @@ class ChildDocTransformer extends DocTransformer {
       final int segBaseId = leafReaderContext.docBase;
       final int segRootId = rootDocId - segBaseId;
       final BitSet segParentsBitSet = parentsFilter.getBitSet(leafReaderContext);
+      final Bits liveDocs = leafReaderContext.reader().getLiveDocs();
 
       if (segParentsBitSet == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -123,6 +125,12 @@ class ChildDocTransformer extends DocTransformer {
 
         if (isNestedSchema && !fullDocPath.startsWith(rootDocPath)) {
           // is not a descendant of the transformed doc; return fast.
+          continue;
+        }
+
+        // check whether doc is "live"
+        if (liveDocs != null && !liveDocs.get(docId)) {
+          // doc is not "live"; return fast
           continue;
         }
 
