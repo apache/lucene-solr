@@ -28,8 +28,9 @@ description = 'Lucene distribution packaging'
 // By default everything is included, unless explicitly excluded.
 def includeInBinaries = project(":lucene").subprojects.findAll {subproject ->
     return !(subproject.path in [
-        // Exclude packaging, not relevant to binary distribution.
+        // Exclude packaging & documentation, not relevant to binary distribution.
         ":lucene:packaging",
+        ":lucene:documentation",
         // Exclude parent container project of analysis modules (no artifacts).
         ":lucene:analysis"
     ])
