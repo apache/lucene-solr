@@ -53,6 +53,8 @@ public interface ConfigNode {
     return child(null, name);
   }
 
+  /**Iterate through child nodes with the name and return the first child that matches
+   */
   default ConfigNode child(Predicate<ConfigNode> test, String name) {
     ConfigNode[] result = new ConfigNode[1];
     forEachChild(it -> {
@@ -66,14 +68,22 @@ public interface ConfigNode {
     return result[0];
   }
 
+  /**Iterate through child nodes with the names and return all the matching children
+   * @param nodeNames names of tags to be returned
+   * @param  test check for the nodes to be returned
+   */
   default List<ConfigNode> children(Predicate<ConfigNode> test, String... nodeNames) {
     return children(test, nodeNames == null ? Collections.emptySet() : Set.of(nodeNames));
   }
 
-  default List<ConfigNode> children(Predicate<ConfigNode> test, Set<String> set) {
+  /**Iterate through child nodes with the names and return all the matching children
+   * @param matchNames names of tags to be returned
+   * @param  test check for the nodes to be returned
+   */
+  default List<ConfigNode> children(Predicate<ConfigNode> test, Set<String> matchNames) {
     List<ConfigNode> result = new ArrayList<>();
     forEachChild(it -> {
-      if (set != null && !set.isEmpty() && !set.contains(it.name())) return Boolean.TRUE;
+      if (matchNames != null && !matchNames.isEmpty() && !matchNames.contains(it.name())) return Boolean.TRUE;
       if (test == null || test.test(it)) result.add(it);
       return Boolean.TRUE;
     });
@@ -84,6 +94,10 @@ public interface ConfigNode {
     return children(null, Collections.singleton(name));
   }
 
+  /** abortable iterate through child
+   *
+   * @param fun consume the node and return true to continue or false to abort
+   */
   void forEachChild(Function<ConfigNode, Boolean> fun);
 
 

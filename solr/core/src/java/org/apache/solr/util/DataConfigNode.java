@@ -105,9 +105,9 @@ public class DataConfigNode implements ConfigNode {
   }
 
   @Override
-  public List<ConfigNode> children(Predicate<ConfigNode> test, Set<String> set) {
+  public List<ConfigNode> children(Predicate<ConfigNode> test, Set<String> matchNames) {
     List<ConfigNode> result = new ArrayList<>();
-    for (String s : set) {
+    for (String s : matchNames) {
       List<ConfigNode> vals = kids.get(s);
       if (vals != null) {
         vals.forEach(it -> {
