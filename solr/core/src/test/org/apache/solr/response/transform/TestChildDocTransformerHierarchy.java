@@ -137,10 +137,26 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
   @Test
   public void testWithDeletedChildren() throws Exception {
+    // add a doc to create another segment
+    final String addNonTestedDoc =
+        "{\n" +
+          "\"add\": {\n" +
+            "\"doc\": {\n" +
+                "\"id\": " + -1000 + ", \n" +
+                "\"type_s\": \"cake\", \n" +
+            "}\n" +
+          "}\n" +
+        "}";
+
     indexSampleData(numberOfDocsPerNestedTest);
     // delete toppings path
     assertU(delQ("_nest_path_:\\/toppings"));
     assertU(commit());
+
+    if (random().nextBoolean()) {
+      updateJ(addNonTestedDoc, null);
+      assertU(commit());
+    }
 
     try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:/toppings' limit=1]",
         "fq", fqToExcludeNonTestedDocs)) {

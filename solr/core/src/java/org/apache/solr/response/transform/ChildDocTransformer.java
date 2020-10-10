@@ -119,18 +119,19 @@ class ChildDocTransformer extends DocTransformer {
       int matches = 0;
       // Loop each child ID up to the parent (exclusive).
       for (int docId = firstChildId; docId < rootDocId; ++docId) {
+        final int segDocId = docId - segBaseId;
 
-        // get the path.  (note will default to ANON_CHILD_KEY if schema is not nested or empty string if blank)
-        final String fullDocPath = getPathByDocId(docId - segBaseId, segPathDocValues);
-
-        if (isNestedSchema && !fullDocPath.startsWith(rootDocPath)) {
-          // is not a descendant of the transformed doc; return fast.
+        // check whether doc is "live"
+        if (liveDocs != null && !liveDocs.get(segDocId)) {
+          // doc is not "live"; return fast
           continue;
         }
 
-        // check whether doc is "live"
-        if (liveDocs != null && !liveDocs.get(docId)) {
-          // doc is not "live"; return fast
+        // get the path.  (note will default to ANON_CHILD_KEY if schema is not nested or empty string if blank)
+        final String fullDocPath = getPathByDocId(segDocId, segPathDocValues);
+
+        if (isNestedSchema && !fullDocPath.startsWith(rootDocPath)) {
+          // is not a descendant of the transformed doc; return fast.
           continue;
         }
 
