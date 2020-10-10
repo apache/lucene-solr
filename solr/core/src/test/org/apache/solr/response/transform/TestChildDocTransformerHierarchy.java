@@ -136,7 +136,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLiveDocs() throws Exception {
+  public void testWithDeletedChildren() throws Exception {
     indexSampleData(numberOfDocsPerNestedTest);
     // delete toppings path
     assertU(delQ("_nest_path_:\\/toppings"));
