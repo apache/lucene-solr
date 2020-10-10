@@ -227,9 +227,49 @@ public class Utils {
     @Override
     @SuppressWarnings({"rawtypes"})
     public void handleUnknownClass(Object o) {
+      // avoid materializing MapWriter / IteratorWriter to Map / List
+      // instead serialize them directly
       if (o instanceof MapWriter) {
-        Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
-        write(m);
+        MapWriter mapWriter = (MapWriter) o;
+        startObject();
+        final boolean[] first = new boolean[1];
+        first[0] = true;
+        int sz = mapWriter._size();
+        mapWriter._forEachEntry((k, v) -> {
+          if (first[0]) {
+            first[0] = false;
+          } else {
+            writeValueSeparator();
+          }
+          if (sz > 1) indent();
+          writeString(k.toString());
+          writeNameSeparator();
+          write(v);
+        });
+        endObject();
+      } else if (o instanceof IteratorWriter) {
+        IteratorWriter iteratorWriter = (IteratorWriter) o;
+        startArray();
+        final boolean[] first = new boolean[1];
+        first[0] = true;
+        try {
+          iteratorWriter.writeIter(new IteratorWriter.ItemWriter() {
+            @Override
+            public IteratorWriter.ItemWriter add(Object o) throws IOException {
+              if (first[0]) {
+                first[0] = false;
+              } else {
+                writeValueSeparator();
+              }
+              indent();
+              write(o);
+              return this;
+            }
+          });
+        } catch (IOException e) {
+          throw new RuntimeException("this should never happen", e);
+        }
+        endArray();
       } else {
         super.handleUnknownClass(o);
       }
@@ -239,13 +279,13 @@ public class Utils {
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-    if (!(o instanceof List) && !(o instanceof Map)) {
-      if (o instanceof MapWriter) {
-        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-      } else if (o instanceof IteratorWriter) {
-        o = ((IteratorWriter) o).toList(new ArrayList<>());
-      }
-    }
+//    if (!(o instanceof List) && !(o instanceof Map)) {
+//      if (o instanceof MapWriter) {
+//        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+//      } else if (o instanceof IteratorWriter) {
+//        o = ((IteratorWriter) o).toList(new ArrayList<>());
+//      }
+//    }
     new MapWriterJSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }

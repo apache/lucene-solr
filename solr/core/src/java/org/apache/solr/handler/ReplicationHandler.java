@@ -68,6 +68,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -894,7 +895,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
          true, "isLeader", getCategory().toString(), scope);
     solrMetricsContext.gauge(() -> isFollower,
          true, "isFollower", getCategory().toString(), scope);
-    final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
+    final MetricsMap fetcherMap = new MetricsMap(map -> {
       IndexFetcher fetcher = currentIndexFetcher;
       if (fetcher != null) {
         map.put(LEADER_URL, fetcher.getLeaderUrl());
@@ -1110,10 +1111,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private void addVal(Map<String, Object> map, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
+  private void addVal(MapWriter.EntryWriter ew, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
     Object val = formatVal(key, props, clzz);
     if (val != null) {
-      map.put(key, val);
+      ew.putNoEx(key, val);
     }
   }
 
@@ -1217,7 +1218,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // Randomize initial delay, with a minimum of 1ms
     long initialDelayNs = new Random().nextLong() % pollIntervalNs
         + TimeUnit.NANOSECONDS.convert(1, TimeUnit.MILLISECONDS);
-    executorService.scheduleAtFixedRate(task, initialDelayNs, pollIntervalNs, TimeUnit.NANOSECONDS);
+    executorService.scheduleWithFixedDelay(task, initialDelayNs, pollIntervalNs, TimeUnit.NANOSECONDS);
     log.info("Poll scheduled at an interval of {}ms",
         TimeUnit.MILLISECONDS.convert(pollIntervalNs, TimeUnit.NANOSECONDS));
   }
