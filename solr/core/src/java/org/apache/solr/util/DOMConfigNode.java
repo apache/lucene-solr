@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.WrappedSimpleMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;

@@ -74,7 +74,6 @@ import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.DOMConfigNode;
-import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.DataConfigNode;
 import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;

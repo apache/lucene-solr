@@ -29,9 +29,10 @@ import java.util.function.Predicate;
 
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
+import org.apache.solr.common.util.PropertiesUtil;
 
 /**
- * ConfigNode impl that copies and maintains data internally
+ * ConfigNode impl that copies and maintains data internally from DOM
  */
 public class DataConfigNode implements ConfigNode {
   final String name;

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.w3c.dom.NamedNodeMap;
@@ -40,7 +39,7 @@ public class DOMUtil {
 
   public static final String XML_RESERVED_PREFIX = "xml";
 
-  public static final Set<String>  NL_TAGS = ImmutableSet.of("str", "int","long","float","double","bool");
+  public static final Set<String>  NL_TAGS = Set.of("str", "int","long","float","double","bool");
 
 
   public static Map<String,String> toMap(NamedNodeMap attrs) {
