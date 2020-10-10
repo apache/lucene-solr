@@ -23,8 +23,8 @@ import java.util.Properties;
 import com.google.common.base.Strings;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.util.PropertiesUtil;
 
 /**
  * SolrCloud metadata attached to a {@link CoreDescriptor}.
