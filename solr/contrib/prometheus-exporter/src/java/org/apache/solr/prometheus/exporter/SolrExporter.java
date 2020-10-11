@@ -32,8 +32,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.prometheus.collector.MetricsCollectorFactory;
 import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
@@ -215,9 +213,8 @@ public class SolrExporter {
   }
 
   private static MetricsConfiguration loadMetricsConfiguration(Path configPath) {
-    try (SolrResourceLoader loader = new SolrResourceLoader(configPath.getParent())) {
-      XmlConfigFile config = new XmlConfigFile(loader, configPath.getFileName().toString(), null, null);
-      return MetricsConfiguration.from(config);
+    try {
+      return MetricsConfiguration.from(configPath);
     } catch (Exception e) {
       log.error("Could not load scrape configuration from {}", configPath.toAbsolutePath());
       throw new RuntimeException(e);

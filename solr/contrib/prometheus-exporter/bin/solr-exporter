@@ -83,23 +83,11 @@ for JAR in $(find "$BASEDIR"/../../dist/solrj-lib -name '*.jar')
 do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
-for JAR in $(find "$BASEDIR"/../../dist -name 'solr-core-*.jar')
-do
-  CLASSPATH="$CLASSPATH":"$JAR"
-done
 for JAR in $(find "$BASEDIR"/../../dist -name 'solr-solrj-*.jar')
 do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
 for JAR in $(find "$BASEDIR"/../../dist -name 'solr-prometheus-exporter-*.jar')
-do
-  CLASSPATH="$CLASSPATH":"$JAR"
-done
-for JAR in $(find "$BASEDIR"/lucene-libs -name '*.jar')
-do
-  CLASSPATH="$CLASSPATH":"$JAR"
-done
-for JAR in $(find "$BASEDIR"/../../server/solr-webapp/webapp/WEB-INF/lib -name '*.jar')
 do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
