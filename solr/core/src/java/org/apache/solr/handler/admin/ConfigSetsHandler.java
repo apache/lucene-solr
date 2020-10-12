@@ -175,15 +175,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
     boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
 
-    // Create a node for the configuration in zookeeper
-    // For creating the baseZnode, the cleanup parameter is only allowed to be true when singleFilePath is not passed.
-    createBaseZnode(zkClient, overwritesExisting, isTrusted(req, coreContainer.getAuthenticationPlugin()), singleFilePath.isEmpty() && cleanup, configPathInZk);
-
     Iterator<ContentStream> contentStreamsIterator = req.getContentStreams().iterator();
 
     if (!contentStreamsIterator.hasNext()) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
-          "No stream found for the config data to be uploaded");
+              "No stream found for the config data to be uploaded");
     }
 
     InputStream inputStream = contentStreamsIterator.next().getStream();
@@ -201,6 +197,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet uploads do not allow cleanup=true when filePath is used.");
       } else {
         try {
+          // Create a node for the configuration in zookeeper
+          // For creating the baseZnode, the cleanup parameter is only allowed to be true when singleFilePath is not passed.
+          createBaseZnode(zkClient, overwritesExisting, isTrusted(req, coreContainer.getAuthenticationPlugin()), false, configPathInZk);
           String filePathInZk = configPathInZk + "/" + fixedSingleFilePath;
           zkClient.makePath(filePathInZk, IOUtils.toByteArray(inputStream), CreateMode.PERSISTENT, null, !allowOverwrite, true);
         } catch(KeeperException.NodeExistsException nodeExistsException) {
@@ -216,13 +215,16 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
               "The configuration " + configSetName + " already exists in zookeeper");
     }
 
-
     Set<String> filesToDelete;
     if (overwritesExisting && cleanup) {
       filesToDelete = getAllConfigsetFiles(zkClient, configPathInZk);
     } else {
       filesToDelete = Collections.emptySet();
     }
+
+    // Create a node for the configuration in zookeeper
+    // For creating the baseZnode, the cleanup parameter is only allowed to be true when singleFilePath is not passed.
+    createBaseZnode(zkClient, overwritesExisting, isTrusted(req, coreContainer.getAuthenticationPlugin()), cleanup, configPathInZk);
 
     ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
     ZipEntry zipEntry = null;
