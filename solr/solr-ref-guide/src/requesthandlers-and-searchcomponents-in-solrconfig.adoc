@@ -239,10 +239,10 @@ They do need to defined and referenced in `solrconfig.xml` to be actually used.
 
 * `AnalyticsComponent`, described in the section <<analytics.adoc#analytics,Analytics>>.
 * `ClusteringComponent`, described in the section <<result-clustering.adoc#result-clustering,Result Clustering>>.
-* `PhrasesIdentificationComponent`, used to identify & score "phrases" found in the input string, based on shingles in indexed fields, described in the {solr-javadocs}solr-core/org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] javadocs.
+* `PhrasesIdentificationComponent`, used to identify & score "phrases" found in the input string, based on shingles in indexed fields, described in the {solr-javadocs}/core/org/apache/solr/handler/component/PhrasesIdentificationComponent.html[PhrasesIdentificationComponent] javadocs.
 * `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>.
 * `RealTimeGetComponent`, described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
-* `ResponseLogComponent`, used to record which documents are returned to the user via the Solr log, described in the {solr-javadocs}solr-core/org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] javadocs.
+* `ResponseLogComponent`, used to record which documents are returned to the user via the Solr log, described in the {solr-javadocs}/core/org/apache/solr/handler/component/ResponseLogComponent.html[ResponseLogComponent] javadocs.
 * `SpellCheckComponent`, described in the section <<spell-checking.adoc#spell-checking,Spell Checking>>.
 * `SuggestComponent`, described in the section <<suggester.adoc#suggester,Suggester>>.
 * `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>.

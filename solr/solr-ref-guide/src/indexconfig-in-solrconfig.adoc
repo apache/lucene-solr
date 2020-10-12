@@ -119,7 +119,7 @@ When a document is deleted or updated, the document is marked as deleted but it 
 
 === Customizing Merge Policies
 
-If the configuration options for the built-in merge policies do not fully suit your use case, you can customize them: either by creating a custom merge policy factory that you specify in your configuration, or by configuring a {solr-javadocs}/solr-core/org/apache/solr/index/WrapperMergePolicyFactory.html[merge policy wrapper] which uses a `wrapped.prefix` configuration option to control how the factory it wraps will be configured:
+If the configuration options for the built-in merge policies do not fully suit your use case, you can customize them: either by creating a custom merge policy factory that you specify in your configuration, or by configuring a {solr-javadocs}/core/org/apache/solr/index/WrapperMergePolicyFactory.html[merge policy wrapper] which uses a `wrapped.prefix` configuration option to control how the factory it wraps will be configured:
 
 [source,xml]
 ----
@@ -132,7 +132,7 @@ If the configuration options for the built-in merge policies do not fully suit y
 </mergePolicyFactory>
 ----
 
-The example above shows Solr's {solr-javadocs}/solr-core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] being configured to sort documents in merged segments by `"timestamp desc"`, and wrapped around a `TieredMergePolicyFactory` configured to use the values `maxMergeAtOnce=10` and `segmentsPerTier=10` via the `inner` prefix defined by `SortingMergePolicyFactory` 's `wrapped.prefix` option. For more information on using `SortingMergePolicyFactory`, see <<common-query-parameters.adoc#segmentterminateearly-parameter,the segmentTerminateEarly parameter>>.
+The example above shows Solr's {solr-javadocs}/core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] being configured to sort documents in merged segments by `"timestamp desc"`, and wrapped around a `TieredMergePolicyFactory` configured to use the values `maxMergeAtOnce=10` and `segmentsPerTier=10` via the `inner` prefix defined by `SortingMergePolicyFactory` 's `wrapped.prefix` option. For more information on using `SortingMergePolicyFactory`, see <<common-query-parameters.adoc#segmentterminateearly-parameter,the segmentTerminateEarly parameter>>.
 
 === mergeScheduler
 
@@ -202,9 +202,9 @@ The set of valid lock type options depends on the <<datadir-and-directoryfactory
 
 The values listed below are are supported by `StandardDirectoryFactory` (the default):
 
-* `native` (default) uses NativeFSLockFactory to specify native OS file locking. If a second Solr process attempts to access the directory, it will fail. Do not use when multiple Solr web applications are attempting to share a single index. See also the {lucene-javadocs}core/org/apache/lucene/store/NativeFSLockFactory.html[Javadocs].
-* `simple` uses SimpleFSLockFactory to specify a plain file for locking. See also the {lucene-javadocs}core/org/apache/lucene/store/SimpleFSLockFactory.html[Javadocs].
-* `single` (expert) uses SingleInstanceLockFactory. Use for special situations of a read-only index directory, or when there is no possibility of more than one process trying to modify the index (even sequentially). This type will protect against multiple cores within the _same_ JVM attempting to access the same index. WARNING! If multiple Solr instances in different JVMs modify an index, this type will _not_ protect against index corruption. See also the {lucene-javadocs}core/org/apache/lucene/store/SingleInstanceLockFactory.html[Javadocs].
+* `native` (default) uses NativeFSLockFactory to specify native OS file locking. If a second Solr process attempts to access the directory, it will fail. Do not use when multiple Solr web applications are attempting to share a single index. See also the {lucene-javadocs}/core/org/apache/lucene/store/NativeFSLockFactory.html[Javadocs].
+* `simple` uses SimpleFSLockFactory to specify a plain file for locking. See also the {lucene-javadocs}/core/org/apache/lucene/store/SimpleFSLockFactory.html[Javadocs].
+* `single` (expert) uses SingleInstanceLockFactory. Use for special situations of a read-only index directory, or when there is no possibility of more than one process trying to modify the index (even sequentially). This type will protect against multiple cores within the _same_ JVM attempting to access the same index. WARNING! If multiple Solr instances in different JVMs modify an index, this type will _not_ protect against index corruption. See also the {lucene-javadocs}/core/org/apache/lucene/store/SingleInstanceLockFactory.html[Javadocs].
 * `hdfs` uses HdfsLockFactory to support reading and writing index and transaction log files to a HDFS filesystem. See the section <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>> for more details on using this feature.
 
 [source,xml]
