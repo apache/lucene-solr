@@ -24,9 +24,3 @@ configure(subprojects.findAll { it.path.contains(':solr:contrib:') }) {
 configure(project(":solr:contrib:extraction")) {
   archivesBaseName = "solr-cell"
 }
-
-configure(subprojects.findAll { it.path.contains(':lucene:analysis:') }) {
-  project.archivesBaseName = project.archivesBaseName.replace("-analysis-", "-analyzers-")
-}
-
-
