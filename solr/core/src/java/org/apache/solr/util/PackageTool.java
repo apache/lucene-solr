@@ -16,9 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-import static org.apache.solr.packagemanager.PackageUtils.print;
-
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
@@ -45,6 +42,9 @@ import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.packagemanager.PackageUtils.print;
+import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 public class PackageTool extends SolrCLI.ToolBase {
 
@@ -212,6 +212,9 @@ public class PackageTool extends SolrCLI.ToolBase {
                 print("");
                 printGreen("./solr package undeploy <package-name> -collections <comma-separated-collections>");
                 print("Undeploys a package from specified collection(s)");
+                print("");
+                printGreen("./solr package uninstall <package-name>:<version>");
+                print("Uninstall an unused package with specified version from Solr. Both package name and version are required.");
                 print("\n");
                 print("Note: (a) Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
                 print("      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
