@@ -192,6 +192,9 @@ public class PackageTool extends SolrCLI.ToolBase {
                 printGreen("./solr package add-repo <repository-name> <repository-url>");
                 print("Add a repository to Solr.");
                 print("");
+                printGreen("./solr package add-key <file-containing-trusted-key>");
+                print("Add a trusted key to Solr.");
+                print("");
                 printGreen("./solr package install <package-name>[:<version>] ");
                 print("Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
                 print("");
