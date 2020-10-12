@@ -16,13 +16,14 @@
  */
 package org.apache.solr.common.util;
 
+import org.apache.solr.common.SolrException;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
 
-import org.apache.solr.common.SolrException;
 
 /**
  * Breaking out some utility methods into a separate class as part of SOLR-4196. These utils have nothing to do with
