@@ -126,7 +126,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           targetNode = assignStrategy.assign(ocmh.cloudManager, assignRequest).get(0).node;
         }
         ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
-        if (async != null) msg.getProperties().put(ASYNC, async);
+       // if (async != null) msg.getProperties().put(ASYNC, async);
         final ZkNodeProps addedReplica = ocmh.addReplica(clusterState,
             msg, nl, () -> {
               countDownLatch.countDown();
@@ -228,7 +228,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
     // we have reached this far means all replicas could be recreated
     //now cleanup the replicas in the source node
-    DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ocmh, source, async);
+    DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ocmh, source, null);
     results.add("success", "REPLACENODE action completed successfully from  : " + source + " to : " + target);
   }
 
