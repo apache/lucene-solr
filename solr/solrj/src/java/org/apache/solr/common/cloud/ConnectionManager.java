@@ -340,15 +340,14 @@ public class ConnectionManager implements Watcher, Closeable {
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
 
 
-
+    client.zkCallbackExecutor.shutdown();
     client.zkConnManagerCallbackExecutor.shutdown();
     if (keeper != null) {
       keeper.close();
     }
     keeper = null;
-    client.zkCallbackExecutor.shutdown();
+
     ExecutorUtil.awaitTermination(client.zkCallbackExecutor);
-  //  client.zkConnManagerCallbackExecutor.shutdownNow();
     ExecutorUtil.awaitTermination(client.zkConnManagerCallbackExecutor);
 
     assert ObjectReleaseTracker.release(this);
