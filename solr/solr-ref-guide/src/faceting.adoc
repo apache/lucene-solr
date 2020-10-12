@@ -177,7 +177,7 @@ The `facet.range.end` specifies the upper bound of the ranges. You can specify t
 `f.lastModified_dt.facet.range.end=NOW/DAY+30DAYS`
 
 `facet.range.gap`::
-The span of each range expressed as a value to be added to the lower bound. For date fields, this should be expressed using the {solr-javadocs}/solr-core/org/apache/solr/util/DateMathParser.html[`DateMathParser` syntax] (such as, `facet.range.gap=%2B1DAY ... '+1DAY'`). You can specify this parameter on a per-field basis with the syntax of `f.<fieldname>.facet.range.gap`. For example:
+The span of each range expressed as a value to be added to the lower bound. For date fields, this should be expressed using the {solr-javadocs}/core/org/apache/solr/util/DateMathParser.html[`DateMathParser` syntax] (such as, `facet.range.gap=%2B1DAY ... '+1DAY'`). You can specify this parameter on a per-field basis with the syntax of `f.<fieldname>.facet.range.gap`. For example:
 +
 `f.price.facet.range.gap=100&f.age.facet.range.gap=10`
 +

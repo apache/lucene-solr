@@ -38,7 +38,7 @@ There is a growing library of functions that can be combined to implement:
 * Streaming NLP
 * Statistical Programming
 
-Streams from outside systems can be joined with streams originating from Solr and users can add their own stream functions by following Solr's {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/stream/package-summary.html[Java streaming API].
+Streams from outside systems can be joined with streams originating from Solr and users can add their own stream functions by following Solr's {solr-javadocs}/solrj/org/apache/solr/client/solrj/io/stream/package-summary.html[Java streaming API].
 
 [IMPORTANT]
 ====
@@ -95,7 +95,7 @@ For the above example the `/stream` handler responded with the following JSON re
 
 Note the last tuple in the above example stream is `{"EOF":true,"RESPONSE_TIME":33}`. The `EOF` indicates the end of the stream. To process the JSON response, you'll need to use a streaming JSON implementation because streaming expressions are designed to return the entire result set which may have millions of records. In your JSON client you'll need to iterate each doc (tuple) and check for the EOF tuple to determine the end of stream.
 
-The {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/package-summary.html[`org.apache.solr.client.solrj.io`] package provides Java classes that compile streaming expressions into streaming API objects. These classes can be used to execute streaming expressions from inside a Java application. For example:
+The {solr-javadocs}/solrj/org/apache/solr/client/solrj/io/package-summary.html[`org.apache.solr.client.solrj.io`] package provides Java classes that compile streaming expressions into streaming API objects. These classes can be used to execute streaming expressions from inside a Java application. For example:
 
 [source,java]
 ----
@@ -134,7 +134,7 @@ The value of `shards.preference` that is used to route requests is determined in
 
 === Adding Custom Expressions
 
-Creating your own custom expressions can be easily done by implementing the {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/stream/expr/Expressible.html[Expressible] interface.   To add a custom expression to the
+Creating your own custom expressions can be easily done by implementing the {solr-javadocs}/solrj/org/apache/solr/client/solrj/io/stream/expr/Expressible.html[Expressible] interface.   To add a custom expression to the
 list of known mappings for the `/stream` and `/graph` handlers, you just need to declare it as a plugin in `solrconfig.xml` via:
 
 [source,xml]
