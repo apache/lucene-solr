@@ -16,7 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -120,13 +119,9 @@ public class IndexSchema {
   public static final String UNIQUE_KEY = "uniqueKey";
   public static final String VERSION = "version";
 
-  private static final String AT = "@";
   private static final String DESTINATION_DYNAMIC_BASE = "destDynamicBase";
-  private static final String SOLR_CORE_NAME = "solr.core.name";
   private static final String SOURCE_DYNAMIC_BASE = "sourceDynamicBase";
   private static final String SOURCE_EXPLICIT_FIELDS = "sourceExplicitFields";
-  private static final String TEXT_FUNCTION = "text()";
-  private static final String XPATH_OR = " | ";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected String resourceName;
@@ -758,7 +753,7 @@ public class IndexSchema {
   /**
    * Loads the copy fields
    */
-  protected synchronized void loadCopyFields(ConfigNode n) throws XPathExpressionException {
+  protected synchronized void loadCopyFields(ConfigNode n) {
 //    String expression = "//" + COPY_FIELD;
 //    NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
 
@@ -801,17 +796,6 @@ public class IndexSchema {
             , entry.getKey().name, COPY_FIELDS, entry.getValue());
       }
     }
-  }
-
-  /**
-   * Converts a sequence of path steps into a rooted path, by inserting slashes in front of each step.
-   * @param steps The steps to join with slashes to form a path
-   * @return a rooted path: a leading slash followed by the given steps joined with slashes
-   */
-  private String stepsToPath(String... steps) {
-    StringBuilder builder = new StringBuilder();
-    for (String step : steps) { builder.append(SLASH).append(step); }
-    return builder.toString();
   }
 
   /** Returns true if the given name has exactly one asterisk either at the start or end of the name */
@@ -1978,14 +1962,6 @@ public class IndexSchema {
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
   }
 
-  protected String getFieldTypeXPathExpressions() {
-    //               /schema/fieldtype | /schema/fieldType | /schema/types/fieldtype | /schema/types/fieldType
-    String expression = stepsToPath(SCHEMA, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?)
-            + XPATH_OR + stepsToPath(SCHEMA, FIELD_TYPE)
-            + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT))
-            + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE);
-    return expression;
-  }
 
   /**
    * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} uses the exact

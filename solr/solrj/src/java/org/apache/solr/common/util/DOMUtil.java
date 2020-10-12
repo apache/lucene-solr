@@ -40,7 +40,7 @@ public class DOMUtil {
 
   public static final String XML_RESERVED_PREFIX = "xml";
 
-  static final Set<String>  NL_TAGS = ImmutableSet.of("str", "int","long","float","double","bool");
+  public static final Set<String>  NL_TAGS = ImmutableSet.of("str", "int","long","float","double","bool");
 
 
   public static Map<String,String> toMap(NamedNodeMap attrs) {
