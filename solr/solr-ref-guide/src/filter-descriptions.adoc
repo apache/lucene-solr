@@ -2240,7 +2240,7 @@ By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopwo
 
 *Arguments:*
 
-`words`:: (optional; default: {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/core/StopAnalyzer.html[`StopAnalyzer#ENGLISH_STOP_WORDS_SET`] ) The name of a stopwords file to parse.
+`words`:: (optional; default: {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/core/StopAnalyzer.html[`StopAnalyzer#ENGLISH_STOP_WORDS_SET`] ) The name of a stopwords file to parse.
 
 `format`:: (optional; default: `wordset`) Defines how the words file will be parsed. If `words` is not specified, then `format` must not be specified. The valid values for the format option are:
 
@@ -2326,7 +2326,7 @@ There are two ways to specify synonym mappings:
 
 `expand`:: (optional; default: `true`) If `true`, a synonym will be expanded to all equivalent synonyms. If `false`, all equivalent synonyms will be reduced to the first in the list.
 
-`format`:: (optional; default: `solr`) Controls how the synonyms will be parsed. The short names `solr` (for {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser)`] and `wordnet` (for {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported, or you may alternatively supply the name of your own {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
+`format`:: (optional; default: `solr`) Controls how the synonyms will be parsed. The short names `solr` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser)`] and `wordnet` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported, or you may alternatively supply the name of your own {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
 
 `tokenizerFactory`:: (optional; default: `WhitespaceTokenizerFactory`) The name of the tokenizer factory to use when parsing the synonyms file. Arguments with the name prefix `tokenizerFactory.*` will be supplied as init params to the specified tokenizer factory.
 +
