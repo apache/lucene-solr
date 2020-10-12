@@ -254,7 +254,7 @@ final public class Automata {
       cmp = min.compareTo(max);
     } else {
       cmp = -1;
-      if (min.length == 0 && minInclusive) {
+      if (min.length == 0) {
         return makeAnyBinary();
       }
     }
@@ -266,7 +266,7 @@ final public class Automata {
         return makeBinary(min);
       }
     } else if (cmp > 0) {
-      // max > min
+      // max < min
       return makeEmpty();
     }
 
