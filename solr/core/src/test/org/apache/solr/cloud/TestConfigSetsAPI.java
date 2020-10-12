@@ -782,7 +782,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     @SuppressWarnings({"rawtypes"})
     Map map = postDataAndGetResponse(cluster.getSolrClient(),
-            cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix+"&path="+uploadPath + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : ""),
+            cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix+"&filePath="+uploadPath + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : ""),
             sampleConfigFile, username);
     assertNotNull(map);
     long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
