@@ -170,6 +170,8 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     boolean overwritesExisting = zkClient.exists(configPathInZk, true);
 
+    boolean requestIsTrusted = isTrusted(req, coreContainer.getAuthenticationPlugin());
+
     // Get upload parameters
     String singleFilePath = req.getParams().get(ConfigSetParams.FILE_PATH, "");
     boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
@@ -199,7 +201,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         try {
           // Create a node for the configuration in zookeeper
           // For creating the baseZnode, the cleanup parameter is only allowed to be true when singleFilePath is not passed.
-          createBaseZnode(zkClient, overwritesExisting, isTrusted(req, coreContainer.getAuthenticationPlugin()), false, configPathInZk);
+          createBaseZnode(zkClient, overwritesExisting, requestIsTrusted, configPathInZk);
           String filePathInZk = configPathInZk + "/" + fixedSingleFilePath;
           zkClient.makePath(filePathInZk, IOUtils.toByteArray(inputStream), CreateMode.PERSISTENT, null, !allowOverwrite, true);
         } catch(KeeperException.NodeExistsException nodeExistsException) {
@@ -224,7 +226,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     // Create a node for the configuration in zookeeper
     // For creating the baseZnode, the cleanup parameter is only allowed to be true when singleFilePath is not passed.
-    createBaseZnode(zkClient, overwritesExisting, isTrusted(req, coreContainer.getAuthenticationPlugin()), cleanup, configPathInZk);
+    createBaseZnode(zkClient, overwritesExisting, requestIsTrusted, configPathInZk);
 
     ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
     ZipEntry zipEntry = null;
@@ -244,17 +246,22 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
     zis.close();
     deleteUnusedFiles(zkClient, filesToDelete);
+
+    // If the request is doing a full trusted overwrite of an untrusted configSet (overwrite=true, cleanup=true), then trust the configSet.
+    if (cleanup && requestIsTrusted && overwritesExisting && !isCurrentlyTrusted(zkClient, configPathInZk)) {
+      byte[] baseZnodeData =  ("{\"trusted\": true}").getBytes(StandardCharsets.UTF_8);
+      zkClient.setData(configPathInZk, baseZnodeData, true);
+    }
   }
 
-  private void createBaseZnode(SolrZkClient zkClient, boolean overwritesExisting, boolean requestIsTrusted, boolean cleanup, String configPathInZk) throws KeeperException, InterruptedException {
+  private void createBaseZnode(SolrZkClient zkClient, boolean overwritesExisting, boolean requestIsTrusted, String configPathInZk) throws KeeperException, InterruptedException {
     byte[] baseZnodeData =  ("{\"trusted\": " + Boolean.toString(requestIsTrusted) + "}").getBytes(StandardCharsets.UTF_8);
 
     if (overwritesExisting) {
-      if (cleanup && requestIsTrusted) {
-        zkClient.setData(configPathInZk, baseZnodeData, true);
-      } else if (!requestIsTrusted) {
+      if (!requestIsTrusted) {
         ensureOverwritingUntrustedConfigSet(zkClient, configPathInZk);
       }
+      // If the request is trusted and cleanup=true, then the configSet will be set to trusted after the overwriting has been done.
     } else {
       zkClient.makePath(configPathInZk, baseZnodeData, true);
     }

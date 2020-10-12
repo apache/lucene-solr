@@ -470,6 +470,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       assertFalse(isTrusted(zkClient, configsetName, configsetSuffix));
       solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
 
+      // Was untrusted, overwrite with trusted with cleanup but fail on unzipping.
+      // Should not set trusted=true
+      assertEquals(500, uploadBadConfigSet(configsetName, configsetSuffix, "solr", zkClient, true, true));
+      assertEquals("Expecting version bump",
+              solrconfigZkVersion,  getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
+      assertFalse(isTrusted(zkClient, configsetName, configsetSuffix));
+      solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
+
       // Was untrusted, overwrite with trusted with cleanup
       assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, "solr", zkClient, true, true));
       assertTrue("Expecting version bump",
@@ -795,6 +803,20 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     Map map = postDataAndGetResponse(cluster.getSolrClient(),
         cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : ""),
         sampleZippedConfig, username);
+    assertNotNull(map);
+    long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+    return statusCode;
+  }
+
+  private long uploadBadConfigSet(String configSetName, String suffix, String username,
+                               SolrZkClient zkClient, boolean overwrite, boolean cleanup) throws IOException {
+    // Read single file from sample configs. This should fail the unzipping
+    ByteBuffer sampleBadZippedFile = TestSolrConfigHandler.getFileContent(SolrTestCaseJ4.getFile("solr/configsets/upload/regular/solrconfig.xml").getAbsolutePath(), false);
+
+    @SuppressWarnings({"rawtypes"})
+    Map map = postDataAndGetResponse(cluster.getSolrClient(),
+            cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : ""),
+            sampleBadZippedFile, username);
     assertNotNull(map);
     long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
     return statusCode;
