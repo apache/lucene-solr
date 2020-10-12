@@ -2127,7 +2127,7 @@ fi
 
 # Pick default for Java thread stack size, and then add to SOLR_OPTS
 if [ -z ${SOLR_JAVA_STACK_SIZE+x} ]; then
-  SOLR_JAVA_STACK_SIZE='-Xss256k'
+  SOLR_JAVA_STACK_SIZE='-Xss512k'
 fi
 SOLR_OPTS+=($SOLR_JAVA_STACK_SIZE)
 
