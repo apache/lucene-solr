@@ -20,29 +20,19 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
-import org.jsoup.parser.Parser;
 import org.jsoup.parser.Tag;
 import org.jsoup.select.Elements;
-import org.jsoup.select.NodeVisitor;
 
 /**
  * Check various things regarding anchors, links &amp; general doc structure in the generated HTML site.
@@ -422,5 +412,4 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
     }
     return s.substring(0, 17) + "...";
   }
-
 }
