@@ -24,7 +24,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.parser.QueryParser;
+import org.apache.solr.parser.Operator;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -153,9 +153,9 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       
       lparser.setInOrder(inOrder);
 
-      QueryParser.Operator defaultOperator = QueryParsing.parseOP(getParam(QueryParsing.OP));
+      Operator defaultOperator = QueryParsing.parseOP(getParam(QueryParsing.OP));
 
-      if (QueryParser.Operator.AND.equals(defaultOperator))
+      if (Operator.AND.equals(defaultOperator))
         lparser.setDefaultOperator(org.apache.lucene.queryparser.classic.QueryParser.Operator.AND);
       else
         lparser.setDefaultOperator(org.apache.lucene.queryparser.classic.QueryParser.Operator.OR);

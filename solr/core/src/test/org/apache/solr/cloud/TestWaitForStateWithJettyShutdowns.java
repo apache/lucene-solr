@@ -18,9 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.Set;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -34,11 +32,10 @@ import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-
-import static org.apache.solr.cloud.SolrCloudTestCase.clusterShape;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.SolrCloudTestCase.clusterShape;
 
 public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -19,9 +19,6 @@ import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.queryparser.charstream.FastCharStream;
 
 public class QueryParser extends SolrQueryParserBase implements QueryParserConstants {
-  /** The default operator for parsing queries.
-   */
-  static public enum Operator { OR, AND }
 
   /** default split on whitespace behavior */
   public static final boolean DEFAULT_SPLIT_ON_WHITESPACE = false;
@@ -60,7 +57,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
                                  SynonymQueryStyle synonymQueryStyle)
       throws SyntaxError {
     setAutoGenerateMultiTermSynonymsPhraseQuery(fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries());
-    // Don't auto-quote graph-aware field queries 
+    // Don't auto-quote graph-aware field queries
     boolean treatAsQuoted = getSplitOnWhitespace()
         ? (quoted || fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries()) : quoted;
     return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false,
@@ -668,6 +665,33 @@ if (splitOnWhitespace == false) {
     finally { jj_save(2, xla); }
   }
 
+  private boolean jj_3_1()
+ {
+    if (jj_3R_3()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_6()
+ {
+    return false;
+  }
+
+  private boolean jj_3R_3()
+ {
+    if (jj_scan_token(TERM)) return true;
+    jj_lookingAhead = true;
+    jj_semLA = getToken(1).kind == TERM && allowedPostMultiTerm(getToken(2).kind);
+    jj_lookingAhead = false;
+    if (!jj_semLA || jj_3R_6()) return true;
+    Token xsp;
+    if (jj_3R_7()) return true;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_7()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
   private boolean jj_3_3()
  {
     Token xsp;
@@ -702,33 +726,6 @@ if (splitOnWhitespace == false) {
  {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
-  private boolean jj_3_1()
- {
-    if (jj_3R_3()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_6()
- {
-    return false;
-  }
-
-  private boolean jj_3R_3()
- {
-    if (jj_scan_token(TERM)) return true;
-    jj_lookingAhead = true;
-    jj_semLA = getToken(1).kind == TERM && allowedPostMultiTerm(getToken(2).kind);
-    jj_lookingAhead = false;
-    if (!jj_semLA || jj_3R_6()) return true;
-    Token xsp;
-    if (jj_3R_7()) return true;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_7()) { jj_scanpos = xsp; break; }
-    }
     return false;
   }
 

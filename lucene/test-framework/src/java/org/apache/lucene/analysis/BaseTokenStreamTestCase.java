@@ -125,7 +125,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   //     arriving to pos Y have the same endOffset)
   public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[],
                                                int posLengths[], Integer finalOffset, Integer finalPosInc, boolean[] keywordAtts,
-                                               boolean graphOffsetsAreCorrect, byte[][] payloads) throws IOException {
+                                               boolean graphOffsetsAreCorrect, byte[][] payloads, int[] flags) throws IOException {
     assertNotNull(output);
     CheckClearAttributesAttribute checkClearAtt = ts.addAttribute(CheckClearAttributesAttribute.class);
     
@@ -170,6 +170,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       assertTrue("has no PayloadAttribute", ts.hasAttribute(PayloadAttribute.class));
       payloadAtt = ts.getAttribute(PayloadAttribute.class);
     }
+
+    FlagsAttribute flagsAtt = null;
+    if (flags != null) {
+      assertTrue("has no FlagsAttribute", ts.hasAttribute(FlagsAttribute.class));
+      flagsAtt = ts.getAttribute(FlagsAttribute.class);
+    }
     
     // Maps position to the start/end offset:
     final Map<Integer,Integer> posToStartOffset = new HashMap<>();
@@ -190,7 +196,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (posLengthAtt != null) posLengthAtt.setPositionLength(45987653);
       if (keywordAtt != null) keywordAtt.setKeyword((i&1) == 0);
       if (payloadAtt != null) payloadAtt.setPayload(new BytesRef(new byte[] { 0x00, -0x21, 0x12, -0x43, 0x24 }));
-      
+      if (flagsAtt != null) flagsAtt.setFlags(Integer.MAX_VALUE); // all 1's
+
       checkClearAtt.getAndResetClearCalled(); // reset it, because we called clearAttribute() before
       assertTrue("token "+i+" does not exist", ts.incrementToken());
       assertTrue("clearAttributes() was not called correctly in TokenStream chain at token " + i, checkClearAtt.getAndResetClearCalled());
@@ -213,6 +220,9 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       }
       if (keywordAtts != null) {
         assertEquals("keywordAtt " + i + " term=" + termAtt, keywordAtts[i], keywordAtt.isKeyword());
+      }
+      if (flagsAtt != null) {
+        assertEquals("flagsAtt " + i + " term=" + termAtt, flags[i], flagsAtt.getFlags());
       }
       if (payloads != null) {
         if (payloads[i] != null) {
@@ -294,6 +304,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     if (posLengthAtt != null) posLengthAtt.setPositionLength(45987653);
     if (keywordAtt != null) keywordAtt.setKeyword(true);
     if (payloadAtt != null) payloadAtt.setPayload(new BytesRef(new byte[] { 0x00, -0x21, 0x12, -0x43, 0x24 }));
+    if (flagsAtt != null) flagsAtt.setFlags(Integer.MAX_VALUE); // all 1's
 
     checkClearAtt.getAndResetClearCalled(); // reset it, because we called clearAttribute() before
 
@@ -316,7 +327,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[],
                                                int posLengths[], Integer finalOffset, boolean[] keywordAtts,
                                                boolean graphOffsetsAreCorrect) throws IOException {
-    assertTokenStreamContents(ts, output, startOffsets, endOffsets, types, posIncrements, posLengths, finalOffset, null, keywordAtts, graphOffsetsAreCorrect, null);
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, types, posIncrements, posLengths, finalOffset, null, keywordAtts, graphOffsetsAreCorrect, null, null);
   }
 
   public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], Integer finalOffset, boolean graphOffsetsAreCorrect) throws IOException {
@@ -390,7 +401,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], boolean graphOffsetsAreCorrect, byte[][] payloads) throws IOException {
-    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), null, null, graphOffsetsAreCorrect, payloads);
+    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), null, null, graphOffsetsAreCorrect, payloads, null);
     checkResetException(a, input);
     checkAnalysisConsistency(random(), a, true, input, graphOffsetsAreCorrect);
   }

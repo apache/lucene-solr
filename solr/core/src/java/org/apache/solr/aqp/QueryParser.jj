@@ -1,0 +1,465 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+options {
+  STATIC=false;
+  JAVA_UNICODE_ESCAPE=true;
+  USER_CHAR_STREAM=true;
+  COMMON_TOKEN_ACTION = true;
+//  DEBUG_PARSER = true; // remove for production builds
+}
+
+PARSER_BEGIN(QueryParser)
+
+package org.apache.solr.aqp;
+
+// Note this list of imports gets propagated to several generated classes!
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Deque;
+import java.util.ArrayDeque;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryparser.charstream.CharStream;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.solr.parser.Operator;
+import org.apache.solr.parser.SynonymQueryStyle;
+import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.QParser;
+
+import static org.apache.solr.aqp.TokenMgrError.LEXICAL_ERROR;
+
+@SuppressWarnings("ALL") // generated class!
+public class QueryParser extends AdvancedQueryParserBase {
+
+
+  //TODO: figure out what we want to do about split on whitespace...
+  /** default split on whitespace behavior */
+  public static final boolean DEFAULT_SPLIT_ON_WHITESPACE = false;
+
+   public QueryParser(String defaultField, QParser parser) {
+    this(new FastCharStream(new StringReader("")));
+    init(defaultField, parser);
+  }
+
+  /**
+   * @see #setSplitOnWhitespace(boolean)
+   */
+  public boolean getSplitOnWhitespace() {
+    return splitOnWhitespace;
+  }
+
+  /**
+   * Whether query text should be split on whitespace prior to analysis.
+   * Default is <code>{@value #DEFAULT_SPLIT_ON_WHITESPACE}</code>.
+   */
+  public void setSplitOnWhitespace(boolean splitOnWhitespace) {
+    this.splitOnWhitespace = splitOnWhitespace;
+  }
+
+  private boolean splitOnWhitespace = DEFAULT_SPLIT_ON_WHITESPACE;
+  private static Set<Integer> disallowedPostMultiTerm
+    = new HashSet<Integer>(Arrays.asList(COLON, STAR, AND, OR));
+  private static boolean allowedPostMultiTerm(int tokenKind) {
+    return disallowedPostMultiTerm.contains(tokenKind) == false;
+  }
+
+  @Override
+  protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
+                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries,
+                                SynonymQueryStyle synonymQueryStyle)
+      throws SyntaxError {
+    setAutoGenerateMultiTermSynonymsPhraseQuery(fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries());
+    // Don't auto-quote graph-aware field queries
+    boolean treatAsQuoted = getSplitOnWhitespace()
+        ? (quoted || fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries()) : quoted;
+    return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false, fieldEnableGraphQueries, synonymQueryStyle);
+  }
+
+  void eatRp()  throws ParseException, SyntaxError  {
+    EatRP();
+  }
+
+  protected static int getOpDistance(String distanceOp) {
+    /* W, W/2, W/3 etc -> 1, 2 3, etc. Same for N... */
+    return distanceOp.length() == 1
+      ? 0
+      : Integer.parseInt( distanceOp.substring( 2 , distanceOp.length() - 1 )) - 1;
+  }
+}
+
+PARSER_END(QueryParser)
+
+TOKEN_MGR_DECLS : {
+  Deque<Integer> pStack = new ArrayDeque<Integer>();
+
+    void CommonTokenAction(Token token) {
+      AdvToken atk = ((AdvToken)token);
+      if(pStack.size() > 0 ) {
+        SpanContext sctx = new SpanContext();
+        sctx.type = pStack.peekFirst();
+        atk.value = sctx;
+      }
+      atk.pDepth = pStack.size();
+    }
+}
+
+/* ***************** */
+/* Token Definitions */
+/* ***************** */
+
+<*> TOKEN : {
+  <#_ESCAPED_CHAR:    "\\" ~[] >  // every character that follows a backslash is considered as an escaped character
+| <#_WHITESPACE:      ( " " | "\t" | "\n" | "\r" | "\u3000") >
+| <#_TERM_START_CHAR: ( ~[ " ", "\t", "\n", "\r", "\u3000", "+", "-", "!", "(", ")", ":", "^",
+                           "[", "]", "\"", "{", "}", "~", "*", "?", "\\", "/","w", "W", "n", "N"]
+                        | <_ESCAPED_CHAR> ) >
+| <#_TERM_END_CHAR:   ( ~[ " ", "\t", "\n", "\r", "\u3000", "(", ")", ":", "\"", "*", "?", "\\", "/" ]
+                        | <_ESCAPED_CHAR> ) >
+// This is meant gives greater latitude with pattern based synonyms
+// NOT included from above: ':' '*' '?' --- these are important for fielded and wild card queries. so 2:1 ratio still
+// hard to search for but C++ or POW/MIA should become easier to support.
+| <#_TERM_CHAR:       ( <_TERM_START_CHAR> | <_ESCAPED_CHAR> | <_DISTOP>
+                        | "-" | "+" | "/" | "!"| "(" | ")" | "^" |"[" | "]" |"{" | "}"| "~" | "\\" | "/")>
+| <#_QUOTED_CHAR:     ( ~[ "\"", "\\" ] | <_ESCAPED_CHAR> ) >
+| <#_SQUOTED_CHAR:    ( ~[ "'", "\\" ] | <_ESCAPED_CHAR> ) > // Todo: convert to literal query
+| <#_DISTOP:          ("W" | "w" | "N" | "n")>
+| <#_DISTOP_NUM: ((["1"-"9"](["0"-"9"])?(["0"-"9"])?))>
+}
+
+<DEFAULT, Within, Near> SKIP : {
+   < <_WHITESPACE>>
+ }
+
+<Range> SKIP : {
+  < <_WHITESPACE>>
+}
+
+<DEFAULT, Within, Near> TOKEN : {
+  <AND:           ("AND" | "&&") >
+| <OR:            ("OR" | "||") >
+| <NOT:           "!" >
+| <MUST:          "+" >
+| <SHOULD:        "~" >
+| <W:             ("W/"|"w/")(<_DISTOP_NUM>)("(")> { pStack.addFirst(Within); } : Within
+| <N:             ("N/"|"n/")(<_DISTOP_NUM>)("(")> { pStack.addFirst(Near); } : Near
+| <BAREOPER:      ("+"|"-"|"!") <_WHITESPACE> >
+| <LPAREN:        "(" > {if (pStack.size() > 1) { pStack.addFirst(pStack.peek());} else { pStack.addFirst(DEFAULT);}
+
+}
+| <RPAREN:        ")" > { if (pStack.size() > 1) {
+                            pStack.removeFirst(); // pop our current state off
+                            SwitchTo(pStack.peek()); // back to the prior state
+                          } else {
+                            pStack.clear();
+                            SwitchTo(DEFAULT);
+                          }}
+| <COLON:         ":" > { if (pStack.size() > 0 && pStack.peek() != DEFAULT) {throw new TokenMgrError("':' not allowed inside of "+
+                                        "proximity queries, cross field proximity is meaningless", LEXICAL_ERROR);}}
+| <STAR:          "*" >
+| <QUOTED:        "\"" (<_QUOTED_CHAR>)* "\"">
+| <SINGLE_QUOTED:        "'" (<_SQUOTED_CHAR>)* "'">
+| <TERM:
+                  (<_TERM_START_CHAR>) |
+                  (<_DISTOP>) |
+                  (<_DISTOP> <_TERM_START_CHAR>)  |
+                  ((<_TERM_START_CHAR>) (<_TERM_CHAR>)* (<_TERM_END_CHAR>))  |
+                  ((<_DISTOP>) (<_TERM_START_CHAR>) (<_TERM_CHAR>)* (<_TERM_END_CHAR>))
+
+                  >
+| <PREFIXTERM:    ( <_TERM_START_CHAR> (<_TERM_CHAR>)* (<_TERM_END_CHAR>) "*" ) >
+| <WILDTERM:      (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* (<_TERM_END_CHAR> | ( [ "*", "?" ] )) >
+| <REGEXPTERM:    "/" (~["*","/"] | "\\/" ) (~[ "/" ] | "\\/" )* "/" >
+| <RANGEIN_START: "[" > : Range
+| <RANGEEX_START: "{" > : Range
+}
+
+<Range> TOKEN : {
+  <RANGE_TO:     "TO">
+| <RANGEIN_END:  "]"> : DEFAULT
+| <RANGEEX_END:  "}"> : DEFAULT
+| <RANGE_QUOTED: "\"" (~["\""] | "\\\"")+ "\"">
+| <RANGE_GOOP:   (~[ " ", "]", "}" ])+ >
+}
+
+// This makes sure that there is no garbage after the query string
+Query TopLevelQuery(String field) throws SyntaxError : {
+  Query q;
+}
+{
+  q=Query(field, null, MOD_NONE) <EOF>
+  {
+    return q;
+  }
+}
+
+int ModifierOpt(int ret) : {
+}
+{
+  [
+     ret = Modifier()
+  ]
+  { return ret; }
+}
+
+//noinspection BnfStringCanNeverBeMatched
+int Modifier() : {
+  int ret = MOD_NONE;
+}
+{
+
+     ( <MUST> { ret = MOD_MUST; }
+     | <NOT> { ret = MOD_NOT; }
+     | <SHOULD> { ret = MOD_SHOULD;  }
+     )
+     {
+      return ret;
+     }
+}
+
+Query Query(String field, SpanContext sc, int mods) throws SyntaxError :
+{
+  @SuppressWarnings("Convert2Diamond") // javacc doesn't like diamonds
+  List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+  Query q;
+  int conj;
+}
+{
+  (
+    LOOKAHEAD(2)
+    MultiTerm(field, clauses, sc)
+    // don't want to pass in NOT here, leads to double negatives when the outer clause is negated
+    | mods=ModifierOpt(mods) q=Clause(field, mods == MOD_NOT ? MOD_NONE : mods)
+      { addClause(clauses,  mods, q); mods=MOD_NONE;}
+  )
+  (
+    LOOKAHEAD(2)
+    MultiTerm(field, clauses, sc)
+    // don't want to pass in NOT here, leads to double negatives when the outer clause is negated
+    | mods=ModifierOpt(mods) q=Clause(field, mods == MOD_NOT ? MOD_NONE : mods)
+      { addClause(clauses,  mods, q);  mods=MOD_NONE;}
+  )*
+  {
+  if (clauses.size() == 1 && clauses.get(0).getOccur() != BooleanClause.Occur.MUST_NOT ) {
+    Query firstQuery = clauses.get(0).getQuery();
+    if ( !(firstQuery instanceof RawQuery) || ((RawQuery)firstQuery).getTermCount() == 1) {
+      Query normQ = rawToNormal(firstQuery);
+      if (sc == null) {
+        return normQ;
+      } else {
+        return convertToSpans(sc, normQ, this.operator);
+      }
+    }
+  }
+  @SuppressWarnings("Convert2Diamond") // javacc doesn't like diamonds
+  List<BooleanClause> singleDefaults = new ArrayList<BooleanClause>();
+    for (BooleanClause clause : clauses) {
+      Query query = clause.getQuery();
+      if (query instanceof BooleanQuery) {
+        BooleanQuery bool = (BooleanQuery) query;
+        List<BooleanClause> subClauses = bool.clauses();
+        BooleanClause.Occur op = (operator == AND_OPERATOR ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD);
+        if (subClauses.size() == 1 && clause.getOccur() == op) {
+          singleDefaults.add(clause);
+        }
+      }
+    }
+    // promote single shoulds to avoid (-foo) not being equivalent to -(foo)
+    for (BooleanClause singleDefault : singleDefaults) {
+      clauses.remove(singleDefault);
+      BooleanClause promote = ((BooleanQuery)singleDefault.getQuery()).clauses().get(0);
+      clauses.add(new BooleanClause(promote.getQuery(), promote.getOccur()));
+    }
+    Query booleanQuery = getBooleanQuery(clauses);
+    if (sc == null) {
+      return booleanQuery;
+    } else {
+      // span query cases
+      return booleanQuery == null ? null : convertToSpans(sc, booleanQuery, this.operator);
+    }
+  }
+}
+
+//noinspection BnfStringCanNeverBeMatched
+Query Clause(String field, int mods) throws SyntaxError : {
+  Query q;
+  Token fieldToken;
+  Token star;
+  int flags = 0;
+  Token prox;
+  SpanContext sc;
+  Operator origOperator = operator;
+}
+{
+  [
+    LOOKAHEAD(2)
+    (
+      fieldToken=<TERM> <COLON> { assertNotInsideSpan(fieldToken); field = discardEscapeChar(fieldToken.image); }
+      | star = <STAR> <COLON> {  assertNotInsideSpan(star); field = "*"; }
+    )
+  ]
+  (
+   q=Term(field)
+
+   | prox=<W>{this.operator = Operator.AND; sc = new SpanContext(); sc.type=W; sc.distOpNum=getOpDistance(prox.image); }  q=Query(field, sc, mods) CloseParen(origOperator)
+   | prox=<N>{this.operator = Operator.AND; sc = new SpanContext(); sc.type=N; sc.distOpNum=getOpDistance(prox.image); }  q=Query(field, sc, mods) CloseParen(origOperator)
+   | mods = Modifier()  q=Query(field, null, mods)
+   | [ mods = Modifier() ] OpenParen(mods) q=Query(field, null, mods) CloseParen(origOperator)
+  )
+  { return q; }
+}
+
+//noinspection BnfStringCanNeverBeMatched
+void OpenParen(int modifier) : {
+  if (modifier == MOD_MUST) {
+    this.operator = Operator.AND;
+  }
+  if (modifier == MOD_SHOULD) {
+    this.operator = Operator.OR;
+  }
+}
+{
+ <LPAREN>
+}
+
+//noinspection BnfStringCanNeverBeMatched
+void CloseParen(Operator original) : {
+  this.operator = original;
+} {
+ <RPAREN>
+}
+
+//noinspection BnfStringCanNeverBeMatched
+Query Term(String field) throws SyntaxError : {
+  Token term = null, goop1, goop2;
+  AdvToken atk;
+  boolean prefix = false;
+  boolean wildcard = false;
+  boolean regexp = false;
+  boolean startInc=false;
+  boolean endInc=false;
+  Query q;
+}
+{
+  (
+    (
+      term=<TERM>
+      | term=<STAR> { wildcard=true; }
+      | term=<PREFIXTERM> { prefix=true; }
+      | term=<WILDTERM> { wildcard=true; }
+      | term=<REGEXPTERM> { regexp=true; }
+      | term=<BAREOPER> { term.image = term.image.substring(0,1); }
+    )
+    {
+      assert term != null;
+      atk = (AdvToken) term;
+      q = handleBareTokenQuery(getField(field), term,  prefix, wildcard, regexp, this, atk.pDepth);
+    }
+
+  | ( <RANGEIN_START> { startInc = true; } | <RANGEEX_START> )
+    ( goop1=<RANGE_GOOP> | goop1=<RANGE_QUOTED> | goop1=<RANGE_TO> )
+    <RANGE_TO>
+    ( goop2=<RANGE_GOOP> | goop2=<RANGE_QUOTED> | goop2=<RANGE_TO> )
+    ( <RANGEIN_END> { endInc = true; } | <RANGEEX_END> )
+    {
+      assertNotInsideSpan(term);
+      boolean startOpen=false;
+      boolean endOpen=false;
+      if (goop1.kind == RANGE_QUOTED) {
+        goop1.image = goop1.image.substring(1, goop1.image.length()-1);
+      } else if ("*".equals(goop1.image)) {
+        startOpen=true;
+      }
+      if (goop2.kind == RANGE_QUOTED) {
+        goop2.image = goop2.image.substring(1, goop2.image.length()-1);
+      } else if ("*".equals(goop2.image)) {
+        endOpen=true;
+      }
+      q = getRangeQuery(getField(field),
+                        startOpen ? null : discardEscapeChar(goop1.image),
+                        endOpen ? null : discardEscapeChar(goop2.image), startInc, endInc);
+    }
+  | term=<QUOTED>
+    { q = handleQuotedTerm(getField(field), term, ""); }
+  | term=<SINGLE_QUOTED>
+    { q = handleQuotedTerm(getField(field), term, "_lit"); }
+  )
+  { return q; }
+}
+
+void MultiTerm(String field, List<BooleanClause> clauses, SpanContext sc) throws SyntaxError : {
+  Token text;
+  AdvToken atk;
+  List<String> terms = null;
+}
+{
+  text=<TERM>
+  {
+  assert text != null;
+  atk  = (AdvToken) text;
+  if (text.getValue() != null) {
+    atk.value = sc;
+  }
+  if (splitOnWhitespace) {
+    Query q = getFieldQuery(getField(field), discardEscapeChar(text.image), false, true, (SpanContext) text.getValue());
+    addClause(clauses,  MOD_NONE, q);
+  } else {
+    // javacc doesn't like diamonds
+    //noinspection Convert2Diamond
+    terms = new ArrayList<String>();
+    terms.add(discardEscapeChar(text.image));
+  }
+}
+  // Both lookaheads are required; the first lookahead vets the first following term and the second lookahead vets the rest
+  LOOKAHEAD({ getToken(1).kind == TERM && allowedPostMultiTerm(getToken(2).kind) })
+  (
+    LOOKAHEAD({ getToken(1).kind == TERM && allowedPostMultiTerm(getToken(2).kind) })
+    text=<TERM>
+    {
+      atk  = (AdvToken)text;
+      if (text.getValue() != null) {
+        atk.value = sc;
+      }
+      if (splitOnWhitespace) {
+        Query q = getFieldQuery(getField(field), discardEscapeChar(text.image), false, true, (SpanContext) text.getValue());
+        addClause(clauses,  MOD_NONE, q);
+      } else {
+        terms.add(discardEscapeChar(text.image));
+      }
+    }
+  )+
+  {
+    atk  = (AdvToken)text;
+    if (splitOnWhitespace == false) {
+      Query q = getFieldQuery(getField(field), terms, (SpanContext) text.getValue(), this, atk.pDepth);
+      addMultiTermClause(clauses, q);
+    }
+  }
+}
+
+// this is used above at QueryParser.jj:71
+//noinspection UnusedProduction,BnfStringCanNeverBeMatched
+void EatRP() : {}  {
+   <RPAREN>
+   }

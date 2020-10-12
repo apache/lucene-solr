@@ -1,0 +1,15 @@
+# Entries in this file follow the format:
+#     :::
+#
+# The entries are evaluated in the order shown, and only the first match  will be used. Avoid patterns with
+# leading .* or other permissive patterns, since the complexity of evaluations will effect performance.
+# TODO: Some of thees may be sub optimal...
+# TODO: Find a way to convert all of this to automata for efficiency (hard problem)
+#
+2 (\d+)\(?([a-z])\)? ::: legal2_$1_$2
+2 (\d+)\(?([a-z])\)?\(?(\d+)\)? ::: legal3_$1_$2_$3
+2 C\+\+ ::: c_plus_plus
+2 ^(?:1[-.]?)?(?:\(?(\d\d\d)\)?)[-.]?(\d\d\d)[-.]?(\d\d\d\d)$ ::: us_phone_$1_$2_$3
+#
+# this next line is probably too general, may need to seek another path if indexing perf is poor.
+2 \b([a-zA-Z]+)-([a-zA-Z]+) ::: $1_hyphen_$2

@@ -56,7 +56,6 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.parser.QueryParser.Operator;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -69,7 +68,7 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.queryparser.charstream.FastCharStream;
 
-import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
+import static org.apache.solr.parser.SynonymQueryStyle.AS_SAME_TERM;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file.
@@ -89,37 +88,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   static final int MOD_REQ     = 11;
 
   protected SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
-
-  /**
-   *  Query strategy when analyzed query terms overlap the same position (ie synonyms)
-   *  consider if pants and khakis are query time synonyms
-   *
-   *  {@link #AS_SAME_TERM}
-   *  {@link #PICK_BEST}
-   *  {@link #AS_DISTINCT_TERMS}
-   */
-  public static enum SynonymQueryStyle {
-    /** (default) synonym terms share doc freq
-     *  so if "pants" has df 500, and "khakis" a df of 50, uses 500 df when scoring both terms
-     *  appropriate for exact synonyms
-     *  see {@link org.apache.lucene.search.SynonymQuery}
-     * */
-    AS_SAME_TERM,
-
-    /** highest scoring term match chosen (ie dismax)
-     *  so if "pants" has df 500, and "khakis" a df of 50, khakis matches are scored higher
-     *  appropriate when more specific synonyms should score higher
-     * */
-    PICK_BEST,
-
-    /** each synonym scored indepedently, then added together (ie boolean query)
-     *  so if "pants" has df 500, and "khakis" a df of 50, khakis matches are scored higher but
-     *  summed with any "pants" matches
-     *  appropriate when more specific synonyms should score higher, but we don't want to ignore
-     *  less specific synonyms
-     * */
-    AS_DISTINCT_TERMS
-  }
 
   // make it possible to call setDefaultOperator() without accessing
   // the nested class:

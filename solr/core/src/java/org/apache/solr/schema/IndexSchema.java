@@ -234,7 +234,11 @@ public class IndexSchema {
     return version;
   }
 
-
+  public void registerAware(SchemaAware aware) {
+    // todo: perhaps some controls as to what can register. Important not to register objects that are
+    //  meant to be transient/request scoped.
+    schemaAware.add(aware);
+  }
   /**
    * Provides direct access to the Map containing all explicit
    * (ie: non-dynamic) fields in the index, keyed on field name.

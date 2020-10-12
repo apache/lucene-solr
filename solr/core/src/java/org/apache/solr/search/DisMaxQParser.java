@@ -21,7 +21,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.parser.QueryParser;
+import org.apache.solr.parser.Operator;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
@@ -59,10 +59,10 @@ public class DisMaxQParser extends QParser {
    */
   public static String parseMinShouldMatch(final IndexSchema schema, 
                                            final SolrParams params) {
-    org.apache.solr.parser.QueryParser.Operator op = QueryParsing.parseOP(params.get(QueryParsing.OP));
+    Operator op = QueryParsing.parseOP(params.get(QueryParsing.OP));
     
     return params.get(DisMaxParams.MM, 
-                      op.equals(QueryParser.Operator.AND) ? "100%" : "0%");
+                      op.equals(Operator.AND) ? "100%" : "0%");
   }
 
   /**

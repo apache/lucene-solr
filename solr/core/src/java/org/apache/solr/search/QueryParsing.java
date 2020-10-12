@@ -32,7 +32,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.parser.QueryParser;
+import org.apache.solr.parser.Operator;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 
@@ -375,7 +375,7 @@ public class QueryParsing {
    * @param operator the string from request
    * @return Operator.AND if string equals "AND", else return Operator.OR (default)
    */
-  public static QueryParser.Operator parseOP(String operator) {
-    return "and".equalsIgnoreCase(operator) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
+  public static Operator parseOP(String operator) {
+    return "and".equalsIgnoreCase(operator) ? Operator.AND : Operator.OR;
   }
 }

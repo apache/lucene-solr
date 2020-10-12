@@ -17,13 +17,19 @@
 
 package org.apache.lucene.analysis.miscellaneous;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link TypeAsSynonymFilter}.
+ *
+ * <p>In Solr this might be used as such
  * <pre class="prettyprint">
  * &lt;fieldType name="text_type_as_synonym" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -35,9 +41,11 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  * <p>
  * If the optional {@code prefix} parameter is used, the specified value will be prepended
  * to the type, e.g. with prefix="_type_", for a token "example.com" with type "&lt;URL&gt;",
- * the emitted synonym will have text "_type_&lt;URL&gt;".
+ * the emitted synonym will have text "_type_&lt;URL&gt;". Note that this class does not attempt
+ * to create a proper graph of synonyms so sausagization my occur. Contributions welcome on that
+ * front.
  *
- * @since 7.3.0
+ * @since 8.6.0
  * @lucene.spi {@value #NAME}
  */
 public class TypeAsSynonymFilterFactory extends TokenFilterFactory {
@@ -46,10 +54,17 @@ public class TypeAsSynonymFilterFactory extends TokenFilterFactory {
   public static final String NAME = "typeAsSynonym";
 
   private final String prefix;
+  private Set<String> ignore = null;
+  private int synFlagMask;
 
   public TypeAsSynonymFilterFactory(Map<String,String> args) {
     super(args);
     prefix = get(args, "prefix");  // default value is null
+    String ignoreList = get(args, "ignore");
+    synFlagMask = getInt(args,"synFlagsMask", ~0);
+    if (ignoreList != null) {
+      ignore = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(ignoreList.split(","))));
+    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -62,6 +77,6 @@ public class TypeAsSynonymFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenStream create(TokenStream input) {
-    return new TypeAsSynonymFilter(input, prefix);
+    return new TypeAsSynonymFilter(input, prefix, ignore, synFlagMask);
   }
 }
