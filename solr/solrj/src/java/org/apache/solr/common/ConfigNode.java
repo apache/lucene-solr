@@ -94,7 +94,7 @@ public interface ConfigNode {
     return children(null, Collections.singleton(name));
   }
 
-  /** abortable iterate through child
+  /** abortable iterate through children
    *
    * @param fun consume the node and return true to continue or false to abort
    */
