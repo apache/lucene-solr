@@ -125,7 +125,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
     @Override
     public boolean reject(Thread t) {
       final ThreadGroup tg = t.getThreadGroup();
-      return tg != null && "TGRP-CloudHttp2SolrClientWireMockTest".equals(tg.getName());
+      return tg != null && tg.getName().contains("TGRP-") && tg.getName().endsWith("Test");
     }
   }
 
@@ -159,7 +159,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
       qtp = null;
     }
     if (mockSolr != null) {
-      mockSolr.shutdown();
+      mockSolr.stop();
       mockSolr = null;
     }
   }
@@ -251,6 +251,10 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
   }
 
   protected byte[] queryResponseOk() throws IOException {
+    return queryResponseOk("javabin");
+  }
+
+  protected byte[] queryResponseOk(final String wt) throws IOException {
     NamedList<Object> rh = new NamedList<>();
     rh.add("status", 0);
     rh.add("QTime", 10);
@@ -264,7 +268,11 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
     NamedList<Object> nl = new NamedList<>();
     nl.add("responseHeader", rh);
     nl.add("response", rs);
-    return toJavabin(nl);
+    return "javabin".equals(wt) ? toJavabin(nl) : toXml(nl);
+  }
+
+  protected byte[] toXml(NamedList<Object> nl) {
+    return "<response></response>".getBytes(); // TODO;
   }
 
   protected byte[] updateRequestOk() throws IOException {

@@ -28,7 +28,6 @@ import org.apache.solr.util.LogLevel;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.BeforeClass;
 
 @LogLevel("org.eclipse.jetty.client=DEBUG;org.eclipse.jetty.util=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
@@ -50,7 +49,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
   public void testConnectToOldNodesUsingHttp1() throws Exception {
 
     JettyConfig jettyConfig = JettyConfig.builder()
-        .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
+        .withServlet(new ServletHolder(BasicHttpSolrClientTest.DebugServlet.class), "/debug/*")
         .useOnlyHttp1(true)
         .build();
     JettySolrRunner jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
@@ -70,7 +69,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
   public void testConnectToNewNodesUsingHttp1() throws Exception {
 
     JettyConfig jettyConfig = JettyConfig.builder()
-        .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
+        .withServlet(new ServletHolder(BasicHttpSolrClientTest.DebugServlet.class), "/debug/*")
         .useOnlyHttp1(false)
         .build();
     JettySolrRunner jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
@@ -92,7 +91,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
     // if this test some how failure, this mean that Jetty client now be able to switch between HTTP/1
     // and HTTP/2.2 protocol dynamically therefore rolling updates will be easier we should then notify this to users
     JettyConfig jettyConfig = JettyConfig.builder()
-        .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
+        .withServlet(new ServletHolder(BasicHttpSolrClientTest.DebugServlet.class), "/debug/*")
         .useOnlyHttp1(true)
         .build();
     JettySolrRunner jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
