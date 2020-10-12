@@ -160,6 +160,8 @@ New Features
 * SOLR-11167: Avoid $SOLR_STOP_WAIT use during 'bin/solr start' if $SOLR_START_WAIT is supplied.
   (Omar Abdelnabi, Christine Poerschke)
 
+* SOLR-14907: Support single file upload/overwrite in configSet API. (Houston Putman)
+
 Improvements
 ---------------------
 

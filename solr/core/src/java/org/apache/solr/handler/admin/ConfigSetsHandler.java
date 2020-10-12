@@ -170,10 +170,14 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     boolean overwritesExisting = zkClient.exists(configPathInZk, true);
 
-    if (overwritesExisting && !req.getParams().getBool(ConfigSetParams.OVERWRITE, false)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-          "The configuration " + configSetName + " already exists in zookeeper");
-    }
+    // Get upload parameters
+    String singleFilePath = req.getParams().get(ConfigSetParams.FILE_PATH, "");
+    boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
+    // Cleanup is not allowed while using singleFilePath upload
+    boolean cleanup = singleFilePath.isEmpty() && req.getParams().getBool(ConfigSetParams.CLEANUP, false);
+
+    // Create a node for the configuration in zookeeper
+    createBaseZnode(zkClient, overwritesExisting, isTrusted(req, coreContainer.getAuthenticationPlugin()), cleanup, configPathInZk);
 
     Iterator<ContentStream> contentStreamsIterator = req.getContentStreams().iterator();
 
@@ -184,8 +188,28 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     InputStream inputStream = contentStreamsIterator.next().getStream();
 
-    // Create a node for the configuration in zookeeper
-    boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
+    // Only Upload a single file
+    if (!singleFilePath.isEmpty()) {
+      if (singleFilePath.charAt(0) == '/') {
+        singleFilePath = singleFilePath.substring(1);
+      }
+      if (!singleFilePath.isEmpty()) {
+        try {
+          String filePathInZk = configPathInZk + "/" + singleFilePath;
+          zkClient.makePath(filePathInZk, IOUtils.toByteArray(inputStream), CreateMode.PERSISTENT, null, !allowOverwrite, true);
+        } catch(KeeperException.NodeExistsException nodeExistsException) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+                  "The path " + singleFilePath + " for configSet " + configSetName + " already exists. In order to overwrite, provide overwrite=true.");
+        }
+      }
+      return;
+    }
+
+    if (overwritesExisting && !allowOverwrite) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+              "The configuration " + configSetName + " already exists in zookeeper");
+    }
+
 
     Set<String> filesToDelete;
     if (overwritesExisting && cleanup) {
@@ -193,7 +217,6 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     } else {
       filesToDelete = Collections.emptySet();
     }
-    createBaseZnode(zkClient, overwritesExisting, isTrusted(req, coreContainer.getAuthenticationPlugin()), cleanup, configPathInZk);
 
     ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
     ZipEntry zipEntry = null;
