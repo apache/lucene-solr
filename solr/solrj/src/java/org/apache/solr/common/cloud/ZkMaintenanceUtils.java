@@ -19,6 +19,7 @@ package org.apache.solr.common.cloud;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -339,7 +340,7 @@ public class ZkMaintenanceUtils {
   }
 
   private static boolean isEphemeral(SolrZkClient zkClient, String zkPath) throws KeeperException, InterruptedException {
-    Stat znodeStat = zkClient.exists(zkPath, null);
+    Stat znodeStat = zkClient.exists(zkPath, null, true);
     return znodeStat.getEphemeralOwner() != 0;
   }
 

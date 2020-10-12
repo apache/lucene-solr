@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
@@ -32,23 +33,21 @@ public class ZkCmdExecutor {
 
   private long retryDelay = 50L;
   private int retryCount;
-  private long timeoutms;
   private IsClosed isClosed;
   
-  public ZkCmdExecutor(int timeoutms) {
-    this(timeoutms, null);
+  public ZkCmdExecutor(int retryCount) {
+    this(retryCount, null);
   }
   
   /**
    * TODO: At this point, this should probably take a SolrZkClient in
    * its constructor.
    * 
-   * @param timeoutms
-   *          the client timeout for the ZooKeeper clients that will be used
-   *          with this class.
+   * @param retryCount
+   *          number of retries on connectionloss
    */
-  public ZkCmdExecutor(long timeoutms, IsClosed isClosed) {
-    this.timeoutms = timeoutms;
+  public ZkCmdExecutor(int retryCount, IsClosed isClosed) {
+    this.retryCount = retryCount;
     this.isClosed = isClosed;
   }
   
@@ -68,34 +67,21 @@ public class ZkCmdExecutor {
   public <T> T retryOperation(ZkOperation operation)
       throws KeeperException, InterruptedException {
     KeeperException exception = null;
-    TimeOut timeout = new TimeOut(timeoutms, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     int tryCnt = 0;
-    while (true) {
+    while (tryCnt < retryCount) {
       try {
-
-        if (timeout.hasTimedOut()) {
-          throw new RuntimeException("Timed out attempting zk call");
-        }
-
         return (T) operation.execute();
       } catch (KeeperException.ConnectionLossException e) {
         log.warn("ConnectionLost to ZK");
         if (exception == null) {
           exception = e;
         }
-        if (Thread.currentThread().isInterrupted()) {
-          Thread.currentThread().interrupt();
-          throw new InterruptedException();
-        }
-
-        if (timeout.hasTimedOut()) {
-          throw new RuntimeException("Timed out attempting zk call");
-        }
 
         retryDelay(tryCnt);
       }
       tryCnt++;
     }
+    throw exception;
   }
   
   /**
@@ -106,7 +92,7 @@ public class ZkCmdExecutor {
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
     long sleep = retryDelay;
-    log.info("delaying for retry, attempt={} retryDelay={} sleep={} timeout={}", attemptCount, retryDelay, sleep, timeoutms);
+    log.info("delaying for retry, attempt={} retryDelay={} sleep={}", attemptCount, retryDelay, sleep);
     Thread.sleep(sleep);
   }
 
