@@ -103,12 +103,12 @@ If set to `true`, Solr will overwrite an existing configset with the same name (
 
 `cleanup`::
 When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files in ZooKeeper that existed in the old configset but not in the one being uploaded. Default is `false`.
-This parameter is ignored when `filePath` is provided.
+This parameter cannot be set to true when `filePath` is used.
 
 filePath::
 This parameter allows the uploading of a single, non-zipped file to the given path under the configSet in ZooKeeper.
 This functionality respects the `overwrite` parameter, so a request will fail if the given file path already exists in the configSet and overwrite is set to `false`.
-The `cleanup` parameter is unused when `filePath` is provided.
+The `cleanup` parameter cannot be set to true when `filePath` is used.
 
 The body of the request should be a zip file that contains the configset. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
 
