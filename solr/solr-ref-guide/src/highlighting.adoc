@@ -191,7 +191,7 @@ Both the FastVector and Original Highlighters can be used in conjunction in a se
 
 The Unified Highlighter is exclusively configured via search parameters. In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`. There's a robust example of the latter in the "```techproducts```" configset.
 
-In addition to further information below, more information can be found in the {solr-javadocs}/solr-core/org/apache/solr/highlight/package-summary.html[Solr javadocs].
+In addition to further information below, more information can be found in the {solr-javadocs}/core/org/apache/solr/highlight/package-summary.html[Solr javadocs].
 
 === Schema Options and Performance Considerations
 

@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The following table lists the field types that are available in Solr and are recommended. The page further down, lists all the deprecated types for those migrating from older version of Solr. The {solr-javadocs}/solr-core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table.
+The following table lists the field types that are available in Solr and are recommended. The page further down, lists all the deprecated types for those migrating from older version of Solr. The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table.
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 

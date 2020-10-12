@@ -24,7 +24,7 @@ These notes highlight the biggest changes that may impact the largest number of
 implementations. It is not a comprehensive list of all changes to Solr in any release.
 
 When planning your Solr upgrade, consider the customizations you have made to
-your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`]
+your system and review the {solr-javadocs}/changes//Changes.html[`CHANGES.txt`]
 file found in your Solr package. That file includes all the changes and updates
 that may effect your existing implementation.
 
@@ -567,7 +567,7 @@ If you run in SolrCloud mode, you must be on Solr version 7.3 or higher in order
 
 == Upgrading from Pre-7.x Versions
 
-Users upgrading from versions of Solr prior to 7.x are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
+Users upgrading from versions of Solr prior to 7.x are strongly encouraged to consult {solr-javadocs}/changes//Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
 
 The upgrade from Solr 6.x to Solr 7.0 introduced several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#major-changes-in-solr-7,Major Changes in Solr 7>> before starting your upgrade.
 

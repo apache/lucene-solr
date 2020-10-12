@@ -18,7 +18,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-{solr-javadocs}/solr-solrj/[SolrJ] is an API that makes it easy for applications written in Java (or any language based on the JVM) to talk to Solr. SolrJ hides a lot of the details of connecting to Solr and allows your application to interact with Solr with simple high-level methods.  SolrJ supports most Solr APIs, and is highly configurable.
+{solr-javadocs}/solrj/[SolrJ] is an API that makes it easy for applications written in Java (or any language based on the JVM) to talk to Solr. SolrJ hides a lot of the details of connecting to Solr and allows your application to interact with Solr with simple high-level methods.  SolrJ supports most Solr APIs, and is highly configurable.
 
 == Building and Running SolrJ Applications
 
@@ -77,21 +77,21 @@ If you are worried about the SolrJ libraries expanding the size of your client a
 
 For all its flexibility, SolrJ is built around a few simple interfaces.
 
-All requests to Solr are sent by a {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrClient.html[`SolrClient`].  SolrClient's are the main workhorses at the core of SolrJ.  They handle the work of connecting to and communicating with Solr, and are where most of the user configuration happens.
+All requests to Solr are sent by a {solr-javadocs}/solrj/org/apache/solr/client/solrj/SolrClient.html[`SolrClient`].  SolrClient's are the main workhorses at the core of SolrJ.  They handle the work of connecting to and communicating with Solr, and are where most of the user configuration happens.
 
-Requests are sent in the form of {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrRequest.html[`SolrRequests`], and are returned as {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrResponse.html[`SolrResponses`].
+Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/solrj/SolrRequest.html[`SolrRequests`], and are returned as {solr-javadocs}/solrj/org/apache/solr/client/solrj/SolrResponse.html[`SolrResponses`].
 
 === Types of SolrClients
 
 `SolrClient` has a few concrete implementations, each geared towards a different usage-pattern or resiliency model:
 
-- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - geared towards query-centric workloads, though also a good general-purpose client.  Communicates directly with a single Solr node.
-- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - async, non-blocking and general-purpose client that leverage HTTP/2. This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
-- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/LBHttpSolrClient.html[`LBHttpSolrClient`] - balances request load across a list of Solr nodes. Adjusts the list of "in-service" nodes based on node health.
-- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - just like `LBHttpSolrClient` but using `Http2SolrClient` instead. This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
-- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - geared towards communicating with SolrCloud deployments. Uses already-recorded ZooKeeper state to discover and route requests to healthy Solr nodes.
-- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.html[`ConcurrentUpdateSolrClient`] - geared towards indexing-centric workloads.  Buffers documents internally before sending larger batches to Solr.
-- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateHttp2SolrClient.html[`ConcurrentUpdateHttp2SolrClient`] - just like `ConcurrentUpdateSolrClient` but using `Http2SolrClient` instead. This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - geared towards query-centric workloads, though also a good general-purpose client.  Communicates directly with a single Solr node.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - async, non-blocking and general-purpose client that leverage HTTP/2. This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttpSolrClient.html[`LBHttpSolrClient`] - balances request load across a list of Solr nodes. Adjusts the list of "in-service" nodes based on node health.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - just like `LBHttpSolrClient` but using `Http2SolrClient` instead. This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - geared towards communicating with SolrCloud deployments. Uses already-recorded ZooKeeper state to discover and route requests to healthy Solr nodes.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.html[`ConcurrentUpdateSolrClient`] - geared towards indexing-centric workloads.  Buffers documents internally before sending larger batches to Solr.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateHttp2SolrClient.html[`ConcurrentUpdateHttp2SolrClient`] - just like `ConcurrentUpdateSolrClient` but using `Http2SolrClient` instead. This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
 
 === Common Configuration Options
 
@@ -188,7 +188,7 @@ include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-index
 CAUTION: The indexing examples above are intended to show syntax.  For brevity, they break several Solr indexing best-practices.  Under normal circumstances, documents should be indexed in larger batches, instead of one at a time.  It is also suggested that Solr administrators commit documents using Solr's autocommit settings, and not using explicit `commit()` invocations.
 
 == Java Object Binding
-While the `UpdateResponse` and `QueryResponse` interfaces that SolrJ provides are useful, it is often more convenient to work with domain-specific objects that can more easily be understood by your application.  Thankfully, SolrJ supports this by implicitly converting documents to and from any class that has been specially marked with {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj//beans/Field.html[`Field`] annotations.
+While the `UpdateResponse` and `QueryResponse` interfaces that SolrJ provides are useful, it is often more convenient to work with domain-specific objects that can more easily be understood by your application.  Thankfully, SolrJ supports this by implicitly converting documents to and from any class that has been specially marked with {solr-javadocs}/solrj/org/apache/solr/client/solrj//beans/Field.html[`Field`] annotations.
 
 Each instance variable in a Java object can be mapped to a corresponding Solr field, using the `Field` annotation.  The Solr field shares the name of the annotated variable by default, however, this can be overridden by providing the annotation with an explicit field name.
 
