@@ -8,6 +8,15 @@ https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-u
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 
+Upgrade Notes
+---------------------
+
+* SOLR-14656: Current Autoscaling Framework is marked as deprecated and will be replaced in
+  Solr 9.0 by APIs for replica placement and cluster events, with plugin-based implementations.
+  Deprecations include: autoscaling policy, triggers, withCollection handling, simulation framework,
+  autoscaling suggestions tab in the UI, autoAddReplicas and UTILIZENODE command.
+
+
 New Features
 ---------------------
 
