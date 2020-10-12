@@ -537,9 +537,24 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
     try (SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
             AbstractZkTestCase.TIMEOUT, 45000, null)) {
-      assertEquals(0, uploadSingleConfigSetFile(configsetName, configsetSuffix, null, zkClient, "solr/configsets/upload/regular/solrconfig.xml", "/test/upload/path/solrconfig.xml", false, true));
+      assertEquals(0, uploadSingleConfigSetFile(configsetName, configsetSuffix, null, zkClient, "solr/configsets/upload/regular/solrconfig.xml", "/test/upload/path/solrconfig.xml", false, false));
       assertEquals("Expecting first version of new file", 0, getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "test/upload/path/solrconfig.xml"));
       assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
+    }
+  }
+
+  @Test
+  public void testSingleWithCleanup() throws Exception {
+    String configsetName = "regular";
+    String configsetSuffix = "testSinglePathCleanup-1";
+    uploadConfigSetWithAssertions(configsetName, configsetSuffix, null);
+    try (SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
+            AbstractZkTestCase.TIMEOUT, 45000, null)) {
+      ignoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
+      assertEquals(400, uploadSingleConfigSetFile(configsetName, configsetSuffix, null, zkClient, "solr/configsets/upload/regular/solrconfig.xml", "/test/upload/path/solrconfig.xml", false, true));
+      assertFalse("New file should not exist, since the trust check did not succeed.", zkClient.exists("/configs/"+configsetName+configsetSuffix+"/test/upload/path/solrconfig.xml", true));
+      assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
+      unIgnoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
     }
   }
 
@@ -609,6 +624,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               extraFileZkVersion < getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "test/upload/path/solrconfig.xml"));
       assertFalse(isTrusted(zkClient, configsetName, configsetSuffix));
       assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
+
+      // Make sure that cleanup flag does not result in configSet being trusted.
+      ignoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
+      extraFileZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "test/different/path/solrconfig.xml");
+      assertEquals(400, uploadSingleConfigSetFile(configsetName, configsetSuffix, "solr", zkClient, "solr/configsets/upload/regular/solrconfig.xml", "/test/different/path/solrconfig.xml", true, true));
+      assertEquals("Expecting version to stay the same",
+              extraFileZkVersion, getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "test/different/path/solrconfig.xml"));
+      assertFalse("The cleanup=true flag allowed for trust overwriting in a filePath upload.", isTrusted(zkClient, configsetName, configsetSuffix));
+      assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
+      unIgnoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
     }
   }
 

@@ -173,11 +173,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     // Get upload parameters
     String singleFilePath = req.getParams().get(ConfigSetParams.FILE_PATH, "");
     boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
-    // Cleanup is not allowed while using singleFilePath upload
-    boolean cleanup = singleFilePath.isEmpty() && req.getParams().getBool(ConfigSetParams.CLEANUP, false);
+    boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
 
     // Create a node for the configuration in zookeeper
-    createBaseZnode(zkClient, overwritesExisting, isTrusted(req, coreContainer.getAuthenticationPlugin()), cleanup, configPathInZk);
+    // For creating the baseZnode, the cleanup parameter is only allowed to be true when singleFilePath is not passed.
+    createBaseZnode(zkClient, overwritesExisting, isTrusted(req, coreContainer.getAuthenticationPlugin()), singleFilePath.isEmpty() && cleanup, configPathInZk);
 
     Iterator<ContentStream> contentStreamsIterator = req.getContentStreams().iterator();
 
@@ -190,12 +190,18 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     // Only Upload a single file
     if (!singleFilePath.isEmpty()) {
-      if (singleFilePath.charAt(0) == '/') {
-        singleFilePath = singleFilePath.substring(1);
+      String fixedSingleFilePath = singleFilePath;
+      if (fixedSingleFilePath.charAt(0) == '/') {
+        fixedSingleFilePath = fixedSingleFilePath.substring(1);
       }
-      if (!singleFilePath.isEmpty()) {
+      if (fixedSingleFilePath.isEmpty()) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "The filePath provided for upload, '" + singleFilePath + "', is not valid.");
+      } else if (cleanup) {
+        // Cleanup is not allowed while using singleFilePath upload
+        throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet uploads do not allow cleanup=true when filePath is used.");
+      } else {
         try {
-          String filePathInZk = configPathInZk + "/" + singleFilePath;
+          String filePathInZk = configPathInZk + "/" + fixedSingleFilePath;
           zkClient.makePath(filePathInZk, IOUtils.toByteArray(inputStream), CreateMode.PERSISTENT, null, !allowOverwrite, true);
         } catch(KeeperException.NodeExistsException nodeExistsException) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
