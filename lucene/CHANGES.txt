@@ -12,6 +12,10 @@ System Requirements
 
 API Changes
 
+* LUCENE-9562: All binary analysis packages (and corresponding
+  Maven artifacts) with names containing '-analyzers-' have been renamed
+  to '-analysis-'. (Dawid Weiss)
+
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been
   removed. (Dawid Weiss)
 
