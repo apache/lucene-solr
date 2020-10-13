@@ -141,16 +141,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
       int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
 
-      log.debug("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
-
-      //      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
-      //              ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
-      //      try {
-      //        zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
-      //      } catch (Exception e1) {
-      //        ParWork.propegateInterrupt(e1);
-      //        throw new SolrException(ErrorCode.SERVER_ERROR, e1);
-      //      }
+      if (log.isDebugEnabled()) log.debug("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
 
       if (isClosed()) {
         // Solr is shutting down or the ZooKeeper session expired while waiting for replicas. If the later,
@@ -202,7 +193,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         success = result.isSuccess();
       } catch (Exception e) {
         ParWork.propagateInterrupt("Exception while trying to sync", e);
-        result = PeerSync.PeerSyncResult.failure();
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
       if (isClosed()) {
         return;
@@ -277,14 +268,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             log.error("WARNING: Potential data loss -- Replica {} became leader after timeout (leaderVoteWait) " + "without being up-to-date with the previous leader", coreNodeName);
             zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreNodeName);
           }
-          if (isClosed()) {
-            return;
-          }
 
           super.runLeaderProcess(context, weAreReplacement, 0);
 
           assert shardId != null;
 
+          core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
+          publishActive(core);
           ZkNodeProps zkNodes = ZkNodeProps
               .fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(), ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.BASE_URL_PROP,
                   leaderProps.get(ZkStateReader.BASE_URL_PROP), ZkStateReader.NODE_NAME_PROP, leaderProps.get(ZkStateReader.NODE_NAME_PROP), ZkStateReader.CORE_NAME_PROP,
@@ -293,9 +283,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           assert zkController != null;
           assert zkController.getOverseer() != null;
           zkController.getOverseer().offerStateUpdate(Utils.toJSON(zkNodes));
-
-          core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
-          publishActive(core);
 
           log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
 
@@ -331,6 +318,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
         }
+      } else {
+        cancelElection();
       }
 
     } finally {
@@ -406,8 +395,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
     log.info("There may be a better leader candidate than us - going back into recovery");
 
-    cancelElection();
-
     if (isClosed()) {
       log.debug("Not rejoining election because CoreContainer is closed");
       return;
@@ -419,7 +406,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       log.debug("Not rejoining election because CoreContainer is closed");
       return;
     }
-
+    cancelElection();
     leaderElector.joinElection(this, true);
   }
 

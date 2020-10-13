@@ -1838,13 +1838,6 @@ public class ZkController implements Closeable, Runnable {
    * Publish core state to overseer.
    */
   public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState, boolean forcePublish) throws Exception {
-    if (!forcePublish) {
-      try (SolrCore core = cc.getCore(cd.getName())) {
-        if (core == null || core.isClosed()) {
-          return;
-        }
-      }
-    }
     MDCLoggingContext.setCoreDescriptor(cc, cd);
 
     if ((state == Replica.State.ACTIVE || state == Replica.State.RECOVERING ) && isClosed()) {
