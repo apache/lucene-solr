@@ -1392,7 +1392,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     final boolean hasNoDocuments = (documents == null || documents.isEmpty());
     final boolean hasNoDeleteById = (deleteById == null || deleteById.isEmpty());
     if (hasNoDocuments && hasNoDeleteById) {
-      // no documents and no delete-by-id, so no info to find leader(s)
+      if (log.isDebugEnabled()) log.debug("no documents and no delete-by-id, so no info to find leader(s)");
       return false;
     }
 
@@ -1401,7 +1401,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         final SolrInputDocument doc = entry.getKey();
         final Object fieldValue = doc.getFieldValue(idField);
         if (fieldValue == null) {
-          // a document with no id field value, so can't find leader for it
+          if (log.isDebugEnabled()) log.debug("a document with no id field value, so can't find leader for it");
           return false;
         }
       }

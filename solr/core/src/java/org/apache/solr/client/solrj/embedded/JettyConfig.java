@@ -37,8 +37,6 @@ public class JettyConfig {
   public final boolean enableV2;
 
   public final boolean stopAtShutdown;
-  
-  public final Long waitForLoadingCoresToFinishMs;
 
   public final Map<ServletHolder, String> extraServlets;
 
@@ -52,14 +50,12 @@ public class JettyConfig {
 
   public final SolrQueuedThreadPool qtp;
 
-  private JettyConfig(boolean onlyHttp1, int port, int portRetryTime , String context, boolean stopAtShutdown,
-                      Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
+  private JettyConfig(boolean onlyHttp1, int port, int portRetryTime , String context, boolean stopAtShutdown, Map<ServletHolder, String> extraServlets,
                       Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2, boolean enableProxy, SolrQueuedThreadPool qtp) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
     this.context = context;
     this.stopAtShutdown = stopAtShutdown;
-    this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
     this.extraServlets = extraServlets;
     this.extraFilters = extraFilters;
     this.sslConfig = sslConfig;
@@ -84,7 +80,6 @@ public class JettyConfig {
     builder.enableProxy = other.enableProxy;
     builder.portRetryTime = other.portRetryTime;
     builder.onlyHttp1 = other.onlyHttp1;
-    builder.waitForLoadingCoresToFinishMs = other.waitForLoadingCoresToFinishMs;
     builder.enableV2 = other.enableV2;
     builder.qtp = other.qtp;
     return builder;
@@ -179,7 +174,7 @@ public class JettyConfig {
 
     public JettyConfig build() {
       return new JettyConfig(onlyHttp1, port, portRetryTime, context, stopAtShutdown,
-          waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig, enableV2, enableProxy, qtp);
+            extraServlets, extraFilters, sslConfig, enableV2, enableProxy, qtp);
     }
 
   }

@@ -581,10 +581,6 @@ public class JettySolrRunner implements Closeable {
         }
       }
 
-      if (config.waitForLoadingCoresToFinishMs != null && config.waitForLoadingCoresToFinishMs > 0L) {
-        waitForLoadingCoresToFinish(config.waitForLoadingCoresToFinishMs);
-      }
-
       if (getCoreContainer() != null && System.getProperty("zkHost") != null) {
         SolrZkClient zkClient = getCoreContainer().getZkController().getZkStateReader().getZkClient();
         CountDownLatch latch = new CountDownLatch(1);

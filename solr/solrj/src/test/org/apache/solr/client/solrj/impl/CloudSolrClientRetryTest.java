@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -30,6 +31,7 @@ import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.AwaitsFix(bugUrl = "flakey test on getting metrics")
 public class CloudSolrClientRetryTest extends SolrCloudTestCase {
   private static final int NODE_COUNT = 1;
 
@@ -59,6 +61,16 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
     NamedList<Object> namedList = response.getResponse();
     System.out.println(namedList);
     NamedList metrics = (NamedList) namedList.get("metrics");
+
+    // this does not help
+    if (metrics.get(updateRequestCountKey) == null) {
+      Thread.sleep(500);
+      response = solrClient.query(collectionName, params, SolrRequest.METHOD.GET);
+      namedList = response.getResponse();
+      System.out.println(namedList);
+      metrics = (NamedList) namedList.get("metrics");
+    }
+
     assertEquals(1L, metrics.get(updateRequestCountKey));
 
     TestInjection.failUpdateRequests = "true:100";
