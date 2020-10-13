@@ -160,7 +160,13 @@ public class ZkStateWriter {
             log.debug("enqueueUpdate() - going to create_collection {}", path);
           }
           //   assert c.getStateFormat() > 1;
-          DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0);
+          int version = 0;
+          DocCollection prevCol = prevState.getCollectionOrNull(c.getName());
+          if (prevCol != null) {
+            version = prevCol.getZNodeVersion();
+          }
+
+          DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), version);
 
           LinkedHashMap<String,ClusterState.CollectionRef> collStates = new LinkedHashMap<>(prevState.getCollectionStates());
           collStates.put(name, new ClusterState.CollectionRef(newCollection));
@@ -246,7 +252,7 @@ public class ZkStateWriter {
             try {
               int version = c.getZNodeVersion();
               Integer v = trackVersions.get(c.getName());
-              if (v != null && version == 0) {
+              if (v != null) {
                 version = v;
                 trackVersions.put(c.getName(), v + 1);
               } else {
