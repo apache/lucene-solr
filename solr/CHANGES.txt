@@ -211,6 +211,9 @@ Optimizations
 
 * SOLR-14576 : Do not use SolrCore as keys in a WeakHashMap (noble)
 
+* SOLR-14776: Precompute fingerprint during PeerSync in parallel with fetching fingerprint from replicas.
+  (Cao Manh Dat, Mike Drob via shalin)
+
 Bug Fixes
 ---------------------
 
