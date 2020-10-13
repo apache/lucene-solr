@@ -172,6 +172,9 @@ Optimizations
 * SOLR-13132: JSON Facet perf improvements to support "sweeping" collection of "relatedness()"
   (hossman, Michael Gibney)
 
+* SOLR-14776: Precompute fingerprint during PeerSync in parallel with fetching fingerprint from replicas.
+  (Cao Manh Dat, Mike Drob via shalin)
+
 Bug Fixes
 ---------------------
 
