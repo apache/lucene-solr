@@ -56,7 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
-import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")

@@ -226,7 +226,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final RecoveryStrategy.Builder recoveryStrategyBuilder;
   private volatile IndexReaderFactory indexReaderFactory;
   private final Codec codec;
-  private final MemClassLoader memClassLoader;
 
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
@@ -1028,10 +1027,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.solrDelPolicy = initDeletionPolicy(delPolicy);
 
       this.codec = initCodec(solrConfig, this.schema);
-
-      memClassLoader = new MemClassLoader(
-          PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())),
-          getResourceLoader());
       initIndex(prev != null, reload);
 
       initWriters();
@@ -1067,9 +1062,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       // Initialize the RestManager
       restManager = initRestManager(cd);
-
-      // at this point we can load jars loaded from remote urls.
-      memClassLoader.loadRemoteJars();
 
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
@@ -1274,7 +1266,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private void checkVersionFieldExistsInSchema(IndexSchema schema, CoreDescriptor coreDescriptor) {
     if (null != coreDescriptor.getCloudDescriptor()) {
-      // we are evidently running in cloud mode.  
+      // we are evidently running in cloud mode.
       //
       // In cloud mode, version field is required for correct consistency
       // ideally this check would be more fine grained, and individual features
@@ -1649,11 +1641,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         IOUtils.closeQuietly(transformerFactories);
         return "transformerFactories";
       });
-      closeCalls.add(() -> {
-        IOUtils.closeQuietly(memClassLoader);
-        return "memClassLoader";
-      });
-
       closer.collect("SolrCoreInternals", closeCalls);
       closer.addCollect();
 
@@ -2193,7 +2180,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           newReader = currentReader;
         }
 
-        // for now, turn off caches if this is for a realtime reader 
+        // for now, turn off caches if this is for a realtime reader
         // (caches take a little while to instantiate)
         final boolean useCaches = !realtime;
         final String newName = realtime ? "realtime" : "main";
@@ -2877,9 +2864,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     };
   }
 
-  public MemClassLoader getMemClassLoader() {
-    return memClassLoader;
-  }
 
   private Object call() {
     IOUtils.closeQuietly(responseWriters);

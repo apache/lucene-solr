@@ -128,7 +128,7 @@ public class BlobRepositoryMockingTest {
   @Test
   public void testGetBlobIncrRefByUrl() throws Exception{
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
-    filecontent = TestDynamicLoading.getFileContent("runtimecode/runtimelibs_v2.jar.bin");
+    filecontent = TestSolrConfigHandler.getFileContent("runtimecode/runtimelibs_v2.jar.bin");
     url = "http://localhost:8080/myjar/location.jar";
     BlobRepository.BlobContentRef ref = repository.getBlobIncRef( "filefoo",null,url,
         "bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a6c35574f3504963f5f7e4d92247d0eb4db3fc9abdda5d417");

@@ -16,10 +16,9 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,13 +26,14 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.StrUtils;
@@ -47,6 +47,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
+import org.apache.solr.util.SimplePostTool;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
@@ -69,6 +70,52 @@ public class TestSolrConfigHandler extends RestTestBase {
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
   private JettySolrRunner jetty;
+
+  public static ByteBuffer getFileContent(String f) throws IOException {
+    return getFileContent(f, true);
+  }
+
+  /**
+   * @param loadFromClassPath if true, it will look in the classpath to find the file,
+   *        otherwise load from absolute filesystem path.
+   */
+  public static ByteBuffer getFileContent(String f, boolean loadFromClassPath) throws IOException {
+    ByteBuffer jar;
+    File file = loadFromClassPath ? getFile(f): new File(f);
+    try (FileInputStream fis = new FileInputStream(file)) {
+      byte[] buf = new byte[fis.available()];
+      fis.read(buf);
+      jar = ByteBuffer.wrap(buf);
+    }
+    return jar;
+  }
+
+  public static  ByteBuffer persistZip(String loc,
+                                       @SuppressWarnings({"rawtypes"})Class... classes) throws IOException {
+    ByteBuffer jar = generateZip(classes);
+    try (FileOutputStream fos =  new FileOutputStream(loc)){
+      fos.write(jar.array(), 0, jar.limit());
+      fos.flush();
+    }
+    return jar;
+  }
+
+  public static ByteBuffer generateZip(@SuppressWarnings({"rawtypes"})Class... classes) throws IOException {
+    SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
+    try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
+      zipOut.setLevel(ZipOutputStream.DEFLATED);
+      for (@SuppressWarnings({"rawtypes"})Class c : classes) {
+        String path = c.getName().replace('.', '/').concat(".class");
+        ZipEntry entry = new ZipEntry(path);
+        ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
+        zipOut.putNextEntry(entry);
+        zipOut.write(b.array(), 0, b.limit());
+        zipOut.closeEntry();
+      }
+    }
+    return bos.getByteBuffer();
+  }
+
 
   @Before
   public void before() throws Exception {
@@ -184,7 +231,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertTrue("Expected status != 0: " + response, 0L != (Long)((Map)map.get("responseHeader")).get("status"));
     List errorDetails = (List)((Map)map.get("error")).get("details");
     List errorMessages = (List)((Map)errorDetails.get(0)).get("errorMessages");
-    assertTrue("Expected '" + expectedErrorMessage + "': " + response, 
+    assertTrue("Expected '" + expectedErrorMessage + "': " + response,
         errorMessages.get(0).toString().contains(expectedErrorMessage));
   }
 
@@ -501,14 +548,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertEquals("Actual output "+ Utils.toJSONString(map), "org.apache.solr.search.CaffeineCache",getObjectByPath(map, true, ImmutableList.of( "caches", "lfuCacheDecayFalse")));
 
   }
-  
+
   public void testFailures() throws Exception {
     String payload = "{ not-a-real-command: { param1: value1, param2: value2 } }";
     runConfigCommandExpectFailure(restTestHarness, "/config", payload, "Unknown operation 'not-a-real-command'");
 
     payload = "{ set-property: { update.autoCreateFields: false } }";
     runConfigCommandExpectFailure(restTestHarness, "/config", payload, "'update.autoCreateFields' is not an editable property");
-    
+
     payload = "{ set-property: { updateHandler.autoCommit.maxDocs: false } }";
     runConfigCommandExpectFailure(restTestHarness, "/config", payload, "Property updateHandler.autoCommit.maxDocs must be of Integer type");
 
@@ -517,7 +564,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     for (String component : new String[] {
         "requesthandler", "searchcomponent", "initparams", "queryresponsewriter", "queryparser",
-        "valuesourceparser", "transformer", "updateprocessor", "queryconverter", "listener", "runtimelib"}) {
+        "valuesourceparser", "transformer", "updateprocessor", "queryconverter", "listener"}) {
       for (String operation : new String[] { "add", "update" }) {
         payload = "{ " + operation + "-" + component + ": { param1: value1 } }";
         runConfigCommandExpectFailure(restTestHarness, "/config", payload, "'name' is a required field");
