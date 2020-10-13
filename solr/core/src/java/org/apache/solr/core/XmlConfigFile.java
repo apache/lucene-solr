@@ -212,8 +212,6 @@ public class XmlConfigFile { // formerly simply "Config"
       try {
         //builder.setStatistics(conf2.getTreeStatistics().SOURCE_DOCUMENT_STATISTICS);
 
-
-
         Sender.send(source, builder, parseOptions);
         docTree = (TinyDocumentImpl) builder.getCurrentRoot();
       } finally {

@@ -67,6 +67,8 @@
     <Set name="sendDateHeader"><Property name="solr.jetty.send.date.header" default="false" /></Set>
     <Set name="headerCacheSize"><Property name="solr.jetty.header.cache.size" default="512" /></Set>
     <Set name="delayDispatchUntilContent"><Property name="solr.jetty.delayDispatchUntilContent" default="true"/></Set>
+    <Set name="notifyRemoteAsyncErrors">false</Set>
+
     <!-- Uncomment to enable handling of X-Forwarded- style headers
     <Call name="addCustomizer">
       <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>

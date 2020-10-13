@@ -221,6 +221,15 @@ public class Overseer implements SolrCloseable {
       log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
 
         ZkStateWriter zkStateWriter = null;
+        try {
+          reader.forciblyRefreshAllClusterStateSlow();
+        } catch (KeeperException e) {
+          log.error("", e);
+          return;
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          return;
+        }
         ClusterState clusterState = reader.getClusterState();
         assert clusterState != null;
 
@@ -382,6 +391,7 @@ public class Overseer implements SolrCloseable {
         if (!isClosed && !closeAndDone) { // if we have not been closed, close so that we stop the other threads
           Overseer.this.close(true);
         }
+        itemsQueued.reset();
       }
 
       if (log.isDebugEnabled()) {
@@ -429,14 +439,13 @@ public class Overseer implements SolrCloseable {
       ClusterState state;
       LinkedHashMap<String,ClusterState.CollectionRef> collStates;
       ClusterState prevState = null;
-//      if (itemsQueued.sum() == 1) {
-//        log.info("First queue item for Overseer, pull cluster state ...");
-//        zkClient.printLayout();
-//        zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
-//        prevState = state = reader.getClusterState();
-//      } else {
+      if (itemsQueued.sum() == 1) {
+        log.info("First queue item for Overseer ...");
+        // we have ensured a full cluster state update on start over cluster state updater loop
+        state = reader.getClusterState();
+      } else {
         state = clusterState;
-//      }
+      }
       collStates = new LinkedHashMap<>(state.getCollectionStates());
       for (DocCollection docCollection : updatesToWrite.values()) {
         Map<String,Slice> slicesMap = docCollection.getSlicesMap();

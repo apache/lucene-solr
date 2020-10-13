@@ -140,7 +140,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
 
       if (failedReplicas == null) {
-        skipFinalStateWork = true;
+        // TODO: handle this in any special way? more logging?
       }
 
     } finally {
@@ -149,8 +149,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
         ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
-        if (!skipFinalStateWork) {
-          // wait for a while until we don't see the collection
+        // wait for a while until we don't see the collection
+        if (zkStateReader.getClusterState().getCollectionOrNull(collection) != null) {
           zkStateReader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
         }
       } catch (Exception e) {

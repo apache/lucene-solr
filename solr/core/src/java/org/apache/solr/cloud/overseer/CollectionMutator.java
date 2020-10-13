@@ -180,13 +180,7 @@ public class CollectionMutator {
     Map<String, Slice> slices;
 
     if (collection == null) {
-      //  when updateSlice is called on a collection that doesn't exist, it's currently when a core is publishing itself
-      // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
-      slices = new LinkedHashMap<>(1);
-      slices.put(slice.getName(), slice);
-      Map<String, Object> props = new HashMap<>(1);
-      props.put(DocCollection.DOC_ROUTER, Utils.makeMap(NAME, ImplicitDocRouter.NAME));
-      newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter());
+      throw new IllegalStateException("Collection does not exist: " + collectionName);
     } else {
       slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy
       slices.put(slice.getName(), slice);
