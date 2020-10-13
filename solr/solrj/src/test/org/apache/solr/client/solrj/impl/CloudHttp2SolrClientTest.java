@@ -624,6 +624,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "flakey test")
   public void checkCollectionParameters() throws Exception {
 
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
