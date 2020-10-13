@@ -453,9 +453,10 @@ public class Http2SolrClient extends SolrClient {
         public void onFailure(Response response, Throwable failure) {
           try {
             super.onFailure(response, failure);
-            //if (failure != CANCELLED_EXCEPTION) {
+            if (failure != CANCELLED_EXCEPTION) { // avoid retrying on load balanced search requests - keep in mind this
+              // means cancelled requests won't notify the caller of fail or complete
               asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
-            //}
+            }
           } finally {
             asyncTracker.arrive();
           }
