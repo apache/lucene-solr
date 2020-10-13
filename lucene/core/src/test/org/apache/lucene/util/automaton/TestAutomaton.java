@@ -1334,6 +1334,7 @@ public class TestAutomaton extends LuceneTestCase {
   
   public void testMakeBinaryIntervalLowerBoundEmptyString() throws Exception {
     Automaton a = Automata.makeBinaryInterval(new BytesRef(""), true, new BytesRef("bar"), true);
+    assertTrue(Operations.run(a, intsRef("")));
     assertTrue(Operations.run(a, intsRef("a")));
     assertTrue(Operations.run(a, intsRef("bar")));
     assertFalse(Operations.run(a, intsRef("bara")));
@@ -1341,6 +1342,7 @@ public class TestAutomaton extends LuceneTestCase {
     
     
     a = Automata.makeBinaryInterval(new BytesRef(""), false, new BytesRef("bar"), true);
+    assertFalse(Operations.run(a, intsRef("")));
     assertTrue(Operations.run(a, intsRef("a")));
     assertTrue(Operations.run(a, intsRef("bar")));
     assertFalse(Operations.run(a, intsRef("bara")));
@@ -1384,9 +1386,11 @@ public class TestAutomaton extends LuceneTestCase {
   public void testMakeBinaryIntervalOpenMaxZeroLengthMin() throws Exception {
     // when including min, automaton should accept "a"
     Automaton a = Automata.makeBinaryInterval(new BytesRef(""), true, null, true);
+    assertTrue(Operations.run(a, intsRef("")));
     assertTrue(Operations.run(a, intsRef("a")));
     // excluding min should still accept "a"
     a = Automata.makeBinaryInterval(new BytesRef(""), false, null, true);
+    assertFalse(Operations.run(a, intsRef("")));
     assertTrue(Operations.run(a, intsRef("a")));
   }
 

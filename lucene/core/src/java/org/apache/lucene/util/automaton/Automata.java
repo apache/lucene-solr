@@ -85,7 +85,15 @@ final public class Automata {
     a.finishState();
     return a;
   }
-  
+
+  /**
+   * Returns a new (deterministic) automaton that accepts all binary terms except
+   * the empty string.
+   */
+  public static Automaton makeAnyBinaryExceptEmpty() {
+    return makeCharRange(0, 255);
+  }
+
   /**
    * Returns a new (deterministic) automaton that accepts any single codepoint.
    */
@@ -255,7 +263,11 @@ final public class Automata {
     } else {
       cmp = -1;
       if (min.length == 0) {
-        return makeAnyBinary();
+        if (minInclusive) {
+          return makeAnyBinary();
+        } else {
+          return makeAnyBinaryExceptEmpty();
+        }
       }
     }
 
