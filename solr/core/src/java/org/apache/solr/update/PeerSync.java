@@ -267,6 +267,10 @@ public class PeerSync implements SolrMetricProducer {
     for (String replica : replicas) {
       requestFingerprint(replica);
     }
+
+    // We only compute fingerprint during leader election. Therefore after heavy indexing,
+    // the call to compute fingerprint takes awhile and slows the leader election.
+    // So we do it in parallel with fetching the fingerprint from the other replicas
     IndexFingerprint ourFingerprint;
     try {
       ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
