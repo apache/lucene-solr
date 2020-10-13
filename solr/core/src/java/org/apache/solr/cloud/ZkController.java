@@ -1486,14 +1486,6 @@ public class ZkController implements Closeable, Runnable {
       assert coreZkNodeName != null : "we should have a coreNodeName by now";
       log.info("Register SolrCore, baseUrl={} collection={}, shard={} coreNodeName={}", baseUrl, collection, shardId, coreZkNodeName);
 
-      // make sure we don't stop watching our own collection after a collection delete -> create
-
-      // the watcher is added to a set so multiple calls of this method will left only one watcher
-      getZkStateReader().registerCore(cloudDesc.getCollectionName());
-      // the watcher is added to a set so multiple calls of this method will left only one watcher
-
-      // nocommit
-      registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), cloudDesc.getCoreNodeName(), desc.getName());
 
       // check replica's existence in clusterstate first
       try {
@@ -1605,6 +1597,13 @@ public class ZkController implements Closeable, Runnable {
           shardTerms.addListener(new RecoveringCoreTermWatcher(core.getCoreDescriptor(), getCoreContainer()));
         }
         desc.getCloudDescriptor().setHasRegistered(true);
+
+        // the watcher is added to a set so multiple calls of this method will left only one watcher
+        getZkStateReader().registerCore(cloudDesc.getCollectionName());
+        // the watcher is added to a set so multiple calls of this method will left only one watcher
+        // nocommit
+        registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), cloudDesc.getCoreNodeName(), desc.getName());
+
       } catch (Exception e) {
         SolrZkClient.checkInterrupted(e);
         unregister(coreName, desc, false);
