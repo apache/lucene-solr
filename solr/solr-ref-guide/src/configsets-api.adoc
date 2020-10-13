@@ -99,7 +99,9 @@ The `upload` command takes the following parameters:
 The configset to be created when the upload is complete. This parameter is required.
 
 `overwrite`::
-If set to `true`, Solr will overwrite an existing configset with the same name (if false, the request will fail). Default is `false`.
+If set to `true`, Solr will overwrite an existing configset with the same name (if false, the request will fail).
+If `filePath` is provided, then this option specifies whether the specified file within the configSet should be overwritten if it already exists.
+Default is `false`.
 
 `cleanup`::
 When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files in ZooKeeper that existed in the old configset but not in the one being uploaded. Default is `false`.
