@@ -26,6 +26,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -50,7 +51,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
         .configure();
   }
 
-  @Before
+  @After
   public void ensureClusterEmpty() throws Exception {
     cluster.deleteAllCollections();
   }
