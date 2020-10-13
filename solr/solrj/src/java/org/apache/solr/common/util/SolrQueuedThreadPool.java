@@ -904,7 +904,6 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
 
     public void close() {
-        this.closed = true;
         removeBean(_tryExecutor);
         _tryExecutor = TryExecutor.NO_TRY;
 
@@ -913,18 +912,25 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
         //setIdleTimeout(1);
 
+        try {
+            super.doStop();
+        } catch (Exception e) {
+            LOG.warn("super.doStop", e);
+            return;
+        }
+
         // Fill the job queue with noop jobs to wakeup idle threads.
         for (int i = 0; i < threads; ++i) {
             jobs.offer(NOOP);
         }
 
         // interrupt threads
-        for (Future thread : _threadFutures)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Interrupting {}", thread);
-            thread.cancel(true);
-        }
+//        for (Future thread : _threadFutures)
+//        {
+//            if (LOG.isDebugEnabled())
+//                LOG.debug("Interrupting {}", thread);
+//            thread.cancel(true);
+//        }
 
 
         // Close any un-executed jobs
@@ -947,14 +953,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 //        }
 
 
-        try {
-            super.doStop();
-        } catch (Exception e) {
-            LOG.warn("super.doStop", e);
-            return;
-        }
-
-
+        this.closed = true;
         try {
             joinThreads(15000);
         } catch (InterruptedException e) {

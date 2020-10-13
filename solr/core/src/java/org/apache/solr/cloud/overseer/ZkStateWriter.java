@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,7 @@ public class ZkStateWriter {
   // / protected boolean isClusterStateModified = false;
   protected long lastUpdatedTime = 0;
 
+  private Map<String,Integer> trackVersions = new HashMap<>();
 
   private final ZkStateReader reader;
 
@@ -126,11 +128,11 @@ public class ZkStateWriter {
           }
 
           updatesToWrite.remove(name);
+          trackVersions.remove(name);
 
           reader.getZkClient().clean(path);
 
           TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-          DocCollection coll;
           timeout.waitFor("", () -> {
             DocCollection rc = reader.getClusterState().getCollectionOrNull(name);
             if (rc == null) return true;
@@ -140,17 +142,11 @@ public class ZkStateWriter {
           LinkedHashMap<String,ClusterState.CollectionRef> collStates = new LinkedHashMap<>(prevState.getCollectionStates());
           collStates.remove(name);
           prevState = new ClusterState(prevState.getLiveNodes(), collStates, prevState.getZNodeVersion());
-        } else if (updatesToWrite.get(name) != null || prevState.getCollectionOrNull(name) != null) {
+        } else if (updatesToWrite.get(name) != null) {
           if (log.isDebugEnabled()) {
             log.debug("enqueueUpdate() - going to update_collection {} version: {}", path, c.getZNodeVersion());
           }
 
-          // assert c.getStateFormat() > 1;
-          // stat = reader.getZkClient().getCurator().checkExists().forPath(path);
-          DocCollection coll = updatesToWrite.get(name);
-          if (coll == null) {
-            coll = prevState.getCollectionOrNull(name);
-          }
 
           if (log.isDebugEnabled()) {
             log.debug("The new collection {}", c);
@@ -230,6 +226,7 @@ public class ZkStateWriter {
       //
       //
       Map<String,DocCollection> failedUpdates = new LinkedHashMap<>();
+      Exception lastFailedException = null;
       for (DocCollection c : updatesToWrite.values()) {
         String name = c.getName();
         String path = ZkStateReader.getCollectionPath(c.getName());
@@ -247,37 +244,30 @@ public class ZkStateWriter {
             //}
             // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
             try {
-              stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), false);
-            } catch (KeeperException.BadVersionException bve) {
-
-              if (c.getZNodeVersion() == 1 && stat.getVersion() == 0) {
-                // need to figure out how this case happens
-                stat = reader.getZkClient().setData(path, data, 0, false);
+              int version = c.getZNodeVersion();
+              Integer v = trackVersions.get(c.getName());
+              if (v != null && version == 0) {
+                version = v;
+                trackVersions.put(c.getName(), v + 1);
               } else {
-                // this is a tragic error, we must disallow usage of this instance
-                log.warn(
-                    "Tried to update the cluster state using version={} but we where rejected, found {}",
-                    c.getZNodeVersion(), stat.getVersion(), bve);
-                throw bve;
+                trackVersions.put(c.getName(), version + 1);
               }
-            }
 
+              reader.getZkClient().setData(path, data, version, true);
+            } catch (KeeperException.BadVersionException bve) {
+              lastFailedException = bve;
+              failedUpdates.put(c.getName(), c);
+              stat = reader.getZkClient().exists(path, null);
+              // this is a tragic error, we must disallow usage of this instance
+              log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", c.getZNodeVersion(), stat.getVersion(), bve);
+            }
+            if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", c.getName(), c.getZNodeVersion() + 1);
         } catch (InterruptedException | AlreadyClosedException e) {
           ParWork.propagateInterrupt(e);
           throw e;
         } catch (KeeperException.SessionExpiredException e) {
           throw e;
         } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
-//          if (e instanceof KeeperException.BadVersionException) {
-//            // nocommit invalidState = true;
-//            //if (log.isDebugEnabled())
-//            log.info(
-//                "Tried to update the cluster state using version={} but we where rejected, currently at {}",
-//                prevVersion, c == null ? "null" : c.getZNodeVersion(), e);
-//            prevState = reader.getClusterState();
-//            continue;
-//          }
           ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Failed processing update=" + c, e);
@@ -290,7 +280,10 @@ public class ZkStateWriter {
           if (c != null && !failedUpdates.containsKey(c.getName())) {
             try {
               //System.out.println("waiting to see state " + prevVersion);
-              Integer finalPrevVersion = c.getZNodeVersion();
+              Integer v = trackVersions.get(c.getName());
+              int version = v - 1;
+              
+              Integer finalPrevVersion = version;
               reader.waitForState(c.getName(), 15, TimeUnit.SECONDS, (l, col) -> {
 
                 //              if (col != null) {
@@ -313,11 +306,11 @@ public class ZkStateWriter {
 
       lastUpdatedTime = System.nanoTime();
 
-      updatesToWrite.clear();
-      if (log.isDebugEnabled()) log.debug("Failed updates {}", failedUpdates.values());
-   //   updatesToWrite.putAll(failedUpdates);
+
+
       if (failedUpdates.size() > 0) {
-        throw new AlreadyClosedException();
+        failedUpdates.clear();
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException);
       }
 
       success = true;
@@ -334,8 +327,11 @@ public class ZkStateWriter {
 //      log.debug("writePendingUpdates() - end - New Cluster State is: {}", newClusterState);
 //    }
 
-
-    return state;
+    try {
+      return new ClusterState(state.getLiveNodes(), updatesToWrite);
+    } finally {
+      updatesToWrite.clear();
+    }
   }
 
   public Map<String,DocCollection>  getUpdatesToWrite() {
