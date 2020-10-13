@@ -91,6 +91,9 @@ public class ZkCmdExecutor {
    *          the number of the attempts performed so far
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
+    if (isClosed != null && isClosed.isClosed()) {
+      return;
+    }
     long sleep = retryDelay;
     log.info("delaying for retry, attempt={} retryDelay={} sleep={}", attemptCount, retryDelay, sleep);
     Thread.sleep(sleep);

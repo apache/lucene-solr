@@ -112,10 +112,9 @@ class SolrCores implements Closeable {
     if (transientSolrCoreCache != null) {
       coreList.addAll(transientSolrCoreCache.prepareForShutdown());
     }
-    cores.clear();
 
     try (ParWork closer = new ParWork(this, true)) {
-      for (SolrCore core : coreList) {
+      cores.forEach((s, core) -> {
         closer.collect("closeCore-" + core.getName(), () -> {
           MDCLoggingContext.setCore(core);
           try {
@@ -128,7 +127,22 @@ class SolrCores implements Closeable {
           }
           return core;
         });
-      }
+      });
+
+      coreList.forEach((core) -> {
+        closer.collect("closeCore-" + core.getName(), () -> {
+          MDCLoggingContext.setCore(core);
+          try {
+            core.closeAndWait();
+          } catch (Throwable e) {
+            log.error("Error closing SolrCore", e);
+            ParWork.propagateInterrupt("Error shutting down core", e);
+          } finally {
+            MDCLoggingContext.clear();
+          }
+          return core;
+        });
+      });
     }
 
   }

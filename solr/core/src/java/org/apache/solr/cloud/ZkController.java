@@ -1954,12 +1954,12 @@ public class ZkController implements Closeable, Runnable {
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
     final String collection = cd.getCloudDescriptor().getCollectionName();
 
-    zkStateReader.unregisterCore(collection);
-
     ZkCollectionTerms ct = collectionToTerms.get(collection);
     if (ct != null) {
       ct.remove(cd.getCloudDescriptor().getShardId(), cd);
     }
+
+    zkStateReader.unregisterCore(collection);
 
     replicasMetTragicEvent.remove(collection+":"+coreNodeName);
 

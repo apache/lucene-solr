@@ -74,6 +74,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -926,9 +927,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       // okay
     } finally {
       if (tpe != null) {
-//        if (!tpe.isShutdown()) {
-//          ExecutorUtil.shutdownAndAwaitTermination(tpe);
-//        }
+        if (!tpe.isShutdown()) {
+          ExecutorUtil.shutdownAndAwaitTermination(tpe);
+        }
       }
     }
 

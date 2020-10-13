@@ -61,8 +61,6 @@ public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
     
     solrServer.close();
     
-    Assert.assertEquals(0, cores.getCores().size());
-    
     for (SolrCore solrCore : solrCores) {
       Assert.assertEquals(true, solrCore.isClosed());
     }

@@ -96,6 +96,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -1662,10 +1663,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       AtomicBoolean coreStateClosed = new AtomicBoolean(false);
 
-      assert ObjectReleaseTracker.release(searcherExecutor);
-      closer.collect(searcherExecutor);
-
-      closer.addCollect();
       closer.collect("closeSearcher", () -> {
 
         synchronized (searcherLock) {
@@ -1705,6 +1702,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
         coreStateClosed.set(closed);
         return solrCoreState;
+      });
+
+      closer.collect();
+
+      assert ObjectReleaseTracker.release(searcherExecutor);
+      closer.collect("", ()->{
+        if (!searcherExecutor.isTerminated()) {
+          searcherExecutor.shutdownNow();
+        }
       });
 
       closer.collect();

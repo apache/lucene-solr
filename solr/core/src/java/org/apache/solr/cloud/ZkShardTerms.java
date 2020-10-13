@@ -195,10 +195,16 @@ public class ZkShardTerms implements AutoCloseable{
   // return true if this object should not be reused
   boolean removeTerm(String coreNodeName) {
     ShardTerms newTerms;
+    int tries = 0;
     while ( (newTerms = terms.get().removeTerm(coreNodeName)) != null) {
       try {
         if (saveTerms(newTerms)) return false;
       } catch (KeeperException.NoNodeException e) {
+        return true;
+      }
+      tries++;
+      if (tries > 15) {
+        log.warn("Could not save terms to zk within " + tries + " tries");
         return true;
       }
     }
@@ -330,18 +336,23 @@ public class ZkShardTerms implements AutoCloseable{
    * Fetch latest terms from ZK
    */
   public void refreshTerms(Watcher watcher) {
-    ShardTerms newTerms;
+    ShardTerms newTerms = null;
     try {
       Stat stat = new Stat();
       byte[] data = zkClient.getData(znodePath, watcher, stat);
       newTerms = new ShardTerms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
     } catch (InterruptedException e) {
       // dont propegate interrupt
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
+      return;
     } catch (KeeperException.NoNodeException e) {
-      newTerms = new ShardTerms(Collections.emptyMap(), -1);
+
     } catch (KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
+      log.error("Error updating shard term for collection: {}", collection);
+      return;
+    }
+
+    if (newTerms == null) {
+      newTerms = new ShardTerms(Collections.emptyMap(), -1);
     }
 
     setNewTerms(newTerms);

@@ -120,6 +120,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void deleteCollectionOnlyInZk() throws Exception {
     final String collectionName = "onlyinzk";
 
@@ -139,6 +140,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
 
   @Test
   @SuppressWarnings("rawtypes")
+  @Ignore
   public void testTooManyReplicas() {
     CollectionAdminRequest req = CollectionAdminRequest.createCollection("collection", "conf", 2, 10);
     try {
@@ -213,6 +215,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testMaxNodesPerShard() {
     int numLiveNodes = cluster.getJettySolrRunners().size();
     int numShards = (numLiveNodes/2) + 1;
@@ -264,6 +267,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018 SOLR-12028
+  @Ignore
   public void testCollectionsAPI() throws Exception {
 
     // create new collections rapid fire
@@ -331,6 +335,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void testCollectionReload() throws Exception {
     final String collectionName = "reloaded_collection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).setMaxShardsPerNode(10).process(cluster.getSolrClient());
