@@ -21,13 +21,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -59,7 +56,7 @@ public class SolrCmdDistributor implements Closeable {
 
   private volatile boolean finished = false; // see finish()
 
-  private int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD;
+  private int maxRetries = MAX_RETRIES_ON_FORWARD;
 
   private final Set<Error> allErrors = ConcurrentHashMap.newKeySet();
   
@@ -102,25 +99,25 @@ public class SolrCmdDistributor implements Closeable {
         doRetry = true;
       }
 
-      // if it's a connect exception, lets try again
+      // if it's a io exception exception, lets try again
       if (err.t instanceof SolrServerException) {
-        if (((SolrServerException) err.t).getRootCause() instanceof ConnectException) {
+        if (((SolrServerException) err.t).getRootCause() instanceof IOException) {
           doRetry = true;
         }
       }
 
-      if (err.t instanceof ConnectException) {
+      if (err.t instanceof IOException) {
         doRetry = true;
       }
 
-      if (err.req.retries < maxRetriesOnForward && doRetry) {
+      if (err.req.retries < maxRetries && doRetry) {
         err.req.retries++;
 
-        SolrException.log(SolrCmdDistributor.log, "forwarding update to "
+        SolrException.log(SolrCmdDistributor.log, "sending update to "
                 + oldNodeUrl + " failed - retrying ... retries: "
                 + err.req.retries + " " + err.req.cmd.toString() + " params:"
                 + err.req.uReq.getParams() + " rsp:" + rspCode, err.t);
-        log.info("check retry true");
+        if (log.isDebugEnabled()) log.debug("check retry true");
         return true;
       } else {
         log.info("max retries exhausted or not a retryable error {} {}", err.req.retries, rspCode);
@@ -251,18 +248,11 @@ public class SolrCmdDistributor implements Closeable {
           }
 
           boolean retry = false;
-          if (t instanceof RejectedExecutionException || checkRetry(error)) {
+          if (checkRetry(error)) {
             retry = true;
           }
 
           if (retry) {
-            if (t instanceof RejectedExecutionException) {
-              try {
-                Thread.sleep(1000);
-              } catch (InterruptedException e) {
-                ParWork.propagateInterrupt(e);
-              }
-            }
             log.info("Retrying distrib update on error: {}", t.getMessage());
             submit(req);
             return;
@@ -279,14 +269,7 @@ public class SolrCmdDistributor implements Closeable {
       if (e instanceof SolrException) {
         error.statusCode = ((SolrException) e).code();
       }
-      if (e instanceof RejectedExecutionException || checkRetry(error)) {
-        if (e instanceof RejectedExecutionException) {
-          try {
-            Thread.sleep(1000);
-          } catch (InterruptedException e1) {
-            ParWork.propagateInterrupt(e1);
-          }
-        }
+      if (checkRetry(error)) {
         log.info("Retrying distrib update on error: {}", e.getMessage());
         submit(req);
       } else {
@@ -445,7 +428,7 @@ public class SolrCmdDistributor implements Closeable {
 
     @Override
     public boolean checkRetry() {
-      return false;
+      return true;
     }
 
     @Override

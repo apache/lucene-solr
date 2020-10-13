@@ -327,6 +327,11 @@ public class JettySolrRunner implements Closeable {
     HttpConfiguration configuration = new HttpConfiguration();
     configuration.setRequestHeaderSize(16 * 1024);
     configuration.setResponseHeaderSize(16 * 1024);
+
+    // https://github.com/jersey/jersey/issues/3691
+    // https://github.com/eclipse/jetty.project/issues/1891
+    configuration.setNotifyRemoteAsyncErrors(false);
+
     ServerConnector connector;
     if (sslcontext != null) {
       configuration.setSecureScheme("https");

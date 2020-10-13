@@ -168,7 +168,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       assertEquals(0, response.getStatus());
       assertTrue(response.isSuccess());
-      cluster.waitForActiveCollection(COLL_NAME, 2, 4);
 
       DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(COLL_NAME);
       Map<String, Slice> slices = coll.getSlicesMap();

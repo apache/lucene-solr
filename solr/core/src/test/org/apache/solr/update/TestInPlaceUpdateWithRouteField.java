@@ -83,7 +83,6 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
       createCmd.setShards(Arrays.stream(shards).collect(Collectors.joining(",")));
     }
     createCmd.process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, shards.length, shards.length * replicas);
   }
 
   @Test
