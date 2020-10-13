@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -27,10 +28,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
 public class CloudSolrClientRetryTest extends SolrCloudTestCase {
   private static final int NODE_COUNT = 1;
 
@@ -64,9 +63,13 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
 
     TestInjection.failUpdateRequests = "true:100";
     try {
-      expectThrows(CloudSolrClient.RouteException.class,
+      expectThrows(BaseCloudSolrClient.RouteException.class,
           "Expected an exception on the client when failure is injected during updates", () -> {
-            solrClient.add(collectionName, new SolrInputDocument("id", "2"));
+            UpdateRequest req = new UpdateRequest();
+            req.add(new SolrInputDocument("id", "2"));
+            req.setCommitWithin(-1);
+            req.setParam("maxErrors", "0"); // nocommit: did the default change for single doc adds?
+            req.process(solrClient, collectionName);
           });
     } finally {
       TestInjection.reset();

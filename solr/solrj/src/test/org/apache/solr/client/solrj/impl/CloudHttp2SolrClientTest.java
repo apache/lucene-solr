@@ -624,7 +624,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ hangs, possibly related to creating collections with processAsync
   public void checkCollectionParameters() throws Exception {
 
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
@@ -785,7 +784,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - this was flakey, no failing consistently with wrong number of versions returned
   public void testVersionsAreReturned() throws Exception {
     CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1).process(cluster.getSolrClient());
     

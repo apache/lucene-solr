@@ -93,6 +93,14 @@ public class LBHttp2SolrClient extends LBSolrClient {
   }
 
   @Override
+  public void close() {
+    if (closeClient) {
+      httpClient.close();
+    }
+    super.close();
+  }
+
+  @Override
   protected SolrClient getClient(String baseUrl) {
     return httpClient;
   }

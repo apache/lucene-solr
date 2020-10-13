@@ -43,11 +43,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -338,11 +335,10 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  @Ignore // nocommit TODO extrac to test that resets in Before/After
   public void testReplaceFieldAccuracy() throws Exception {
     // Given
     Map<String, Object> fieldAttributes = new LinkedHashMap<>();
-    String fieldName = "accuracyField";
+    String fieldName = "accuracyFieldReplace";
     fieldAttributes.put("name", fieldName);
     fieldAttributes.put("type", "string");
     fieldAttributes.put("stored", false);
@@ -494,7 +490,6 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  @Ignore // nocommit TODO extrac to test that resets in Before/After
   public void testAddFieldTypeAccuracy() throws Exception {
     SchemaRequest.FieldTypes fieldTypesRequest = new SchemaRequest.FieldTypes();
     SchemaResponse.FieldTypesResponse initialFieldTypesResponse = fieldTypesRequest.process(getSolrClient(jetty));
@@ -503,7 +498,7 @@ public class SchemaTest extends RestTestBase {
 
     FieldTypeDefinition fieldTypeDefinition = new FieldTypeDefinition();
     Map<String, Object> fieldTypeAttributes = new LinkedHashMap<>();
-    String fieldTypeName = "accuracyTextField";
+    String fieldTypeName = "accuracyTextFieldAdd";
     fieldTypeAttributes.put("name", fieldTypeName);
     fieldTypeAttributes.put("class", "solr.TextField");
     fieldTypeAttributes.put("positionIncrementGap", "100");
@@ -535,7 +530,7 @@ public class SchemaTest extends RestTestBase {
     assertEquals(initialFieldTypes.size() + 1, currentFieldTypes.size());
 
     Map<String, Object> fieldAttributes = new LinkedHashMap<>();
-    String fieldName = "accuracyField";
+    String fieldName = "accuracyFieldAdd";
     fieldAttributes.put("name", fieldName);
     fieldAttributes.put("type", fieldTypeName);
     SchemaRequest.AddField addFieldRequest =
@@ -741,14 +736,13 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  @Ignore // nocommit TODO extrac to test that resets in Before/After
   public void testCopyFieldAccuracy() throws Exception {
     SchemaRequest.CopyFields copyFieldsSchemaRequest = new SchemaRequest.CopyFields();
     SchemaResponse.CopyFieldsResponse initialCopyFieldsResponse = copyFieldsSchemaRequest.process(getSolrClient(jetty));
     List<Map<String, Object>> initialCopyFieldsAttributes = initialCopyFieldsResponse.getCopyFields();
 
-    String srcFieldName = "copyfield";
-    String destFieldName1 = "destField1", destFieldName2 = "destField2";
+    String srcFieldName = "copyfieldZ";
+    String destFieldName1 = "destField1Z", destFieldName2 = "destField2Z";
     createStoredStringField(srcFieldName, getSolrClient(jetty));
     createStoredStringField(destFieldName1, getSolrClient(jetty));
     createStoredStringField(destFieldName2, getSolrClient(jetty));
@@ -765,14 +759,13 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  @Ignore // nocommit TODO extrac to test that resets in Before/After
   public void testCopyFieldWithMaxCharsAccuracy() throws Exception {
     SchemaRequest.CopyFields copyFieldsSchemaRequest = new SchemaRequest.CopyFields();
     SchemaResponse.CopyFieldsResponse initialCopyFieldsResponse = copyFieldsSchemaRequest.process(getSolrClient(jetty));
     List<Map<String, Object>> initialCopyFieldsAttributes = initialCopyFieldsResponse.getCopyFields();
 
-    String srcFieldName = "copyfield";
-    String destFieldName1 = "destField1", destFieldName2 = "destField2";
+    String srcFieldName = "copyfieldMaxChars";
+    String destFieldName1 = "destField1MaxChars", destFieldName2 = "destField2MaxChars";
     createStoredStringField(srcFieldName, getSolrClient(jetty));
     createStoredStringField(destFieldName1, getSolrClient(jetty));
     createStoredStringField(destFieldName2, getSolrClient(jetty));
@@ -844,13 +837,12 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  @Ignore // nocommit TODO extrac to test that resets in Before/After
   public void testMultipleUpdateRequestAccuracy() throws Exception {
-    String fieldTypeName = "accuracyTextField";
+    String fieldTypeName = "accuracyTextFieldMulti";
     SchemaRequest.AddFieldType addFieldTypeRequest = createFieldTypeRequest(fieldTypeName);
 
-    String field1Name = "accuracyField1";
-    String field2Name = "accuracyField2";
+    String field1Name = "accuracyField1Multi";
+    String field2Name = "accuracyField2Multi";
     Map<String, Object> fieldAttributes = new LinkedHashMap<>();
     fieldAttributes.put("name", field1Name);
     fieldAttributes.put("type", fieldTypeName);

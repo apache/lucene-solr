@@ -282,8 +282,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     clusterState = zkController.getClusterState();
 
-    assert TestInjection.injectFailUpdateRequests();
-
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }

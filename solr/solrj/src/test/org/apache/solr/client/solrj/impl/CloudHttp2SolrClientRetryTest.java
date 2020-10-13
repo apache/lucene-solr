@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -33,7 +34,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
+@Ignore // nocommit ~ still a bit flakey when run in the suite, usually passes in the IDE though
 public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
   private static final int NODE_COUNT = 1;
 
@@ -69,7 +70,11 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
       try {
         expectThrows(BaseCloudSolrClient.RouteException.class,
             "Expected an exception on the client when failure is injected during updates", () -> {
-              solrClient.add(collectionName, new SolrInputDocument("id", "2"));
+              UpdateRequest req = new UpdateRequest();
+              req.add(new SolrInputDocument("id", "2"));
+              req.setCommitWithin(-1);
+              req.setParam("maxErrors", "0"); // nocommit: did the default change for single doc adds?
+              req.process(solrClient, collectionName);
             });
       } finally {
         TestInjection.reset();
