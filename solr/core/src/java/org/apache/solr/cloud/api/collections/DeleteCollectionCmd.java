@@ -151,7 +151,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
         // wait for a while until we don't see the collection
         if (zkStateReader.getClusterState().getCollectionOrNull(collection) != null) {
-          zkStateReader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
+          zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
         }
       } catch (Exception e) {
         log.error("Exception while removing collection", e);
