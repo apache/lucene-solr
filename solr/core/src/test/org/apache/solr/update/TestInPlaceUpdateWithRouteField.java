@@ -87,7 +87,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
 
   @Test
   public void testUpdatingDocValuesWithRouteField() throws Exception {
-
+    // TODO: this can rare fail ???, lots off http2 input failures
      new UpdateRequest().add(createDocs(NUMBER_OF_DOCS)).commit(cluster.getSolrClient(), COLLECTION);
 
     int id = TestUtil.nextInt(random(), 1, NUMBER_OF_DOCS - 1);
