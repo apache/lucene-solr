@@ -129,7 +129,7 @@ include::securing-solr.adoc[tag=list-of-authentication-plugins]
 [#configuring-authorization]
 == Authorization
 
-An authorization plugin can be written for Solr by extending the {solr-javadocs}/solr-core/org/apache/solr/security/AuthorizationPlugin.html[AuthorizationPlugin] interface.
+An authorization plugin can be written for Solr by extending the {solr-javadocs}/core/org/apache/solr/security/AuthorizationPlugin.html[AuthorizationPlugin] interface.
 
 === Enabling an Authorization Plugin
 

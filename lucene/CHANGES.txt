@@ -12,6 +12,10 @@ System Requirements
 
 API Changes
 
+* LUCENE-9562: All binary analysis packages (and corresponding
+  Maven artifacts) with names containing '-analyzers-' have been renamed
+  to '-analysis-'. (Dawid Weiss)
+
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been
   removed. (Dawid Weiss)
 
@@ -309,6 +313,12 @@ Other
 Build
 
 * Upgrade forbiddenapis to version 3.1.  (Uwe Schindler)
+
+======================= Lucene 8.6.3 =======================
+
+Bug Fixes
+---------------------
+(No changes)
 
 ======================= Lucene 8.6.2 =======================
 
