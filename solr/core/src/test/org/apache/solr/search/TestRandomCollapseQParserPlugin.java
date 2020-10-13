@@ -16,9 +16,10 @@
  */
 package org.apache.solr.search;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.CursorPagingTest;
@@ -27,13 +28,13 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import static org.apache.solr.search.CollapsingQParserPlugin.NULL_IGNORE;
-import static org.apache.solr.search.CollapsingQParserPlugin.NULL_COLLAPSE;
-import static org.apache.solr.search.CollapsingQParserPlugin.NULL_EXPAND;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
@@ -43,7 +44,9 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   public static List<String> ALL_COLLAPSE_FIELD_NAMES;
 
   private static String[] NULL_POLICIES
-    = new String[] {NULL_IGNORE, NULL_COLLAPSE, NULL_EXPAND};
+    = new String[] {CollapsingQParserPlugin.NullPolicy.IGNORE.getName(),
+                    CollapsingQParserPlugin.NullPolicy.COLLAPSE.getName(),
+                    CollapsingQParserPlugin.NullPolicy.EXPAND.getName()};
   
   @BeforeClass
   public static void buildIndexAndClient() throws Exception {
@@ -143,7 +146,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
           "" : " size=" + TestUtil.nextInt(random(),1,10000);
 
         final String nullPolicy = randomNullPolicy();
-        final String nullPs = NULL_IGNORE.equals(nullPolicy)
+        final String nullPs =  nullPolicy.equals(CollapsingQParserPlugin.NullPolicy.IGNORE.getName())
           // ignore is default, randomly be explicit about it
           ? (random().nextBoolean() ? "" : " nullPolicy=ignore")
           : (" nullPolicy=" + nullPolicy);
@@ -162,14 +165,14 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
             final Object collapseVal = doc.getFieldValue(collapseField);
             
             if (null == collapseVal) {
-              if (NULL_EXPAND.equals(nullPolicy)) {
+              if (nullPolicy.equals(CollapsingQParserPlugin.NullPolicy.EXPAND.getName())) {
                 // nothing to check for this doc, it's in its own group
                 continue;
               }
               
               assertFalse(groupHeadId + " has null collapseVal but nullPolicy==ignore; " + 
                           "mainP: " + mainP + ", collapseP: " + collapseP,
-                          NULL_IGNORE.equals(nullPolicy));
+                          nullPolicy.equals(CollapsingQParserPlugin.NullPolicy.IGNORE.getName()));
             }
             
             // workaround for SOLR-8082...
@@ -203,6 +206,40 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
         }
       }
     }
+  }
+  
+  public void testParsedFilterQueryResponse() throws Exception {
+    String nullPolicy = randomNullPolicy();
+    String groupHeadSort = "'_version_ asc'";
+    String collapseSize = "5000";
+    String collapseHint = "top_fc";
+    String filterQuery = "{!collapse field=id sort=" + groupHeadSort + " nullPolicy=" + nullPolicy + " size=" +
+                                collapseSize + " hint=" + collapseHint + "}";
+    SolrParams solrParams = params("q", "*:*", "rows", "0", "debug", "true", "fq", filterQuery);
+
+    QueryResponse response = SOLR.query(solrParams);
+    // Query name is occurring twice, this should be handled in QueryParsing.toString
+    String expectedParsedFilterString = "CollapsingPostFilter(CollapsingPostFilter(field=id, " +
+        "nullPolicy=" + nullPolicy + ", GroupHeadSelector(selectorText=" + groupHeadSort.substring(1,
+        groupHeadSort.length() - 1) + ", type=SORT" +
+        "), hint=" + collapseHint + ", size=" + collapseSize + "))";
+    List<String> expectedParsedFilterQuery = Collections.singletonList(expectedParsedFilterString);
+    assertEquals(expectedParsedFilterQuery, response.getDebugMap().get("parsed_filter_queries"));
+    assertEquals(Collections.singletonList(filterQuery), response.getDebugMap().get("filter_queries"));
+  }
+
+  public void testNullPolicy() {
+    String nullPolicy = "xyz";
+    String groupHeadSort = "'_version_ asc'";
+    String filterQuery = "{!collapse field=id sort=" + groupHeadSort + " nullPolicy=" + nullPolicy + "}";
+    SolrParams solrParams = params("q", "*:*", "fq", filterQuery);
+
+    SolrException e = expectThrows(SolrException.class, () -> SOLR.query(solrParams));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("Invalid nullPolicy: " + nullPolicy));
+
+    // valid nullPolicy
+    assertQ(req("q", "*:*", "fq", "{!collapse field=id nullPolicy=" + randomNullPolicy() + "}"));
   }
 
   private String randomNullPolicy() {

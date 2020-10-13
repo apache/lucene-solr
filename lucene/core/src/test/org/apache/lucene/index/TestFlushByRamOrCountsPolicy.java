@@ -267,7 +267,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     long bytesUsed = 0;
     while (allActiveWriter.hasNext()) {
       DocumentsWriterPerThread next = allActiveWriter.next();
-      bytesUsed += next.bytesUsed();
+      bytesUsed += next.ramBytesUsed();
     }
     assertEquals(bytesUsed, flushControl.activeBytes());
   }

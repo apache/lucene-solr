@@ -69,7 +69,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -90,8 +90,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private final int numDocs;
   private final boolean merging;
   private final BlockState state;
-  private final long numChunks; // number of compressed blocks written
   private final long numDirtyChunks; // number of incomplete compressed blocks written
+  private final long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
   private boolean closed;
 
   // used by clone
@@ -106,8 +106,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.compressionMode = reader.compressionMode;
     this.decompressor = reader.decompressor.clone();
     this.numDocs = reader.numDocs;
-    this.numChunks = reader.numChunks;
     this.numDirtyChunks = reader.numDirtyChunks;
+    this.numDirtyDocs = reader.numDirtyDocs;
     this.merging = merging;
     this.state = new BlockState();
     this.closed = false;
@@ -187,15 +187,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       this.indexReader = indexReader;
 
       if (version >= VERSION_META) {
-        numChunks = metaIn.readVLong();
         numDirtyChunks = metaIn.readVLong();
+        numDirtyDocs = metaIn.readVLong();
       } else {
-        fieldsStream.seek(maxPointer);
-        numChunks = fieldsStream.readVLong();
-        numDirtyChunks = fieldsStream.readVLong();
-      }
-      if (numDirtyChunks > numChunks) {
-        throw new CorruptIndexException("invalid chunk counts: dirty=" + numDirtyChunks + ", total=" + numChunks, fieldsStream);
+        // Old versions of this format did not record numDirtyDocs. Since bulk
+        // merges are disabled on version increments anyway, we make no effort
+        // to get valid values of numDirtyChunks and numDirtyDocs.
+        numDirtyChunks = numDirtyDocs = -1;
       }
 
       if (metaIn != null) {
@@ -399,14 +397,23 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     // whether the block has been sliced, this happens for large documents
     private boolean sliced;
 
-    private int[] offsets = IntsRef.EMPTY_INTS;
-    private int[] numStoredFields = IntsRef.EMPTY_INTS;
+    private long[] offsets = LongsRef.EMPTY_LONGS;
+    private long[] numStoredFields = LongsRef.EMPTY_LONGS;
 
     // the start pointer at which you can read the compressed documents
     private long startPointer;
 
-    private final BytesRef spare = new BytesRef();
-    private final BytesRef bytes = new BytesRef();
+    private final BytesRef spare;
+    private final BytesRef bytes;
+
+    BlockState() {
+      if (merging) {
+        spare = new BytesRef();
+        bytes = new BytesRef();
+      } else {
+        spare = bytes = null;
+      }
+    }
 
     boolean contains(int docID) {
       return docID >= docBase && docID < docBase + chunkDocs;
@@ -460,9 +467,11 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         } else if (bitsPerStoredFields > 31) {
           throw new CorruptIndexException("bitsPerStoredFields=" + bitsPerStoredFields, fieldsStream);
         } else {
-          final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerStoredFields, 1);
-          for (int i = 0; i < chunkDocs; ++i) {
-            numStoredFields[i] = (int) it.next();
+          final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerStoredFields, 1024);
+          for (int i = 0; i < chunkDocs; ) {
+            final LongsRef next = it.next(Integer.MAX_VALUE);
+            System.arraycopy(next.longs, next.offset, numStoredFields, i, next.length);
+            i += next.length;
           }
         }
 
@@ -477,9 +486,11 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         } else if (bitsPerStoredFields > 31) {
           throw new CorruptIndexException("bitsPerLength=" + bitsPerLength, fieldsStream);
         } else {
-          final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerLength, 1);
-          for (int i = 0; i < chunkDocs; ++i) {
-            offsets[i + 1] = (int) it.next();
+          final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerLength, 1024);
+          for (int i = 0; i < chunkDocs; ) {
+            final LongsRef next = it.next(Integer.MAX_VALUE);
+            System.arraycopy(next.longs, next.offset, offsets, i + 1, next.length);
+            i += next.length;
           }
           for (int i = 0; i < chunkDocs; ++i) {
             offsets[i + 1] += offsets[i];
@@ -488,8 +499,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
         // Additional validation: only the empty document has a serialized length of 0
         for (int i = 0; i < chunkDocs; ++i) {
-          final int len = offsets[i + 1] - offsets[i];
-          final int storedFields = numStoredFields[i];
+          final long len = offsets[i + 1] - offsets[i];
+          final long storedFields = numStoredFields[i];
           if ((len == 0) != (storedFields == 0)) {
             throw new CorruptIndexException("length=" + len + ", numStoredFields=" + storedFields, fieldsStream);
           }
@@ -500,7 +511,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       startPointer = fieldsStream.getFilePointer();
 
       if (merging) {
-        final int totalLength = offsets[chunkDocs];
+        final int totalLength = Math.toIntExact(offsets[chunkDocs]);
         // decompress eagerly
         if (sliced) {
           bytes.offset = bytes.length = 0;
@@ -531,10 +542,17 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       }
 
       final int index = docID - docBase;
-      final int offset = offsets[index];
-      final int length = offsets[index+1] - offset;
-      final int totalLength = offsets[chunkDocs];
-      final int numStoredFields = this.numStoredFields[index];
+      final int offset = Math.toIntExact(offsets[index]);
+      final int length = Math.toIntExact(offsets[index+1]) - offset;
+      final int totalLength = Math.toIntExact(offsets[chunkDocs]);
+      final int numStoredFields = Math.toIntExact(this.numStoredFields[index]);
+
+      final BytesRef bytes;
+      if (merging) {
+        bytes = this.bytes;
+      } else {
+        bytes = new BytesRef();
+      }
 
       final DataInput documentInput;
       if (length == 0) {
@@ -670,12 +688,24 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     return chunkSize;
   }
   
-  long getNumChunks() {
-    return numChunks;
+  long getNumDirtyDocs() {
+    if (version != VERSION_CURRENT) {
+      throw new IllegalStateException("getNumDirtyDocs should only ever get called when the reader is on the current version");
+    }
+    assert numDirtyDocs >= 0;
+    return numDirtyDocs;
   }
   
   long getNumDirtyChunks() {
+    if (version != VERSION_CURRENT) {
+      throw new IllegalStateException("getNumDirtyChunks should only ever get called when the reader is on the current version");
+    }
+    assert numDirtyChunks >= 0;
     return numDirtyChunks;
+  }
+
+  int getNumDocs() {
+    return numDocs;
   }
 
   int getPackedIntsVersion() {

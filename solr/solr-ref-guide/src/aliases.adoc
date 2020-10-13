@@ -390,8 +390,6 @@ Some _potential_ areas for improvement that _are not implemented yet_ are:
 * Collections might be constrained by their size instead of or in addition to time or category value.
   This might be implemented as another type of routed alias, or possibly as an option on the existing routed aliases
 
-* Compatibility with CDCR.
-
 * Option for deletion of aliases that also deletes the underlying collections in one step. Routed Aliases may quickly
   create more collections than expected during initial testing. Removing them after such events is overly tedious.
 

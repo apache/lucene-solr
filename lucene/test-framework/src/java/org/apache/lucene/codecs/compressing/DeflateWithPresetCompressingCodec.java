@@ -16,16 +16,16 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat.DeflateWithPresetDict;
+import org.apache.lucene.codecs.lucene87.DeflateWithPresetDictCompressionMode;
 
-/** CompressionCodec that uses {@link DeflateWithPresetDict}. */
+/** CompressionCodec that uses {@link DeflateWithPresetDictCompressionMode}. */
 public class DeflateWithPresetCompressingCodec extends CompressingCodec {
 
   /** Constructor that allows to configure the chunk size. */
   public DeflateWithPresetCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
     super("DeflateWithPresetCompressingStoredFieldsData", 
           withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
-          new DeflateWithPresetDict(chunkSize/10, chunkSize/3+1), chunkSize, maxDocsPerChunk, blockSize);
+          new DeflateWithPresetDictCompressionMode(), chunkSize, maxDocsPerChunk, blockSize);
   }
 
   /** No-arg constructor. */

@@ -117,6 +117,9 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    */
   private final ArrayDeque<ByteBuffer> blocks = new ArrayDeque<>();
 
+  /** Cumulative RAM usage across all blocks. */
+  private long ramBytesUsed;
+
   /**
    * The current-or-next write block.
    */
@@ -400,8 +403,8 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   public long ramBytesUsed() {
     // Return a rough estimation for allocated blocks. Note that we do not make
     // any special distinction for direct memory buffers.
-    return RamUsageEstimator.NUM_BYTES_OBJECT_REF * blocks.size() + 
-           blocks.stream().mapToLong(buf -> buf.capacity()).sum();
+    assert ramBytesUsed == blocks.stream().mapToLong(ByteBuffer::capacity).sum() + blocks.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    return ramBytesUsed;
   }
 
   /**
@@ -417,6 +420,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
       blocks.forEach(blockReuse);
     }
     blocks.clear();
+    ramBytesUsed = 0;
     currentBlock = EMPTY;
   }
 
@@ -450,6 +454,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     currentBlock = blockAllocate.apply(requiredBlockSize);
     assert currentBlock.capacity() == requiredBlockSize;
     blocks.add(currentBlock);
+    ramBytesUsed += RamUsageEstimator.NUM_BYTES_OBJECT_REF + currentBlock.capacity();
   }
 
   private void rewriteToBlockSize(int targetBlockBits) {
@@ -471,6 +476,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     assert blocks.isEmpty();
     this.blockBits = targetBlockBits;
     blocks.addAll(cloned.blocks);
+    ramBytesUsed = cloned.ramBytesUsed;
   }
 
   private static int computeBlockSizeBitsFor(long bytes) {

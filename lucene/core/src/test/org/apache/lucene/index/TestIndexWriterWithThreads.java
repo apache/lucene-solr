@@ -453,7 +453,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail) {
-        if (callStackContains(DefaultIndexingChain.class, "flush")) {
+        if (callStackContains(IndexingChain.class, "flush")) {
           if (onlyOnce)
             doFail = false;
           //System.out.println(Thread.currentThread().getName() + ": NOW FAIL: onlyOnce=" + onlyOnce);

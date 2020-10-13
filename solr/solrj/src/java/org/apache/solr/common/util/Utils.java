@@ -52,7 +52,6 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -94,19 +93,9 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+
 public class Utils {
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_LINKED_HASHMAP_FUN = o -> new LinkedHashMap<>();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_ATOMICLONG_FUN = o -> new AtomicLong();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_ARRAYLIST_FUN = o -> new ArrayList<>();
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_SYNCHRONIZED_ARRAYLIST_FUN = o -> Collections.synchronizedList(new ArrayList<>());
-  @SuppressWarnings({"rawtypes"})
-  public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @SuppressWarnings({"rawtypes"})
@@ -236,11 +225,51 @@ public class Utils {
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes"})
     public void handleUnknownClass(Object o) {
+      // avoid materializing MapWriter / IteratorWriter to Map / List
+      // instead serialize them directly
       if (o instanceof MapWriter) {
-        Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
-        write(m);
+        MapWriter mapWriter = (MapWriter) o;
+        startObject();
+        final boolean[] first = new boolean[1];
+        first[0] = true;
+        int sz = mapWriter._size();
+        mapWriter._forEachEntry((k, v) -> {
+          if (first[0]) {
+            first[0] = false;
+          } else {
+            writeValueSeparator();
+          }
+          if (sz > 1) indent();
+          writeString(k.toString());
+          writeNameSeparator();
+          write(v);
+        });
+        endObject();
+      } else if (o instanceof IteratorWriter) {
+        IteratorWriter iteratorWriter = (IteratorWriter) o;
+        startArray();
+        final boolean[] first = new boolean[1];
+        first[0] = true;
+        try {
+          iteratorWriter.writeIter(new IteratorWriter.ItemWriter() {
+            @Override
+            public IteratorWriter.ItemWriter add(Object o) throws IOException {
+              if (first[0]) {
+                first[0] = false;
+              } else {
+                writeValueSeparator();
+              }
+              indent();
+              write(o);
+              return this;
+            }
+          });
+        } catch (IOException e) {
+          throw new RuntimeException("this should never happen", e);
+        }
+        endArray();
       } else {
         super.handleUnknownClass(o);
       }
@@ -250,13 +279,13 @@ public class Utils {
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-    if (!(o instanceof List) && !(o instanceof Map)) {
-      if (o instanceof MapWriter) {
-        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-      } else if (o instanceof IteratorWriter) {
-        o = ((IteratorWriter) o).toList(new ArrayList<>());
-      }
-    }
+//    if (!(o instanceof List) && !(o instanceof Map)) {
+//      if (o instanceof MapWriter) {
+//        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+//      } else if (o instanceof IteratorWriter) {
+//        o = ((IteratorWriter) o).toList(new ArrayList<>());
+//      }
+//    }
     new MapWriterJSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }
@@ -404,7 +433,6 @@ public class Utils {
     return getObjectByPath(root, onlyPrimitive, parts);
   }
 
-  @SuppressWarnings({"unchecked"})
   public static boolean setObjectByPath(Object root, String hierarchy, Object value) {
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return setObjectByPath(root, parts, value);
@@ -693,7 +721,7 @@ public class Utils {
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"unchecked"})
   public static boolean mergeJson(Map<String, Object> sink, Map<String, Object> input) {
     boolean isModified = false;
     for (Map.Entry<String, Object> e : input.entrySet()) {
@@ -812,7 +840,7 @@ public class Utils {
     int statusCode = rsp.getStatusLine().getStatusCode();
     if (statusCode != 200) {
       try {
-        log.error("Failed a request to: {}, status: {}, body: {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // logOk
+        log.error("Failed a request to: {}, status: {}, body: {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // nowarn
       } catch (IOException e) {
         log.error("could not print error", e);
       }
@@ -883,7 +911,7 @@ public class Utils {
               l.add((ew, inst) -> ew.put(fname, (float) mh.invoke(inst)));
             } else {
               MethodHandle mh = lookup.findGetter(c, field.getName(), field.getType());
-              l.add((ew, inst) -> ew.put(fname, mh.invoke(inst)));
+              l.add((ew, inst) -> ew.putIfNotNull(fname, mh.invoke(inst)));
             }
           } catch (NoSuchFieldException e) {
             //this is unlikely

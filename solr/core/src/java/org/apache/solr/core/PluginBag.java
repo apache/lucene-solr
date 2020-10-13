@@ -24,13 +24,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -342,7 +343,7 @@ public class PluginBag<T> implements AutoCloseable {
    * subclasses may choose to lazily load the plugin
    */
   public static class PluginHolder<T> implements Supplier<T>,  AutoCloseable {
-    protected T inst;
+    protected volatile T inst;
     protected final PluginInfo pluginInfo;
     boolean registerAPI = false;
 
@@ -357,6 +358,10 @@ public class PluginBag<T> implements AutoCloseable {
     public PluginHolder(PluginInfo info, T inst) {
       this.inst = inst;
       this.pluginInfo = info;
+    }
+
+    public Optional<T> getInstance() {
+      return Optional.ofNullable(inst);
     }
 
     public T get() {

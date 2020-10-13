@@ -25,3 +25,4 @@ dependencies {
   testImplementation project(':lucene:test-framework')
   testImplementation project(':lucene:expressions')
 }
+

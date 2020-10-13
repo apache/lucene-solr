@@ -40,7 +40,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.bkd.BKDWriter;
+import org.apache.lucene.util.bkd.BKDConfig;
 
 public class TestLucene86PointsFormat extends BasePointsFormatTestCase {
 
@@ -78,7 +78,7 @@ public class TestLucene86PointsFormat extends BasePointsFormatTestCase {
     } else {
       // standard issue
       codec = defaultCodec;
-      maxPointsInLeafNode = BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE;
+      maxPointsInLeafNode = BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE;
     }
   }
 

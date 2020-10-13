@@ -31,7 +31,7 @@ For example, here is one of the `<initParams>` sections defined by default in th
 
 [source,xml]
 ----
-<initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
+<initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell">
   <lst name="defaults">
     <str name="df">_text_</str>
   </lst>
