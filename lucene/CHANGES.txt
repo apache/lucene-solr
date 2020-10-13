@@ -12,8 +12,9 @@ System Requirements
 
 API Changes
 
-* LUCENE-9317: Clean up package name conflicts between core and analyzers-common.
-  See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
+* LUCENE-9562: All binary analysis packages (and corresponding
+  Maven artifacts) with names containing '-analyzers-' have been renamed
+  to '-analysis-'. (Dawid Weiss)
 
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been
   removed. (Dawid Weiss)
@@ -67,6 +68,9 @@ API Changes
 * LUCENE-9516: Removed the ability to replace the IndexingChain / DocConsumer
   in Lucenes IndexWriter. The interface is not sufficient to efficiently
   replace the functionality with reasonable efforts. (Simon Willnauer)
+
+* LUCENE-9317 LUCENE-9558: Clean up package name conflicts between modules.
+  See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
 
 Improvements
 
@@ -250,6 +254,9 @@ Improvements
 * LUCENE-9539: Use more compact datastructures to represent sorted doc-values in memory when 
   sorting a segment before flush and in SortingCodecReader. (Simon Willnauer)
 
+* LUCENE-9458: WordDelimiterGraphFilter should order tokens at the same position by endOffset to
+  emit longer tokens first.  The same graph is produced. (David Smiley)
+
 Optimizations
 ---------------------
 
@@ -306,6 +313,12 @@ Other
 Build
 
 * Upgrade forbiddenapis to version 3.1.  (Uwe Schindler)
+
+======================= Lucene 8.6.3 =======================
+
+Bug Fixes
+---------------------
+(No changes)
 
 ======================= Lucene 8.6.2 =======================
 

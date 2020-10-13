@@ -18,14 +18,15 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -399,7 +400,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private final HashSet<SegmentCommitInfo> mergingSegments = new HashSet<>();
   private final MergeScheduler mergeScheduler;
   private final Set<SegmentMerger> runningAddIndexesMerges = new HashSet<>();
-  private final LinkedList<MergePolicy.OneMerge> pendingMerges = new LinkedList<>();
+  private final Deque<MergePolicy.OneMerge> pendingMerges = new ArrayDeque<>();
   private final Set<MergePolicy.OneMerge> runningMerges = new HashSet<>();
   private final List<MergePolicy.OneMerge> mergeExceptions = new ArrayList<>();
   private long mergeGen;
@@ -5461,6 +5462,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   private void tooManyDocs(long addedNumDocs) {
     assert addedNumDocs >= 0;
     throw new IllegalArgumentException("number of documents in the index cannot exceed " + actualMaxDocs + " (current document count is " + pendingNumDocs.get() + "; added numDocs is " + addedNumDocs + ")");
+  }
+
+  /**
+   * Returns the number of documents in the index including documents are being added (i.e., reserved).
+   * @lucene.experimental
+   */
+  public long getPendingNumDocs() {
+    return pendingNumDocs.get();
   }
 
   /** Returns the highest <a href="#sequence_number">sequence number</a> across

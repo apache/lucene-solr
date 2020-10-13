@@ -146,16 +146,6 @@ configure([
   }
 }
 
-configure(project(":lucene:analysis:icu")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.lucene.collation",
-        "org.apache.lucene.collation.tokenattributes"
-    ]
-  }
-}
-
 configure(project(":lucene:backward-codecs")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing @param tags

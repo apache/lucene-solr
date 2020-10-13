@@ -44,7 +44,7 @@ public class NewCollationAnalyzerTask extends PerfTask {
   public enum Implementation { 
     JDK("org.apache.lucene.collation.CollationKeyAnalyzer", 
         "java.text.Collator"),
-    ICU("org.apache.lucene.collation.ICUCollationKeyAnalyzer", 
+    ICU("org.apache.lucene.analysis.icu.ICUCollationKeyAnalyzer",
         "com.ibm.icu.text.Collator");
     
     String className;

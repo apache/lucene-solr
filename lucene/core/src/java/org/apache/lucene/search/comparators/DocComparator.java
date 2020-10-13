@@ -133,14 +133,16 @@ public class DocComparator extends FieldComparator<Integer> {
                 return null;
             } else {
                 return new DocIdSetIterator() {
+                    private int docID = -1;
+
                     @Override
                     public int nextDoc() throws IOException {
-                        return competitiveIterator.nextDoc();
+                        return advance(docID + 1);
                     }
 
                     @Override
                     public int docID() {
-                        return competitiveIterator.docID();
+                        return docID;
                     }
 
                     @Override
@@ -150,7 +152,7 @@ public class DocComparator extends FieldComparator<Integer> {
 
                     @Override
                     public int advance(int target) throws IOException {
-                        return competitiveIterator.advance(target);
+                        return docID = competitiveIterator.advance(target);
                     }
                 };
             }

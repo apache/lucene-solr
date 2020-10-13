@@ -9,7 +9,7 @@
 # Gems that are included for building the site. jekyll-asciidoc allows Jekyll to use Asciidoctor for variables and settings
 plugins: [jekyll-asciidoc]
 
-destination: ../html-site
+destination: '${htmlOutDir}'
 
 # this property is useful for conditional filtering of content that is separate from another format (if any).
 output: web

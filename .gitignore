@@ -37,3 +37,6 @@ build/
 
 # Ignore the generated local settings file.
 gradle.properties
+
+# IntelliJ creates this folder, ignore.
+dev-tools/missing-doclet/out/

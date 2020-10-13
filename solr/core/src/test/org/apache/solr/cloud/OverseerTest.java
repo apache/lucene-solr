@@ -1171,14 +1171,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
     Snapshot snapshot = timer.getSnapshot();
     if (log.isInfoEnabled()) {
       log.info("\t avgRequestsPerSecond: {}", timer.getMeanRate());
-      log.info("\t 5minRateRequestsPerSecond: {}", timer.getFiveMinuteRate()); // logOk
-      log.info("\t 15minRateRequestsPerSecond: {}", timer.getFifteenMinuteRate()); // logOk
-      log.info("\t avgTimePerRequest: {}", nsToMs(snapshot.getMean())); // logOk
-      log.info("\t medianRequestTime: {}", nsToMs(snapshot.getMedian())); // logOk
-      log.info("\t 75thPcRequestTime: {}", nsToMs(snapshot.get75thPercentile())); // logOk
-      log.info("\t 95thPcRequestTime: {}", nsToMs(snapshot.get95thPercentile())); // logOk
-      log.info("\t 99thPcRequestTime: {}", nsToMs(snapshot.get99thPercentile())); // logOk
-      log.info("\t 999thPcRequestTime: {}", nsToMs(snapshot.get999thPercentile())); // logOk
+      log.info("\t 5minRateRequestsPerSecond: {}", timer.getFiveMinuteRate()); // nowarn
+      log.info("\t 15minRateRequestsPerSecond: {}", timer.getFifteenMinuteRate()); // nowarn
+      log.info("\t avgTimePerRequest: {}", nsToMs(snapshot.getMean())); // nowarn
+      log.info("\t medianRequestTime: {}", nsToMs(snapshot.getMedian())); // nowarn
+      log.info("\t 75thPcRequestTime: {}", nsToMs(snapshot.get75thPercentile())); // nowarn
+      log.info("\t 95thPcRequestTime: {}", nsToMs(snapshot.get95thPercentile())); // nowarn
+      log.info("\t 99thPcRequestTime: {}", nsToMs(snapshot.get99thPercentile())); // nowarn
+      log.info("\t 999thPcRequestTime: {}", nsToMs(snapshot.get999thPercentile())); // nowarn
     }
   }
 
