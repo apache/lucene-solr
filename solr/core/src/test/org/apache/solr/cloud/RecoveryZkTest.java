@@ -47,6 +47,17 @@ public class RecoveryZkTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     useFactory(null);
     System.setProperty("solr.skipCommitOnClose", "false");
+
+    System.setProperty("solr.http2solrclient.default.idletimeout", "4000");
+    System.setProperty("distribUpdateSoTimeout", "4000");
+    System.setProperty("socketTimeout", "4000");
+    System.setProperty("connTimeout", "4000");
+    System.setProperty("solr.test.socketTimeout.default", "4000");
+    System.setProperty("solr.connect_timeout.default", "4000");
+    System.setProperty("solr.so_commit_timeout.default", "4000");
+    System.setProperty("solr.httpclient.defaultConnectTimeout", "4000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "4000");
+
     configureCluster(2).formatZk(true)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
