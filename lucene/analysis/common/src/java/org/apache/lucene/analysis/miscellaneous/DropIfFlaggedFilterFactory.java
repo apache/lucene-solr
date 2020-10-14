@@ -41,7 +41,7 @@ import org.apache.lucene.analysis.TokenStream;
  * @since 8.8.0
  * @lucene.spi {@value #NAME}
  */
-public class DropIfFlaggedFilterFactory  extends TokenFilterFactory {
+public final class DropIfFlaggedFilterFactory  extends TokenFilterFactory {
   /**
    * SPI name
    */

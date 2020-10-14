@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
  * @see DropIfFlaggedFilterFactory
  * @since 8.8.0
  */
-public class DropIfFlaggedFilter extends FilteringTokenFilter {
+public final class DropIfFlaggedFilter extends FilteringTokenFilter {
   private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
   private final int dropFlags;
 
@@ -38,8 +38,7 @@ public class DropIfFlaggedFilter extends FilteringTokenFilter {
    * @param input the source stream
    * @param dropFlags a combination of flags that indicates that the token should be dropped.
    */
-  @SuppressWarnings("WeakerAccess")
-  protected DropIfFlaggedFilter(TokenStream input, int dropFlags) {
+  public DropIfFlaggedFilter(TokenStream input, int dropFlags) {
     super(input);
     this.dropFlags = dropFlags;
   }
