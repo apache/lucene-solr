@@ -336,6 +336,7 @@ public class JettySolrRunner implements Closeable {
     if (sslcontext != null) {
       configuration.setSecureScheme("https");
       configuration.addCustomizer(new SecureRequestCustomizer());
+      configuration.setIdleTimeout(TimeUnit.MINUTES.toMillis(10));
       HttpConnectionFactory http1ConnectionFactory = new HttpConnectionFactory(configuration);
 
       if (config.onlyHttp1 || !Constants.JRE_IS_MINIMUM_JAVA9) {
@@ -350,8 +351,8 @@ public class JettySolrRunner implements Closeable {
 
         HTTP2ServerConnectionFactory http2ConnectionFactory = new HTTP2ServerConnectionFactory(configuration);
 
-        http2ConnectionFactory.setMaxConcurrentStreams(512);
-        http2ConnectionFactory.setInputBufferSize(16384);
+        http2ConnectionFactory.setMaxConcurrentStreams(1024);
+        http2ConnectionFactory.setInputBufferSize(8192);
         http2ConnectionFactory.setStreamIdleTimeout(TimeUnit.MINUTES.toMillis(10));
 
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(http2ConnectionFactory.getProtocol(), http1ConnectionFactory.getProtocol());
