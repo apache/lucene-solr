@@ -55,8 +55,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.common.cloud.DocCollection.RULE;
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
@@ -83,8 +81,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * The set of modifiable collection properties
    */
   public static final java.util.List<String> MODIFIABLE_COLLECTION_PROPERTIES = Arrays.asList(
-      RULE,
-      SNITCH,
       REPLICATION_FACTOR,
       COLL_CONF,
       WITH_COLLECTION,
@@ -568,8 +564,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (tlogReplicas != null) {
         params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
       }
-      if (rule != null) params.set(DocCollection.RULE, rule);
-      if (snitch != null) params.set(DocCollection.SNITCH, snitch);
       params.setNonNull(ALIAS, alias);
       return params;
     }
