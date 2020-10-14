@@ -73,7 +73,7 @@ public class TestConcatenatingTokenStream extends BaseTokenStreamTestCase {
         new int[]{      1,   3,   11,  13 },
         null,
         new int[]{      1,   1,   3,   1 },
-        null, 20, 2, null, false, null, null
+        null, 20, 2, null, false, null
         );
   }
 
