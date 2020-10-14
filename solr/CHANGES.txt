@@ -219,6 +219,8 @@ Optimizations
 Bug Fixes
 ---------------------
 
+* SOLR-14869: ChildDocTransformer should have omitted deleted child documents. (Bar Rotstein, David Smiley)
+
 * SOLR-11656: TLOG replication doesn't work properly after rebalancing leaders. (Yuki Yano via
   Erick Erickson)
 
