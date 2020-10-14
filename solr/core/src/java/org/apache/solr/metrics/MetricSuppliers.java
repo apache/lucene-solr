@@ -191,17 +191,21 @@ public class MetricSuppliers {
       return new SlidingWindowReservoir(size);
     } else { // custom reservoir
       Reservoir reservoir;
-      try {
-        reservoir = loader.newInstance(clazz, Reservoir.class);
-        if (reservoir instanceof PluginInfoInitialized) {
-          ((PluginInfoInitialized)reservoir).init(info);
-        } else {
-          SolrPluginUtils.invokeSetters(reservoir, info.initArgs, true);
-        }
-        return reservoir;
-      } catch (Exception e) {
-        log.warn("Error initializing custom Reservoir implementation (will use default): {}", info, e);
+      if (loader == null) {
         return new ExponentiallyDecayingReservoir(size, alpha, clk);
+      } else {
+        try {
+          reservoir = loader.newInstance(clazz, Reservoir.class);
+          if (reservoir instanceof PluginInfoInitialized) {
+            ((PluginInfoInitialized)reservoir).init(info);
+          } else {
+            SolrPluginUtils.invokeSetters(reservoir, info.initArgs, true);
+          }
+          return reservoir;
+        } catch (Exception e) {
+          log.warn("Error initializing custom Reservoir implementation (will use default): {}", info, e);
+          return new ExponentiallyDecayingReservoir(size, alpha, clk);
+        }
       }
     }
   }
@@ -280,11 +284,15 @@ public class MetricSuppliers {
       return NoOpCounterSupplier.INSTANCE;
     }
     MetricRegistry.MetricSupplier<Counter> supplier;
-    try {
-      supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
-    } catch (Exception e) {
-      log.warn("Error creating custom Counter supplier (will use default): {}", info, e);
+    if (loader == null) {
       supplier = new DefaultCounterSupplier();
+    } else {
+      try {
+        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+      } catch (Exception e) {
+        log.warn("Error creating custom Counter supplier (will use default): {}", info, e);
+        supplier = new DefaultCounterSupplier();
+      }
     }
     if (supplier instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized)supplier).init(info);
@@ -309,11 +317,15 @@ public class MetricSuppliers {
       if (MetricsConfig.NOOP_IMPL_CLASS.equals(info.className)) {
         return NoOpMeterSupplier.INSTANCE;
       }
-      try {
-        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
-      } catch (Exception e) {
-        log.warn("Error creating custom Meter supplier (will use default): {}",info, e);
+      if (loader == null) {
         supplier = new DefaultMeterSupplier();
+      } else {
+        try {
+          supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+        } catch (Exception e) {
+          log.warn("Error creating custom Meter supplier (will use default): {}",info, e);
+          supplier = new DefaultMeterSupplier();
+        }
       }
     }
     if (supplier instanceof PluginInfoInitialized) {
@@ -339,11 +351,15 @@ public class MetricSuppliers {
       if (MetricsConfig.NOOP_IMPL_CLASS.equals(info.className)) {
         return NoOpTimerSupplier.INSTANCE;
       }
-      try {
-        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
-      } catch (Exception e) {
-        log.warn("Error creating custom Timer supplier (will use default): {}", info, e);
-        supplier = new DefaultTimerSupplier(loader);
+      if (loader == null) {
+        supplier = new DefaultTimerSupplier(null);
+      } else {
+        try {
+          supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+        } catch (Exception e) {
+          log.warn("Error creating custom Timer supplier (will use default): {}", info, e);
+          supplier = new DefaultTimerSupplier(loader);
+        }
       }
     }
     if (supplier instanceof PluginInfoInitialized) {
@@ -368,11 +384,15 @@ public class MetricSuppliers {
       if (MetricsConfig.NOOP_IMPL_CLASS.equals(info.className)) {
         return NoOpHistogramSupplier.INSTANCE;
       }
-      try {
-        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
-      } catch (Exception e) {
-        log.warn("Error creating custom Histogram supplier (will use default): {}", info, e);
-        supplier = new DefaultHistogramSupplier(loader);
+      if (loader == null) {
+        supplier = new DefaultHistogramSupplier(null);
+      } else {
+        try {
+          supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+        } catch (Exception e) {
+          log.warn("Error creating custom Histogram supplier (will use default): {}", info, e);
+          supplier = new DefaultHistogramSupplier(loader);
+        }
       }
     }
     if (supplier instanceof PluginInfoInitialized) {
