@@ -247,6 +247,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
   // check that .system exists
   public void checkSystemCollection() {
+    if (!enable) {
+      return;
+    }
     if (cloudManager != null) {
       try {
         if (cloudManager.isClosed() || Thread.interrupted()) {
@@ -308,7 +311,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   public void removeHistory(String registry) throws IOException {
     registry = SolrMetricManager.enforcePrefix(registry);
     knownDbs.remove(registry);
-    factory.remove(registry);
+    if (factory != null) {
+      factory.remove(registry);
+    }
   }
 
   @VisibleForTesting
@@ -702,7 +707,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     if (!enable) {
-      rsp.add("error", "metrics collection is disabled");
+      rsp.add("error", "metrics history collection is disabled");
       return;
     }
     String actionStr = req.getParams().get(CommonParams.ACTION);

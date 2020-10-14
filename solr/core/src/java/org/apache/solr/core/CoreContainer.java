@@ -905,7 +905,8 @@ public class CoreContainer {
   private void createMetricsHistoryHandler() {
     PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
     if (plugin != null && MetricsConfig.NOOP_IMPL_CLASS.equals(plugin.className)) {
-      return;
+      // still create the handler but it will be disabled
+      plugin = null;
     }
     Map<String, Object> initArgs;
     if (plugin != null && plugin.initArgs != null) {
