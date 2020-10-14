@@ -83,8 +83,7 @@ public final class TypeAsSynonymFilter extends TokenFilter {
       termAtt.append(typeAtt.type());
       posIncrAtt.setPositionIncrement(0);
       // control what flags transfer to synonym
-      int flags = getAttribute(FlagsAttribute.class).getFlags();
-      flagsAtt.setFlags(flags & synFlagsMask);
+      flagsAtt.setFlags(flagsAtt.getFlags() & synFlagsMask);
       return true;
     } else if (input.incrementToken()) { // No pending token type to emit
       String type = typeAtt.type();
