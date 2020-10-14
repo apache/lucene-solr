@@ -49,8 +49,7 @@ public class TestDropIfFlaggedFilter extends BaseTokenStreamTestCase {
   }
 
   /**
-   * Test the difficult case where the first token is dropped. See comments in {@link DropIfFlaggedFilter} for details
-   * of why this case is problematic.
+   * Test where the first and last token are dropped.
    */
   public void testDroppedFirst() throws Exception {
 
@@ -71,27 +70,4 @@ public class TestDropIfFlaggedFilter extends BaseTokenStreamTestCase {
          "bar", "baz"}, new int[]{ 4, 8}, new int[]{6, 10}, new int[]{2, 1});
   }
 
-  /**
-   * In this case lucene won't complain about the offset value (unless there was some other problem
-   * that set the value to less than the prior token), so no worries
-   */
-  public void testFirstNotPos0() throws Exception {
-
-    Token token = new Token("foo", 1, 3);
-    Token token2 = new Token("bar", 5, 7);
-    Token token3 = new Token("baz", 9, 11);
-    Token token4 = new Token("bam", 13, 15);
-
-    token.setFlags(4); // 100 flag matches (drop)
-    token2.setFlags(1);// 001 no flags match
-    token3.setFlags(2);// 010 no flags match
-    token4.setFlags(7);// 111 flag matches (drop)
-
-
-    TokenStream ts = new CannedTokenStream(token, token2, token3, token4);
-    ts = new DropIfFlaggedFilter(ts, 4) ;
-
-    assertTokenStreamContents(ts, new String[]{ "bar", "baz"},
-        new int[]{ 5, 9}, new int[]{7, 11}, new int[]{2, 1});
-  }
 }
