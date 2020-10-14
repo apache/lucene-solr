@@ -72,6 +72,13 @@ public class TestGermanLightStemFilter extends BaseTokenStreamTestCase {
     checkOneTerm(a, "sängerinnen", "sängerinnen");
     a.close();
   }
+
+  public void testExamples() throws IOException {
+    //LUCENE-9410
+    checkOneTerm(analyzer, "schlummert", "schlummern");
+    checkOneTerm(analyzer, "grüßend", "grüßen");
+    checkOneTerm(analyzer, "gegrüßt", "grüßen");
+  }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {

@@ -64,6 +64,10 @@ public class TestGermanMinimalStemFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "boote", "boot");
     checkOneTerm(analyzer, "götter", "gott");
     checkOneTerm(analyzer, "äpfel", "apfel");
+    //LUCENE-9410
+    checkOneTerm(analyzer, "schlummert", "schlummern");
+    checkOneTerm(analyzer, "grüßend", "grüßen");
+    checkOneTerm(analyzer, "gegrüßt", "grüßen");
   }
   
   public void testKeyword() throws IOException {

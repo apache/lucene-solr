@@ -58,6 +58,9 @@ public class TestFrenchMinimalStemFilter extends BaseTokenStreamTestCase {
   public void testExamples() throws IOException {
     checkOneTerm(analyzer, "chevaux", "cheval");
     checkOneTerm(analyzer, "hiboux", "hibou");
+
+    //LUCENE-9410
+    checkOneTerm(analyzer, "maux", "mal");
     
     checkOneTerm(analyzer, "chantés", "chant");
     checkOneTerm(analyzer, "chanter", "chant");
@@ -66,6 +69,7 @@ public class TestFrenchMinimalStemFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "baronnes", "baron");
     checkOneTerm(analyzer, "barons", "baron");
     checkOneTerm(analyzer, "baron", "baron");
+
   }
   
   public void testKeyword() throws IOException {
