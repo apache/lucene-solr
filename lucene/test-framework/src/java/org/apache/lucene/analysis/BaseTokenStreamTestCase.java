@@ -196,7 +196,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (posLengthAtt != null) posLengthAtt.setPositionLength(45987653);
       if (keywordAtt != null) keywordAtt.setKeyword((i&1) == 0);
       if (payloadAtt != null) payloadAtt.setPayload(new BytesRef(new byte[] { 0x00, -0x21, 0x12, -0x43, 0x24 }));
-      if (flagsAtt != null) flagsAtt.setFlags(Integer.MAX_VALUE); // all 1's
+      if (flagsAtt != null) flagsAtt.setFlags(~0); // all 1's
 
       checkClearAtt.getAndResetClearCalled(); // reset it, because we called clearAttribute() before
       assertTrue("token "+i+" does not exist", ts.incrementToken());
@@ -304,7 +304,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     if (posLengthAtt != null) posLengthAtt.setPositionLength(45987653);
     if (keywordAtt != null) keywordAtt.setKeyword(true);
     if (payloadAtt != null) payloadAtt.setPayload(new BytesRef(new byte[] { 0x00, -0x21, 0x12, -0x43, 0x24 }));
-    if (flagsAtt != null) flagsAtt.setFlags(Integer.MAX_VALUE); // all 1's
+    if (flagsAtt != null) flagsAtt.setFlags(~0); // all 1's
 
     checkClearAtt.getAndResetClearCalled(); // reset it, because we called clearAttribute() before
 
