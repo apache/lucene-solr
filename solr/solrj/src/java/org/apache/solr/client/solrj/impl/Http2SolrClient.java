@@ -233,7 +233,6 @@ public class Http2SolrClient extends SolrClient {
       log.debug("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
       http2client.setSelectors(2);
-      http2client.setIdleTimeout(idleTimeout);
       http2client.setMaxConcurrentPushedStreams(512);
       http2client.setInputBufferSize(8192);
       HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2client);
@@ -368,6 +367,7 @@ public class Http2SolrClient extends SolrClient {
         .method(HttpMethod.POST)
         .header(HttpHeader.CONTENT_TYPE, contentType)
         .content(provider);
+    postRequest.idleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
     for (Map.Entry<String,String> entry : headers.entrySet()) {
       postRequest.header(entry.getKey(), entry.getValue());
     }
@@ -621,6 +621,7 @@ public class Http2SolrClient extends SolrClient {
       for (Map.Entry<String,String> entry : headers.entrySet()) {
         req.header(entry.getKey(), entry.getValue());
       }
+      req.idleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
       return req;
     }
 
@@ -629,6 +630,7 @@ public class Http2SolrClient extends SolrClient {
       for (Map.Entry<String,String> entry : headers.entrySet()) {
         req.header(entry.getKey(), entry.getValue());
       }
+      req.idleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
       return req;
     }
 
@@ -654,7 +656,8 @@ public class Http2SolrClient extends SolrClient {
         for (Map.Entry<String,String> entry : headers.entrySet()) {
           req.header(entry.getKey(), entry.getValue());
         }
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(4096);
+        req.idleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(8192);
         contentWriter.write(baos);
 
         //TODO reduce memory usage
