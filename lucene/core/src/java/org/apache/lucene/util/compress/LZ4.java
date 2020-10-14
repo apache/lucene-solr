@@ -55,7 +55,6 @@ public final class LZ4 {
   static final int LAST_LITERALS = 5; // the last 5 bytes must be encoded as literals
   static final int HASH_LOG_HC = 15; // log size of the dictionary for compressHC
   static final int HASH_TABLE_SIZE_HC = 1 << HASH_LOG_HC;
-  static final int OPTIMAL_ML = 0x0F + 4 - 1; // match length that doesn't require an additional byte
 
 
   private static int hash(int i, int hashBits) {
@@ -77,14 +76,15 @@ public final class LZ4 {
   }
 
   /**
-   * Decompress at least <code>decompressedLen</code> bytes into
-   * <code>dest[dOff:]</code>. Please note that <code>dest</code> must be large
+   * Decompress at least {@code decompressedLen} bytes into
+   * {@code dest[dOff:]}. Please note that {@code dest} must be large
    * enough to be able to hold <b>all</b> decompressed data (meaning that you
    * need to know the total decompressed length).
+   * If the given bytes were compressed using a preset dictionary then the same
+   * dictionary must be provided in {@code dest[dOff-dictLen:dOff]}.
    */
-  public static int decompress(DataInput compressed, int decompressedLen, byte[] dest) throws IOException {
-    int dOff = 0;
-    final int destEnd = dest.length;
+  public static int decompress(DataInput compressed, int decompressedLen, byte[] dest, int dOff) throws IOException {
+    final int destEnd = dOff + decompressedLen;
 
     do {
       // literals
@@ -103,7 +103,7 @@ public final class LZ4 {
         dOff += literalLen;
       }
 
-      if (dOff >= decompressedLen) {
+      if (dOff >= destEnd) {
         break;
       }
 
@@ -133,7 +133,7 @@ public final class LZ4 {
         System.arraycopy(dest, dOff - matchDec, dest, dOff, fastLen);
         dOff += matchLen;
       }
-    } while (dOff < decompressedLen);
+    } while (dOff < destEnd);
 
     return dOff;
   }
@@ -190,8 +190,11 @@ public final class LZ4 {
     /** Reset this hash table in order to compress the given content. */
     abstract void reset(byte[] b, int off, int len);
 
+    /** Init {@code dictLen} bytes to be used as a dictionary. */
+    abstract void initDictionary(int dictLen);
+
     /**
-     * Advance the cursor to {@off} and return an index that stored the same
+     * Advance the cursor to {@code off} and return an index that stored the same
      * 4 bytes as {@code b[o:o+4)}. This may only be called on strictly
      * increasing sequences of offsets. A return value of {@code -1} indicates
      * that no other index could be found. */
@@ -229,7 +232,6 @@ public final class LZ4 {
       Objects.checkFromIndexSize(off, len, bytes.length);
       this.bytes = bytes;
       this.base = off;
-      this.lastOff = off - 1;
       this.end = off + len;
       final int bitsPerOffset = PackedInts.bitsRequired(len - LAST_LITERALS);
       final int bitsPerOffsetLog = 32 - Integer.numberOfLeadingZeros(bitsPerOffset - 1);
@@ -239,8 +241,18 @@ public final class LZ4 {
       } else {
         // Avoid calling hashTable.clear(), this makes it costly to compress many short sequences otherwise.
         // Instead, get() checks that references are less than the current offset.
-        get(off); // this sets the hashTable for the first 4 bytes as a side-effect
       }
+      this.lastOff = off - 1;
+    }
+
+    @Override
+    void initDictionary(int dictLen) {
+      for (int i = 0; i < dictLen; ++i) {
+        final int v = readInt(bytes, base + i);
+        final int h = hash(v, hashLog);
+        hashTable.set(h, i);
+      }
+      lastOff += dictLen;
     }
 
     @Override
@@ -328,8 +340,17 @@ public final class LZ4 {
     }
 
     @Override
+    void initDictionary(int dictLen) {
+      assert next == base;
+      for (int i = 0; i < dictLen; ++i) {
+        addHash(base + i);
+      }
+      next += dictLen;
+    }
+
+    @Override
     int get(int off) {
-      assert off > next;
+      assert off >= next;
       assert off < end;
 
       for (; next < off; next++) {
@@ -389,23 +410,40 @@ public final class LZ4 {
   }
 
   /**
-   * Compress <code>bytes[off:off+len]</code> into <code>out</code> using
-   * at most 16KB of memory. <code>ht</code> shouldn't be shared across threads
-   * but can safely be reused.
+   * Compress {@code bytes[off:off+len]} into {@code out} using at most 16kB of
+   * memory. {@code ht} shouldn't be shared across threads but can safely be
+   * reused.
    */
   public static void compress(byte[] bytes, int off, int len, DataOutput out, HashTable ht) throws IOException {
-    Objects.checkFromIndexSize(off, len, bytes.length);
+    compressWithDictionary(bytes, off, 0, len, out, ht);
+  }
 
-    final int base = off;
-    final int end = off + len;
+  /**
+   * Compress {@code bytes[dictOff+dictLen:dictOff+dictLen+len]} into
+   * {@code out} using at most 16kB of memory.
+   * {@code bytes[dictOff:dictOff+dictLen]} will be used as a dictionary.
+   * {@code dictLen} must not be greater than 64kB, the maximum window size.
+   *
+   * {@code ht} shouldn't be shared across threads but can safely be reused.
+   */
+  public static void compressWithDictionary(byte[] bytes, int dictOff, int dictLen, int len, DataOutput out, HashTable ht) throws IOException {
+    Objects.checkFromIndexSize(dictOff, dictLen, bytes.length);
+    Objects.checkFromIndexSize(dictOff + dictLen, len, bytes.length);
+    if (dictLen > MAX_DISTANCE) {
+      throw new IllegalArgumentException("dictLen must not be greater than 64kB, but got " + dictLen);
+    }
 
-    int anchor = off++;
+    final int end = dictOff + dictLen + len;
+
+    int off = dictOff + dictLen;
+    int anchor = off;
 
     if (len > LAST_LITERALS + MIN_MATCH) {
 
       final int limit = end - LAST_LITERALS;
       final int matchLimit = limit - MIN_MATCH;
-      ht.reset(bytes, base, len);
+      ht.reset(bytes, dictOff, dictLen + len);
+      ht.initDictionary(dictLen);
 
       main:
       while (off <= limit) {
@@ -417,7 +455,7 @@ public final class LZ4 {
           }
           ref = ht.get(off);
           if (ref != -1) {
-            assert ref >= base && ref < off;
+            assert ref >= dictOff && ref < off;
             assert readInt(bytes, ref) == readInt(bytes, off);
             break;
           }
@@ -428,7 +466,7 @@ public final class LZ4 {
         int matchLen = MIN_MATCH + commonBytes(bytes, ref + MIN_MATCH, off + MIN_MATCH, limit);
 
         // try to find a better match
-        for (int r = ht.previous(ref), min = Math.max(off - MAX_DISTANCE + 1, base); r >= min; r = ht.previous(r)) {
+        for (int r = ht.previous(ref), min = Math.max(off - MAX_DISTANCE + 1, dictOff); r >= min; r = ht.previous(r)) {
           assert readInt(bytes, r) == readInt(bytes, off);
           int rMatchLen = MIN_MATCH + commonBytes(bytes, r + MIN_MATCH, off + MIN_MATCH, limit);
           if (rMatchLen > matchLen) {

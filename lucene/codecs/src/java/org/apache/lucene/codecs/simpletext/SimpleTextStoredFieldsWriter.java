@@ -39,8 +39,6 @@ import org.apache.lucene.util.IOUtils;
  */
 public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   private int numDocsWritten = 0;
-  private final Directory directory;
-  private final String segment;
   private IndexOutput out;
   
   final static String FIELDS_EXTENSION = "fld";
@@ -62,8 +60,6 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   private final BytesRefBuilder scratch = new BytesRefBuilder();
   
   public SimpleTextStoredFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
-    this.directory = directory;
-    this.segment = segment;
     boolean success = false;
     try {
       out = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION), context);
@@ -180,5 +176,10 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   
   private void newLine() throws IOException {
     SimpleTextUtil.writeNewline(out);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return Integer.BYTES; // something > 0
   }
 }

@@ -151,7 +151,7 @@ public class ContainerPluginsApi {
     SolrZkClient zkClient = zkClientSupplier.get();
     try {
       Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
-      return (Map<String, Object>) clusterPropsJson.computeIfAbsent(PLUGIN, Utils.NEW_LINKED_HASHMAP_FUN);
+      return (Map<String, Object>) clusterPropsJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>());
     } catch (KeeperException.NoNodeException e) {
       return new LinkedHashMap<>();
     } catch (KeeperException | InterruptedException e) {
@@ -165,7 +165,7 @@ public class ContainerPluginsApi {
       zkClientSupplier.get().atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
         Map rawJson = bytes == null ? new LinkedHashMap() :
             (Map) Utils.fromJSON(bytes);
-        Map pluginsModified = modifier.apply((Map) rawJson.computeIfAbsent(PLUGIN, Utils.NEW_LINKED_HASHMAP_FUN));
+        Map pluginsModified = modifier.apply((Map) rawJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>()));
         if (pluginsModified == null) return null;
         rawJson.put(PLUGIN, pluginsModified);
         return Utils.toJSON(rawJson);

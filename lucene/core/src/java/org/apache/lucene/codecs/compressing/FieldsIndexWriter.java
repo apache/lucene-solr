@@ -46,12 +46,6 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  */
 public final class FieldsIndexWriter implements Closeable {
 
-  /** Extension of stored fields index file. */
-  public static final String FIELDS_INDEX_EXTENSION_SUFFIX = "x";
-
-  /** Extension of stored fields meta file. */
-  public static final String FIELDS_META_EXTENSION_SUFFIX = "m";
-
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = 0;
 
@@ -102,7 +96,7 @@ public final class FieldsIndexWriter implements Closeable {
     totalChunks++;
   }
 
-  void finish(int numDocs, long maxPointer) throws IOException {
+  void finish(int numDocs, long maxPointer, IndexOutput metaOut) throws IOException {
     if (numDocs != totalDocs) {
       throw new IllegalStateException("Expected " + numDocs + " docs, but got " + totalDocs);
     }
@@ -110,10 +104,7 @@ public final class FieldsIndexWriter implements Closeable {
     CodecUtil.writeFooter(filePointersOut);
     IOUtils.close(docsOut, filePointersOut);
 
-    try (IndexOutput metaOut = dir.createOutput(IndexFileNames.segmentFileName(name, suffix, extension + FIELDS_META_EXTENSION_SUFFIX), ioContext);
-        IndexOutput dataOut = dir.createOutput(IndexFileNames.segmentFileName(name, suffix, extension + FIELDS_INDEX_EXTENSION_SUFFIX), ioContext)) {
-
-      CodecUtil.writeIndexHeader(metaOut, codecName + "Meta", VERSION_CURRENT, id, suffix);
+    try (IndexOutput dataOut = dir.createOutput(IndexFileNames.segmentFileName(name, suffix, extension), ioContext)) {
       CodecUtil.writeIndexHeader(dataOut, codecName + "Idx", VERSION_CURRENT, id, suffix);
 
       metaOut.writeInt(numDocs);
@@ -173,7 +164,6 @@ public final class FieldsIndexWriter implements Closeable {
       metaOut.writeLong(dataOut.getFilePointer());
       metaOut.writeLong(maxPointer);
 
-      CodecUtil.writeFooter(metaOut);
       CodecUtil.writeFooter(dataOut);
     }
   }

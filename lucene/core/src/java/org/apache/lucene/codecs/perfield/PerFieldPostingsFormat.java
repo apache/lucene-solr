@@ -80,7 +80,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   public static final String PER_FIELD_SUFFIX_KEY = PerFieldPostingsFormat.class.getSimpleName() + ".suffix";
 
   /** Sole constructor. */
-  public PerFieldPostingsFormat() {
+  protected PerFieldPostingsFormat() {
     super(PER_FIELD_NAME);
   }
 

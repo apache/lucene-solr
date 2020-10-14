@@ -33,9 +33,9 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -78,7 +78,7 @@ import org.apache.solr.uninverting.UninvertingReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
+import static org.apache.lucene.analysis.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
 
 /**
  * Base class for all field types used by an index schema.
@@ -677,6 +677,9 @@ public abstract class FieldType extends FieldProperties {
 
   /**
    * calls back to TextResponseWriter to write the field value
+   * <p>
+   * Sub-classes should prefer using {@link #toExternal(IndexableField)} or {@link #toObject(IndexableField)}
+   * to get the writeable external value of <code>f</code> instead of directly using <code>f.stringValue()</code> or <code>f.binaryValue()</code>
    */
   public abstract void write(TextResponseWriter writer, String name, IndexableField f) throws IOException;
 

@@ -373,9 +373,6 @@ These commands allow registering more advanced customizations to Solr:
 * `add-listener`
 * `update-listener`
 * `delete-listener`
-* `add-runtimelib`
-* `update-runtimelib`
-* `delete-runtimelib`
 * `add-expressible`
 * `update-expressible`
 * `delete-expressible`

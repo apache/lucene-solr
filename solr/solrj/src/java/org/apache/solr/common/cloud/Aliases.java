@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -70,6 +71,13 @@ public class Aliases {
     this.collectionAliases = Objects.requireNonNull(collectionAliases);
     this.collectionAliasProperties = Objects.requireNonNull(collectionAliasProperties);
     this.zNodeVersion = zNodeVersion;
+  }
+
+  public void forEachAlias(BiConsumer<String, List<String>> consumer) {
+    collectionAliases.forEach((s, colls) -> consumer.accept(s, Collections.unmodifiableList(colls)));
+  }
+  public int size() {
+    return collectionAliases.size();
   }
 
   /**

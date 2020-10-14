@@ -36,6 +36,8 @@ import java.io.OutputStream;
  */
 
 public final class VerifyingLockFactory extends LockFactory {
+  public static final int MSG_LOCK_RELEASED = 0;
+  public static final int MSG_LOCK_ACQUIRED = 1;
 
   final LockFactory lf;
   final InputStream in;
@@ -46,7 +48,7 @@ public final class VerifyingLockFactory extends LockFactory {
 
     public CheckedLock(Lock lock) throws IOException {
       this.lock = lock;
-      verify((byte) 1);
+      verify((byte) MSG_LOCK_ACQUIRED);
     }
 
     @Override
@@ -58,7 +60,7 @@ public final class VerifyingLockFactory extends LockFactory {
     public void close() throws IOException {
       try (Lock l = lock) {
         l.ensureValid();
-        verify((byte) 0);
+        verify((byte) MSG_LOCK_RELEASED);
       }
     }
 

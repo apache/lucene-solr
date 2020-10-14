@@ -17,12 +17,12 @@
 
 package org.apache.solr.pkg;
 
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrClassLoader;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
 import java.io.IOException;

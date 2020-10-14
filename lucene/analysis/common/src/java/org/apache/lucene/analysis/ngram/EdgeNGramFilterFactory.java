@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Creates new instances of {@link EdgeNGramTokenFilter}.

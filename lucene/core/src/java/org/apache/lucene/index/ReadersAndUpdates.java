@@ -492,7 +492,7 @@ final class ReadersAndUpdates {
     // we write approximately that many bytes (based on Lucene46DVF):
     // HEADER + FOOTER: 40
     // 90 bytes per-field (over estimating long name and attributes map)
-    final long estInfosSize = 40 + 90 * fieldInfos.size();
+    final long estInfosSize = 40 + 90L * fieldInfos.size();
     final IOContext infosContext = new IOContext(new FlushInfo(info.info.maxDoc(), estInfosSize));
     // separately also track which files were created for this gen
     final TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);

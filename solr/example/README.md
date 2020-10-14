@@ -25,15 +25,14 @@ separate directory. To run a specific example, do:
   bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
   
     cloud        : SolrCloud example
-    dih          : Data Import Handler (rdbms, mail, atom, tika)
     schemaless   : Schema-less example (schema is inferred from data during indexing)
     techproducts : Kitchen sink example providing comprehensive examples of Solr features
 ```
 
-For instance, if you want to run the Solr Data Import Handler example, do:
+For instance, if you want to run the SolrCloud example, do:
 
 ```
-  bin/solr -e dih
+  bin/solr -e cloud
 ```
 
 To see all the options available when starting Solr:
@@ -80,8 +79,8 @@ statements in the solrconfig.xml file to reference plugin jars outside of
 this directory for loading "contrib" plugins via relative paths.  
 
 If you make a copy of this example server and wish to use the 
-ExtractingRequestHandler (SolrCell), DataImportHandler (DIH), the 
-clustering component, or any other modules in "contrib", you will need to 
+ExtractingRequestHandler (SolrCell), the clustering component, 
+or any other modules in "contrib", you will need to
 copy the required jars or update the paths to those jars in your 
 solrconfig.xml.
 

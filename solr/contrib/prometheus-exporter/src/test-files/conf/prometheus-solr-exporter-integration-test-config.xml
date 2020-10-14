@@ -989,7 +989,7 @@
             (if $parent_key_item_len == 5 then $parent_key_items[3] else "" end) as $shard |
             (if $parent_key_item_len == 5 then $parent_key_items[4] else "" end) as $replica |
             (if $parent_key_item_len == 5 then ($collection + "_" + $shard + "_" + $replica) else $core end) as $core |
-            $parent.value | to_entries | .[] | select(.key == "REPLICATION./replication.isMaster") as $object |
+            $parent.value | to_entries | .[] | select(.key == "REPLICATION./replication.isLeader") as $object |
             $object.key | split(".")[0] as $category |
             $object.key | split(".")[1] as $handler |
             (if $object.value == true then 1.0 else 0.0 end) as $value |
@@ -1022,13 +1022,13 @@
             (if $parent_key_item_len == 5 then $parent_key_items[3] else "" end) as $shard |
             (if $parent_key_item_len == 5 then $parent_key_items[4] else "" end) as $replica |
             (if $parent_key_item_len == 5 then ($collection + "_" + $shard + "_" + $replica) else $core end) as $core |
-            $parent.value | to_entries | .[] | select(.key == "REPLICATION./replication.isSlave") as $object |
+            $parent.value | to_entries | .[] | select(.key == "REPLICATION./replication.isFollower") as $object |
             $object.key | split(".")[0] as $category |
             $object.key | split(".")[1] as $handler |
             (if $object.value == true then 1.0 else 0.0 end) as $value |
             if $parent_key_item_len == 3 then
             {
-              name: "solr_metrics_core_replication_slave",
+              name: "solr_metrics_core_replication_follower",
               type: "GAUGE",
               help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
               label_names: ["category", "handler", "core"],
@@ -1037,7 +1037,7 @@
             }
             else
             {
-              name: "solr_metrics_core_replication_slave",
+              name: "solr_metrics_core_replication_follower",
               type: "GAUGE",
               help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
               label_names: ["category", "handler", "core", "collection", "shard", "replica"],

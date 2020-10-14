@@ -26,7 +26,7 @@ vectorize text fields.
 == Streams
 
 Streaming Expressions has a wide range of stream sources that can be used to
-retrieve data from Solr Cloud collections. Math expressions can be used
+retrieve data from SolrCloud collections. Math expressions can be used
 to vectorize and analyze the results sets.
 
 Below are some of the key stream sources:
@@ -62,13 +62,13 @@ on by math expressions in the same manner as result sets originating from Solr.
 
 * *`topic`*: Messaging is an important foundational technology for large scale computing. The `topic`
 function provides publish/subscribe messaging capabilities by treating
-Solr Cloud as a distributed message queue. Topics are extremely powerful
+SolrCloud as a distributed message queue. Topics are extremely powerful
 because they allow subscription by query. Topics can be use to support a broad set of
 use cases including bulk text mining operations and AI alerting.
 
 * *`nodes`*: Graph queries are frequently used by recommendation engines and are an important
 machine learning tool. The `nodes` function provides fast, distributed, breadth
-first graph traversal over documents in a Solr Cloud collection. The node sets collected
+first graph traversal over documents in a SolrCloud collection. The node sets collected
 by the `nodes` function can be operated on by statistical and machine learning expressions to
 gain more insight into the graph.
 
@@ -251,7 +251,7 @@ When this expression is sent to the `/stream` handler it responds with:
 == Facet Co-occurrence Matrices
 
 The `facet` function can be used to quickly perform multi-dimension aggregations of categorical data from
-records stored in a Solr Cloud collection. These multi-dimension aggregations can represent co-occurrence
+records stored in a SolrCloud collection. These multi-dimension aggregations can represent co-occurrence
 counts for the values in the dimensions. The `pivot` function can be used to move two dimensional
 aggregations into a co-occurrence matrix. The co-occurrence matrix can then be clustered or analyzed for
 correlations to learn about the hidden connections within the data.
