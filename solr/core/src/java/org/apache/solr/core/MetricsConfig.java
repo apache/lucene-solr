@@ -127,7 +127,8 @@ public class MetricsConfig {
     private PluginInfo timerSupplier;
     private PluginInfo histogramSupplier;
     private PluginInfo historyHandler;
-    private boolean enabled;
+    // default to metrics enabled
+    private boolean enabled = true;
 
     public MetricsConfigBuilder() {
 
