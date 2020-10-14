@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
  * the token is dropped, otherwise it is retained.
  *
  * @see DropIfFlaggedFilterFactory
+ * @since 8.8.0
  */
 public class DropIfFlaggedFilter extends FilteringTokenFilter {
   private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);

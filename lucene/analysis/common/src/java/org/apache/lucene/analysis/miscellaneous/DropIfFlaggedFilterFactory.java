@@ -38,7 +38,7 @@ import org.apache.lucene.analysis.TokenStream;
  * </pre>
  * The above would drop any token that had the first and fourth bit set.
  *
- * @since 8.6.0
+ * @since 8.8.0
  * @lucene.spi {@value #NAME}
  */
 public class DropIfFlaggedFilterFactory  extends TokenFilterFactory {
