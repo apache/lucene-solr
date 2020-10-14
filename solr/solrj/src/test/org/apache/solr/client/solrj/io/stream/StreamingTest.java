@@ -2716,4 +2716,11 @@ public void testParallelRankStream() throws Exception {
     return pstream;
   }
 
+  public void testCloudSolrStreamWithoutStreamContext() throws Exception {
+    SolrParams sParams = StreamingTest.mapParams("q", "*:*", "fl", "id", "sort", "id asc");
+    try (CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
+      stream.open();
+    }
+  }
+
 }

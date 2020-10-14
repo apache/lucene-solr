@@ -16,23 +16,18 @@
  */
 
 configure(rootProject) {
-
   task checkBrokenLinks {
     group 'Verification'
     description 'Check broken links in the entire documentation'
 
-    dependsOn ':lucene:checkBrokenLinks'
-    dependsOn ':solr:checkBrokenLinks'
+    dependsOn ':lucene:documentation:checkBrokenLinks'
+    dependsOn ':solr:documentation:checkBrokenLinks'
   }
-
 }
-configure(subprojects.findAll { it.path in [':lucene', ':solr'] }) {
 
+configure(subprojects.findAll { it.path in [':lucene:documentation', ':solr:documentation'] }) {
   task checkBrokenLinks(type: CheckBrokenLinksTask, 'dependsOn': 'documentation')
-
-  // TODO: uncomment this line after fixing all broken links.
-  // (we can't fix the cross-project links until ant build is disabled.)
-  // check.dependsOn checkBrokenLinks
+  check.dependsOn checkBrokenLinks
 }
 
 class CheckBrokenLinksTask extends DefaultTask {
@@ -52,7 +47,7 @@ class CheckBrokenLinksTask extends DefaultTask {
     def result
     outputFile.withOutputStream { output ->
       result = project.exec {
-        executable "python3"
+        executable project.externalTool("python3")
         ignoreExitValue = true
         standardOutput = output
         errorOutput = output

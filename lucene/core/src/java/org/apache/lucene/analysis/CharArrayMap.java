@@ -523,6 +523,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
    * @throws NullPointerException
    *           if the given map is <code>null</code>.
    */
+  @SuppressWarnings("ReferenceEquality")
   public static <V> CharArrayMap<V> unmodifiableMap(CharArrayMap<V> map) {
     if (map == null)
       throw new NullPointerException("Given map is null");

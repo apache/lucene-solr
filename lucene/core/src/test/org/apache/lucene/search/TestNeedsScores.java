@@ -76,7 +76,7 @@ public class TestNeedsScores extends LuceneTestCase {
   
   /** when not sorting by score */
   public void testSortByField() throws Exception {
-    Query query = new AssertNeedsScores(new MatchAllDocsQuery(), ScoreMode.COMPLETE_NO_SCORES);
+    Query query = new AssertNeedsScores(new MatchAllDocsQuery(), ScoreMode.TOP_DOCS);
     assertEquals(5, searcher.search(query, 5, Sort.INDEXORDER).totalHits.value);
   }
   

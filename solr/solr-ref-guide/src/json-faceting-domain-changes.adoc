@@ -77,7 +77,7 @@ The referred parameter might have 0 (absent) or many values.
 ** When no values are specified, no filter is applied and no error is thrown.
 ** When many values are specified, each value is parsed and used as filters in conjunction.
 
-Here is the example of referencing DSL queries: 
+Here is the example of referencing DSL queries:
 
 [source,bash]
 ----
@@ -214,9 +214,9 @@ NOTE: While a `query` domain can be combined with an additional domain `filter`,
 
 == Block Join Domain Changes
 
-When a collection contains <<indexing-nested-documents.adoc#indexing-nested-documents, Nested Documents>>, the `blockChildren` or `blockParent` domain options can be used transform an existing domain containing one type of document, into a domain containing the documents with the specified relationship (child or parent of) to the documents from the original domain.
+When a collection contains <<indexing-nested-documents.adoc#indexing-nested-documents, Nested Documents>>, the `blockChildren` or `blockParent` domain options can be used to transform an existing domain containing one type of document, into a domain containing the documents with the specified relationship (child or parent of) to the documents from the original domain.
 
-Both of these options work similarly to the corresponding <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> by taking in a single String query that exclusively matches all parent documents in the collection.  If `blockParent` is used, then the resulting domain will contain all parent documents of the children from the original domain.  If `blockChildren` is used, then the resulting domain will contain all child documents of the parents from the original domain. Quite often facets over child documents needs to be counted in parent documents, this can be done by `uniqueBlock(\_root_)` as described in <<json-facet-api#uniqueblock-and-block-join-counts, Block Join Facet Counts>>.      
+Both of these options work similarly to the corresponding <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> by taking in a single String query that exclusively matches all parent documents in the collection.  If `blockParent` is used, then the resulting domain will contain all parent documents of the children from the original domain.  If `blockChildren` is used, then the resulting domain will contain all child documents of the parents from the original domain. Quite often facets over child documents needs to be counted in parent documents, this can be done by `uniqueBlock(\_root_)` as described in <<json-facet-api#uniqueblock-and-block-join-counts, Block Join Facet Counts>>.
 
 [source,json,subs="verbatim,callouts"]]
 ----
@@ -241,7 +241,7 @@ Both of these options work similarly to the corresponding <<other-parsers.adoc#b
 
 A `join` domain change option can be used to specify arbitrary `from` and `to` fields to use in transforming from the existing domain to a related set of documents.
 
-This works very similar to the <<other-parsers.adoc#join-query-parser,Join Query Parser>>, and has the same limitations when dealing with multi-shard collections.
+This works similarly to the <<other-parsers.adoc#join-query-parser,Join Query Parser>>, and has the same limitations when dealing with multi-shard collections.
 
 Example:
 [source,json]
@@ -267,6 +267,8 @@ Example:
 }
 
 ----
+
+`join` domain changes support an optional `method` parameter, which allows users to specify which join implementation they would like to use in this domain transform.  Solr offers several join implementations, each with different performance characteristics.  For more information on these implementations and their tradeoffs, see the `method` parameter documentation <<other-parsers.adoc#parameters,here>>.  Join domain changes support all `method` values except `crossCollection`.
 
 == Graph Traversal Domain Changes
 

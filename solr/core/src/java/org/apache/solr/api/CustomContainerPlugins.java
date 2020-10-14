@@ -27,9 +27,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.MapWriter;
@@ -228,16 +229,23 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       PluginInfo.ClassName klassInfo = new PluginInfo.ClassName(info.klass);
       pkg = klassInfo.pkg;
       if (pkg != null) {
-        PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);
-        if (p == null) {
-          errs.add("Invalid package " + klassInfo.pkg);
-          return;
+        Optional<PackageLoader.Package.Version> ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
+        if (ver.isEmpty()) {
+          //may be we are a bit early. Do a refresh and try again
+         coreContainer.getPackageLoader().getPackageAPI().refreshPackages(null);
+         ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         }
-        this.pkgVersion = p.getVersion(info.version);
-        if (pkgVersion == null) {
-          errs.add("No such package version:" + pkg + ":" + info.version + " . available versions :" + p.allVersions());
-          return;
+        if (ver.isEmpty()) {
+          PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);
+          if (p == null) {
+            errs.add("Invalid package " + klassInfo.pkg);
+            return;
+          } else {
+            errs.add("No such package version:" + pkg + ":" + info.version + " . available versions :" + p.allVersions());
+            return;
+          }
         }
+        this.pkgVersion = ver.get();
         try {
           klas = pkgVersion.getLoader().findClass(klassInfo.className, Object.class);
         } catch (Exception e) {

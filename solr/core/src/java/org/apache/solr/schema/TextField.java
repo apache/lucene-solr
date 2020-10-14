@@ -582,7 +582,7 @@ public class TextField extends FieldType implements SchemaAware {
 
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
-    writer.writeStr(name, f.stringValue(), true);
+    writer.writeStr(name, toExternal(f), true);
   }
 
   @Override

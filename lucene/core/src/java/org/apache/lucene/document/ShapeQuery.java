@@ -265,10 +265,20 @@ abstract class ShapeQuery extends Query {
         final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
         return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       }
-      final DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(reader.maxDoc(), values, query.getField());
-      values.intersect(getSparseVisitor(query, docIdSetBuilder));
-      final DocIdSetIterator iterator = docIdSetBuilder.build().iterator();
-      return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+      if (values.getDocCount() < (values.size() >>> 2)) {
+        // we use a dense structure so we can skip already visited documents
+        final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+        final long[] cost = new long[]{0};
+        values.intersect(getIntersectsDenseVisitor(query, result, cost));
+        assert cost[0] > 0 || result.cardinality() == 0;
+        final DocIdSetIterator iterator = cost[0] == 0 ? DocIdSetIterator.empty() : new BitSetIterator(result, cost[0]);
+        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+      } else {
+        final DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(reader.maxDoc(), values, query.getField());
+        values.intersect(getSparseVisitor(query, docIdSetBuilder));
+        final DocIdSetIterator iterator = docIdSetBuilder.build().iterator();
+        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+      }
     }
 
     /** Scorer used for WITHIN and DISJOINT **/
@@ -293,8 +303,8 @@ abstract class ShapeQuery extends Query {
         // process still reads the leaf nodes.
         values.intersect(getShallowInverseDenseVisitor(query, result));
       }
-      assert cost[0] > 0;
-      final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+      assert cost[0] > 0 || result.cardinality() == 0;
+      final DocIdSetIterator iterator = cost[0] == 0 ? DocIdSetIterator.empty() : new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
 
@@ -305,7 +315,8 @@ abstract class ShapeQuery extends Query {
       final FixedBitSet excluded = new FixedBitSet(reader.maxDoc());
       values.intersect(getContainsDenseVisitor(query, result, excluded, cost));
       result.andNot(excluded);
-      final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+      assert cost[0] > 0 || result.cardinality() == 0;
+      final DocIdSetIterator iterator = cost[0] == 0 ? DocIdSetIterator.empty() : new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
 
@@ -340,7 +351,8 @@ abstract class ShapeQuery extends Query {
     };
   }
 
-  /** create a visitor that adds documents that match the query using a sparse bitset. (Used by INTERSECT) */
+  /** create a visitor that adds documents that match the query using a sparse bitset. (Used by INTERSECT
+   * when the number of docs <= 4 * number of points ) */
   private static IntersectVisitor getSparseVisitor(final ShapeQuery query, final DocIdSetBuilder result) {
     return new IntersectVisitor() {
       final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
@@ -380,6 +392,43 @@ abstract class ShapeQuery extends Query {
     };
   }
 
+  /** Scorer used for INTERSECTS when the number of points > 4 * number of docs **/
+  private static IntersectVisitor getIntersectsDenseVisitor(final ShapeQuery query, final FixedBitSet result, final long[] cost) {
+    return new IntersectVisitor() {
+      final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+
+      @Override
+      public void visit(int docID) {
+        result.set(docID);
+        cost[0]++;
+      }
+
+      @Override
+      public void visit(int docID, byte[] t) {
+        if (result.get(docID) == false) {
+          if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
+            visit(docID);
+          }
+        }
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+        if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
+          int docID;
+          while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              visit(docID);
+          }
+        }
+      }
+
+      @Override
+      public Relation compare(byte[] minTriangle, byte[] maxTriangle) {
+        return query.relateRangeToQuery(minTriangle, maxTriangle, query.getQueryRelation());
+      }
+    };
+  }
+
   /** create a visitor that adds documents that match the query using a dense bitset; used with WITHIN & DISJOINT */
   private static IntersectVisitor getDenseVisitor(final ShapeQuery query, final FixedBitSet result, final FixedBitSet excluded, final long[] cost) {
     return new IntersectVisitor() {
@@ -393,10 +442,12 @@ abstract class ShapeQuery extends Query {
 
       @Override
       public void visit(int docID, byte[] t) {
-        if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
-          visit(docID);
-        } else {
-          excluded.set(docID);
+        if (excluded.get(docID) == false) {
+          if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
+            visit(docID);
+          } else {
+            excluded.set(docID);
+          }
         }
       }
 
@@ -432,12 +483,14 @@ abstract class ShapeQuery extends Query {
 
       @Override
       public void visit(int docID, byte[] t) {
-        Component2D.WithinRelation within = query.queryWithin(t, scratchTriangle);
-        if (within == Component2D.WithinRelation.CANDIDATE) {
-          cost[0]++;
-          result.set(docID);
-        } else if (within == Component2D.WithinRelation.NOTWITHIN) {
-          excluded.set(docID);
+        if (excluded.get(docID) == false) {
+          Component2D.WithinRelation within = query.queryWithin(t, scratchTriangle);
+          if (within == Component2D.WithinRelation.CANDIDATE) {
+            cost[0]++;
+            result.set(docID);
+          } else if (within == Component2D.WithinRelation.NOTWITHIN) {
+            excluded.set(docID);
+          }
         }
       }
 
@@ -475,8 +528,10 @@ abstract class ShapeQuery extends Query {
 
       @Override
       public void visit(int docID, byte[] packedTriangle) {
-        if (query.queryMatches(packedTriangle, scratchTriangle, query.getQueryRelation()) == false) {
-          visit(docID);
+        if (result.get(docID)) {
+          if (query.queryMatches(packedTriangle, scratchTriangle, query.getQueryRelation()) == false) {
+            visit(docID);
+          }
         }
       }
 

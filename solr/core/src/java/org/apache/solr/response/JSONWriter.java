@@ -131,36 +131,6 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   //       contained in an array or map, a negative value indicates
   //       that the size could not be reliably determined.
   //
-
-  /**
-   * This method will be removed in Solr 9
-   * @deprecated Use {{@link #writeStartDocumentList(String, long, int, long, Float, Boolean)}.
-   */
-  @Override
-  @Deprecated
-  public void writeStartDocumentList(String name,
-      long start, int size, long numFound, Float maxScore) throws IOException
-  {
-    writeMapOpener(headerSize(maxScore, null));
-    incLevel();
-    writeKey("numFound",false);
-    writeLong(null,numFound);
-    writeMapSeparator();
-    writeKey("start",false);
-    writeLong(null,start);
-
-    if (maxScore!=null) {
-      writeMapSeparator();
-      writeKey("maxScore",false);
-      writeFloat(null,maxScore);
-    }
-    writeMapSeparator();
-    // indent();
-    writeKey("docs",false);
-    writeArrayOpener(size);
-
-    incLevel();
-  }
   
   @Override
   public void writeStartDocumentList(String name,

@@ -18,6 +18,8 @@ package org.apache.lucene.codecs.lucene84;
 
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50RWStoredFieldsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60RWPointsFormat;
 import org.apache.lucene.codecs.lucene70.Lucene70RWSegmentInfoFormat;
 
@@ -34,6 +36,11 @@ public class Lucene84RWCodec extends Lucene84Codec {
   @Override
   public SegmentInfoFormat segmentInfoFormat() {
     return new Lucene70RWSegmentInfoFormat();
+  }
+
+  @Override
+  public StoredFieldsFormat storedFieldsFormat() {
+    return new Lucene50RWStoredFieldsFormat();
   }
 
 }

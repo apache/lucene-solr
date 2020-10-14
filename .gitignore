@@ -8,7 +8,6 @@ dist
 lib
 test-lib
 /*~
-/velocity.log
 /build.properties
 /.idea
 lucene/**/*.iml
@@ -38,3 +37,6 @@ build/
 
 # Ignore the generated local settings file.
 gradle.properties
+
+# IntelliJ creates this folder, ignore.
+dev-tools/missing-doclet/out/

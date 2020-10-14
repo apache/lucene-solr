@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -184,7 +186,11 @@ public class TestMatchesIterator extends LuceneTestCase {
       Matches matches = w.matches(ctx, doc);
       if (expected[i]) {
         MatchesIterator mi = matches.getMatches(field);
-        assertNull(mi);
+        assertTrue(mi.next());
+        assertEquals(-1, mi.startPosition());
+        while (mi.next()) {
+          assertEquals(-1, mi.startPosition());
+        }
       }
       else {
         assertNull(matches);
@@ -751,6 +757,91 @@ public class TestMatchesIterator extends LuceneTestCase {
         assertEquals("Unexpected seek count on doc " + doc, expectedSeeks[i], reader.seeks);
         i++;
       }
+    }
+  }
+
+  public void testFromSubIteratorsMethod() throws IOException {
+    class CountIterator implements MatchesIterator {
+      private int count;
+      private int max;
+
+      CountIterator(int count) {
+        this.count = count;
+        this.max = count;
+      }
+
+      @Override
+      public boolean next() throws IOException {
+        if (count == 0) {
+          return false;
+        } else {
+          count--;
+          return true;
+        }
+      }
+
+      @Override
+      public int startPosition() {
+        return max - count;
+      }
+
+      @Override
+      public int endPosition() {
+        return max - count;
+      }
+
+      @Override
+      public int startOffset() throws IOException {
+        throw new AssertionError();
+      }
+
+      @Override
+      public int endOffset() throws IOException {
+        throw new AssertionError();
+      }
+
+      @Override
+      public MatchesIterator getSubMatches() throws IOException {
+        throw new AssertionError();
+      }
+
+      @Override
+      public Query getQuery() {
+        throw new AssertionError();
+      }
+    }
+
+    int [][] checks = {
+        { 0 },
+        { 1 },
+        { 0, 0 },
+        { 0, 1 },
+        { 1, 0 },
+        { 1, 1 },
+        { 0, 0, 0 },
+        { 0, 0, 1 },
+        { 0, 1, 0 },
+        { 1, 0, 0 },
+        { 1, 0, 1 },
+        { 1, 1, 0 },
+        { 1, 1, 1 },
+    };
+
+    for (int[] counts : checks) {
+      List<MatchesIterator> its = IntStream.of(counts)
+          .mapToObj(CountIterator::new)
+          .collect(Collectors.toList());
+
+      int expectedCount = IntStream.of(counts).sum();
+
+      MatchesIterator merged = DisjunctionMatchesIterator.fromSubIterators(its);
+      int actualCount = 0;
+      while (merged.next()) {
+        actualCount++;
+      }
+
+      assertEquals("Sub-iterator count is not right for: "
+          + Arrays.toString(counts), expectedCount, actualCount);
     }
   }
 
