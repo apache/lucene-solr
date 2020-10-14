@@ -190,6 +190,13 @@ Other
 
 * LUCENE-9544: add regenerate gradle script for nori dictionary (Namgyu Kim)
 
+======================= Lucene 8.8.0 =======================
+
+New Features
+---------------------
+
+* LUCENE-9574 A token filter to drop tokens that match all specified flags.
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes
