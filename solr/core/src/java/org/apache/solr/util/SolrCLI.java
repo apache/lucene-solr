@@ -449,6 +449,7 @@ public class SolrCLI {
     formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
     formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
     formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
+    formatter.printHelp("package", getToolOptions(new PackageTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
