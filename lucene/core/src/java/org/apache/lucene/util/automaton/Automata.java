@@ -91,7 +91,14 @@ final public class Automata {
    * the empty string.
    */
   public static Automaton makeAnyBinaryExceptEmpty() {
-    return makeCharRange(0, 255);
+    Automaton a = new Automaton();
+    int s1 = a.createState();
+    int s2 = a.createState();
+    a.setAccept(s2, true);
+    a.addTransition(s1, s2, 0, 255);
+    a.addTransition(s2, s2, 0, 255);
+    a.finishState();
+    return a;
   }
 
   /**
