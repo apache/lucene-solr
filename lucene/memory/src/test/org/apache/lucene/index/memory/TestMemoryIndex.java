@@ -57,18 +57,14 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
@@ -620,23 +616,6 @@ public class TestMemoryIndex extends LuceneTestCase {
         "\tterms=0, positions=0\n" +
         "\n" +
         "fields=2, terms=2, positions=3", mi.toStringDebug());
-  }
-
-  public void testExplain() throws ParseException, IOException {
-    String queryString = "(lorem AND NOT \"dolor lorem\") OR ipsum";
-    String text = "dolor lorem ipsum";
-
-    Analyzer analyzer = new MockAnalyzer(random());
-    Query query = new ComplexPhraseQueryParser("content", analyzer).parse(queryString);
-
-    MemoryIndex memoryIndex = new MemoryIndex(true);
-    memoryIndex.addField("content", text, analyzer);
-
-    IndexSearcher searcher = memoryIndex.createSearcher();
-
-    TopDocs topDocs = searcher.search(query, 1);
-    ScoreDoc match = topDocs.scoreDocs[0];
-    searcher.explain(query, match.doc);
   }
 
 }

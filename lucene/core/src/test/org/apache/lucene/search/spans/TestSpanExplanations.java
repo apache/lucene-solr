@@ -17,7 +17,18 @@
 package org.apache.lucene.search.spans;
 
 
+import java.io.IOException;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.*;
+import org.apache.lucene.store.Directory;
 
 /**
  * TestExplanations subclass focusing on span queries
@@ -165,4 +176,29 @@ public class TestSpanExplanations extends BaseExplanationTestCase {
     qtest(q, new int[] {0,1,3});
   }
 
+  public void testExplainWithoutScorer() throws ParseException, IOException {
+    String queryString = "(lorem AND NOT \"dolor lorem\") OR ipsum";
+    String text = "dolor lorem ipsum";
+
+    Analyzer analyzer = new MockAnalyzer(random());
+    Query query = new ComplexPhraseQueryParser("content", analyzer).parse(queryString);
+
+    try(Directory rd = newDirectory()) {
+      try(IndexWriter writer = new IndexWriter(rd, newIndexWriterConfig(analyzer))) {
+        Document doc = new Document();
+        doc.add(newTextField("content", text, Field.Store.YES));
+        writer.addDocument(doc);
+      }
+
+      try(DirectoryReader reader = DirectoryReader.open(rd)) {
+        IndexSearcher searcher = newSearcher(reader);
+        // Setting query cache to null here would result in null simScore in SpanWight object
+        searcher.setQueryCache(null);
+
+        TopDocs topDocs = searcher.search(query, 1);
+        ScoreDoc match = topDocs.scoreDocs[0];
+        searcher.explain(query, match.doc);
+      }
+    }
+  }
 }
