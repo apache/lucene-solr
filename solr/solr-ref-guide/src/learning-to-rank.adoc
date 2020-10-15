@@ -55,23 +55,23 @@ The LTR contrib module includes several feature classes as well as support for c
 [cols=",,,",options="header",]
 |===
 |Feature |Class |Example parameters |<<External Feature Information>>
-|field length |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/FieldLengthFeature.html[FieldLengthFeature] |`{"field":"title"}` |not (yet) supported
-|field value |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/FieldValueFeature.html[FieldValueFeature] |`{"field":"hits"}` |not (yet) supported
-|original score |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/OriginalScoreFeature.html[OriginalScoreFeature] |`{}` |not applicable
-|solr query |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified)` `,3.16e-11,1,1)"}` |supported
-|solr filter query |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"fq":["{!terms f=category}book"]}` |supported
-|solr query + filter query |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified),` `3.16e-11,1,1)",` `"fq":["{!terms f=category}book"]}` |supported
-|value |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] |`{"value":"$\{userFromMobile}","required":true}` |supported
-|(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/Feature.html[Feature]) | |
+|field length |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/FieldLengthFeature.html[FieldLengthFeature] |`{"field":"title"}` |not (yet) supported
+|field value |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/FieldValueFeature.html[FieldValueFeature] |`{"field":"hits"}` |not (yet) supported
+|original score |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/OriginalScoreFeature.html[OriginalScoreFeature] |`{}` |not applicable
+|solr query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified)` `,3.16e-11,1,1)"}` |supported
+|solr filter query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"fq":["{!terms f=category}book"]}` |supported
+|solr query + filter query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified),` `3.16e-11,1,1)",` `"fq":["{!terms f=category}book"]}` |supported
+|value |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] |`{"value":"$\{userFromMobile}","required":true}` |supported
+|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/Feature.html[Feature]) | |
 |===
 
 [cols=",,",options="header",]
 |===
 |Normalizer |Class |Example parameters
-|Identity |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/IdentityNormalizer.html[IdentityNormalizer] |`{}`
-|MinMax |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/MinMaxNormalizer.html[MinMaxNormalizer] |`{"min":"0", "max":"50" }`
-|Standard |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/StandardNormalizer.html[StandardNormalizer] |`{"avg":"42","std":"6"}`
-|(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer]) |
+|Identity |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/IdentityNormalizer.html[IdentityNormalizer] |`{}`
+|MinMax |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/MinMaxNormalizer.html[MinMaxNormalizer] |`{"min":"0", "max":"50" }`
+|Standard |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/StandardNormalizer.html[StandardNormalizer] |`{"avg":"42","std":"6"}`
+|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer]) |
 |===
 
 ==== Feature Extraction
@@ -85,12 +85,12 @@ Feature selection and model training take place offline and outside Solr. The lt
 [cols=",,",options="header",]
 |===
 |General form |Class |Specific examples
-|Linear |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/LinearModel.html[LinearModel] |RankSVM, Pranking
-|Multiple Additive Trees |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/MultipleAdditiveTreesModel.html[MultipleAdditiveTreesModel] |LambdaMART, Gradient Boosted Regression Trees (GBRT)
-|Neural Network |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/NeuralNetworkModel.html[NeuralNetworkModel] |RankNet
-|(wrapper) |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/DefaultWrapperModel.html[DefaultWrapperModel] |(not applicable)
-|(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/AdapterModel.html[AdapterModel]) |(not applicable)
-|(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel]) |(not applicable)
+|Linear |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LinearModel.html[LinearModel] |RankSVM, Pranking
+|Multiple Additive Trees |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/MultipleAdditiveTreesModel.html[MultipleAdditiveTreesModel] |LambdaMART, Gradient Boosted Regression Trees (GBRT)
+|Neural Network |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/NeuralNetworkModel.html[NeuralNetworkModel] |RankNet
+|(wrapper) |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/DefaultWrapperModel.html[DefaultWrapperModel] |(not applicable)
+|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/AdapterModel.html[AdapterModel]) |(not applicable)
+|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel]) |(not applicable)
 |===
 
 == Quick Start with LTR
@@ -249,7 +249,7 @@ The output XML will include feature values as a comma-separated list, resembling
 
 === External Feature Information
 
-The {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] and {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] classes support the use of external feature information, `efi` for short.
+The {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] and {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] classes support the use of external feature information, `efi` for short.
 
 ==== Uploading Features
 
@@ -422,13 +422,13 @@ Learning-To-Rank is a contrib module and therefore its plugins must be configure
 
 ==== LTRThreadModule
 
-A thread module can be configured for the query parser and/or the transformer to parallelize the creation of feature weights. For details, please refer to the {solr-javadocs}/solr-ltr/org/apache/solr/ltr/LTRThreadModule.html[LTRThreadModule] javadocs.
+A thread module can be configured for the query parser and/or the transformer to parallelize the creation of feature weights. For details, please refer to the {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/LTRThreadModule.html[LTRThreadModule] javadocs.
 
 ==== Feature Vector Customization
 
 The features transformer returns dense CSV values such as `featureA=0.1,featureB=0.2,featureC=0.3,featureD=0.0`.
 
-For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can customize the {solr-javadocs}/solr-ltr/org/apache/solr/ltr/response/transform/LTRFeatureLoggerTransformerFactory.html[feature logger transformer] declaration in `solrconfig.xml` as follows:
+For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can customize the {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/response/transform/LTRFeatureLoggerTransformerFactory.html[feature logger transformer] declaration in `solrconfig.xml` as follows:
 
 [source,xml]
 ----
@@ -443,14 +443,14 @@ For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can c
 ==== Implementation and Contributions
 
 How does Solr Learning-To-Rank work under the hood?::
-Please refer to the `ltr` {solr-javadocs}/solr-ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
+Please refer to the `ltr` {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
 
 How could I write additional models and/or features?::
 Contributions for further models, features and normalizers are welcome. Related links:
 +
-* {solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
-* {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
-* {solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
+* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
+* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
+* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
 * https://cwiki.apache.org/confluence/display/solr/HowToContribute
 * https://cwiki.apache.org/confluence/display/LUCENE/HowToContribute
 
