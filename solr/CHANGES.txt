@@ -265,6 +265,8 @@ Bug Fixes
 
 * SOLR-14936: Fixed Grafana dashboard filters for collection, shard, replica and core (janhoy)
 
+* SOLR-14924: Some ReplicationHandler metrics are reported using incorrect types. (ab)
+
 Other Changes
 ---------------------
 
