@@ -136,7 +136,8 @@ public class XMLLoader extends ContentStreamLoader {
       } catch(TransformerException te) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, te.getMessage(), te);
       } finally {
-        IOUtils.closeQuietly(is);
+        // dont close streams
+        // IOUtils.closeQuietly(is);
       }
       // second step: feed the intermediate DOM tree into StAX parser:
       try {
@@ -146,7 +147,7 @@ public class XMLLoader extends ContentStreamLoader {
       } catch (XMLStreamException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
       } finally {
-        if (parser != null) parser.closeCompletely();
+        if (parser != null) parser.close();
       }
     }
     // Normal XML Loader
@@ -173,7 +174,8 @@ public class XMLLoader extends ContentStreamLoader {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
       } finally {
         if (parser != null) parser.close();
-        IOUtils.closeQuietly(is);
+        // don't close streams
+        // IOUtils.closeQuietly(is);
       }
     }
   }

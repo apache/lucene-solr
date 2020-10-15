@@ -132,6 +132,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
 
       printWriter.write("</graph></graphml>");
     } finally {
+      // don't close stream
       // stream.close();
     }
   }
