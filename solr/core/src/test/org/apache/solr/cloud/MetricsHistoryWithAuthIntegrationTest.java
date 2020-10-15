@@ -55,7 +55,7 @@ public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace("<metrics>\n",
+    String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace("<metrics enabled=\"${metricsEnabled:false}\">\n",
         "<metrics>\n" + SOLR_XML_HISTORY_CONFIG);
     // Spin up a cluster with a protected /admin/metrics handler, and a 2 seconds metrics collectPeriod
     configureCluster(1)

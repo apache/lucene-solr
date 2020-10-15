@@ -29,6 +29,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
   
   @Override
   public void distribSetUp() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     super.distribSetUp();
     System.setProperty("solr.statsCache", LocalStatsCache.class.getName());
   }

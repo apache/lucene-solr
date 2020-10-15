@@ -121,6 +121,9 @@ The handler assumes that a simple aggregation (sum of partial metric values from
 sufficient. This happens to make sense for the default built-in sets of metrics. Future extensions will
 provide other aggregation strategies (such as, average, max, min, etc.).
 
+This handler is automatically disabled when metrics collection is disabled using the
+`<metrics enabled="false">` element in `solr.xml`.
+
 == Metrics History Configuration
 There are two ways to configure this subsystem:
 
