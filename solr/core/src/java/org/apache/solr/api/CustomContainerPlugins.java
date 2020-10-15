@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.util.ResourceLoaderAware;
@@ -59,6 +60,8 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private final List<PluginRegistryListener> listeners = new CopyOnWriteArrayList<>();
+
   final CoreContainer coreContainer;
   final ApiBag containerApiBag;
 
@@ -68,6 +71,13 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
   public boolean onChange(Map<String, Object> properties) {
     refresh();
     return false;
+  }
+
+  public void registerListener(PluginRegistryListener listener) {
+    listeners.add(listener);
+  }
+  public void unregisterListener(PluginRegistryListener listener) {
+    listeners.remove(listener);
   }
 
   public CustomContainerPlugins(CoreContainer coreContainer, ApiBag apiBag) {
@@ -113,6 +123,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       if (e.getValue() == Diff.REMOVED) {
         ApiInfo apiInfo = currentPlugins.remove(e.getKey());
         if (apiInfo == null) continue;
+        listeners.forEach(listener -> listener.deleted(apiInfo));
         handleClusterSingleton(null, apiInfo);
         for (ApiHolder holder : apiInfo.holders) {
           Api old = containerApiBag.unregister(holder.api.getEndPoint().method()[0],
@@ -143,6 +154,8 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
             containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
           currentPlugins.put(e.getKey(), apiInfo);
+          final ApiInfo apiInfoFinal = apiInfo;
+          listeners.forEach(listener -> listener.added(apiInfoFinal));
           handleClusterSingleton(apiInfo, null);
         } else {
           //this plugin is being updated
@@ -151,6 +164,8 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
             //register all new paths
             containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
+          final ApiInfo apiInfoFinal = apiInfo;
+          listeners.forEach(listener -> listener.modified(old, apiInfoFinal));
           handleClusterSingleton(apiInfo, old);
           if (old != null) {
             //this is an update of the plugin. But, it is possible that
@@ -240,6 +255,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
   @SuppressWarnings({"rawtypes"})
   public class ApiInfo implements ReflectMapWriter {
     List<ApiHolder> holders;
+
     @JsonProperty
     private final PluginMeta info;
 
@@ -265,6 +281,9 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       return instance;
     }
 
+    public PluginMeta getInfo() {
+      return info.copy();
+    }
     @SuppressWarnings({"unchecked","rawtypes"})
     public ApiInfo(PluginMeta info, List<String> errs) {
       this.info = info;
@@ -400,5 +419,15 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     }
 
     return null;
+  }
+
+  interface PluginRegistryListener {
+
+    void added(ApiInfo plugin);
+
+    void deleted(ApiInfo plugin);
+
+    void modified(ApiInfo old, ApiInfo replacement);
+
   }
 }
