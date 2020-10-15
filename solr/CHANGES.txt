@@ -263,6 +263,8 @@ Bug Fixes
 * SOLR-14503: Use specified waitForZk value as connection timeout for zookeeper in SolrDispatcherFilter.
   Also, consume specified SOLR_WAIT_FOR_ZK in bin/solr.cmd (Colvin Cowie via Munendra S N)
 
+* SOLR-14924: Some ReplicationHandler metrics are reported using incorrect types. (ab)
+
 Other Changes
 ---------------------
 
