@@ -51,7 +51,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
   public static final String STATE_FORMAT = "stateFormat";
+  /** @deprecated to be removed in Solr 9.0 (see SOLR-14930)
+   *
+   */
   public static final String RULE = "rule";
+
+  /** @deprecated to be removed in Solr 9.0 (see SOLR-14930)
+   *
+   */
   public static final String SNITCH = "snitch";
 
   private final int znodeVersion;

@@ -53,6 +53,9 @@ import static org.apache.solr.cloud.rule.Rule.Phase.FUZZY_VERIFY;
 import static org.apache.solr.cloud.rule.Rule.Phase.VERIFY;
 import static org.apache.solr.common.util.Utils.getDeepCopy;
 
+/** @deprecated to be removed in Solr 9.0 (see SOLR-14930)
+ *
+ */
 public class ReplicaAssigner {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   List<Rule> rules;

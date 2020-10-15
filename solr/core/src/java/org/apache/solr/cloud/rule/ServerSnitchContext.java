@@ -29,6 +29,9 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** @deprecated to be removed in Solr 9.0 (see SOLR-14930)
+ *
+ */
 public class ServerSnitchContext extends SnitchContext {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

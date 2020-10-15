@@ -36,7 +36,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.rule.ImplicitSnitch.CORES;
 
-
+/** @deprecated to be removed in Solr 9.0 (see SOLR-14930)
+ *
+ */
 public class Rule {
   public static final String WILD_CARD = "*";
   public static final String WILD_WILD_CARD = "**";
