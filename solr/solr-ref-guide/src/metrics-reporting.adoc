@@ -534,7 +534,7 @@ These metrics are available only on a per-core basis. Metrics can be aggregated 
 
 These metrics are collected in respective registries for each core (e.g., `solr.core.collection1....`), under the `INDEX` category.
 
-Metrics collection is controlled by boolean parameters in the `/config/indexConfig/metrics` section of `solrconfig.xml`:
+Metrics collection is controlled by boolean parameters in the `<metrics>` section of `solrconfig.xml`:
 
 Basic metrics:
 
