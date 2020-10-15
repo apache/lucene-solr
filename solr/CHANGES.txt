@@ -157,6 +157,8 @@ Bug Fixes
 
 * SOLR-14898: Stop returning duplicate HTTP response headers when requests are forward to another node. (hossman)
 
+* SOLR-14924: Some ReplicationHandler metrics are reported using incorrect types. (ab)
+
 Other Changes
 ---------------------
 
