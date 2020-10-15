@@ -58,8 +58,6 @@ import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.cloud.overseer.SliceMutator;
-import org.apache.solr.cloud.rule.ReplicaAssigner;
-import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -119,8 +117,6 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
-import static org.apache.solr.common.cloud.DocCollection.RULE;
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -469,8 +465,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           ZkStateReader.CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
           SHARDS_PROP,
-          RULE,
-          SNITCH,
           PULL_REPLICAS,
           TLOG_REPLICAS,
           NRT_REPLICAS,
@@ -493,9 +487,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         props.put(REPLICATION_FACTOR, props.get(NRT_REPLICAS));
       }
 
-      addMapObject(props, RULE);
-      addMapObject(props, SNITCH);
-      verifyRuleParams(h.coreContainer, props);
       final String collectionName = SolrIdentifierValidator.validateCollectionName((String) props.get(NAME));
       final String shardsParam = (String) props.get(SHARDS_PROP);
       if (StringUtils.isNotEmpty(shardsParam)) {
@@ -1047,8 +1038,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             formatString("no supported values provided {0}", CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES.toString()));
       }
       copy(req.getParams().required(), m, COLLECTION_PROP);
-      addMapObject(m, RULE);
-      addMapObject(m, SNITCH);
       for (Map.Entry<String, Object> entry : m.entrySet()) {
         String prop = entry.getKey();
         if ("".equals(entry.getValue())) {
@@ -1057,7 +1046,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
         DocCollection.verifyProp(m, prop);
       }
-      verifyRuleParams(h.coreContainer, m);
       if (m.get(REPLICATION_FACTOR) != null) {
         m.put(NRT_REPLICAS, m.get(REPLICATION_FACTOR));
       }
@@ -1408,47 +1396,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
   }
-
-  public static void verifyRuleParams(CoreContainer cc, Map<String, Object> m) {
-    @SuppressWarnings({"rawtypes"})
-    List l = (List) m.get(RULE);
-    if (l != null) {
-      for (Object o : l) {
-        @SuppressWarnings({"rawtypes"})
-        Map map = (Map) o;
-        try {
-          new Rule(map);
-        } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error in rule " + m, e);
-        }
-      }
-    }
-    if (cc != null && cc.isZooKeeperAware())
-      ReplicaAssigner.verifySnitchConf(cc.getZkController().getSolrCloudManager(), (List) m.get(SNITCH));
-  }
-
-  /**
-   * Converts a String of the form a:b,c:d to a Map
-   */
-  private static Map<String, Object> addMapObject(Map<String, Object> props, String key) {
-    Object v = props.get(key);
-    if (v == null) return props;
-    List<String> val = new ArrayList<>();
-    if (v instanceof String[]) {
-      val.addAll(Arrays.asList((String[]) v));
-    } else {
-      val.add(v.toString());
-    }
-    if (val.size() > 0) {
-      @SuppressWarnings({"rawtypes"})
-      ArrayList<Map> l = new ArrayList<>();
-      for (String rule : val) l.add(Rule.parseRule(rule));
-      props.put(key, l);
-    }
-    return props;
-  }
-
   private static void verifyShardsParam(String shardsParam) {
     for (String shard : shardsParam.split(",")) {
       SolrIdentifierValidator.validateShardName(shard);

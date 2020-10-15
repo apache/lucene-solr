@@ -423,7 +423,7 @@ public class Overseer implements SolrCloseable {
     private LongAdder itemsQueued = new LongAdder();
 
     private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter,
-        boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
+                                          boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
       if (log.isDebugEnabled()) log.debug("Consume state update from queue {}", message);
       // assert clusterState != null;
 
@@ -543,7 +543,6 @@ public class Overseer implements SolrCloseable {
             }
             break;
           case MODIFYCOLLECTION:
-            CollectionsHandler.verifyRuleParams(zkController.getCoreContainer(), message.getProperties());
             ZkWriteCommand zkwrite = new CollectionMutator(getSolrCloudManager()).modifyCollection(clusterState, message);
             return Collections.singletonList(zkwrite);
           default:
@@ -1046,7 +1045,7 @@ public class Overseer implements SolrCloseable {
   static DistributedMap getFailureMap(final SolrZkClient zkClient) throws KeeperException {
     return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-failure", NUM_RESPONSES_TO_STORE, (child) -> getAsyncIdsMap(zkClient).remove(child));
   }
-  
+
   /* Map of async IDs currently in use*/
   static DistributedMap getAsyncIdsMap(final SolrZkClient zkClient) throws KeeperException {
     return new DistributedMap(zkClient, Overseer.OVERSEER_ASYNC_IDS);
@@ -1132,7 +1131,7 @@ public class Overseer implements SolrCloseable {
     // that the actions are prefixed with a unique string.
     return getCollectionQueue(zkClient, zkStats);
   }
-  
+
   public ZkStateReader getZkStateReader() {
     return reader;
   }

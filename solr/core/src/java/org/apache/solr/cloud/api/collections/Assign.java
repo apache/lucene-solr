@@ -37,8 +37,6 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.cloud.rule.ReplicaAssigner;
-import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -51,7 +49,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 // nocommit - this needs work, but lets not hit zk and other nodes if we dont need for base Assign
@@ -405,58 +402,6 @@ public class Assign {
     }
   }
 
-  public static class RulesBasedAssignStrategy implements AssignStrategy {
-    public List<Rule> rules;
-    @SuppressWarnings({"rawtypes"})
-    public List snitches;
-    public ClusterState clusterState;
-
-    public RulesBasedAssignStrategy(List<Rule> rules, @SuppressWarnings({"rawtypes"})List snitches, ClusterState clusterState) {
-      this.rules = rules;
-      this.snitches = snitches;
-      this.clusterState = clusterState;
-    }
-
-    @Override
-    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
-      if (assignRequest.numTlogReplicas + assignRequest.numPullReplicas != 0) {
-        throw new Assign.AssignmentException(
-            Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules or cluster policies");
-      }
-
-      Map<String, Integer> shardVsReplicaCount = new HashMap<>();
-      for (String shard : assignRequest.shardNames) shardVsReplicaCount.put(shard, assignRequest.numNrtReplicas);
-
-      Map<String, Map<String, Integer>> shardVsNodes = new LinkedHashMap<>();
-      DocCollection docCollection = solrCloudManager.getClusterStateProvider().getClusterState().getCollectionOrNull(assignRequest.collectionName);
-      if (docCollection != null) {
-        for (Slice slice : docCollection.getSlices()) {
-          LinkedHashMap<String, Integer> n = new LinkedHashMap<>();
-          shardVsNodes.put(slice.getName(), n);
-          for (Replica replica : slice.getReplicas()) {
-            Integer count = n.get(replica.getNodeName());
-            if (count == null) count = 0;
-            n.put(replica.getNodeName(), ++count);
-          }
-        }
-      }
-
-      List<String> nodesList = assignRequest.nodes == null ? new ArrayList<>(clusterState.getLiveNodes()) : assignRequest.nodes;
-
-      ReplicaAssigner replicaAssigner = new ReplicaAssigner(rules,
-          shardVsReplicaCount,
-          snitches,
-          shardVsNodes,
-          nodesList,
-          solrCloudManager, clusterState);
-
-      Map<ReplicaPosition, String> nodeMappings = replicaAssigner.getNodeMappings();
-      return nodeMappings.entrySet().stream()
-          .map(e -> new ReplicaPosition(e.getKey().shard, e.getKey().index, e.getKey().type, e.getValue()))
-          .collect(Collectors.toList());
-    }
-  }
-
   public static class AssignStrategyFactory {
     public SolrCloudManager solrCloudManager;
 
@@ -465,32 +410,9 @@ public class Assign {
     }
 
     public AssignStrategy create(ClusterState clusterState, DocCollection collection) throws IOException, InterruptedException {
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      List<Map> ruleMaps = (List<Map>) collection.get("rule");
-      @SuppressWarnings({"rawtypes"})
-      List snitches = (List) collection.get(SNITCH);
 
-      Strategy strategy = null;
-      if (ruleMaps != null && !ruleMaps.isEmpty()) {
-        strategy = Strategy.RULES;
-      } else {
-        strategy = Strategy.LEGACY;
-      }
+      return new LegacyAssignStrategy();
 
-      // nocommit
-      // these other policies are way too slow!!
-      strategy = Strategy.LEGACY;
-
-      switch (strategy) {
-        case LEGACY:
-          return new LegacyAssignStrategy();
-        case RULES:
-          List<Rule> rules = new ArrayList<>();
-          for (Object map : ruleMaps) rules.add(new Rule((Map) map));
-          return new RulesBasedAssignStrategy(rules, snitches, clusterState);
-        default:
-          throw new Assign.AssignmentException("Unknown strategy type: " + strategy);
-      }
     }
 
     private enum Strategy {
