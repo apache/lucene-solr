@@ -71,20 +71,24 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   public static final String ALL = "all";
 
   private static final Pattern KEY_REGEX = Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
-  private CoreContainer cc;
+  private final CoreContainer cc;
   private final Map<String, String> injectedSysProps = CommonTestInjection.injectAdditionalProps();
-
-  public MetricsHandler() {
-    this.metricManager = null;
-  }
+  private final boolean enabled;
 
   public MetricsHandler(CoreContainer coreContainer) {
     this.metricManager = coreContainer.getMetricManager();
     this.cc = coreContainer;
+    this.enabled = coreContainer.getConfig().getMetricsConfig().isEnabled();
   }
 
   public MetricsHandler(SolrMetricManager metricManager) {
     this.metricManager = metricManager;
+    this.cc = null;
+    this.enabled = true;
+  }
+
+  public boolean isEnabled() {
+    return enabled;
   }
 
   @Override
@@ -107,6 +111,10 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   
   @SuppressWarnings({"unchecked"})
   public void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) throws Exception {
+    if (!enabled) {
+      consumer.accept("error", "metrics collection is disabled");
+      return;
+    }
     boolean compact = params.getBool(COMPACT_PARAM, true);
     String[] keys = params.getParams(KEY_PARAM);
     if (keys != null && keys.length > 0) {
