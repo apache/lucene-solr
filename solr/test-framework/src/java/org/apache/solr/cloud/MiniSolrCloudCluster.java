@@ -118,7 +118,8 @@ public class MiniSolrCloudCluster {
       "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:cryptokeys/priv_key512_pkcs8.pem}</str> \n" +
       "    <str name=\"pkiHandlerPublicKeyPath\">${pkiHandlerPublicKeyPath:cryptokeys/pub_key512.der}</str> \n" +
       "  </solrcloud>\n" +
-      "  <metrics>\n" +
+      // NOTE: this turns off the metrics collection unless overriden by a sysprop
+      "  <metrics enabled=\"${metricsEnabled:false}\">\n" +
       "    <reporter name=\"default\" class=\"org.apache.solr.metrics.reporters.SolrJmxReporter\">\n" +
       "      <str name=\"rootName\">solr_${hostPort:8983}</str>\n" +
       "    </reporter>\n" +
