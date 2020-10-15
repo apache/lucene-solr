@@ -71,6 +71,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
   // set up a real cluster as the source of test data
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     simulated = random().nextBoolean();
     simulated = true;
     log.info("####### Using simulated components? {}", simulated);

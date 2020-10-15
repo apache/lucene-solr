@@ -43,6 +43,7 @@ public class TestUtilizeNode extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(3)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();

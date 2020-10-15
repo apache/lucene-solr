@@ -57,6 +57,7 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();

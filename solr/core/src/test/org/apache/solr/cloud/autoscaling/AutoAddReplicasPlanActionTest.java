@@ -51,6 +51,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
   
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     System.setProperty("solr.httpclient.retries", "4");
     System.setProperty("solr.retries.on.forward", "1");
     System.setProperty("solr.retries.to.followers", "1"); 

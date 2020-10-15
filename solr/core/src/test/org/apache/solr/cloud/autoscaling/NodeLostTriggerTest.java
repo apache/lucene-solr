@@ -64,7 +64,8 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     actionConstructorCalled = new AtomicBoolean(false);
     actionInitCalled = new AtomicBoolean(false);
     actionCloseCalled = new AtomicBoolean(false);
-    
+    System.setProperty("metricsEnabled", "true");
+
     configureCluster(3)
     .addConfig("conf", configset("cloud-minimal"))
     .configure();

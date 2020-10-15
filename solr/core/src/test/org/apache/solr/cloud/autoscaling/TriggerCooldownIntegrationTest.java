@@ -65,6 +65,7 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
   
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     resetTriggerAndListenerState();
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))

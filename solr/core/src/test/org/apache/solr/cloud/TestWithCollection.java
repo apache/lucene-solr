@@ -70,6 +70,7 @@ public class TestWithCollection extends SolrCloudTestCase {
 
   @Before
   public void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(NUM_JETTIES)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();

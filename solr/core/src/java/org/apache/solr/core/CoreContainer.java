@@ -748,9 +748,11 @@ public class CoreContainer {
     createMetricsHistoryHandler();
 
     autoscalingHistoryHandler = createHandler(AUTOSCALING_HISTORY_PATH, AutoscalingHistoryHandler.class.getName(), AutoscalingHistoryHandler.class);
-    metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
-    // may want to add some configuration here in the future
-    metricsCollectorHandler.init(null);
+    if (cfg.getMetricsConfig().isEnabled()) {
+      metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
+      // may want to add some configuration here in the future
+      metricsCollectorHandler.init(null);
+    }
 
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
     securityConfHandler.initializeMetrics(solrMetricsContext, AUTHZ_PATH);
@@ -912,6 +914,10 @@ public class CoreContainer {
   @SuppressWarnings({"unchecked"})
   private void createMetricsHistoryHandler() {
     PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
+    if (plugin != null && MetricsConfig.NOOP_IMPL_CLASS.equals(plugin.className)) {
+      // still create the handler but it will be disabled
+      plugin = null;
+    }
     Map<String, Object> initArgs;
     if (plugin != null && plugin.initArgs != null) {
       initArgs = plugin.initArgs.asMap(5);

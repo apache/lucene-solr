@@ -322,7 +322,7 @@ public class Policy implements MapWriter {
           } catch (IOException e1) {
             //
           }
-          throw new RuntimeException(e.getMessage());
+          throw new RuntimeException(e.getMessage(), e);
         }
         p.setApproxVal(tmpMatrix);
       }

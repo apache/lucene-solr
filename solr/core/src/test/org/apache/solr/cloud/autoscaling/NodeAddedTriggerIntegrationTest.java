@@ -80,6 +80,7 @@ public class NodeAddedTriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();

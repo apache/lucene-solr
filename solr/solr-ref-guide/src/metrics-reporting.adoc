@@ -87,6 +87,21 @@ The metrics available in your system can be customized by modifying the `<metric
 
 TIP: See also the section <<format-of-solr-xml.adoc#format-of-solr-xml,Format of Solr.xml>> for more information about the `solr.xml` file, where to find it, and how to edit it.
 
+=== Disabling the metrics collection ===
+The `<metrics>` element in `solr.xml` supports one attribute `enabled`, which takes a boolean value,
+for example `<metrics enabled="true">`.
+
+The default value of this attribute is `true`, meaning that metrics are being collected, processed and
+reported by Solr according to the configured metric reporters. They are also available from the
+metrics and metrics history APIs.
+
+The `false` value of this attribute (`<metrics enabled="false">`) turns off metrics collection, processing,
+and the collection of metrics history. Internally, all metrics suppliers are replaced by singleton no-op
+implementations, which effectively removes nearly all overheads related to metrics collection.
+All reporter configurations are skipped, and the metrics
+and metrics history APIs stop reporting any metrics and only return an `<error>`
+element in their responses.
+
 === The <metrics> <hiddenSysProps> Element
 
 This section of `solr.xml` allows you to define the system properties which are considered system-sensitive and should not be exposed via the Metrics API.

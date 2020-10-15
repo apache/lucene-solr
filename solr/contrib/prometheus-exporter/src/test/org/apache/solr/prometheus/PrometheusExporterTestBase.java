@@ -60,6 +60,7 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(NUM_NODES)
         .addConfig(CONF_NAME, getFile(CONF_DIR).toPath())
         .configure();

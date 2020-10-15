@@ -81,6 +81,7 @@ public class IndexSizeTriggerMixedBoundsTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(2)
     .addConfig("conf", configset("cloud-minimal"))
     .configure();

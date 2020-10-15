@@ -42,6 +42,7 @@ public class HdfsAutoAddReplicasIntegrationTest extends AutoAddReplicasIntegrati
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
   }
 

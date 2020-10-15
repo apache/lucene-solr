@@ -66,6 +66,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(2)
         .addConfig(CONFIGSET_NAME, configset("cloud-minimal"))
         .configure();

@@ -72,7 +72,8 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
-    
+    System.setProperty("metricsEnabled", "true");
+
     configureCluster(4)
     .addConfig("conf", configset("cloud-minimal"))
     .configure();

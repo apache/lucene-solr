@@ -21,6 +21,8 @@
 -->
 <solr>
 
+  <metrics enabled="${metricsEnabled:true}"/>
+
   <str name="shareSchema">${shareSchema:false}</str>
   <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>

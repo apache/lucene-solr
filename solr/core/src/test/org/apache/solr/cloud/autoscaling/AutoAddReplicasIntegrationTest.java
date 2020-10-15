@@ -63,6 +63,7 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   
   @Before
   public void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(3)
         .addConfig("conf", configset(getConfigSet()))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))

@@ -52,6 +52,7 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     // make sure there's an MBeanServer
     mBeanServer = ManagementFactory.getPlatformMBeanServer();
     configureCluster(1)

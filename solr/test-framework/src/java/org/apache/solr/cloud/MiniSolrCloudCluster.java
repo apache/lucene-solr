@@ -116,7 +116,8 @@ public class MiniSolrCloudCluster {
       "    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str> \n" +
       "    <str name=\"zkACLProvider\">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str> \n" +
       "  </solrcloud>\n" +
-      "  <metrics>\n" +
+      // NOTE: this turns off the metrics collection unless overriden by a sysprop
+      "  <metrics enabled=\"${metricsEnabled:false}\">\n" +
       "    <reporter name=\"default\" class=\"org.apache.solr.metrics.reporters.SolrJmxReporter\">\n" +
       "      <str name=\"rootName\">solr_${hostPort:8983}</str>\n" +
       "    </reporter>\n" +

@@ -74,6 +74,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();

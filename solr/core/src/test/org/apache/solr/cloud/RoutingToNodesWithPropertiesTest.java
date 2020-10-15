@@ -67,6 +67,7 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
 
   @Before
   public void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     CommonTestInjection.setAdditionalProps(ImmutableMap.of("zone", "us-west1"));
     configureCluster(2)
         .withSolrXml(TEST_PATH().resolve("solr-trackingshardhandler.xml"))

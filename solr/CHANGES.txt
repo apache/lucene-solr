@@ -40,6 +40,8 @@ New Features
 
 * SOLR-14907: Support single file upload/overwrite in configSet API. (Houston Putman)
 
+* SOLR-14914: Add option to disable metrics collection. (ab)
+
 Improvements
 ---------------------
 

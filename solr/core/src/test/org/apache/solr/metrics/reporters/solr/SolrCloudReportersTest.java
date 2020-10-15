@@ -48,6 +48,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void configureDummyCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(0).configure();
   }
 

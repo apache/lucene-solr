@@ -85,6 +85,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
 
   @Before
   public void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();

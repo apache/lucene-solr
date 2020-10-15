@@ -99,7 +99,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
   @Before
   public void setUp() throws Exception  {
     super.setUp();
-    
+    System.setProperty("metricsEnabled", "true");
     configureCluster(NODE_COUNT)
     .addConfig("conf", configset("cloud-minimal"))
     .configure();
