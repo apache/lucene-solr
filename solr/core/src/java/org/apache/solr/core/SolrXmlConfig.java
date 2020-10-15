@@ -500,7 +500,18 @@ public class SolrXmlConfig {
 
   private static MetricsConfig getMetricsConfig(XmlConfigFile config) {
     MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
-    Node node = config.getNode("solr/metrics/suppliers/counter", false);
+    Node node = config.getNode("solr/metrics", false);
+    // enabled by default
+    boolean enabled = true;
+    if (node != null) {
+      enabled = Boolean.parseBoolean(DOMUtil.getAttrOrDefault(node, "enabled", "true"));
+    }
+    builder.setEnabled(enabled);
+    if (!enabled) {
+      log.info("Metrics collection is disabled.");
+      return builder.build();
+    }
+    node = config.getNode("solr/metrics/suppliers/counter", false);
     if (node != null) {
       builder = builder.setCounterSupplier(new PluginInfo(node, "counterSupplier", false, false));
     }
