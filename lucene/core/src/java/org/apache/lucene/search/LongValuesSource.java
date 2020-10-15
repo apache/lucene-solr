@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.search.comparators.LongComparator;
 
 /**
  * Base class for producing {@link LongValues}
@@ -305,7 +306,11 @@ public abstract class LongValuesSource implements SegmentCacheable {
 
     @Override
     public SortField rewrite(IndexSearcher searcher) throws IOException {
-      LongValuesSortField rewritten = new LongValuesSortField(producer.rewrite(searcher), reverse);
+      LongValuesSource rewrittenSource = producer.rewrite(searcher);
+      if (producer == rewrittenSource) {
+        return this;
+      }
+      LongValuesSortField rewritten = new LongValuesSortField(rewrittenSource, reverse);
       if (missingValue != null) {
         rewritten.setMissingValue(missingValue);
       }
@@ -333,20 +338,26 @@ public abstract class LongValuesSource implements SegmentCacheable {
     @Override
     public FieldComparator<Long> newComparator(String fieldname, int numHits,
                                                int sortPos, boolean reversed) {
-      return new FieldComparator.LongComparator(numHits, fieldname, missingValue) {
-
-        LeafReaderContext ctx;
-        LongValuesHolder holder = new LongValuesHolder();
-
+      return new LongComparator(numHits, fieldname, missingValue, reversed, sortPos) {
         @Override
-        protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-          ctx = context;
-          return asNumericDocValues(holder);
-        }
+        public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          LongValuesHolder holder = new LongValuesHolder();
 
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-          holder.values = producer.getValues(ctx, DoubleValuesSource.fromScorer(scorer));
+          return new LongComparator.LongLeafComparator(context) {
+            LeafReaderContext ctx;
+
+            @Override
+            protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) {
+              ctx = context;
+              return asNumericDocValues(holder);
+            }
+
+            @Override
+            public void setScorer(Scorable scorer) throws IOException {
+              holder.values = producer.getValues(ctx, DoubleValuesSource.fromScorer(scorer));
+              super.setScorer(scorer);
+            }
+          };
         }
       };
     }

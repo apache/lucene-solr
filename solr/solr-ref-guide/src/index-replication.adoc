@@ -82,7 +82,7 @@ A directory containing hard links to the data files of an index. Snapshots are d
 In addition to `ReplicationHandler` configuration options specific to the leader/follower roles, there are a few special configuration options that are generally supported (even when using SolrCloud).
 
 * `maxNumberOfBackups` an integer value dictating the maximum number of backups this node will keep on disk as it receives `backup` commands.
-* Similar to most other request handlers in Solr you may configure a set of <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,defaults, invariants, and/or appends>> parameters corresponding with any request parameters supported by the `ReplicationHandler` when <<HTTP API Commands for the ReplicationHandler,processing commands>>.
+* Similar to most other request handlers in Solr you may configure a set of <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-handlers,defaults, invariants, and/or appends>> parameters corresponding with any request parameters supported by the `ReplicationHandler` when <<HTTP API Commands for the ReplicationHandler,processing commands>>.
 
 === Configuring the Replication RequestHandler on a Leader Server
 
@@ -351,7 +351,7 @@ http://_leader_host:port_/solr/_core_name_/replication?command=restorestatus
 +
 This command is used to check the status of a restore operation. This command takes no parameters.
 +
-The status value can be "In Progress" , "success" or "failed". If it failed then an "exception" will also be sent in the response.
+The status value can be "In Progress", "success", or "failed". If it failed then an "exception" will also be sent in the response.
 
 `deletebackup`::
 Delete any backup created using the `backup` command.

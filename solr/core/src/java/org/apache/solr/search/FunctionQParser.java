@@ -239,9 +239,21 @@ public class FunctionQParser extends QParser {
    * @return List&lt;ValueSource&gt;
    */
   public List<ValueSource> parseValueSourceList() throws SyntaxError {
+    return parseValueSourceList(FLAG_DEFAULT | FLAG_CONSUME_DELIMITER);
+  }
+
+  /**
+   * Parse a list of ValueSource.  Must be the final set of arguments
+   * to a ValueSource.
+   *
+   * @param flags - customize parsing behavior
+   *
+   * @return List&lt;ValueSource&gt;
+   */
+  public List<ValueSource> parseValueSourceList(int flags) throws SyntaxError {
     List<ValueSource> sources = new ArrayList<>(3);
     while (hasMoreArguments()) {
-      sources.add(parseValueSource(FLAG_DEFAULT | FLAG_CONSUME_DELIMITER));
+      sources.add(parseValueSource(flags));
     }
     return sources;
   }

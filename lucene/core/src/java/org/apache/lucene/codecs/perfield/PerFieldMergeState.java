@@ -37,7 +37,7 @@ import org.apache.lucene.index.Terms;
  * <p>
  * Warning: the input {@linkplain MergeState} instance will be updated when calling {@link #apply(Collection)}.
  * <p>
- * It should be called within a {@code try &#123;...&#125; finally &#123;...&#125;} block to make sure that the mergeState instance is
+ * It should be called within a {@code try {...} finally {...}} block to make sure that the mergeState instance is
  * restored to its original state:
  * <pre>
  * PerFieldMergeState pfMergeState = new PerFieldMergeState(mergeState);

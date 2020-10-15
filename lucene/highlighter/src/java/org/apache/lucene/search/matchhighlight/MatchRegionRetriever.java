@@ -80,22 +80,23 @@ public class MatchRegionRetriever {
 
   /**
    * A constructor with the default offset strategy supplier.
+   *
+   * @param analyzer An analyzer that may be used to reprocess (retokenize) document fields
+   *                 in the absence of position offsets in the index. Note that the analyzer must return
+   *                 tokens (positions and offsets) identical to the ones stored in the index.
    */
   public MatchRegionRetriever(IndexSearcher searcher, Query query, Analyzer analyzer) throws IOException {
-    this(searcher, query, analyzer, computeOffsetRetrievalStrategies(searcher.getIndexReader(), analyzer));
+    this(searcher, query, computeOffsetRetrievalStrategies(searcher.getIndexReader(), analyzer));
   }
 
   /**
    * @param searcher Index searcher to be used for retrieving matches.
    * @param query The query for which matches should be retrieved. The query should be rewritten
    *              against the provided searcher.
-   * @param analyzer An analyzer that may be used to reprocess (retokenize) document fields
-   *                 in the absence of position offsets in the index. Note that the analyzer must return
-   *                 tokens (positions and offsets) identical to the ones stored in the index.
    * @param fieldOffsetStrategySupplier A custom supplier of per-field {@link OffsetsRetrievalStrategy}
    *                                    instances.
    */
-  public MatchRegionRetriever(IndexSearcher searcher, Query query, Analyzer analyzer,
+  public MatchRegionRetriever(IndexSearcher searcher, Query query,
                               OffsetsRetrievalStrategySupplier fieldOffsetStrategySupplier)
       throws IOException {
     leaves = searcher.getIndexReader().leaves();

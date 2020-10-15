@@ -88,7 +88,7 @@ Snippets can be included directly from any file in the Lucene/Solr GIT repo by r
 ----
 --
 
-When building the Guide, the `solr-root-path` attribute will be automatically set correctly for the (temporary) `build/solr-ref-guide/content` directory used by Ant.
+When building the Guide, the `solr-root-path` attribute will be automatically set correctly for the (temporary) `solr-ref-guide/build/content` directory used by Gradle.
 
 In order for editors (such as ATOM) to be able to offer "live preview" of the `*.adoc` files using these includes, the `solr-root-path` attribute must also be set as a document level attribute in each file, with the correct relative path.
 

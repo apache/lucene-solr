@@ -2984,20 +2984,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static final String UPDATELOG_SYSPROP = "solr.tests.ulog";
 
   /**
-   * randomizes the updateLog between different update log implementations for better test coverage
-   */
-  public static void randomizeUpdateLogImpl() {
-    if (random().nextBoolean()) {
-      System.setProperty(UPDATELOG_SYSPROP, "solr.CdcrUpdateLog");
-    } else {
-      System.setProperty(UPDATELOG_SYSPROP,"solr.UpdateLog");
-    }
-    if (log.isInfoEnabled()) {
-      log.info("updateLog impl={}", System.getProperty(UPDATELOG_SYSPROP));
-    }
-  }
-
-  /**
    * Sets various sys props related to user specified or randomized choices regarding the types 
    * of numerics that should be used in tests.
    *

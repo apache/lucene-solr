@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import java.net.URI;
-import java.util.Optional;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -39,7 +38,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
     String name = params.required().get(NAME);
 
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
-    BackupRepository repository = it.handler.coreContainer.newBackupRepository(Optional.ofNullable(repoName));
+    BackupRepository repository = it.handler.coreContainer.newBackupRepository(repoName);
 
     String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
     if (location == null) {

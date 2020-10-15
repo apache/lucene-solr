@@ -509,27 +509,18 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     }
   }
   
-  private boolean forceApplyGlobalSlice() {
-    globalBufferLock.lock();
-    final Node<?> currentTail = tail;
+  public int getBufferedUpdatesTermsSize() {
+    final ReentrantLock lock = globalBufferLock; // Trusted final
+    lock.lock();
     try {
+      final Node<?> currentTail = tail;
       if (globalSlice.sliceTail != currentTail) {
         globalSlice.sliceTail = currentTail;
         globalSlice.apply(globalBufferedUpdates, BufferedUpdates.MAX_INT);
       }
-      return globalBufferedUpdates.any();
-    } finally {
-      globalBufferLock.unlock();
-    }
-  }
-
-  public int getBufferedUpdatesTermsSize() {
-    globalBufferLock.lock();
-    try {
-      forceApplyGlobalSlice();
       return globalBufferedUpdates.deleteTerms.size();
     } finally {
-      globalBufferLock.unlock();
+      lock.unlock();
     }
   }
 
@@ -573,6 +564,12 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     }
   }
 
+  // we use a static method to get this lambda since we previously introduced a memory leak since it would
+  // implicitly reference this.nextSeqNo which holds on to this del queue. see LUCENE-9478 for reference
+  private static LongSupplier getPrevMaxSeqIdSupplier(AtomicLong nextSeqNo) {
+    return () -> nextSeqNo.get() - 1;
+  }
+
   /**
    * Advances the queue to the next queue on flush. This carries over the the generation to the next queue and
    * set the {@link #getMaxSeqNo()} based on the given maxNumPendingOps. This method can only be called once, subsequently
@@ -593,7 +590,7 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     return new DocumentsWriterDeleteQueue(infoStream, generation + 1, seqNo + 1,
         // don't pass ::getMaxCompletedSeqNo here b/c otherwise we keep an reference to this queue
         // and this will be a memory leak since the queues can't be GCed
-        () -> nextSeqNo.get() - 1);
+        getPrevMaxSeqIdSupplier(nextSeqNo));
 
   }
 

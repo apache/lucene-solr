@@ -77,6 +77,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
   }
 
 
+  /** Transforms values into a range between 0 and 1 */
   protected List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
     String[] tokenizedText = tokenize(inputDocument);
 

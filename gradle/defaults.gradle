@@ -23,9 +23,6 @@ allprojects {
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
-    maven {
-      url "https://maven.restlet.com"
-    }
   }
 
   // Artifacts will have names after full gradle project path
@@ -40,10 +37,40 @@ allprojects {
         result = project.getProperty(propName)
       } else if (System.properties.containsKey(propName)) {
         result = System.properties.get(propName)
+      } else if (defValue instanceof Closure) {
+        result = defValue.call()
       } else {
         result = defValue
       }
       return result
+    }
+
+    // System environment variable or default.
+    envOrDefault = { envName, defValue ->
+      return Objects.requireNonNullElse(System.getenv(envName), defValue);
+    }
+
+    // Either a project, system property, environment variable or default value.
+    propertyOrEnvOrDefault = { propName, envName, defValue ->
+      return propertyOrDefault(propName, envOrDefault(envName, defValue));
+    }
+
+    // Locate script-relative resource folder. This is context-sensitive so pass
+    // the right buildscript (top-level).
+    scriptResources = { buildscript ->
+      return file(buildscript.sourceFile.absolutePath.replaceAll('.gradle$', ""))
+    }
+
+    // LUCENE-9505: utility function that sets up dummy outputs for a task so that
+    // clean[TaskName] works and allows selective re-runs.
+    setupDummyOutputs = { Task task ->
+      File dummyOutput = file("${task.project.buildDir}/tasks/${task.name}/dummy-output.txt")
+      task.outputs.file(dummyOutput)
+      task.doLast {
+        if (!dummyOutput.exists()) {
+          dummyOutput.createNewFile()
+        }
+      }
     }
   }
 }

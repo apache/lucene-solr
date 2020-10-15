@@ -184,7 +184,7 @@ ul.nav li ul {
 
 /* end navgoco sidebar */
 
-/* When '-Dsolr-guide-version' is not set during the build, the Guide is
+/* When 'solr-guide-draft-status: DRAFT' is in _config.yml, the Guide is
    considered a Draft and includes a notice in the sidebar to that effect */
 
 .sidebar-header p.draft-notice {

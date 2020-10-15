@@ -890,6 +890,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   @Override
+  public int _size() {
+    return size();
+  }
+
+  @Override
   public void forEachEntry(BiConsumer<String, ? super T> fun) {
     forEach(fun);
   }

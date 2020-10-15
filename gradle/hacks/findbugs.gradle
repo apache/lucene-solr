@@ -16,13 +16,14 @@
  */ 
 
 // See LUCENE-9411. This hack adds compile-time only dependencies
-// on findbugs annotations. Otherwise javac generates odd warnings about missing
+// on findbugs and error_prone annotations. Otherwise javac generates odd warnings about missing
 // type information.
 
 configure([project(":solr:core"),
            project(":solr:solrj"),
            project(":solr:contrib:prometheus-exporter"),
-           project(":solr:test-framework")]) {
+           project(":solr:test-framework"),
+           project(":solr:contrib:analytics")]) {
   plugins.withType(JavaPlugin) {
     dependencies {
       // Use versionless variants because these libraries are in versions.lock.

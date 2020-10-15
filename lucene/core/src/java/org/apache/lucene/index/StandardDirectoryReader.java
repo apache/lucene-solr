@@ -82,7 +82,8 @@ public final class StandardDirectoryReader extends DirectoryReader {
   }
 
   /** Used by near real-time search */
-  static DirectoryReader open(IndexWriter writer, SegmentInfos infos, boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
+  static StandardDirectoryReader open(IndexWriter writer, IOUtils.IOFunction<SegmentCommitInfo, SegmentReader> readerFunction,
+                                      SegmentInfos infos, boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     // IndexWriter synchronizes externally before calling
     // us, which ensures infos will not change; so there's
     // no need to process segments in reverse order
@@ -101,19 +102,14 @@ public final class StandardDirectoryReader extends DirectoryReader {
         // IndexWriter's segmentInfos:
         final SegmentCommitInfo info = infos.info(i);
         assert info.info.dir == dir;
-        final ReadersAndUpdates rld = writer.getPooledInstance(info, true);
-        try {
-          final SegmentReader reader = rld.getReadOnlyClone(IOContext.READ);
-          if (reader.numDocs() > 0 || writer.getConfig().mergePolicy.keepFullyDeletedSegment(() -> reader)) {
-            // Steal the ref:
-            readers.add(reader);
-            infosUpto++;
-          } else {
-            reader.decRef();
-            segmentInfos.remove(infosUpto);
-          }
-        } finally {
-          writer.release(rld);
+        final SegmentReader reader = readerFunction.apply(info);
+        if (reader.numDocs() > 0 || writer.getConfig().mergePolicy.keepFullyDeletedSegment(() -> reader)) {
+          // Steal the ref:
+          readers.add(reader);
+          infosUpto++;
+        } else {
+          reader.decRef();
+          segmentInfos.remove(infosUpto);
         }
       }
 

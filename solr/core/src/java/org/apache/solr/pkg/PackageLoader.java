@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -60,6 +61,12 @@ public class PackageLoader implements Closeable {
 
   private PackageAPI packageAPI;
 
+
+  public Optional<Package.Version> getPackageVersion(String pkg, String version) {
+    Package p = packageClassLoaders.get(pkg);
+    if(p == null) return Optional.empty();
+    return Optional.ofNullable(p.getVersion(version));
+  }
 
   public PackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
@@ -227,6 +234,7 @@ public class PackageLoader implements Closeable {
     }
 
     public Version getVersion(String version) {
+      if(version == null) return getLatest();
       return myVersions.get(version);
     }
 

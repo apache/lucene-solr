@@ -97,7 +97,7 @@ public class Lucene84Codec extends Codec {
   }
 
   @Override
-  public final StoredFieldsFormat storedFieldsFormat() {
+  public StoredFieldsFormat storedFieldsFormat() {
     return storedFieldsFormat;
   }
 

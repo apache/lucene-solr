@@ -37,7 +37,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.util.*;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.JsonSchemaCreator;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -267,6 +271,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
 
     @SuppressWarnings({"unchecked"})
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation cmd) {
+      Object original = null;
       try {
         Object o = null;
         String commandName = null;
@@ -282,12 +287,13 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
             }
           } else {
             commandName = cmd.name;
-            o = cmd.getCommandData();
+            original = cmd.getCommandData();
+            o = original;
             if (o instanceof Map && parameterClass != null && parameterClass != Map.class) {
               o = mapper.readValue(Utils.toJSONString(o), parameterClass);
             }
           }
-          PayloadObj<Object> payloadObj = new PayloadObj<>(commandName, o, o, req, rsp);
+          PayloadObj<Object> payloadObj = new PayloadObj<>(commandName, original, o, req, rsp);
           cmd = payloadObj;
           method.invoke(obj, payloadObj);
           checkForErrorInPayload(cmd);
