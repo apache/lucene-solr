@@ -38,7 +38,7 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
       // if we can't tessellate; then random polygon generator created a malformed shape
       p = (XYPolygon)getShapeType().nextShape();
       try {
-        Tessellator.tessellate(p);
+        Tessellator.tessellate(p, true);
         return p;
       } catch (IllegalArgumentException e) {
         continue;
@@ -48,7 +48,7 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
 
   @Override
   protected Field[] createIndexableFields(String field, Object polygon) {
-    return XYShape.createIndexableFields(field, (XYPolygon)polygon);
+    return XYShape.createIndexableFields(field, (XYPolygon)polygon, random().nextBoolean());
   }
 
   @Override
@@ -71,9 +71,9 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object o) {
       XYPolygon polygon = (XYPolygon) o;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, XYShape.createIndexableFields("dummy", polygon)) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(query, XYShape.createIndexableFields("dummy", polygon, random().nextBoolean())) == Component2D.WithinRelation.CANDIDATE;
       }
-      return testComponentQuery(query, XYShape.createIndexableFields("dummy", polygon));
+      return testComponentQuery(query, XYShape.createIndexableFields("dummy", polygon, random().nextBoolean()));
     }
   }
 

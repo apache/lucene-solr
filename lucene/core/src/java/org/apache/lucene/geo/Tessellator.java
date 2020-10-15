@@ -82,7 +82,7 @@ final public class Tessellator {
   // No Instance:
   private Tessellator() {}
 
-  public static final List<Triangle> tessellate(final Polygon polygon) {
+  public static final List<Triangle> tessellate(final Polygon polygon, boolean checkSelfIntersections) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
     // then filter instances of intersections.
     Node outerNode = createDoublyLinkedList(polygon.getPolyLons(), polygon.getPolyLats(),polygon.getWindingOrder(), true,
@@ -112,7 +112,9 @@ final public class Tessellator {
         sortByMorton(outerNode);
       }
     }
-    checkIntersection(outerNode, mortonOptimized);
+    if (checkSelfIntersections) {
+      checkIntersection(outerNode, mortonOptimized);
+    }
     // Calculate the tessellation using the doubly LinkedList.
     List<Triangle> result = earcutLinkedList(polygon, outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
     if (result.size() == 0) {
@@ -123,7 +125,7 @@ final public class Tessellator {
   }
 
 
-  public static final List<Triangle> tessellate(final XYPolygon polygon) {
+  public static final List<Triangle> tessellate(final XYPolygon polygon, boolean checkSelfIntersections) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
     // then filter instances of intersections.0
     Node outerNode = createDoublyLinkedList(XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()), XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()),
@@ -153,7 +155,9 @@ final public class Tessellator {
         sortByMorton(outerNode);
       }
     }
-    checkIntersection(outerNode, mortonOptimized);
+    if (checkSelfIntersections) {
+      checkIntersection(outerNode, mortonOptimized);
+    }
     // Calculate the tessellation using the doubly LinkedList.
     List<Triangle> result = earcutLinkedList(polygon, outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
     if (result.size() == 0) {

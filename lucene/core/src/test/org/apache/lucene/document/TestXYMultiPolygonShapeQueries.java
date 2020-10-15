@@ -45,7 +45,7 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
         // if we can't tessellate; then random polygon generator created a malformed shape
         XYPolygon p = (XYPolygon) getShapeType().nextShape();
         try {
-          Tessellator.tessellate(p);
+          Tessellator.tessellate(p, true);
           //polygons are disjoint so CONTAINS works. Note that if we intersect
           //any shape then contains return false.
           if (isDisjoint(polygons, p, i)) {
@@ -86,7 +86,7 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
     XYPolygon[] polygons = (XYPolygon[]) o;
     List<Field> allFields = new ArrayList<>();
     for (XYPolygon polygon : polygons) {
-      Field[] fields = XYShape.createIndexableFields(name, polygon);
+      Field[] fields = XYShape.createIndexableFields(name, polygon, random().nextBoolean());
       for (Field field : fields) {
         allFields.add(field);
       }
@@ -142,7 +142,8 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
     private boolean testWithinPolygon(Component2D query, XYPolygon[] polygons) {
       Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
       for (XYPolygon p : polygons) {
-        Component2D.WithinRelation relation = POLYGONVALIDATOR.testWithinQuery(query, XYShape.createIndexableFields("dummy", p));
+        Component2D.WithinRelation relation = 
+                POLYGONVALIDATOR.testWithinQuery(query, XYShape.createIndexableFields("dummy", p, random().nextBoolean()));
         if (relation == Component2D.WithinRelation.NOTWITHIN) {
           return false;
         } else if (relation == Component2D.WithinRelation.CANDIDATE) {

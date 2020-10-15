@@ -43,7 +43,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  * <p>
  * This class defines seven static factory methods for common indexing and search operations:
  * <ul>
- *   <li>{@link #createIndexableFields(String, Polygon)} for indexing a geo polygon.
+ *   <li>{@link #createIndexableFields(String, Polygon, boolean)} for indexing a geo polygon.
  *   <li>{@link #createIndexableFields(String, Line)} for indexing a geo linestring.
  *   <li>{@link #createIndexableFields(String, double, double)} for indexing a lat, lon geo point.
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching geo shapes that have some {@link QueryRelation} with a bounding box.
@@ -66,9 +66,9 @@ public class LatLonShape {
   }
 
   /** create indexable fields for polygon geometry */
-  public static Field[] createIndexableFields(String fieldName, Polygon polygon) {
+  public static Field[] createIndexableFields(String fieldName, Polygon polygon, boolean checkSelfIntersections) {
     // the lionshare of the indexing is done by the tessellator
-    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon, checkSelfIntersections);
     List<Triangle> fields = new ArrayList<>();
     for (Tessellator.Triangle t : tessellation) {
       fields.add(new Triangle(fieldName, t));

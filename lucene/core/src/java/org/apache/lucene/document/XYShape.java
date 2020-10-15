@@ -40,7 +40,7 @@ import static org.apache.lucene.geo.XYEncodingUtils.encode;
  * <p>
  * This class defines seven static factory methods for common indexing and search operations:
  * <ul>
- *   <li>{@link #createIndexableFields(String, XYPolygon)} for indexing a cartesian polygon.
+ *   <li>{@link #createIndexableFields(String, XYPolygon, boolean)} for indexing a cartesian polygon.
  *   <li>{@link #createIndexableFields(String, XYLine)} for indexing a cartesian linestring.
  *   <li>{@link #createIndexableFields(String, float, float)} for indexing a x, y cartesian point.
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a bounding box.
@@ -62,9 +62,9 @@ public class XYShape {
   }
 
   /** create indexable fields for cartesian polygon geometry */
-  public static Field[] createIndexableFields(String fieldName, XYPolygon polygon) {
+  public static Field[] createIndexableFields(String fieldName, XYPolygon polygon, boolean checkSelfIntersections) {
 
-    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon, checkSelfIntersections);
     List<Triangle> fields = new ArrayList<>(tessellation.size());
     for (Tessellator.Triangle t : tessellation) {
       fields.add(new Triangle(fieldName, t));

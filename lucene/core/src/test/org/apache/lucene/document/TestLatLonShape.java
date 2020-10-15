@@ -60,7 +60,7 @@ public class TestLatLonShape extends LuceneTestCase {
   }
 
   protected void addPolygonsToDoc(String field, Document doc, Polygon polygon) {
-    Field[] fields = LatLonShape.createIndexableFields(field, polygon);
+    Field[] fields = LatLonShape.createIndexableFields(field, polygon, random().nextBoolean());
     for (Field f : fields) {
       doc.add(f);
     }
@@ -280,14 +280,9 @@ public class TestLatLonShape extends LuceneTestCase {
         new double[] {180d, 180d, 176d, 174d, 176d, 180d}
     );
 
-    Field[] fields = LatLonShape.createIndexableFields("test", indexPoly1);
-    for (Field f : fields) {
-      doc.add(f);
-    }
-    fields = LatLonShape.createIndexableFields("test", indexPoly2);
-    for (Field f : fields) {
-      doc.add(f);
-    }
+    addPolygonsToDoc("test", doc, indexPoly1);
+    addPolygonsToDoc("test", doc, indexPoly2);
+    
     w.addDocument(doc);
     w.forceMerge(1);
 
@@ -345,14 +340,9 @@ public class TestLatLonShape extends LuceneTestCase {
         new double[] {-180d, -178d, -178d, -180d, -180d}
     );
 
-    Field[] fields = LatLonShape.createIndexableFields("test", indexPoly1);
-    for (Field f : fields) {
-      doc.add(f);
-    }
-    fields = LatLonShape.createIndexableFields("test", indexPoly2);
-    for (Field f : fields) {
-      doc.add(f);
-    }
+    addPolygonsToDoc("test", doc, indexPoly1);
+    addPolygonsToDoc("test", doc, indexPoly2);
+    
     w.addDocument(doc);
     w.forceMerge(1);
 
@@ -734,7 +724,7 @@ public class TestLatLonShape extends LuceneTestCase {
           lons[i] = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(polygon.getPolyLon(i)));
         }
         polygon = new Polygon(lats, lons);
-        Tessellator.tessellate(polygon);
+        Tessellator.tessellate(polygon, true);
         break;
       } catch (Exception e) {
         // invalid polygon, try a new one

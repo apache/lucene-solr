@@ -41,7 +41,7 @@ public class TestXYShape extends LuceneTestCase {
 
   protected static String FIELDNAME = "field";
   protected static void addPolygonsToDoc(String field, Document doc, XYPolygon polygon) {
-    Field[] fields = XYShape.createIndexableFields(field, polygon);
+    Field[] fields = XYShape.createIndexableFields(field, polygon, random().nextBoolean());
     for (Field f : fields) {
       doc.add(f);
     }
@@ -127,7 +127,7 @@ public class TestXYShape extends LuceneTestCase {
       if (areBoxDisjoint(r1, r2)) {
         p = toPolygon(r2);
         try {
-          Tessellator.tessellate(p);
+          Tessellator.tessellate(p, true);
           break;
         } catch (Exception e) {
           // ignore, try other combination
