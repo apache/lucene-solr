@@ -497,8 +497,7 @@ public class Assign {
     PlacementPlugin plugin = PlacementPluginConfigImpl.getPlacementPlugin(solrCloudManager);
 
     if (plugin != null) {
-      // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin), it overrides
-      // per collection configuration (i.e. rules are ignored)
+      // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin)
       return new PlacementPluginAssignStrategy(collection, plugin);
     }  else {
         return new LegacyAssignStrategy();
