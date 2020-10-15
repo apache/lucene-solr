@@ -17,6 +17,7 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.util.Collections;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -65,7 +66,7 @@ public class TestTypeAsSynonymFilter extends BaseTokenStreamTestCase {
     tokens[0].setType("bar");
     tokens[2].setType("ignoreme");
     TokenStream ts = new CannedTokenStream(tokens);
-    ts = new TypeAsSynonymFilter(ts,"pfx_", Stream.of("word","ignoreme").collect(Collectors.toSet()), 0);
+    ts = new TypeAsSynonymFilter(ts,"pfx_", Set.of("word","ignoreme"), 0);
 
     assertTokenStreamContents(ts, new String[] {
         "foo", "pfx_bar","foo","foo"},new int[] {1,1,5,9}, new int[]{3,3,7,11}, new int[] {1,0,1,1});
