@@ -61,15 +61,16 @@ public class XYShape {
   private XYShape() {
   }
 
-  /** create indexable fields for cartesian polygon geometry */
+  /** create indexable fields for cartesian polygon geometry. If {@code checkSelfIntersections} is set to true, the validity of
+   * the provided polygon is checked with a small performance penalty. */
   public static Field[] createIndexableFields(String fieldName, XYPolygon polygon, boolean checkSelfIntersections) {
 
     List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon, checkSelfIntersections);
-    List<Triangle> fields = new ArrayList<>(tessellation.size());
-    for (Tessellator.Triangle t : tessellation) {
-      fields.add(new Triangle(fieldName, t));
+    Triangle[] fields = new Triangle[tessellation.size()];
+    for (int i = 0; i < tessellation.size(); i++) {
+      fields[i] = new Triangle(fieldName, tessellation.get(i));
     }
-    return fields.toArray(new Field[fields.size()]);
+    return fields;
   }
 
   /** create indexable fields for cartesian line geometry */
