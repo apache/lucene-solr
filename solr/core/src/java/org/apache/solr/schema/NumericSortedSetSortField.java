@@ -23,8 +23,13 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.comparators.DoubleComparator;
+import org.apache.lucene.search.comparators.FloatComparator;
+import org.apache.lucene.search.comparators.IntComparator;
+import org.apache.lucene.search.comparators.LongComparator;
 
 /**
  * SortField wrapping numeric {@link SortedSetDocValues}.
@@ -137,31 +142,51 @@ public class NumericSortedSetSortField extends SortField {
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
     switch(numberType) {
       case INTEGER:
-        return new FieldComparator.IntComparator(numHits, getField(), (Integer) missingValue) {
+        return new IntComparator(numHits, getField(), (Integer) missingValue, getReverse(), sortPos) {
           @Override
-          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+            return new IntLeafComparator(context) {
+              @Override
+              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
+                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+              }
+            };
           }
         };
       case FLOAT:
-        return new FieldComparator.FloatComparator(numHits, getField(), (Float) missingValue) {
+        return new FloatComparator(numHits, getField(), (Float) missingValue, getReverse(), sortPos) {
           @Override
-          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+            return new FloatLeafComparator(context) {
+              @Override
+              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
+                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+              }
+            };
           }
         };
       case LONG:
-        return new FieldComparator.LongComparator(numHits, getField(), (Long) missingValue) {
+        return new LongComparator(numHits, getField(), (Long) missingValue, getReverse(), sortPos) {
           @Override
-          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+            return new LongLeafComparator(context) {
+              @Override
+              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
+                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+              }
+            };
           }
         };
       case DOUBLE:
-        return new FieldComparator.DoubleComparator(numHits, getField(), (Double) missingValue) {
+        return new DoubleComparator(numHits, getField(), (Double) missingValue, getReverse(), sortPos) {
           @Override
-          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+            return new DoubleLeafComparator(context) {
+              @Override
+              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
+                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+              }
+            };
           }
         };
       default:
