@@ -1,0 +1,76 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// This adds support for compiling and testing against a different Java runtime.
+// This is the only way to build against JVMs not yet supported by Gradle itself.
+
+JavaInstallationRegistry registry = extensions.getByType(JavaInstallationRegistry)
+
+JavaInstallation currentJvm = registry.installationForCurrentVirtualMachine.get()
+
+JavaInstallation altJvm = {
+  def runtimeJavaHome = propertyOrDefault("runtime.java.home", System.getenv('RUNTIME_JAVA_HOME'))
+  if (!runtimeJavaHome) {
+    return currentJvm
+  } else {
+    return registry.installationForDirectory(
+        layout.projectDirectory.dir(runtimeJavaHome)).get()
+  }
+}()
+
+// Set up root project's property.
+rootProject.ext.runtimeJava = altJvm
+
+if (!currentJvm.javaExecutable.equals(altJvm.javaExecutable)) {
+  // Set up java toolchain tasks to use the alternative Java.
+  // This is a related Gradle issue for the future:
+  // https://github.com/gradle/gradle/issues/1652
+
+  configure(rootProject) {
+    task altJvmWarning() {
+      doFirst {
+        logger.warn("""NOTE: Alternative java toolchain will be used for compilation and tests:
+  Project will use Java ${altJvm.javaVersion} from: ${altJvm.installationDirectory}
+  Gradle runs with Java ${currentJvm.javaVersion} from: ${currentJvm.installationDirectory}
+""")
+      }
+    }
+  }
+
+  // Set up toolchain-dependent tasks to use the alternative JVM.
+  allprojects {
+    // Any tests
+    tasks.withType(Test) {
+      dependsOn ":altJvmWarning"
+      executable = altJvm.javaExecutable
+    }
+
+    // Any javac compilation tasks
+    tasks.withType(JavaCompile) {
+      dependsOn ":altJvmWarning"
+      options.fork = true
+      options.forkOptions.javaHome = altJvm.installationDirectory.asFile
+    }
+
+    // Javadoc compilation.
+    def javadocExecutable = altJvm.jdk.get().javadocExecutable.asFile
+    tasks.matching { it.name == "renderJavadoc" || it.name == "renderSiteJavadoc" }.all {
+      dependsOn ":altJvmWarning"
+      executable = javadocExecutable
+    }
+  }
+}

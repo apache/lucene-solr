@@ -298,7 +298,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    int numPatterns = 10 + random().nextInt(20);
+    int numPatterns = 5;
     Random random = new Random(random().nextLong());
     for (int i = 0; i < numPatterns; i++) {
       final Pattern p = TestUtil.randomPattern(random());
@@ -322,7 +322,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenStreamTestCase {
       final int maxInputLength = 30;
       /* ASCII only input?: */
       final boolean asciiOnly = true;
-      checkRandomData(random, a, 250 * RANDOM_MULTIPLIER, maxInputLength, asciiOnly);
+      checkRandomData(random, a, 50 * RANDOM_MULTIPLIER, maxInputLength, asciiOnly);
       a.close();
     }
   }

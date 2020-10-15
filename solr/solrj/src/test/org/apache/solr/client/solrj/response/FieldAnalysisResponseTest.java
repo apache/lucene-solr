@@ -45,6 +45,7 @@ public class FieldAnalysisResponseTest extends SolrTestCase {
     AnalysisResponseBase.AnalysisPhase expectedPhase = new AnalysisResponseBase.AnalysisPhase("Tokenizer");
     phases.add(expectedPhase);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList responseNL = buildResponse();
     FieldAnalysisResponse response = new FieldAnalysisResponse() {
       @Override
@@ -79,6 +80,7 @@ public class FieldAnalysisResponseTest extends SolrTestCase {
 
   //================================================ Helper Methods ==================================================
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList buildResponse() {
     NamedList response = new NamedList();
 

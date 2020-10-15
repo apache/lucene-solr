@@ -42,6 +42,7 @@ import org.junit.Test;
 /**
  * Testcase for {@link org.apache.lucene.classification.utils.DatasetSplitter}
  */
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class DataSplitterTest extends LuceneTestCase {
 
   private LeafReader originalIndex;
@@ -66,7 +67,8 @@ public class DataSplitterTest extends LuceneTestCase {
 
     Document doc;
     Random rnd = random();
-    for (int i = 0; i < 1000; i++) {
+    int numDocs = atLeast(100);
+    for (int i = 0; i < numDocs; i++) {
       doc = new Document();
       doc.add(new Field(idFieldName, "id" + Integer.toString(i), ft));
       doc.add(new Field(textFieldName, TestUtil.randomUnicodeString(rnd, 1024), ft));

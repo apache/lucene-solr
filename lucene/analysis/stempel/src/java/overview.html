@@ -133,12 +133,11 @@ all possible cases, so there is always some loss of precision/recall
 (which
 means that even the words from the training corpus are sometimes
 incorrectly stemmed).<br>
-<h2>Algorithm and implementation<span style="font-style: italic;"></span></h2>
+<h2>Algorithm and implementation</h2>
 The algorithm and its Java implementation is described in detail in the
 publications cited below. Here's just a short excerpt from [2]:<br>
 <br>
-<center>
-<div style="width: 80%;" align="justify">"The aim is separation of the
+<div style="width: 80%; text-align: center">"The aim is separation of the
 stemmer execution code from the data
 structures [...]. In other words, a static algorithm configurable by
 data must be developed. The word transformations that happen in the
@@ -171,7 +170,6 @@ The P-commands are applied from the end of a word (right to left). This
 assumption can reduce the set of P-command's, because the last NOOP,
 moving the cursor to the end of a string without any changes, need not
 be stored."</div>
-</center>
 <br>
 Data structure used to keep the dictionary (words and their P-commands)
 is a trie. Several optimization steps are applied in turn to reduce and
@@ -273,10 +271,10 @@ incorrect lemma. Note: quite often in such case the output was a
 correct stem.</li>
   <li><b>table size:</b> the size in bytes of the stemmer table.</li>
 </ul>
-<div align="center">
-<table border="1" cellpadding="2" cellspacing="0">
+<table class="padding2" style="border: 1px solid; border-spacing: 0px; border-collapse: separate">
+  <caption>test results for different sizes of training samples</caption>
   <tbody>
-    <tr bgcolor="#a0b0c0">
+    <tr style="background-color: #a0b0c0">
       <th>Training sets</th>
       <th>Testing forms</th>
       <th>Stem OK</th>
@@ -286,7 +284,7 @@ correct stem.</li>
       <th>Lemma Bad</th>
       <th>Table size [B]</th>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>100</td>
       <td>1022985</td>
       <td>842209</td>
@@ -296,7 +294,7 @@ correct stem.</li>
       <td>256642</td>
       <td>28438</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>200</td>
       <td>1022985</td>
       <td>862789</td>
@@ -306,7 +304,7 @@ correct stem.</li>
       <td>223209</td>
       <td>48660</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>500</td>
       <td>1022985</td>
       <td>885786</td>
@@ -316,7 +314,7 @@ correct stem.</li>
       <td>207204</td>
       <td>108798</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>700</td>
       <td>1022985</td>
       <td>909031</td>
@@ -326,7 +324,7 @@ correct stem.</li>
       <td>211292</td>
       <td>139291</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>1000</td>
       <td>1022985</td>
       <td>926079</td>
@@ -336,7 +334,7 @@ correct stem.</li>
       <td>207148</td>
       <td>183677</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>2000</td>
       <td>1022985</td>
       <td>942886</td>
@@ -346,7 +344,7 @@ correct stem.</li>
       <td>202915</td>
       <td>313516</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>5000</td>
       <td>1022985</td>
       <td>954721</td>
@@ -356,7 +354,7 @@ correct stem.</li>
       <td>201579</td>
       <td>640969</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>7000</td>
       <td>1022985</td>
       <td>956165</td>
@@ -366,7 +364,7 @@ correct stem.</li>
       <td>198588</td>
       <td>839347</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>10000</td>
       <td>1022985</td>
       <td>965427</td>
@@ -376,7 +374,7 @@ correct stem.</li>
       <td>196681</td>
       <td>1144537</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>12000</td>
       <td>1022985</td>
       <td>967664</td>
@@ -386,7 +384,7 @@ correct stem.</li>
       <td>192120</td>
       <td>1313508</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>15000</td>
       <td>1022985</td>
       <td>973188</td>
@@ -396,7 +394,7 @@ correct stem.</li>
       <td>190871</td>
       <td>1567902</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>17000</td>
       <td>1022985</td>
       <td>974203</td>
@@ -406,7 +404,7 @@ correct stem.</li>
       <td>188862</td>
       <td>1733957</td>
     </tr>
-    <tr align="right">
+    <tr style="text-align: right">
       <td>20000</td>
       <td>1022985</td>
       <td>976234</td>
@@ -418,7 +416,6 @@ correct stem.</li>
     </tr>
   </tbody>
 </table>
-</div>
 <p>I also measured the time to produce a stem (which involves
 traversing a trie,
 retrieving a patch command and applying the patch command to the input
@@ -462,7 +459,7 @@ press.</li>
 Intelligent Information Processing and Web Mining Conference, 2004,
 Zakopane, Poland.</li>
   <li>Galambos, L.: Lemmatizer for Document Information Retrieval
-Systems in JAVA.<span style="text-decoration: underline;"> </span><a
+Systems in JAVA.<a
  class="moz-txt-link-rfc2396E"
  href="http://www.informatik.uni-trier.de/%7Eley/db/conf/sofsem/sofsem2001.html#Galambos01">&lt;http://www.informatik.uni-trier.de/%7Eley/db/conf/sofsem/sofsem2001.html#Galambos01&gt;</a>
 SOFSEM 2001, Piestany, Slovakia. <br>

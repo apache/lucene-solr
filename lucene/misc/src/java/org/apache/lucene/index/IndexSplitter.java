@@ -143,7 +143,7 @@ public class IndexSplitter {
                                             info.getUseCompoundFile(), info.getCodec(), info.getDiagnostics(), info.getId(), Collections.emptyMap(), null);
       destInfos.add(new SegmentCommitInfo(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getSoftDelCount(),
           infoPerCommit.getDelGen(), infoPerCommit.getFieldInfosGen(),
-          infoPerCommit.getDocValuesGen()));
+          infoPerCommit.getDocValuesGen(), infoPerCommit.getId()));
       // now copy files over
       Collection<String> files = infoPerCommit.files();
       for (final String srcName : files) {

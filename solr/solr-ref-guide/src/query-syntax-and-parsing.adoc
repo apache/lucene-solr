@@ -28,4 +28,4 @@ The parsers discussed in this Guide are:
 * <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,The Extended DisMax Query Parser>>
 * <<other-parsers.adoc#other-parsers,Other Parsers>>
 
-The query parser plugins are all subclasses of {solr-javadocs}/solr-core/org/apache/solr/search/QParserPlugin.html[QParserPlugin]. If you have custom parsing needs, you may want to extend that class to create your own query parser.
+The query parser plugins are all subclasses of {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin]. If you have custom parsing needs, you may want to extend that class to create your own query parser.

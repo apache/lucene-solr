@@ -34,7 +34,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.util.JmxUtil;
@@ -73,7 +72,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-metricreporter.xml").toFile(), "UTF-8");
-    NodeConfig cfg = SolrXmlConfig.fromString(new SolrResourceLoader(home), solrXml);
+    NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
     cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
                              (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
                               "solrconfig.xml", "schema.xml"));
@@ -133,7 +132,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
     String metricName = SolrMetricManager.mkName(METRIC_NAME, HANDLER_CATEGORY.toString(), HANDLER_NAME);
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
-    Timer timer = (Timer) metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
+    Timer timer = metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
 
     long initialCount = timer.getCount();
 
@@ -181,7 +180,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertTrue(metrics.containsKey("CONTAINER.version.specification"));
     assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
     Gauge<?> g = (Gauge<?>)metrics.get("CONTAINER.fs.path");
-    assertEquals(g.getValue(), cc.getResourceLoader().getInstancePath().toAbsolutePath().toString());
+    assertEquals(g.getValue(), cc.getSolrHome());
     boolean spins = IOUtils.spins(cc.getCoreRootDirectory());
     g = (Gauge<?>)metrics.get("CONTAINER.fs.coreRoot.spins");
     assertEquals(spins, g.getValue());

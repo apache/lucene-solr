@@ -36,7 +36,7 @@ public class SmileResponseWriter extends BinaryResponseWriter {
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
   }
   //smile format is an equivalent of JSON format . So we extend JSONWriter and override the relevant methods

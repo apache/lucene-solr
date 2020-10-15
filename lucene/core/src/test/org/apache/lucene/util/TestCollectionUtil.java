@@ -36,7 +36,7 @@ public class TestCollectionUtil extends LuceneTestCase {
   }
   
   public void testIntroSort() {
-    for (int i = 0, c = atLeast(500); i < c; i++) {
+    for (int i = 0, c = atLeast(100); i < c; i++) {
       List<Integer> list1 = createRandomList(2000), list2 = new ArrayList<>(list1);
       CollectionUtil.introSort(list1);
       Collections.sort(list2);
@@ -55,7 +55,7 @@ public class TestCollectionUtil extends LuceneTestCase {
   }
 
   public void testTimSort() {
-    for (int i = 0, c = atLeast(500); i < c; i++) {
+    for (int i = 0, c = atLeast(100); i < c; i++) {
       List<Integer> list1 = createRandomList(2000), list2 = new ArrayList<>(list1);
       CollectionUtil.timSort(list1);
       Collections.sort(list2);

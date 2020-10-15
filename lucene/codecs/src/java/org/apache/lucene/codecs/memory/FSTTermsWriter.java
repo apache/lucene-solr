@@ -41,7 +41,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
 
@@ -58,12 +58,12 @@ import org.apache.lucene.util.fst.Util;
  * <p>
  * File:
  * <ul>
- *   <li><tt>.tst</tt>: <a href="#Termdictionary">Term Dictionary</a></li>
+ *   <li><code>.tst</code>: <a href="#Termdictionary">Term Dictionary</a></li>
  * </ul>
  * <p>
  *
- * <a name="Termdictionary"></a>
- * <h3>Term Dictionary</h3>
+ * <a id="Termdictionary"></a>
+ * <h2>Term Dictionary</h2>
  * <p>
  *  The .tst contains a list of FSTs, one for each field.
  *  The FST maps a term to its corresponding statistics (e.g. docfreq) 
@@ -209,8 +209,7 @@ public class FSTTermsWriter extends FieldsConsumer {
           }
           out.writeVLong(field.sumDocFreq);
           out.writeVInt(field.docCount);
-          out.writeVInt(field.longsSize);
-          field.dict.save(out);
+          field.dict.save(out, out);
         }
         writeTrailer(out, dirStart);
         CodecUtil.writeFooter(out);
@@ -232,25 +231,22 @@ public class FSTTermsWriter extends FieldsConsumer {
     public final long sumTotalTermFreq;
     public final long sumDocFreq;
     public final int docCount;
-    public final int longsSize;
     public final FST<FSTTermOutputs.TermData> dict;
 
-    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize, FST<FSTTermOutputs.TermData> fst) {
+    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, FST<FSTTermOutputs.TermData> fst) {
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
-      this.longsSize = longsSize;
       this.dict = fst;
     }
   }
 
   final class TermsWriter {
-    private final Builder<FSTTermOutputs.TermData> builder;
+    private final FSTCompiler<FSTTermOutputs.TermData> fstCompiler;
     private final FSTTermOutputs outputs;
     private final FieldInfo fieldInfo;
-    private final int longsSize;
     private long numTerms;
 
     private final IntsRefBuilder scratchTerm = new IntsRefBuilder();
@@ -259,32 +255,31 @@ public class FSTTermsWriter extends FieldsConsumer {
     TermsWriter(FieldInfo fieldInfo) {
       this.numTerms = 0;
       this.fieldInfo = fieldInfo;
-      this.longsSize = postingsWriter.setField(fieldInfo);
-      this.outputs = new FSTTermOutputs(fieldInfo, longsSize);
-      this.builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+      postingsWriter.setField(fieldInfo);
+      this.outputs = new FSTTermOutputs(fieldInfo);
+      this.fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
     }
 
     public void finishTerm(BytesRef text, BlockTermState state) throws IOException {
       // write term meta data into fst
       final FSTTermOutputs.TermData meta = new FSTTermOutputs.TermData();
-      meta.longs = new long[longsSize];
       meta.bytes = null;
       meta.docFreq = state.docFreq;
       meta.totalTermFreq = state.totalTermFreq;
-      postingsWriter.encodeTerm(meta.longs, metaWriter, fieldInfo, state, true);
+      postingsWriter.encodeTerm(metaWriter, fieldInfo, state, true);
       if (metaWriter.size() > 0) {
         meta.bytes = metaWriter.toArrayCopy();
         metaWriter.reset();
       }
-      builder.add(Util.toIntsRef(text, scratchTerm), meta);
+      fstCompiler.add(Util.toIntsRef(text, scratchTerm), meta);
       numTerms++;
     }
 
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       // save FST dict
       if (numTerms > 0) {
-        final FST<FSTTermOutputs.TermData> fst = builder.finish();
-        fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, fst));
+        final FST<FSTTermOutputs.TermData> fst = fstCompiler.compile();
+        fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, fst));
       }
     }
   }

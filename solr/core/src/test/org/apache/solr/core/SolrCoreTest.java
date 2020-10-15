@@ -28,7 +28,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrCoreState;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
@@ -87,7 +87,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     int ihCount = 0;
     {
-      ++ihCount; assertEquals(pathToClassMap.get("/admin/health"), "solr.HealthCheckHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/file"), "solr.ShowFileRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/logging"), "solr.LoggingHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/luke"), "solr.LukeRequestHandler");
@@ -187,12 +186,12 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     final int LOOP = 100;
     final int MT = 16;
-    ExecutorService service = ExecutorUtil.newMDCAwareFixedThreadPool(MT, new DefaultSolrThreadFactory("refCountMT"));
+    ExecutorService service = ExecutorUtil.newMDCAwareFixedThreadPool(MT, new SolrNamedThreadFactory("refCountMT"));
     List<Callable<Integer>> callees = new ArrayList<>(MT);
     final CoreContainer cores = h.getCoreContainer();
     for (int i = 0; i < MT; ++i) {
       Callable<Integer> call = new Callable<Integer>() {
-        void yield(int n) {
+        void yieldInt(int n) {
           try {
             Thread.sleep(0, (n % 13 + 1) * 10);
           } catch (InterruptedException xint) {
@@ -208,16 +207,16 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
               r += 1;
               core = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
               // sprinkle concurrency hinting...
-              yield(l);
+              yieldInt(l);
               assertTrue("Refcount < 1", core.getOpenCount() >= 1);              
-              yield(l);
+              yieldInt(l);
               assertTrue("Refcount > 17", core.getOpenCount() <= 17);             
-              yield(l);
+              yieldInt(l);
               assertTrue("Handler is closed", handler1.closed == false);
-              yield(l);
+              yieldInt(l);
               core.close();
               core = null;
-              yield(l);
+              yieldInt(l);
             }
             return r;
           } finally {
@@ -275,7 +274,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   @Test
   public void testReloadLeak() throws Exception {
     final ExecutorService executor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(1, new DefaultSolrThreadFactory("testReloadLeak"));
+        ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("testReloadLeak"));
 
     // Continuously open new searcher while core is not closed, and reload core to try to reproduce searcher leak.
     // While in practice we never continuously open new searchers, this is trying to make up for the fact that opening

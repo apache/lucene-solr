@@ -20,9 +20,12 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -122,7 +125,12 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
   public void testLargeArrayAdd() {
     ByteBuffersDataOutput o = new ByteBuffersDataOutput();
     int MB = 1024 * 1024;
-    byte [] bytes = randomBytesOfLength(5 * MB, 15 * MB);
+    final byte [] bytes;
+    if (LuceneTestCase.TEST_NIGHTLY) {
+      bytes = randomBytesOfLength(5 * MB, 15 * MB);
+    } else {
+      bytes = randomBytesOfLength(MB/2, MB);
+    }
     int offset = randomIntBetween(0, 100);
     int len = bytes.length - offset;
     o.writeBytes(bytes, offset, len);
@@ -152,5 +160,45 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
       assertTrue(!bb.isReadOnly());
       assertTrue(bb.hasArray()); // heap-based by default, so array should be there.
     }
+  }
+
+  @Test
+  public void testRamBytesUsed() {
+    ByteBuffersDataOutput out = new ByteBuffersDataOutput();
+    // Empty output requires no RAM
+    assertEquals(0, out.ramBytesUsed());
+
+    // Non-empty buffer requires RAM
+    out.writeInt(4);
+    assertEquals(out.ramBytesUsed(), computeRamBytesUsed(out));
+
+    // Make sure this keeps working with multiple backing buffers
+    while (out.toBufferList().size() < 2) {
+      out.writeLong(42);
+    }
+    assertEquals(out.ramBytesUsed(), computeRamBytesUsed(out));
+
+    // Make sure this keeps working when increasing the block size
+    int currentBlockCapacity = out.toBufferList().get(0).capacity();
+    do {
+      out.writeLong(42);
+    } while (out.toBufferList().get(0).capacity() == currentBlockCapacity);
+    assertEquals(out.ramBytesUsed(), computeRamBytesUsed(out));
+
+    // Back to zero after a clear
+    out.reset();
+    assertEquals(0, out.ramBytesUsed());
+
+    // And back to non-empty
+    out.writeInt(4);
+    assertEquals(out.ramBytesUsed(), computeRamBytesUsed(out));
+  }
+
+  private static long computeRamBytesUsed(ByteBuffersDataOutput out) {
+    if (out.size() == 0) {
+      return 0;
+    }
+    List<ByteBuffer> buffers = out.toBufferList();
+    return buffers.stream().mapToLong(ByteBuffer::capacity).sum() + buffers.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
   }
 }

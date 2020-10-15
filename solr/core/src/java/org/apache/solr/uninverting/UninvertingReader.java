@@ -237,12 +237,12 @@ public class UninvertingReader extends FilterLeafReader {
       DocValuesType type = fi.getDocValuesType();
       // fields which currently don't have docValues, but are uninvertable (indexed or points data present)
       if (type == DocValuesType.NONE &&
-          (fi.getIndexOptions() != IndexOptions.NONE || (fi.getPointNumBytes() > 0 && fi.getPointDataDimensionCount() == 1))) {
+          (fi.getIndexOptions() != IndexOptions.NONE || (fi.getPointNumBytes() > 0 && fi.getPointDimensionCount() == 1))) {
         Type t = mapping.apply(fi.name); // could definitely return null, thus still can't uninvert it
         if (t != null) {
           if (t == Type.INTEGER_POINT || t == Type.LONG_POINT || t == Type.FLOAT_POINT || t == Type.DOUBLE_POINT) {
             // type uses points
-            if (fi.getPointDataDimensionCount() == 0) {
+            if (fi.getPointDimensionCount() == 0) {
               continue;
             }
           } else {
@@ -284,7 +284,7 @@ public class UninvertingReader extends FilterLeafReader {
         wrap = true;
         newFieldInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
             fi.hasPayloads(), fi.getIndexOptions(), type, fi.getDocValuesGen(), fi.attributes(),
-            fi.getPointDataDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField()));
+            fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField()));
       } else {
         newFieldInfos.add(fi);
       }

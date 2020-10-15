@@ -33,7 +33,7 @@ public class TermStats {
     this.term = term;
     t = makeTerm(term);
   }
-  
+
   private Term makeTerm(String s) {
     int idx = s.indexOf(':');
     if (idx == -1) {
@@ -68,6 +68,6 @@ public class TermStats {
   }
   
   public String toString() {
-    return StatsUtil.termStatsToString(this, true);
+    return StatsUtil.termStatsToString(this, false);
   }
 }

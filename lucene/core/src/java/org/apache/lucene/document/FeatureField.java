@@ -197,7 +197,7 @@ public final class FeatureField extends Field {
     }
   }
 
-  private static final int MAX_FREQ = Float.floatToIntBits(Float.MAX_VALUE) >>> 15;
+  static final int MAX_FREQ = Float.floatToIntBits(Float.MAX_VALUE) >>> 15;
 
   static float decodeFeatureValue(float freq) {
     if (freq > MAX_FREQ) {

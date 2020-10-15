@@ -27,11 +27,11 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.analysis.ko.dict.UserDictionary;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
 
 /**
@@ -95,6 +95,11 @@ public class KoreanTokenizerFactory extends TokenizerFactory implements Resource
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public KoreanTokenizerFactory() {
+    throw defaultCtorException();
   }
 
   @Override

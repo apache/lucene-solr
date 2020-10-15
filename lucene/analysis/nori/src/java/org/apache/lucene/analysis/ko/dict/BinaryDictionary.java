@@ -150,7 +150,18 @@ public abstract class BinaryDictionary implements Dictionary {
         throw new IllegalStateException("unknown resource scheme " + resourceScheme);
     }
   }
-  
+
+  public static InputStream getResource(ResourceScheme scheme, String path) throws IOException {
+    switch(scheme) {
+      case CLASSPATH:
+        return getClassResource(path);
+      case FILE:
+        return Files.newInputStream(Paths.get(path));
+      default:
+        throw new IllegalStateException("unknown resource scheme " + scheme);
+    }
+  }
+
   // util, reused by ConnectionCosts and CharacterDefinition
   public static InputStream getClassResource(Class<?> clazz, String suffix) throws IOException {
     final InputStream is = clazz.getResourceAsStream(clazz.getSimpleName() + suffix);
@@ -160,7 +171,7 @@ public abstract class BinaryDictionary implements Dictionary {
     return is;
   }
 
-  private InputStream getClassResource(String path) throws IOException {
+  private static InputStream getClassResource(String path) throws IOException {
     final InputStream is = BinaryDictionary.class.getClassLoader().getResourceAsStream(path);
     if (is == null) {
       throw new FileNotFoundException("Not in classpath: " + path);

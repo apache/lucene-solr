@@ -42,7 +42,7 @@ These properties exist in 3 files: `schema.xml`, `solrconfig.xml`, and `solr.xml
 </updateHandler>
 ----
 +
-. The http://wiki.apache.org/solr/UpdateRequestProcessor#Distributed_Updates[DistributedUpdateProcessor] is part of the default update chain and is automatically injected into any of your custom update chains, so you don't actually need to make any changes for this capability. However, should you wish to add it explicitly, you can still add it to the `solrconfig.xml` file as part of an `updateRequestProcessorChain`. For example:
+. The DistributedUpdateProcessor is part of the default update chain and is automatically injected into any of your custom update chains, so you don't actually need to make any changes for this capability. However, should you wish to add it explicitly, you can still add it to the `solrconfig.xml` file as part of an `updateRequestProcessorChain`. For example:
 +
 [source,xml]
 ----
@@ -67,3 +67,6 @@ If you do not want the DistributedUpdateProcessFactory auto-injected into your c
 ----
 +
 In the update process, Solr skips updating processors that have already been run on other nodes.
++
+For more on the default update request processor chain and options, see
+the section <<update-request-processors.adoc#default-update-request-processor-chain,Default Update Request Processor Chain>>.

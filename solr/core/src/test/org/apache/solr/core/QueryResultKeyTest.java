@@ -136,7 +136,21 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     }
     assert minIters <= iter;
   }
-
+  
+  public void testMinExactCount() {
+    int[] nums = smallArrayOfRandomNumbers();
+    final Query base = new FlatHashTermQuery("base");
+    assertKeyEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10));
+    assertKeyNotEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 20));
+    assertKeyNotEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0));//Integer.MAX_VALUE
+    assertKeyEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, Integer.MAX_VALUE),
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0));
+    
+  }
+  
   /**
    * does bi-directional equality check as well as verifying hashCode
    */

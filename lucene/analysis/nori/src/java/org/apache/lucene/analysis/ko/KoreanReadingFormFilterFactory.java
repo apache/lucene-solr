@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.ko;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link KoreanReadingFormFilter}.
@@ -49,6 +49,11 @@ public class KoreanReadingFormFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public KoreanReadingFormFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new KoreanReadingFormFilter(input);

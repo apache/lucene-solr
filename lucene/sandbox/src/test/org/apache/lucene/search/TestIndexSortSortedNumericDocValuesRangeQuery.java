@@ -65,7 +65,7 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
         iw.deleteDocuments(LongPoint.newRangeQuery("idx", 0L, 10L));
       }
       final IndexReader reader = iw.getReader();
-      final IndexSearcher searcher = newSearcher(reader, false);
+      final IndexSearcher searcher = newSearcher(reader);
       iw.close();
 
       for (int i = 0; i < 100; ++i) {

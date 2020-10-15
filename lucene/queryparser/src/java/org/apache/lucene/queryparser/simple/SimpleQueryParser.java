@@ -48,19 +48,19 @@ import java.util.Map;
  * <p>
  * <b>Query Operators</b>
  * <ul>
- *  <li>'{@code +}' specifies {@code AND} operation: <tt>token1+token2</tt>
- *  <li>'{@code |}' specifies {@code OR} operation: <tt>token1|token2</tt>
- *  <li>'{@code -}' negates a single token: <tt>-token0</tt>
- *  <li>'{@code "}' creates phrases of terms: <tt>"term1 term2 ..."</tt>
- *  <li>'{@code *}' at the end of terms specifies prefix query: <tt>term*</tt>
- *  <li>'{@code ~}N' at the end of terms specifies fuzzy query: <tt>term~1</tt>
- *  <li>'{@code ~}N' at the end of phrases specifies near query: <tt>"term1 term2"~5</tt>
- *  <li>'{@code (}' and '{@code )}' specifies precedence: <tt>token1 + (token2 | token3)</tt>
+ *  <li>'{@code +}' specifies {@code AND} operation: <code>token1+token2</code>
+ *  <li>'{@code |}' specifies {@code OR} operation: <code>token1|token2</code>
+ *  <li>'{@code -}' negates a single token: <code>-token0</code>
+ *  <li>'{@code "}' creates phrases of terms: <code>"term1 term2 ..."</code>
+ *  <li>'{@code *}' at the end of terms specifies prefix query: <code>term*</code>
+ *  <li>'{@code ~}N' at the end of terms specifies fuzzy query: <code>term~1</code>
+ *  <li>'{@code ~}N' at the end of phrases specifies near query: <code>"term1 term2"~5</code>
+ *  <li>'{@code (}' and '{@code )}' specifies precedence: <code>token1 + (token2 | token3)</code>
  * </ul>
  * <p>
  * The {@link #setDefaultOperator default operator} is {@code OR} if no other operator is specified.
  * For example, the following will {@code OR} {@code token1} and {@code token2} together:
- * <tt>token1 token2</tt>
+ * <code>token1 token2</code>
  * <p>
  * Normal operator precedence will be simple order from right to left.
  * For example, the following will evaluate {@code token1 OR token2} first,

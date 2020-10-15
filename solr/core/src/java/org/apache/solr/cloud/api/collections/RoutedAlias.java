@@ -106,10 +106,10 @@ public abstract class RoutedAlias {
         // v2 api case - the v2 -> v1 mapping mechanisms can't handle this conversion because they expect
         // strings or arrays of strings, not lists of objects.
         if (props.containsKey("router.routerList")) {
-          @SuppressWarnings("unchecked")  // working around solrparams inability to express lists of objects
-              HashMap tmp = new HashMap(props);
-          @SuppressWarnings("unchecked")  // working around solrparams inability to express lists of objects
-              List<Map<String, Object>> v2RouterList = (List<Map<String, Object>>) tmp.get("router.routerList");
+          @SuppressWarnings({"unchecked", "rawtypes"})
+          HashMap tmp = new HashMap(props);
+          @SuppressWarnings({"unchecked", "rawtypes"})
+          List<Map<String, Object>> v2RouterList = (List<Map<String, Object>>) tmp.get("router.routerList");
           Map<String, Object> o = v2RouterList.get(i);
           for (Map.Entry<String, Object> entry : o.entrySet()) {
             props.put(ROUTER_PREFIX + i + "." + entry.getKey(), String.valueOf(entry.getValue()));
@@ -130,7 +130,6 @@ public abstract class RoutedAlias {
       // this next remove is checked for key because when we build from aliases.json's data it we get an
       // immutable map which would cause  UnsupportedOperationException to be thrown. This remove is here
       // to prevent this property from making it into aliases.json
-      //noinspection RedundantCollectionOperation
       if (props.containsKey("router.routerList")) {
         props.remove("router.routerList");
       }
@@ -362,7 +361,7 @@ public abstract class RoutedAlias {
         try {
           ensureCollection(targetCollectionDesc.creationCollection, coreContainer);
         } catch (Exception e) {
-          log.error("Async creation of a collection for routed Alias " + this.getAliasName() + " failed!", e);
+          log.error("Async creation of a collection for routed Alias {} failed!", this.getAliasName(), e);
         }
       }, core);
     }

@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import java.util.Arrays;
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -144,7 +143,7 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     iwc.setMergeScheduler(new SerialMergeScheduler());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
-    int dims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int dims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
     float[][] values = new float[numPoints][dims];
     for (int id = 0 ; id < numPoints ; ++id) {
       for (int dim = 0 ; dim < dims ; ++dim) {
@@ -243,7 +242,7 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
 
   private IndexWriterConfig getIndexWriterConfig() {
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(Codec.forName("Lucene80"));
+    iwc.setCodec(TestUtil.getDefaultCodec());
     return iwc;
   }
 }

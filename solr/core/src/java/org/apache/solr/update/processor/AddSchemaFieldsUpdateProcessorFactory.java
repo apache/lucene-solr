@@ -158,7 +158,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     inclusions = FieldMutatingUpdateProcessorFactory.parseSelectorParams(args);
     validateSelectorParams(inclusions);
     inclusions.fieldNameMatchesSchemaField = false;  // Explicitly (non-configurably) require unknown field names
@@ -192,8 +192,9 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     }
   }
 
-  private static List<TypeMapping> parseTypeMappings(NamedList args) {
+  private static List<TypeMapping> parseTypeMappings(@SuppressWarnings({"rawtypes"})NamedList args) {
     List<TypeMapping> typeMappings = new ArrayList<>();
+    @SuppressWarnings({"unchecked"})
     List<Object> typeMappingsParams = args.getAll(TYPE_MAPPING_PARAM);
     for (Object typeMappingObj : typeMappingsParams) {
       if (null == typeMappingObj) {
@@ -202,6 +203,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       if ( ! (typeMappingObj instanceof NamedList) ) {
         throw new SolrException(SERVER_ERROR, "'" + TYPE_MAPPING_PARAM + "' init param must be a <lst>");
       }
+      @SuppressWarnings({"rawtypes"})
       NamedList typeMappingNamedList = (NamedList)typeMappingObj;
 
       Object fieldTypeObj = typeMappingNamedList.remove(FIELD_TYPE_PARAM);
@@ -218,6 +220,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       }
       String fieldType = fieldTypeObj.toString();
 
+      @SuppressWarnings({"unchecked"})
       Collection<String> valueClasses
           = typeMappingNamedList.removeConfigArgs(VALUE_CLASS_PARAM);
       if (valueClasses.isEmpty()) {
@@ -245,6 +248,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         if ( ! (copyFieldObj instanceof NamedList)) {
           throw new SolrException(SERVER_ERROR, "'" + COPY_FIELD_PARAM + "' init param must be a <lst>");
         }
+        @SuppressWarnings({"rawtypes"})
         NamedList copyFieldNamedList = (NamedList)copyFieldObj;
         // dest
         Object destObj = copyFieldNamedList.remove(DEST_PARAM);
@@ -424,11 +428,12 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           builder.append("]");
           builder.append("\nCopyFields to be added to the schema: [");
           isFirst = true;
-          for (String fieldName : newCopyFields.keySet()) {
+          for (Map.Entry<String, Map<Integer, List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
+            String fieldName = entry.getKey();
             builder.append(isFirst ? "" : ",");
             isFirst = false;
             builder.append("source=").append(fieldName).append("{");
-            for (List<CopyFieldDef> copyFieldDefList : newCopyFields.get(fieldName).values()) {
+            for (List<CopyFieldDef> copyFieldDefList : entry.getValue().values()) {
               for (CopyFieldDef copyFieldDef : copyFieldDefList) {
                 builder.append("{dest=").append(copyFieldDef.getDest(fieldName));
                 builder.append(", maxChars=").append(copyFieldDef.getMaxChars()).append("}");
@@ -437,7 +442,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             builder.append("}");
           }
           builder.append("]");
-          log.debug(builder.toString());
+          log.debug("{}", builder);
         }
         // Need to hold the lock during the entire attempt to ensure that
         // the schema on the request is the latest
@@ -445,10 +450,11 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           try {
             IndexSchema newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
             // Add copyFields
-            for (String srcField : newCopyFields.keySet()) {
-              for (Integer maxChars : newCopyFields.get(srcField).keySet()) {
-                newSchema = newSchema.addCopyFields(srcField, 
-                  newCopyFields.get(srcField).get(maxChars).stream().map(f -> f.getDest(srcField)).collect(Collectors.toList()), 
+            for (Map.Entry<String, Map<Integer, List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
+              String srcField = entry.getKey();
+              for (Integer maxChars : entry.getValue().keySet()) {
+                newSchema = newSchema.addCopyFields(srcField,
+                    entry.getValue().get(maxChars).stream().map(f -> f.getDest(srcField)).collect(Collectors.toList()),
                   maxChars);
               }
             }
@@ -554,6 +560,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     }
 
     private boolean isImmutableConfigSet(SolrCore core) {
+      @SuppressWarnings({"rawtypes"})
       NamedList args = core.getConfigSetProperties();
       Object immutable = args != null ? args.get(IMMUTABLE_CONFIGSET_ARG) : null;
       return immutable != null ? Boolean.parseBoolean(immutable.toString()) : false;

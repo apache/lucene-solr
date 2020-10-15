@@ -255,9 +255,9 @@ abstract class RangeFieldQuery extends Query {
 
   /** Check indexed field info against the provided query data. */
   private void checkFieldInfo(FieldInfo fieldInfo) {
-    if (fieldInfo.getPointDataDimensionCount()/2 != numDims) {
+    if (fieldInfo.getPointDimensionCount()/2 != numDims) {
       throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims="
-          + fieldInfo.getPointDataDimensionCount()/2 + " but this query has numDims=" + numDims);
+          + fieldInfo.getPointDimensionCount()/2 + " but this query has numDims=" + numDims);
     }
   }
 
@@ -361,7 +361,7 @@ abstract class RangeFieldQuery extends Query {
             public long cost() {
               if (cost == -1) {
                 // Computing the cost may be expensive, so only do it if necessary
-                cost = values.estimatePointCount(visitor);
+                cost = values.estimateDocCount(visitor);
                 assert cost >= 0;
               }
               return cost;

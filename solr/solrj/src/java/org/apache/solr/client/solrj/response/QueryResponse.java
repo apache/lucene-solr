@@ -43,6 +43,7 @@ public class QueryResponse extends SolrResponseBase
   // Direct pointers to known types
   private NamedList<Object> _header = null;
   private SolrDocumentList _results = null;
+  @SuppressWarnings({"rawtypes"})
   private NamedList<ArrayList> _sortvalues = null;
   private NamedList<Object> _facetInfo = null;
   private NamedList<Object> _debugInfo = null;
@@ -68,6 +69,7 @@ public class QueryResponse extends SolrResponseBase
   private List<FacetField> _facetFields = null;
   private List<FacetField> _limitingFacets = null;
   private List<FacetField> _facetDates = null;
+  @SuppressWarnings({"rawtypes"})
   private List<RangeFacet> _facetRanges = null;
   private NamedList<List<PivotField>> _facetPivot = null;
   private List<IntervalFacet> _intervalFacets = null;
@@ -95,7 +97,7 @@ public class QueryResponse extends SolrResponseBase
   
   // Debug Info
   private Map<String,Object> _debugMap = null;
-  private Map<String,String> _explainMap = null;
+  private Map<String,Object> _explainMap = null;
 
   // utility variable used for automatic binding -- it should not be serialized
   private transient final SolrClient solrClient;
@@ -117,6 +119,7 @@ public class QueryResponse extends SolrResponseBase
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void setResponse( NamedList<Object> res )
   {
     super.setResponse( res );
@@ -239,9 +242,9 @@ public class QueryResponse extends SolrResponseBase
 
     // Parse out interesting bits from the debug info
     _explainMap = new HashMap<>();
-    NamedList<String> explain = (NamedList<String>)_debugMap.get( "explain" );
+    NamedList<Object> explain = (NamedList<Object>)_debugMap.get( "explain" );
     if( explain != null ) {
-      for( Map.Entry<String, String> info : explain ) {
+      for( Map.Entry<String, Object> info : explain ) {
         String key = info.getKey();
         _explainMap.put( key, info.getValue() );
       }
@@ -277,6 +280,7 @@ public class QueryResponse extends SolrResponseBase
           }
 
           for (Object oGrp : groupsArr) {
+            @SuppressWarnings({"rawtypes"})
             SimpleOrderedMap grpMap = (SimpleOrderedMap) oGrp;
             Object sGroupValue = grpMap.get( "groupValue");
             SolrDocumentList doclist = (SolrDocumentList) grpMap.get( "doclist");
@@ -316,6 +320,7 @@ public class QueryResponse extends SolrResponseBase
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private void extractFacetInfo( NamedList<Object> info )
   {
     // Parse the queries
@@ -379,6 +384,7 @@ public class QueryResponse extends SolrResponseBase
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List<RangeFacet> extractRangeFacets(NamedList<NamedList<Object>> rf) {
     List<RangeFacet> facetRanges = new ArrayList<>( rf.size() );
 
@@ -429,6 +435,7 @@ public class QueryResponse extends SolrResponseBase
     return facetRanges;
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected List<PivotField> readPivots( List<NamedList> list )
   {
     ArrayList<PivotField> values = new ArrayList<>( list.size() );
@@ -456,7 +463,7 @@ public class QueryResponse extends SolrResponseBase
             assert null != val : "Server sent back 'null' for sub pivots?";
             assert val instanceof List : "Server sent non-List for sub pivots?";
 
-            subPivots = readPivots( (List<NamedList>) val );
+                    subPivots = readPivots( (List<NamedList>) val );
             break;
           }
           case "stats": {
@@ -514,6 +521,7 @@ public class QueryResponse extends SolrResponseBase
     return _results;
   }
  
+  @SuppressWarnings({"rawtypes"})
   public NamedList<ArrayList> getSortValues(){
     return _sortvalues;
   }
@@ -522,7 +530,7 @@ public class QueryResponse extends SolrResponseBase
     return _debugMap;
   }
 
-  public Map<String, String> getExplainMap() {
+  public Map<String, Object> getExplainMap() {
     return _explainMap;
   }
 
@@ -595,6 +603,7 @@ public class QueryResponse extends SolrResponseBase
     return _facetDates;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public List<RangeFacet> getFacetRanges() {
     return _facetRanges;
   }

@@ -36,7 +36,7 @@
     </analyzer>
   </fieldType>
 
-  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="${solr.tests.id.stored:true}" multiValued="false" docValues="${solr.tests.id.docValues:false}" required="false"/>
   <field name="text" type="text_offsets" indexed="true" stored="true"/>
   <field name="text2" type="text" indexed="true" stored="true"/>
   <field name="text3" type="text_offsets" indexed="true" stored="true"         large="true"/>

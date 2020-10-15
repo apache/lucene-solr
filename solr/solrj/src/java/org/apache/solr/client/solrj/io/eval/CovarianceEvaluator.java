@@ -32,6 +32,7 @@ public class CovarianceEvaluator extends RecursiveObjectEvaluator implements Man
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException{
 
     if(values.length == 2) {
@@ -49,7 +50,11 @@ public class CovarianceEvaluator extends RecursiveObjectEvaluator implements Man
       Covariance covariance = new Covariance(data, true);
       RealMatrix coMatrix = covariance.getCovarianceMatrix();
       double[][] coData = coMatrix.getData();
-      return new Matrix(coData);
+      Matrix realMatrix = new Matrix(coData);
+      List<String> labels = CorrelationEvaluator.getColumnLabels(matrix.getColumnLabels(), coData.length);
+      realMatrix.setColumnLabels(labels);
+      realMatrix.setRowLabels(labels);
+      return realMatrix;
     } else {
       throw new IOException("The cov function expects either two numeric arrays or a matrix as parameters.");
     }

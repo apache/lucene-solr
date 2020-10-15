@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.fr.FrenchAnalyzer;
 
@@ -56,6 +59,11 @@ public class ElisionFilterFactory extends TokenFilterFactory implements Resource
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ElisionFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

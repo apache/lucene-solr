@@ -32,7 +32,7 @@ Lucene QueryParser to parse Google-style search syntax provided by end users.</p
 Unlike Queries, <i>Filters</i> are not used to select or score content - they are simply used to filter <i>Query</i> output (see <a href="#FilteredQuery">FilteredQuery</a> for an example use of query filtering).
 Because Filters simply offer a yes/no decision for each document in the index their output can be efficiently cached in memory as a <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/util/BitSet.html">Bitset</a> for
 subsequent reuse (see <a href="#CachedFilter">CachedFilter</a> tag).</p><p><h4>Nesting elements</h4>
-Many of the the elements can nest other elements to produce queries/filters of an arbitrary depth and complexity.
+Many of the elements can nest other elements to produce queries/filters of an arbitrary depth and complexity.
 The <a href="#BooleanQuery">BooleanQuery</a> element is one such example which provides a means for combining other queries (including other BooleanQueries) using Boolean
 logic to determine mandatory or optional elements.</p><p><h3>Advanced topics</h3>
 <h4>Advanced positional testing - span queries</h4>

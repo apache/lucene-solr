@@ -36,7 +36,7 @@ public class MatchesEvaluator extends RecursiveBooleanEvaluator implements ManyV
     }
   }
 
-  public Object doWork(Object[] values) throws IOException {
+  public Object doWork(Object... values) throws IOException {
     if(values[1] instanceof String) {
       String s = values[0].toString();
       if(pattern == null) {

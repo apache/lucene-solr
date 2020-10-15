@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import org.apache.lucene.mockfile.FilterPath;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
@@ -37,7 +38,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
 
   @BeforeClass
   public static void setupLoader() throws Exception {
-    solrHome = Paths.get(createTempDir().toAbsolutePath().toString());
+    solrHome = FilterPath.unwrap(createTempDir()); // FilterPath can interfere
     loader = new SolrResourceLoader(solrHome);
   }
 
@@ -76,6 +77,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
     doTestGetDataHome(ByteBuffersDirectoryFactory.class);
   }
   
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void doTestGetDataHome(Class<? extends DirectoryFactory> directoryFactoryClass) throws Exception {
     NodeConfig config = loadNodeConfig("/solr/solr-solrDataHome.xml");
     CoreContainer cc = new CoreContainer(config);
@@ -114,13 +116,14 @@ public class DirectoryFactoryTest extends SolrTestCase {
   }
 
   private void assertDataHome(String expected, String instanceDir, DirectoryFactory df, CoreContainer cc, String... properties) throws IOException {
-    String dataHome = df.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc.containerProperties, cc.isZooKeeperAware(), properties));
+    String dataHome = df.getDataHome(
+            new CoreDescriptor("core_name", Paths.get(instanceDir).toAbsolutePath(), cc, properties));
     assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
   }
 
 
   private NodeConfig loadNodeConfig(String config) throws Exception {
     InputStream is = DirectoryFactoryTest.class.getResourceAsStream(config);
-    return SolrXmlConfig.fromInputStream(loader, is);
+    return SolrXmlConfig.fromInputStream(solrHome, is, new Properties());
   }
 }

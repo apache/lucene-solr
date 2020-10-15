@@ -16,11 +16,16 @@
  */
 package org.apache.solr.schema;
 
+import java.util.EnumSet;
+
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.NumericUtils;
@@ -300,6 +305,40 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     } catch (NumberFormatException e) {
       String msg = "Invalid Number: " + val + (null == fieldName ? "" : " for field " + fieldName);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
+    }
+  }
+
+  public static EnumSet<NumberType> doubleOrFloat = EnumSet.of(NumberType.FLOAT, NumberType.DOUBLE);
+
+  /**
+   * For doubles and floats, unbounded range queries (which do not match NaN values) are not equivalent to existence queries (which do match NaN values).
+   *
+   * The two types of queries are equivalent for all other numeric types.
+   *
+   * @param field the schema field
+   * @return false for double and float fields, true for all others
+   */
+  @Override
+  protected boolean treatUnboundedRangeAsExistence(SchemaField field) {
+    return !doubleOrFloat.contains(getNumberType());
+  }
+
+  /**
+   * Override the default existence behavior, so that the non-docValued/norms implementation matches NaN values for double and float fields.
+   * The [* TO *] query for those fields does not match 'NaN' values, so they must be matched separately.
+   * <p>
+   * For doubles and floats the query behavior is equivalent to (field:[* TO *] OR field:NaN).
+   * For all other numeric types, the default existence query behavior is used.
+   */
+  @Override
+  public Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
+    if (doubleOrFloat.contains(getNumberType())) {
+      return new ConstantScoreQuery(new BooleanQuery.Builder()
+          .add(getSpecializedRangeQuery(parser, field, null, null, true, true), BooleanClause.Occur.SHOULD)
+          .add(getFieldQuery(parser, field, Float.toString(Float.NaN)), BooleanClause.Occur.SHOULD)
+          .setMinimumNumberShouldMatch(1).build());
+    } else {
+      return super.getSpecializedExistenceQuery(parser, field);
     }
   }
 }

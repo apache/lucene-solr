@@ -52,7 +52,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TestInjection;
@@ -89,11 +88,6 @@ public class TestPullReplica extends SolrCloudTestCase {
    configureCluster(2) // 2 + random().nextInt(3)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    Boolean useLegacyCloud = rarely();
-    log.info("Using legacyCloud?: {}", useLegacyCloud);
-    CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud));
-    CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
-    assertEquals(0, response.getStatus());
   }
 
   @AfterClass
@@ -136,17 +130,15 @@ public class TestPullReplica extends SolrCloudTestCase {
         case 0:
           // Sometimes use SolrJ
           CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
-          .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
           break;
         case 1:
           // Sometimes use v1 API
-          String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&pullReplicas=%s&maxShardsPerNode=%s",
+          String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&pullReplicas=%s",
               cluster.getRandomJetty(random()).getBaseUrl(),
               collectionName, "conf",
               2,    // numShards
-              3,    // pullReplicas
-              100); // maxShardsPerNode
+              3);   // pullReplicas
           url = url + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1"); // These options should all mean the same
           HttpGet createCollectionGet = new HttpGet(url);
           cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
@@ -154,11 +146,10 @@ public class TestPullReplica extends SolrCloudTestCase {
         case 2:
           // Sometimes use V2 API
           url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
-          String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, pullReplicas:%s, maxShardsPerNode:%s %s}}",
+          String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, pullReplicas:%s, %s}}",
               collectionName, "conf",
               2,    // numShards
               3,    // pullReplicas
-              100, // maxShardsPerNode
               pickRandom("", ", nrtReplicas:1", ", replicationFactor:1")); // These options should all mean the same
           HttpPost createCollectionPost = new HttpPost(url);
           createCollectionPost.setHeader("Content-type", "application/json");
@@ -227,7 +218,6 @@ public class TestPullReplica extends SolrCloudTestCase {
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
-    .setMaxShardsPerNode(100)
     .process(cluster.getSolrClient());
     waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas", collectionName, clusterShape(1, numPullReplicas + 1));
     DocCollection docCollection = assertNumberOfReplicas(1, 0, numPullReplicas, false, true);
@@ -267,7 +257,7 @@ public class TestPullReplica extends SolrCloudTestCase {
               "stats", "true");
           QueryResponse statsResponse = pullReplicaClient.query(req);
           assertEquals("Replicas shouldn't process the add document request: " + statsResponse,
-              0L, ((Map<String, Object>)((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
+              0L, ((Map<String, Object>)(statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
         }
       }
       if (reloaded) {
@@ -285,7 +275,6 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   public void testAddRemovePullReplica() throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 0)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
     waitForState("Expected collection to be created with 2 shards and 1 replica each", collectionName, clusterShape(2, 2));
     DocCollection docCollection = assertNumberOfReplicas(2, 0, 0, false, true);
@@ -321,7 +310,6 @@ public class TestPullReplica extends SolrCloudTestCase {
   public void testPullReplicaStates() throws Exception {
     // Validate that pull replicas go through the correct states when starting, stopping, reconnecting
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 0)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
 //    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Is this needed?
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 0));
@@ -334,13 +322,17 @@ public class TestPullReplica extends SolrCloudTestCase {
         return false;
       }
       statesSeen.add(r.getState());
-      log.info("CollectionStateWatcher saw state: {}", r.getState());
+      if (log.isInfoEnabled()) {
+        log.info("CollectionStateWatcher saw state: {}", r.getState());
+      }
       return r.getState() == Replica.State.ACTIVE;
     });
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL).process(cluster.getSolrClient());
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
     zkClient().printLayoutToStream(System.out);
-    log.info("Saw states: " + Arrays.toString(statesSeen.toArray()));
+    if (log.isInfoEnabled()) {
+      log.info("Saw states: {}", Arrays.toString(statesSeen.toArray()));
+    }
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), 3, statesSeen.size());
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.DOWN, statesSeen.get(0));
     assertEquals("Expecting DOWN->RECOVERING->ACTIVE but saw: " + Arrays.toString(statesSeen.toArray()), Replica.State.RECOVERING, statesSeen.get(0));
@@ -351,7 +343,6 @@ public class TestPullReplica extends SolrCloudTestCase {
     // should be redirected to Replica.Type.NRT
     int numReplicas = random().nextBoolean()?1:2;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, numReplicas, 0, numReplicas)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
     waitForState("Unexpected replica count", collectionName, activeReplicaCount(numReplicas, 0, numReplicas));
     DocCollection docCollection = assertNumberOfReplicas(numReplicas, 0, numReplicas, false, true);
@@ -393,9 +384,9 @@ public class TestPullReplica extends SolrCloudTestCase {
   /*
    * validate that replication still happens on a new leader
    */
+  @SuppressWarnings({"try"})
   private void doTestNoLeader(boolean removeReplica) throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
     waitForState("Expected collection to be created with 1 shard and 2 replicas", collectionName, clusterShape(1, 2));
     DocCollection docCollection = assertNumberOfReplicas(1, 0, 1, false, true);
@@ -501,7 +492,6 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   public void testKillPullReplica() throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
 //    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Is this needed?
     waitForState("Expected collection to be created with 1 shard and 2 replicas", collectionName, clusterShape(1, 2));

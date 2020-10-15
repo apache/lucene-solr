@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.analysis.core;
 
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
 import java.util.Map;
@@ -61,6 +61,11 @@ public class KeywordTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public KeywordTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public KeywordTokenizer create(AttributeFactory factory) {
     return new KeywordTokenizer(factory, maxTokenLen);

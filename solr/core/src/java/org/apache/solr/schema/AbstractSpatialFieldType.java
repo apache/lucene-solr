@@ -138,7 +138,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
         }
         // Warn about using old Spatial4j class names
         if (argEntry.getValue().contains(OLD_SPATIAL4J_PREFIX)) {
-          log.warn("Replace '" + OLD_SPATIAL4J_PREFIX + "' with '" + NEW_SPATIAL4J_PREFIX + "' in your schema.");
+          log.warn("Replace '{}' with '{}' in your schema", OLD_SPATIAL4J_PREFIX, NEW_SPATIAL4J_PREFIX);
           argEntry.setValue(argEntry.getValue().replace(OLD_SPATIAL4J_PREFIX, NEW_SPATIAL4J_PREFIX));
         }
       }
@@ -316,7 +316,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   }
 
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     if (!minInclusive || !maxInclusive)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Both sides of spatial range query must be inclusive: " + field.getName());
     Point p1 = SpatialUtils.parsePointSolrException(part1, ctx);

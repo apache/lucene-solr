@@ -40,7 +40,9 @@ public class TestForTooMuchCloning extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir,
                                                       newIndexWriterConfig(new MockAnalyzer(random()))
                                                         .setMaxBufferedDocs(2)
-                                                        .setMergePolicy(tmp));
+                                                        // use a FilterMP otherwise RIW will randomly reconfigure
+                                                        // the MP while the test runs
+                                                        .setMergePolicy(new FilterMergePolicy(tmp)));
     final int numDocs = 20;
     for(int docs=0;docs<numDocs;docs++) {
       StringBuilder sb = new StringBuilder();
@@ -54,7 +56,6 @@ public class TestForTooMuchCloning extends LuceneTestCase {
     }
     final IndexReader r = w.getReader();
     w.close();
-
     //System.out.println("merge clone count=" + cloneCount);
     assertTrue("too many calls to IndexInput.clone during merging: " + dir.getInputCloneCount(), dir.getInputCloneCount() < 500);
 

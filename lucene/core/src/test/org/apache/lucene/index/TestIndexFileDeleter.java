@@ -414,12 +414,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
         @Override
         public void eval(MockDirectoryWrapper dir) throws IOException {
           if (doFailExc.get() && random().nextInt(4) == 1) {
-            Exception e = new Exception();
-            StackTraceElement stack[] = e.getStackTrace();
-            for (int i = 0; i < stack.length; i++) {
-              if (stack[i].getClassName().equals(IndexFileDeleter.class.getName()) && stack[i].getMethodName().equals("decRef")) {
-                throw new RuntimeException("fake fail");
-              }
+            if (callStackContains(IndexFileDeleter.class, "decRef")) {
+              throw new RuntimeException("fake fail");
             }
           }
         }
@@ -431,7 +427,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     if (ms instanceof ConcurrentMergeScheduler) {
       final ConcurrentMergeScheduler suppressFakeFail = new ConcurrentMergeScheduler() {
           @Override
-          protected void handleMergeException(Directory dir, Throwable exc) {
+          protected void handleMergeException(Throwable exc) {
             // suppress only FakeIOException:
             if (exc instanceof RuntimeException && exc.getMessage().equals("fake fail")) {
               // ok to ignore
@@ -439,7 +435,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
                         && exc.getCause() != null && "fake fail".equals(exc.getCause().getMessage())) {
               // also ok to ignore
             } else {
-              super.handleMergeException(dir, exc);
+              super.handleMergeException( exc);
             }
           }
         };
@@ -497,12 +493,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
           @Override
           public void eval(MockDirectoryWrapper dir) throws IOException {
             if (doFailExc.get() && random().nextInt(4) == 1) {
-              Exception e = new Exception();
-              StackTraceElement stack[] = e.getStackTrace();
-              for (int i = 0; i < stack.length; i++) {
-                if (stack[i].getClassName().equals(MockDirectoryWrapper.class.getName()) && stack[i].getMethodName().equals("deleteFile")) {
-                  throw new MockDirectoryWrapper.FakeIOException();
-                }
+              if (callStackContains(MockDirectoryWrapper.class, "deleteFile")) {
+                throw new MockDirectoryWrapper.FakeIOException();
               }
             }
           }

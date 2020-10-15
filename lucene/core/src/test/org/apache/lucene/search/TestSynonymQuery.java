@@ -385,7 +385,7 @@ public class TestSynonymQuery extends LuceneTestCase {
   public void testRandomTopDocs() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    int numDocs = atLeast(128 * 8 * 8 * 3); // make sure some terms have skip data
+    int numDocs = TEST_NIGHTLY ? atLeast(128 * 8 * 8 * 3) : atLeast(100); // at night, make sure some terms have skip data
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
       int numValues = random().nextInt(1 << random().nextInt(5));

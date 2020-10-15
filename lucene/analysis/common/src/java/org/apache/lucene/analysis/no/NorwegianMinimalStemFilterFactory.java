@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.no;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 import static org.apache.lucene.analysis.no.NorwegianLightStemmer.BOKMAAL;
 import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
@@ -63,6 +63,11 @@ public class NorwegianMinimalStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public NorwegianMinimalStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new NorwegianMinimalStemFilter(input, flags);

@@ -180,7 +180,7 @@ public class TestDecimalDigitFilter extends BaseTokenStreamTestCase {
    * blast some random strings through the filter
    */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), tokenized, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), tokenized, 200 * RANDOM_MULTIPLIER);
   }
 
   /** returns a psuedo-random codepoint which is a Decimal Digit */

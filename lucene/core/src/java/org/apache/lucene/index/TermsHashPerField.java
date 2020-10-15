@@ -19,83 +19,99 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.tokenattributes.TermFrequencyAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash.BytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool;
 
+/**
+ * This class stores streams of information per term without knowing
+ * the size of the stream ahead of time. Each stream typically encodes one level
+ * of information like term frequency per document or term proximity. Internally
+ * this class allocates a linked list of slices that can be read by a {@link ByteSliceReader}
+ * for each term. Terms are first deduplicated in a {@link BytesRefHash} once this is done
+ * internal data-structures point to the current offset of each stream that can be written to.
+ */
 abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   private static final int HASH_INIT_SIZE = 4;
 
-  final TermsHash termsHash;
-
-  final TermsHashPerField nextPerField;
-  protected final DocumentsWriterPerThread.DocState docState;
-  protected final FieldInvertState fieldState;
-  TermToBytesRefAttribute termAtt;
-  protected TermFrequencyAttribute termFreqAtt;
-
-  // Copied from our perThread
-  final IntBlockPool intPool;
+  private final TermsHashPerField nextPerField;
+  private final IntBlockPool intPool;
   final ByteBlockPool bytePool;
-  final ByteBlockPool termBytePool;
-
-  final int streamCount;
-  final int numPostingInt;
-
-  protected final FieldInfo fieldInfo;
-
-  final BytesRefHash bytesHash;
+  // for each term we store an integer per stream that points into the bytePool above
+  // the address is updated once data is written to the stream to point to the next free offset
+  // in the terms stream. The start address for the stream is stored in postingsArray.byteStarts[termId]
+  // This is initialized in the #addTerm method, either to a brand new per term stream if the term is new or
+  // to the addresses where the term stream was written to when we saw it the last time.
+  private int[] termStreamAddressBuffer;
+  private int streamAddressOffset;
+  private final int streamCount;
+  private final String fieldName;
+  final IndexOptions indexOptions;
+  /* This stores the actual term bytes for postings and offsets into the parent hash in the case that this
+  * TermsHashPerField is hashing term vectors.*/
+  private final BytesRefHash bytesHash;
 
   ParallelPostingsArray postingsArray;
-  private final Counter bytesUsed;
+  private int lastDocID; // only with assert
 
   /** streamCount: how many streams this field stores per term.
    * E.g. doc(+freq) is 1 stream, prox+offset is a second. */
-
-  public TermsHashPerField(int streamCount, FieldInvertState fieldState, TermsHash termsHash, TermsHashPerField nextPerField, FieldInfo fieldInfo) {
-    intPool = termsHash.intPool;
-    bytePool = termsHash.bytePool;
-    termBytePool = termsHash.termBytePool;
-    docState = termsHash.docState;
-    this.termsHash = termsHash;
-    bytesUsed = termsHash.bytesUsed;
-    this.fieldState = fieldState;
+  TermsHashPerField(int streamCount, IntBlockPool intPool, ByteBlockPool bytePool, ByteBlockPool termBytePool,
+                    Counter bytesUsed, TermsHashPerField nextPerField, String fieldName, IndexOptions indexOptions) {
+    this.intPool = intPool;
+    this.bytePool = bytePool;
     this.streamCount = streamCount;
-    numPostingInt = 2*streamCount;
-    this.fieldInfo = fieldInfo;
+    this.fieldName = fieldName;
     this.nextPerField = nextPerField;
+    assert indexOptions != IndexOptions.NONE;
+    this.indexOptions = indexOptions;
     PostingsBytesStartArray byteStarts = new PostingsBytesStartArray(this, bytesUsed);
     bytesHash = new BytesRefHash(termBytePool, HASH_INIT_SIZE, byteStarts);
   }
 
   void reset() {
     bytesHash.clear(false);
+    sortedTermIDs = null;
     if (nextPerField != null) {
       nextPerField.reset();
     }
   }
 
-  public void initReader(ByteSliceReader reader, int termID, int stream) {
+  final void initReader(ByteSliceReader reader, int termID, int stream) {
     assert stream < streamCount;
-    int intStart = postingsArray.intStarts[termID];
-    final int[] ints = intPool.buffers[intStart >> IntBlockPool.INT_BLOCK_SHIFT];
-    final int upto = intStart & IntBlockPool.INT_BLOCK_MASK;
+    int streamStartOffset = postingsArray.addressOffset[termID];
+    final int[] streamAddressBuffer = intPool.buffers[streamStartOffset >> IntBlockPool.INT_BLOCK_SHIFT];
+    final int offsetInAddressBuffer = streamStartOffset & IntBlockPool.INT_BLOCK_MASK;
     reader.init(bytePool,
                 postingsArray.byteStarts[termID]+stream*ByteBlockPool.FIRST_LEVEL_SIZE,
-                ints[upto+stream]);
+                streamAddressBuffer[offsetInAddressBuffer+stream]);
   }
 
-  int[] sortedTermIDs;
+  private int[] sortedTermIDs;
 
   /** Collapse the hash table and sort in-place; also sets
-   * this.sortedTermIDs to the results */
-  public int[] sortPostings() {
+   * this.sortedTermIDs to the results
+   * This method must not be called twice unless {@link #reset()}
+   * or {@link #reinitHash()} was called. */
+  final void sortTerms() {
+    assert sortedTermIDs == null;
     sortedTermIDs = bytesHash.sort();
+  }
+
+  /**
+   * Returns the sorted term IDs. {@link #sortTerms()} must be called before
+   */
+  final int[] getSortedTermIDs() {
+    assert sortedTermIDs != null;
     return sortedTermIDs;
+  }
+
+  final void reinitHash() {
+    sortedTermIDs = null;
+    bytesHash.reinit();
   }
 
   private boolean doNextCall;
@@ -104,97 +120,85 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   // because token text has already been "interned" into
   // textStart, so we hash by textStart.  term vectors use
   // this API.
-  public void add(int textStart) throws IOException {
+  private void add(int textStart, final int docID) throws IOException {
     int termID = bytesHash.addByPoolOffset(textStart);
     if (termID >= 0) {      // New posting
       // First time we are seeing this token since we last
       // flushed the hash.
-      // Init stream slices
-      if (numPostingInt + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE) {
-        intPool.nextBuffer();
-      }
-
-      if (ByteBlockPool.BYTE_BLOCK_SIZE - bytePool.byteUpto < numPostingInt*ByteBlockPool.FIRST_LEVEL_SIZE) {
-        bytePool.nextBuffer();
-      }
-
-      intUptos = intPool.buffer;
-      intUptoStart = intPool.intUpto;
-      intPool.intUpto += streamCount;
-
-      postingsArray.intStarts[termID] = intUptoStart + intPool.intOffset;
-
-      for(int i=0;i<streamCount;i++) {
-        final int upto = bytePool.newSlice(ByteBlockPool.FIRST_LEVEL_SIZE);
-        intUptos[intUptoStart+i] = upto + bytePool.byteOffset;
-      }
-      postingsArray.byteStarts[termID] = intUptos[intUptoStart];
-
-      newTerm(termID);
-
+      initStreamSlices(termID, docID);
     } else {
-      termID = (-termID)-1;
-      int intStart = postingsArray.intStarts[termID];
-      intUptos = intPool.buffers[intStart >> IntBlockPool.INT_BLOCK_SHIFT];
-      intUptoStart = intStart & IntBlockPool.INT_BLOCK_MASK;
-      addTerm(termID);
+      positionStreamSlice(termID, docID);
     }
+  }
+
+  private void initStreamSlices(int termID, int docID) throws IOException {
+    // Init stream slices
+    // TODO: figure out why this is 2*streamCount here. streamCount should be enough?
+    if ((2*streamCount) + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE) {
+      // can we fit all the streams in the current buffer?
+      intPool.nextBuffer();
+    }
+
+    if (ByteBlockPool.BYTE_BLOCK_SIZE - bytePool.byteUpto < (2*streamCount) * ByteBlockPool.FIRST_LEVEL_SIZE) {
+      // can we fit at least one byte per stream in the current buffer, if not allocate a new one
+      bytePool.nextBuffer();
+    }
+
+    termStreamAddressBuffer = intPool.buffer;
+    streamAddressOffset = intPool.intUpto;
+    intPool.intUpto += streamCount; // advance the pool to reserve the N streams for this term
+
+    postingsArray.addressOffset[termID] = streamAddressOffset + intPool.intOffset;
+
+    for (int i = 0; i < streamCount; i++) {
+      // initialize each stream with a slice we start with ByteBlockPool.FIRST_LEVEL_SIZE)
+      // and grow as we need more space. see ByteBlockPool.LEVEL_SIZE_ARRAY
+      final int upto = bytePool.newSlice(ByteBlockPool.FIRST_LEVEL_SIZE);
+      termStreamAddressBuffer[streamAddressOffset + i] = upto + bytePool.byteOffset;
+    }
+    postingsArray.byteStarts[termID] = termStreamAddressBuffer[streamAddressOffset];
+    newTerm(termID, docID);
+  }
+
+  private boolean assertDocId(int docId) {
+    assert docId >= lastDocID : "docID must be >= " + lastDocID + " but was: " + docId;
+    lastDocID = docId;
+    return true;
   }
 
   /** Called once per inverted token.  This is the primary
    *  entry point (for first TermsHash); postings use this
    *  API. */
-  void add() throws IOException {
+  void add(BytesRef termBytes, final int docID) throws IOException {
+    assert assertDocId(docID);
     // We are first in the chain so we must "intern" the
     // term text into textStart address
     // Get the text & hash of this term.
-    int termID = bytesHash.add(termAtt.getBytesRef());
-      
+    int termID = bytesHash.add(termBytes);
     //System.out.println("add term=" + termBytesRef.utf8ToString() + " doc=" + docState.docID + " termID=" + termID);
-
-    if (termID >= 0) {// New posting
-      bytesHash.byteStart(termID);
+    if (termID >= 0) { // New posting
       // Init stream slices
-      if (numPostingInt + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE) {
-        intPool.nextBuffer();
-      }
-
-      if (ByteBlockPool.BYTE_BLOCK_SIZE - bytePool.byteUpto < numPostingInt*ByteBlockPool.FIRST_LEVEL_SIZE) {
-        bytePool.nextBuffer();
-      }
-
-      intUptos = intPool.buffer;
-      intUptoStart = intPool.intUpto;
-      intPool.intUpto += streamCount;
-
-      postingsArray.intStarts[termID] = intUptoStart + intPool.intOffset;
-
-      for(int i=0;i<streamCount;i++) {
-        final int upto = bytePool.newSlice(ByteBlockPool.FIRST_LEVEL_SIZE);
-        intUptos[intUptoStart+i] = upto + bytePool.byteOffset;
-      }
-      postingsArray.byteStarts[termID] = intUptos[intUptoStart];
-
-      newTerm(termID);
-
+      initStreamSlices(termID, docID);
     } else {
-      termID = (-termID)-1;
-      int intStart = postingsArray.intStarts[termID];
-      intUptos = intPool.buffers[intStart >> IntBlockPool.INT_BLOCK_SHIFT];
-      intUptoStart = intStart & IntBlockPool.INT_BLOCK_MASK;
-      addTerm(termID);
+      termID = positionStreamSlice(termID, docID);
     }
-
     if (doNextCall) {
-      nextPerField.add(postingsArray.textStarts[termID]);
+      nextPerField.add(postingsArray.textStarts[termID], docID);
     }
   }
 
-  int[] intUptos;
-  int intUptoStart;
+  private int positionStreamSlice(int termID, final int docID) throws IOException {
+    termID = (-termID) - 1;
+    int intStart = postingsArray.addressOffset[termID];
+    termStreamAddressBuffer = intPool.buffers[intStart >> IntBlockPool.INT_BLOCK_SHIFT];
+    streamAddressOffset = intStart & IntBlockPool.INT_BLOCK_MASK;
+    addTerm(termID, docID);
+    return termID;
+  }
 
-  void writeByte(int stream, byte b) {
-    int upto = intUptos[intUptoStart+stream];
+  final void writeByte(int stream, byte b) {
+    int streamAddress = streamAddressOffset + stream;
+    int upto = termStreamAddressBuffer[streamAddress];
     byte[] bytes = bytePool.buffers[upto >> ByteBlockPool.BYTE_BLOCK_SHIFT];
     assert bytes != null;
     int offset = upto & ByteBlockPool.BYTE_BLOCK_MASK;
@@ -202,26 +206,34 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
       // End of slice; allocate a new one
       offset = bytePool.allocSlice(bytes, offset);
       bytes = bytePool.buffer;
-      intUptos[intUptoStart+stream] = offset + bytePool.byteOffset;
+      termStreamAddressBuffer[streamAddress] = offset + bytePool.byteOffset;
     }
     bytes[offset] = b;
-    (intUptos[intUptoStart+stream])++;
+    (termStreamAddressBuffer[streamAddress])++;
   }
 
-  public void writeBytes(int stream, byte[] b, int offset, int len) {
+  final void writeBytes(int stream, byte[] b, int offset, int len) {
     // TODO: optimize
     final int end = offset + len;
     for(int i=offset;i<end;i++)
       writeByte(stream, b[i]);
   }
 
-  void writeVInt(int stream, int i) {
+  final void writeVInt(int stream, int i) {
     assert stream < streamCount;
     while ((i & ~0x7F) != 0) {
       writeByte(stream, (byte)((i & 0x7f) | 0x80));
       i >>>= 7;
     }
     writeByte(stream, (byte) i);
+  }
+
+  final TermsHashPerField getNextPerField() {
+    return nextPerField;
+  }
+
+  final String getFieldName() {
+    return fieldName;
   }
 
   private static final class PostingsBytesStartArray extends BytesStartArray {
@@ -272,8 +284,8 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   }
 
   @Override
-  public int compareTo(TermsHashPerField other) {
-    return fieldInfo.name.compareTo(other.fieldInfo.name);
+  public final int compareTo(TermsHashPerField other) {
+    return fieldName.compareTo(other.fieldName);
   }
 
   /** Finish adding all instances of this field to the
@@ -284,24 +296,25 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
     }
   }
 
+  final int getNumTerms() {
+    return bytesHash.size();
+  }
+
   /** Start adding a new field instance; first is true if
    *  this is the first time this field name was seen in the
    *  document. */
   boolean start(IndexableField field, boolean first) {
-    termAtt = fieldState.termAttribute;
-    termFreqAtt = fieldState.termFreqAttribute;
     if (nextPerField != null) {
       doNextCall = nextPerField.start(field, first);
     }
-
     return true;
   }
 
   /** Called when a term is seen for the first time. */
-  abstract void newTerm(int termID) throws IOException;
+  abstract void newTerm(int termID, final int docID) throws IOException;
 
   /** Called when a previously seen term is seen again. */
-  abstract void addTerm(int termID) throws IOException;
+  abstract void addTerm(int termID, final int docID) throws IOException;
 
   /** Called when the postings array is initialized or
    *  resized. */

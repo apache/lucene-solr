@@ -229,7 +229,7 @@ final class BufferedUpdatesStream implements Accountable {
       // Frozen packets are now resolved, concurrently, by the indexing threads that
       // create them, by adding a DocumentsWriter.ResolveUpdatesEvent to the events queue,
       // but if we get here and the packet is not yet resolved, we resolve it now ourselves:
-      if (packet.tryApply(writer) == false) {
+      if (writer.tryApply(packet) == false) {
         // if somebody else is currently applying it - move on to the next one and force apply below
         pendingPackets.add(packet);
       }
@@ -237,7 +237,7 @@ final class BufferedUpdatesStream implements Accountable {
     }
     for (FrozenBufferedUpdates packet : pendingPackets) {
       // now block on all the packets that were concurrently applied to ensure they are due before we continue.
-      packet.forceApply(writer);
+      writer.forceApply(packet);
     }
 
     if (infoStream.isEnabled("BD")) {
@@ -345,5 +345,4 @@ final class BufferedUpdatesStream implements Accountable {
       }
     }
   }
-
 }

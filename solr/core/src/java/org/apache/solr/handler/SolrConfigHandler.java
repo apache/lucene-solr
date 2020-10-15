@@ -36,7 +36,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -46,9 +45,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -61,15 +60,16 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
-import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -77,7 +77,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -151,263 +150,13 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   }
 
   public static boolean getImmutable(SolrCore core) {
+    @SuppressWarnings({"rawtypes"})
     NamedList configSetProperties = core.getConfigSetProperties();
     if (configSetProperties == null) return false;
     Object immutable = configSetProperties.get(IMMUTABLE_CONFIGSET_ARG);
     return immutable != null && Boolean.parseBoolean(immutable.toString());
   }
 
-  public static String validateName(String s) {
-    for (int i = 0; i < s.length(); i++) {
-      char c = s.charAt(i);
-      if ((c >= 'A' && c <= 'Z') ||
-          (c >= 'a' && c <= 'z') ||
-          (c >= '0' && c <= '9') ||
-          c == '_' ||
-          c == '-' ||
-          c == '.'
-      ) continue;
-      else {
-        return formatString("''{0}'' name should only have chars [a-zA-Z_-.0-9] ", s);
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Block up to a specified maximum time until we see agreement on the schema
-   * version in ZooKeeper across all replicas for a collection.
-   */
-  public static void waitForAllReplicasState(String collection,
-                                             ZkController zkController,
-                                             String prop,
-                                             int expectedVersion,
-                                             int maxWaitSecs) {
-    final RTimer timer = new RTimer();
-    // get a list of active replica cores to query for the schema zk version (skipping this core of course)
-    List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
-
-    for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection)) {
-      PerReplicaCallable e = new PerReplicaCallable(coreUrl, prop, expectedVersion, maxWaitSecs);
-      concurrentTasks.add(e);
-    }
-    if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
-
-    log.info(formatString("Waiting up to {0} secs for {1} replicas to set the property {2} to be of version {3} for collection {4}",
-        maxWaitSecs, concurrentTasks.size(), prop, expectedVersion, collection));
-
-    // use an executor service to invoke schema zk version requests in parallel with a max wait time
-    execInparallel(concurrentTasks, parallelExecutor -> {
-      try {
-        List<String> failedList = executeAll(expectedVersion, maxWaitSecs, concurrentTasks, parallelExecutor);
-        // if any tasks haven't completed within the specified timeout, it's an error
-        if (failedList != null)
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              formatString("{0} out of {1} the property {2} to be of version {3} within {4} seconds! Failed cores: {5}",
-                  failedList.size(), concurrentTasks.size() + 1, prop, expectedVersion, maxWaitSecs, failedList));
-      } catch (InterruptedException e) {
-        log.warn(formatString(
-            "Core  was interrupted . trying to set the property {0} to version {1} to propagate to {2} replicas for collection {3}",
-            prop, expectedVersion, concurrentTasks.size(), collection));
-        Thread.currentThread().interrupt();
-      }
-    });
-
-    log.info("Took {}ms to set the property {} to be of version {} for collection {}",
-        timer.getTime(), prop, expectedVersion, collection);
-  }
-
-  public static void execInparallel(List<? extends PerReplicaCallable> concurrentTasks, Consumer<ExecutorService> fun) {
-    int poolSize = Math.min(concurrentTasks.size(), 10);
-    ExecutorService parallelExecutor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new DefaultSolrThreadFactory("solrHandlerExecutor"));
-    try {
-
-      fun.accept(parallelExecutor);
-
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
-    }
-  }
-
-  @Override
-  public SolrRequestHandler getSubHandler(String path) {
-    if (subPaths.contains(path)) return this;
-    if (path.startsWith("/params/")) return this;
-    List<String> p = StrUtils.splitSmart(path, '/', true);
-    if (p.size() > 1) {
-      if (subPaths.contains("/" + p.get(0))) return this;
-    }
-    return null;
-  }
-
-
-  private static Set<String> subPaths = new HashSet<>(Arrays.asList("/overlay", "/params", "/updateHandler",
-      "/query", "/jmx", "/requestDispatcher", "/znodeVersion"));
-
-  static {
-    for (SolrConfig.SolrPluginInfo solrPluginInfo : SolrConfig.plugins)
-      subPaths.add("/" + solrPluginInfo.getCleanTag());
-
-  }
-
-  //////////////////////// SolrInfoMBeans methods //////////////////////
-
-
-  @Override
-  public String getDescription() {
-    return "Edit solrconfig.xml";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.ADMIN;
-  }
-
-
-  public static final String SET_PROPERTY = "set-property";
-  public static final String UNSET_PROPERTY = "unset-property";
-  public static final String SET_USER_PROPERTY = "set-user-property";
-  public static final String UNSET_USER_PROPERTY = "unset-user-property";
-  public static final String SET = "set";
-  public static final String UPDATE = "update";
-  public static final String CREATE = "create";
-  private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE, UPDATE, "delete", "add");
-
-  public static List<String> executeAll(int expectedVersion, int maxWaitSecs, List<? extends PerReplicaCallable> concurrentTasks, ExecutorService parallelExecutor) throws InterruptedException {
-    List<Future<Boolean>> results =
-        parallelExecutor.invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
-
-    // determine whether all replicas have the update
-    List<String> failedList = null; // lazily init'd
-    for (int f = 0; f < results.size(); f++) {
-      Boolean success = false;
-      Future<Boolean> next = results.get(f);
-      if (next.isDone() && !next.isCancelled()) {
-        // looks to have finished, but need to check if it succeeded
-        try {
-          success = next.get();
-        } catch (ExecutionException e) {
-          // shouldn't happen since we checked isCancelled
-        }
-      }
-
-      if (!success) {
-        String coreUrl = concurrentTasks.get(f).coreUrl;
-        log.warn("Core " + coreUrl + "could not get the expected version " + expectedVersion);
-        if (failedList == null) failedList = new ArrayList<>();
-        failedList.add(coreUrl);
-      }
-    }
-    return failedList;
-  }
-
-  public static class PerReplicaCallable extends SolrRequest implements Callable<Boolean> {
-    protected String coreUrl;
-    String prop;
-    protected int expectedZkVersion;
-    protected Number remoteVersion = null;
-    int maxWait;
-
-    public PerReplicaCallable(String coreUrl, String prop, int expectedZkVersion, int maxWait) {
-      super(METHOD.GET, "/config/" + ZNODEVER);
-      this.coreUrl = coreUrl;
-      this.expectedZkVersion = expectedZkVersion;
-      this.prop = prop;
-      this.maxWait = maxWait;
-    }
-
-    @Override
-    public SolrParams getParams() {
-      return new ModifiableSolrParams()
-          .set(prop, expectedZkVersion)
-          .set(CommonParams.WT, CommonParams.JAVABIN);
-    }
-
-    @Override
-    public Boolean call() throws Exception {
-      final RTimer timer = new RTimer();
-      int attempts = 0;
-      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
-        // eventually, this loop will get killed by the ExecutorService's timeout
-        while (true) {
-          try {
-            long timeElapsed = (long) timer.getTime() / 1000;
-            if (timeElapsed >= maxWait) {
-              return false;
-            }
-            log.info("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
-            Thread.sleep(100);
-            MapWriter resp = solr.httpUriRequest(this).future.get();
-            if (verifyResponse(resp, attempts)) break;
-            attempts++;
-          } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-              break; // stop looping
-            } else {
-              log.warn("Failed to get /schema/zkversion from " + coreUrl + " due to: " + e);
-            }
-          }
-        }
-      }
-      return true;
-    }
-
-    protected boolean verifyResponse(MapWriter mw, int attempts) {
-      NamedList resp = (NamedList) mw;
-      if (resp != null) {
-        Map m = (Map) resp.get(ZNODEVER);
-        if (m != null) {
-          remoteVersion = (Number) m.get(prop);
-          if (remoteVersion != null && remoteVersion.intValue() >= expectedZkVersion) return true;
-          log.info(formatString("Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts", expectedZkVersion, coreUrl, prop, attempts));
-
-        }
-      }
-      return false;
-    }
-
-
-    @Override
-    protected SolrResponse createResponse(SolrClient client) {
-      return null;
-    }
-  }
-
-  public static List<String> getActiveReplicaCoreUrls(ZkController zkController,
-                                                      String collection) {
-    List<String> activeReplicaCoreUrls = new ArrayList<>();
-    ClusterState clusterState = zkController.getZkStateReader().getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (docCollection != null && docCollection.getActiveSlices() != null && docCollection.getActiveSlices().size() > 0) {
-      final Collection<Slice> activeSlices = docCollection.getActiveSlices();
-      for (Slice next : activeSlices) {
-        Map<String, Replica> replicasMap = next.getReplicasMap();
-        if (replicasMap != null) {
-          for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
-            Replica replica = entry.getValue();
-            if (replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
-              activeReplicaCoreUrls.add(replica.getCoreUrl());
-            }
-          }
-        }
-      }
-    }
-    return activeReplicaCoreUrls;
-  }
-
-  @Override
-  public Name getPermissionName(AuthorizationContext ctx) {
-    switch (ctx.getHttpMethod()) {
-      case "GET":
-        return Name.CONFIG_READ_PERM;
-      case "POST":
-        return Name.CONFIG_EDIT_PERM;
-      default:
-        return null;
-    }
-  }
 
   private class Command {
     private final SolrQueryRequest req;
@@ -429,6 +178,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return "/config";
     }
 
+    @SuppressWarnings({"unchecked"})
     private void handleGET() {
       if (parts.size() == 1) {
         //this is the whole config. sent out the whole payload
@@ -440,6 +190,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           if (parts.size() == 3) {
             RequestParams params = req.getCore().getSolrConfig().getRequestParams();
             RequestParams.ParamSet p = params.getParams(parts.get(2));
+            @SuppressWarnings({"rawtypes"})
             Map m = new LinkedHashMap<>();
             m.put(ZNODEVER, params.getZnodeVersion());
             if (p != null) {
@@ -488,7 +239,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 }
               }, SolrConfigHandler.class.getSimpleName() + "-refreshconf").start();
             } else {
-              log.info("isStale {} , resourceloader {}", isStale, req.getCore().getResourceLoader().getClass().getName());
+              if (log.isInfoEnabled()) {
+                log.info("isStale {} , resourceloader {}", isStale, req.getCore().getResourceLoader().getClass().getName());
+              }
             }
 
           } else {
@@ -496,74 +249,67 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             Map<String, Object> val = makeMap(parts.get(1), m.get(parts.get(1)));
             String componentName = req.getParams().get("componentName");
             if (componentName != null) {
+              @SuppressWarnings({"rawtypes"})
               Map map = (Map) val.get(parts.get(1));
               if (map != null) {
-                val.put(parts.get(1), makeMap(componentName, map.get(componentName)));
+                Object o = map.get(componentName);
+                val.put(parts.get(1), makeMap(componentName, o));
+                if (req.getParams().getBool("meta", false)) {
+                  // meta=true is asking for the package info of the plugin
+                  // We go through all the listeners and see if there is one registered for this plugin
+                  List<PackageListeners.Listener> listeners = req.getCore().getPackageListeners().getListeners();
+                  for (PackageListeners.Listener listener :
+                      listeners) {
+                    PluginInfo info = listener.pluginInfo();
+                    if(info == null) continue;
+                    if (info.type.equals(parts.get(1)) && info.name.equals(componentName)) {
+                      if (o instanceof Map) {
+                        @SuppressWarnings({"rawtypes"})
+                        Map m1 = (Map) o;
+                        m1.put("_packageinfo_", listener.getPackageVersion(info.cName));
+                      }
+                    }
+                  }
+                }
               }
             }
-
             resp.add("config", val);
           }
         }
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {
       String componentName = componentType == null ? null : req.getParams().get("componentName");
-      if(componentName == null && parts.size() > 2){
-        componentName = parts.get(2);
-        if(SolrRequestHandler.TYPE.equals(componentType)){
-          componentName = "/"+componentName;
-        }
-      }
-
       boolean showParams = req.getParams().getBool("expandParams", false);
       Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
-      if (SolrRequestHandler.TYPE.equals(componentType) || componentType == null) {
-        Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
-        if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
-        List<PluginInfo> plugins = this.req.getCore().getImplicitHandlers();
-        for (PluginInfo plugin : plugins) {
-          if (SolrRequestHandler.TYPE.equals(plugin.type)) {
-            if (!reqHandlers.containsKey(plugin.name)) {
-              reqHandlers.put(plugin.name, plugin);
-            }
+      if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
+      @SuppressWarnings({"rawtypes"})
+      Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
+      if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
+      List<PluginInfo> plugins = this.req.getCore().getImplicitHandlers();
+      for (PluginInfo plugin : plugins) {
+        if (SolrRequestHandler.TYPE.equals(plugin.type)) {
+          if (!reqHandlers.containsKey(plugin.name)) {
+            reqHandlers.put(plugin.name, plugin);
           }
         }
-        if (showParams) {
-          for (Object o : reqHandlers.entrySet()) {
-            Map.Entry e = (Map.Entry) o;
-            if (componentName == null || e.getKey().equals(componentName)) {
-              Map<String, Object> m = expandUseParams(req, e.getValue());
-              e.setValue(m);
-            }
-          }
-        }
-
       }
-
-      if (req.getParams().getBool("meta", false)) {
-        for (SolrCore.PkgListener pkgListener : req.getCore().getPackageListeners()) {
-          PluginInfo meta = pkgListener.pluginInfo();
-          if (meta.pathInConfig != null) {
-            Object obj = Utils.getObjectByPath(map, false, meta.pathInConfig);
-            if (obj instanceof Map) {
-              Map m = (Map) obj;
-              m.put("_packageinfo_", pkgListener.lib());
-            } else if(obj instanceof MapWriter){
-              MapWriter mw = (MapWriter) obj;
-              Utils.setObjectByPath(map, meta.pathInConfig, (MapWriter) ew -> {
-                mw.writeMap(ew);
-                ew.put("_packageinfo_", pkgListener.lib());
-              }, false);
-            }
-          }
+      if (!showParams) return map;
+      for (Object o : reqHandlers.entrySet()) {
+        @SuppressWarnings({"rawtypes"})
+        Map.Entry e = (Map.Entry) o;
+        if (componentName == null || e.getKey().equals(componentName)) {
+          Map<String, Object> m = expandUseParams(req, e.getValue());
+          e.setValue(m);
         }
       }
 
       return map;
     }
 
+    @SuppressWarnings({"unchecked"})
     private Map<String, Object> expandUseParams(SolrQueryRequest req,
                                                 Object plugin) {
 
@@ -573,14 +319,16 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       } else if (plugin instanceof PluginInfo) {
         pluginInfo = ((PluginInfo) plugin).toMap(new LinkedHashMap<>());
       }
+      @SuppressWarnings({"rawtypes"})
       String useParams = (String) pluginInfo.get(USEPARAM);
-      String useparamsInReq = req.getOriginalParams().get(USEPARAM);
-      if (useParams != null || useparamsInReq != null) {
+      String useParamsInReq = req.getOriginalParams().get(USEPARAM);
+      if (useParams != null || useParamsInReq != null) {
+        @SuppressWarnings({"rawtypes"})
         Map m = new LinkedHashMap<>();
         pluginInfo.put("_useParamsExpanded_", m);
         List<String> params = new ArrayList<>();
         if (useParams != null) params.addAll(StrUtils.splitSmart(useParams, ','));
-        if (useparamsInReq != null) params.addAll(StrUtils.splitSmart(useparamsInReq, ','));
+        if (useParamsInReq != null) params.addAll(StrUtils.splitSmart(useParamsInReq, ','));
         for (String param : params) {
           RequestParams.ParamSet p = this.req.getCore().getSolrConfig().getRequestParams().getParams(param);
           if (p != null) {
@@ -593,6 +341,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
         LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), req.getOriginalParams());
         r.getContext().put(USEPARAM, useParams);
+        @SuppressWarnings({"rawtypes"})
         NamedList nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
         SolrPluginUtils.setDefaults(r,
             getSolrParamsFromNamedList(nl, DEFAULTS),
@@ -629,12 +378,12 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             break;//succeeded . so no need to go over the loop again
           } catch (ZkController.ResourceModifiedInZkException e) {
             //retry
-            log.info("Race condition, the node is modified in ZK by someone else " + e.getMessage());
+            if (log.isInfoEnabled()) {
+              log.info("Race condition, the node is modified in ZK by someone else", e);
+            }
           }
         }
       } catch (Exception e) {
-
-        log.error("error executing commands " + Utils.toJSONString(ops), e);
         resp.setException(e);
         resp.add(CommandOperation.ERR_MSGS, singletonList(SchemaManager.getErrorStr(e)));
       }
@@ -642,6 +391,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     }
 
 
+    @SuppressWarnings({"unchecked"})
     private void handleParams(ArrayList<CommandOperation> ops, RequestParams params) {
       for (CommandOperation op : ops) {
         switch (op.name) {
@@ -652,6 +402,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
             for (Map.Entry<String, Object> entry : map.entrySet()) {
 
+              @SuppressWarnings({"rawtypes"})
               Map val;
               String key = entry.getKey();
               if (isNullOrEmpty(key)) {
@@ -698,15 +449,20 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             if (op.hasError()) break;
             for (String s : name) {
               if (params.getParams(s) == null) {
-                op.addError(formatString("can't delete . No such params ''{0}'' exist", s));
+                op.addError(formatString("Could not delete. No such params ''{0}'' exist", s));
               }
               params = params.setParams(s, null);
             }
+            break;
+          }
+          default: {
+            op.unknownOperation();
           }
         }
       }
 
 
+      @SuppressWarnings({"rawtypes"})
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
         throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing params", errs);
@@ -718,7 +474,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         if (ops.isEmpty()) {
           ZkController.touchConfDir(zkLoader);
         } else {
-          log.debug("persisting params data : {}", Utils.toJSONString(params.toMap(new LinkedHashMap<>())));
+          if (log.isDebugEnabled()) {
+            log.debug("persisting params data : {}", Utils.toJSONString(params.toMap(new LinkedHashMap<>())));
+          }
           int latestVersion = ZkController.persistConfigResourceToZooKeeper(zkLoader,
               params.getZnodeVersion(), RequestParams.RESOURCE, params.toByteArray(), true);
 
@@ -734,6 +492,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     }
 
+    @SuppressWarnings({"unchecked"})
     private void handleCommands(List<CommandOperation> ops, ConfigOverlay overlay) throws IOException {
       for (CommandOperation op : ops) {
         switch (op.name) {
@@ -770,8 +529,10 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           }
         }
       }
+      @SuppressWarnings({"rawtypes"})
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
+        log.error("ERROR:{}", Utils.toJSONString(errs));
         throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
       }
 
@@ -779,15 +540,15 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       if (loader instanceof ZkSolrResourceLoader) {
         int latestVersion = ZkController.persistConfigResourceToZooKeeper((ZkSolrResourceLoader) loader, overlay.getZnodeVersion(),
             ConfigOverlay.RESOURCE_NAME, overlay.toByteArray(), true);
-        log.info("Executed config commands successfully and persisted to ZK {}", ops);
+        log.debug("Executed config commands successfully and persisted to ZK {}", ops);
         waitForAllReplicasState(req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName(),
             req.getCore().getCoreContainer().getZkController(),
             ConfigOverlay.NAME,
             latestVersion, 30);
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
-        req.getCore().getCoreContainer().reload(req.getCore().getName());
-        log.info("Executed config commands successfully and persited to File System {}", ops);
+        req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
+        log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
 
     }
@@ -810,20 +571,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       op.getMap(PluginInfo.INVARIANTS, null);
       op.getMap(PluginInfo.APPENDS, null);
       if (op.hasError()) return overlay;
-      if (info.clazz == RuntimeLib.class) {
-        if (!RuntimeLib.isEnabled()) {
-          op.addError("Solr not started with -Denable.runtime.lib=true");
-          return overlay;
-        }
-        try {
-          new RuntimeLib(req.getCore().getCoreContainer()).init(new PluginInfo(info.tag, op.getDataMap()));
-        } catch (Exception e) {
-          op.addError(e.getMessage());
-          log.error("can't load this plugin ", e);
-          return overlay;
-        }
-      }
-      if (!verifyClass(op, clz, info)) return overlay;
+      if (!verifyClass(op, clz, info.clazz)) return overlay;
       if (pluginExists(info, overlay, name)) {
         if (isCeate) {
           op.addError(formatString(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, "update-" + info.getTagCleanLower()));
@@ -847,25 +595,26 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
     }
 
-    private boolean verifyClass(CommandOperation op, String clz, SolrConfig.SolrPluginInfo pluginMeta) {
+    @SuppressWarnings({"unchecked"})
+    private boolean verifyClass(CommandOperation op, String clz, @SuppressWarnings({"rawtypes"})Class expected) {
       if (clz == null) return true;
-      PluginInfo info = new PluginInfo(pluginMeta.getCleanTag(), op.getDataMap());
-
-      if (info.isRuntimePlugin() && !RuntimeLib.isEnabled()) {
-        op.addError("node not started with enable.runtime.lib=true");
+      PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
+      try {
+        if (expected == Expressible.class) {
+          @SuppressWarnings("resource")
+          SolrResourceLoader resourceLoader = info.pkgName == null ?
+              req.getCore().getResourceLoader() :
+              req.getCore().getResourceLoader(info.pkgName);
+          resourceLoader.findClass(info.className, expected);
+        } else {
+          req.getCore().createInitInstance(info, expected, clz, "");
+        }
+      } catch (Exception e) {
+        log.error("Error checking plugin : ", e);
+        op.addError(e.getMessage());
         return false;
       }
 
-      if (!"true".equals(String.valueOf(op.getStr(RuntimeLib.TYPE, null)))) {
-        //this is not dynamically loaded so we can verify the class right away
-        try {
-          req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), pluginMeta.clazz, clz, "");
-        } catch (Exception e) {
-          op.addError(e.getMessage());
-          return false;
-        }
-
-      }
       return true;
     }
 
@@ -914,6 +663,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       for (Map.Entry<String, Object> e : m.entrySet()) {
         String name = e.getKey();
         Object val = e.getValue();
+        @SuppressWarnings({"rawtypes"})
         Class typ = ConfigOverlay.checkEditable(name, false, null);
         if (typ == null) {
           op.addError(formatString(NOT_EDITABLE, name));
@@ -955,6 +705,248 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return overlay;
     }
 
+  }
+
+  public static String validateName(String s) {
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if ((c >= 'A' && c <= 'Z') ||
+          (c >= 'a' && c <= 'z') ||
+          (c >= '0' && c <= '9') ||
+          c == '_' ||
+          c == '-' ||
+          c == '.'
+      ) continue;
+      else {
+        return formatString("''{0}'' name should only have chars [a-zA-Z_-.0-9] ", s);
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public SolrRequestHandler getSubHandler(String path) {
+    if (subPaths.contains(path)) return this;
+    if (path.startsWith("/params/")) return this;
+    return null;
+  }
+
+
+  private static Set<String> subPaths = new HashSet<>(Arrays.asList("/overlay", "/params", "/updateHandler",
+      "/query", "/jmx", "/requestDispatcher", "/znodeVersion"));
+
+  static {
+    for (SolrConfig.SolrPluginInfo solrPluginInfo : SolrConfig.plugins)
+      subPaths.add("/" + solrPluginInfo.getCleanTag());
+
+  }
+
+  //////////////////////// SolrInfoMBeans methods //////////////////////
+
+
+  @Override
+  public String getDescription() {
+    return "Edit solrconfig.xml";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
+
+  public static final String SET_PROPERTY = "set-property";
+  public static final String UNSET_PROPERTY = "unset-property";
+  public static final String SET_USER_PROPERTY = "set-user-property";
+  public static final String UNSET_USER_PROPERTY = "unset-user-property";
+  public static final String SET = "set";
+  public static final String UPDATE = "update";
+  public static final String CREATE = "create";
+  private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE, UPDATE, "delete", "add");
+
+  /**
+   * Block up to a specified maximum time until we see agreement on the schema
+   * version in ZooKeeper across all replicas for a collection.
+   */
+  private static void waitForAllReplicasState(String collection,
+                                              ZkController zkController,
+                                              String prop,
+                                              int expectedVersion,
+                                              int maxWaitSecs) {
+    final RTimer timer = new RTimer();
+    // get a list of active replica cores to query for the schema zk version (skipping this core of course)
+    List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
+
+    for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection)) {
+      PerReplicaCallable e = new PerReplicaCallable(coreUrl, prop, expectedVersion, maxWaitSecs);
+      concurrentTasks.add(e);
+    }
+    if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
+
+    if (log.isInfoEnabled()) {
+      log.info(formatString("Waiting up to {0} secs for {1} replicas to set the property {2} to be of version {3} for collection {4}",
+          maxWaitSecs, concurrentTasks.size(), prop, expectedVersion, collection));
+    }
+
+    // use an executor service to invoke schema zk version requests in parallel with a max wait time
+    int poolSize = Math.min(concurrentTasks.size(), 10);
+    ExecutorService parallelExecutor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrNamedThreadFactory("solrHandlerExecutor"));
+    try {
+      List<Future<Boolean>> results =
+          parallelExecutor.invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
+
+      // determine whether all replicas have the update
+      List<String> failedList = null; // lazily init'd
+      for (int f = 0; f < results.size(); f++) {
+        Boolean success = false;
+        Future<Boolean> next = results.get(f);
+        if (next.isDone() && !next.isCancelled()) {
+          // looks to have finished, but need to check if it succeeded
+          try {
+            success = next.get();
+          } catch (ExecutionException e) {
+            // shouldn't happen since we checked isCancelled
+          }
+        }
+
+        if (!success) {
+          String coreUrl = concurrentTasks.get(f).coreUrl;
+          log.warn("Core {} could not get the expected version {}", coreUrl, expectedVersion);
+          if (failedList == null) failedList = new ArrayList<>();
+          failedList.add(coreUrl);
+        }
+      }
+
+      // if any tasks haven't completed within the specified timeout, it's an error
+      if (failedList != null)
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            formatString("{0} out of {1} the property {2} to be of version {3} within {4} seconds! Failed cores: {5}",
+                failedList.size(), concurrentTasks.size() + 1, prop, expectedVersion, maxWaitSecs, failedList));
+
+    } catch (InterruptedException ie) {
+      log.warn(formatString(
+          "Core  was interrupted . trying to set the property {1} to version {2} to propagate to {3} replicas for collection {4}",
+          prop, expectedVersion, concurrentTasks.size(), collection));
+      Thread.currentThread().interrupt();
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
+    }
+
+    if (log.isInfoEnabled()) {
+      log.info("Took {}ms to set the property {} to be of version {} for collection {}",
+          timer.getTime(), prop, expectedVersion, collection);
+    }
+  }
+
+  public static List<String> getActiveReplicaCoreUrls(ZkController zkController,
+                                                      String collection) {
+    List<String> activeReplicaCoreUrls = new ArrayList<>();
+    ClusterState clusterState = zkController.getZkStateReader().getClusterState();
+    Set<String> liveNodes = clusterState.getLiveNodes();
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    if (docCollection != null && docCollection.getActiveSlices() != null && docCollection.getActiveSlices().size() > 0) {
+      final Collection<Slice> activeSlices = docCollection.getActiveSlices();
+      for (Slice next : activeSlices) {
+        Map<String, Replica> replicasMap = next.getReplicasMap();
+        if (replicasMap != null) {
+          for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
+            Replica replica = entry.getValue();
+            if (replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
+              activeReplicaCoreUrls.add(replica.getCoreUrl());
+            }
+          }
+        }
+      }
+    }
+    return activeReplicaCoreUrls;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext ctx) {
+    switch (ctx.getHttpMethod()) {
+      case "GET":
+        return Name.CONFIG_READ_PERM;
+      case "POST":
+        return Name.CONFIG_EDIT_PERM;
+      default:
+        return null;
+    }
+  }
+
+  @SuppressWarnings({"rawtypes"})
+  private static class PerReplicaCallable extends SolrRequest implements Callable<Boolean> {
+    String coreUrl;
+    String prop;
+    int expectedZkVersion;
+    Number remoteVersion = null;
+    int maxWait;
+
+    PerReplicaCallable(String coreUrl, String prop, int expectedZkVersion, int maxWait) {
+      super(METHOD.GET, "/config/" + ZNODEVER);
+      this.coreUrl = coreUrl;
+      this.expectedZkVersion = expectedZkVersion;
+      this.prop = prop;
+      this.maxWait = maxWait;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      return new ModifiableSolrParams()
+          .set(prop, expectedZkVersion)
+          .set(CommonParams.WT, CommonParams.JAVABIN);
+    }
+
+    @Override
+    public Boolean call() throws Exception {
+      final RTimer timer = new RTimer();
+      int attempts = 0;
+      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
+        // eventually, this loop will get killed by the ExecutorService's timeout
+        while (true) {
+          try {
+            long timeElapsed = (long) timer.getTime() / 1000;
+            if (timeElapsed >= maxWait) {
+              return false;
+            }
+            log.info("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
+            Thread.sleep(100);
+            NamedList<Object> resp = solr.httpUriRequest(this).future.get();
+            if (resp != null) {
+              @SuppressWarnings({"rawtypes"})
+              Map m = (Map) resp.get(ZNODEVER);
+              if (m != null) {
+                remoteVersion = (Number) m.get(prop);
+                if (remoteVersion != null && remoteVersion.intValue() >= expectedZkVersion) break;
+              }
+            }
+
+            attempts++;
+            if (log.isInfoEnabled()) {
+              log.info(formatString("Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts", expectedZkVersion, coreUrl, prop, attempts));
+            }
+          } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+              break; // stop looping
+            } else {
+              log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);
+            }
+          }
+        }
+      }
+      return true;
+    }
+
+
+    @Override
+    protected SolrResponse createResponse(SolrClient client) {
+      return null;
+    }
+
+    @Override
+    public String getRequestType() {
+      return SolrRequest.SolrRequestType.ADMIN.toString();
+    }
   }
 
   @Override

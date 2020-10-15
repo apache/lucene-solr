@@ -33,6 +33,7 @@ public class AkimaEvaluator extends RecursiveNumericEvaluator implements ManyVal
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... objects) throws IOException{
 
     Object first = objects[0];
@@ -56,7 +57,7 @@ public class AkimaEvaluator extends RecursiveNumericEvaluator implements ManyVal
     AkimaSplineInterpolator interpolator = new AkimaSplineInterpolator();
     PolynomialSplineFunction spline = interpolator.interpolate(x, y);
 
-    List<Number> list = new ArrayList();
+    List<Number> list = new ArrayList<>();
     for(double xvalue : x) {
       list.add(spline.value(xvalue));
     }

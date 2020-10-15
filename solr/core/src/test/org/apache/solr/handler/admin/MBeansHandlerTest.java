@@ -19,20 +19,18 @@ package org.apache.solr.handler.admin;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,6 +63,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     NamedList<NamedList<NamedList<Object>>> diff = SolrInfoMBeanHandler.fromXML(xml);
 
     // The stats bean for SolrInfoMBeanHandler
+    @SuppressWarnings({"rawtypes"})
     NamedList stats = (NamedList)diff.get("ADMIN").get("/admin/mbeans").get("stats");
 
     //System.out.println("stats:"+stats);
@@ -132,9 +131,8 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testMetricsSnapshot() throws Exception {
     final CountDownLatch counter = new CountDownLatch(500);
-    MetricRegistry registry = new MetricRegistry();
-    Set<String> names = ConcurrentHashMap.newKeySet();
     SolrInfoBean bean = new SolrInfoBean() {
+      SolrMetricsContext solrMetricsContext;
       @Override
       public String getName() {
         return "foo";
@@ -151,20 +149,21 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
       }
 
       @Override
-      public Set<String> getMetricNames() {
-        return names;
+      public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+        this.solrMetricsContext = parentContext.getChildContext(this);
       }
 
       @Override
-      public MetricRegistry getMetricRegistry() {
-        return registry;
+      public SolrMetricsContext getSolrMetricsContext() {
+        return solrMetricsContext;
       }
     };
+    bean.initializeMetrics(new SolrMetricsContext(h.getCoreContainer().getMetricManager(), "testMetricsSnapshot", "foobar"), "foo");
     runSnapshots = true;
     Thread modifier = new Thread(() -> {
       int i = 0;
       while (runSnapshots) {
-        bean.registerMetricName("name-" + i++);
+        bean.getSolrMetricsContext().registerMetricName("name-" + i++);
         try {
           Thread.sleep(31);
         } catch (InterruptedException e) {
@@ -176,7 +175,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     Thread reader = new Thread(() -> {
       while (runSnapshots) {
         try {
-          bean.getMetricsSnapshot();
+          bean.getSolrMetricsContext().getMetricsSnapshot();
         } catch (Exception e) {
           runSnapshots = false;
           e.printStackTrace();
@@ -195,5 +194,6 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     reader.start();
     counter.await(30, TimeUnit.SECONDS);
     runSnapshots = false;
+    bean.close();
   }
 }

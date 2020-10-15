@@ -31,7 +31,7 @@
  * <p>
  *     The main access point is the {@link org.apache.lucene.util.packed.PackedInts} factory.
  * 
- * <h3>In-memory structures</h3>
+ * <h2>In-memory structures</h2>
  * 
  * <ul>
  *     <li><b>{@link org.apache.lucene.util.packed.PackedInts.Mutable}</b><ul>
@@ -62,7 +62,7 @@
  *     </ul></li>
  * </ul>
  * 
- * <h3>Disk-based structures</h3>
+ * <h2>Disk-based structures</h2>
  * 
  * <ul>
  *     <li><b>{@link org.apache.lucene.util.packed.PackedInts.Writer}, {@link org.apache.lucene.util.packed.PackedInts.Reader}, {@link org.apache.lucene.util.packed.PackedInts.ReaderIterator}</b><ul>

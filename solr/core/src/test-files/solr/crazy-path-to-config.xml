@@ -34,7 +34,6 @@
     <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
     <useFilterForSortedQuery>true</useFilterForSortedQuery>
     <queryResultWindowSize>10</queryResultWindowSize>
-    <HashDocSet maxSize="3000" loadFactor="0.75"/>
     <boolTofilterOptimizer enabled="true" cacheSize="32" threshold=".05"/>
   </query>
 

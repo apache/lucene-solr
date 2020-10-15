@@ -21,11 +21,10 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 
@@ -64,9 +63,7 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
     KNOWN_METRIC_NAME_STRATEGIES.put("methodOnly", METHOD_ONLY);
   }
 
-  protected MetricRegistry metricsRegistry;
-  protected SolrMetricManager metricManager;
-  protected String registryName;
+  protected SolrMetricsContext solrMetricsContext;
   protected String scope;
   protected NameStrategy nameStrategy;
 
@@ -85,7 +82,7 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
 
       @Override
       public void onBegin(Request request) {
-        if (metricsRegistry != null) {
+        if (solrMetricsContext != null) {
           timerContext = timer(request).time();
         }
       }
@@ -100,15 +97,18 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   }
 
   private Timer timer(Request request) {
-    return metricsRegistry.timer(nameStrategy.getNameFor(scope, request));
+    return solrMetricsContext.timer(nameStrategy.getNameFor(scope, request));
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    this.metricManager = manager;
-    this.registryName = registry;
-    this.metricsRegistry = manager.registry(registry);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext;
     this.scope = scope;
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 }
 

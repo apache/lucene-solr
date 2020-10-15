@@ -42,7 +42,7 @@ public final class NoMergeScheduler extends MergeScheduler {
   public void close() {}
 
   @Override
-  public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) {}
+  public void merge(MergeSource mergeSource, MergeTrigger trigger) {}
   
   @Override
   public Directory wrapForMerge(OneMerge merge, Directory in) {

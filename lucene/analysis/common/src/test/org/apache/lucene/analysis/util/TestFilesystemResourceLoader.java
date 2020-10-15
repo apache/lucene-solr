@@ -25,6 +25,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -53,7 +55,7 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
     assertEquals("org.apache.lucene.analysis.util.RollingCharBuffer",
         rl.newInstance("org.apache.lucene.analysis.util.RollingCharBuffer", Object.class).getClass().getName());
   }
-  
+
   public void testBaseDir() throws Exception {
     final Path base = createTempDir("fsResourceLoaderBase");
     Writer os = Files.newBufferedWriter(base.resolve("template.txt"), StandardCharsets.UTF_8);
@@ -62,7 +64,8 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
     } finally {
       IOUtils.closeWhileHandlingException(os);
     }
-      
+
+    @SuppressWarnings("deprecation")
     ResourceLoader rl = new FilesystemResourceLoader(base);
     assertEquals("foobar", WordlistLoader.getLines(rl.openResource("template.txt"), StandardCharsets.UTF_8).get(0));
     // Same with full path name:

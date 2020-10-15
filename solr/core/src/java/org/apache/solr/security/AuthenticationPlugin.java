@@ -17,40 +17,36 @@
 package org.apache.solr.security;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import java.io.Closeable;
-import java.util.Arrays;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
+import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
 
 /**
  * 
  * @lucene.experimental
  */
-public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, SolrMetricProducer {
+public abstract class AuthenticationPlugin implements SolrInfoBean {
 
   final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
   final public static String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";
 
   // Metrics
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
+  protected SolrMetricsContext solrMetricsContext;
 
-  protected String registryName;
-  protected SolrMetricManager metricManager;
   protected Meter numErrors = new Meter();
   protected Counter requests = new Counter();
   protected Timer requestTimes = new Timer();
@@ -78,15 +74,14 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
    * the response and status code have already been sent.
    * @throws Exception any exception thrown during the authentication, e.g. PrivilegedActionException
    */
-  //TODO redeclare params as HttpServletRequest & HttpServletResponse
-  public abstract boolean doAuthenticate(ServletRequest request, ServletResponse response,
+  public abstract boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws Exception;
 
   /**
    * This method is called by SolrDispatchFilter in order to initiate authentication.
    * It does some standard metrics counting.
    */
-  public final boolean authenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
+  public final boolean authenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
     Timer.Context timer = requestTimes.time();
     requests.inc();
     try {
@@ -98,6 +93,24 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
       long elapsed = timer.stop();
       totalTime.inc(elapsed);
     }
+  }
+
+  HttpServletRequest wrapWithPrincipal(HttpServletRequest request, Principal principal) {
+      return wrapWithPrincipal(request, principal, principal.getName());
+  }
+
+  HttpServletRequest wrapWithPrincipal(HttpServletRequest request, Principal principal, String username) {
+    return new HttpServletRequestWrapper(request) {
+      @Override
+      public Principal getUserPrincipal() {
+        return principal;
+      }
+
+      @Override
+      public String getRemoteUser() {
+        return username;
+      }
+    };
   }
 
   /**
@@ -144,21 +157,22 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, final String scope) {
-    this.metricManager = manager;
-    this.registryName = registryName;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
     // Metrics
-    registry = manager.registry(registryName);
-    numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope);
-    requests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
-    numAuthenticated = manager.counter(this, registryName, "authenticated", getCategory().toString(), scope);
-    numPassThrough = manager.counter(this, registryName, "passThrough", getCategory().toString(), scope);
-    numWrongCredentials = manager.counter(this, registryName, "failWrongCredentials", getCategory().toString(), scope);
-    numMissingCredentials = manager.counter(this, registryName, "failMissingCredentials", getCategory().toString(), scope);
-    requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
-    totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
-    metricNames.addAll(Arrays.asList("errors", "requests", "authenticated", "passThrough",
-        "failWrongCredentials", "failMissingCredentials", "requestTimes", "totalTime"));
+    numErrors = this.solrMetricsContext.meter("errors", getCategory().toString(), scope);
+    requests = this.solrMetricsContext.counter("requests", getCategory().toString(), scope);
+    numAuthenticated = this.solrMetricsContext.counter("authenticated",getCategory().toString(), scope);
+    numPassThrough = this.solrMetricsContext.counter("passThrough",  getCategory().toString(), scope);
+    numWrongCredentials = this.solrMetricsContext.counter("failWrongCredentials",getCategory().toString(), scope);
+    numMissingCredentials = this.solrMetricsContext.counter("failMissingCredentials",getCategory().toString(), scope);
+    requestTimes = this.solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
+    totalTime = this.solrMetricsContext.counter("totalTime", getCategory().toString(), scope);
   }
 
   @Override
@@ -175,15 +189,4 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
   public Category getCategory() {
     return Category.SECURITY;
   }
-  
-  @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
-  }
-
 }

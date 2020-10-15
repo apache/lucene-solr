@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.apache.lucene.analysis.cn.smart.AnalyzerProfile;
+import org.apache.lucene.util.SuppressForbidden;
 
 /**
  * SmartChineseAnalyzer Bigram dictionary.
@@ -85,6 +86,7 @@ class BigramDictionary extends AbstractDictionary {
     }
   }
 
+  @SuppressForbidden(reason = "TODO: fix code to serialize its own dictionary vs. a binary blob in the codebase")
   private void loadFromInputStream(InputStream serialObjectInputStream)
       throws IOException, ClassNotFoundException {
     try (ObjectInputStream input = new ObjectInputStream(serialObjectInputStream)) {
@@ -94,6 +96,7 @@ class BigramDictionary extends AbstractDictionary {
     }
   }
 
+  @SuppressForbidden(reason = "TODO: fix code to serialize its own dictionary vs. a binary blob in the codebase")
   private void saveToObj(Path serialObj) throws IOException {
     try (ObjectOutputStream output = new ObjectOutputStream(Files.newOutputStream(
         serialObj))) {

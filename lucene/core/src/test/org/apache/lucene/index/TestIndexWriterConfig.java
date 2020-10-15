@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
@@ -40,16 +39,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   private static final class MySimilarity extends ClassicSimilarity {
     // Does not implement anything - used only for type checking on IndexWriterConfig.
-  }
-
-  private static final class MyIndexingChain extends IndexingChain {
-    // Does not implement anything - used only for type checking on IndexWriterConfig.
-
-    @Override
-    DocConsumer getChain(DocumentsWriterPerThread documentsWriter) {
-      return null;
-    }
-
   }
 
   @Test
@@ -65,10 +54,8 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, conf.getRAMBufferSizeMB(), 0.0);
     assertEquals(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS, conf.getMaxBufferedDocs());
     assertEquals(IndexWriterConfig.DEFAULT_READER_POOLING, conf.getReaderPooling());
-    assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
     assertNull(conf.getMergedSegmentWarmer());
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
-    assertEquals(DocumentsWriterPerThreadPool.class, conf.getIndexerThreadPool().getClass());
     assertEquals(FlushByRamOrCountsPolicy.class, conf.getFlushPolicy().getClass());
     assertEquals(IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB, conf.getRAMPerThreadHardLimitMB());
     assertEquals(Codec.getDefault(), conf.getCodec());
@@ -230,9 +217,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     expectThrows(IllegalArgumentException.class, () -> {
       conf.setSimilarity(null);
     });
-
-    // Test IndexingChain
-    assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
 
     expectThrows(IllegalArgumentException.class, () -> {
       conf.setMaxBufferedDocs(1);

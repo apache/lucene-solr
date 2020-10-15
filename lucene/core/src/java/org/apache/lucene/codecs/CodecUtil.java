@@ -448,24 +448,27 @@ public final class CodecUtil {
       checkFooter(in);
     } else {
       try {
+        // If we have evidence of corruption then we return the corruption as the
+        // main exception and the prior exception gets suppressed. Otherwise we
+        // return the prior exception with a suppressed exception that notifies
+        // the user that checksums matched.
         long remaining = in.length() - in.getFilePointer();
         if (remaining < footerLength()) {
           // corruption caused us to read into the checksum footer already: we can't proceed
-          priorException.addSuppressed(new CorruptIndexException("checksum status indeterminate: remaining=" + remaining +
-                                                                 ", please run checkindex for more details", in));
+          throw new CorruptIndexException("checksum status indeterminate: remaining=" + remaining +
+                                          "; please run checkindex for more details", in);
         } else {
           // otherwise, skip any unread bytes.
           in.skipBytes(remaining - footerLength());
           
           // now check the footer
-          try {
-            long checksum = checkFooter(in);
-            priorException.addSuppressed(new CorruptIndexException("checksum passed (" + Long.toHexString(checksum) + 
-                                                                   "). possibly transient resource issue, or a Lucene or JVM bug", in));
-          } catch (CorruptIndexException t) {
-            priorException.addSuppressed(t);
-          }
+          long checksum = checkFooter(in);
+          priorException.addSuppressed(new CorruptIndexException("checksum passed (" + Long.toHexString(checksum) +
+                                                                 "). possibly transient resource issue, or a Lucene or JVM bug", in));
         }
+      } catch (CorruptIndexException corruptException) {
+        corruptException.addSuppressed(priorException);
+        throw corruptException;
       } catch (Throwable t) {
         // catch-all for things that shouldn't go wrong (e.g. OOM during readInt) but could...
         priorException.addSuppressed(new CorruptIndexException("checksum status indeterminate: unexpected exception", in, t));
@@ -487,7 +490,25 @@ public final class CodecUtil {
     validateFooter(in);
     return readCRC(in);
   }
-  
+
+  /** 
+   * Returns (but does not validate) the checksum previously written by {@link #checkFooter}.
+   * @return actual checksum value
+   * @throws IOException if the footer is invalid
+   */
+  public static long retrieveChecksum(IndexInput in, long expectedLength) throws IOException {
+    if (expectedLength < footerLength()) {
+      throw new IllegalArgumentException("expectedLength cannot be less than the footer length");
+    }
+    if (in.length() < expectedLength) {
+      throw new CorruptIndexException("truncated file: length=" + in.length() + " but expectedLength==" + expectedLength, in);
+    } else if (in.length() > expectedLength) {
+      throw new CorruptIndexException("file too long: length=" + in.length() + " but expectedLength==" + expectedLength, in);
+    }
+
+    return retrieveChecksum(in);
+  }
+
   private static void validateFooter(IndexInput in) throws IOException {
     long remaining = in.length() - in.getFilePointer();
     long expected = footerLength();

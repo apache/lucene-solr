@@ -16,12 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -79,6 +78,7 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     List<OverseerTaskQueue.QueueEvent> queueEvents = tq.peekTopN(2, s -> false, 1000);
     OverseerTaskQueue.QueueEvent requestId2Event = null;
     for (OverseerTaskQueue.QueueEvent queueEvent : queueEvents) {
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> eventProps = (Map<String, Object>) Utils.fromJSON(queueEvent.getBytes());
       if (requestId2.equals(eventProps.get(CommonAdminParams.ASYNC))) {
         requestId2Event = queueEvent;
@@ -86,7 +86,7 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
       }
     }
     assertNotNull("Didn't find event with requestid " + requestId2, requestId2Event);
-    requestId2Event.setBytes(SolrResponse.serializable(new SolrResponseBase()));
+    requestId2Event.setBytes("foo bar".getBytes(StandardCharsets.UTF_8));
     tq.remove(requestId2Event);
 
     // Make sure this call to check if requestId exists doesn't barf with Json parse exception

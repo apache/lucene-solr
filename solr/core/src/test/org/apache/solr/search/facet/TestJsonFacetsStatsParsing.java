@@ -58,6 +58,7 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
       
       // NOTE: we don't bother trying to test 'min(foo_i)' because of SOLR-12559
       // ...once that bug is fixed, several assertions below will need to change
+      @SuppressWarnings({"unchecked"})
       final FacetRequest fr = FacetRequest.parse
         (req, (Map<String,Object>) Utils.fromJSONString
          ("{ " +
@@ -98,6 +99,7 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testVerboseSyntaxWithLocalParams() throws IOException {
     // some parsers may choose to use "global" req params as defaults/shadows for
     // local params, but DebugAgg does not -- so use these to test that the

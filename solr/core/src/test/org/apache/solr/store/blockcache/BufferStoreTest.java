@@ -23,6 +23,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +42,8 @@ public class BufferStoreTest extends SolrTestCase {
     SolrMetricManager metricManager = new SolrMetricManager();
     String registry = TestUtil.randomSimpleString(random(), 2, 10);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
-    metrics.initializeMetrics(metricManager, registry, "foo", scope);
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    metrics.initializeMetrics(solrMetricsContext, scope);
     metricsMap = (MetricsMap) ((SolrMetricManager.GaugeWrapper)metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache")).getGauge();
     BufferStore.initNewBuffer(blockSize, blockSize, metrics);
     store = BufferStore.instance(blockSize);

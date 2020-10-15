@@ -20,12 +20,12 @@ package org.apache.lucene.util;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.packed.PackedInts;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
-@Slow
+@Nightly
 public class TestTimSorterWorstCase extends LuceneTestCase {
 
   public void testWorstCaseStackSize() {

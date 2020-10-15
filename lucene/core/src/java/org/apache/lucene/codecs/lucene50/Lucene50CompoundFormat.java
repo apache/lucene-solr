@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.lucene50;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.CompoundDirectory;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -34,9 +35,9 @@ import org.apache.lucene.store.IndexOutput;
  * <p>
  * Files:
  * <ul>
- *    <li><tt>.cfs</tt>: An optional "virtual" file consisting of all the other 
+ *    <li><code>.cfs</code>: An optional "virtual" file consisting of all the other 
  *    index files for systems that frequently run out of file handles.
- *    <li><tt>.cfe</tt>: The "virtual" compound file's entry table holding all 
+ *    <li><code>.cfe</code>: The "virtual" compound file's entry table holding all 
  *    entries in the corresponding .cfs file.
  * </ul>
  * <p>Description:</p>
@@ -66,7 +67,7 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
   }
   
   @Override
-  public Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException {
+  public CompoundDirectory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException {
     return new Lucene50CompoundReader(dir, si, context);
   }
 

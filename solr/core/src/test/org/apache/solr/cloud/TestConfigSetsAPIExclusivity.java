@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -92,6 +93,8 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
 
   private void setupBaseConfigSet(String baseConfigSetName) throws Exception {
     solrCluster.uploadConfigSet(configset("configset-2"), baseConfigSetName);
+    //Make configset untrusted
+    solrCluster.getZkClient().setData("/configs/" + baseConfigSetName, "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8), true);
   }
 
   private Exception getFirstExceptionOrNull(List<Exception> list) {
@@ -112,11 +115,13 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
       this.trials = trials;
     }
 
+    @SuppressWarnings({"rawtypes"})
     public abstract ConfigSetAdminRequest createRequest();
 
     public void run() {
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
+      @SuppressWarnings({"rawtypes"})
       ConfigSetAdminRequest request = createRequest();
 
       for (int i = 0; i < trials; ++i) {
@@ -159,6 +164,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public ConfigSetAdminRequest createRequest() {
       Create create = new Create();
       create.setBaseConfigSetName(baseConfigSet).setConfigSetName(configSet);
@@ -175,6 +181,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public ConfigSetAdminRequest createRequest() {
       Delete delete = new Delete();
       delete.setConfigSetName(configSet);

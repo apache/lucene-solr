@@ -22,6 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.SolrException;
+
 public class ObjectUtil {
 
   public static class ConflictHandler {
@@ -37,7 +39,9 @@ public class ObjectUtil {
       }
 
       if (previous instanceof Map && current instanceof Map) {
+        @SuppressWarnings({"unchecked"})
         Map<String,Object> prevMap = (Map<String,Object>)previous;
+        @SuppressWarnings({"unchecked"})
         Map<String,Object> currMap = (Map<String,Object>)current;
         if (prevMap.size() == 0) return;
         mergeMap(prevMap, currMap, path);
@@ -68,13 +72,15 @@ public class ObjectUtil {
     }
 
     protected Object makeList(Object current, Object previous) {
+      @SuppressWarnings({"rawtypes"})
       ArrayList lst = new ArrayList();
       append(lst, previous);   // make the original value(s) come first
       append(lst, current);
       return lst;
     }
 
-    protected void append(List lst, Object current) {
+    @SuppressWarnings({"unchecked"})
+    protected void append(@SuppressWarnings({"rawtypes"})List lst, Object current) {
       if (current instanceof Collection) {
         lst.addAll((Collection)current);
       } else {
@@ -87,6 +93,7 @@ public class ObjectUtil {
   public static void mergeObjects(Map<String,Object> top, List<String> path, Object val, ConflictHandler handler) {
     Map<String,Object> outer = top;
     for (int i=0; i<path.size()-1; i++) {
+      @SuppressWarnings({"unchecked"})
       Map<String,Object> sub = (Map<String,Object>)outer.get(path.get(i));
       if (sub == null) {
         sub = new LinkedHashMap<String,Object>();
@@ -103,10 +110,15 @@ public class ObjectUtil {
         // OK, now we need to merge values
         handler.handleConflict(outer, path, key, val, existingVal);
       }
-    } else {
+    } else if (val instanceof Map) {
       // merging at top level...
+      @SuppressWarnings({"unchecked"})
       Map<String,Object> newMap = (Map<String,Object>)val;
       handler.mergeMap(outer, newMap, path);
+    } else {
+      // todo: find a way to return query param in error message
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expected JSON Object but got " + val.getClass().getSimpleName() + "=" + val);
     }
   }
 

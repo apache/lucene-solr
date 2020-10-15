@@ -16,11 +16,13 @@
  */
 package org.apache.lucene.codecs;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.SortedSet;
+import java.util.List;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.Impact;
@@ -30,11 +32,14 @@ import org.apache.lucene.index.Impact;
  */
 public final class CompetitiveImpactAccumulator {
 
-  // We speed up accumulation for common norm values by first computing
-  // the max freq for all norms in -128..127
+  // We speed up accumulation for common norm values with this array that maps
+  // norm values in -128..127 to the maximum frequency observed for these norm
+  // values
   private final int[] maxFreqs;
-  private boolean dirty;
-  private final TreeSet<Impact> freqNormPairs;
+  // This TreeSet stores competitive (freq,norm) pairs for norm values that fall
+  // outside of -128..127. It is always empty with the default similarity, which
+  // encodes norms as bytes.
+  private final TreeSet<Impact> otherFreqNormPairs;
 
   /** Sole constructor. */
   public CompetitiveImpactAccumulator() {
@@ -51,14 +56,14 @@ public final class CompetitiveImpactAccumulator {
         return cmp;
       }
     };
-    freqNormPairs = new TreeSet<>(comparator);
+    otherFreqNormPairs = new TreeSet<>(comparator);
   }
 
   /** Reset to the same state it was in after creation. */
   public void clear() {
     Arrays.fill(maxFreqs, 0);
-    dirty = false;
-    freqNormPairs.clear();
+    otherFreqNormPairs.clear();
+    assert assertConsistent();
   }
 
   /** Accumulate a (freq,norm) pair, updating this structure if there is no
@@ -67,34 +72,52 @@ public final class CompetitiveImpactAccumulator {
     if (norm >= Byte.MIN_VALUE && norm <= Byte.MAX_VALUE) {
       int index = Byte.toUnsignedInt((byte) norm);
       maxFreqs[index] = Math.max(maxFreqs[index], freq); 
-      dirty = true;
     } else {
-      add(new Impact(freq, norm));
+      add(new Impact(freq, norm), otherFreqNormPairs);
     }
+    assert assertConsistent();
   }
 
   /** Merge {@code acc} into this. */
   public void addAll(CompetitiveImpactAccumulator acc) {
-    for (Impact entry : acc.getCompetitiveFreqNormPairs()) {
-      add(entry);
+    int[] maxFreqs = this.maxFreqs;
+    int[] otherMaxFreqs = acc.maxFreqs;
+    for (int i = 0; i < maxFreqs.length; ++i) {
+      maxFreqs[i] = Math.max(maxFreqs[i], otherMaxFreqs[i]);
     }
+
+    for (Impact entry : acc.otherFreqNormPairs) {
+      add(entry, otherFreqNormPairs);
+    }
+
+    assert assertConsistent();
   }
 
-  /** Get the set of competitive freq and norm pairs, orderer by increasing freq and norm. */
-  public SortedSet<Impact> getCompetitiveFreqNormPairs() {
-    if (dirty) {
-      for (int i = 0; i < maxFreqs.length; ++i) {
-        if (maxFreqs[i] > 0) {
-          add(new Impact(maxFreqs[i], (byte) i));
-          maxFreqs[i] = 0;
-        }
+  /** Get the set of competitive freq and norm pairs, ordered by increasing freq and norm. */
+  public Collection<Impact> getCompetitiveFreqNormPairs() {
+    List<Impact> impacts = new ArrayList<>();
+    int maxFreqForLowerNorms = 0;
+    for (int i = 0; i < maxFreqs.length; ++i) {
+      int maxFreq = maxFreqs[i];
+      if (maxFreq > maxFreqForLowerNorms) {
+        impacts.add(new Impact(maxFreq, (byte) i));
+        maxFreqForLowerNorms = maxFreq;
       }
-      dirty = false;
     }
-    return Collections.unmodifiableSortedSet(freqNormPairs);
+
+    if (otherFreqNormPairs.isEmpty()) {
+      // Common case: all norms are bytes
+      return impacts;
+    }
+
+    TreeSet<Impact> freqNormPairs = new TreeSet<>(this.otherFreqNormPairs);
+    for (Impact impact : impacts) {
+      add(impact, freqNormPairs);
+    }
+    return Collections.unmodifiableSet(freqNormPairs);
   }
 
-  private void add(Impact newEntry) {
+  private void add(Impact newEntry, TreeSet<Impact> freqNormPairs) {
     Impact next = freqNormPairs.ceiling(newEntry);
     if (next == null) {
       // nothing is more competitive
@@ -122,6 +145,23 @@ public final class CompetitiveImpactAccumulator {
 
   @Override
   public String toString() {
-    return getCompetitiveFreqNormPairs().toString();
+    return new ArrayList<>(getCompetitiveFreqNormPairs()).toString();
+  }
+
+  // Only called by assertions
+  private boolean assertConsistent() {
+    for (int freq : maxFreqs) {
+      assert freq >= 0;
+    }
+    int previousFreq = 0;
+    long previousNorm = 0;
+    for (Impact impact : otherFreqNormPairs) {
+      assert impact.norm < Byte.MIN_VALUE || impact.norm > Byte.MAX_VALUE;
+      assert previousFreq < impact.freq;
+      assert Long.compareUnsigned(previousNorm, impact.norm) < 0;
+      previousFreq = impact.freq;
+      previousNorm = impact.norm;
+    }
+    return true;
   }
 }

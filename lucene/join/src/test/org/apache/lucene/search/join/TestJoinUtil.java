@@ -383,8 +383,8 @@ public class TestJoinUtil extends LuceneTestCase {
   }
 
   public void testRandomOrdinalsJoin() throws Exception {
-    IndexIterationContext context = createContext(512, false, true);
-    int searchIters = 10;
+    IndexIterationContext context = createContext(128, false, true);
+    int searchIters = atLeast(1);
     IndexSearcher indexSearcher = context.searcher;
     for (int i = 0; i < searchIters; i++) {
       if (VERBOSE) {
@@ -1162,8 +1162,8 @@ public class TestJoinUtil extends LuceneTestCase {
   @Test
   @Slow
   public void testSingleValueRandomJoin() throws Exception {
-    int maxIndexIter = TestUtil.nextInt(random(), 6, 12);
-    int maxSearchIter = TestUtil.nextInt(random(), 13, 26);
+    int maxIndexIter = atLeast(1);
+    int maxSearchIter = atLeast(1);
     executeRandomJoin(false, maxIndexIter, maxSearchIter, TestUtil.nextInt(random(), 87, 764));
   }
 
@@ -1171,8 +1171,8 @@ public class TestJoinUtil extends LuceneTestCase {
   @Slow
   // This test really takes more time, that is why the number of iterations are smaller.
   public void testMultiValueRandomJoin() throws Exception {
-    int maxIndexIter = TestUtil.nextInt(random(), 3, 6);
-    int maxSearchIter = TestUtil.nextInt(random(), 6, 12);
+    int maxIndexIter = atLeast(1);
+    int maxSearchIter = atLeast(1);
     executeRandomJoin(true, maxIndexIter, maxSearchIter, TestUtil.nextInt(random(), 11, 57));
   }
 

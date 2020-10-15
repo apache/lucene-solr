@@ -99,7 +99,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     conf.setMergeScheduler(new SerialMergeScheduler());
     conf.setCodec(codec);
 
-    int numDocs = atLeast(500);
+    int numDocs = atLeast(100);
     
     IndexWriter iw = new IndexWriter(dir, conf);
     try {
@@ -143,7 +143,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             }
           } catch (AlreadyClosedException ace) {
             // OK: writer was closed by abort; we just reopen now:
-            assertTrue(iw.deleter.isClosed());
+            assertTrue(iw.isDeleterClosed());
             assertTrue(allowAlreadyClosed);
             allowAlreadyClosed = false;
             conf = newIndexWriterConfig(analyzer);
@@ -177,7 +177,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             }
           } catch (AlreadyClosedException ace) {
             // OK: writer was closed by abort; we just reopen now:
-            assertTrue(iw.deleter.isClosed());
+            assertTrue(iw.isDeleterClosed());
             assertTrue(allowAlreadyClosed);
             allowAlreadyClosed = false;
             conf = newIndexWriterConfig(analyzer);
@@ -215,7 +215,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             }
           } catch (AlreadyClosedException ace) {
             // OK: writer was closed by abort; we just reopen now:
-            assertTrue(iw.deleter.isClosed());
+            assertTrue(iw.isDeleterClosed());
             assertTrue(allowAlreadyClosed);
             allowAlreadyClosed = false;
             conf = newIndexWriterConfig(analyzer);

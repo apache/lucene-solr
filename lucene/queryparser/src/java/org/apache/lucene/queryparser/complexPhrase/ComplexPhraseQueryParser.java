@@ -147,7 +147,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
   // to throw a runtime exception here if a term for another field is embedded
   // in phrase query
   @Override
-  protected Query newTermQuery(Term term) {
+  protected Query newTermQuery(Term term, float boost) {
     if (isPass2ResolvingPhrases) {
       try {
         checkPhraseClauseIsForSameField(term.field());
@@ -155,7 +155,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
         throw new RuntimeException("Error parsing complex phrase", pe);
       }
     }
-    return super.newTermQuery(term);
+    return super.newTermQuery(term, boost);
   }
 
   // Helper method used to report on any clauses that appear in query syntax
@@ -434,10 +434,15 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
     @Override
     public String toString(String field) {
-      if (slopFactor == 0)
-        return "\"" + phrasedQueryStringContents + "\"";
-      else
-        return "\"" + phrasedQueryStringContents + "\"" + "~" + slopFactor;
+      StringBuilder sb = new StringBuilder();
+      if (!this.field.equals(field)) {
+        sb.append(this.field).append(":");
+      }
+      sb.append("\"").append(phrasedQueryStringContents).append("\"");
+      if (slopFactor != 0) {
+        sb.append("~").append(slopFactor);
+      }
+      return sb.toString();
     }
 
     @Override

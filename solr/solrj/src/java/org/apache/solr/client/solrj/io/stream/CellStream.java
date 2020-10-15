@@ -18,10 +18,8 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -123,7 +121,7 @@ public class CellStream extends TupleStream implements Expressible {
   public void open() throws IOException {
     try {
       stream.open();
-      List<Tuple> list = new ArrayList();
+      List<Tuple> list = new ArrayList<>();
       while(true) {
         Tuple tuple = stream.read();
         if(tuple.EOF) {
@@ -134,9 +132,8 @@ public class CellStream extends TupleStream implements Expressible {
         }
       }
 
-      Map map = new HashMap();
-      map.put(name, list);
-      tuple = new Tuple(map);
+      tuple = new Tuple();
+      tuple.put(name, list);
     } finally {
       stream.close();
     }

@@ -157,14 +157,15 @@ public class OrdinalCalculator {
     }
     return new Point(left, right);
   }
-}
 
-class Point {
-  public int low;
-  public int high;
+  static class Point {
+    public int low;
+    public int high;
 
-  public Point(int low, int high) {
-    this.low = low;
-    this.high = high;
+    public Point(int low, int high) {
+      this.low = low;
+      this.high = high;
+    }
   }
 }
+

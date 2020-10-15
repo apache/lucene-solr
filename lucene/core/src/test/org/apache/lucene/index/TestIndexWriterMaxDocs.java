@@ -362,6 +362,8 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
   /** 
    * LUCENE-6299: Test if addindexes(Dir[]) prevents exceeding max docs.
    */
+  // TODO: can we use the setter to lower the amount of docs to be written here?
+  @Nightly
   public void testAddTooManyIndexesDir() throws Exception {
     // we cheat and add the same one over again... IW wants a write lock on each
     Directory dir = newDirectory(random(), NoLockFactory.INSTANCE);
@@ -456,7 +458,7 @@ public class TestIndexWriterMaxDocs extends LuceneTestCase {
     dir2.close();
   }
 
-  public void testTooLargeMaxDocs() throws Exception {
+  public void testTooLargeMaxDocs() {
     expectThrows(IllegalArgumentException.class, () -> {
       IndexWriter.setMaxDocs(Integer.MAX_VALUE);
     });

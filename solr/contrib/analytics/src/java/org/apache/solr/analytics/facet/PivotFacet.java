@@ -72,43 +72,44 @@ public class PivotFacet extends AnalyticsFacet implements StreamingFacet {
   public Iterable<Map<String,Object>> createResponse() {
     return pivotHead.createResponse();
   }
-}
-/**
- * Typed Pivot class that stores the overall Pivot data and head of the Pivot node chain.
- *
- * This class exists so that the {@link PivotFacet} class doesn't have to be typed ( {@code <T>} ).
- */
-class PivotHead<T> implements StreamingFacet {
-  private final PivotNode<T> topPivot;
-  private final Map<String, T> pivotValues;
 
-  public PivotHead(PivotNode<T> topPivot) {
-    this.topPivot = topPivot;
-    this.pivotValues = new HashMap<>();
-  }
+  /**
+   * Typed Pivot class that stores the overall Pivot data and head of the Pivot node chain.
+   *
+   * This class exists so that the {@link PivotFacet} class doesn't have to be typed ( {@code <T>} ).
+   */
+  private static class PivotHead<T> implements StreamingFacet {
+    private final PivotNode<T> topPivot;
+    private final Map<String, T> pivotValues;
 
-  public void setReductionCollectionManager(ReductionCollectionManager collectionManager) {
-    topPivot.setReductionCollectionManager(collectionManager);
-  }
+    public PivotHead(PivotNode<T> topPivot) {
+      this.topPivot = topPivot;
+      this.pivotValues = new HashMap<>();
+    }
 
-  public void setExpressionCalculator(ExpressionCalculator expressionCalculator) {
-    topPivot.setExpressionCalculator(expressionCalculator);
-  }
+    public void setReductionCollectionManager(ReductionCollectionManager collectionManager) {
+      topPivot.setReductionCollectionManager(collectionManager);
+    }
 
-  @Override
-  public void addFacetValueCollectionTargets() {
-    topPivot.addFacetValueCollectionTargets(pivotValues);
-  }
+    public void setExpressionCalculator(ExpressionCalculator expressionCalculator) {
+      topPivot.setExpressionCalculator(expressionCalculator);
+    }
 
-  public void importShardData(DataInput input) throws IOException {
-    topPivot.importPivot(input, pivotValues);
-  }
+    @Override
+    public void addFacetValueCollectionTargets() {
+      topPivot.addFacetValueCollectionTargets(pivotValues);
+    }
 
-  public void exportShardData(DataOutput output) throws IOException {
-    topPivot.exportPivot(output, pivotValues);
-  }
+    public void importShardData(DataInput input) throws IOException {
+      topPivot.importPivot(input, pivotValues);
+    }
 
-  public Iterable<Map<String,Object>> createResponse() {
-    return topPivot.getPivotedResponse(pivotValues);
+    public void exportShardData(DataOutput output) throws IOException {
+      topPivot.exportPivot(output, pivotValues);
+    }
+
+    public Iterable<Map<String,Object>> createResponse() {
+      return topPivot.getPivotedResponse(pivotValues);
+    }
   }
 }

@@ -1691,7 +1691,7 @@ public class TestIndexSorting extends LuceneTestCase {
     Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
     iwc.setIndexSort(indexSort);
     IndexWriter w = new IndexWriter(dir, iwc);
-    final int numDocs = atLeast(1000);
+    final int numDocs = atLeast(200);
     final FixedBitSet deleted = new FixedBitSet(numDocs);
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
@@ -1762,7 +1762,7 @@ public class TestIndexSorting extends LuceneTestCase {
     Sort indexSort = new Sort(new SortedNumericSortField("foo", SortField.Type.LONG));
     iwc.setIndexSort(indexSort);
     IndexWriter w = new IndexWriter(dir, iwc);
-    final int numDocs = atLeast(1000);
+    final int numDocs = atLeast(200);
     final FixedBitSet deleted = new FixedBitSet(numDocs);
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
@@ -2146,7 +2146,7 @@ public class TestIndexSorting extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       iwc.setIndexSort(Sort.RELEVANCE);
     });
-    assertEquals("invalid SortField type: must be one of [STRING, INT, FLOAT, LONG, DOUBLE] but got: <score>", expected.getMessage());
+    assertEquals("Cannot sort index with sort field <score>", expected.getMessage());
   }
 
   // you can't change the index sort on an existing index:
@@ -2498,6 +2498,7 @@ public class TestIndexSorting extends LuceneTestCase {
         System.out.println("  float=" + docValues.floatValue);
         System.out.println("  double=" + docValues.doubleValue);
         System.out.println("  bytes=" + new BytesRef(docValues.bytesValue));
+        System.out.println("  mvf=" + Arrays.toString(docValues.floatValues));
       }
 
       Document doc = new Document();
@@ -2741,7 +2742,7 @@ public class TestIndexSorting extends LuceneTestCase {
         Document doc = new Document();
         doc.add(dvs.get(j));
         IllegalArgumentException exc = expectThrows(IllegalArgumentException.class, () -> w.addDocument(doc));
-        assertThat(exc.getMessage(), containsString("invalid doc value type"));
+        assertThat(exc.getMessage(), containsString("expected field [field] to be "));
         doc.clear();
         doc.add(dvs.get(i));
         w.addDocument(doc);

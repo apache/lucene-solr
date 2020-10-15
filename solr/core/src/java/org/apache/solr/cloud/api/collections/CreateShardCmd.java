@@ -51,6 +51,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
@@ -77,10 +78,13 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
     }
 
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+    //ZkStateReader zkStateReader = ocmh.zkStateReader;
     ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
     // wait for a while until we see the shard
-    ocmh.waitForNewShard(collectionName, sliceName);
+    //ocmh.waitForNewShard(collectionName, sliceName);
+    // wait for a while until we see the shard and update the local view of the cluster state
+    clusterState = ocmh.waitForNewShard(collectionName, sliceName);
+
     String async = message.getStr(ASYNC);
     ZkNodeProps addReplicasProps = new ZkNodeProps(
         COLLECTION_PROP, collectionName,
@@ -97,7 +101,8 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
     final NamedList addResult = new NamedList();
     try {
-      ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, () -> {
+      //ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, () -> {
+      ocmh.addReplica(clusterState, addReplicasProps, addResult, () -> {
         Object addResultFailure = addResult.get("failure");
         if (addResultFailure != null) {
           SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
@@ -122,7 +127,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw e;
     }
 
-    log.info("Finished create command on all shards for collection: " + collectionName);
+    log.info("Finished create command on all shards for collection: {}", collectionName);
   }
 
 }

@@ -45,8 +45,11 @@ public class GeohashFunction extends ValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+    @SuppressWarnings({"unchecked"})
     final FunctionValues latDV = lat.getValues(context, readerContext);
+    @SuppressWarnings({"unchecked"})
     final FunctionValues lonDV = lon.getValues(context, readerContext);
 
 

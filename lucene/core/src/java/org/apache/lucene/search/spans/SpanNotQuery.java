@@ -106,6 +106,10 @@ public final class SpanNotQuery extends SpanQuery {
                                   includeWeight, excludeWeight, boost);
   }
 
+  /**
+   * Creates SpanNotQuery scorer instances
+   * @lucene.internal
+   */
   public class SpanNotWeight extends SpanWeight {
 
     final SpanWeight includeWeight;

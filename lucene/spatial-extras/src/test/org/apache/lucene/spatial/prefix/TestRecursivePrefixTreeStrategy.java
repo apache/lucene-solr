@@ -25,12 +25,14 @@ import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
 
   private int maxLength;
@@ -68,11 +70,11 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
   public void testPrecision() throws IOException{
     init(GeohashPrefixTree.getMaxLevelsPossible());
 
-    Point iPt = ctx.makePoint(2.8028712999999925, 48.3708044);//lon, lat
+    Point iPt = ctx.getShapeFactory().pointXY(2.8028712999999925, 48.3708044);//lon, lat
     addDocument(newDoc("iPt", iPt));
     commit();
 
-    Point qPt = ctx.makePoint(2.4632387000000335, 48.6003516);
+    Point qPt = ctx.getShapeFactory().pointXY(2.4632387000000335, 48.6003516);
 
     final double KM2DEG = DistanceUtils.dist2Degrees(1, DistanceUtils.EARTH_MEAN_RADIUS_KM);
     final double DEG2KM = 1 / KM2DEG;
@@ -99,7 +101,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
   }
 
   private SpatialArgs q(Point pt, double distDEG, double distErrPct) {
-    Shape shape = ctx.makeCircle(pt, distDEG);
+    Shape shape = ctx.getShapeFactory().circle(pt, distDEG);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,shape);
     args.setDistErrPct(distErrPct);
     return args;

@@ -58,7 +58,7 @@ package org.egothor.stemmer;
  * The Optimizer class is a Trie that will be reduced (have empty rows removed).
  * <p>
  * This is the result of allowing a joining of rows when there is no collision
- * between non-<tt>null</tt> values in the rows. Information loss, resulting in
+ * between non-<code>null</code> values in the rows. Information loss, resulting in
  * the stemmer not being able to recognize words (as in Optimizer), is
  * curtailed, allowing the stemmer to recognize words for which the original
  * trie was built. Use of this class allows the stemmer to be self-teaching.
@@ -74,7 +74,7 @@ public class Optimizer2 extends Optimizer {
    * 
    * @param m the master Cell
    * @param e the existing Cell
-   * @return the resulting Cell, or <tt>null</tt> if the operation cannot be
+   * @return the resulting Cell, or <code>null</code> if the operation cannot be
    *         realized
    */
   @Override

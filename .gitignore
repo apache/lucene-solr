@@ -8,18 +8,19 @@ dist
 lib
 test-lib
 /*~
-/velocity.log
 /build.properties
 /.idea
 lucene/**/*.iml
 parent.iml
 *.ipr
 *.iws
-/.project
-/.classpath
-/.settings
+/*.iml
+.project
+.classpath
+.settings
 /.caches
 /prj.el
+bin
 /bin
 /bin.*
 pom.xml
@@ -30,3 +31,12 @@ __pycache__
 /dev-tools/scripts/scripts.iml
 .DS_Store
 
+build/
+.gradle/
+.idea/
+
+# Ignore the generated local settings file.
+gradle.properties
+
+# IntelliJ creates this folder, ignore.
+dev-tools/missing-doclet/out/

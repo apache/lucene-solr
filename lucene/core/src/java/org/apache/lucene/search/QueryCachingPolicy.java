@@ -39,7 +39,7 @@ public interface QueryCachingPolicy {
   /** Whether the given {@link Query} is worth caching.
    *  This method will be called by the {@link QueryCache} to know whether to
    *  cache. It will first attempt to load a {@link DocIdSet} from the cache.
-   *  If it is not cached yet and this method returns <tt>true</tt> then a
+   *  If it is not cached yet and this method returns <code>true</code> then a
    *  cache entry will be generated. Otherwise an uncached scorer will be
    *  returned. */
   boolean shouldCache(Query query) throws IOException;

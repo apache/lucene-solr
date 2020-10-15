@@ -26,9 +26,16 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.comparators.DoubleComparator;
+import org.apache.lucene.search.comparators.FloatComparator;
+import org.apache.lucene.search.comparators.IntComparator;
+import org.apache.lucene.search.comparators.LongComparator;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.NumericUtils;
+
+import static org.apache.lucene.search.join.BlockJoinSelector.toIter;
 
 /**
  * A special sort field that allows sorting parent docs based on nested / child level fields.
@@ -92,13 +99,13 @@ public class ToParentBlockJoinSortField extends SortField {
       case STRING:
         return getStringComparator(numHits);
       case DOUBLE:
-        return getDoubleComparator(numHits);
+        return getDoubleComparator(numHits, sortPos);
       case FLOAT:
-        return getFloatComparator(numHits);
+        return getFloatComparator(numHits, sortPos);
       case LONG:
-        return getLongComparator(numHits);
+        return getLongComparator(numHits, sortPos);
       case INT:
-        return getIntComparator(numHits);
+        return getIntComparator(numHits, sortPos);
       default:
         throw new UnsupportedOperationException("Sort type " + getType() + " is not supported");
     }
@@ -118,90 +125,110 @@ public class ToParentBlockJoinSortField extends SortField {
         if (children == null) {
           return DocValues.emptySorted();
         }
-        return BlockJoinSelector.wrap(sortedSet, type, parents, children);
+        return BlockJoinSelector.wrap(sortedSet, type, parents, toIter(children));
       }
 
     };
   }
 
-  private FieldComparator<?> getIntComparator(int numHits) {
-    return new FieldComparator.IntComparator(numHits, getField(), (Integer) missingValue) {
+  private FieldComparator<?> getIntComparator(int numHits, int sortPos) {
+    return new IntComparator(numHits, getField(), (Integer) missingValue, getReverse(), sortPos) {
       @Override
-      protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-        SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
-        final BlockJoinSelector.Type type = order
-            ? BlockJoinSelector.Type.MAX
-            : BlockJoinSelector.Type.MIN;
-        final BitSet parents = parentFilter.getBitSet(context);
-        final BitSet children = childFilter.getBitSet(context);
-        if (children == null) {
-          return DocValues.emptyNumeric();
-        }
-        return BlockJoinSelector.wrap(sortedNumeric, type, parents, children);
-      }
-    };
-  }
-
-  private FieldComparator<?> getLongComparator(int numHits) {
-    return new FieldComparator.LongComparator(numHits, getField(), (Long) missingValue) {
-      @Override
-      protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-        SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
-        final BlockJoinSelector.Type type = order
-            ? BlockJoinSelector.Type.MAX
-            : BlockJoinSelector.Type.MIN;
-        final BitSet parents = parentFilter.getBitSet(context);
-        final BitSet children = childFilter.getBitSet(context);
-        if (children == null) {
-          return DocValues.emptyNumeric();
-        }
-        return BlockJoinSelector.wrap(sortedNumeric, type, parents, children);
-      }
-    };
-  }
-
-  private FieldComparator<?> getFloatComparator(int numHits) {
-    return new FieldComparator.FloatComparator(numHits, getField(), (Float) missingValue) {
-      @Override
-      protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-        SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
-        final BlockJoinSelector.Type type = order
-            ? BlockJoinSelector.Type.MAX
-            : BlockJoinSelector.Type.MIN;
-        final BitSet parents = parentFilter.getBitSet(context);
-        final BitSet children = childFilter.getBitSet(context);
-        if (children == null) {
-          return DocValues.emptyNumeric();
-        }
-        return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, children)) {
+      public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+        return new IntLeafComparator(context) {
           @Override
-          public long longValue() throws IOException {
-            // undo the numericutils sortability
-            return NumericUtils.sortableFloatBits((int) super.longValue());
+          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
+            SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
+            final BlockJoinSelector.Type type = order
+                    ? BlockJoinSelector.Type.MAX
+                    : BlockJoinSelector.Type.MIN;
+            final BitSet parents = parentFilter.getBitSet(context);
+            final BitSet children = childFilter.getBitSet(context);
+            if (children == null) {
+              return DocValues.emptyNumeric();
+            }
+            return BlockJoinSelector.wrap(sortedNumeric, type, parents, toIter(children));
           }
         };
       }
     };
   }
 
-  private FieldComparator<?> getDoubleComparator(int numHits) {
-    return new FieldComparator.DoubleComparator(numHits, getField(), (Double) missingValue) {
+  private FieldComparator<?> getLongComparator(int numHits, int sortPos) {
+    return new LongComparator(numHits, getField(), (Long) missingValue, getReverse(), sortPos) {
       @Override
-      protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-        SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
-        final BlockJoinSelector.Type type = order
-            ? BlockJoinSelector.Type.MAX
-            : BlockJoinSelector.Type.MIN;
-        final BitSet parents = parentFilter.getBitSet(context);
-        final BitSet children = childFilter.getBitSet(context);
-        if (children == null) {
-          return DocValues.emptyNumeric();
-        }
-        return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, children)) {
+      public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+        return new LongLeafComparator(context) {
           @Override
-          public long longValue() throws IOException {
-            // undo the numericutils sortability
-            return NumericUtils.sortableDoubleBits(super.longValue());
+          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
+            SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
+            final BlockJoinSelector.Type type = order
+                    ? BlockJoinSelector.Type.MAX
+                    : BlockJoinSelector.Type.MIN;
+            final BitSet parents = parentFilter.getBitSet(context);
+            final BitSet children = childFilter.getBitSet(context);
+            if (children == null) {
+              return DocValues.emptyNumeric();
+            }
+            return BlockJoinSelector.wrap(sortedNumeric, type, parents, toIter(children));
+          }
+        };
+      }
+    };
+  }
+
+  private FieldComparator<?> getFloatComparator(int numHits, int sortPos) {
+    return new FloatComparator(numHits, getField(), (Float) missingValue, getReverse(), sortPos) {
+      @Override
+      public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+        return new FloatLeafComparator(context) {
+          @Override
+          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
+            SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
+            final BlockJoinSelector.Type type = order
+                    ? BlockJoinSelector.Type.MAX
+                    : BlockJoinSelector.Type.MIN;
+            final BitSet parents = parentFilter.getBitSet(context);
+            final BitSet children = childFilter.getBitSet(context);
+            if (children == null) {
+              return DocValues.emptyNumeric();
+            }
+            return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, toIter(children))) {
+              @Override
+              public long longValue() throws IOException {
+                // undo the numericutils sortability
+                return NumericUtils.sortableFloatBits((int) super.longValue());
+              }
+            };
+          }
+        };
+      };
+    };
+  }
+
+  private FieldComparator<?> getDoubleComparator(int numHits, int sortPost) {
+    return new DoubleComparator(numHits, getField(), (Double) missingValue, getReverse(), sortPost) {
+      @Override
+      public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+        return new DoubleLeafComparator(context) {
+          @Override
+          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
+            SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
+            final BlockJoinSelector.Type type = order
+                    ? BlockJoinSelector.Type.MAX
+                    : BlockJoinSelector.Type.MIN;
+            final BitSet parents = parentFilter.getBitSet(context);
+            final BitSet children = childFilter.getBitSet(context);
+            if (children == null) {
+              return DocValues.emptyNumeric();
+            }
+            return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, toIter(children))) {
+              @Override
+              public long longValue() throws IOException {
+                // undo the numericutils sortability
+                return NumericUtils.sortableDoubleBits(super.longValue());
+              }
+            };
           }
         };
       }

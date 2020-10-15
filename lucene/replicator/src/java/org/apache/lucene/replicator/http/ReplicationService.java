@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpStatus;
 import org.apache.lucene.replicator.Replicator;
 import org.apache.lucene.replicator.SessionToken;
+import org.apache.lucene.util.SuppressForbidden;
 
 /**
  * A server-side service for handling replication requests. The service assumes
@@ -129,6 +130,7 @@ public class ReplicationService {
   }
   
   /** Executes the replication task. */
+  @SuppressForbidden(reason = "XXX: security hole")
   public void perform(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
     String[] pathElements = getPathElements(req);
     

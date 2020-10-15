@@ -37,8 +37,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
-import org.apache.solr.common.ConditionalMapWriter;
+import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
@@ -49,6 +50,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
 import org.noggit.CharArr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -349,6 +351,7 @@ public class JavaBinCodec implements PushWriter {
     throw new RuntimeException("Unknown type " + tagByte);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public boolean writeKnownType(Object val) throws IOException {
     if (writePrimitive(val)) return true;
     if (val instanceof NamedList) {
@@ -360,7 +363,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     }
     if (val instanceof SolrInputField) {
-      return writeKnownType(((SolrInputField) val).getRawValue());
+      return writeKnownType(((SolrInputField) val).getValue());
     }
     if (val instanceof IteratorWriter) {
       writeIterator((IteratorWriter) val);
@@ -531,7 +534,7 @@ public class JavaBinCodec implements PushWriter {
   //use this to ignore the writable interface because , child docs will ignore the fl flag
   // is it a good design?
   private boolean ignoreWritable =false;
-  private ConditionalMapWriter.EntryWriterWrapper cew;
+  private MapWriter.EntryWriter cew;
 
   public void writeSolrDocument(SolrDocument doc) throws IOException {
     List<SolrDocument> children = doc.getChildDocuments();
@@ -546,7 +549,7 @@ public class JavaBinCodec implements PushWriter {
     int sz = fieldsCount + (children==null ? 0 : children.size());
     writeTag(SOLRDOC);
     writeTag(ORDERED_MAP, sz);
-    if (cew == null) cew = new ConditionalMapWriter.EntryWriterWrapper(ew, (k, o) -> toWrite(k.toString()));
+    if (cew == null) cew = new ConditionalKeyMapWriter.EntryWriterWrapper(ew, (k) -> toWrite(k.toString()));
     doc.writeMap(cew);
     if (children != null) {
       try {
@@ -586,10 +589,14 @@ public class JavaBinCodec implements PushWriter {
 
   public SolrDocumentList readSolrDocumentList(DataInputInputStream dis) throws IOException {
     SolrDocumentList solrDocs = new SolrDocumentList();
-    List list = (List) readVal(dis);
+    @SuppressWarnings("unchecked")
+    List<Object> list = (List<Object>) readVal(dis);
     solrDocs.setNumFound((Long) list.get(0));
     solrDocs.setStart((Long) list.get(1));
     solrDocs.setMaxScore((Float) list.get(2));
+    if (list.size() > 3) { //needed for back compatibility
+      solrDocs.setNumFoundExact((Boolean)list.get(3));
+    }
 
     @SuppressWarnings("unchecked")
     List<SolrDocument> l = (List<SolrDocument>) readVal(dis);
@@ -600,10 +607,11 @@ public class JavaBinCodec implements PushWriter {
   public void writeSolrDocumentList(SolrDocumentList docs)
           throws IOException {
     writeTag(SOLRDOCLST);
-    List<Number> l = new ArrayList<>(3);
+    List<Object> l = new ArrayList<>(4);
     l.add(docs.getNumFound());
     l.add(docs.getStart());
     l.add(docs.getMaxScore());
+    l.add(docs.getNumFoundExact());
     writeArray(l);
     writeArray(docs);
   }
@@ -649,13 +657,14 @@ public class JavaBinCodec implements PushWriter {
   protected SolrInputDocument createSolrInputDocument(int sz) {
     return new SolrInputDocument(new LinkedHashMap<>(sz));
   }
+  static final Predicate<CharSequence> IGNORECHILDDOCS = it -> !CommonParams.CHILDDOC.equals(it.toString());
 
   public void writeSolrInputDocument(SolrInputDocument sdoc) throws IOException {
     List<SolrInputDocument> children = sdoc.getChildDocuments();
     int sz = sdoc.size() + (children==null ? 0 : children.size());
     writeTag(SOLRINPUTDOC, sz);
     writeFloat(1f); // document boost
-    sdoc.writeMap(ew);
+    sdoc.writeMap(new ConditionalKeyMapWriter.EntryWriterWrapper(ew,IGNORECHILDDOCS));
     if (children != null) {
       for (SolrInputDocument child : children) {
         writeSolrInputDocument(child);
@@ -744,7 +753,7 @@ public class JavaBinCodec implements PushWriter {
     val.writeIter(itemWriter);
     writeTag(END);
   }
-  public void writeIterator(Iterator iter) throws IOException {
+  public void writeIterator(@SuppressWarnings({"rawtypes"})Iterator iter) throws IOException {
     writeTag(ITERATOR);
     while (iter.hasNext()) {
       writeVal(iter.next());
@@ -762,14 +771,14 @@ public class JavaBinCodec implements PushWriter {
     return l;
   }
 
-  public void writeArray(List l) throws IOException {
+  public void writeArray(@SuppressWarnings({"rawtypes"})List l) throws IOException {
     writeTag(ARR, l.size());
     for (int i = 0; i < l.size(); i++) {
       writeVal(l.get(i));
     }
   }
 
-  public void writeArray(Collection coll) throws IOException {
+  public void writeArray(@SuppressWarnings({"rawtypes"})Collection coll) throws IOException {
     writeTag(ARR, coll.size());
     for (Object o : coll) {
       writeVal(o);
@@ -785,11 +794,13 @@ public class JavaBinCodec implements PushWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public List<Object> readArray(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
     return readArray(dis, sz);
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected List readArray(DataInputInputStream dis, int sz) throws IOException {
     ArrayList<Object> l = new ArrayList<>(sz);
     for (int i = 0; i < sz; i++) {
@@ -808,7 +819,7 @@ public class JavaBinCodec implements PushWriter {
     writeStr(enumFieldValue.toString());
   }
 
-  public void writeMapEntry(Map.Entry val) throws IOException {
+  public void writeMapEntry(Map.Entry<?,?> val) throws IOException {
     writeTag(MAP_ENTRY);
     writeVal(val.getKey());
     writeVal(val.getValue());
@@ -864,11 +875,11 @@ public class JavaBinCodec implements PushWriter {
         if(this == obj) {
           return true;
         }
-        if(!(obj instanceof Entry)) {
-          return false;
+        if (obj instanceof Map.Entry<?, ?>) {
+          Entry<?, ?> entry = (Entry<?, ?>) obj;
+          return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
         }
-        Map.Entry<Object, Object> entry = (Entry<Object, Object>) obj;
-        return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
+        return false;
       }
     };
   }
@@ -959,11 +970,15 @@ public class JavaBinCodec implements PushWriter {
 
   private Function<ByteArrayUtf8CharSequence, String> getStringProvider() {
     if (stringProvider == null) {
-      stringProvider = butf8cs -> {
-        synchronized (JavaBinCodec.this) {
-          arr.reset();
-          ByteUtils.UTF8toUTF16(butf8cs.buf, butf8cs.offset(), butf8cs.size(), arr);
-          return arr.toString();
+      stringProvider = new Function<>() {
+        final CharArr charArr = new CharArr(8);
+        @Override
+        public String apply(ByteArrayUtf8CharSequence butf8cs) {
+          synchronized (charArr) {
+            charArr.reset();
+            ByteUtils.UTF8toUTF16(butf8cs.buf, butf8cs.offset(), butf8cs.size(), charArr);
+            return charArr.toString();
+          }
         }
       };
     }

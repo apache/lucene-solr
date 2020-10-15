@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.ngram;
 
 
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
 import java.util.Map;
@@ -53,6 +53,11 @@ public class EdgeNGramTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public EdgeNGramTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public Tokenizer create(AttributeFactory factory) {
     return new EdgeNGramTokenizer(factory, minGramSize, maxGramSize);

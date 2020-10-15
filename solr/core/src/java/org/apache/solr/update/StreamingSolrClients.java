@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -38,6 +39,8 @@ public class StreamingSolrClients {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final int runnerCount = Integer.getInteger("solr.cloud.replication.runners", 1);
+  // should be less than solr.jetty.http.idleTimeout
+  private final int pollQueueTime = Integer.getInteger("solr.cloud.client.pollQueueTime", 10000);
 
   private Http2SolrClient httpClient;
 
@@ -72,14 +75,14 @@ public class StreamingSolrClients {
           .withExecutorService(updateExecutor)
           .alwaysStreamDeletes()
           .build();
-      client.setPollQueueTime(Integer.MAX_VALUE); // minimize connections created
+      client.setPollQueueTime(pollQueueTime); // minimize connections created
       solrClients.put(url, client);
     }
 
     return client;
   }
 
-  public synchronized void blockUntilFinished() {
+  public synchronized void blockUntilFinished() throws IOException {
     for (ConcurrentUpdateHttp2SolrClient client : solrClients.values()) {
       client.blockUntilFinished();
     }
@@ -123,7 +126,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
 
   @Override
   public void handleError(Throwable ex) {
-    log.error("Error when calling {} to {}", req.toString(), req.node.getUrl(), ex);
+    log.error("Error when calling {} to {}", req, req.node.getUrl(), ex);
     Error error = new Error();
     error.e = (Exception) ex;
     if (ex instanceof SolrException) {

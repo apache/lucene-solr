@@ -42,6 +42,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * Abstraction through which all communication with a Solr server may be routed
@@ -959,6 +960,21 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
+   * Issues a ping request to check if the collection's replicas are alive
+   *
+   * @param collection collection to ping
+   *
+   * @return a {@link org.apache.solr.client.solrj.response.SolrPingResponse} containing the response
+   *         from the server
+   *
+   * @throws IOException If there is a low-level I/O error.
+   * @throws SolrServerException if there is an error on the server
+   */
+  public SolrPingResponse ping(String collection) throws SolrServerException, IOException {
+    return new SolrPing().process(this, collection);
+  }
+
+  /**
    * Issues a ping request to check if the server is alive
    *
    * @return a {@link org.apache.solr.client.solrj.response.SolrPingResponse} containing the response
@@ -970,6 +986,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   public SolrPingResponse ping() throws SolrServerException, IOException {
     return new SolrPing().process(this, null);
   }
+
 
   /**
    * Performs a query to the Solr server
@@ -1223,8 +1240,7 @@ public abstract class SolrClient implements Serializable, Closeable {
     if (StringUtils.isEmpty(reqParams.get(CommonParams.QT))) {
       reqParams.set(CommonParams.QT, "/get");
     }
-    reqParams.set("ids", ids.toArray(new String[ids.size()]));
-
+    reqParams.set("ids", ids.stream().map(id -> StrUtils.escapeTextWithSeparator(id, ',')).toArray(String[]::new));
     return query(collection, reqParams).getResults();
   }
 
@@ -1257,7 +1273,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public abstract NamedList<Object> request(final SolrRequest request, String collection)
+  public abstract NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, String collection)
       throws SolrServerException, IOException;
 
   /**
@@ -1270,7 +1286,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public final NamedList<Object> request(final SolrRequest request) throws SolrServerException, IOException {
+  public final NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request) throws SolrServerException, IOException {
     return request(request, null);
   }
 
@@ -1289,4 +1305,12 @@ public abstract class SolrClient implements Serializable, Closeable {
     return binder;
   }
 
+  /**
+   * This method defines the context in which this Solr client
+   * is being used (e.g. for internal communication between Solr
+   * nodes or as an external client). The default value is {@code SolrClientContext#Client}
+   */
+  public SolrRequest.SolrClientContext getContext() {
+    return SolrRequest.SolrClientContext.CLIENT;
+  }
 }

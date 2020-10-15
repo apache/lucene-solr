@@ -217,7 +217,7 @@ public class TestSearchAfter extends LuceneTestCase {
       System.out.println("\nassertQuery " + (iter++) + ": query=" + query + " sort=" + sort + " pageSize=" + pageSize);
     }
     final boolean doScores;
-    final TopDocsCollector allCollector;
+    final TopDocsCollector<?> allCollector;
     if (sort == null) {
       allCollector = TopScoreDocCollector.create(maxDoc, null, Integer.MAX_VALUE);
       doScores = false;
@@ -245,7 +245,7 @@ public class TestSearchAfter extends LuceneTestCase {
     ScoreDoc lastBottom = null;
     while (pageStart < all.totalHits.value) {
       TopDocs paged;
-      final TopDocsCollector pagedCollector;
+      final TopDocsCollector<?> pagedCollector;
       if (sort == null) {
         if (VERBOSE) {
           System.out.println("  iter lastBottom=" + lastBottom);
@@ -295,7 +295,7 @@ public class TestSearchAfter extends LuceneTestCase {
       assertEquals(sd1.score, sd2.score, 0f);
       if (sd1 instanceof FieldDoc) {
         assertTrue(sd2 instanceof FieldDoc);
-        assertEquals(((FieldDoc) sd1).fields, ((FieldDoc) sd2).fields);
+        assertArrayEquals(((FieldDoc) sd1).fields, ((FieldDoc) sd2).fields);
       }
     }
   }

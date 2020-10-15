@@ -180,6 +180,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     tempDir.close();
   }  
 
+  @Slow
   public void testMultilingualInput() throws Exception {
     List<Input> input = LookupBenchmarkTest.readTop50KWiki();
 

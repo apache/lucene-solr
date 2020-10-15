@@ -16,10 +16,17 @@
  */
 package org.apache.lucene.geo;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SloppyMath;
@@ -327,8 +334,8 @@ public class GeoTestUtil {
     for(int i=0;i<gons;i++) {
       double angle = 360.0-i*(360.0/gons);
       //System.out.println("  angle " + angle);
-      double x = Math.cos(SloppyMath.toRadians(angle));
-      double y = Math.sin(SloppyMath.toRadians(angle));
+      double x = Math.cos(Math.toRadians(angle));
+      double y = Math.sin(Math.toRadians(angle));
       double factor = 2.0;
       double step = 1.0;
       int last = 0;
@@ -382,6 +389,13 @@ public class GeoTestUtil {
     //System.out.println("  polyLons=" + Arrays.toString(result[1]));
 
     return new Polygon(result[0], result[1]);
+  }
+
+  public static Circle nextCircle() {
+    double lat = nextLatitude();
+    double lon = nextLongitude();
+    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    return new Circle(lat, lon, radiusMeters);
   }
 
   /** returns next pseudorandom polygon */
@@ -494,8 +508,8 @@ public class GeoTestUtil {
         }
         double len = radius * (1.0 - radiusDelta + radiusDelta * random().nextDouble());
         //System.out.println("    len=" + len);
-        double lat = centerLat + len * Math.cos(SloppyMath.toRadians(angle));
-        double lon = centerLon + len * Math.sin(SloppyMath.toRadians(angle));
+        double lat = centerLat + len * Math.cos(Math.toRadians(angle));
+        double lon = centerLon + len * Math.sin(Math.toRadians(angle));
         if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL ||
             lat > 90 || lat < -90) {
           // cannot cross dateline or pole: try again!
@@ -710,5 +724,27 @@ public class GeoTestUtil {
       }
     }
     return c;
+  }
+
+  /** reads a shape from file */
+  public static String readShape(String name) throws IOException {
+    return Loader.LOADER.readShape(name);
+  }
+
+  private static class Loader {
+
+    static Loader LOADER = new Loader();
+
+    String readShape(String name) throws IOException {
+      InputStream is = getClass().getResourceAsStream(name);
+      if (is == null) {
+        throw new FileNotFoundException("classpath resource not found: " + name);
+      }
+      if (name.endsWith(".gz")) {
+        is = new GZIPInputStream(is);
+      }
+      BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+      return reader.readLine();
+    }
   }
 }

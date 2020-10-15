@@ -34,8 +34,6 @@ Regardless of the method used to ingest data, there is a common basic data struc
 
 If the field name is defined in the Schema that is associated with the index, then the analysis steps associated with that field will be applied to its content when the content is tokenized. Fields that are not explicitly defined in the Schema will either be ignored or mapped to a dynamic field definition (see <<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>), if one matching the field name exists.
 
-For more information on indexing in Solr, see the https://wiki.apache.org/solr/FrontPage[Solr Wiki].
-
 == The Solr Example Directory
 
 When starting Solr with the "-e" option, the `example/` directory will be used as base directory for the example Solr instances that are created. This directory also includes an `example/exampledocs/` subdirectory containing sample documents in a variety of formats that you can use to experiment with indexing into the various examples.

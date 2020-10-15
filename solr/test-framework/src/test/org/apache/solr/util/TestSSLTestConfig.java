@@ -20,6 +20,8 @@ package org.apache.solr.util;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.lucene.util.Constants;
+
 import org.apache.solr.SolrTestCase;
 
 public class TestSSLTestConfig extends SolrTestCase {
@@ -84,4 +86,19 @@ public class TestSSLTestConfig extends SolrTestCase {
     
   }
 
+  public void testFailIfUserRunsTestsWithJVMThatHasKnownSSLBugs() {
+    // NOTE: If there is some future JVM version, where all available "ea" builds are known to be buggy,
+    // but we still want to be able to use for running tests (ie: via jenkins) to look for *other* bugs,
+    // then those -ea versions can be "white listed" here...
+
+    try {
+      SSLTestConfig.assumeSslIsSafeToTest();
+    } catch (org.junit.AssumptionViolatedException ave) {
+      fail("Current JVM (" + Constants.JVM_NAME + " / " + Constants.JVM_VERSION +
+           ") is known to have SSL Bugs.  Other tests that (explicitly or via randomization) " +
+           " use SSL will be SKIPed");
+    }
+  }
+
+  
 }

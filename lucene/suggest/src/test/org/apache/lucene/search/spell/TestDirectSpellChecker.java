@@ -147,9 +147,17 @@ public class TestDirectSpellChecker extends LuceneTestCase {
         "fobar"), 1, ir, SuggestMode.SUGGEST_MORE_POPULAR);
     assertEquals(0, similar.length);
     
+    // confirm that a term shorter than minQueryLength is not spellchecked
     spellChecker = new DirectSpellChecker(); // reset defaults
     spellChecker.setMinQueryLength(5);
     similar = spellChecker.suggestSimilar(new Term("text", "foba"), 1, ir,
+        SuggestMode.SUGGEST_MORE_POPULAR);
+    assertEquals(0, similar.length);
+
+    // confirm that a term longer than maxQueryLength is not spellchecked
+    spellChecker = new DirectSpellChecker(); // reset defaults
+    spellChecker.setMaxQueryLength(5);
+    similar = spellChecker.suggestSimilar(new Term("text", "foobrr"), 1, ir,
         SuggestMode.SUGGEST_MORE_POPULAR);
     assertEquals(0, similar.length);
     

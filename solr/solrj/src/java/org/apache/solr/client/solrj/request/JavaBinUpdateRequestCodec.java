@@ -40,6 +40,7 @@ import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.CHILDDOC;
 import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
 
 /**
@@ -70,8 +71,11 @@ public class JavaBinUpdateRequestCodec {
    *
    * @throws IOException in case of an exception during marshalling or writing to the stream
    */
+  @SuppressWarnings({"unchecked"})
   public void marshal(UpdateRequest updateRequest, OutputStream os) throws IOException {
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = new NamedList();
+    @SuppressWarnings({"rawtypes"})
     NamedList params = solrParamsToNamedList(updateRequest.getParams());
     if (updateRequest.getCommitWithin() != -1) {
       params.add("commitWithin", updateRequest.getCommitWithin());
@@ -81,7 +85,7 @@ public class JavaBinUpdateRequestCodec {
     if(updateRequest.getDocIterator() != null){
       docIter = updateRequest.getDocIterator();
     }
-    
+
     Map<SolrInputDocument,Map<String,Object>> docMap = updateRequest.getDocumentsMap();
 
     nl.add("params", params);// 0: params
@@ -114,6 +118,7 @@ public class JavaBinUpdateRequestCodec {
    *
    * @throws IOException in case of an exception while reading from the input stream or unmarshalling
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public UpdateRequest unmarshal(InputStream is, final StreamingUpdateHandler handler) throws IOException {
     final UpdateRequest updateRequest = new UpdateRequest();
     List<List<NamedList>> doclist;
@@ -125,7 +130,7 @@ public class JavaBinUpdateRequestCodec {
     try (JavaBinCodec codec = new StreamingCodec(namedList, updateRequest, handler)) {
       codec.unmarshal(is);
     }
-    
+
     // NOTE: if the update request contains only delete commands the params
     // must be loaded now
     if(updateRequest.getParams()==null) {
@@ -145,11 +150,11 @@ public class JavaBinUpdateRequestCodec {
     } else {
       docMap = (List<Entry<SolrInputDocument, Map<Object, Object>>>) docsMapObj;
     }
-    
+
 
     // we don't add any docs, because they were already processed
     // deletes are handled later, and must be passed back on the UpdateRequest
-    
+
     if (delById != null) {
       for (String s : delById) {
         updateRequest.deleteById(s);
@@ -167,7 +172,7 @@ public class JavaBinUpdateRequestCodec {
         } else {
           updateRequest.deleteById(entry.getKey());
         }
-  
+
       }
     }
     if (delByQ != null) {
@@ -175,11 +180,12 @@ public class JavaBinUpdateRequestCodec {
         updateRequest.deleteByQuery(s);
       }
     }
-    
+
     return updateRequest;
   }
 
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList solrParamsToNamedList(SolrParams params) {
     if (params == null) return new NamedList();
     return params.toNamedList();
@@ -203,6 +209,7 @@ public class JavaBinUpdateRequestCodec {
 
   class StreamingCodec extends JavaBinCodec {
 
+    @SuppressWarnings({"rawtypes"})
     private final NamedList[] namedList;
     private final UpdateRequest updateRequest;
     private final StreamingUpdateHandler handler;
@@ -211,7 +218,7 @@ public class JavaBinUpdateRequestCodec {
     // is ever refactored, this will not work.
     private boolean seenOuterMostDocIterator;
 
-    public StreamingCodec(NamedList[] namedList, UpdateRequest updateRequest, StreamingUpdateHandler handler) {
+    public StreamingCodec(@SuppressWarnings({"rawtypes"})NamedList[] namedList, UpdateRequest updateRequest, StreamingUpdateHandler handler) {
       this.namedList = namedList;
       this.updateRequest = updateRequest;
       this.handler = handler;
@@ -219,11 +226,13 @@ public class JavaBinUpdateRequestCodec {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     protected SolrInputDocument createSolrInputDocument(int sz) {
       return new MaskCharSequenceSolrInputDoc(new LinkedHashMap(sz));
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public NamedList readNamedList(DataInputInputStream dis) throws IOException {
       int sz = readSize(dis);
       NamedList nl = new NamedList();
@@ -238,6 +247,7 @@ public class JavaBinUpdateRequestCodec {
       return nl;
     }
 
+    @SuppressWarnings({"rawtypes"})
     private SolrInputDocument listToSolrInputDocument(List<NamedList> namedList) {
       SolrInputDocument doc = new SolrInputDocument();
       for (int i = 0; i < namedList.size(); i++) {
@@ -270,6 +280,7 @@ public class JavaBinUpdateRequestCodec {
     }
 
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public List readIterator(DataInputInputStream fis) throws IOException {
       // default behavior for reading any regular Iterator in the stream
       if (seenOuterMostDocIterator) return super.readIterator(fis);
@@ -281,8 +292,11 @@ public class JavaBinUpdateRequestCodec {
     }
 
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private List readOuterMostDocIterator(DataInputInputStream fis) throws IOException {
+      if(namedList[0] == null) namedList[0] = new NamedList();
       NamedList params = (NamedList) namedList[0].get("params");
+      if (params == null) params = new NamedList();
       updateRequest.setParams(new ModifiableSolrParams(params.toSolrParams()));
       if (handler == null) return super.readIterator(fis);
       Integer commitWithin = null;
@@ -313,8 +327,10 @@ public class JavaBinUpdateRequestCodec {
               commitWithin = (Integer) p.get(UpdateRequest.COMMIT_WITHIN);
               overwrite = (Boolean) p.get(UpdateRequest.OVERWRITE);
             }
-          } else {
+          } else if (o instanceof SolrInputDocument) {
             sdoc = (SolrInputDocument) o;
+          } else if (o instanceof Map) {
+            sdoc = convertMapToSolrInputDoc((Map) o);
           }
 
           // peek at the next object to see if we're at the end
@@ -326,11 +342,34 @@ public class JavaBinUpdateRequestCodec {
 
           handler.update(sdoc, updateRequest, commitWithin, overwrite);
         }
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
       } finally {
         super.readStringAsCharSeq = false;
 
       }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private SolrInputDocument convertMapToSolrInputDoc(@SuppressWarnings({"rawtypes"})Map m) {
+      SolrInputDocument result = createSolrInputDocument(m.size());
+      m.forEach((k, v) -> {
+        if (CHILDDOC.equals(k.toString())) {
+          if (v instanceof List) {
+            @SuppressWarnings({"rawtypes"})
+            List list = (List) v;
+            for (Object o : list) {
+              if (o instanceof Map) {
+                result.addChildDocument(convertMapToSolrInputDoc((Map) o));
+              }
+            }
+          } else if (v instanceof Map) {
+            result.addChildDocument(convertMapToSolrInputDoc((Map) v));
+          }
+        } else {
+          result.addField(k.toString(), v);
+        }
+      });
+      return result;
     }
 
   }

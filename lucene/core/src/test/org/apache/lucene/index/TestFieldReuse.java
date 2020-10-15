@@ -48,8 +48,8 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
     // now reuse previous stream
     stringField = new StringField("foo", "baz", Field.Store.NO);
     TokenStream ts2 = stringField.tokenStream(null, ts);
-    assertSame(ts, ts);
-    assertTokenStreamContents(ts, 
+    assertSame(ts, ts2);
+    assertTokenStreamContents(ts,
         new String[] { "baz" },
         new int[]    { 0 },
         new int[]    { 3 }

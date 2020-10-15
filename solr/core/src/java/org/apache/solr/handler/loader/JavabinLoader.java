@@ -119,7 +119,6 @@ public class JavabinLoader extends ContentStreamLoader {
       if (in.peek() == -1) return;
       try {
         update = new JavaBinUpdateRequestCodec()
-            .setReadStringAsCharSeq(true)
             .unmarshal(in, handler);
       } catch (EOFException e) {
         break; // this is expected
@@ -134,7 +133,7 @@ public class JavabinLoader extends ContentStreamLoader {
       throws IOException {
     FastInputStream in = FastInputStream.wrap(stream);
     SolrParams old = req.getParams();
-    new JavaBinCodec() {
+    try (JavaBinCodec jbc = new JavaBinCodec() {
       SolrParams params;
       AddUpdateCommand addCmd = null;
 
@@ -165,7 +164,9 @@ public class JavabinLoader extends ContentStreamLoader {
         return Collections.emptyList();
       }
 
-    }.unmarshal(in);
+    }) {
+      jbc.unmarshal(in);
+    }
   }
 
   private AddUpdateCommand getAddCommand(SolrQueryRequest req, SolrParams params) {

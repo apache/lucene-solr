@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.pattern;
 
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -58,6 +58,11 @@ public class PatternReplaceFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public PatternReplaceFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

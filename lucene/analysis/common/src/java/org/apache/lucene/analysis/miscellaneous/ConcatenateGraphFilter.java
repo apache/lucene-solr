@@ -56,11 +56,11 @@ public final class ConcatenateGraphFilter extends TokenStream {
    */
 
   /**
-   * Represents the separation between tokens, if
-   * <code>preserveSep</code> is <code>true</code>.
+   * Represents the default separator between tokens.
    */
   public final static int SEP_LABEL = TokenStreamToAutomaton.POS_SEP;
   public final static int DEFAULT_MAX_GRAPH_EXPANSIONS = Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+  public final static Character DEFAULT_TOKEN_SEPARATOR = SEP_LABEL;
   public final static boolean DEFAULT_PRESERVE_SEP = true;
   public final static boolean DEFAULT_PRESERVE_POSITION_INCREMENTS = true;
 
@@ -69,7 +69,7 @@ public final class ConcatenateGraphFilter extends TokenStream {
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   private final TokenStream inputTokenStream;
-  private final boolean preserveSep;
+  private final Character tokenSeparator;
   private final boolean preservePositionIncrements;
   private final int maxGraphExpansions;
 
@@ -85,7 +85,7 @@ public final class ConcatenateGraphFilter extends TokenStream {
    * This constructor uses the default settings of the constants in this class.
    */
   public ConcatenateGraphFilter(TokenStream inputTokenStream) {
-    this(inputTokenStream, DEFAULT_PRESERVE_SEP, DEFAULT_PRESERVE_POSITION_INCREMENTS, DEFAULT_MAX_GRAPH_EXPANSIONS);
+    this(inputTokenStream, DEFAULT_TOKEN_SEPARATOR, DEFAULT_PRESERVE_POSITION_INCREMENTS, DEFAULT_MAX_GRAPH_EXPANSIONS);
   }
 
   /**
@@ -93,7 +93,8 @@ public final class ConcatenateGraphFilter extends TokenStream {
    * of accepted strings by its token stream graph.
    *
    * @param inputTokenStream The input/incoming TokenStream
-   * @param preserveSep Whether {@link #SEP_LABEL} should separate the input tokens in the concatenated token
+   * @param tokenSeparator Separator to use for concatenation. Can be null, in this case tokens will be concatenated
+   *                       without any separators.
    * @param preservePositionIncrements Whether to add an empty token for missing positions.
    *                                   The effect is a consecutive {@link #SEP_LABEL}.
    *                                   When false, it's as if there were no missing positions
@@ -105,13 +106,21 @@ public final class ConcatenateGraphFilter extends TokenStream {
    *         expansions
    *
    */
-  public ConcatenateGraphFilter(TokenStream inputTokenStream, boolean preserveSep, boolean preservePositionIncrements, int maxGraphExpansions) {
+  public ConcatenateGraphFilter(TokenStream inputTokenStream, Character tokenSeparator, boolean preservePositionIncrements, int maxGraphExpansions) {
     // Don't call the super(input) ctor - this is a true delegate and has a new attribute source since we consume
     // the input stream entirely in the first call to incrementToken
     this.inputTokenStream = inputTokenStream;
-    this.preserveSep = preserveSep;
+    this.tokenSeparator = tokenSeparator;
     this.preservePositionIncrements = preservePositionIncrements;
     this.maxGraphExpansions = maxGraphExpansions;
+  }
+
+  /**
+   * Calls {@link #ConcatenateGraphFilter(org.apache.lucene.analysis.TokenStream, java.lang.Character, boolean, int)}
+   * @param preserveSep Whether {@link #SEP_LABEL} should separate the input tokens in the concatenated token
+   */
+  public ConcatenateGraphFilter(TokenStream inputTokenStream, boolean preserveSep, boolean preservePositionIncrements, int maxGraphExpansions) {
+    this(inputTokenStream, (preserveSep) ? DEFAULT_TOKEN_SEPARATOR : null, preservePositionIncrements, maxGraphExpansions);
   }
 
   @Override
@@ -196,8 +205,8 @@ public final class ConcatenateGraphFilter extends TokenStream {
     // from each analyzed token, with byte 0 used as
     // separator between tokens:
     final TokenStreamToAutomaton tsta;
-    if (preserveSep) {
-      tsta = new EscapingTokenStreamToAutomaton(SEP_LABEL);
+    if (tokenSeparator != null) {
+      tsta = new EscapingTokenStreamToAutomaton(tokenSeparator);
     } else {
       // When we're not preserving sep, we don't steal 0xff
       // byte, so we don't need to do any escaping:
@@ -210,7 +219,7 @@ public final class ConcatenateGraphFilter extends TokenStream {
 
     // TODO: we can optimize this somewhat by determinizing
     // while we convert
-    automaton = replaceSep(automaton, preserveSep, SEP_LABEL);
+    automaton = replaceSep(automaton, tokenSeparator);
     // This automaton should not blow up during determinize:
     return Operations.determinize(automaton, maxGraphExpansions);
   }
@@ -249,7 +258,7 @@ public final class ConcatenateGraphFilter extends TokenStream {
 
   // Replaces SEP with epsilon or remaps them if
   // we were asked to preserve them:
-  private static Automaton replaceSep(Automaton a, boolean preserveSep, int sepLabel) {
+  private static Automaton replaceSep(Automaton a, Character tokenSeparator) {
 
     Automaton result = new Automaton();
 
@@ -271,9 +280,9 @@ public final class ConcatenateGraphFilter extends TokenStream {
         a.getNextTransition(t);
         if (t.min == TokenStreamToAutomaton.POS_SEP) {
           assert t.max == TokenStreamToAutomaton.POS_SEP;
-          if (preserveSep) {
-            // Remap to SEP_LABEL:
-            result.addTransition(state, t.dest, sepLabel);
+          if (tokenSeparator != null) {
+            // Remap to tokenSeparator:
+            result.addTransition(state, t.dest, tokenSeparator);
           } else {
             result.addEpsilon(state, t.dest);
           }

@@ -39,9 +39,9 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -82,6 +82,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @throws Exception When analysis fails.
    */
+  @SuppressWarnings({"rawtypes"})
   protected abstract NamedList doAnalysis(SolrQueryRequest req) throws Exception;
 
   /**
@@ -99,6 +100,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     if (!TokenizerChain.class.isInstance(analyzer)) {
 
       try (TokenStream tokenStream = analyzer.tokenStream(context.getFieldName(), value)) {
+        @SuppressWarnings({"rawtypes"})
         NamedList<List<NamedList>> namedList = new NamedList<>();
         namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
         return namedList;
@@ -231,6 +233,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @return List of NamedLists containing the relevant information taken from the tokens
    */
+  @SuppressWarnings({"rawtypes"})
   private List<NamedList> convertTokensToNamedLists(final List<AttributeSource> tokenList, AnalysisContext context) {
     final List<NamedList> tokensNamedLists = new ArrayList<>();
     final FieldType fieldType = context.getFieldType();

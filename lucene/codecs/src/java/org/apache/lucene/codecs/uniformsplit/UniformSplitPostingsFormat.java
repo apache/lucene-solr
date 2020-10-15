@@ -24,8 +24,8 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
@@ -47,7 +47,9 @@ public class UniformSplitPostingsFormat extends PostingsFormat {
    */
   public static final String TERMS_BLOCKS_EXTENSION = "ustb";
 
-  public static final int VERSION_CURRENT = 0;
+  public static final int VERSION_START = 0;
+  public static final int VERSION_ENCODABLE_FIELDS_METADATA = 1;
+  public static final int VERSION_CURRENT = VERSION_ENCODABLE_FIELDS_METADATA;
 
   public static final String NAME = "UniformSplit";
 
@@ -55,9 +57,14 @@ public class UniformSplitPostingsFormat extends PostingsFormat {
   protected final int deltaNumLines;
   protected final BlockEncoder blockEncoder;
   protected final BlockDecoder blockDecoder;
+  protected final boolean dictionaryOnHeap;
 
+  /**
+   * Creates a {@link UniformSplitPostingsFormat} with default settings.
+   */
   public UniformSplitPostingsFormat() {
-    this(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES, null, null);
+    this(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
+        null, null, false);
   }
 
   /**
@@ -69,16 +76,24 @@ public class UniformSplitPostingsFormat extends PostingsFormat {
    *                            Must be greater than or equal to 0 and strictly less than {@code targetNumBlockLines}.
    *                            The block size will be {@code targetNumBlockLines}+-{@code deltaNumLines}.
    *                            The block size must always be less than or equal to {@link UniformSplitTermsWriter#MAX_NUM_BLOCK_LINES}.
-   * @param blockEncoder        Optional block encoder, may be null if none.
-   *                            It can be used for compression or encryption.
-   * @param blockDecoder        Optional block decoder, may be null if none.
-   *                            It can be used for compression or encryption.
+   * @param blockEncoder        Optional block encoder, may be null if none. If present, it is used to encode all terms
+   *                            blocks, as well as the FST dictionary and the fields metadata.
+   * @param blockDecoder        Optional block decoder, may be null if none. If present, it is used to decode all terms
+   *                            blocks, as well as the FST dictionary and the fields metadata.
+   * @param dictionaryOnHeap    Whether to force loading the terms dictionary on-heap. By default it is kept off-heap without
+   *                            impact on performance. If block encoding/decoding is used, then the dictionary is always
+   *                            loaded on-heap whatever this parameter value is.
    */
-  public UniformSplitPostingsFormat(int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, BlockDecoder blockDecoder) {
-    this(NAME, targetNumBlockLines, deltaNumLines, blockEncoder, blockDecoder);
+  public UniformSplitPostingsFormat(int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, BlockDecoder blockDecoder,
+                                    boolean dictionaryOnHeap) {
+    this(NAME, targetNumBlockLines, deltaNumLines, blockEncoder, blockDecoder, dictionaryOnHeap);
   }
 
-  protected UniformSplitPostingsFormat(String name, int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, BlockDecoder blockDecoder) {
+  /**
+   * @see #UniformSplitPostingsFormat(int, int, BlockEncoder, BlockDecoder, boolean)
+   */
+  protected UniformSplitPostingsFormat(String name, int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder,
+                                       BlockDecoder blockDecoder, boolean dictionaryOnHeap) {
     super(name);
     UniformSplitTermsWriter.validateSettings(targetNumBlockLines, deltaNumLines);
     validateBlockEncoder(blockEncoder, blockDecoder);
@@ -86,11 +101,12 @@ public class UniformSplitPostingsFormat extends PostingsFormat {
     this.deltaNumLines = deltaNumLines;
     this.blockEncoder = blockEncoder;
     this.blockDecoder = blockDecoder;
+    this.dictionaryOnHeap = dictionaryOnHeap;
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
+    PostingsWriterBase postingsWriter = new Lucene84PostingsWriter(state);
     boolean success = false;
     try {
       FieldsConsumer termsWriter = createUniformSplitTermsWriter(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder);
@@ -105,7 +121,7 @@ public class UniformSplitPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
+    PostingsReaderBase postingsReader = new Lucene84PostingsReader(state);
     boolean success = false;
     try {
       FieldsProducer termsReader = createUniformSplitTermsReader(postingsReader, state, blockDecoder);
@@ -125,7 +141,7 @@ public class UniformSplitPostingsFormat extends PostingsFormat {
 
   protected FieldsProducer createUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state,
                                                BlockDecoder blockDecoder) throws IOException {
-    return new UniformSplitTermsReader(postingsReader, state, blockDecoder);
+    return new UniformSplitTermsReader(postingsReader, state, blockDecoder, dictionaryOnHeap);
   }
 
   private static void validateBlockEncoder(BlockEncoder blockEncoder, BlockDecoder blockDecoder) {

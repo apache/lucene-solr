@@ -257,7 +257,7 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer);
       }    
     };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
     
     Analyzer b = new Analyzer() {
@@ -267,7 +267,7 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer);
       }    
     };
-    checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), b, 200 * RANDOM_MULTIPLIER);
     b.close();
   }
 

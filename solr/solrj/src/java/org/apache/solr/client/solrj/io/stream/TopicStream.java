@@ -58,7 +58,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
@@ -273,14 +273,14 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     return l;
   }
 
   public void open() throws IOException {
-    this.tuples = new TreeSet();
-    this.solrStreams = new ArrayList();
-    this.eofTuples = Collections.synchronizedMap(new HashMap());
+    this.tuples = new TreeSet<>();
+    this.solrStreams = new ArrayList<>();
+    this.eofTuples = Collections.synchronizedMap(new HashMap<>());
 
     if(checkpoints.size() == 0 && streamContext.numWorkers > 1) {
       //Each worker must maintain its own checkpoints
@@ -311,9 +311,9 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
   private void openStreams() throws IOException {
 
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("TopicStream"));
+    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TopicStream"));
     try {
-      List<Future<TupleWrapper>> futures = new ArrayList();
+      List<Future<TupleWrapper>> futures = new ArrayList<>();
       for (TupleStream solrStream : solrStreams) {
         StreamOpener so = new StreamOpener((SolrStream) solrStream, comp);
         Future<TupleWrapper> future = service.submit(so);
@@ -430,6 +430,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         if(streamContext != null) {
           StreamContext localContext = new StreamContext();
           localContext.setSolrClientCache(streamContext.getSolrClientCache());
+          localContext.setObjectCache(streamContext.getObjectCache());
           solrStream.setStreamContext(localContext);
         }
 
@@ -488,6 +489,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
           try {
             SolrDocument doc = httpClient.getById(id);
             if(doc != null) {
+              @SuppressWarnings({"unchecked"})
               List<String> checkpoints = (List<String>)doc.getFieldValue("checkpoint_ss");
               for (String checkpoint : checkpoints) {
                 String[] pair = checkpoint.split("~");

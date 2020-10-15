@@ -33,10 +33,10 @@ public final class ExceptionHandler {
     if (t instanceof LukeException) {
       Throwable cause = t.getCause();
       String message = (cause == null) ? t.getMessage() : t.getMessage() + " " + cause.getMessage();
-      log.warn(t.getMessage(), t);
+      log.warn("Uncaught LukeException", t);
       messageBroker.showStatusMessage(message);
     } else {
-      log.error(t.getMessage(), t);
+      log.error("Uncaught Exception", t);
       messageBroker.showUnknownErrorMessage();
     }
   }

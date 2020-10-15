@@ -45,6 +45,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 @SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10844")
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
+  @SuppressWarnings({"unchecked"})
   public TestDistributedGrouping() {
     // SOLR-10844: Even with points suppressed, this test breaks if we (randomize) docvalues="true" on trie fields?!?!?!!?
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"false");
@@ -57,11 +58,12 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
   String s1dv = "a_s_dvo";
   String b1dv = "a_b_dvo";
   String tlong = "other_tl1";
-  String tdate_a = "a_n_tdt";
-  String tdate_b = "b_n_tdt";
+  String tdate_a = "a_n_tdt1"; // use single-valued date field
+  String tdate_b = "b_n_tdt1";
   String oddField="oddField_s1";
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     del("*:*");
     commit();
@@ -248,6 +250,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "group.query", t1 + ":kings OR " + t1 + ":eggs", "rows", "13", "start", "2",
         "fl", "id", "group.main", "true", "sort", i1 + " asc, id asc");
 
+    // SOLR-9802
+    query("q", "*:*", "group", "true", "group.field", tdate_a, "sort", i1 + " asc, id asc", "fl", "id");
+
     // SOLR-3109
     query("q", t1 + ":eggs", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", tlong + " asc, id asc");
     query("q", i1 + ":232", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", tlong + " asc, id asc");
@@ -306,6 +311,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     int which = r.nextInt(clients.size());
     SolrClient client = clients.get(which);
     QueryResponse rsp = client.query(params);
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList<?>) rsp.getResponse().get("grouped");
     nl = (NamedList<?>) nl.getVal(0);
     int matches = (Integer) nl.getVal(0);
@@ -320,6 +326,19 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " desc", "group.sort", "score desc"); // SOLR-2955
     query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "score desc, _docid_ asc, id asc");
     query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1);
+
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+        "fl", "id,score", "sort", i1 + " asc, id asc");
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+        "fl", "id,score", "group.format", "simple", "sort", i1 + " asc, id asc");
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+        "fl", "id,score", "group.main", "true", "sort", i1 + " asc, id asc");
 
     // grouping shouldn't care if there are multiple fl params, or what order the fl field names are in
     variantQuery(params("q", "*:*",

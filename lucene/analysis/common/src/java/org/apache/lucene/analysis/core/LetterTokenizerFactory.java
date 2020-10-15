@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.core;
 
 
 import org.apache.lucene.analysis.util.CharTokenizer;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
 import java.util.Map;
@@ -61,6 +61,11 @@ public class LetterTokenizerFactory extends TokenizerFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public LetterTokenizerFactory() {
+    throw defaultCtorException();
   }
 
   @Override

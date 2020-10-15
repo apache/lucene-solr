@@ -21,7 +21,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -116,6 +116,9 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * Blocks storing data.
    */
   private final ArrayDeque<ByteBuffer> blocks = new ArrayDeque<>();
+
+  /** Cumulative RAM usage across all blocks. */
+  private long ramBytesUsed;
 
   /**
    * The current-or-next write block.
@@ -279,11 +282,12 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * Copy the current content of this object into another {@link DataOutput}.
    */
   public void copyTo(DataOutput output) throws IOException {
-    for (ByteBuffer bb : toBufferList()) {
+    for (ByteBuffer bb : blocks) {
       if (bb.hasArray()) {
-        output.writeBytes(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining());
+        output.writeBytes(bb.array(), bb.arrayOffset(), bb.position());
       } else {
-        output.copyBytes(new ByteBuffersDataInput(Arrays.asList(bb)), bb.remaining());
+        bb = bb.asReadOnlyBuffer().flip();
+        output.copyBytes(new ByteBuffersDataInput(Collections.singletonList(bb)), bb.remaining());
       }
     }
   }
@@ -399,8 +403,8 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
   public long ramBytesUsed() {
     // Return a rough estimation for allocated blocks. Note that we do not make
     // any special distinction for direct memory buffers.
-    return RamUsageEstimator.NUM_BYTES_OBJECT_REF * blocks.size() + 
-           blocks.stream().mapToLong(buf -> buf.capacity()).sum();
+    assert ramBytesUsed == blocks.stream().mapToLong(ByteBuffer::capacity).sum() + blocks.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    return ramBytesUsed;
   }
 
   /**
@@ -412,8 +416,11 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * lead to hard-to-debug issues, use with great care.
    */
   public void reset() {
-    blocks.stream().forEach(blockReuse);
+    if (blockReuse != NO_REUSE) {
+      blocks.forEach(blockReuse);
+    }
     blocks.clear();
+    ramBytesUsed = 0;
     currentBlock = EMPTY;
   }
 
@@ -447,6 +454,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     currentBlock = blockAllocate.apply(requiredBlockSize);
     assert currentBlock.capacity() == requiredBlockSize;
     blocks.add(currentBlock);
+    ramBytesUsed += RamUsageEstimator.NUM_BYTES_OBJECT_REF + currentBlock.capacity();
   }
 
   private void rewriteToBlockSize(int targetBlockBits) {
@@ -468,6 +476,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     assert blocks.isEmpty();
     this.blockBits = targetBlockBits;
     blocks.addAll(cloned.blocks);
+    ramBytesUsed = cloned.ramBytesUsed;
   }
 
   private static int computeBlockSizeBitsFor(long bytes) {

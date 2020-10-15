@@ -62,7 +62,6 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1)
-        .setMaxShardsPerNode(1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, sliceCount, 1));
@@ -263,6 +262,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
 
     if (distribSinglePass) {
       Map<String, Object> debugMap = response.getDebugMap();
+      @SuppressWarnings({"unchecked"})
       SimpleOrderedMap<Object> track = (SimpleOrderedMap<Object>) debugMap.get("track");
       assertNotNull(track);
       assertNotNull(track.get("EXECUTE_QUERY"));

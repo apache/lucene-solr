@@ -397,6 +397,80 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     a.close();
   }
 
+  // https://issues.apache.org/jira/browse/LUCENE-9006
+  public void testCatenateAllEmittedBeforeParts() throws Exception {
+    // no number parts
+    final int flags = PRESERVE_ORIGINAL | GENERATE_WORD_PARTS | CATENATE_ALL;
+    final boolean useCharFilter = true;
+    final boolean graphOffsetsAreCorrect = false; // note: could solve via always incrementing wordPos on first word ('8')
+
+    //not using getAnalyzer because we want adjustInternalOffsets=true
+    Analyzer a = new Analyzer() {
+      @Override
+      public TokenStreamComponents createComponents(String field) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(tokenizer, true, DEFAULT_WORD_DELIM_TABLE, flags, null));
+      }
+    };
+
+    // input starts with a number, but we don't generate numbers.
+    //   Nonetheless preserve-original and concatenate-all show up first.
+    assertTokenStreamContents(a.tokenStream("dummy", "8-other"),
+        new String[] { "8-other", "8other", "other" }, new int[]{0, 0, 2}, new int[]{7, 7, 7}, new int[]{1, 0, 0});
+    checkAnalysisConsistency(random(), a, useCharFilter, "8-other", graphOffsetsAreCorrect);
+    verify("8-other", flags); // uses getAnalyzer which uses adjustInternalOffsets=false which works
+
+    // input ends with a number, but we don't generate numbers
+    assertTokenStreamContents(a.tokenStream("dummy", "other-9"),
+        new String[] { "other-9", "other9", "other" }, new int[]{0, 0, 0}, new int[]{7, 7, 5}, new int[]{1, 0, 0});
+    checkAnalysisConsistency(random(), a, useCharFilter, "other-9", graphOffsetsAreCorrect);
+    verify("9-other", flags); // uses getAnalyzer which uses adjustInternalOffsets=false which works
+
+    a.close();
+  }
+
+  /*
+  static char[] fuzzDict = {'-', 'H', 'w', '4'};
+  public void testFuzz() throws IOException {
+    //System.out.println(getGraphStrings(getAnalyzer(GENERATE_WORD_PARTS | CATENATE_WORDS), "H-H")); // orig:[H H, HH H] orig; fixed posInc:"[HH H H]"
+    //System.out.println(getGraphStrings(getAnalyzer(CATENATE_WORDS | CATENATE_ALL), "H-4")); // fixPos:[H H4] final:"[H4 H]"
+
+    StringBuilder input = new StringBuilder("000000"); // fill with arbitrary chars; not too long or too short
+
+    for (int flags = 0; flags < IGNORE_KEYWORDS; flags++) { // all interesting bit flags precede IGNORE_KEYWORDS
+      System.out.println("Flags: " + flags + " " + WordDelimiterGraphFilter.flagsToString(flags));
+      final Analyzer analyzer = getAnalyzer(flags);
+      fuzzLoop(input, 0, analyzer);
+    }
+  }
+
+  public void fuzzLoop(StringBuilder input, int inputPrefixLenFuzzed, Analyzer analyzer) throws IOException {
+    if (inputPrefixLenFuzzed < input.length()) {
+      for (char c : fuzzDict) {
+        input.setCharAt(inputPrefixLenFuzzed, c);
+        fuzzLoop(input, inputPrefixLenFuzzed + 1, analyzer); // recursive
+      }
+      return;
+    }
+
+    fuzzDoCheck(input.toString(), analyzer);
+  }
+
+  private void fuzzDoCheck(String input, Analyzer analyzer) throws IOException {
+    try (TokenStream ts1 = analyzer.tokenStream("fieldName", input)) {
+      ts1.reset();
+      while (ts1.incrementToken()) { // modified WDF sorter compare() contains assertion check
+        //do-nothing
+      }
+      ts1.end();
+    } catch (AssertionError e) {
+      System.out.println("failed input: " + input);
+      throw e;
+    }
+  }
+*/
+
+
   /** concat numbers + words + all */
   public void testLotsOfConcatenating() throws Exception {
     final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_WORDS | CATENATE_NUMBERS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;    
@@ -447,7 +521,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    int numIterations = atLeast(5);
+    int numIterations = atLeast(3);
     for (int i = 0; i < numIterations; i++) {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
@@ -466,14 +540,14 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
         }
       };
       // TODO: properly support positionLengthAttribute
-      checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20, false, false);
+      checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 20, false, false);
       a.close();
     }
   }
   
   /** blast some enormous random strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    int numIterations = atLeast(5);
+    int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
@@ -493,7 +567,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
         }
       };
       // TODO: properly support positionLengthAttribute
-      checkRandomData(random(), a, 20*RANDOM_MULTIPLIER, 8192, false, false);
+      checkRandomData(random(), a, 10*RANDOM_MULTIPLIER, 8192, false, false);
       a.close();
     }
   }
@@ -867,7 +941,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   }
 
   public void testRandomPaths() throws Exception {
-    int iters = atLeast(100);
+    int iters = atLeast(10);
     for(int iter=0;iter<iters;iter++) {
       String text = randomWDFText();
       if (VERBOSE) {
@@ -947,6 +1021,9 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
 
       fail(b.toString());
     }
+
+    boolean useCharFilter = true;
+    checkAnalysisConsistency(random(), getAnalyzer(flags), useCharFilter, text);
   }
 
   public void testOnlyNumbers() throws Exception {

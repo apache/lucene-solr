@@ -242,22 +242,22 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
         req(params("sow", "false","qf", "text^10","pf", "text^10","pf2", "text^5","pf3", "text^8"))).getQuery();
     assertEquals("+(" +
         "((text:foo)^10.0) ((text:a)^10.0) ((text:b)^10.0) (((+text:tropical +text:cyclone) text:bar)^10.0)) " +
-        "((spanNear([text:foo, text:a, text:b, spanOr([spanNear([text:tropical, text:cyclone], 0, true), text:bar])], 0, true))^10.0) " +
-        "(((text:\"foo a\")^5.0) ((text:\"a b\")^5.0) ((spanNear([text:b, spanOr([spanNear([text:tropical, text:cyclone], 0, true), text:bar])], 0, true))^5.0)) " +
-        "(((text:\"foo a b\")^8.0) ((spanNear([text:a, text:b, spanOr([spanNear([text:tropical, text:cyclone], 0, true), text:bar])], 0, true))^8.0))", q.toString());
+        "((text:\"foo a b tropical cyclone\" text:\"foo a b bar\")^10.0) " +
+        "(((text:\"foo a\")^5.0) ((text:\"a b\")^5.0) ((text:\"b tropical cyclone\" text:\"b bar\")^5.0)) " +
+        "(((text:\"foo a b\")^8.0) ((text:\"a b tropical cyclone\" text:\"a b bar\")^8.0))", q.toString());
 
     q = QParser.getParser("tropical cyclone foo a b ","edismax",true, req(params("qf", "text^10","pf", "text^10","pf2", "text^5","pf3", "text^8"))).getQuery();
     assertEquals("+(" +
         "((text:bar (+text:tropical +text:cyclone))^10.0) ((text:foo)^10.0) ((text:a)^10.0) ((text:b)^10.0)) " +
-        "((spanNear([spanOr([text:bar, spanNear([text:tropical, text:cyclone], 0, true)]), text:foo, text:a, text:b], 0, true))^10.0) " +
-        "(((spanOr([text:bar, spanNear([text:tropical, text:cyclone], 0, true)]))^5.0) ((text:\"cyclone foo\")^5.0) ((text:\"foo a\")^5.0) ((text:\"a b\")^5.0)) " +
-        "(((spanNear([spanOr([text:bar, spanNear([text:tropical, text:cyclone], 0, true)]), text:foo], 0, true))^8.0) ((text:\"cyclone foo a\")^8.0) ((text:\"foo a b\")^8.0))", q.toString());
+        "((text:\"bar foo a b\" text:\"tropical cyclone foo a b\")^10.0) " +
+        "(((text:bar text:\"tropical cyclone\")^5.0) ((text:\"cyclone foo\")^5.0) ((text:\"foo a\")^5.0) ((text:\"a b\")^5.0)) " +
+        "(((text:\"bar foo\" text:\"tropical cyclone foo\")^8.0) ((text:\"cyclone foo a\")^8.0) ((text:\"foo a b\")^8.0))", q.toString());
 
     q = QParser.getParser("foo a b tropical cyclone","edismax",true, req(params("qf", "text^10","pf", "text^10","pf2", "text^5","pf3", "text^8"))).getQuery();
     assertEquals("+(" +
         "((text:foo)^10.0) ((text:a)^10.0) ((text:b)^10.0) ((text:bar (+text:tropical +text:cyclone))^10.0)) " +
-        "((spanNear([text:foo, text:a, text:b, spanOr([text:bar, spanNear([text:tropical, text:cyclone], 0, true)])], 0, true))^10.0) " +
-        "(((text:\"foo a\")^5.0) ((text:\"a b\")^5.0) ((text:\"b tropical\")^5.0) ((spanOr([text:bar, spanNear([text:tropical, text:cyclone], 0, true)]))^5.0)) " +
-        "(((text:\"foo a b\")^8.0) ((text:\"a b tropical\")^8.0) ((spanNear([text:b, spanOr([text:bar, spanNear([text:tropical, text:cyclone], 0, true)])], 0, true))^8.0))", q.toString());
+        "((text:\"foo a b bar\" text:\"foo a b tropical cyclone\")^10.0) " +
+        "(((text:\"foo a\")^5.0) ((text:\"a b\")^5.0) ((text:\"b tropical\")^5.0) ((text:bar text:\"tropical cyclone\")^5.0)) " +
+        "(((text:\"foo a b\")^8.0) ((text:\"a b tropical\")^8.0) ((text:\"b bar\" text:\"b tropical cyclone\")^8.0))", q.toString());
   }
 }

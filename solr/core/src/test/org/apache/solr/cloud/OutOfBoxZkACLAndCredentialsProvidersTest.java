@@ -58,11 +58,13 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    log.info("####SETUP_START " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_START {}", getTestName());
+    }
     createTempDir();
 
     zkDir = createTempDir().resolve("zookeeper/server1/data");
-    log.info("ZooKeeper dataDir:" + zkDir);
+    log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     
@@ -80,7 +82,9 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkClient.create(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.close();
 
-    log.info("####SETUP_END " + getTestName());
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_END {}", getTestName());
+    }
   }
 
   @Override
@@ -123,7 +127,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   protected void assertOpenACLUnsafeAllover(SolrZkClient zkClient, String path, List<String> verifiedList) throws Exception {
     List<ACL> acls = zkClient.getSolrZooKeeper().getACL(path, new Stat());
     if (log.isInfoEnabled()) {
-      log.info("Verifying " + path);
+      log.info("Verifying {}", path);
     }
     if (ZooDefs.CONFIG_NODE.equals(path)) {
       // Treat this node specially, from the ZK docs:

@@ -558,7 +558,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       } else if (intervalStr.charAt(lastNdx) == ']') {
         endOpen = false;
       } else {
-        throw new SyntaxError("Invalid end character " + intervalStr.charAt(0) + " in facet interval " + intervalStr);
+        throw new SyntaxError("Invalid end character " + intervalStr.charAt(lastNdx) + " in facet interval " + intervalStr);
       }
 
       StringBuilder startStr = new StringBuilder(lastNdx);

@@ -17,7 +17,6 @@
 package org.apache.lucene.util;
 
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -81,15 +80,17 @@ public class TestOfflineSorter extends LuceneTestCase {
     if (random().nextBoolean()) {
       return null;
     } else {
-      return new ThreadPoolExecutor(1, TestUtil.nextInt(random(), 2, 6), Long.MAX_VALUE, TimeUnit.MILLISECONDS,
+      int maxThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 2, 6) : 2;
+      return new ThreadPoolExecutor(1, maxThreads, Long.MAX_VALUE, TimeUnit.MILLISECONDS,
                                     new LinkedBlockingQueue<Runnable>(),
-                                    new NamedThreadFactory("TestIndexSearcher"));
+                                    new NamedThreadFactory("TestOfflineSorter"));
     }
   }
 
+  @Slow
   public void testIntermediateMerges() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer, binary merging.
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory(createTempDir())) {
       ExecutorService exec = randomExecutorServiceOrNull();
       SortInfo info = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 2, -1, exec, TestUtil.nextInt(random(), 1, 4)),
                                 generateRandom((int)OfflineSorter.MB * 20));
@@ -100,9 +101,10 @@ public class TestOfflineSorter extends LuceneTestCase {
     }
   }
 
+  @Slow
   public void testSmallRandom() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer.
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory(createTempDir())) {
       ExecutorService exec = randomExecutorServiceOrNull();
       SortInfo sortInfo = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES, -1, exec, TestUtil.nextInt(random(), 1, 4)),
                                     generateRandom((int)OfflineSorter.MB * 20));
@@ -255,7 +257,7 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testThreadSafety() throws Exception {
     Thread[] threads = new Thread[TestUtil.nextInt(random(), 4, 10)];
     final AtomicBoolean failed = new AtomicBoolean();
-    final int iters = atLeast(1000);
+    final int iters = atLeast(200);
     try (Directory dir = newDirectory()) {
       for(int i=0;i<threads.length;i++) {
         final int threadID = i;
@@ -348,14 +350,12 @@ public class TestOfflineSorter extends LuceneTestCase {
       IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
       writeAll(unsorted, generateFixed(5*1024));
 
-      // This corruption made OfflineSorter fail with its own exception, but we verify it also went and added (as suppressed) that the
-      // checksum was wrong:
-      EOFException e = expectThrows(EOFException.class, () -> {
+      // This corruption made OfflineSorter fail with its own exception, but we verify and throw a CorruptIndexException
+      // instead when checksums don't match.
+      CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
           new OfflineSorter(dir, "foo").sort(unsorted.getName());
         });
-      assertEquals(1, e.getSuppressed().length);
-      assertTrue(e.getSuppressed()[0] instanceof CorruptIndexException);
-      assertTrue(e.getSuppressed()[0].getMessage().contains("checksum failed (hardware problem?)"));
+      assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
     }
   }
 
@@ -433,15 +433,14 @@ public class TestOfflineSorter extends LuceneTestCase {
       IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
       writeAll(unsorted, generateFixed((int) (OfflineSorter.MB * 3)));
 
-      EOFException e = expectThrows(EOFException.class, () -> {
+      CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
           new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 10, -1, null, 0).sort(unsorted.getName());
         });
-      assertEquals(1, e.getSuppressed().length);
-      assertTrue(e.getSuppressed()[0] instanceof CorruptIndexException);
-      assertTrue(e.getSuppressed()[0].getMessage().contains("checksum failed (hardware problem?)"));
+      assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
     }
   }
 
+  @Nightly
   public void testFixedLengthHeap() throws Exception {
     // Make sure the RAM accounting is correct, i.e. if we are sorting fixed width
     // ints (4 bytes) then the heap used is really only 4 bytes per value:

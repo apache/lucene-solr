@@ -170,12 +170,12 @@ public class TestCJKBigramFilter extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomUnibiStrings() throws Exception {
-    checkRandomData(random(), unibiAnalyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), unibiAnalyzer, 200 * RANDOM_MULTIPLIER);
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomUnibiHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, unibiAnalyzer, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, unibiAnalyzer, 10 * RANDOM_MULTIPLIER, 8192);
   }
 }

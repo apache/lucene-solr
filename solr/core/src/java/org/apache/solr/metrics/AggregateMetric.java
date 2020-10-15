@@ -107,6 +107,9 @@ public class AggregateMetric implements Metric {
         res = n.doubleValue();
       }
     }
+    if (res == null) {
+      return 0;
+    }
     return res;
   }
 
@@ -127,6 +130,9 @@ public class AggregateMetric implements Metric {
       if (n.doubleValue() < res) {
         res = n.doubleValue();
       }
+    }
+    if (res == null) {
+      return 0;
     }
     return res;
   }

@@ -37,9 +37,9 @@ import java.awt.Window;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;

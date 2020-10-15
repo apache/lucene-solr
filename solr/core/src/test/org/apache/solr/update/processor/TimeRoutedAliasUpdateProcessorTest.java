@@ -20,6 +20,8 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +52,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.UpdateCommand;
+import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.LogLevel;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +66,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_START;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROPS_ZKNODE;
 
@@ -81,8 +89,10 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     configureCluster(4).configure();
     solrClient = getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
-    log.info("SolrClient: {}", solrClient);
-    log.info("ClusterStateProvider {}",solrClient.getClusterStateProvider());
+    if (log.isInfoEnabled()) {
+      log.info("SolrClient: {}", solrClient);
+      log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider()); // nowarn
+    }
   }
 
   @After
@@ -105,7 +115,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     //  This tests we may pre-create the collection and it's acceptable.
     final String col23rd = alias + TRA + "2017-10-23";
     CollectionAdminRequest.createCollection(col23rd, configName, 2, 2)
-        .setMaxShardsPerNode(2)
         .withProperty(ROUTED_ALIAS_NAME_CORE_PROP, alias)
         .process(solrClient);
 
@@ -120,8 +129,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
     CollectionAdminRequest.createTimeRoutedAlias(alias, "2017-10-23T00:00:00Z", "+1DAY", getTimeField(),
-        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2))
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1))
         .process(solrClient);
 
     // now we index a document
@@ -231,8 +239,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     final int numShards = 1 + random().nextInt(4);
     final int numReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createTimeRoutedAlias(alias, "2017-10-23T00:00:00Z", "+1DAY", getTimeField(),
-        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
-            .setMaxShardsPerNode(numReplicas))
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas))
         .process(solrClient);
 
     // cause some collections to be created
@@ -278,14 +285,14 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     final int numShards = 1 ;
     final int numReplicas = 1 ;
     CollectionAdminRequest.createTimeRoutedAlias(alias, "2017-10-23T00:00:00Z", "+1DAY", getTimeField(),
-        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
-            .setMaxShardsPerNode(numReplicas)).setPreemptiveCreateWindow("3HOUR")
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas))
+        .setPreemptiveCreateWindow("3HOUR")
         .process(solrClient);
 
     // needed to verify that preemptive creation in one alias doesn't inhibit preemptive creation in another
     CollectionAdminRequest.createTimeRoutedAlias(alias2, "2017-10-23T00:00:00Z", "+1DAY", getTimeField(),
-        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
-            .setMaxShardsPerNode(numReplicas)).setPreemptiveCreateWindow("3HOUR")
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas))
+        .setPreemptiveCreateWindow("3HOUR")
         .process(solrClient);
 
     addOneDocSynchCreation(numShards, alias);
@@ -366,8 +373,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     // Start and stop some cores that have TRA's... 2x2 used to ensure every jetty gets at least one
 
     CollectionAdminRequest.createTimeRoutedAlias(getSaferTestName() + "foo", "2017-10-23T00:00:00Z", "+1DAY", getTimeField(),
-        CollectionAdminRequest.createCollection("_unused_", configName, 2, 2)
-            .setMaxShardsPerNode(numReplicas)).setPreemptiveCreateWindow("3HOUR")
+        CollectionAdminRequest.createCollection("_unused_", configName, 2, 2))
+        .setPreemptiveCreateWindow("3HOUR")
         .process(solrClient);
 
     waitColAndAlias(getSaferTestName() + "foo", TRA, "2017-10-23",2);
@@ -706,6 +713,68 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + TRA + "2017-10-02"));
   }
 
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13943")
+  @Test
+  public void testDateMathInStart() throws Exception {
+    ClusterStateProvider clusterStateProvider = solrClient.getClusterStateProvider();
+    Class<? extends ClusterStateProvider> aClass = clusterStateProvider.getClass();
+    System.out.println("CSPROVIDER:" + aClass);
+
+    // This test prevents recurrence of SOLR-13760
+
+    String configName = getSaferTestName();
+    createConfigSet(configName);
+    CountDownLatch aliasUpdate = new CountDownLatch(1);
+    monitorAlias(aliasUpdate);
+
+    // each collection has 4 shards with 3 replicas for 12 possible destinations
+    // 4 of which are leaders, and 8 of which should fail this test.
+    final int numShards = 1 + random().nextInt(4);
+    final int numReplicas = 1 + random().nextInt(3);
+    CollectionAdminRequest.createTimeRoutedAlias(alias, "2019-09-14T03:00:00Z/DAY", "+1DAY", getTimeField(),
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas))
+        .process(solrClient);
+
+    aliasUpdate.await();
+    if (BaseHttpClusterStateProvider.class.isAssignableFrom(aClass)) {
+      ((BaseHttpClusterStateProvider)clusterStateProvider).resolveAlias(getAlias(), true);
+    }
+    aliasUpdate = new CountDownLatch(1);
+    monitorAlias(aliasUpdate);
+
+    ModifiableSolrParams params = params();
+    String nowDay = DateTimeFormatter.ISO_INSTANT.format(DateMathParser.parseMath(new Date(), "2019-09-14T01:00:00Z").toInstant());
+    assertUpdateResponse(add(alias, Arrays.asList(
+        sdoc("id", "1", "timestamp_dt", nowDay)), // should not cause preemptive creation of 10-28 now
+        params));
+
+    // this process should have lead to the modification of the start time for the alias, converting it into
+    // a parsable date, removing the DateMath
+
+    // what we test next happens in a separate thread, so we have to give it some time to happen
+    aliasUpdate.await();
+    if (BaseHttpClusterStateProvider.class.isAssignableFrom(aClass)) {
+      ((BaseHttpClusterStateProvider)clusterStateProvider).resolveAlias(getAlias(), true);
+    }
+
+    String hopeFullyModified = clusterStateProvider.getAliasProperties(getAlias()).get(ROUTER_START);
+    try {
+      Instant.parse(hopeFullyModified);
+    } catch (DateTimeParseException e) {
+      fail(ROUTER_START + " should not have any date math by this point and parse as an instant. Using "+ aClass +" Found:" + hopeFullyModified);
+    }
+  }
+
+  private void monitorAlias(CountDownLatch aliasUpdate) throws KeeperException, InterruptedException {
+    Stat stat = new Stat();
+    zkClient().getData("/aliases.json", new Watcher() {
+      @Override
+      public void process(WatchedEvent watchedEvent) {
+        aliasUpdate.countDown();
+      }
+    }, stat, true);
+  }
+
   /**
    * Need to ensure that the existing TRA's gracefully handle, old, new and mixtures thereof. TRA's with
    * an autoDeleteAge setting will gracefully convert to the new format over time.
@@ -845,6 +914,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
   // here we do things not to be emulated elsewhere to create a legacy condition and ensure that we can
   // work with both old and new formats.
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void manuallyConstructLegacyTRA() throws Exception {
     // first create a "modern" alias
     String configName = getSaferTestName();
@@ -853,8 +923,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     final int numShards = 1 ;
     final int numReplicas = 1 ;
     CollectionAdminRequest.createTimeRoutedAlias(alias, "2017-10-23T00:00:00Z", "+1DAY", getTimeField(),
-        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
-            .setMaxShardsPerNode(numReplicas)).setPreemptiveCreateWindow("3HOUR").setAutoDeleteAge("/DAY-3DAYS")
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas))
+        .setPreemptiveCreateWindow("3HOUR").setAutoDeleteAge("/DAY-3DAYS")
         .process(solrClient);
 
     // now create collections that look like the legacy (pre __TRA__) names...
@@ -902,7 +972,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     if (data == null || data.length == 0) {
       aliasMap = Collections.emptyMap();
     } else {
-      //noinspection unchecked
       aliasMap = (Map<String, Map>) Utils.fromJSON(data);
     }
     assertNotEquals(0, aliasMap.size());

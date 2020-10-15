@@ -77,9 +77,10 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     streams.add(new ContentStreamBase.StringStream(xml));
     req.setContentStreams(streams);
     SolrQueryResponse rsp = new SolrQueryResponse();
-    UpdateRequestHandler handler = new UpdateRequestHandler();
-    handler.init(new NamedList<String>());
-    handler.handleRequestBody(req, rsp);
+    try (UpdateRequestHandler handler = new UpdateRequestHandler()) {
+      handler.init(new NamedList<String>());
+      handler.handleRequestBody(req, rsp);
+    }
     StringWriter sw = new StringWriter(32000);
     QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
     responseWriter.write(sw,req,rsp);

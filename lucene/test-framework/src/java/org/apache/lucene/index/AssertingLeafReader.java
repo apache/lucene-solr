@@ -827,7 +827,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       return result;
     }
   }
-  
+
   /** Wraps a SortedNumericDocValues but with additional asserts */
   public static class AssertingSortedNumericDocValues extends SortedNumericDocValues {
     private final Thread creationThread = Thread.currentThread();
@@ -836,10 +836,20 @@ public class AssertingLeafReader extends FilterLeafReader {
     private int lastDocID = -1;
     private int valueUpto;
     private boolean exists;
-    
-    public AssertingSortedNumericDocValues(SortedNumericDocValues in, int maxDoc) {
+
+    private AssertingSortedNumericDocValues(SortedNumericDocValues in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
+    }
+
+    public static SortedNumericDocValues create(SortedNumericDocValues in, int maxDoc) {
+      NumericDocValues singleDocValues = DocValues.unwrapSingleton(in);
+      if (singleDocValues == null) {
+        return new AssertingSortedNumericDocValues(in, maxDoc);
+      } else {
+        NumericDocValues assertingDocValues = new AssertingNumericDocValues(singleDocValues, maxDoc);
+        return DocValues.singleton(assertingDocValues);
+      }
     }
 
     @Override
@@ -924,11 +934,21 @@ public class AssertingLeafReader extends FilterLeafReader {
     private long lastOrd = NO_MORE_ORDS;
     private boolean exists;
     
-    public AssertingSortedSetDocValues(SortedSetDocValues in, int maxDoc) {
+    private AssertingSortedSetDocValues(SortedSetDocValues in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
       this.valueCount = in.getValueCount();
       assert valueCount >= 0;
+    }
+
+    public static SortedSetDocValues create(SortedSetDocValues in, int maxDoc) {
+      SortedDocValues singleDocValues = DocValues.unwrapSingleton(in);
+      if (singleDocValues == null) {
+        return new AssertingSortedSetDocValues(in, maxDoc);
+      } else {
+        SortedDocValues assertingDocValues = new AssertingSortedDocValues(singleDocValues, maxDoc);
+        return DocValues.singleton(assertingDocValues);
+      }
     }
 
     @Override
@@ -1049,7 +1069,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public void intersect(IntersectVisitor visitor) throws IOException {
       assertThread("Points", creationThread);
-      in.intersect(new AssertingIntersectVisitor(in.getNumDataDimensions(), in.getNumIndexDimensions(), in.getBytesPerDimension(), visitor));
+      in.intersect(new AssertingIntersectVisitor(in.getNumDimensions(), in.getNumIndexDimensions(), in.getBytesPerDimension(), visitor));
     }
 
     @Override
@@ -1073,9 +1093,9 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public int getNumDataDimensions() throws IOException {
+    public int getNumDimensions() throws IOException {
       assertThread("Points", creationThread);
-      return in.getNumDataDimensions();
+      return in.getNumDimensions();
     }
 
     @Override
@@ -1233,12 +1253,12 @@ public class AssertingLeafReader extends FilterLeafReader {
   
   @Override
   public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
-    SortedNumericDocValues dv = super.getSortedNumericDocValues(field);
     FieldInfo fi = getFieldInfos().fieldInfo(field);
+    SortedNumericDocValues dv = super.getSortedNumericDocValues(field);
     if (dv != null) {
       assert fi != null;
       assert fi.getDocValuesType() == DocValuesType.SORTED_NUMERIC;
-      return new AssertingSortedNumericDocValues(dv, maxDoc());
+      return AssertingSortedNumericDocValues.create(dv, maxDoc());
     } else {
       assert fi == null || fi.getDocValuesType() != DocValuesType.SORTED_NUMERIC;
       return null;

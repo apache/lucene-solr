@@ -78,6 +78,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private void testReqParams() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(COLL_NAME);
@@ -282,6 +283,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     compareValues(result, new Predicate() {
       @Override
       public boolean test(Object o) {
+        @SuppressWarnings({"rawtypes"})
         List l = (List) o;
         return l.contains("first") && l.contains("second");
       }
@@ -297,5 +299,15 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
         asList("response", "params", "y", "p"),
         null,
         10);
+
+    payload = " {'unset' : 'y'}";
+    TestSolrConfigHandler.runConfigCommandExpectFailure(
+        writeHarness,"/config/params", payload, "Unknown operation 'unset'");
+
+    // deleting already deleted one should fail
+    // error message should contain parameter set name
+    payload = " {'delete' : 'y'}";
+    TestSolrConfigHandler.runConfigCommandExpectFailure(
+        writeHarness,"/config/params", payload, "Could not delete. No such params 'y' exist");
   }
 }

@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter; // javadoc @link
-import org.tartarus.snowball.SnowballProgram;
+import org.tartarus.snowball.SnowballStemmer;
 
 /**
  * A filter that stems words using a Snowball-generated stemmer.
@@ -51,12 +51,12 @@ import org.tartarus.snowball.SnowballProgram;
  */
 public final class SnowballFilter extends TokenFilter {
 
-  private final SnowballProgram stemmer;
+  private final SnowballStemmer stemmer;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
-  public SnowballFilter(TokenStream input, SnowballProgram stemmer) {
+  public SnowballFilter(TokenStream input, SnowballStemmer stemmer) {
     super(input);
     this.stemmer = stemmer;
   }
@@ -76,8 +76,8 @@ public final class SnowballFilter extends TokenFilter {
     //Class.forName is frowned upon in place of the ResourceLoader but in this case,
     // the factory will use the other constructor so that the program is already loaded.
     try {
-      Class<? extends SnowballProgram> stemClass =
-        Class.forName("org.tartarus.snowball.ext." + name + "Stemmer").asSubclass(SnowballProgram.class);
+      Class<? extends SnowballStemmer> stemClass =
+        Class.forName("org.tartarus.snowball.ext." + name + "Stemmer").asSubclass(SnowballStemmer.class);
       stemmer = stemClass.getConstructor().newInstance();
     } catch (Exception e) {
       throw new IllegalArgumentException("Invalid stemmer class specified: " + name, e);

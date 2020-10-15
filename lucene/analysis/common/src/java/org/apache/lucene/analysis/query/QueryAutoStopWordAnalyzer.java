@@ -200,10 +200,12 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
    */
   public Term[] getStopWords() {
     List<Term> allStopWords = new ArrayList<>();
-    for (String fieldName : stopWordsPerField.keySet()) {
-      Set<String> stopWords = stopWordsPerField.get(fieldName);
+    for (Map.Entry<String, Set<String>> entry : stopWordsPerField.entrySet()) {
+      String field = entry.getKey();
+      Set<String> stopWords = entry.getValue();
+
       for (String text : stopWords) {
-        allStopWords.add(new Term(fieldName, text));
+        allStopWords.add(new Term(field, text));
       }
     }
     return allStopWords.toArray(new Term[allStopWords.size()]);

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
@@ -40,7 +41,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -56,7 +56,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
@@ -74,8 +73,7 @@ import org.apache.solr.schema.SchemaField;
  *  This allows graph traversals to skip traversing high frequency nodes which is often desirable from a performance standpoint.
  *
  *   Syntax: {!graphTerms f=field maxDocFreq=10000}term1,term2,term3
- **/
-
+ */
 public class GraphTermsQParserPlugin extends QParserPlugin {
   public static final String NAME = "graphTerms";
 
@@ -227,17 +225,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public String toString(String defaultField) {
-      StringBuilder builder = new StringBuilder();
-      boolean first = true;
-      for (Term term : this.queryTerms) {
-        if (!first) {
-          builder.append(',');
-        }
-        first = false;
-        builder.append(term.toString());
-      }
-
-      return builder.toString();
+      return Arrays.stream(this.queryTerms).map(Term::toString).collect(Collectors.joining(","));
     }
 
     @Override
@@ -245,39 +233,32 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       visitor.visitLeaf(this);
     }
 
-    private class WeightOrDocIdSet {
-      final Weight weight;
-      final DocIdSet set;
-
-      WeightOrDocIdSet(DocIdSet bitset) {
-        this.set = bitset;
-        this.weight = null;
-      }
-    }
-
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
-      List<TermStates> finalContexts = new ArrayList();
-      List<Term> finalTerms = new ArrayList();
-      List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
-      TermStates[] termStates = new TermStates[this.queryTerms.length];
-      collectTermStates(searcher.getIndexReader(), contexts, termStates, this.queryTerms);
-      for(int i=0; i<termStates.length; i++) {
-        TermStates ts = termStates[i];
-        if(ts != null && ts.docFreq() <= this.maxDocFreq) {
-          finalContexts.add(ts);
-          finalTerms.add(queryTerms[i]);
+      List<TermStates> finalContexts = new ArrayList<>();
+      List<Term> finalTerms = new ArrayList<>();
+      {
+        List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
+        TermStates[] termStates = new TermStates[this.queryTerms.length];
+        collectTermStates(searcher.getIndexReader(), contexts, termStates, this.queryTerms);
+        for(int i=0; i<termStates.length; i++) {
+          TermStates ts = termStates[i];
+          if(ts != null && ts.docFreq() <= this.maxDocFreq) {
+            finalContexts.add(ts);
+            finalTerms.add(queryTerms[i]);
+          }
         }
       }
 
       return new ConstantScoreWeight(this, boost) {
 
-        private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();
           Terms terms = reader.terms(field);
-          if(terms == null) {
-            return new WeightOrDocIdSet(new BitDocIdSet(new FixedBitSet(reader.maxDoc()), 0));
+          if (terms == null) {
+            return null;
           }
           TermsEnum  termsEnum = terms.iterator();
           PostingsEnum docs = null;
@@ -292,42 +273,9 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
               builder.add(docs);
             }
           }
-          return new WeightOrDocIdSet(builder.build());
-        }
-
-        private Scorer scorer(DocIdSet set) throws IOException {
-          if (set == null) {
-            return null;
-          }
-          final DocIdSetIterator disi = set.iterator();
-          if (disi == null) {
-            return null;
-          }
-          return new ConstantScoreScorer(this, score(), scoreMode, disi);
-        }
-
-        @Override
-        public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
-          final WeightOrDocIdSet weightOrBitSet = rewrite(context);
-          if (weightOrBitSet.weight != null) {
-            return weightOrBitSet.weight.bulkScorer(context);
-          } else {
-            final Scorer scorer = scorer(weightOrBitSet.set);
-            if (scorer == null) {
-              return null;
-            }
-            return new DefaultBulkScorer(scorer);
-          }
-        }
-
-        @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
-          final WeightOrDocIdSet weightOrBitSet = rewrite(context);
-          if (weightOrBitSet.weight != null) {
-            return weightOrBitSet.weight.scorer(context);
-          } else {
-            return scorer(weightOrBitSet.set);
-          }
+          DocIdSet docIdSet = builder.build();
+          DocIdSetIterator disi = docIdSet.iterator();
+          return disi == null ? null : new ConstantScoreScorer(this, score(), scoreMode, disi);
         }
 
         @Override
@@ -556,8 +504,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     }
     if (searcher instanceof SolrIndexSearcher) {
       return ((SolrIndexSearcher) searcher).getLiveDocSet().getBits();
-    } else {
-      // TODO Does this ever happen?  In Solr should always be SolrIndexSearcher?
+    } else { // could happen in Delete-by-query situation
       //smallSetSize==0 thus will always produce a BitDocSet (FixedBitSet)
       DocSetCollector docSetCollector = new DocSetCollector(0, searcher.getIndexReader().maxDoc());
       searcher.search(new MatchAllDocsQuery(), docSetCollector);

@@ -115,7 +115,7 @@ of the other tools in this folder.
 
     usage: addVersion.py [-h] version
     
-    Add a new version to CHANGES, to Version.java, lucene/version.properties and
+    Add a new version to CHANGES, to Version.java, build.gradle and
     solrconfig.xml files
     
     positional arguments:
@@ -197,15 +197,3 @@ and prints a regular expression that will match all of them
 
 TBD
 
-### publish-solr-ref-guide.sh
-
-TBD
-
-### prep-solr-ref-guide-rc.sh
-
-TBD
-
-## Tools to be removed
-
-* svnBranchToGit.py
-* createPatch.py (svn)

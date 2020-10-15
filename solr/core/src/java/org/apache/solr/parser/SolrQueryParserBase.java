@@ -21,13 +21,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Strings;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
@@ -45,6 +48,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
@@ -62,6 +66,8 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
+import org.apache.lucene.queryparser.charstream.CharStream;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
 
 import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
 
@@ -130,7 +136,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   String defaultField;
   int phraseSlop = 0;     // default slop for phrase queries
-  float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
+  float fuzzyMinSim = FuzzyQuery.defaultMaxEdits;
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
 
   boolean autoGeneratePhraseQueries = false;
@@ -228,17 +234,21 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
 
   public void init(String defaultField, QParser parser) {
+    if ((parser == null) || (parser.getReq() == null) || (parser.getReq().getSchema() == null)) {
+      throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+                      "query parser is null or invalid");
+    }
+    if ((defaultField != null) && (defaultField.isEmpty())) {
+      throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+                      "default field name is empty");
+    }
     this.schema = parser.getReq().getSchema();
     this.parser = parser;
     this.flags = parser.getFlags();
     this.defaultField = defaultField;
     setAnalyzer(schema.getQueryAnalyzer());
-    // TODO in 8.0(?) remove this.  Prior to 7.2 we defaulted to allowing sub-query parsing by default
-    /*
-    if (!parser.getReq().getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_2_0)) {
-      setAllowSubQueryParsing(true);
-    } // otherwise defaults to false
-     */
   }
 
   // Turn on the "filter" bit and return the previous flags for the caller to save
@@ -281,7 +291,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   /** Handles the default field if null is passed */
   public String getField(String fieldName) {
     explicitField = fieldName;
-    return fieldName != null ? fieldName : this.defaultField;
+    return !Strings.isNullOrEmpty(fieldName) ? fieldName : this.defaultField;
   }
 
   /** For a fielded query, returns the actual field specified (i.e. null if default is being used)
@@ -600,19 +610,35 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   @Override
-  protected Query newSynonymQuery(Term terms[]) {
+  protected Query newGraphSynonymQuery(Iterator<Query> sidePathQueriesIterator) {
+    switch (synonymQueryStyle) {
+      case PICK_BEST: {
+        List<Query> sidePathSynonymQueries = new LinkedList<>();
+        sidePathQueriesIterator.forEachRemaining(sidePathSynonymQueries::add);
+        return new DisjunctionMaxQuery(sidePathSynonymQueries, 0.0f);
+      }
+      case AS_SAME_TERM:
+      case AS_DISTINCT_TERMS:{
+        return super.newGraphSynonymQuery(sidePathQueriesIterator);}
+      default:
+        throw new AssertionError("unrecognized synonymQueryStyle passed when creating newSynonymQuery");
+    }
+  }
+
+  @Override
+  protected Query newSynonymQuery(TermAndBoost[] terms) {
     switch (synonymQueryStyle) {
       case PICK_BEST:
         List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
-        for (Term term : terms) {
-          currPosnClauses.add(newTermQuery(term));
+        for (TermAndBoost term : terms) {
+          currPosnClauses.add(newTermQuery(term.term, term.boost));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
       case AS_DISTINCT_TERMS:
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for (Term term : terms) {
-          builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
+        for (TermAndBoost term : terms) {
+          builder.add(newTermQuery(term.term, term.boost), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:
@@ -833,7 +859,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (boost == null || boost.image.length()==0 || q == null) {
       return q;
     }
-    if (boost.image.charAt(0) == '=') {
+    if (boost.image.startsWith("=")) {
       // syntax looks like foo:x^=3
       float val = Float.parseFloat(boost.image.substring(1));
       Query newQ = q;
@@ -984,7 +1010,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
 
   private void checkNullField(String field) throws SolrException {
-    if (field == null && defaultField == null) {
+    if (Strings.isNullOrEmpty(field) && Strings.isNullOrEmpty(defaultField)) {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
               "no field name specified in query and no default specified via 'df' param");
@@ -997,8 +1023,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     SchemaField sf = schema.getFieldOrNull((field));
     if (sf == null || ! (fieldType instanceof TextField)) return part;
-    String out = TextField.analyzeMultiTerm(field, part, ((TextField)fieldType).getMultiTermAnalyzer()).utf8ToString();
-    return out;
+    BytesRef out = TextField.analyzeMultiTerm(field, part, ((TextField)fieldType).getMultiTermAnalyzer());
+    return out == null ? part : out.utf8ToString();
   }
 
 
@@ -1049,7 +1075,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     } else {
       // intercept magic field name of "_" to use as a hook for our
       // own functions.
-      if (allowSubQueryParsing && field.charAt(0) == '_' && parser != null) {
+      if (allowSubQueryParsing && field.startsWith("_") && parser != null) {
         MagicFieldName magic = MagicFieldName.get(field);
         if (null != magic) {
           subQParser = parser.subQuery(queryText, magic.subParser);
@@ -1097,7 +1123,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     } else {
       // intercept magic field name of "_" to use as a hook for our
       // own functions.
-      if (allowSubQueryParsing && field.charAt(0) == '_' && parser != null) {
+      if (allowSubQueryParsing && field.startsWith("_") && parser != null) {
         MagicFieldName magic = MagicFieldName.get(field);
         if (null != magic) {
           subQParser = parser.subQuery(String.join(" ", queryTerms), magic.subParser);
@@ -1183,14 +1209,24 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     // Solr has always used constant scoring for prefix queries.  This should return constant scoring by default.
     return newPrefixQuery(new Term(field, termStr));
   }
+  // called from parser
+  protected Query getExistenceQuery(String field) {
+    checkNullField(field);
+    SchemaField sf = schema.getField(field);
+    return sf.getType().getExistenceQuery(parser, sf);
+  }
 
   // called from parser
   protected Query getWildcardQuery(String field, String termStr) throws SyntaxError {
     checkNullField(field);
-    // *:* -> MatchAllDocsQuery
+
     if ("*".equals(termStr)) {
       if ("*".equals(field) || getExplicitField() == null) {
+        // '*:*' and '*' -> MatchAllDocsQuery
         return newMatchAllDocsQuery();
+      } else {
+        // 'foo:*' -> existenceQuery
+        return getExistenceQuery(field);
       }
     }
 

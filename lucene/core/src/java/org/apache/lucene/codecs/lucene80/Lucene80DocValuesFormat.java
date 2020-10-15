@@ -35,8 +35,8 @@ import org.apache.lucene.util.packed.DirectWriter;
  * <p>
  * Documents that have a value for the field are encoded in a way that it is always possible to
  * know the ordinal of the current document in the set of documents that have a value. For instance,
- * say the set of documents that have a value for the field is <tt>{1, 5, 6, 11}</tt>. When the
- * iterator is on <tt>6</tt>, it knows that this is the 3rd item of the set. This way, values can
+ * say the set of documents that have a value for the field is <code>{1, 5, 6, 11}</code>. When the
+ * iterator is on <code>6</code>, it knows that this is the 3rd item of the set. This way, values can
  * be stored densely and accessed based on their index at search time. If all documents in a segment
  * have a value for the field, the index is the same as the doc ID, so this case is encoded implicitly
  * and is very fast at query time. On the other hand if some documents are missing a value for the
@@ -124,8 +124,8 @@ import org.apache.lucene.util.packed.DirectWriter;
  * <p>
  * Files:
  * <ol>
- *   <li><tt>.dvd</tt>: DocValues data</li>
- *   <li><tt>.dvm</tt>: DocValues metadata</li>
+ *   <li><code>.dvd</code>: DocValues data</li>
+ *   <li><code>.dvm</code>: DocValues metadata</li>
  * </ol>
  * @lucene.experimental
  */
@@ -151,7 +151,8 @@ public final class Lucene80DocValuesFormat extends DocValuesFormat {
   static final String META_CODEC = "Lucene80DocValuesMetadata";
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_BIN_COMPRESSED = 1;  
+  static final int VERSION_CURRENT = VERSION_BIN_COMPRESSED;
 
   // indicates docvalues type
   static final byte NUMERIC = 0;
@@ -165,6 +166,9 @@ public final class Lucene80DocValuesFormat extends DocValuesFormat {
   static final int NUMERIC_BLOCK_SHIFT = 14;
   static final int NUMERIC_BLOCK_SIZE = 1 << NUMERIC_BLOCK_SHIFT;
 
+  static final int BINARY_BLOCK_SHIFT = 5;
+  static final int BINARY_DOCS_PER_COMPRESSED_BLOCK = 1 << BINARY_BLOCK_SHIFT;
+  
   static final int TERMS_DICT_BLOCK_SHIFT = 4;
   static final int TERMS_DICT_BLOCK_SIZE = 1 << TERMS_DICT_BLOCK_SHIFT;
   static final int TERMS_DICT_BLOCK_MASK = TERMS_DICT_BLOCK_SIZE - 1;

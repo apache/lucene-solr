@@ -95,7 +95,7 @@ public class CloudSolrClientBuilderTest extends SolrTestCase {
   }
   
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  @SuppressWarnings({"try"})
   public void test0Timeouts() throws IOException {
     try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.empty())
         .withSocketTimeout(0)

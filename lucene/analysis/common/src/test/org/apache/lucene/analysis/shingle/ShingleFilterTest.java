@@ -1111,7 +1111,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
   }
   
@@ -1125,7 +1125,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ShingleFilter(tokenizer));
       }
     };
-    checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 3*RANDOM_MULTIPLIER, 8192);
     a.close();
   }
   
