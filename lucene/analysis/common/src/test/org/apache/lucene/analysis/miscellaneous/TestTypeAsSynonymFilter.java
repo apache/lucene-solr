@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.TokenStream;
  * Test that this filter moves the value in type to a synonym token with the same offsets. This is rarely
  * useful by itself, but in combination with another filter that updates the type value with an appropriate
  * synonym can be used to identify synonyms before tokens are modified by further analysis, and then
- * add them at the end, ensuring that the synonym value has not ben subjected to the intervening analysis.
+ * add them at the end, ensuring that the synonym value has not been subjected to the intervening analysis.
  * This typically applies when the analysis would remove characters that should remain in the synonym.
  */
 public class TestTypeAsSynonymFilter extends BaseTokenStreamTestCase {
@@ -43,12 +43,20 @@ public class TestTypeAsSynonymFilter extends BaseTokenStreamTestCase {
     Token token = new Token("foo", 0, 2);
     token.setType("bar");
     Token token2 = new Token("foo", 4, 6);
+    token2.setFlags(5);
     TokenStream ts = new CannedTokenStream(token, token2);
     ts = new TypeAsSynonymFilter(ts);
 
     // "word" is the default type!
     assertTokenStreamContents(ts, new String[] {
-        "foo", "bar","foo","word"},new int[] {0,0,4,4}, new int[]{2,2,6,6}, new int[] {1,0,1,0});
+            "foo", "bar","foo","word"},new int[] {0,0,4,4}, new int[]{2,2,6,6},
+        null, // not testing types
+        new int[] {1,0,1,0},null, //positions
+        // final values, keywords, graph, payloads not tested here
+        null,null, null, false,null,
+        // ensure basic case continues to copy flags to synonym by default for back compat
+        new int[] {0,0,5,5}
+    );
   }
 
   /**
