@@ -151,6 +151,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     if (enableTermFacetCache) {
       // WHITE BOX: purge the cache of any existing (autowarmed) couts from previous tests...
+      @SuppressWarnings("rawtypes")
       final SolrCache cache = h.getCore().withSearcher(s -> {
           return s.getCache(TermFacetCache.NAME);
         });

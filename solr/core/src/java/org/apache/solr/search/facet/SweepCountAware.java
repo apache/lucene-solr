@@ -67,10 +67,10 @@ interface SweepCountAware {
    * of {@link SweepCountAware#registerCounts(SegCounter)} indicates to the "driver" the max "active counts" index (for
    * domains that contain the current doc).
    * 
-   * The driver then calls {@link #incrementCount(int, int, int)}, passing the term ord, increment amount (usually "1"),
-   * and the max "active counts" index returned from {@link SweepCountAware#registerCounts(SegCounter)} in the first
-   * phase. The "max active counts index" param is used as the limit (inclusive) to iterate count accumulation over each
-   * of the "active" domains for the current doc.
+   * The driver then calls {@link SegCountPerSeg#incrementCount(int, int, int)} or {@link SegCountGlobal#incrementCount(int, int, int, int)},
+   * passing the seg term ord (or seg term ord and global term ord, respectively), increment amount (usually "1"), and the max
+   * "active counts" index returned from {@link SweepCountAware#registerCounts(SegCounter)} in the first phase. The "max active counts
+   * index" param is used as the limit (inclusive) to iterate count accumulation over each of the "active" domains for the current doc.
    * 
    * @see SweepCountAware#registerCounts(SegCounter)
    */
@@ -108,7 +108,8 @@ interface SweepCountAware {
     /**
      * Increments counts for active domains/CountSlotAccs.
      * 
-     * @param ord - the term ord (either global ord per-seg) for which to increment counts
+     * @param segOrd - the seg term ord for which to increment counts
+     * @param globalOrd - the global term ord for which to increment counts
      * @param inc - the amount by which to increment the count for the specified term ord
      * @param maxIdx - the max index (inclusive) of active domains/CountSlotAccs to be incremented for the current doc
      */
@@ -214,7 +215,8 @@ interface SweepCountAware {
      * @param countAccs - global-scope CountSlotAccs (one for each domain) to be incremented for the most recently accumulated
      * segment
      * @param toGlobal - mapping of per-segment term ords to global term ords for the most recently accumulated segment
-     * @param maxSegOrd - the max per-seg term ord for the most recently accumulated segment
+     * @param segMissingIdx - index for the "missing" bucket on most recently accumulated segment
+     * @param globalMissingIdx - index for the global "missing" bucket
      */
     public void register(CountSlotAcc[] countAccs, LongValues toGlobal, int segMissingIdx, int globalMissingIdx) {
       // NOTE: this method is optimized, with demonstrable benefits for the common "single count" use case.

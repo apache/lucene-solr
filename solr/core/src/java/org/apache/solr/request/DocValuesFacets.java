@@ -134,6 +134,7 @@ public class DocValuesFacets {
     if (maxSlots>0 && docs.size() >= mincount) {
       Map<CacheKey, SegmentCacheEntry> segmentCache = null;
       if (facetCacheThreshold >= 0 && docs.size() > facetCacheThreshold) {
+        @SuppressWarnings("unchecked")
         SolrCache<FacetCacheKey, Map<CacheKey, SegmentCacheEntry>> facetCache = searcher.getCache(TermFacetCache.NAME);
         if (facetCache != null) {
           FacetCacheKey facetCacheKey = new FacetCacheKey(new QueryResultKey(null, Arrays.asList(FacetModule.getBaseFilters(rb)), null, 0), fieldName);

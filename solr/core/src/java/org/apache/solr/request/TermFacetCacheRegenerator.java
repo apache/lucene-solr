@@ -41,6 +41,7 @@ public class TermFacetCacheRegenerator implements CacheRegenerator {
     activeSegments = new WeakHashMap<>();
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   @Override
   public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache nc, SolrCache oc, Object oldKey, Object oldVal) throws IOException {
     Set<CacheKey> segmentKeys;
