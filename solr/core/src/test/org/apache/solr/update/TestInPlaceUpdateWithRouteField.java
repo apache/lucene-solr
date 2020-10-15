@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -48,6 +49,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@LuceneTestCase.AwaitsFix(bugUrl = "strange semi rare fail: Default currency code is not supported by this JVM: HOSS")
 public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
 
   private static final int NUMBER_OF_DOCS = 100;
