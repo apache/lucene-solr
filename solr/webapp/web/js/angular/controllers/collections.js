@@ -257,7 +257,7 @@ solrAdminApp.controller('CollectionsController',
           $timeout(function () {
             shard.replicaAdded = false;
             shard.showAdd = false;
-            $$scope.refresh();
+            $scope.refresh();
           }, 2000);
         });
       };
