@@ -74,39 +74,34 @@ public class NumericSortedSetFieldSource extends SortedSetFieldSource {
   public static NumericDocValues sortedSetAsNumericDocValues(LeafReader reader, String field, SortedSetSelector.Type selector, SortField.Type numericType) throws IOException {
     SortedSetDocValues sortedSet = DocValues.getSortedSet(reader, field);
     SortedDocValues singleValuedView = SortedSetSelector.wrap(sortedSet, selector);
-    NumericDocValues view = new SortedSetNumericDocValues(singleValuedView);
-    switch (numericType) {
-      case FLOAT:
-        return new FilterNumericDocValues(view) {
-          @Override
-          public long longValue() throws IOException {
-            return NumericUtils.sortableFloatBits((int) in.longValue());
-          }
-        };
-      case DOUBLE:
-        return new FilterNumericDocValues(view) {
-          @Override
-          public long longValue() throws IOException {
-            return NumericUtils.sortableDoubleBits(in.longValue());
-          }
-        };
-      default:
-        return view;
-    }
+    return new SortedSetNumericDocValues(singleValuedView, numericType);
   }
 
   public static final class SortedSetNumericDocValues extends NumericDocValues {
 
     private final SortedDocValues backing;
+    private final SortField.Type numericType;
 
-    public SortedSetNumericDocValues(SortedDocValues backing) {
+    public SortedSetNumericDocValues(SortedDocValues backing, SortField.Type numericType) {
       this.backing = backing;
+      this.numericType = numericType;
     }
     @Override
     public long longValue() throws IOException {
       BytesRef bytes = backing.binaryValue();
       assert bytes.length > 0;
-      return LegacyNumericUtils.prefixCodedToLong(bytes);
+      switch (numericType) {
+        case INT:
+          return LegacyNumericUtils.prefixCodedToInt(bytes);
+        case LONG:
+          return LegacyNumericUtils.prefixCodedToLong(bytes);
+        case FLOAT:
+          return NumericUtils.sortableFloatBits(LegacyNumericUtils.prefixCodedToInt(bytes));
+        case DOUBLE:
+          return NumericUtils.sortableDoubleBits(LegacyNumericUtils.prefixCodedToLong(bytes));
+        default:
+          throw new AssertionError();
+      }
     }
 
     @Override
