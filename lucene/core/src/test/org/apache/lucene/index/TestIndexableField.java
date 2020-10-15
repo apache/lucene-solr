@@ -92,6 +92,11 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
+      public DocValuesType tokenDocValuesType() {
+        return DocValuesType.NONE;
+      }
+
+      @Override
       public int pointDimensionCount() {
         return 0;
       }

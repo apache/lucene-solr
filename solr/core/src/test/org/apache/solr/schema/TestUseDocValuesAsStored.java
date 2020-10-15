@@ -31,11 +31,13 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.After;
@@ -63,9 +65,10 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   private static final String[] SEVERITY;
 
   // http://www.w3.org/TR/2006/REC-xml-20060816/#charsets
-  private static final String NON_XML_CHARS = "\u0000-\u0008\u000B-\u000C\u000E-\u001F\uFFFE\uFFFF";
+  private static final String LOW_NON_XML_CHARS = "\u0000-\u0008\u000B-\u000C\u000E-\u001F";
+  private static final String HIGH_NON_XML_CHARS = "\uFFFE\uFFFF";
   // Avoid single quotes (problematic in XPath literals) and carriage returns (XML roundtripping fails)
-  private static final Pattern BAD_CHAR_PATTERN = Pattern.compile("[\'\r" + NON_XML_CHARS + "]");
+  private static final Pattern BAD_CHAR_PATTERN = Pattern.compile("[\'\r" + LOW_NON_XML_CHARS + "]|([" + HIGH_NON_XML_CHARS + "])");
   private static final Pattern STORED_FIELD_NAME_PATTERN = Pattern.compile("_dv$");
 
   static {
@@ -163,9 +166,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   
   @Test
   public void testDuplicateMultiValued() throws Exception {
-    doTest("strTF", dvStringFieldName(3,true,false), "str", "X", "X", "Y");
-    doTest("strTT", dvStringFieldName(3,true,true), "str", "X", "X", "Y");
-    doTest("strFF", dvStringFieldName(3,false,false), "str", "X", "X", "Y");
+    doTest("strTF", dvStringFieldName(3,"s",true,false), "str", "X", "X", "Y");
+    doTest("strTT", dvStringFieldName(3,"s",true,true), "str", "X", "X", "Y");
+    doTest("strFF", dvStringFieldName(3,"s",false,false), "str", "X", "X", "Y");
     doTest("int", "test_is_dvo", "int", "42", "42", "-666");
     doTest("float", "test_fs_dvo", "float", "4.2", "4.2", "-66.666");
     doTest("long", "test_ls_dvo", "long", "420", "420", "-6666666" );
@@ -174,24 +177,38 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     doTest("enum", "enums_dvo", "str", SEVERITY[0], SEVERITY[0], SEVERITY[1]);
   }
 
+  private static final String[] TEXT_TYPES = {"s", "t", "tb"};
   @Test
   public void testRandomSingleAndMultiValued() throws Exception {
     for (int c = 0 ; c < 10 * RANDOM_MULTIPLIER ; ++c) {
       clearIndex();
-      int[] arity = new int[9];
+      int[] arity = new int[11];
       for (int a = 0 ; a < arity.length ; ++a) {
         // Single-valued 50% of the time; other 50%: 2-10 values equally likely
         arity[a] = random().nextBoolean() ? 1 : TestUtil.nextInt(random(), 2, 10);
       }
-      doTest("check string value is correct", dvStringFieldName(arity[0], true, false), "str", nextValues(arity[0], "str"));
+      for (String t : TEXT_TYPES) {
+        doTest("check string value is correct", dvStringFieldName(arity[0], t, true, false), "str", nextValues(arity[0], t));
+      }
       doTest("check int value is correct", "test_i" + plural(arity[1]) + "_dvo", "int", nextValues(arity[1], "int"));
       doTest("check double value is correct", "test_d" + plural(arity[2]) + "_dvo", "double", nextValues(arity[2], "double"));
       doTest("check long value is correct", "test_l" + plural(arity[3]) + "_dvo", "long", nextValues(arity[3], "long"));
       doTest("check float value is correct", "test_f" + plural(arity[4]) + "_dvo", "float", nextValues(arity[4], "float"));
       doTest("check date value is correct", "test_dt" + plural(arity[5]) + "_dvo", "date", nextValues(arity[5], "date"));
-      doTest("check stored and docValues value is correct", dvStringFieldName(arity[6], true, true), "str", nextValues(arity[6], "str"));
-      doTest("check non-stored and non-indexed is accessible", dvStringFieldName(arity[7], false, false), "str", nextValues(arity[7], "str"));
+      for (String t : TEXT_TYPES) {
+        doTest("check stored and docValues value is correct", dvStringFieldName(arity[6], t, true, true), "str", nextValues(arity[6], t));
+        doTest("check non-stored and non-indexed is accessible", dvStringFieldName(arity[7], t, false, false), "str", nextValues(arity[7], t));
+      }
       doTest("enumField", "enum" + plural(arity[8]) + "_dvo", "str", nextValues(arity[8], "enum"));
+
+      // test excessive binary length
+      doTest("check binary maxLength limit", dvStringFieldName("limit_", arity[9], "tb", false, false), "str", nextValues(arity[9], "tb", ~196606));
+      try {
+        doTest("check binary maxLength limit enforced", dvStringFieldName("excessive_", arity[10], "tb", false, false), "str", nextValues(arity[10], "tb", ~196607));
+        assertFalse(true);
+      } catch (SolrException ex) {
+        assertTrue(ex.getCause().getMessage().endsWith(" exceeds maxDocValuesBytes=196606 (length=196607)"));
+      }
     }
   }
 
@@ -203,17 +220,24 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     return STORED_FIELD_NAME_PATTERN.matcher(fieldName).find();
   }
 
-  private String dvStringFieldName(int arity, boolean indexed, boolean stored) {
-    String base = "test_s" + (arity > 1 ? "s": "");
+  private String dvStringFieldName(int arity, String type, boolean indexed, boolean stored) {
+    return dvStringFieldName("test_", arity, type, indexed, stored);
+  }
+  private String dvStringFieldName(String base, int arity, String type, boolean indexed, boolean stored) {
+    String arityBase = base + type + (arity > 1 ? "s": "");
     String suffix = "";
     if (indexed && stored) suffix = "_dv";
     else if (indexed && ! stored) suffix = "_dvo";
     else if ( ! indexed && ! stored) suffix = "_dvo2";
     else assertTrue("unsupported dv string field combination: stored and not indexed", false);
-    return base + suffix;
+    return arityBase + suffix;
   }
 
   private String[] nextValues(int arity, String valueType) throws Exception {
+    return nextValues(arity, valueType, "tb".contentEquals(valueType) ? 32766 : 0);
+  }
+
+  private String[] nextValues(int arity, String valueType, int maxLength) throws Exception {
     String[] values = new String[arity];
     for (int i = 0 ; i < arity ; ++i) {
       switch (valueType) {
@@ -222,9 +246,23 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
         case "long": values[i] = String.valueOf(random().nextLong()); break;
         case "float": values[i] = String.valueOf(Float.intBitsToFloat(random().nextInt())); break;
         case "enum": values[i] = SEVERITY[TestUtil.nextInt(random(), 0, SEVERITY.length - 1)]; break;
-        case "str": {
-          String str = TestUtil.randomRealisticUnicodeString(random());
-          values[i] = BAD_CHAR_PATTERN.matcher(str).replaceAll("\uFFFD");
+        case "s":
+        case "t":
+        case "tb": {
+          final String str;
+          if (maxLength < 0) {
+            final String tmp = TestUtil.randomFixedByteLengthUnicodeString(random(), ~maxLength);
+            str = replaceWithStableUnicodeLength(tmp);
+          } else {
+            final String tmp;
+            if (maxLength == 0) {
+              tmp = TestUtil.randomRealisticUnicodeString(random());
+            } else {
+              tmp = TestUtil.randomRealisticUnicodeString(random(), maxLength);
+            }
+            str = BAD_CHAR_PATTERN.matcher(tmp).replaceAll("\uFFFD");
+          }
+          values[i] = str;
           break;
         }
         case "date": {
@@ -236,6 +274,20 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       }
     }
     return values;
+  }
+
+  private static String replaceWithStableUnicodeLength(String input) {
+    final Matcher m = BAD_CHAR_PATTERN.matcher(input);
+    if (!m.find()) {
+      return input;
+    } else {
+      final StringBuilder sb = new StringBuilder(input.length());
+      do {
+        m.appendReplacement(sb, m.group(1) == null ? "?" : "\uFFFD");
+      } while (m.find());
+      m.appendTail(sb);
+      return sb.toString();
+    }
   }
 
   @Test
@@ -337,7 +389,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       // so cardinality depends on the value source
       final int expectedCardinality =
         (isStoredField(field) || (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
-                                  && ! field.startsWith("test_s")))
+                                  && ! field.startsWith("test_s") && ! field.startsWith("test_t"))) // SORTED_SET DVs are deduped
         ? value.length : valueSet.size();
       xpaths[value.length] = "*[count(//arr[@name='"+field+"']/"+type+")="+expectedCardinality+"]";
       assertU(adoc(fieldAndValues));
@@ -351,22 +403,22 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     assertU(commit());
 
     String fl = field;
-    assertQ(desc + ": " + fl, req("q", "id:" + id, "fl", fl), xpaths);
+    assertQ(desc + ": " + fl, req("q", "id:" + id, "fl", fl, "rows", "30"), xpaths);
 
     fl = field + ",*";
-    assertQ(desc + ": " + fl, req("q", "id:" + id, "fl", fl), xpaths);
+    assertQ(desc + ": " + fl, req("q", "id:" + id, "fl", fl, "rows", "30"), xpaths);
 
     fl = "*" + field.substring(field.length() - 3);
-    assertQ(desc + ": " + fl, req("q", "id:" + id, "fl", fl), xpaths);
+    assertQ(desc + ": " + fl, req("q", "id:" + id, "fl", fl, "rows", "30"), xpaths);
 
     fl = "*";
-    assertQ(desc + ": " + fl, req("q", "id:" + id, "fl", fl), xpaths);
+    assertQ(desc + ": " + fl, req("q", "id:" + id, "fl", fl, "rows", "30"), xpaths);
 
     fl = field + ",fakeFieldName";
-    assertQ(desc + ": " + fl, req("q", "id:" + id, "fl", fl), xpaths);
+    assertQ(desc + ": " + fl, req("q", "id:" + id, "fl", fl, "rows", "30"), xpaths);
 
     fl = "*";
-    assertQ(desc + ": " + fl, req("q", "*:*", "fl", fl), xpaths);
+    assertQ(desc + ": " + fl, req("q", "*:*", "fl", fl, "rows", "30"), xpaths);
 
   }
   

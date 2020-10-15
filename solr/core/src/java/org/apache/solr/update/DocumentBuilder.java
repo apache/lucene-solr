@@ -16,12 +16,18 @@
  */
 package org.apache.solr.update;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.google.common.collect.Sets;
+
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -253,7 +259,135 @@ public class DocumentBuilder {
       moveLargestFieldLast(out);
     }
     
+    collapseMultiBinary(out.iterator(), schema);
+
     return out;
+  }
+
+  private static class CollapseEntry {
+    private final BinaryDocValuesField bdv;
+    private SortedSet<BytesRef> vals;
+    private CollapseEntry(BinaryDocValuesField bdv) {
+      this(bdv, null);
+    }
+    private CollapseEntry(BinaryDocValuesField bdv, SortedSet<BytesRef> vals) {
+      this.bdv = bdv;
+      this.vals = vals;
+    }
+    private boolean add(BinaryDocValuesField bdv) {
+      if (vals == null) {
+        vals = new TreeSet<>();
+        vals.add(this.bdv.binaryValue());
+      }
+      return vals.add(bdv.binaryValue());
+    }
+  }
+  private static Map<String,CollapseEntry> initMultiBinary(Iterator<IndexableField> iter, IndexSchema schema) {
+    String firstName = null;
+    BinaryDocValuesField first = null;
+    SortedSet<BytesRef> firstVals = null;
+    while (iter.hasNext()) {
+      IndexableField next = iter.next();
+      if (next instanceof BinaryDocValuesField) {
+        final String nextName = next.name();
+        if (first == null) {
+          if (schema.getField(nextName).multiValued()) {
+            // if null, assume multiValued. See note below.
+            firstName = nextName;
+            first = (BinaryDocValuesField) next;
+          }
+        } else if (firstName.equals(nextName)) {
+          iter.remove();
+          if (firstVals == null) {
+            firstVals = new TreeSet<>();
+            firstVals.add(first.binaryValue());
+          }
+          firstVals.add(((BinaryDocValuesField)next).binaryValue());
+        } else if (iter.hasNext()) {
+          final Map<String,CollapseEntry> ret = new HashMap<>();
+          ret.put(firstName, new CollapseEntry(first, firstVals));
+          ret.put(nextName, new CollapseEntry((BinaryDocValuesField)next, null));
+          return ret;
+        }
+      }
+    }
+    if (firstVals != null) {
+      collapse(first, firstVals);
+    }
+    return null;
+  }
+
+  private static void collapse(BinaryDocValuesField bdv, SortedSet<BytesRef> vals) {
+    if (vals == null || vals.size() == 1) { // vals.size()==1 could happen if duplicates of a single value
+      final BytesRef val = bdv.binaryValue();
+      final int length = val.length;
+      final byte[] bs = new byte[length + MAX_VINT_BYTES];
+      final int headerLength = writeVInt(length, bs, 0);
+      System.arraycopy(val.bytes, val.offset, bs, headerLength, length);
+      val.bytes = bs;
+      val.offset = 0;
+      val.length += headerLength;
+    } else {
+      final int size = vals.size();
+      BytesRef[] refs = new BytesRef[size];
+      Iterator<BytesRef>iter = vals.iterator();
+      int allocate = size * MAX_VINT_BYTES; // initialize to cover max possible header overhead
+      for (int i = 0; i < size; i++) {
+        BytesRef ref = iter.next();
+        allocate += ref.length;
+        refs[i] = ref;
+      }
+      int offset = 0;
+      final byte[] bs = new byte[allocate];
+      for (BytesRef val : refs) {
+        final int length = val.length;
+        offset = writeVInt(val.length, bs, offset);
+        System.arraycopy(val.bytes, val.offset, bs, offset, length);
+        offset += length;
+      }
+      final BytesRef combined = bdv.binaryValue();
+      combined.bytes = bs;
+      combined.offset = 0;
+      combined.length = offset;
+    }
+  }
+
+  private static final int MAX_VINT_BYTES = 5;
+  /**
+   * Special method for variable length int (copied from lucene). Usually used for writing the length of a
+   * collection/array/map In most of the cases the length can be represented in one byte (length &lt; 127) so it saves 3
+   * bytes/object
+   */
+  public static int writeVInt(int val, byte[] bs, int offset) {
+    while ((val & ~0x7F) != 0) {
+      bs[offset++] = ((byte) ((val & 0x7f) | 0x80));
+      val >>>= 7;
+    }
+    bs[offset++] = ((byte) val);
+    return offset;
+  }
+
+  private static void collapseMultiBinary(Iterator<IndexableField> iter, IndexSchema schema) {
+    Map<String,CollapseEntry> multiBdvFields = initMultiBinary(iter, schema);
+    if (multiBdvFields == null) {
+      return;
+    }
+    do {
+      IndexableField next = iter.next();
+      if (next instanceof BinaryDocValuesField) {
+        final String fieldName = next.name();
+        CollapseEntry initial = multiBdvFields.get(next.name());
+        if (initial != null) {
+          iter.remove();
+          initial.add((BinaryDocValuesField)next);
+        } else if (schema.getField(fieldName).multiValued()) {
+          multiBdvFields.put(fieldName, new CollapseEntry((BinaryDocValuesField) next, null));
+        }
+      }
+    } while (iter.hasNext());
+    for (CollapseEntry e : multiBdvFields.values()) {
+      collapse(e.bdv, e.vals);
+    }
   }
 
   private static SolrException unexpectedNestedDocException(IndexSchema schema, boolean forInPlaceUpdate) {

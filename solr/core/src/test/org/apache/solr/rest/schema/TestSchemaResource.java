@@ -33,8 +33,12 @@ public class TestSchemaResource extends SolrRestletTestBase {
             "/response/lst[@name='schema']/str[@name='uniqueKey'][.='id']",
         
             "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
-            "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
-            "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[3] = 'boolean'",
+            "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[2] = 'HTMLstandardtok_dvSort'",
+            "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[3] = 'HTMLstandardtok_dvStored'",
+            "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[4] = 'HTMLwhitetok'",
+            "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[5] = 'HTMLwhitetok_dvSort'",
+            "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[6] = 'HTMLwhitetok_dvStored'",
+            "(/response/lst[@name='schema']/arr[@name='fieldTypes']/lst/str[@name='name'])[7] = 'boolean'",
 
             "(/response/lst[@name='schema']/arr[@name='fields']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
             "(/response/lst[@name='schema']/arr[@name='fields']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
@@ -110,8 +114,12 @@ public class TestSchemaResource extends SolrRestletTestBase {
              "/schema/uniqueKey=='id'",
 
              "/schema/fieldTypes/[0]/name=='HTMLstandardtok'",
-             "/schema/fieldTypes/[1]/name=='HTMLwhitetok'",
-             "/schema/fieldTypes/[2]/name=='boolean'",
+             "/schema/fieldTypes/[1]/name=='HTMLstandardtok_dvSort'",
+             "/schema/fieldTypes/[2]/name=='HTMLstandardtok_dvStored'",
+             "/schema/fieldTypes/[3]/name=='HTMLwhitetok'",
+             "/schema/fieldTypes/[4]/name=='HTMLwhitetok_dvSort'",
+             "/schema/fieldTypes/[5]/name=='HTMLwhitetok_dvStored'",
+             "/schema/fieldTypes/[6]/name=='boolean'",
         
              "/schema/fields/[0]/name=='HTMLstandardtok'",
              "/schema/fields/[1]/name=='HTMLwhitetok'",
@@ -149,8 +157,12 @@ public class TestSchemaResource extends SolrRestletTestBase {
             "/schema/uniqueKey = 'id'",
 
             "(/schema/fieldType)[1]/@name = 'HTMLstandardtok'",
-            "(/schema/fieldType)[2]/@name = 'HTMLwhitetok'",
-            "(/schema/fieldType)[3]/@name = 'boolean'",
+            "(/schema/fieldType)[2]/@name = 'HTMLstandardtok_dvSort'",
+            "(/schema/fieldType)[3]/@name = 'HTMLstandardtok_dvStored'",
+            "(/schema/fieldType)[4]/@name = 'HTMLwhitetok'",
+            "(/schema/fieldType)[5]/@name = 'HTMLwhitetok_dvSort'",
+            "(/schema/fieldType)[6]/@name = 'HTMLwhitetok_dvStored'",
+            "(/schema/fieldType)[7]/@name = 'boolean'",
 
             "(/schema/field)[1]/@name = 'HTMLstandardtok'",
             "(/schema/field)[2]/@name = 'HTMLwhitetok'",

@@ -25,6 +25,7 @@
 
   <field name="whitespace_stxt" type="whitespace_stxt" indexed="true" stored="true" />
   <field name="whitespace_m_stxt" type="whitespace_stxt" indexed="true" stored="true" multiValued="true" />
+  <field name="max0_whitespace_m_stxt_has_usedvs" type="whitespace_max0_stxt" indexed="true" stored="false" multiValued="true" useDocValuesAsStored="true" />
   <!-- explicit docValues="false" in this version... -->
   <field name="whitespace_nodv_stxt" type="whitespace_stxt" indexed="true" docValues="false" stored="true" />
   <!-- only docValues in this version, no index or stored... -->
@@ -43,7 +44,10 @@
   <field name="keyword_dv_stxt" type="keyword_stxt" indexed="true" docValues="true" stored="true" />
 
   <!-- for behavioral equivilency testing -->
-  <field name="whitespace_plain_txt" type="whitespace_plain_txt" />
+  <field name="whitespace_plain_txt_has_usedvs" type="whitespace_plain_txt" stored="false" docValues="true" useDocValuesAsStored="true"/>
+  <field name="whitespace_m_plain_txt_has_usedvs" type="whitespace_plain_txt" multiValued="true" stored="false" docValues="true" useDocValuesAsStored="true"/>
+  <field name="whitespace_plain_txt" type="whitespace_plain_txt" docValues="true" />
+  <field name="whitespace_m_plain_txt" type="whitespace_plain_txt" multiValued="true" docValues="true"/>
   <field name="whitespace_plain_str" type="str" />
   <field name="keyword_s_dv" type="str" indexed="false" docValues="true" stored="true" />
   <field name="keyword_s" type="str" indexed="true" docValues="false" stored="true" />
@@ -51,13 +55,18 @@
   <!-- . -->
   
   <copyField source="whitespace_stxt" dest="whitespace_m_stxt"/>
+  <copyField source="whitespace_stxt" dest="max0_whitespace_m_stxt_has_usedvs"/>
   <copyField source="whitespace_stxt" dest="whitespace_nodv_stxt"/>
   <copyField source="whitespace_stxt" dest="whitespace_nois_stxt"/>
   <copyField source="whitespace_stxt" dest="whitespace_max3_stxt"/>
   <copyField source="whitespace_stxt" dest="whitespace_max6_stxt"/>
   <copyField source="whitespace_stxt" dest="whitespace_max0_stxt"/>
   <copyField source="whitespace_stxt" dest="whitespace_maxNeg_stxt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_m_plain_txt"/>
   <copyField source="whitespace_stxt" dest="whitespace_plain_txt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_plain_txt_has_usedvs"/>
+  <copyField source="whitespace_stxt" dest="whitespace_m_plain_txt"/>
+  <copyField source="whitespace_stxt" dest="whitespace_m_plain_txt_has_usedvs"/>
   <copyField source="whitespace_stxt" dest="whitespace_plain_str"/>
   
   <copyField source="whitespace_f_stxt" dest="whitespace_l_stxt"/>

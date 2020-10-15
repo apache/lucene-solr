@@ -34,6 +34,7 @@ import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.Grouping;
 import org.apache.solr.search.grouping.Command;
 
 /**
@@ -106,7 +107,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
             = new FirstPassGroupingCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()), groupSort, topNGroups);
       } else {
         firstPassGroupingCollector
-            = new FirstPassGroupingCollector<>(new TermGroupSelector(field.getName()), groupSort, topNGroups);
+            = new FirstPassGroupingCollector<>(new TermGroupSelector(Grouping.getSortFieldName(field)), groupSort, topNGroups);
       }
       collectors.add(firstPassGroupingCollector);
     }
@@ -115,7 +116,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
         ValueSource vs = fieldType.getValueSource(field, null);
         allGroupsCollector = new AllGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()));
       } else {
-        allGroupsCollector = new AllGroupsCollector<>(new TermGroupSelector(field.getName()));
+        allGroupsCollector = new AllGroupsCollector<>(new TermGroupSelector(Grouping.getSortFieldName(field)));
       }
       collectors.add(allGroupsCollector);
     }

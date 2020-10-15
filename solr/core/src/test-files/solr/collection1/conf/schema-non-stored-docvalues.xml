@@ -25,6 +25,14 @@
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+
+  <!-- below will use Sorted or SortedSet docValues, size limit 32766 -->
+  <!-- useDocValuesAsStored defaults to false, so we must explicitly set it to true -->
+  <fieldType name="text" class="solr.TextField" useDocValuesAsStored="true" />
+  <!-- below will use BinaryDocValues; 196606 = 32768 * MAX_CHARS_PER_CODEPOINT(2) * MAX_UTF8_BYTES_PER_CHAR(3) -->
+  <!-- N.b.: setting maxDocValuesBytes implies useDocValuesAsStored=true -->
+  <fieldType name="text_bdv" class="solr.TextField" maxDocValuesBytes="196606"/>
+
   <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0"/>
   <fieldType name="enumField" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
@@ -45,6 +53,12 @@
 
   <!--  single valued fields -->
   <field name="enum_dvo" type="enumField" indexed="true" stored="false" multiValued="false" docValues="true"/>
+  <dynamicField name="*_tb_dvo2" multiValued="false" type="text_bdv" docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_tb_dv" multiValued="false" type="text_bdv" docValues="true" indexed="true" stored="true"/>
+  <dynamicField name="*_tb_dvo" multiValued="false" type="text_bdv" docValues="true" indexed="true" stored="false"/>
+  <dynamicField name="*_t_dvo2" multiValued="false" type="text" docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_t_dv" multiValued="false" type="text" docValues="true" indexed="true" stored="true"/>
+  <dynamicField name="*_t_dvo" multiValued="false" type="text" docValues="true" indexed="true" stored="false"/>
   <dynamicField name="*_s_dvo2" multiValued="false" type="string" docValues="true" indexed="false" stored="false"/>
   <dynamicField name="*_s_dv" multiValued="false" type="string" docValues="true" indexed="true" stored="true"/>
   <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="true" stored="false"/>
@@ -56,6 +70,12 @@
 
   <!--  multi valued fields -->
   <field name="enums_dvo" type="enumField" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_tbs_dvo2" multiValued="true" type="text_bdv" docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_tbs_dv" multiValued="true" type="text_bdv" docValues="true" indexed="true" stored="true"/>
+  <dynamicField name="*_tbs_dvo" multiValued="true" type="text_bdv" docValues="true" indexed="true" stored="false"/>
+  <dynamicField name="*_ts_dvo2" multiValued="true" type="text" docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_ts_dv" multiValued="true" type="text" docValues="true" indexed="true" stored="true"/>
+  <dynamicField name="*_ts_dvo" multiValued="true" type="text" docValues="true" indexed="true" stored="false"/>
   <dynamicField name="*_ss_dvo2" multiValued="true" type="string" docValues="true" indexed="false" stored="false"/>
   <dynamicField name="*_ss_dv" multiValued="true" type="string" docValues="true" indexed="true" stored="true"/>
   <dynamicField name="*_ss_dvo" multiValued="true" type="string" docValues="true" indexed="true" stored="false"/>

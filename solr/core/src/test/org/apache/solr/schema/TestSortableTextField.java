@@ -174,6 +174,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     assertU(commit());
 
     // NOTE: even if the field is indexed=false, should still be able to facet on it
+    // for these fields, faceting is based on non-tokenized terms.
     for (String facet : Arrays.asList("whitespace_stxt", "whitespace_nois_stxt",
                                       "whitespace_m_stxt", "whitespace_plain_str")) {
       for (String search : Arrays.asList("whitespace_stxt", "whitespace_nodv_stxt",
@@ -200,8 +201,51 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
         
       }
     }
+
+    // for txt field, faceting is based on tokenized terms.
+    String facet = "whitespace_plain_txt";
+    for (String search : Arrays.asList("whitespace_stxt", "whitespace_nodv_stxt",
+                                       "whitespace_m_stxt", "whitespace_plain_txt")) {
+      // facet.field
+      final String fpre = "//lst[@name='facet_fields']/lst[@name='"+facet+"']/";
+      assertQ(req("q", search + ":cow", "rows", "0",
+                  "facet.field", facet, "facet", "true")
+              , "//*[@numFound='3']"
+              , fpre + "int[@name='cow'][.=3]"
+              , fpre + "int[@name='?'][.=2]"
+              , fpre + "int[@name='brown'][.=2]"
+              , fpre + "int[@name='how'][.=2]"
+              , fpre + "int[@name='now'][.=2]"
+              , fpre + "int[@name='!'][.=1]"
+              , fpre + "int[@name='holy'][.=1]"
+              , fpre + "int[@name='and'][.=0]"
+              , fpre + "int[@name='cat'][.=0]"
+              , fpre + "int[@name='dog'][.=0]"
+              );
+
+      // json facet
+      final String jpre = "//lst[@name='facets']/lst[@name='x']/arr[@name='buckets']/";
+      assertQ(req("q", search + ":cow", "rows", "0",
+                  "json.facet", "{x:{ type: terms, field:'" + facet + "', mincount:0 }}")
+              , "//*[@numFound='3']"
+              , jpre + "lst[str[@name='val'][.='cow']][long[@name='count'][.=3]]"
+              , jpre + "lst[str[@name='val'][.='?']][long[@name='count'][.=2]]"
+              , jpre + "lst[str[@name='val'][.='brown']][long[@name='count'][.=2]]"
+              , jpre + "lst[str[@name='val'][.='how']][long[@name='count'][.=2]]"
+              , jpre + "lst[str[@name='val'][.='now']][long[@name='count'][.=2]]"
+              , jpre + "lst[str[@name='val'][.='!']][long[@name='count'][.=1]]"
+              , jpre + "lst[str[@name='val'][.='holy']][long[@name='count'][.=1]]"
+              , jpre + "lst[str[@name='val'][.='and']][long[@name='count'][.=0]]"
+              , jpre + "lst[str[@name='val'][.='cat']][long[@name='count'][.=0]]"
+              , jpre + "lst[str[@name='val'][.='dog']][long[@name='count'][.=0]]"
+              );
+
+    }
   }
 
+  private static String getSortFieldName(IndexSchema schema, String field) {
+    return ((TextField)schema.getField(field).getType()).getSortSchemaField(schema.getField(field)).getName();
+  }
   
   public void testWhiteboxIndexReader() throws Exception {
     assertU(adoc("id","1",
@@ -215,10 +259,12 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     final RefCounted<SolrIndexSearcher> searcher = h.getCore().getNewestSearcher(false);
     try {
       final LeafReader r = searcher.get().getSlowAtomicReader();
+      final IndexSchema schema = searcher.get().getSchema();
 
       // common cases...
       for (String field : Arrays.asList("keyword_stxt", "keyword_dv_stxt",
                                         "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
+        assertEquals(field, getSortFieldName(schema, field));
         assertNotNull("FieldInfos: " + field, r.getFieldInfos().fieldInfo(field));
         assertEquals("DocValuesType: " + field,
                      DocValuesType.SORTED, r.getFieldInfos().fieldInfo(field).getDocValuesType());
@@ -228,23 +274,55 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
       }
       
       // special cases...
-      assertNotNull(r.getFieldInfos().fieldInfo("whitespace_nodv_stxt"));
-      assertEquals(DocValuesType.NONE,
-                   r.getFieldInfos().fieldInfo("whitespace_nodv_stxt").getDocValuesType());
-      assertNull(r.getSortedDocValues("whitespace_nodv_stxt"));
-      assertNotNull(r.terms("whitespace_nodv_stxt"));
-      // 
-      assertNotNull(r.getFieldInfos().fieldInfo("whitespace_nois_stxt"));
-      assertEquals(DocValuesType.SORTED,
-                   r.getFieldInfos().fieldInfo("whitespace_nois_stxt").getDocValuesType());
-      assertNotNull(r.getSortedDocValues("whitespace_nois_stxt"));
-      assertNull(r.terms("whitespace_nois_stxt"));
+      String field = "whitespace_plain_txt";
+      String sortFieldName = getSortFieldName(schema, field);
+      assertNotEquals(field, sortFieldName);
+      assertNotNull("FieldInfos: " + field, r.getFieldInfos().fieldInfo(field));
+      assertEquals("token DocValuesType: " + field,
+                   DocValuesType.SORTED_SET, r.getFieldInfos().fieldInfo(field).getDocValuesType());
+      assertNotNull("token DocValues: " + field, r.getSortedSetDocValues(field));
+      assertNotNull("token Terms: " + field, r.terms(field));
+      assertEquals("DocValuesType: " + field,
+                   DocValuesType.SORTED, r.getFieldInfos().fieldInfo(sortFieldName).getDocValuesType());
+      assertNotNull("DocValues: " + field, r.getSortedDocValues(sortFieldName));
+      assertNull("Terms: " + field, r.terms(sortFieldName));
       //
-      assertNotNull(r.getFieldInfos().fieldInfo("whitespace_m_stxt"));
+      field = "whitespace_m_plain_txt";
+      sortFieldName = getSortFieldName(schema, field);
+      assertNotEquals(field, sortFieldName);
+      assertNotNull("FieldInfos: " + field, r.getFieldInfos().fieldInfo(field));
+      assertEquals("token DocValuesType: " + field,
+                   DocValuesType.SORTED_SET, r.getFieldInfos().fieldInfo(field).getDocValuesType());
+      assertNotNull("token DocValues: " + field, r.getSortedSetDocValues(field));
+      assertNotNull("token Terms: " + field, r.terms(field));
+      assertEquals("DocValuesType: " + field,
+                   DocValuesType.SORTED_SET, r.getFieldInfos().fieldInfo(sortFieldName).getDocValuesType());
+      assertNotNull("DocValues: " + field, r.getSortedSetDocValues(sortFieldName));
+      assertNull("Terms: " + field, r.terms(sortFieldName));
+      //
+      field = "whitespace_nodv_stxt";
+      assertEquals(field, getSortFieldName(schema, field));
+      assertNotNull(r.getFieldInfos().fieldInfo(field));
+      assertEquals(DocValuesType.NONE,
+                   r.getFieldInfos().fieldInfo(field).getDocValuesType());
+      assertNull(r.getSortedDocValues(field));
+      assertNotNull(r.terms(field));
+      // 
+      field = "whitespace_nois_stxt";
+      assertEquals(field, getSortFieldName(schema, field));
+      assertNotNull(r.getFieldInfos().fieldInfo(field));
+      assertEquals(DocValuesType.SORTED,
+                   r.getFieldInfos().fieldInfo(field).getDocValuesType());
+      assertNotNull(r.getSortedDocValues(field));
+      assertNull(r.terms(field));
+      //
+      field = "whitespace_m_stxt";
+      assertEquals(field, getSortFieldName(schema, field));
+      assertNotNull(r.getFieldInfos().fieldInfo(field));
       assertEquals(DocValuesType.SORTED_SET,
-                   r.getFieldInfos().fieldInfo("whitespace_m_stxt").getDocValuesType());
-      assertNotNull(r.getSortedSetDocValues("whitespace_m_stxt"));
-      assertNotNull(r.terms("whitespace_m_stxt"));
+                   r.getFieldInfos().fieldInfo(field).getDocValuesType());
+      assertNotNull(r.getSortedSetDocValues(field));
+      assertNotNull(r.terms(field));
         
     } finally {
       if (null != searcher) {
@@ -266,6 +344,27 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     }
     
     // special cases...
+    values = createIndexableFields("whitespace_plain_txt");
+    assertEquals(2, values.size());
+    assertThat(values.get(0), instanceOf(Field.class)); // we still need main field for tokenized DocValues
+    assertThat(values.get(1), instanceOf(SortedDocValuesField.class));
+    //
+    values = createIndexableFields("whitespace_plain_txt_has_usedvs");
+    assertEquals(2, values.size());
+    assertThat(values.get(0), instanceOf(Field.class)); // input for analysis
+    assertThat(values.get(1), instanceOf(SortedDocValuesField.class)); // sort and value-access are the same
+    //
+    values = createIndexableFields("whitespace_m_plain_txt");
+    assertEquals(2, values.size());
+    assertThat(values.get(0), instanceOf(Field.class)); // input for analysis
+    assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class)); // for sort (no value-access dv because udvas==false)
+    //
+    values = createIndexableFields("whitespace_m_plain_txt_has_usedvs");
+    assertEquals(3, values.size());
+    assertThat(values.get(0), instanceOf(Field.class)); // input for analysis
+    assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class)); // for value-access
+    assertThat(values.get(2), instanceOf(SortedSetDocValuesField.class)); // for sort (separate from value-access because multiValued)
+    //
     values = createIndexableFields("whitespace_nois_stxt");
     assertEquals(1, values.size());
     assertThat(values.get(0), instanceOf(SortedDocValuesField.class));
@@ -275,6 +374,11 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     assertThat(values.get(0), instanceOf(Field.class));
     //
     values = createIndexableFields("whitespace_m_stxt");
+    assertEquals(2, values.size());
+    assertThat(values.get(0), instanceOf(Field.class));
+    assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));
+    //
+    values = createIndexableFields("max0_whitespace_m_stxt_has_usedvs");
     assertEquals(2, values.size());
     assertThat(values.get(0), instanceOf(Field.class));
     assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));      
@@ -433,7 +537,8 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
                    name, usedvs ^ name.endsWith("_negates_usedvs"));
         final boolean max6 = name.startsWith("max6_");
         assertTrue("schema change broke assumptions: field must be 'max6_*' or 'max0_*': " +
-                   name, max6 ^ name.startsWith("max0_"));
+                   //name, max6 ^ name.startsWith("max0_")); // temporarily change to below to test txt fieldTypes here as well
+                   name, (max6 ^ name.startsWith("max0_")) || name.endsWith("_plain_txt_has_usedvs"));
         
         assertEquals("Unexpected useDocValuesAsStored value for field: " + name,
                      usedvs, sf.useDocValuesAsStored()) ;
@@ -460,7 +565,12 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
             
           if (usedvs) {
             // ...and if it *does* usedvs, then we should defnitely see our value when searching...
-            doc_xpath = doc_xpath + "[str[@name='"+name+"'][.='"+val+"']]";
+            if (name.contains("_m_")) {
+              // multiValued, slightly different path
+              doc_xpath = doc_xpath + "[arr[@name='"+name+"'][str='"+val+"']]";
+            } else {
+              doc_xpath = doc_xpath + "[str[@name='"+name+"'][.='"+val+"']]";
+            }
           } else {
             // ...but if not, then we should definitely not see any value for our field...
             doc_xpath = doc_xpath + "[not(str[@name='"+name+"'])]";
@@ -470,7 +580,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
       }
     }
     assertEquals("sanity check: wrong number of *_usedvs fields found -- schema changed?",
-                 6, num_fields_found);
+                 9, num_fields_found); // nocommit: changed from 6 to 9 to check TextField here as well, for now
     
     // check all our expected docs can be found (with the expected values)
     assertU(commit());
