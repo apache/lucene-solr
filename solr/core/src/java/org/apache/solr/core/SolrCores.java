@@ -108,7 +108,7 @@ class SolrCores implements Closeable {
     // list to the pendingCloses list.
 
     // make a copy of the cores then clear the map so the core isn't handed out to a request again
-    coreList.addAll(cores.values());
+
     if (transientSolrCoreCache != null) {
       coreList.addAll(transientSolrCoreCache.prepareForShutdown());
     }
@@ -247,13 +247,13 @@ class SolrCores implements Closeable {
       SolrCore c0 = cores.get(n0);
       SolrCore c1 = cores.get(n1);
       if (c0 == null) { // Might be an unloaded transient core
-        c0 = container.getCore(n0);
+        c0 = container.getCore(n0, false);
         if (c0 == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n0);
         }
       }
       if (c1 == null) { // Might be an unloaded transient core
-        c1 = container.getCore(n1);
+        c1 = container.getCore(n1, false);
         if (c1 == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n1);
         }
