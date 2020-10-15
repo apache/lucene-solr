@@ -38,7 +38,7 @@ This product includes jquery.form Javascript library created by Mike Alsup
 Copyright 2006-2014 (c) M. Alsup, https://github.com/malsup/form/
 
 This product includes the jstree Javascript library created by Ivan Bozhanov
-Copyright (c) 2013-2014 Ivan Bozhanov, https://github.com/vakata/jstree
+Copyright (c) 2013-2020 Ivan Bozhanov, https://github.com/vakata/jstree
 
 This product includes jquery.timeago.js Javascript library by Ryan McGeary
 Copyright (c) 2008-2014, Ryan McGeary, https://github.com/rmm5t/jquery-timeago
