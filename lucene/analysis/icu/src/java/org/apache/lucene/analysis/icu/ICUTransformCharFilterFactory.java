@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.icu;
 import java.util.Arrays;
 import java.util.Map;
 import java.io.Reader;
-import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
 
 import com.ibm.icu.text.Transliterator;
 
@@ -65,6 +65,11 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ICUTransformCharFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override
