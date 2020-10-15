@@ -41,6 +41,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
   @Test 
   public void test() throws Exception {
     del("*:*");
+    commit();
     String aDocId=null;
     for (int i = 0; i < clients.size(); i++) {
       int shard = i + 1;

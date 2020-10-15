@@ -41,7 +41,7 @@ import org.apache.lucene.util.AttributeSource;
  * </p>
  * <p>
  *   The dictionary file must be encoded as UTF-8, with one entry per line,
- *   in the form <tt>word[tab]lemma[tab]part-of-speech</tt>
+ *   in the form <code>word[tab]lemma[tab]part-of-speech</code>
  * </p>
  */
 public class OpenNLPLemmatizerFilter extends TokenFilter {

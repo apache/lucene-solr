@@ -51,6 +51,7 @@ import org.apache.lucene.util.mutable.MutableValueDouble;
  * @see Double
  * @see <a href="http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3">Java Language Specification, s4.2.3</a>
  * @deprecated Trie fields are deprecated as of Solr 7.0
+ * @see DoublePointField
  */
 @Deprecated
 public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
@@ -71,7 +72,7 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
     
     return new NumericSortedSetFieldSource(f, choice, NumberType.DOUBLE) {
       @Override
-      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
         
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);

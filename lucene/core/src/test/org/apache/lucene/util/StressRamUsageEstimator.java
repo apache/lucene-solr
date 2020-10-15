@@ -37,6 +37,7 @@ public class StressRamUsageEstimator extends LuceneTestCase {
   volatile Object guard;
   
   // This shows an easy stack overflow because we're counting recursively.
+  @Nightly
   public void testLargeSetOfByteArrays() {
 
     System.gc();
@@ -72,6 +73,7 @@ public class StressRamUsageEstimator extends LuceneTestCase {
     return s;
   }
 
+  @Nightly
   public void testSimpleByteArrays() {
     Object [][] all = new Object [0][];
     try {

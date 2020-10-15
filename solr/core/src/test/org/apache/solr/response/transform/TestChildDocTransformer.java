@@ -22,12 +22,15 @@ import java.util.Iterator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
@@ -92,8 +95,6 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "/response/result/doc[1]/doc[1]/str[@name='id']='3'" ,
         "/response/result/doc[1]/doc[2]/str[@name='id']='5'"};
 
-
-
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "*,[child parentFilter=\"subject:parentDocument\"]"), test1);
 
@@ -102,6 +103,29 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "id, subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
+
+    SolrException e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+          "fl", "id, subject,[child parentFilter=\"subject:bleh\" childFilter=\"title:bar\" limit=2]"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Parent filter 'QueryBitSetProducer(subject:bleh)' doesn't match any parent documents"));
+
+    e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+          "fl", "id, subject,[child parentFilter=e childFilter=\"title:bar\" limit=2]"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(),
+        containsString("Parent filter 'QueryBitSetProducer(text:e)' doesn't match any parent documents"));
+
+    e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+          "fl", "id, subject,[child parentFilter=\"\"]"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("Invalid Parent filter '', resolves to null"));
   }
   
   private void testSubQueryXML() {

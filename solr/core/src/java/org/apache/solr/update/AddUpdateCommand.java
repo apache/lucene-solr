@@ -255,6 +255,7 @@ public class AddUpdateCommand extends UpdateCommand {
           flattenLabelled(unwrappedDocs, ((SolrInputDocument) val));
           continue;
         }
+        @SuppressWarnings({"unchecked"})
         Collection<SolrInputDocument> childrenList = ((Collection) val);
         for (SolrInputDocument child : childrenList) {
           flattenLabelled(unwrappedDocs, child);

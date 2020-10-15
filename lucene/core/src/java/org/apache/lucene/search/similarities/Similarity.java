@@ -42,7 +42,7 @@ import org.apache.lucene.util.SmallFloat;
  * this class at both <a href="#indextime">index-time</a> and 
  * <a href="#querytime">query-time</a>.
  * <p>
- * <a name="indextime">Indexing Time</a>
+ * <a id="indextime">Indexing Time</a>
  * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState)}, allowing
  * the Similarity implementation to set a per-document value for the field that will 
  * be later accessible via {@link org.apache.lucene.index.LeafReader#getNormValues(String)}.
@@ -60,7 +60,7 @@ import org.apache.lucene.util.SmallFloat;
  * Additional scoring factors can be stored in named {@link NumericDocValuesField}s and
  * accessed at query-time with {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}.
  * However this should not be done in the {@link Similarity} but externally, for instance
- * by using <tt>FunctionScoreQuery</tt>.
+ * by using <code>FunctionScoreQuery</code>.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or
  * via DocValues), is an inefficient way to boost the scores of different fields if the
@@ -68,7 +68,7 @@ import org.apache.lucene.util.SmallFloat;
  * boost parameter <i>C</i>, and {@link PerFieldSimilarityWrapper} can return different 
  * instances with different boosts depending upon field name.
  * <p>
- * <a name="querytime">Query time</a>
+ * <a id="querytime">Query time</a>
  * At query-time, Queries interact with the Similarity via these steps:
  * <ol>
  *   <li>The {@link #scorer(float, CollectionStatistics, TermStatistics...)} method is called a single time,
@@ -80,7 +80,7 @@ import org.apache.lucene.util.SmallFloat;
  *   <li>Then {@link SimScorer#score(float, long)} is called for every matching document to compute its score.
  * </ol>
  * <p>
- * <a name="explaintime">Explanations</a>
+ * <a id="explaintime">Explanations</a>
  * When {@link IndexSearcher#explain(org.apache.lucene.search.Query, int)} is called, queries consult the Similarity's DocScorer for an 
  * explanation of how it computed its score. The query passes in a the document id and an explanation of how the frequency
  * was computed.
@@ -90,13 +90,10 @@ import org.apache.lucene.util.SmallFloat;
  * @lucene.experimental
  */
 public abstract class Similarity {
-  
-  /**
-   * Sole constructor. (For invocation by subclass 
-   * constructors, typically implicit.)
-   */
-  public Similarity() {}
-  
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+  // Explicitly declared so that we have non-empty javadoc
+  protected Similarity() {}
+
   /**
    * Computes the normalization value for a field, given the accumulated
    * state of term processing for this field (see {@link FieldInvertState}).
@@ -108,8 +105,8 @@ public abstract class Similarity {
    * <p>Note that for a given term-document frequency, greater unsigned norms
    * must produce scores that are lower or equal, ie. for two encoded norms
    * {@code n1} and {@code n2} so that
-   * {@code Long.compareUnsigned(n1, n2) &gt; 0} then
-   * {@code SimScorer.score(freq, n1) &lt;= SimScorer.score(freq, n2)}
+   * {@code Long.compareUnsigned(n1, n2) > 0} then
+   * {@code SimScorer.score(freq, n1) <= SimScorer.score(freq, n2)}
    * for any legal {@code freq}.
    *
    * <p>{@code 0} is not a legal norm, so {@code 1} is the norm that produces
@@ -154,13 +151,13 @@ public abstract class Similarity {
      * {@code 1} if norms are disabled. {@code norm} is never {@code 0}.
      * <p>
      * Score must not decrease when {@code freq} increases, ie. if
-     * {@code freq1 &gt; freq2}, then {@code score(freq1, norm) &gt;=
+     * {@code freq1 > freq2}, then {@code score(freq1, norm) >=
      * score(freq2, norm)} for any value of {@code norm} that may be produced
      * by {@link Similarity#computeNorm(FieldInvertState)}.
      * <p>
      * Score must not increase when the unsigned {@code norm} increases, ie. if
-     * {@code Long.compareUnsigned(norm1, norm2) &gt; 0} then
-     * {@code score(freq, norm1) &lt;= score(freq, norm2)} for any legal
+     * {@code Long.compareUnsigned(norm1, norm2) > 0} then
+     * {@code score(freq, norm1) <= score(freq, norm2)} for any legal
      * {@code freq}.
      * <p>
      * As a consequence, the maximum score that this scorer can produce is bound

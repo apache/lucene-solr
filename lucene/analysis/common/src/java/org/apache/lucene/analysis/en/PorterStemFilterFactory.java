@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.en;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link PorterStemFilter}.
@@ -49,6 +49,11 @@ public class PorterStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public PorterStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public PorterStemFilter create(TokenStream input) {
     return new PorterStemFilter(input);

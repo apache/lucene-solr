@@ -321,6 +321,10 @@ final class SegmentTermsEnum extends BaseTermsEnum {
       throw new IllegalStateException("terms index was not loaded");
     }
 
+    if (fr.size() > 0 && (target.compareTo(fr.getMin()) < 0 || target.compareTo(fr.getMax()) > 0)) {
+        return false;
+    }
+
     term.grow(1 + target.length);
 
     assert clearEOF();

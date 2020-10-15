@@ -41,6 +41,7 @@ public class MeanEvaluator extends RecursiveObjectEvaluator implements OneValueW
       throw new IOException(String.format(Locale.ROOT, "Unable to find %s(...) because the value is null", constructingFactory.getFunctionName(getClass())));
     }
     else if(value instanceof List){
+      @SuppressWarnings({"unchecked"})
       List<Number> c = (List<Number>) value;
       double[] data = new double[c.size()];
       for(int i=0; i< c.size(); i++) {

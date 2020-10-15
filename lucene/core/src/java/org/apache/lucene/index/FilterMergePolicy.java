@@ -58,6 +58,11 @@ public class FilterMergePolicy extends MergePolicy {
   }
 
   @Override
+  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return in.findFullFlushMerges(mergeTrigger, segmentInfos, mergeContext);
+  }
+
+  @Override
   public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, MergeContext mergeContext)
       throws IOException {
     return in.useCompoundFile(infos, mergedInfo, mergeContext);

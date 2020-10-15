@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -88,10 +87,7 @@ public class NoOpStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
-      HashMap m = new HashMap();
-      m.put("EOF", true);
-      Tuple tuple = new Tuple(m);
-      return tuple;
+    return Tuple.EOF();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */

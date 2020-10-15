@@ -117,4 +117,10 @@
     </processor>
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="evil">
+    <processor class="solr.StatelessScriptUpdateProcessorFactory">
+      <str name="script">evil.js</str>
+    </processor>
+  </updateRequestProcessorChain>
+
 </config>

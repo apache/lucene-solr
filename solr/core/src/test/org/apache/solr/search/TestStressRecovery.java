@@ -51,7 +51,6 @@ public class TestStressRecovery extends TestRTGBase {
 
   @Before
   public void beforeClass() throws Exception {
-    randomizeUpdateLogImpl();
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
   
@@ -314,7 +313,9 @@ public class TestStressRecovery extends TestRTGBase {
               }
 
               String response = h.query(sreq);
+              @SuppressWarnings({"rawtypes"})
               Map rsp = (Map) Utils.fromJSONString(response);
+              @SuppressWarnings({"rawtypes"})
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {
                 // there's no info we can get back with a delete, so not much we can check without further synchronization

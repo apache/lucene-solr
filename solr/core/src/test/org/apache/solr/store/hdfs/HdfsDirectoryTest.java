@@ -17,6 +17,7 @@
 package org.apache.solr.store.hdfs;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -29,6 +30,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -41,6 +44,8 @@ import org.junit.Test;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 public class HdfsDirectoryTest extends SolrTestCaseJ4 {
@@ -52,6 +57,8 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   private static final int MAX_BUFFER_SIZE = 5000;
   private static final int MAX_NUMBER_OF_READS = 10000;
   private static MiniDFSCluster dfsCluster;
+  private Configuration directoryConf;
+  private Path directoryPath;
   private HdfsDirectory directory;
   private Random random;
 
@@ -62,18 +69,22 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void afterClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+    }
   }
   
   @Before
   public void setUp() throws Exception {
     super.setUp();
     
-    Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-    conf.set("dfs.permissions.enabled", "false");
+    directoryConf = HdfsTestUtil.getClientConfiguration(dfsCluster);
+    directoryConf.set("dfs.permissions.enabled", "false");
     
-    directory = new HdfsDirectory(new Path(dfsCluster.getURI().toString() + createTempDir().toFile().getAbsolutePath() + "/hdfs"), conf);
+    directoryPath = new Path(dfsCluster.getURI().toString() + createTempDir().toFile().getAbsolutePath() + "/hdfs");
+    directory = new HdfsDirectory(directoryPath, directoryConf);
     
     random = random();
   }
@@ -106,7 +117,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
 
     IndexInput input1 = directory.openInput("testing.test", new IOContext());
 
-    IndexInput input2 = (IndexInput) input1.clone();
+    IndexInput input2 = input1.clone();
     assertEquals(12345, input2.readInt());
     input2.close();
 
@@ -228,4 +239,32 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     return Long.toString(Math.abs(random.nextLong()));
   }
 
+  public void testCantOverrideFiles() throws IOException {
+    try (IndexOutput out = directory.createOutput("foo", IOContext.DEFAULT)) {
+      out.writeByte((byte) 42);
+    }
+    expectThrows(FileAlreadyExistsException.class,
+        () -> directory.createOutput("foo", IOContext.DEFAULT));
+  }
+
+  public void testCreateTempFiles() throws IOException {
+    String file1;
+    try (Directory dir = new HdfsDirectory(directoryPath, directoryConf);
+        IndexOutput out = dir.createTempOutput("foo", "bar", IOContext.DEFAULT)) {
+      out.writeByte((byte) 42);
+      file1 = out.getName();
+    }
+    assertTrue(file1.startsWith("foo_bar"));
+    assertTrue(file1.endsWith(".tmp"));
+    // Create the directory again to force the counter to be reset
+    String file2;
+    try (Directory dir = new HdfsDirectory(directoryPath, directoryConf);
+        IndexOutput out = dir.createTempOutput("foo", "bar", IOContext.DEFAULT)) {
+      out.writeByte((byte) 42);
+      file2 = out.getName();
+    }
+    assertTrue(file2.startsWith("foo_bar"));
+    assertTrue(file2.endsWith(".tmp"));
+    assertNotEquals(file1, file2);
+  }
 }

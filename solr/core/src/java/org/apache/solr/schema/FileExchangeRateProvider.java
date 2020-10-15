@@ -29,7 +29,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;
@@ -148,9 +148,9 @@ public class FileExchangeRateProvider implements ExchangeRateProvider {
   @Override
   public Set<String> listAvailableCurrencies() {
     Set<String> currencies = new HashSet<>();
-    for(String from : rates.keySet()) {
-      currencies.add(from);
-      for(String to : rates.get(from).keySet()) {
+    for(Map.Entry<String, Map<String, Double>> entry : rates.entrySet()) {
+      currencies.add(entry.getKey());
+      for(String to : entry.getValue().keySet()) {
         currencies.add(to);
       }
     }

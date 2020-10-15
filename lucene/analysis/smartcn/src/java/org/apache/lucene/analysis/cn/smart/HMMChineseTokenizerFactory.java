@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.cn.smart;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
@@ -45,6 +45,11 @@ public final class HMMChineseTokenizerFactory extends TokenizerFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public HMMChineseTokenizerFactory() {
+    throw defaultCtorException();
   }
 
   @Override

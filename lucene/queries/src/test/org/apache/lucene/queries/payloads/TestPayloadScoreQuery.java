@@ -195,7 +195,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
   }
 
   public void testRewrite() throws IOException {
-    SpanMultiTermQueryWrapper xyz = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("field", "xyz*")));
+    SpanMultiTermQueryWrapper<WildcardQuery> xyz = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("field", "xyz*")));
     PayloadScoreQuery psq = new PayloadScoreQuery(xyz, new AveragePayloadFunction(), PayloadDecoder.FLOAT_DECODER, false);
 
     // if query wasn't rewritten properly, the query would have failed with "Rewrite first!"

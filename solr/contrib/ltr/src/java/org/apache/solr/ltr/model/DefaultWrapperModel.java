@@ -94,7 +94,7 @@ public class DefaultWrapperModel extends WrapperModel {
   @SuppressWarnings("unchecked")
   protected Map<String, Object> parseInputStream(InputStream in) throws IOException {
     try (Reader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-      return (Map<String, Object>) new ObjectBuilder(new JSONParser(reader)).getVal();
+      return (Map<String, Object>) new ObjectBuilder(new JSONParser(reader)).getValStrict();
     }
   }
 

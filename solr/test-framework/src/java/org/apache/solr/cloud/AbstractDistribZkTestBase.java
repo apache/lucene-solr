@@ -55,7 +55,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
   protected static final String DEFAULT_COLLECTION = "collection1";
   protected volatile ZkTestServer zkServer;
-  private AtomicInteger homeCount = new AtomicInteger();
+  private final AtomicInteger homeCount = new AtomicInteger();
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -141,20 +141,26 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
   protected void waitForRecoveriesToFinish(String collection, ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout)
       throws Exception {
-    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 330);
+    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 330, SECONDS);
   }
 
   public static void waitForRecoveriesToFinish(String collection,
       ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout, long timeoutSeconds)
       throws Exception {
-    log.info("Wait for recoveries to finish - collection: " + collection + " failOnTimeout:" + failOnTimeout + " timeout (sec):" + timeoutSeconds);
+    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, timeoutSeconds, SECONDS);
+  }
+
+  public static void waitForRecoveriesToFinish(String collection,
+          ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout, long timeout, TimeUnit unit)
+    throws Exception {
+    log.info("Wait for recoveries to finish - collection:{} failOnTimeout:{} timeout:{}{}",
+            collection, failOnTimeout, timeout, unit);
     try {
-      zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (liveNodes, docCollection) -> {
+      zkStateReader.waitForState(collection, timeout, unit, (liveNodes, docCollection) -> {
         if (docCollection == null)
           return false;
         boolean sawLiveRecovering = false;
 
-        assertNotNull("Could not find collection:" + collection, docCollection);
         Map<String,Slice> slices = docCollection.getSlicesMap();
         assertNotNull("Could not find collection:" + collection, slices);
         for (Map.Entry<String,Slice> entry : slices.entrySet()) {
@@ -179,12 +185,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
           }
         }
         if (!sawLiveRecovering) {
-          if (!sawLiveRecovering) {
-            if (verbose) System.out.println("no one is recoverying");
-          } else {
-            if (verbose) System.out.println("Gave up waiting for recovery to finish..");
-            return false;
-          }
+          if (verbose) System.out.println("no one is recoverying");
           return true;
         } else {
           return false;
@@ -193,24 +194,21 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     } catch (TimeoutException | InterruptedException e) {
       Diagnostics.logThreadDumps("Gave up waiting for recovery to finish.  THREAD DUMP:");
       zkStateReader.getZkClient().printLayoutToStream(System.out);
-      fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
+      fail("There are still nodes recovering - waited for " + timeout + unit);
     }
 
-    log.info("Recoveries finished - collection: " + collection);
+    log.info("Recoveries finished - collection:{}", collection);
   }
 
 
   public static void waitForCollectionToDisappear(String collection,
-      ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout, int timeoutSeconds)
+      ZkStateReader zkStateReader, boolean failOnTimeout, int timeoutSeconds)
       throws Exception {
-    log.info("Wait for collection to disappear - collection: " + collection + " failOnTimeout:" + failOnTimeout + " timeout (sec):" + timeoutSeconds);
+    log.info("Wait for collection to disappear - collection: {} failOnTimeout:{} timeout (sec):{}"
+        , collection, failOnTimeout, timeoutSeconds);
 
-    zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (docCollection) -> {
-      if (docCollection == null)
-        return true;
-      return false;
-    });
-    log.info("Collection has disappeared - collection: " + collection);
+    zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (docCollection) -> docCollection == null);
+    log.info("Collection has disappeared - collection:{}", collection);
   }
 
   static void waitForNewLeader(CloudSolrClient cloudClient, String shardName, Replica oldLeader, TimeOut timeOut)
@@ -224,7 +222,10 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       DocCollection coll = clusterState.getCollection("collection1");
       Slice slice = coll.getSlice(shardName);
       if (slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getLeader().getState() == Replica.State.ACTIVE) {
-        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(),timeOut.timeElapsed(MILLISECONDS) );
+        if (log.isInfoEnabled()) {
+          log.info("Old leader {}, new leader {}. New leader got elected in {} ms"
+              , oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS));
+        }
         break;
       }
 
@@ -243,7 +244,10 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
       Slice slice = docCollection.getSlice(shardName);
       if (slice != null && slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getLeader().getState() == Replica.State.ACTIVE) {
-        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS) );
+        if (log.isInfoEnabled()) {
+          log.info("Old leader {}, new leader {}. New leader got elected in {} ms"
+              , oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS));
+        }
         return true;
       }
       return false;
@@ -321,7 +325,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   protected void restartZk(int pauseMillis) throws Exception {
     log.info("Restarting ZK with a pause of {}ms in between", pauseMillis);
     zkServer.shutdown();
-    // disconnect enough to test stalling, if things stall, then clientSoTimeout w""ill be hit
+    // disconnect enough to test stalling, if things stall, then clientSoTimeout will be hit
     Thread.sleep(pauseMillis);
     zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
     zkServer.run(false);
@@ -338,7 +342,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         "-confname", dstConfigName,
         "-confdir", srcConfigSet,
         "-zkHost", zkAddr,
-        "-configsetsDir", configSetDir.toAbsolutePath().toString(),
+        "-configsetsDir", configSetDir.toString(),
     };
 
     SolrCLI.ConfigSetUploadTool tool = new SolrCLI.ConfigSetUploadTool();

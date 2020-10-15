@@ -38,8 +38,8 @@ import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
+import org.apache.lucene.codecs.lucene86.Lucene86PointsReader;
+import org.apache.lucene.codecs.lucene86.Lucene86PointsWriter;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
@@ -68,7 +68,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.bkd.BKDWriter;
+import org.apache.lucene.util.bkd.BKDConfig;
 import org.junit.BeforeClass;
 
 @LuceneTestCase.SuppressCodecs("SimpleText")
@@ -332,7 +332,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testAllEqual() throws Exception {
-    int numValues = atLeast(10000);
+    int numValues = atLeast(1000);
     long value = randomValue();
     long[] values = new long[numValues];
 
@@ -350,7 +350,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testRandomLongsMedium() throws Exception {
-    doTestRandomLongs(10000);
+    doTestRandomLongs(1000);
   }
 
   private void doTestRandomLongs(int count) throws Exception {
@@ -602,13 +602,13 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testRandomBinaryMedium() throws Exception {
-    doTestRandomBinary(10000);
+    doTestRandomBinary(1000);
   }
 
   private void doTestRandomBinary(int count) throws Exception {
     int numValues = TestUtil.nextInt(random(), count, count*2);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
 
     int sameValuePct = random().nextInt(100);
     if (VERBOSE) {
@@ -1160,25 +1160,25 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   private static Codec getCodec() {
-    if (Codec.getDefault().getName().equals("Lucene80")) {
+    if (Codec.getDefault().getName().equals("Lucene84")) {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
       double maxMBSortInHeap = 5.0 + (3*random().nextDouble());
       if (VERBOSE) {
         System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
-      return new FilterCodec("Lucene80", Codec.getDefault()) {
+      return new FilterCodec("Lucene84", Codec.getDefault()) {
         @Override
         public PointsFormat pointsFormat() {
           return new PointsFormat() {
             @Override
             public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-              return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+              return new Lucene86PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
             }
 
             @Override
             public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
-              return new Lucene60PointsReader(readState);
+              return new Lucene86PointsReader(readState);
             }
           };
         }
@@ -2175,11 +2175,12 @@ public class TestPointQueries extends LuceneTestCase {
     assertTrue(Float.compare(Float.MAX_VALUE, FloatPoint.nextDown(Float.POSITIVE_INFINITY)) == 0);
   }
 
+  @Nightly
   public void testInversePointRange() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     final int numDims = TestUtil.nextInt(random(), 1, 3);
-    final int numDocs = atLeast(10 * BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE); // we need multiple leaves to enable this optimization
+    final int numDocs = atLeast(10 * BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE); // we need multiple leaves to enable this optimization
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
       int[] values = new int[numDims];
@@ -2200,9 +2201,9 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(high[0] - low[0] + 1, searcher.count(IntPoint.newRangeQuery("f", low, high)));
     Arrays.fill(high, numDocs - 1);
     assertEquals(high[0] - low[0] + 1, searcher.count(IntPoint.newRangeQuery("f", low, high)));
-    Arrays.fill(low, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE + 1);
+    Arrays.fill(low, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE + 1);
     assertEquals(high[0] - low[0] + 1, searcher.count(IntPoint.newRangeQuery("f", low, high)));
-    Arrays.fill(high, numDocs - BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    Arrays.fill(high, numDocs - BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
     assertEquals(high[0] - low[0] + 1, searcher.count(IntPoint.newRangeQuery("f", low, high)));
 
     r.close();

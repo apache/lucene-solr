@@ -70,7 +70,7 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
   protected synchronized void doInit() {
     if (serviceUrl != null && agentId != null) {
       mBeanServer = JmxUtil.findFirstMBeanServer();
-      log.warn("No more than one of serviceUrl({}) and agentId({}) should be configured, using first MBeanServer instead of configuration.",
+      log.warn("No more than one of serviceUrl({}) and agentId({}) should be configured, using first MBeanServer {} instead of configuration.",
           serviceUrl, agentId, mBeanServer);
     } else if (serviceUrl != null) {
       // reuse existing services
@@ -79,7 +79,7 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
       mBeanServer = JmxUtil.findMBeanServerForAgentId(agentId);
     } else {
       mBeanServer = JmxUtil.findFirstMBeanServer();
-      log.debug("No serviceUrl or agentId was configured, using first MBeanServer: " + mBeanServer);
+      log.debug("No serviceUrl or agentId was configured, using first MBeanServer: {}", mBeanServer);
     }
 
     if (mBeanServer == null) {
@@ -108,7 +108,7 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
                           .build();
     reporter.start();
     started = true;
-    log.info("JMX monitoring for '" + fullDomain + "' (registry '" + registryName + "') enabled at server: " + mBeanServer);
+    log.info("JMX monitoring for '{}' (registry '{}') enabled at server: {}", fullDomain, registryName, mBeanServer);
   }
 
   /**
@@ -123,7 +123,7 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
    */
   @Override
   public synchronized void close() {
-    log.info("Closing reporter " + this + " for registry " + registryName + " / " + registry);
+    log.info("Closing reporter {} for registry {}/{}", this, registryName, registry);
     started = false;
     if (reporter != null) {
       reporter.close();

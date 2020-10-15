@@ -61,15 +61,19 @@ public class TestCharArraySet extends LuceneTestCase {
   public void testObjectContains() {
     CharArraySet set = new CharArraySet(10, true);
     Integer val = Integer.valueOf(1);
+    @SuppressWarnings("deprecation")
+    Integer val1 = new Integer(1);
+    // Verify explicitly the case of different Integer instances
+    assertNotSame(val, val1);
     set.add(val);
     assertTrue(set.contains(val));
-    assertTrue(set.contains(new Integer(1))); // another integer
+    assertTrue(set.contains(val1)); // another integer
     assertTrue(set.contains("1"));
     assertTrue(set.contains(new char[]{'1'}));
     // test unmodifiable
     set = CharArraySet.unmodifiableSet(set);
     assertTrue(set.contains(val));
-    assertTrue(set.contains(new Integer(1))); // another integer
+    assertTrue(set.contains(val1)); // another integer
     assertTrue(set.contains("1"));
     assertTrue(set.contains(new char[]{'1'}));
   }
@@ -211,9 +215,8 @@ public class TestCharArraySet extends LuceneTestCase {
     }
   }
   
-  @SuppressWarnings("deprecated")
   public void testCopyCharArraySetBWCompat() {
-    CharArraySet setIngoreCase = new CharArraySet(10, true);
+    CharArraySet setIgnoreCase = new CharArraySet(10, true);
     CharArraySet setCaseSensitive = new CharArraySet(10, false);
 
     List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
@@ -221,15 +224,15 @@ public class TestCharArraySet extends LuceneTestCase {
     for (String string : stopwords) {
       stopwordsUpper.add(string.toUpperCase(Locale.ROOT));
     }
-    setIngoreCase.addAll(Arrays.asList(TEST_STOP_WORDS));
-    setIngoreCase.add(Integer.valueOf(1));
+    setIgnoreCase.addAll(Arrays.asList(TEST_STOP_WORDS));
+    setIgnoreCase.add(Integer.valueOf(1));
     setCaseSensitive.addAll(Arrays.asList(TEST_STOP_WORDS));
     setCaseSensitive.add(Integer.valueOf(1));
 
-    CharArraySet copy = CharArraySet.copy(setIngoreCase);
+    CharArraySet copy = CharArraySet.copy(setIgnoreCase);
     CharArraySet copyCaseSens = CharArraySet.copy(setCaseSensitive);
 
-    assertEquals(setIngoreCase.size(), copy.size());
+    assertEquals(setIgnoreCase.size(), copy.size());
     assertEquals(setCaseSensitive.size(), copy.size());
 
     assertTrue(copy.containsAll(stopwords));
@@ -250,7 +253,7 @@ public class TestCharArraySet extends LuceneTestCase {
     assertTrue(copy.containsAll(newWords));
     // new added terms are not in the source set
     for (String string : newWords) {
-      assertFalse(setIngoreCase.contains(string));  
+      assertFalse(setIgnoreCase.contains(string));
       assertFalse(setCaseSensitive.contains(string));  
 
     }

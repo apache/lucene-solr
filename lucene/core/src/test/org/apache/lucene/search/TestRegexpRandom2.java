@@ -155,7 +155,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   
   /** test a bunch of random regular expressions */
   public void testRegexps() throws Exception {
-    int num = atLeast(1000);
+    int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
       if (VERBOSE) {

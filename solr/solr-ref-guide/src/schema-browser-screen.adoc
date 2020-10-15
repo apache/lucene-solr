@@ -33,3 +33,5 @@ Under the analyzer information is a button to *Load Term Info*. Clicking that bu
 ====
 Term Information is loaded from single arbitrarily selected core from the collection, to provide a representative sample for the collection. Full <<faceting.adoc#faceting,Field Facet>> query results are needed to see precise term counts across the entire collection.
 ====
+
+For programmatic access to the underlying information in this screen please reference the <<luke-request-handler.adoc#luke-request-handler,Luke Request Handler>>

@@ -97,7 +97,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     assertEquals(0, addFieldResponse.getStatus());
     assertNull(addFieldResponse.getResponse().get("errors"));
 
-    log.info("added new field="+fieldName);
+    log.info("added new field={}", fieldName);
   }
 
   private void testModifyField(String collection) throws IOException, SolrServerException {

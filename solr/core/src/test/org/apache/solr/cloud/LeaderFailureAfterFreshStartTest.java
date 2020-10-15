@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.codec.digest.DigestUtils;
@@ -48,7 +49,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * 
@@ -119,7 +119,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       forceNodeFailures(singletonList(freshNode));
 
       del("*:*");
-      waitForThingsToLevelOut(30);
+      waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
       checkShardConsistency(false, true);
 
@@ -129,7 +129,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
             "document number " + docId++);
       }
       commit();
-      waitForThingsToLevelOut(30);
+      waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
       checkShardConsistency(false, true);
       
@@ -154,7 +154,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       // shutdown the original leader
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
-      waitForNewLeader(cloudClient, "shard1", (Replica)initialLeaderJetty.client.info  , new TimeOut(15, SECONDS, TimeSource.NANO_TIME));
+      waitForNewLeader(cloudClient, "shard1", (Replica)initialLeaderJetty.client.info  , new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME));
       waitTillNodesActive();
       log.info("Updating mappings from zk");
       updateMappingsFromZk(jettys, clients, true);

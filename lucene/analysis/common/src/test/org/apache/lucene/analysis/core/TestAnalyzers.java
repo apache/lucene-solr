@@ -230,7 +230,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(),
         new StopAnalyzer(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET), new UnicodeWhitespaceAnalyzer() };
     for (Analyzer analyzer : analyzers) {
-      checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+      checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER);
     }
     IOUtils.close(analyzers);
   }
@@ -240,7 +240,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(),
         new StopAnalyzer(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET), new UnicodeWhitespaceAnalyzer() };
     for (Analyzer analyzer : analyzers) {
-      checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER, 8192);
+      checkRandomData(random(), analyzer, 10*RANDOM_MULTIPLIER, 8192);
     }
     IOUtils.close(analyzers);
   } 

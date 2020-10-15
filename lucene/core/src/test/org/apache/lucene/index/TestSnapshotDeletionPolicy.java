@@ -102,8 +102,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   }
 
   private void runTest(Random random, Directory dir) throws Exception {
-    // Run for ~1 seconds
-    final long stopTime = System.currentTimeMillis() + 1000;
+    // Run for ~1 seconds at night
+    final long stopTime = System.currentTimeMillis() + (TEST_NIGHTLY ? 1000 : 100);
 
     SnapshotDeletionPolicy dp = getDeletionPolicy();
     final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))

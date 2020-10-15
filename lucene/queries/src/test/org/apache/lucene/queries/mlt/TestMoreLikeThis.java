@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -128,6 +129,64 @@ public class TestMoreLikeThis extends LuceneTestCase {
       doc.add(newTextField(fieldName, text, Field.Store.YES));
     }
     writer.addDocument(doc);
+  }
+
+  public void testSmallSampleFromCorpus() throws Throwable {
+    // add series of docs with terms of decreasing df
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    for (int i = 0; i < 1980; i++) {
+      Document doc = new Document();
+      doc.add(newTextField("text", "filler", Field.Store.YES));
+      writer.addDocument(doc);
+    }
+    for (int i = 0; i < 18; i++) {
+      Document doc = new Document();
+      doc.add(newTextField("one_percent", "all", Field.Store.YES));
+      writer.addDocument(doc);
+    }
+    for (int i = 0; i < 2; i++) {
+      Document doc = new Document();
+      doc.add(newTextField("one_percent", "all", Field.Store.YES));
+      doc.add(newTextField("one_percent", "tenth", Field.Store.YES));
+      writer.addDocument(doc);
+    }
+    IndexReader reader = writer.getReader();
+    writer.close();
+
+    // setup MLT query
+    MoreLikeThis mlt = new MoreLikeThis(reader);
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    mlt.setAnalyzer(analyzer);
+    mlt.setMaxQueryTerms(3);
+    mlt.setMinDocFreq(1);
+    mlt.setMinTermFreq(1);
+    mlt.setMinWordLen(1);
+    mlt.setFieldNames(new String[]{"one_percent"});
+
+    BooleanQuery query = (BooleanQuery) mlt.like("one_percent", new StringReader("tenth tenth all"));
+    Collection<BooleanClause> clauses = query.clauses();
+
+    assertTrue(clauses.size() == 2);
+    Term term = ((TermQuery) ((List<BooleanClause>) clauses).get(0).getQuery()).getTerm();
+    assertTrue(term.text().equals("all"));
+    term = ((TermQuery) ((List<BooleanClause>) clauses).get(1).getQuery()).getTerm();
+    assertTrue(term.text().equals("tenth"));
+
+
+    query = (BooleanQuery) mlt.like("one_percent", new StringReader("tenth all all"));
+    clauses = query.clauses();
+
+    assertTrue(clauses.size() == 2);
+    term = ((TermQuery) ((List<BooleanClause>) clauses).get(0).getQuery()).getTerm();
+    assertTrue(term.text().equals("all"));
+    term = ((TermQuery) ((List<BooleanClause>) clauses).get(1).getQuery()).getTerm();
+    assertTrue(term.text().equals("tenth"));
+
+    // clean up
+    reader.close();
+    dir.close();
+    analyzer.close();
   }
 
   public void testBoostFactor() throws Throwable {

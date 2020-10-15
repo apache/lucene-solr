@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -138,7 +139,7 @@ class TermIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
     Terms terms = ctx.reader().terms(field);
     if (terms == null)
       return null;
@@ -149,15 +150,26 @@ class TermIntervalsSource extends IntervalsSource {
     if (te.seekExact(term) == false) {
       return null;
     }
-    return matches(te, doc);
+    return matches(te, doc, field);
   }
 
-  static MatchesIterator matches(TermsEnum te, int doc) throws IOException {
+  static IntervalMatchesIterator matches(TermsEnum te, int doc, String field) throws IOException {
+    TermQuery query = new TermQuery(new Term(field, te.term()));
     PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
     if (pe.advance(doc) != doc) {
       return null;
     }
-    return new MatchesIterator() {
+    return new IntervalMatchesIterator() {
+
+      @Override
+      public int gaps() {
+        return 0;
+      }
+
+      @Override
+      public int width() {
+        return 1;
+      }
 
       int upto = pe.freq();
       int pos = -1;
@@ -200,7 +212,7 @@ class TermIntervalsSource extends IntervalsSource {
 
       @Override
       public Query getQuery() {
-        throw new UnsupportedOperationException();
+        return query;
       }
     };
   }
@@ -241,10 +253,10 @@ class TermIntervalsSource extends IntervalsSource {
   /** A guess of
    * the average number of simple operations for the initial seek and buffer refill
    * per document for the positions of a term.
-   * See also {@link Lucene50PostingsReader.EverythingEnum#nextPosition()}.
+   * See also {@link Lucene84PostingsReader.EverythingEnum#nextPosition()}.
    * <p>
    * Aside: Instead of being constant this could depend among others on
-   * {@link Lucene50PostingsFormat#BLOCK_SIZE},
+   * {@link Lucene84PostingsFormat#BLOCK_SIZE},
    * {@link TermsEnum#docFreq()},
    * {@link TermsEnum#totalTermFreq()},
    * {@link DocIdSetIterator#cost()} (expected number of matching docs),
@@ -253,7 +265,7 @@ class TermIntervalsSource extends IntervalsSource {
    */
   private static final int TERM_POSNS_SEEK_OPS_PER_DOC = 128;
 
-  /** Number of simple operations in {@link Lucene50PostingsReader.EverythingEnum#nextPosition()}
+  /** Number of simple operations in {@link Lucene84PostingsReader.EverythingEnum#nextPosition()}
    *  when no seek or buffer refill is done.
    */
   private static final int TERM_OPS_PER_POS = 7;

@@ -52,11 +52,11 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
       }
 
       double[][] data = matrix.getData();
-      List<List<String>> topFeatures = new ArrayList();
+      List<List<String>> topFeatures = new ArrayList<>();
 
       for(int i=0; i<data.length; i++) {
         double[] row = data[i];
-        List<String> featuresRow = new ArrayList();
+        List<String> featuresRow = new ArrayList<>();
         List<Integer> indexes = getMaxIndexes(row, k);
         for(int index : indexes) {
           featuresRow.add(features.get(index));
@@ -71,15 +71,17 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
   }
 
   private List<Integer> getMaxIndexes(double[] values, int k) {
-    TreeSet<Pair> set = new TreeSet();
+    TreeSet<Pair> set = new TreeSet<>();
     for(int i=0; i<values.length; i++) {
-      set.add(new Pair(i, values[i]));
-      if(set.size() > k) {
-        set.pollFirst();
+      if(values[i] > 0){
+        set.add(new Pair(i, values[i]));
+        if (set.size() > k) {
+          set.pollFirst();
+        }
       }
     }
 
-    List<Integer> top = new ArrayList(k);
+    List<Integer> top = new ArrayList<>(k);
     while(set.size() > 0) {
       top.add(set.pollLast().getIndex());
     }
@@ -89,16 +91,22 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
 
   public static class Pair implements Comparable<Pair> {
 
-    private int index;
+    private Integer index;
     private Double value;
 
-    public Pair(int index, Number value) {
-      this.index = index;
+    public Pair(int _index, Number value) {
+      this.index = _index;
       this.value = value.doubleValue();
     }
 
     public int compareTo(Pair pair) {
-      return value.compareTo(pair.value);
+
+      int c = value.compareTo(pair.value);
+      if(c==0) {
+        return index.compareTo(pair.index);
+      } else {
+        return c;
+      }
     }
 
     public int getIndex() {

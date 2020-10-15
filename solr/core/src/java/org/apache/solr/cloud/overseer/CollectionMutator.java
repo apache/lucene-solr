@@ -59,6 +59,7 @@ public class CollectionMutator {
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
     if (slice == null) {
+      @SuppressWarnings({"unchecked"})
       Map<String, Replica> replicas = Collections.EMPTY_MAP;
       Map<String, Object> sliceProps = new HashMap<>();
       String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
@@ -77,10 +78,10 @@ public class CollectionMutator {
       if (shardParentNode != null)  {
         sliceProps.put("shard_parent_node", shardParentNode);
       }
-      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps));
+      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
       return new ZkWriteCommand(collectionName, collection);
     } else {
-      log.error("Unable to create Shard: " + shardId + " because it already exists in collection: " + collectionName);
+      log.error("Unable to create Shard: {} because it already exists in collection: {}", shardId, collectionName);
       return ZkStateWriter.NO_OP;
     }
   }
@@ -90,7 +91,7 @@ public class CollectionMutator {
     final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
 
-    log.info("Removing collection: " + collection + " shard: " + sliceId + " from clusterstate");
+    log.info("Removing collection: {} shard: {}  from clusterstate", collection, sliceId);
 
     DocCollection coll = clusterState.getCollection(collection);
 
@@ -136,7 +137,7 @@ public class CollectionMutator {
     }
 
     return new ZkWriteCommand(coll.getName(),
-        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), coll.getZNode()));
+        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion()));
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {
@@ -167,7 +168,7 @@ public class CollectionMutator {
   static boolean checkKeyExistence(ZkNodeProps message, String key) {
     String value = message.getStr(key);
     if (value == null || value.trim().length() == 0) {
-      log.error("Skipping invalid Overseer message because it has no " + key + " specified: " + message);
+      log.error("Skipping invalid Overseer message because it has no {} specified '{}'", key, message);
       return false;
     }
     return true;

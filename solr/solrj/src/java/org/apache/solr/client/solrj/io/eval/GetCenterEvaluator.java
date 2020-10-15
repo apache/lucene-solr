@@ -41,9 +41,10 @@ public class GetCenterEvaluator extends RecursiveObjectEvaluator implements OneV
     if(!(value instanceof EnclosingBall)){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting an EnclosingBall",toExpression(constructingFactory), value.getClass().getSimpleName()));
     } else {
+      @SuppressWarnings({"rawtypes"})
       EnclosingBall enclosingBall = (EnclosingBall)value;
       Vector2D vec = (Vector2D)enclosingBall.getCenter();
-      List<Number> center = new ArrayList();
+      List<Number> center = new ArrayList<>();
       center.add(vec.getX());
       center.add(vec.getY());
       return center;

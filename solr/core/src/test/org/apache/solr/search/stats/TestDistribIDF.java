@@ -197,12 +197,10 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     CollectionAdminResponse response;
     if (router.equals(ImplicitDocRouter.NAME)) {
       CollectionAdminRequest.Create create = CollectionAdminRequest.createCollectionWithImplicitRouter(name,config,"a,b,c",1);
-      create.setMaxShardsPerNode(1);
       response = create.process(solrCluster.getSolrClient());
       solrCluster.waitForActiveCollection(name, 3, 3);
     } else {
       CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
-      create.setMaxShardsPerNode(1);
       response = create.process(solrCluster.getSolrClient());
       solrCluster.waitForActiveCollection(name, 2, 2);
     }

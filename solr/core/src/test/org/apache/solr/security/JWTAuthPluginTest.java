@@ -93,6 +93,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     claims.unsetClaim("iss");
     claims.unsetClaim("aud");
     claims.unsetClaim("exp");
+    claims.setSubject(null);
     jws.setPayload(claims.toJson());
     String slimJwt = jws.getCompactSerialization();
     slimHeader = "Bearer" + " " + slimJwt;
@@ -113,8 +114,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     claims.setClaim("claim1", "foo"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim2", "bar"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim3", "foo"); // additional claims/attributes about the subject can be added
-    List<String> groups = Arrays.asList("group-one", "other-group", "group-three");
-    claims.setStringListClaim("groups", groups); // multi-valued claims work too and will end up as a JSON array
+    List<String> roles = Arrays.asList("group-one", "other-group", "group-three");
+    claims.setStringListClaim("roles", roles); // multi-valued claims work too and will end up as a JSON array
     return claims;
   }
 
@@ -127,6 +128,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
     testConfig = new HashMap<>();
     testConfig.put("class", "org.apache.solr.security.JWTAuthPlugin");
+    testConfig.put("principalClaim", "customPrincipal");
     testConfig.put("jwk", testJwk);
     plugin.init(testConfig);
     
@@ -216,11 +218,25 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void authenticateOk() {
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertTrue(resp.isAuthenticated());
-    assertEquals("solruser", resp.getPrincipal().getName());
+    assertEquals("custom", resp.getPrincipal().getName()); // principalClaim = customPrincipal, not sub here
   }
 
   @Test
   public void authFailedMissingSubject() {
+    minimalConfig.put("principalClaim","sub");  // minimalConfig has no subject specified
+    plugin.init(minimalConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
+    assertFalse(resp.isAuthenticated());
+    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+
+    testConfig.put("principalClaim","sub");  // testConfig has subject = solruser
+    plugin.init(testConfig);
+    resp = plugin.authenticate(testHeader);
+    assertTrue(resp.isAuthenticated());
+  }
+
+  @Test
+  public void authFailedMissingIssuer() {
     testConfig.put("iss", "NA");
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
@@ -325,11 +341,29 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
 
+    // When 'rolesClaim' is not defined in config, then all scopes are registered as roles
     Principal principal = resp.getPrincipal();
     assertTrue(principal instanceof VerifiedUserRoles);
     Set<String> roles = ((VerifiedUserRoles)principal).getVerifiedRoles();
     assertEquals(1, roles.size());
     assertTrue(roles.contains("solr:read"));
+  }
+
+  @Test
+  public void roles() {
+    testConfig.put("rolesClaim", "roles");
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+
+    // When 'rolesClaim' is defined in config, then roles from that claim are used instead of claims
+    Principal principal = resp.getPrincipal();
+    assertTrue(principal instanceof VerifiedUserRoles);
+    Set<String> roles = ((VerifiedUserRoles)principal).getVerifiedRoles();
+    assertEquals(3, roles.size());
+    assertTrue(roles.contains("group-one"));
+    assertTrue(roles.contains("other-group"));
+    assertTrue(roles.contains("group-three"));
   }
 
   @Test

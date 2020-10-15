@@ -306,7 +306,7 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
   int curOffset;
 
   /** Just make a token with the text, and set the payload
-   *  to the text as well.  Offets increment "naturally". */
+   *  to the text as well.  Offsets increment "naturally". */
   private Token getToken(String text) {
     Token t = new Token(text, curOffset, curOffset+text.length());
     t.setPayload(new BytesRef(text));
@@ -391,6 +391,7 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
       if (startOffsets[i] == startOffsets[i-1]) {
         if (VERBOSE)
           System.out.println("Skipping test because can't easily validate random token-stream is correct.");
+        rTokenStream.close();
         return;
       }
     }
@@ -438,6 +439,7 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
 
     reader.close();
     dir.close();
+    rTokenStream.close();
   }
 
   public void testMaxStartOffsetConsistency() throws IOException {

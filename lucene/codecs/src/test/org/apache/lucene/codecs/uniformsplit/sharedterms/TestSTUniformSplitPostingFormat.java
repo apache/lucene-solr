@@ -17,19 +17,19 @@
 
 package org.apache.lucene.codecs.uniformsplit.sharedterms;
 
-import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.uniformsplit.TestUniformSplitPostingFormat;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.codecs.uniformsplit.UniformSplitTermsWriter;
 
 /**
  * Tests {@link STUniformSplitPostingsFormat} with block encoding using ROT13 cypher.
  */
 public class TestSTUniformSplitPostingFormat extends TestUniformSplitPostingFormat {
 
-  private final Codec codec = TestUtil.alwaysPostingsFormat(new STUniformSplitRot13PostingsFormat());
-
   @Override
-  protected Codec getCodec() {
-    return codec;
+  protected PostingsFormat getPostingsFormat() {
+    return checkEncoding ? new STUniformSplitRot13PostingsFormat()
+        : new STUniformSplitPostingsFormat(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
+        null, null, random().nextBoolean());
   }
 }

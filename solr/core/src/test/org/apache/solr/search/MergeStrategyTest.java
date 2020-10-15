@@ -47,6 +47,7 @@ public class MergeStrategyTest extends BaseDistributedSearchTestCase {
 
   @Test
   @ShardsFixed(num = 3)
+  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     del("*:*");
 

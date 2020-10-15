@@ -95,12 +95,14 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
 
   IndexFingerprint getFingerprint(SolrClient client, long maxVersion) throws IOException, SolrServerException {
     QueryRequest qr = new QueryRequest(params("qt","/get", "getFingerprint",Long.toString(maxVersion)));
+    @SuppressWarnings({"rawtypes"})
     NamedList rsp = client.request(qr);
     return IndexFingerprint.fromObject(rsp.get("fingerprint"));
   }
 
   void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {
     QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions",Integer.toString(numVersions), "sync", StrUtils.join(Arrays.asList(syncWith), ',')));
+    @SuppressWarnings({"rawtypes"})
     NamedList rsp = client.request(qr);
     assertEquals(expectedResult, (Boolean) rsp.get("sync"));
   }

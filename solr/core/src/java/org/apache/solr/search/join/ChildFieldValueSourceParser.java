@@ -129,10 +129,12 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
         return new ToParentBlockJoinSortField(childField.getName(), 
             type, reverse, 
             parentFilter, childFilter) {
+          @SuppressWarnings("unchecked")
           @Override
           public FieldComparator<?> getComparator(int numHits, int sortPos) {
             final FieldComparator<?> comparator = super.getComparator(numHits, sortPos);
-            return type ==Type.STRING ?  new BytesToStringComparator((FieldComparator<BytesRef>) comparator): comparator;
+            return type ==Type.STRING ?  new BytesToStringComparator((FieldComparator<BytesRef>) comparator)
+                : comparator;
           }
         };
     }
@@ -148,7 +150,8 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
     }
 
     @Override
-    public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context,
+        LeafReaderContext readerContext) throws IOException {
       throw new UnsupportedOperationException(this + " is only for sorting");
     }
   }
@@ -177,8 +180,8 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       }
       bjQ = (AllParentsAware) query;
       
-      parentFilter = BlockJoinParentQParser.getCachedFilter(fp.getReq(), bjQ.getParentQuery()).getFilter();
-      childFilter = BlockJoinParentQParser.getCachedFilter(fp.getReq(), bjQ.getChildQuery()).getFilter();
+      parentFilter = BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getParentQuery());
+      childFilter = BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getChildQuery());
 
       if (sortFieldName==null || sortFieldName.equals("")) {
         throw new SyntaxError ("field is omitted in "+fp.getString());
@@ -190,7 +193,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
           (NAME+" sort param field \""+ sortFieldName+"\" can't be found in schema");
       }
     } catch (SyntaxError e) {
-      log.error("can't parse "+fp.getString(), e);
+      log.error("can't parse {}", fp.getString(), e);
       throw e;
     }
     return new BlockJoinSortFieldValueSource(childFilter, parentFilter, sf);

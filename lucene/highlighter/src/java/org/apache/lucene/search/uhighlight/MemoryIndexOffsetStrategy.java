@@ -29,8 +29,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 
 /**
@@ -42,7 +40,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
 
   private final MemoryIndex memoryIndex;
   private final LeafReader memIndexLeafReader;
-  private final CharacterRunAutomaton preMemIndexFilterAutomaton;
+  private final CharArrayMatcher preMemIndexFilterAutomaton;
 
   public MemoryIndexOffsetStrategy(UHComponents components, Analyzer analyzer) {
     super(components, analyzer);
@@ -54,17 +52,17 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
   }
 
   /**
-   * Build one {@link CharacterRunAutomaton} matching any term the query might match.
+   * Build one {@link CharArrayMatcher} matching any term the query might match.
    */
-  private static CharacterRunAutomaton buildCombinedAutomaton(UHComponents components) {
+  private static CharArrayMatcher buildCombinedAutomaton(UHComponents components) {
     // We don't know enough about the query to do this confidently
     if (components.getTerms() == null || components.getAutomata() == null) {
       return null;
     }
 
-    List<CharacterRunAutomaton> allAutomata = new ArrayList<>();
+    List<CharArrayMatcher> allAutomata = new ArrayList<>();
     if (components.getTerms().length > 0) {
-      allAutomata.add(new CharacterRunAutomaton(Automata.makeStringUnion(Arrays.asList(components.getTerms()))));
+      allAutomata.add(CharArrayMatcher.fromTerms(Arrays.asList(components.getTerms())));
     }
     Collections.addAll(allAutomata, components.getAutomata());
     for (SpanQuery spanQuery : components.getPhraseHelper().getSpanQueries()) {
@@ -75,20 +73,18 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     if (allAutomata.size() == 1) {
       return allAutomata.get(0);
     }
+
     //TODO it'd be nice if we could get at the underlying Automaton in CharacterRunAutomaton so that we
     //  could union them all. But it's not exposed, and sometimes the automaton is byte (not char) oriented
 
-    // Return an aggregate CharacterRunAutomaton of others
-    return new CharacterRunAutomaton(Automata.makeEmpty()) {// the makeEmpty() is bogus; won't be used
-      @Override
-      public boolean run(char[] chars, int offset, int length) {
-        for (int i = 0; i < allAutomata.size(); i++) {// don't use foreach to avoid Iterator allocation
-          if (allAutomata.get(i).run(chars, offset, length)) {
-            return true;
-          }
+    // Return an aggregate CharArrayMatcher of others
+    return (chars, offset, length) -> {
+      for (int i = 0; i < allAutomata.size(); i++) {// don't use foreach to avoid Iterator allocation
+        if (allAutomata.get(i).match(chars, offset, length)) {
+          return true;
         }
-        return false;
       }
+      return false;
     };
   }
 
@@ -118,14 +114,14 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
   }
 
   private static FilteringTokenFilter newKeepWordFilter(final TokenStream tokenStream,
-                                                        final CharacterRunAutomaton charRunAutomaton) {
+                                                        final CharArrayMatcher matcher) {
     // it'd be nice to use KeepWordFilter but it demands a CharArraySet. TODO File JIRA? Need a new interface?
     return new FilteringTokenFilter(tokenStream) {
       final CharTermAttribute charAtt = addAttribute(CharTermAttribute.class);
 
       @Override
       protected boolean accept() throws IOException {
-        return charRunAutomaton.run(charAtt.buffer(), 0, charAtt.length());
+        return matcher.match(charAtt.buffer(), 0, charAtt.length());
       }
     };
   }

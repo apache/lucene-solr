@@ -4,4 +4,4 @@
       blockquote =content
 - elsif style != 'partintro' || partintro_allowed?
   = block_with_title :class=>['openblock', (style if style != 'open')]
-    .content =content
+    .content.d-flex.flex-row =content

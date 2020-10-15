@@ -37,14 +37,16 @@ class Geo3DPointOutsideDistanceComparator extends FieldComparator<Double> implem
   final String field;
   
   final GeoOutsideDistance distanceShape;
+  final private PlanetModel planetModel;
 
   final double[] values;
   double bottomDistance;
   double topValue;
   SortedNumericDocValues currentDocs;
   
-  public Geo3DPointOutsideDistanceComparator(String field, final GeoOutsideDistance distanceShape, int numHits) {
+  public Geo3DPointOutsideDistanceComparator(String field, final PlanetModel planetModel, final GeoOutsideDistance distanceShape, int numHits) {
     this.field = field;
+    this.planetModel = planetModel;
     this.distanceShape = distanceShape;
     this.values = new double[numHits];
   }
@@ -85,9 +87,9 @@ class Geo3DPointOutsideDistanceComparator extends FieldComparator<Double> implem
 
       // Test against bounds.
       // First we need to decode...
-      final double x = Geo3DDocValuesField.decodeXValue(encoded);
-      final double y = Geo3DDocValuesField.decodeYValue(encoded);
-      final double z = Geo3DDocValuesField.decodeZValue(encoded);
+      final double x = planetModel.getDocValueEncoder().decodeXValue(encoded);
+      final double y = planetModel.getDocValueEncoder().decodeYValue(encoded);
+      final double z = planetModel.getDocValueEncoder().decodeZValue(encoded);
       
       cmp = Math.max(cmp, Double.compare(bottomDistance, distanceShape.computeOutsideDistance(DistanceStyle.ARC, x, y, z)));
     }
@@ -113,7 +115,7 @@ class Geo3DPointOutsideDistanceComparator extends FieldComparator<Double> implem
   @Override
   public Double value(int slot) {
     // Return the arc distance
-    return Double.valueOf(values[slot] * PlanetModel.WGS84_MEAN);
+    return Double.valueOf(values[slot] * planetModel.getMeanRadius());
   }
   
   @Override
@@ -131,9 +133,9 @@ class Geo3DPointOutsideDistanceComparator extends FieldComparator<Double> implem
       for (int i = 0; i < numValues; i++) {
         final long encoded = currentDocs.nextValue();
         final double distance = distanceShape.computeOutsideDistance(DistanceStyle.ARC,
-                                                                     Geo3DDocValuesField.decodeXValue(encoded),
-                                                                     Geo3DDocValuesField.decodeYValue(encoded),
-                                                                     Geo3DDocValuesField.decodeZValue(encoded));
+                                                                     planetModel.getDocValueEncoder().decodeXValue(encoded),
+                                                                     planetModel.getDocValueEncoder().decodeYValue(encoded),
+                                                                     planetModel.getDocValueEncoder().decodeZValue(encoded));
         minValue = Math.min(minValue, distance);
       }
     }

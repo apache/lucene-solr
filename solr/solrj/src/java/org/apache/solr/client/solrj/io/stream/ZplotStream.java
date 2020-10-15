@@ -28,13 +28,16 @@ import java.util.Set;
 import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.ml.clustering.CentroidCluster;
+import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.apache.commons.math3.stat.Frequency;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.util.Precision;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eval.DbscanEvaluator;
 import org.apache.solr.client.solrj.io.eval.KmeansEvaluator;
+import org.apache.solr.client.solrj.io.eval.Matrix;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -50,9 +53,11 @@ public class ZplotStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
   private StreamContext streamContext;
+  @SuppressWarnings({"rawtypes"})
   private Map letParams = new LinkedHashMap();
   private Iterator<Tuple> out;
 
+  @SuppressWarnings({"unchecked"})
   public ZplotStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -108,20 +113,18 @@ public class ZplotStream extends TupleStream implements Expressible {
     if(out.hasNext()) {
       return out.next();
     } else {
-      Map m = new HashMap();
-      m.put("EOF", true);
-      Tuple t = new Tuple(m);
-      return t;
+      return Tuple.EOF();
     }
   }
 
   public void close() throws IOException {
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void open() throws IOException {
     Map<String, Object> lets = streamContext.getLets();
     Set<Map.Entry<String, Object>> entries = letParams.entrySet();
-    Map<String, Object> evaluated = new HashMap();
+    Map<String, Object> evaluated = new HashMap<>();
 
     //Load up the StreamContext with the data created by the letParams.
     int numTuples = -1;
@@ -129,6 +132,7 @@ public class ZplotStream extends TupleStream implements Expressible {
     boolean table = false;
     boolean distribution = false;
     boolean clusters = false;
+    boolean heat = false;
     for(Map.Entry<String, Object> entry : entries) {
       ++columns;
 
@@ -139,6 +143,9 @@ public class ZplotStream extends TupleStream implements Expressible {
         distribution = true;
       } else if(name.equals("clusters")) {
         clusters = true;
+      } else if(name.equals("heat")) {
+        heat = true;
+
       }
 
       Object o = entry.getValue();
@@ -176,6 +183,8 @@ public class ZplotStream extends TupleStream implements Expressible {
           evaluated.put(name, l);
         } else if(eval instanceof Tuple) {
           evaluated.put(name, eval);
+        } else if(eval instanceof Matrix) {
+          evaluated.put(name, eval);
         }
       }
     }
@@ -185,21 +194,21 @@ public class ZplotStream extends TupleStream implements Expressible {
     }
     //Load the values into tuples
 
-    List<Tuple> outTuples = new ArrayList();
-    if(!table && !distribution && !clusters) {
+    List<Tuple> outTuples = new ArrayList<>();
+    if(!table && !distribution && !clusters && !heat) {
       //Handle the vectors
       for (int i = 0; i < numTuples; i++) {
-        Tuple tuple = new Tuple(new HashMap());
-        for (String key : evaluated.keySet()) {
-          List l = (List) evaluated.get(key);
-          tuple.put(key, l.get(i));
+        Tuple tuple = new Tuple();
+        for (Map.Entry<String, Object> entry : evaluated.entrySet()) {
+          List l = (List) entry.getValue();
+          tuple.put(entry.getKey(), l.get(i));
         }
 
         outTuples.add(tuple);
       }
 
       //Generate the x axis if the tuples contain y and not x
-      if (outTuples.get(0).fields.containsKey("y") && !outTuples.get(0).fields.containsKey("x")) {
+      if (outTuples.get(0).getFields().containsKey("y") && !outTuples.get(0).getFields().containsKey("x")) {
         int x = 0;
         for (Tuple tuple : outTuples) {
           tuple.put("x", x++);
@@ -207,18 +216,35 @@ public class ZplotStream extends TupleStream implements Expressible {
       }
     } else if(clusters) {
       Object o = evaluated.get("clusters");
-      KmeansEvaluator.ClusterTuple ct = (KmeansEvaluator.ClusterTuple)o;
-      List<CentroidCluster<KmeansEvaluator.ClusterPoint>> cs = ct.getClusters();
-      int clusterNum = 0;
-      for(CentroidCluster<KmeansEvaluator.ClusterPoint> c : cs) {
-        clusterNum++;
-        List<KmeansEvaluator.ClusterPoint> points = c.getPoints();
-        for(KmeansEvaluator.ClusterPoint p : points) {
-          Tuple tuple = new Tuple(new HashMap());
-          tuple.put("x", p.getPoint()[0]);
-          tuple.put("y", p.getPoint()[1]);
-          tuple.put("cluster", "cluster"+clusterNum);
-          outTuples.add(tuple);
+      if(o instanceof  KmeansEvaluator.ClusterTuple) {
+        KmeansEvaluator.ClusterTuple ct = (KmeansEvaluator.ClusterTuple) o;
+        List<CentroidCluster<KmeansEvaluator.ClusterPoint>> cs = ct.getClusters();
+        int clusterNum = 0;
+        for (CentroidCluster<KmeansEvaluator.ClusterPoint> c : cs) {
+          clusterNum++;
+          List<KmeansEvaluator.ClusterPoint> points = c.getPoints();
+          for (KmeansEvaluator.ClusterPoint p : points) {
+            Tuple tuple = new Tuple();
+            tuple.put("x", p.getPoint()[0]);
+            tuple.put("y", p.getPoint()[1]);
+            tuple.put("cluster", "cluster" + clusterNum);
+            outTuples.add(tuple);
+          }
+        }
+      } else if(o instanceof DbscanEvaluator.ClusterTuple) {
+        DbscanEvaluator.ClusterTuple ct = (DbscanEvaluator.ClusterTuple) o;
+        List<Cluster<DbscanEvaluator.ClusterPoint>> cs = ct.getClusters();
+        int clusterNum = 0;
+        for (Cluster<DbscanEvaluator.ClusterPoint> c : cs) {
+          clusterNum++;
+          List<DbscanEvaluator.ClusterPoint> points = c.getPoints();
+          for (DbscanEvaluator.ClusterPoint p : points) {
+            Tuple tuple = new Tuple();
+            tuple.put("x", p.getPoint()[0]);
+            tuple.put("y", p.getPoint()[1]);
+            tuple.put("cluster", "cluster" + clusterNum);
+            outTuples.add(tuple);
+          }
         }
       }
     } else if(distribution) {
@@ -243,7 +269,7 @@ public class ZplotStream extends TupleStream implements Expressible {
         }
 
         for (int i = 0; i < x.length; i++) {
-          Tuple tuple = new Tuple(new HashMap());
+          Tuple tuple = new Tuple();
           if(!Double.isNaN(x[i])) {
             tuple.put("x", Precision.round(x[i], 2));
             if(y[i] == Double.NEGATIVE_INFINITY || y[i] == Double.POSITIVE_INFINITY) {
@@ -264,7 +290,7 @@ public class ZplotStream extends TupleStream implements Expressible {
         }
 
         Iterator it = frequency.valuesIterator();
-        List<Long> values = new ArrayList();
+        List<Long> values = new ArrayList<>();
         while(it.hasNext()) {
           values.add((Long)it.next());
         }
@@ -276,7 +302,7 @@ public class ZplotStream extends TupleStream implements Expressible {
         }
 
         for (int i = 0; i < x.length; i++) {
-          Tuple tuple = new Tuple(new HashMap());
+          Tuple tuple = new Tuple();
           tuple.put("x", x[i]);
           tuple.put("y", y[i]);
           outTuples.add(tuple);
@@ -286,16 +312,16 @@ public class ZplotStream extends TupleStream implements Expressible {
         if(list.get(0) instanceof Tuple) {
           List<Tuple> tlist = (List<Tuple>)o;
           Tuple tuple = tlist.get(0);
-          if(tuple.fields.containsKey("N")) {
+          if(tuple.getFields().containsKey("N")) {
             for(Tuple t : tlist) {
-              Tuple outtuple = new Tuple(new HashMap());
+              Tuple outtuple = new Tuple();
               outtuple.put("x", Precision.round(((double)t.get("mean")), 2));
               outtuple.put("y", t.get("prob"));
               outTuples.add(outtuple);
             }
-          } else if(tuple.fields.containsKey("count")) {
+          } else if(tuple.getFields().containsKey("count")) {
             for(Tuple t : tlist) {
-              Tuple outtuple = new Tuple(new HashMap());
+              Tuple outtuple = new Tuple();
               outtuple.put("x", t.get("value"));
               outtuple.put("y", t.get("pct"));
               outTuples.add(outtuple);
@@ -303,18 +329,94 @@ public class ZplotStream extends TupleStream implements Expressible {
           }
         }
       }
-    } else if(table){
+    } else if(table) {
       //Handle the Tuple and List of Tuples
       Object o = evaluated.get("table");
-      if(o instanceof List) {
-        List<Tuple> tuples = (List<Tuple>)o;
-        outTuples.addAll(tuples);
-      } else if(o instanceof Tuple) {
-        outTuples.add((Tuple)o);
+      if (o instanceof Matrix) {
+        Matrix m = (Matrix) o;
+        List<String> rowLabels = m.getRowLabels();
+        List<String> colLabels = m.getColumnLabels();
+        double[][] data = m.getData();
+        for (int i = 0; i < data.length; i++) {
+          String rowLabel = null;
+          if (rowLabels != null) {
+            rowLabel = rowLabels.get(i);
+          } else {
+            rowLabel = Integer.toString(i);
+          }
+          Tuple tuple = new Tuple();
+          tuple.put("rowLabel", rowLabel);
+          double[] row = data[i];
+          for (int j = 0; j < row.length; j++) {
+            String colLabel = null;
+            if (colLabels != null) {
+              colLabel = colLabels.get(j);
+            } else {
+              colLabel = "col" + Integer.toString(j);
+            }
+
+            tuple.put(colLabel, data[i][j]);
+          }
+          outTuples.add(tuple);
+        }
+      }
+    } else if (heat) {
+      //Handle the Tuple and List of Tuples
+      Object o = evaluated.get("heat");
+      if(o instanceof Matrix) {
+        Matrix m = (Matrix) o;
+        List<String> rowLabels = m.getRowLabels();
+        List<String> colLabels = m.getColumnLabels();
+        double[][] data = m.getData();
+        for (int i = 0; i < data.length; i++) {
+          String rowLabel = null;
+          if (rowLabels != null) {
+            rowLabel = rowLabels.get(i);
+          } else {
+            rowLabel = "row"+pad(Integer.toString(i), data.length);
+          }
+
+          double[] row = data[i];
+          for (int j = 0; j < row.length; j++) {
+            Tuple tuple = new Tuple();
+            tuple.put("y", rowLabel);
+            String colLabel = null;
+            if (colLabels != null) {
+              colLabel = colLabels.get(j);
+            } else {
+              colLabel = "col" + pad(Integer.toString(j), row.length);
+            }
+            tuple.put("x", colLabel);
+            tuple.put("z", data[i][j]);
+            outTuples.add(tuple);
+          }
+        }
       }
     }
 
     this.out = outTuples.iterator();
+  }
+
+  public static String pad(String v, int length) {
+    if(length < 11) {
+      return v;
+    } else if(length < 101) {
+      return prepend(v, 2);
+    } else if (length < 1001) {
+      return prepend(v, 3);
+    } else if(length < 10001){
+      return prepend(v, 4);
+    } else {
+      return prepend(v, 5);
+    }
+  }
+
+  private static String prepend(String v, int length) {
+    while(v.length() < length) {
+      v="0"+v;
+    }
+
+    return v;
   }
 
   /** Return the stream sort - ie, the order in which records are returned */

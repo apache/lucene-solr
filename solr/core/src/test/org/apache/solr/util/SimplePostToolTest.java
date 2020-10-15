@@ -24,6 +24,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -37,9 +38,7 @@ import org.junit.Test;
 /**
  * NOTE: do *not* use real hostnames, not even "example.com", in this test.
  *
- * Even though a MockPageFetcher is used to prevent real HTTP requests from being 
- * executed, the use of the URL class in SimplePostTool causes attempted resolution of 
- * the hostnames.
+ * A MockPageFetcher is used to prevent real HTTP requests from being executed.
  */ 
 public class SimplePostToolTest extends SolrTestCaseJ4 {
 
@@ -173,7 +172,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     assertEquals(3, num);
     
     // Without respecting robots.txt
-    t_web.pageFetcher.robotsCache.clear();
+    t_web.pageFetcher.robotsCache.put("[ff01::114]", Collections.emptyList());
     t_web.recursive = 5;
     num = t_web.postWebPages(new String[] {"http://[ff01::114]/#removeme"}, 0, null);
     assertEquals(6, num);

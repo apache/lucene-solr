@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
@@ -63,6 +64,9 @@ public class TermGroupSelector extends GroupSelector<BytesRef> {
         ordsToGroupIds.put(ord, i);
     }
   }
+
+  @Override
+  public void setScorer(Scorable scorer) throws IOException { }
 
   @Override
   public State advanceTo(int doc) throws IOException {

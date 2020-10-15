@@ -53,10 +53,14 @@ public class FunctionQuery extends Query {
     return func;
   }
 
+  /**
+   * Creates FunctionQuery scorer instances
+   * @lucene.internal
+   */
   protected class FunctionWeight extends Weight {
     protected final IndexSearcher searcher;
     protected final float boost;
-    protected final Map context;
+    protected final Map<Object, Object> context;
 
     public FunctionWeight(IndexSearcher searcher, float boost) throws IOException {
       super(FunctionQuery.this);
@@ -87,6 +91,10 @@ public class FunctionQuery extends Query {
     visitor.visitLeaf(this);
   }
 
+  /**
+   * Scores all documents, applying the function to each document
+   * @lucene.internal
+   */
   protected class AllScorer extends Scorer {
     final IndexReader reader;
     final FunctionWeight weight;

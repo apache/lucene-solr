@@ -34,21 +34,21 @@
 <li><a href="#Searching_Files">Searching Files</a></li>
 </ul>
 </div>
-<a name="About_this_Document"></a>
+<a id="About_this_Document"></a>
 <h2 class="boxed">About this Document</h2>
 <div class="section">
 <p>This document is intended as a "getting started" guide to using and running
 the Lucene demos. It walks you through some basic installation and
 configuration.</p>
 </div>
-<a name="About_the_Demo"></a>
+<a id="About_the_Demo"></a>
 <h2 class="boxed">About the Demo</h2>
 <div class="section">
 <p>The Lucene command-line demo code consists of an application that
 demonstrates various functionalities of Lucene and how you can add Lucene to
 your applications.</p>
 </div>
-<a name="Setting_your_CLASSPATH"></a>
+<a id="Setting_your_CLASSPATH"></a>
 <h2 class="boxed">Setting your CLASSPATH</h2>
 <div class="section">
 <p>First, you should <a href=
@@ -60,12 +60,12 @@ when you extracted the archive -- it should be named something like
 <span class="codefrag">lucene-core-{version}.jar</span>. You should also see
 files called <span class="codefrag">lucene-queryparser-{version}.jar</span>,
 <span class=
-"codefrag">lucene-analyzers-common-{version}.jar</span> and <span class=
+"codefrag">lucene-analysis-common-{version}.jar</span> and <span class=
 "codefrag">lucene-demo-{version}.jar</span> under queryparser, analysis/common/ and demo/,
 respectively.</p>
 <p>Put all four of these files in your Java CLASSPATH.</p>
 </div>
-<a name="Indexing_Files"></a>
+<a id="Indexing_Files"></a>
 <h2 class="boxed">Indexing Files</h2>
 <div class="section">
 <p>Once you've gotten this far you're probably itching to go. Let's <b>build an
@@ -85,7 +85,7 @@ You'll see that there are no maching results in the lucene source code.
 Now try entering the word "string". That should return a whole bunch
 of documents. The results will page at every tenth result and ask you whether
 you want more results.</div>
-<a name="About_the_code"></a>
+<a id="About_the_code"></a>
 <h2 class="boxed">About the code</h2>
 <div class="section">
 <p>In this section we walk through the sources behind the command-line Lucene
@@ -93,7 +93,7 @@ demo: where to find them, their parts and their function. This section is
 intended for Java developers wishing to understand how to use Lucene in their
 applications.</p>
 </div>
-<a name="Location_of_the_source"></a>
+<a id="Location_of_the_source"></a>
 <h2 class="boxed">Location of the source</h2>
 <div class="section">
 <p>The files discussed here are linked into this documentation directly:
@@ -101,9 +101,8 @@ applications.</p>
      <li><a href="src-html/org/apache/lucene/demo/IndexFiles.html">IndexFiles.java</a>: code to create a Lucene index.
      <li><a href="src-html/org/apache/lucene/demo/SearchFiles.html">SearchFiles.java</a>: code to search a Lucene index.
   </ul>
-</p>
 </div>
-<a name="IndexFiles" id="IndexFiles"></a>
+<a id="IndexFiles"></a>
 <h2 class="boxed">IndexFiles</h2>
 <div class="section">
 <p>As we discussed in the previous walk-through, the <a href=
@@ -152,7 +151,7 @@ have less value for searching. It should be noted that there are different
 rules for every language, and you should use the proper analyzer for each.
 Lucene currently provides Analyzers for a number of different languages (see
 the javadocs under <a href=
-"../analyzers-common/overview-summary.html">lucene/analysis/common/src/java/org/apache/lucene/analysis</a>).</p>
+"../analysis/common/overview-summary.html">lucene/analysis/common/src/java/org/apache/lucene/analysis</a>).</p>
 <p>The <span class="codefrag">IndexWriterConfig</span> instance holds all
 configuration for <span class="codefrag">IndexWriter</span>. For example, we
 set the <span class="codefrag">OpenMode</span> to use here based on the value
@@ -174,7 +173,7 @@ already-indexed document with the same identifier (in our case, the file path
 serves as the identifier); deleting it from the index if it exists; and then
 adding the new document to the index.</p>
 </div>
-<a name="Searching_Files"></a>
+<a id="Searching_Files"></a>
 <h2 class="boxed">Searching Files</h2>
 <div class="section">
 <p>The <a href=

@@ -21,13 +21,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.cloud.DocCollection;
@@ -43,13 +42,9 @@ public class SolrCloudScraper extends SolrScraper {
   private final CloudSolrClient solrClient;
   private final SolrClientFactory solrClientFactory;
 
-  private Cache<String, HttpSolrClient> hostClientCache = CacheBuilder.newBuilder()
-      .maximumSize(100)
-      .removalListener((RemovalListener<String, HttpSolrClient>)
-          removalNotification -> IOUtils.closeQuietly(removalNotification.getValue()))
-      .build();
+  private Cache<String, HttpSolrClient> hostClientCache = CacheBuilder.newBuilder().build();
 
-  public SolrCloudScraper(CloudSolrClient solrClient, Executor executor, SolrClientFactory solrClientFactory) {
+  public SolrCloudScraper(CloudSolrClient solrClient, ExecutorService executor, SolrClientFactory solrClientFactory) {
     super(executor);
     this.solrClient = solrClient;
     this.solrClientFactory = solrClientFactory;

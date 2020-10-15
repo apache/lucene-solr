@@ -24,7 +24,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -38,11 +41,16 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.Operations;
+
+import static org.hamcrest.CoreMatchers.containsString;
 
 /**
  * Tests {@link FuzzyQuery}.
@@ -216,7 +224,46 @@ public class TestFuzzyQuery extends LuceneTestCase {
     reader.close();
     directory.close();
   }
-  
+
+  public void testPrefixLengthEqualStringLength() throws Exception {
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
+    addDoc("b*a", writer);
+    addDoc("b*ab", writer);
+    addDoc("b*abc", writer);
+    addDoc("b*abcd", writer);
+    String multibyte = "아프리카코끼리속";
+    addDoc(multibyte, writer);
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    writer.close();
+
+    int maxEdits = 0;
+    int prefixLength = 3;
+    FuzzyQuery query = new FuzzyQuery(new Term("field", "b*a"), maxEdits, prefixLength);
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+
+    maxEdits = 1;
+    query = new FuzzyQuery(new Term("field", "b*a"), maxEdits, prefixLength);
+    hits = searcher.search(query, 1000).scoreDocs;
+    assertEquals(2, hits.length);
+
+    maxEdits = 2;
+    query = new FuzzyQuery(new Term("field", "b*a"), maxEdits, prefixLength);
+    hits = searcher.search(query, 1000).scoreDocs;
+    assertEquals(3, hits.length);
+
+    maxEdits = 1;
+    prefixLength = multibyte.length() - 1;
+    query = new FuzzyQuery(new Term("field", multibyte.substring(0, prefixLength)), maxEdits, prefixLength);
+    hits = searcher.search(query, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+
+    reader.close();
+    directory.close();
+  }
+
   public void test2() throws Exception {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
@@ -403,7 +450,6 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testGiga() throws Exception {
 
-    MockAnalyzer analyzer = new MockAnalyzer(random());
     Directory index = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), index);
 
@@ -435,6 +481,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals(1, hits.length);
     assertEquals("Giga byte", searcher.doc(hits[0].doc).get("field"));
     r.close();
+    w.close();
     index.close();
   }
   
@@ -492,7 +539,32 @@ public class TestFuzzyQuery extends LuceneTestCase {
     });
     assertTrue(expected.getMessage().contains("maxExpansions must be positive"));
   }
-  
+
+  private String randomRealisticMultiByteUnicode(int length) {
+    while (true) {
+      // There is 1 single-byte unicode block, and 194 multi-byte blocks
+      String value = RandomizedTest.randomRealisticUnicodeOfCodepointLength(length);
+      if (value.charAt(0) > Byte.MAX_VALUE) {
+        return value;
+      }
+    }
+  }
+
+  public void testErrorMessage() {
+    // 45 states per vector from Lev2TParametricDescription
+    final int length = (Operations.DEFAULT_MAX_DETERMINIZED_STATES / 45) + 10;
+    final String value = randomRealisticMultiByteUnicode(length);
+
+    FuzzyTermsEnum.FuzzyTermsException expected = expectThrows(FuzzyTermsEnum.FuzzyTermsException.class, () -> {
+      new FuzzyAutomatonBuilder(value, 2, 0, true).buildMaxEditAutomaton();
+    });
+    assertThat(expected.getMessage(), containsString(value));
+
+    expected = expectThrows(FuzzyTermsEnum.FuzzyTermsException.class,
+        () -> new FuzzyAutomatonBuilder(value, 2, 0, true).buildAutomatonSet());
+    assertThat(expected.getMessage(), containsString(value));
+  }
+
   private void addDoc(String text, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
     doc.add(newTextField("field", text, Field.Store.YES));
@@ -528,9 +600,10 @@ public class TestFuzzyQuery extends LuceneTestCase {
       w.addDocument(doc);
     }
     DirectoryReader r = w.getReader();
+    w.close();
     //System.out.println("TEST: reader=" + r);
     IndexSearcher s = newSearcher(r);
-    int iters = atLeast(1000);
+    int iters = atLeast(200);
     for(int iter=0;iter<iters;iter++) {
       String queryTerm = randomSimpleString(digits);
       int prefixLength = random().nextInt(queryTerm.length());
@@ -605,7 +678,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
       }
     }
     
-    IOUtils.close(r, w, dir);
+    IOUtils.close(r, dir);
   }
 
   private static class TermAndScore implements Comparable<TermAndScore> {
@@ -704,5 +777,32 @@ public class TestFuzzyQuery extends LuceneTestCase {
       cp = ref.ints[ref.length++] = Character.codePointAt(s, i);
     }
     return ref;
+  }
+
+  public void testVisitor() {
+    FuzzyQuery q = new FuzzyQuery(new Term("field", "blob"), 2);
+    AtomicBoolean visited = new AtomicBoolean(false);
+    q.visit(new QueryVisitor() {
+      @Override
+      public void consumeTermsMatching(Query query, String field, Supplier<ByteRunAutomaton> automaton) {
+        visited.set(true);
+        ByteRunAutomaton a = automaton.get();
+        assertMatches(a, "blob");
+        assertMatches(a, "bolb");
+        assertMatches(a, "blobby");
+        assertNoMatches(a, "bolbby");
+      }
+    });
+    assertTrue(visited.get());
+  }
+
+  private static void assertMatches(ByteRunAutomaton automaton, String text) {
+    BytesRef b = new BytesRef(text);
+    assertTrue(automaton.run(b.bytes, b.offset, b.length));
+  }
+
+  private static void assertNoMatches(ByteRunAutomaton automaton, String text) {
+    BytesRef b = new BytesRef(text);
+    assertFalse(automaton.run(b.bytes, b.offset, b.length));
   }
 }

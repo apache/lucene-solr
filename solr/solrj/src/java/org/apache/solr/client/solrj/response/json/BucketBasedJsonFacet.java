@@ -49,6 +49,7 @@ public class BucketBasedJsonFacet {
   private long afterLastBucketCount = UNSET_FLAG;
   private long betweenAllBucketsCount = UNSET_FLAG;
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public BucketBasedJsonFacet(NamedList<Object> bucketBasedFacet) {
     for (Map.Entry<String, Object> entry : bucketBasedFacet) {
       final String key = entry.getKey();

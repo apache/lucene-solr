@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.pattern;
 
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
@@ -76,6 +76,11 @@ public class SimplePatternTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public SimplePatternTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public SimplePatternTokenizer create(final AttributeFactory factory) {
     return new SimplePatternTokenizer(factory, dfa);

@@ -20,7 +20,7 @@
  *
  * <h2>Query Node Processors</h2>
  * <p>
- * The package <tt>org.apache.lucene.queryParser.processors</tt> contains interfaces
+ * The package <code>org.apache.lucene.queryParser.processors</code> contains interfaces
  * that should be implemented by every query node processor.
  * <p>
  * The interface that every query node processor should implement is {@link org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor}.

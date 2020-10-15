@@ -470,7 +470,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       writer.addDocument(doc);
     }
 
-    Thread[] threads = new Thread[2 + random().nextInt(3)];
+    int numThreads = TEST_NIGHTLY ? 2 + random().nextInt(3) : 2;
+    Thread[] threads = new Thread[numThreads];
     CyclicBarrier barrier = new CyclicBarrier(threads.length + 1);
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new Thread(() -> {

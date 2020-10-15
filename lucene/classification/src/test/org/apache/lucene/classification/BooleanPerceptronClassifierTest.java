@@ -84,7 +84,8 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
   @Test
   public void testPerformance() throws Exception {
     MockAnalyzer analyzer = new MockAnalyzer(random());
-    LeafReader leafReader = getRandomIndex(analyzer, 100);
+    int numDocs = atLeast(10);
+    LeafReader leafReader = getRandomIndex(analyzer, numDocs);
     try {
       BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, null, booleanFieldName, textFieldName);
 

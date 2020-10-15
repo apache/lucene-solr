@@ -167,6 +167,20 @@ public class DocValuesTermsQuery extends Query implements Accountable {
     return builder.toString();
   }
 
+  /**
+   * @return the name of the field searched by this query.
+   */
+  public String getField() {
+    return field;
+  }
+
+  /**
+   * @return the terms looked up by this query, prefix-encoded.
+   */
+  public PrefixCodedTerms getTerms() {
+    return termData;
+  }
+
   @Override
   public long ramBytesUsed() {
     return BASE_RAM_BYTES +

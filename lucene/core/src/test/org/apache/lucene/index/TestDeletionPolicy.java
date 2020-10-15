@@ -216,6 +216,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
   /*
    * Test "by time expiration" deletion policy:
    */
+  // TODO: this wall-clock-dependent test doesn't seem to actually test any deletionpolicy logic?
+  @Nightly
   public void testExpirationTimeDeletionPolicy() throws IOException, InterruptedException {
 
     final double SECONDS = 2.0;

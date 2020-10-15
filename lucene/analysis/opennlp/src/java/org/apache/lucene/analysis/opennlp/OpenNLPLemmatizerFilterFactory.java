@@ -23,9 +23,9 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.opennlp.tools.NLPLemmatizerOp;
 import org.apache.lucene.analysis.opennlp.tools.OpenNLPOpsFactory;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link OpenNLPLemmatizerFilter}.
@@ -69,6 +69,11 @@ public class OpenNLPLemmatizerFilterFactory extends TokenFilterFactory implement
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public OpenNLPLemmatizerFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

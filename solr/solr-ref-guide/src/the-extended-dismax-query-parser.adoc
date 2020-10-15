@@ -27,7 +27,7 @@ In addition to supporting all the DisMax query parser parameters, Extended Disma
 * includes improved smart partial escaping in the case of syntax errors; fielded queries, +/-, and phrase queries are still supported in this mode.
 * improves proximity boosting by using word shingles; you do not need the query to match all words in the document before proximity boosting is applied.
 * includes advanced stopword handling: stopwords are not required in the mandatory part of the query but are still used in the proximity boosting part. If a query consists of all stopwords, such as "to be or not to be", then all words are required.
-* includes improved boost function: in Extended DisMax, the `boost` function is a multiplier rather than an addend, improving your boost results; the additive boost functions of DisMax (`bf` and `bq`) are also supported.
+* includes improved boost function: in Extended DisMax, the `boost` function is a multiplier <<the-dismax-query-parser.adoc#bq-bf-shortcomings,rather than an addend>>, improving your boost results; the additive boost functions of DisMax (`bf` and `bq`) are also supported.
 * supports pure negative nested queries: queries such as `+foo (-foo)` will match all documents.
 * lets you specify which fields the end user is allowed to query, and to disallow direct fielded searches.
 
@@ -52,7 +52,19 @@ If `true`, the number of clauses required (<<the-dismax-query-parser.adoc#mm-min
 Note that relaxing `mm` may cause undesired side effects, such as hurting the precision of the search, depending on the nature of your index content.
 
 `boost`::
-A multivalued list of strings parsed as queries with scores multiplied by the score from the main query for all matching documents. This parameter is shorthand for wrapping the query produced by eDisMax using the `BoostQParserPlugin`.
+A multivalued list of strings parsed as <<function-queries.adoc#available-functions,functions>> whose results will be multiplied into the score from the main query for all matching documents. This parameter is shorthand for wrapping the query produced by eDisMax using the <<other-parsers.adoc#boost-query-parser,`BoostQParserPlugin`>>.
+
+These two examples are equivalent:
+[source,text]
+----
+q={!edismax qf=name}ipod
+boost=div(1,sum(1,price))
+----
+[source,text]
+----
+q={!boost b=div(1,sum(1,price)) v=$qq}
+qq={!edismax qf=name}ipod
+----
 
 `lowercaseOperators`::
 A Boolean parameter indicating if lowercase "and" and "or" should be treated the same as operators "AND" and "OR".
@@ -149,11 +161,6 @@ q=sysadmin name:Mike
 qf=title text last_name first_name
 f.name.qf=last_name first_name
 ----
-
-== Using Negative Boost
-
-Negative query boosts have been supported at the "Query" object level for a long time (resulting in negative scores for matching documents). Now the QueryParsers have been updated to handle this too.
-
 
 == Using 'Slop'
 

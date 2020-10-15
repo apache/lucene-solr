@@ -181,12 +181,30 @@ class ConnectionImpl implements Connection {
 
   @Override
   public void setTransactionIsolation(int level) throws SQLException {
-    throw new UnsupportedOperationException();
+    if(isClosed()) {
+      throw new SQLException("Connection is closed.");
+    }
+    if(Connection.TRANSACTION_NONE == level) {
+      throw new SQLException("Connection.TRANSACTION_NONE cannot be used.");
+    }
+    if(
+        Connection.TRANSACTION_READ_COMMITTED == level ||
+        Connection.TRANSACTION_READ_UNCOMMITTED == level ||
+        Connection.TRANSACTION_REPEATABLE_READ == level ||
+        Connection.TRANSACTION_SERIALIZABLE == level
+    ) {
+      throw new SQLException(new UnsupportedOperationException());
+    } else {
+      throw new SQLException("Unsupported transaction type specified.");
+    }
   }
 
   @Override
   public int getTransactionIsolation() throws SQLException {
-    throw new UnsupportedOperationException();
+    if(isClosed()) {
+      throw new SQLException("Connection is closed.");
+    }
+    return Connection.TRANSACTION_NONE;
   }
 
   @Override
@@ -317,7 +335,11 @@ class ConnectionImpl implements Connection {
     // check that the connection isn't closed and able to connect within the timeout
     try {
       if(!isClosed()) {
-        this.client.connect(timeout, TimeUnit.SECONDS);
+        if (timeout == 0) {
+          this.client.connect();
+        } else {
+          this.client.connect(timeout, TimeUnit.SECONDS);
+        }
         return true;
       }
     } catch (InterruptedException|TimeoutException ignore) {

@@ -105,7 +105,12 @@ public class TermFilteredPresearcher extends Presearcher {
       DocumentQueryBuilder queryBuilder = getQueryBuilder();
       for (FieldInfo field : reader.getFieldInfos()) {
 
-        TokenStream ts = new TermsEnumTokenStream(reader.terms(field.name).iterator());
+        Terms terms = reader.terms(field.name);
+        if (terms == null) {
+          continue;
+        }
+
+        TokenStream ts = new TermsEnumTokenStream(terms.iterator());
         for (CustomQueryHandler handler : queryHandlers) {
           ts = handler.wrapTermStream(field.name, ts);
         }
@@ -225,8 +230,8 @@ public class TermFilteredPresearcher extends Presearcher {
       @Override
       public Query build() {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for (String field : terms.keySet()) {
-          builder.add(new TermInSetQuery(field, terms.get(field)), BooleanClause.Occur.SHOULD);
+        for (Map.Entry<String, List<BytesRef>> entry : terms.entrySet()) {
+          builder.add(new TermInSetQuery(entry.getKey(), entry.getValue()), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       }

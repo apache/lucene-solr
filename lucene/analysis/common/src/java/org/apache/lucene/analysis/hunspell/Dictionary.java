@@ -64,7 +64,7 @@ import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.CharSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.IntSequenceOutputs;
@@ -231,9 +231,9 @@ public class Dictionary {
       
       // read dictionary entries
       IntSequenceOutputs o = IntSequenceOutputs.getSingleton();
-      Builder<IntsRef> b = new Builder<>(FST.INPUT_TYPE.BYTE4, o);
-      readDictionaryFiles(tempDir, tempFileNamePrefix, dictionaries, decoder, b);
-      words = b.finish();
+      FSTCompiler<IntsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, o);
+      readDictionaryFiles(tempDir, tempFileNamePrefix, dictionaries, decoder, fstCompiler);
+      words = fstCompiler.compile();
       aliases = null; // no longer needed
       morphAliases = null; // no longer needed
       success = true;
@@ -414,7 +414,7 @@ public class Dictionary {
   
   private FST<IntsRef> affixFST(TreeMap<String,List<Integer>> affixes) throws IOException {
     IntSequenceOutputs outputs = IntSequenceOutputs.getSingleton();
-    Builder<IntsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, outputs);
+    FSTCompiler<IntsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, outputs);
     IntsRefBuilder scratch = new IntsRefBuilder();
     for (Map.Entry<String,List<Integer>> entry : affixes.entrySet()) {
       Util.toUTF32(entry.getKey(), scratch);
@@ -423,9 +423,9 @@ public class Dictionary {
       for (Integer c : entries) {
         output.ints[output.length++] = c;
       }
-      builder.add(scratch.get(), output);
+      fstCompiler.add(scratch.get(), output);
     }
-    return builder.finish();
+    return fstCompiler.compile();
   }
   
   static String escapeDash(String re) {
@@ -608,14 +608,14 @@ public class Dictionary {
     }
     
     Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
-    Builder<CharsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE2, outputs);
+    FSTCompiler<CharsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, outputs);
     IntsRefBuilder scratchInts = new IntsRefBuilder();
     for (Map.Entry<String,String> entry : mappings.entrySet()) {
       Util.toUTF16(entry.getKey(), scratchInts);
-      builder.add(scratchInts.get(), new CharsRef(entry.getValue()));
+      fstCompiler.add(scratchInts.get(), new CharsRef(entry.getValue()));
     }
     
-    return builder.finish();
+    return fstCompiler.compile();
   }
   
   /** pattern accepts optional BOM + SET + any whitespace */
@@ -776,7 +776,7 @@ public class Dictionary {
    * @param decoder CharsetDecoder used to decode the contents of the file
    * @throws IOException Can be thrown while reading from the file
    */
-  private void readDictionaryFiles(Directory tempDir, String tempFileNamePrefix, List<InputStream> dictionaries, CharsetDecoder decoder, Builder<IntsRef> words) throws IOException {
+  private void readDictionaryFiles(Directory tempDir, String tempFileNamePrefix, List<InputStream> dictionaries, CharsetDecoder decoder, FSTCompiler<IntsRef> words) throws IOException {
     BytesRefBuilder flagsScratch = new BytesRefBuilder();
     IntsRefBuilder scratchInts = new IntsRefBuilder();
     

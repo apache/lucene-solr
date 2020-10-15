@@ -16,7 +16,8 @@
  */
  
 /** 
- * Analysis-related functionality for RESTful API access to the Solr Schema using Restlet.
+ * Analysis-related functionality for RESTful API access to managed resources related to the schema, such
+ * as stopwords, protected words, and synonyms.
  */
 package org.apache.solr.rest.schema.analysis;
 

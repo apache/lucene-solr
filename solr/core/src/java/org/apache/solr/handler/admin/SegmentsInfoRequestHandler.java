@@ -127,7 +127,6 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     SimpleOrderedMap<Object> segmentInfos = new SimpleOrderedMap<>();
 
     SolrCore core = req.getCore();
-    RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
     SimpleOrderedMap<Object> infosInfo = new SimpleOrderedMap<>();
     Version minVersion = infos.getMinSegmentLuceneVersion();
     if (minVersion != null) {
@@ -149,6 +148,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
       coreInfo.add("indexDir", core.getIndexDir());
       coreInfo.add("sizeInGB", (double)core.getIndexSize() / GB);
 
+      RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
       if (iwRef != null) {
         try {
           IndexWriter iw = iwRef.get();
@@ -170,8 +170,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
       }
     }
     SimpleOrderedMap<Object> segmentInfo = null;
-    List<SegmentCommitInfo> sortable = new ArrayList<>();
-    sortable.addAll(infos.asList());
+    List<SegmentCommitInfo> sortable = new ArrayList<>(infos.asList());
     // Order by the number of live docs. The display is logarithmic so it is a little jumbled visually
     sortable.sort((s1, s2) ->
       (s2.info.maxDoc() - s2.getDelCount()) - (s1.info.maxDoc() - s1.getDelCount())
@@ -239,10 +238,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     SegmentReader seg = null;
     for (LeafReaderContext lrc : leafContexts) {
       LeafReader leafReader = lrc.reader();
-      // unwrap
-      while (leafReader instanceof FilterLeafReader) {
-        leafReader = ((FilterLeafReader)leafReader).getDelegate();
-      }
+      leafReader = FilterLeafReader.unwrap(leafReader);
       if (leafReader instanceof SegmentReader) {
         SegmentReader sr = (SegmentReader)leafReader;
         if (sr.getSegmentInfo().info.equals(segmentCommitInfo.info)) {
@@ -305,7 +301,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     }
     if (withFieldInfos) {
       if (seg == null) {
-        log.debug("Skipping segment info - not available as a SegmentReader: " + segmentCommitInfo);
+        log.debug("Skipping segment info - not available as a SegmentReader: {}", segmentCommitInfo);
       } else {
         FieldInfos fis = seg.getFieldInfos();
         SimpleOrderedMap<Object> fields = new SimpleOrderedMap<>();
@@ -377,9 +373,9 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
 
     flags.append( (fi.hasPayloads() ? "p" : "-"));
     flags.append( (fi.isSoftDeletesField() ? "s" : "-"));
-    if (fi.getPointDataDimensionCount() > 0 || fi.getPointIndexDimensionCount() > 0) {
+    if (fi.getPointDimensionCount() > 0 || fi.getPointIndexDimensionCount() > 0) {
       flags.append(":");
-      flags.append(fi.getPointDataDimensionCount()).append(':');
+      flags.append(fi.getPointDimensionCount()).append(':');
       flags.append(fi.getPointIndexDimensionCount()).append(':');
       flags.append(fi.getPointNumBytes());
     }
@@ -393,7 +389,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
         fieldFlags.add("sumTotalTermFreq", terms.getSumTotalTermFreq());
       }
     } catch (Exception e) {
-      log.debug("Exception retrieving term stats for field " + fi.name, e);
+      log.debug("Exception retrieving term stats for field {}", fi.name, e);
     }
 
     // probably too much detail?
@@ -404,7 +400,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
 
     // check compliance of the index with the current schema
     SchemaField sf = schema.getFieldOrNull(fi.name);
-    boolean hasPoints = fi.getPointDataDimensionCount() > 0 || fi.getPointIndexDimensionCount() > 0;
+    boolean hasPoints = fi.getPointDimensionCount() > 0 || fi.getPointIndexDimensionCount() > 0;
 
     if (sf != null) {
       fieldFlags.add("schemaType", sf.getType().getTypeName());

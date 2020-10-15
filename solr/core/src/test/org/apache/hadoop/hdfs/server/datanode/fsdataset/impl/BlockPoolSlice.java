@@ -25,9 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,9 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CachingGetSpaceUsed;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
-import org.apache.hadoop.fs.GetSpaceUsed;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtilClient;
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -82,8 +78,11 @@ import com.google.common.annotations.VisibleForTesting;
  *
  * This class is synchronized by {@link FsVolumeImpl}.
  */
-class BlockPoolSlice {
-  static final Logger LOG = LoggerFactory.getLogger(BlockPoolSlice.class);
+public class BlockPoolSlice {
+  public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
+
+  // Apparently the Hadoop code expectes upper-case LOG, so...
+  static final Logger LOG = LoggerFactory.getLogger(BlockPoolSlice.class); //nowarn
 
   private final String bpid;
   private final FsVolumeImpl volume; // volume to which this BlockPool belongs to
@@ -118,9 +117,6 @@ class BlockPoolSlice {
           return f1.getName().compareTo(f2.getName());
         }
       };
-
-  // TODO:FEDERATION scalability issue - a thread per DU is needed
-  private final GetSpaceUsed dfsUsage;
 
   /**
    * Create a blook pool slice
@@ -178,12 +174,6 @@ class BlockPoolSlice {
     fileIoProvider.mkdirs(volume, rbwDir);
     fileIoProvider.mkdirs(volume, tmpDir);
 
-    // Use cached value initially if available. Or the following call will
-    // block until the initial du command completes.
-    this.dfsUsage = new CachingGetSpaceUsed.Builder().setPath(bpDir)
-        .setConf(conf)
-        .setInitialUsed(loadDfsUsed())
-        .build();
     if (addReplicaThreadPool == null) {
       // initialize add replica fork join pool
       initializeAddReplicaPool(conf);
@@ -192,10 +182,7 @@ class BlockPoolSlice {
     shutdownHook = new Runnable() {
       @Override
       public void run() {
-        if (!dfsUsedSaved) {
-          saveDfsUsed();
-          addReplicaThreadPool.shutdownNow();
-        }
+        addReplicaThreadPool.shutdownNow();
       }
     };
     ShutdownHookManager.get().addShutdownHook(shutdownHook,
@@ -243,92 +230,13 @@ class BlockPoolSlice {
 
   /** Run DU on local drives.  It must be synchronized from caller. */
   void decDfsUsed(long value) {
-    if (dfsUsage instanceof CachingGetSpaceUsed) {
-      ((CachingGetSpaceUsed)dfsUsage).incDfsUsed(-value);
-    }
   }
 
   long getDfsUsed() throws IOException {
-    return dfsUsage.getUsed();
+    return 0L;
   }
 
   void incDfsUsed(long value) {
-    if (dfsUsage instanceof CachingGetSpaceUsed) {
-      ((CachingGetSpaceUsed)dfsUsage).incDfsUsed(value);
-    }
-  }
-
-  /**
-   * Read in the cached DU value and return it if it is less than
-   * cachedDfsUsedCheckTime which is set by
-   * dfs.datanode.cached-dfsused.check.interval.ms parameter. Slight imprecision
-   * of dfsUsed is not critical and skipping DU can significantly shorten the
-   * startup time. If the cached value is not available or too old, -1 is
-   * returned.
-   */
-  long loadDfsUsed() {
-    long cachedDfsUsed;
-    long mtime;
-    Scanner sc;
-
-    try {
-      sc = new Scanner(new File(currentDir, DU_CACHE_FILE), "UTF-8");
-    } catch (FileNotFoundException fnfe) {
-      return -1;
-    }
-
-    try {
-      // Get the recorded dfsUsed from the file.
-      if (sc.hasNextLong()) {
-        cachedDfsUsed = sc.nextLong();
-      } else {
-        return -1;
-      }
-      // Get the recorded mtime from the file.
-      if (sc.hasNextLong()) {
-        mtime = sc.nextLong();
-      } else {
-        return -1;
-      }
-
-      // Return the cached value if mtime is okay.
-      if (mtime > 0 && (timer.now() - mtime < cachedDfsUsedCheckTime)) {
-        FsDatasetImpl.LOG.info("Cached dfsUsed found for " + currentDir + ": " +
-            cachedDfsUsed);
-        return cachedDfsUsed;
-      }
-      return -1;
-    } finally {
-      sc.close();
-    }
-  }
-
-  /**
-   * Write the current dfsUsed to the cache file.
-   */
-  void saveDfsUsed() {
-    File outFile = new File(currentDir, DU_CACHE_FILE);
-    if (!fileIoProvider.deleteWithExistsCheck(volume, outFile)) {
-      FsDatasetImpl.LOG.warn("Failed to delete old dfsUsed file in " +
-          outFile.getParent());
-    }
-
-    try {
-      long used = getDfsUsed();
-      try (Writer out = new OutputStreamWriter(
-          new FileOutputStream(outFile), "UTF-8")) {
-        // mtime is written last, so that truncated writes won't be valid.
-        out.write(Long.toString(used) + " " + Long.toString(timer.now()));
-        // This is only called as part of the volume shutdown.
-        // We explicitly avoid calling flush with fileIoProvider which triggers
-        // volume check upon io exception to avoid cyclic volume checks.
-        out.flush();
-      }
-    } catch (IOException ioe) {
-      // If write failed, the volume might be bad. Since the cache file is
-      // not critical, log the error and continue.
-      FsDatasetImpl.LOG.warn("Failed to write dfsUsed to " + outFile, ioe);
-    }
   }
 
   /**
@@ -362,13 +270,7 @@ class BlockPoolSlice {
   File addFinalizedBlock(Block b, ReplicaInfo replicaInfo) throws IOException {
     File blockDir = DatanodeUtil.idToBlockDir(finalizedDir, b.getBlockId());
     fileIoProvider.mkdirsWithExistsCheck(volume, blockDir);
-    File blockFile = FsDatasetImpl.moveBlockFiles(b, replicaInfo, blockDir);
-    File metaFile = FsDatasetUtil.getMetaFile(blockFile, b.getGenerationStamp());
-    if (dfsUsage instanceof CachingGetSpaceUsed) {
-      ((CachingGetSpaceUsed) dfsUsage).incDfsUsed(
-          b.getNumBytes() + metaFile.length());
-    }
-    return blockFile;
+    return FsDatasetImpl.moveBlockFiles(b, replicaInfo, blockDir);
   }
 
   /**
@@ -517,7 +419,7 @@ class BlockPoolSlice {
           try {
             fileIoProvider.mkdirsWithExistsCheck(volume, targetDir);
           } catch(IOException ioe) {
-            LOG.warn("Failed to mkdirs " + targetDir);
+            LOG.warn("Failed to mkdirs {}", targetDir);
             continue;
           }
 
@@ -525,8 +427,7 @@ class BlockPoolSlice {
           try {
             fileIoProvider.rename(volume, metaFile, targetMetaFile);
           } catch (IOException e) {
-            LOG.warn("Failed to move meta file from "
-                + metaFile + " to " + targetMetaFile, e);
+            LOG.warn("Failed to move meta file from {} to {}", metaFile, targetMetaFile, e);
             continue;
           }
 
@@ -534,8 +435,7 @@ class BlockPoolSlice {
           try {
             fileIoProvider.rename(volume, blockFile, targetBlockFile);
           } catch (IOException e) {
-            LOG.warn("Failed to move block file from "
-                + blockFile + " to " + targetBlockFile, e);
+            LOG.warn("Failed to move block file from {} to {}", blockFile, targetBlockFile, e);
             continue;
           }
 
@@ -543,7 +443,7 @@ class BlockPoolSlice {
             ++numRecovered;
           } else {
             // Failure should be rare.
-            LOG.warn("Failed to move " + blockFile + " to " + targetDir);
+            LOG.warn("Failed to move {} to {}", blockFile, targetDir);
           }
         }
       }
@@ -754,8 +654,7 @@ class BlockPoolSlice {
     replicaToDelete = (replicaToKeep == replica1) ? replica2 : replica1;
 
     if (LOG.isDebugEnabled()) {
-      LOG.debug("resolveDuplicateReplicas decide to keep " + replicaToKeep
-          + ".  Will try to delete " + replicaToDelete);
+      LOG.debug("resolveDuplicateReplicas decide to keep {}.  Will try to delete {}", replicaToKeep, replicaToDelete);
     }
     return replicaToDelete;
   }
@@ -763,10 +662,10 @@ class BlockPoolSlice {
   private void deleteReplica(final ReplicaInfo replicaToDelete) {
     // Delete the files on disk. Failure here is okay.
     if (!replicaToDelete.deleteBlockData()) {
-      LOG.warn("Failed to delete block file for replica " + replicaToDelete);
+      LOG.warn("Failed to delete block file for replica {}", replicaToDelete);
     }
     if (!replicaToDelete.deleteMetadata()) {
-      LOG.warn("Failed to delete meta file for replica " + replicaToDelete);
+      LOG.warn("Failed to delete meta file for replica {}", replicaToDelete);
     }
   }
 
@@ -851,16 +750,10 @@ class BlockPoolSlice {
 
   void shutdown(BlockListAsLongs blocksListToPersist) {
     saveReplicas(blocksListToPersist);
-    saveDfsUsed();
-    dfsUsedSaved = true;
 
     // Remove the shutdown hook to avoid any memory leak
     if (shutdownHook != null) {
       ShutdownHookManager.get().removeShutdownHook(shutdownHook);
-    }
-
-    if (dfsUsage instanceof CachingGetSpaceUsed) {
-      IOUtils.cleanupWithLogger(LOG, ((CachingGetSpaceUsed) dfsUsage));
     }
   }
 
@@ -870,18 +763,21 @@ class BlockPoolSlice {
     File replicaFile = new File(currentDir, REPLICA_CACHE_FILE);
     // Check whether the file exists or not.
     if (!replicaFile.exists()) {
-      LOG.info("Replica Cache file: "+  replicaFile.getPath() +
-          " doesn't exist ");
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Replica Cache file: {} doesn't exist", replicaFile.getPath());
+      }
       return false;
     }
     long fileLastModifiedTime = replicaFile.lastModified();
     if (System.currentTimeMillis() > fileLastModifiedTime + replicaCacheExpiry) {
-      LOG.info("Replica Cache file: " + replicaFile.getPath() +
-          " has gone stale");
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Replica Cache file: {} has gone stale", replicaFile.getPath());
+      }
       // Just to make findbugs happy
       if (!replicaFile.delete()) {
-        LOG.info("Replica Cache file: " + replicaFile.getPath() +
-            " cannot be deleted");
+        if (LOG.isInfoEnabled()) {
+          LOG.info("Replica Cache file: {} cannot be deleted", replicaFile.getPath());
+        }
       }
       return false;
     }
@@ -919,14 +815,16 @@ class BlockPoolSlice {
         iter.remove();
         volumeMap.add(bpid, info);
       }
-      LOG.info("Successfully read replica from cache file : "
-          + replicaFile.getPath());
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Successfully read replica from cache file : {}", replicaFile.getPath());
+      }
       return true;
     } catch (Exception e) {
       // Any exception we need to revert back to read from disk
       // Log the error and return false
-      LOG.info("Exception occurred while reading the replicas cache file: "
-          + replicaFile.getPath(), e );
+      if (LOG.isInfoEnabled()) {
+        LOG.info("Exception occurred while reading the replicas cache file: {}", replicaFile.getPath(), e);
+      }
       return false;
     }
     finally {
@@ -934,8 +832,9 @@ class BlockPoolSlice {
       IOUtils.closeStream(inputStream);
 
       if (!fileIoProvider.delete(volume, replicaFile)) {
-        LOG.info("Failed to delete replica cache file: " +
-            replicaFile.getPath());
+        if (LOG.isInfoEnabled()) {
+          LOG.info("Failed to delete replica cache file: {}", replicaFile.getPath());
+        }
       }
     }
   }
@@ -1027,8 +926,7 @@ class BlockPoolSlice {
         addToReplicasMap(volumeMap, dir, lazyWriteReplicaMap, isFinalized,
             exceptions, subTaskQueue);
       } catch (IOException e) {
-        LOG.warn("Caught exception while adding replicas from " + volume
-            + " in subtask. Will throw later.", e);
+        LOG.warn("Caught exception while adding replicas from {} in subtask. Will throw later.", volume, e);
         exceptions.add(e);
       }
     }

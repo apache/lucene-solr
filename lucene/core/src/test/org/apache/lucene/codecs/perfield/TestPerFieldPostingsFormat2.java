@@ -67,6 +67,7 @@ import org.junit.Test;
 //TODO: would be better in this test to pull termsenums and instanceof or something?
 // this way we can verify PFPF is doing the right thing.
 // for now we do termqueries.
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)

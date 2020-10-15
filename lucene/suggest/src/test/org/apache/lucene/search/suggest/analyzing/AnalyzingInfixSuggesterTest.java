@@ -539,6 +539,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     }
   }
 
+  @Slow
   public void testRandomNRT() throws Exception {
     final Path tempDir = createTempDir("AnalyzingInfixSuggesterTest");
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
@@ -555,7 +556,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     LookupThread lookupThread = new LookupThread(suggester);
     lookupThread.start();
 
-    int iters = atLeast(1000);
+    int iters = atLeast(100);
     int visibleUpto = 0;
 
     Set<Long> usedWeights = new HashSet<>();

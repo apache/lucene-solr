@@ -43,7 +43,11 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
 
   @Override
   protected Codec getCodec() {
-    return CompressingCodec.randomInstance(random());
+    if (TEST_NIGHTLY) {
+      return CompressingCodec.randomInstance(random());
+    } else {
+      return CompressingCodec.reasonableInstance(random());
+    }
   }
   
   // https://issues.apache.org/jira/browse/LUCENE-5156
@@ -98,7 +102,7 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
       for (LeafReaderContext leaf : ir2.leaves()) {
         CodecReader sr = (CodecReader) leaf.reader();
         CompressingTermVectorsReader reader = (CompressingTermVectorsReader)sr.getTermVectorsReader();
-        assertEquals(1, reader.getNumChunks());
+        assertTrue(reader.getNumDirtyDocs() > 0);
         assertEquals(1, reader.getNumDirtyChunks());
       }
     }

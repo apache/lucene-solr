@@ -25,7 +25,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs;
@@ -53,7 +53,7 @@ final class NRTSuggesterBuilder {
   public static final int END_BYTE = 0x0;
 
   private final PairOutputs<Long, BytesRef> outputs;
-  private final Builder<PairOutputs.Pair<Long, BytesRef>> builder;
+  private final FSTCompiler<PairOutputs.Pair<Long, BytesRef>> fstCompiler;
   private final IntsRefBuilder scratchInts = new IntsRefBuilder();
   private final BytesRefBuilder analyzed = new BytesRefBuilder();
   private final PriorityQueue<Entry> entries;
@@ -70,7 +70,7 @@ final class NRTSuggesterBuilder {
     this.endByte = END_BYTE;
     this.outputs = new PairOutputs<>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton());
     this.entries = new PriorityQueue<>();
-    this.builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+    this.fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
   }
 
   /**
@@ -108,7 +108,7 @@ final class NRTSuggesterBuilder {
       }
       analyzed.setByteAt(analyzed.length() - 1, (byte) numArcs++);
       Util.toIntsRef(analyzed.get(), scratchInts);
-      builder.add(scratchInts.get(), outputs.newPair(entry.weight, entry.payload));
+      fstCompiler.add(scratchInts.get(), outputs.newPair(entry.weight, entry.payload));
     }
     maxAnalyzedPathsPerOutput = Math.max(maxAnalyzedPathsPerOutput, entries.size());
     entries.clear();
@@ -119,11 +119,11 @@ final class NRTSuggesterBuilder {
    * {@link NRTSuggester#load(IndexInput, CompletionPostingsFormat.FSTLoadMode)})}
    */
   public boolean store(DataOutput output) throws IOException {
-    final FST<PairOutputs.Pair<Long, BytesRef>> build = builder.finish();
-    if (build == null) {
+    final FST<PairOutputs.Pair<Long, BytesRef>> fst = fstCompiler.compile();
+    if (fst == null) {
       return false;
     }
-    build.save(output);
+    fst.save(output, output);
 
     /* write some more  meta-info */
     assert maxAnalyzedPathsPerOutput > 0;

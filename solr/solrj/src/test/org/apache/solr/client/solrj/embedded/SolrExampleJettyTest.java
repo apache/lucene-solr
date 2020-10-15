@@ -23,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
@@ -89,6 +91,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
     SolrDocument doc = rsp.getResults().get(0);
     String src = (String) doc.getFieldValue("_src_");
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) fromJSONString(src);
     assertEquals("abc1",m.get("id"));
     assertEquals("name1",m.get("name"));
@@ -105,6 +108,23 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     return random().nextBoolean() ?
         baseURL.replace("/collection1", "/____v2/cores/collection1/update") :
         baseURL + "/update/json/docs";
+  }
+
+  @Test
+  public void testUtf8PerfDegradation() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+
+    doc.addField("id", "1");
+    doc.addField("b_is", IntStream.range(0, 30000).boxed().collect(Collectors.toList()));
+
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    client.add(doc);
+    client.commit();
+    long start = System.nanoTime();
+    QueryResponse rsp = client.query(new SolrQuery("*:*"));
+    System.out.println("time taken : " + ((System.nanoTime() - start)) / (1000 * 1000));
+    assertEquals(1, rsp.getResults().getNumFound());
+
   }
 
   @Ignore

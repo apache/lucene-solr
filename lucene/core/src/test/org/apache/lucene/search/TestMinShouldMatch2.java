@@ -273,6 +273,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   }
   
   /** test advance with varying numbers of terms with varying minShouldMatch */
+  @Nightly
   public void testAdvanceVaryingNumberOfTerms() throws Exception {
     List<String> termsList = new ArrayList<>();
     termsList.addAll(Arrays.asList(commonTerms));

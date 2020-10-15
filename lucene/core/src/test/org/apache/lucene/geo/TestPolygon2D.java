@@ -35,7 +35,7 @@ public class TestPolygon2D extends LuceneTestCase {
     Polygon hole = new Polygon(new double[] { -10, -10, 10, 10, -10 }, new double[] { -10, 10, 10, -10, -10 });
     Polygon outer = new Polygon(new double[] { -50, -50, 50, 50, -50 }, new double[] { -50, 50, 50, -50, -50 }, hole);
     Polygon island = new Polygon(new double[] { -5, -5, 5, 5, -5 }, new double[] { -5, 5, 5, -5, -5 } );
-    Polygon2D polygon = Polygon2D.create(outer, island);
+    Component2D polygon = LatLonGeometry.create(outer, island);
     
     // contains(point)
     assertTrue(polygon.contains(-2, 2)); // on the island
@@ -66,21 +66,21 @@ public class TestPolygon2D extends LuceneTestCase {
     double yMax = 1;//5;
 
     // test cell crossing poly
-    Polygon2D polygon = Polygon2D.create(new Polygon(py, px));
+    Component2D polygon = Polygon2D.create(new Polygon(py, px));
     assertEquals(Relation.CELL_CROSSES_QUERY, polygon.relate(yMin, yMax, xMin, xMax));
   }
   
   public void testBoundingBox() throws Exception {
     for (int i = 0; i < 100; i++) {
-      Polygon2D polygon = Polygon2D.create(nextPolygon());
+      Component2D polygon = Polygon2D.create(nextPolygon());
       
       for (int j = 0; j < 100; j++) {
         double latitude = nextLatitude();
         double longitude = nextLongitude();
         // if the point is within poly, then it should be in our bounding box
-        if (polygon.contains(latitude, longitude)) {
-          assertTrue(latitude >= polygon.minLat && latitude <= polygon.maxLat);
-          assertTrue(longitude >= polygon.minLon && longitude <= polygon.maxLon);
+        if (polygon.contains(longitude, latitude)) {
+          assertTrue(latitude >= polygon.getMinY() && latitude <= polygon.getMaxY());
+          assertTrue(longitude >= polygon.getMinX() && longitude <= polygon.getMaxX());
         }
       }
     }
@@ -90,14 +90,14 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testBoundingBoxEdgeCases() throws Exception {
     for (int i = 0; i < 100; i++) {
       Polygon polygon = nextPolygon();
-      Polygon2D impl = Polygon2D.create(polygon);
+      Component2D impl = Polygon2D.create(polygon);
       
       for (int j = 0; j < 100; j++) {
         double point[] = GeoTestUtil.nextPointNear(polygon);
         double latitude = point[0];
         double longitude = point[1];
         // if the point is within poly, then it should be in our bounding box
-        if (impl.contains(latitude, longitude)) {
+        if (impl.contains(longitude, latitude)) {
           assertTrue(latitude >= polygon.minLat && latitude <= polygon.maxLat);
           assertTrue(longitude >= polygon.minLon && longitude <= polygon.maxLon);
         }
@@ -110,7 +110,7 @@ public class TestPolygon2D extends LuceneTestCase {
     int iters = atLeast(50);
     for (int i = 0; i < iters; i++) {
       Polygon polygon = nextPolygon();
-      Polygon2D impl = Polygon2D.create(polygon);
+      Component2D impl = Polygon2D.create(polygon);
       
       for (int j = 0; j < 100; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
@@ -147,12 +147,12 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testContainsEdgeCases() throws Exception {
     for (int i = 0; i < 1000; i++) {
       Polygon polygon = nextPolygon();
-      Polygon2D impl = Polygon2D.create(polygon);
+      Component2D impl = Polygon2D.create(polygon);
 
       for (int j = 0; j < 10; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
         // allowed to conservatively return false
-        if (impl.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_INSIDE_QUERY) {
+        if (impl.relate(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat) == Relation.CELL_INSIDE_QUERY) {
           for (int k = 0; k < 100; k++) {
             // this tests in our range but sometimes outside! so we have to double-check its really in other box
             double point[] = GeoTestUtil.nextPointNear(rectangle);
@@ -160,7 +160,7 @@ public class TestPolygon2D extends LuceneTestCase {
             double longitude = point[1];
             // check for sure its in our box
             if (latitude >= rectangle.minLat && latitude <= rectangle.maxLat && longitude >= rectangle.minLon && longitude <= rectangle.maxLon) {
-              assertTrue(impl.contains(latitude, longitude));
+              assertTrue(impl.contains(longitude, latitude));
             }
           }
           for (int k = 0; k < 20; k++) {
@@ -170,7 +170,7 @@ public class TestPolygon2D extends LuceneTestCase {
             double longitude = point[1];
             // check for sure its in our box
             if (latitude >= rectangle.minLat && latitude <= rectangle.maxLat && longitude >= rectangle.minLon && longitude <= rectangle.maxLon) {
-              assertTrue(impl.contains(latitude, longitude));
+              assertTrue(impl.contains(longitude, latitude));
             }
           }
         }
@@ -183,12 +183,13 @@ public class TestPolygon2D extends LuceneTestCase {
     int iters = atLeast(10);
     for (int i = 0; i < iters; i++) {
       Polygon polygon = nextPolygon();
-      Polygon2D impl = Polygon2D.create(polygon);
+      Component2D impl = Polygon2D.create(polygon);
       
-      for (int j = 0; j < 100; j++) {
+      int innerIters = atLeast(10);
+      for (int j = 0; j < innerIters; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
         // allowed to conservatively return true.
-        if (impl.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_OUTSIDE_QUERY) {
+        if (impl.relate(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat) == Relation.CELL_OUTSIDE_QUERY) {
           for (int k = 0; k < 1000; k++) {
             double point[] = GeoTestUtil.nextPointNear(rectangle);
             // this tests in our range but sometimes outside! so we have to double-check its really in other box
@@ -196,7 +197,7 @@ public class TestPolygon2D extends LuceneTestCase {
             double longitude = point[1];
             // check for sure its in our box
             if (latitude >= rectangle.minLat && latitude <= rectangle.maxLat && longitude >= rectangle.minLon && longitude <= rectangle.maxLon) {
-              assertFalse(impl.contains(latitude, longitude));
+              assertFalse(impl.contains(longitude, latitude));
             }
           }
           for (int k = 0; k < 100; k++) {
@@ -206,7 +207,7 @@ public class TestPolygon2D extends LuceneTestCase {
             double longitude = point[1];
             // check for sure its in our box
             if (latitude >= rectangle.minLat && latitude <= rectangle.maxLat && longitude >= rectangle.minLon && longitude <= rectangle.maxLon) {
-              assertFalse(impl.contains(latitude, longitude));
+              assertFalse(impl.contains(longitude, latitude));
             }
           }
         }
@@ -220,12 +221,12 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testIntersectEdgeCases() {
     for (int i = 0; i < 100; i++) {
       Polygon polygon = nextPolygon();
-      Polygon2D impl = Polygon2D.create(polygon);
+      Component2D impl = Polygon2D.create(polygon);
 
       for (int j = 0; j < 10; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
         // allowed to conservatively return false.
-        if (impl.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_OUTSIDE_QUERY) {
+        if (impl.relate(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat) == Relation.CELL_OUTSIDE_QUERY) {
           for (int k = 0; k < 100; k++) {
             // this tests in our range but sometimes outside! so we have to double-check its really in other box
             double point[] = GeoTestUtil.nextPointNear(rectangle);
@@ -233,7 +234,7 @@ public class TestPolygon2D extends LuceneTestCase {
             double longitude = point[1];
             // check for sure its in our box
             if (latitude >= rectangle.minLat && latitude <= rectangle.maxLat && longitude >= rectangle.minLon && longitude <= rectangle.maxLon) {
-              assertFalse(impl.contains(latitude, longitude));
+              assertFalse(impl.contains(longitude, latitude));
             }
           }
           for (int k = 0; k < 50; k++) {
@@ -243,7 +244,7 @@ public class TestPolygon2D extends LuceneTestCase {
             double longitude = point[1];
             // check for sure its in our box
             if (latitude >= rectangle.minLat && latitude <= rectangle.maxLat && longitude >= rectangle.minLon && longitude <= rectangle.maxLon) {
-              assertFalse(impl.contains(latitude, longitude));
+              assertFalse(impl.contains(longitude, latitude));
             }
           }
         }
@@ -253,23 +254,48 @@ public class TestPolygon2D extends LuceneTestCase {
   
   /** Tests edge case behavior with respect to insideness */
   public void testEdgeInsideness() {
-    Polygon2D poly = Polygon2D.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
+    Component2D poly = Polygon2D.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
     assertTrue(poly.contains(-2, -2)); // bottom left corner: true
-    assertTrue(poly.contains(-2, 2));  // bottom right corner: true
-    assertTrue(poly.contains(2, -2));  // top left corner: true
+    assertTrue(poly.contains(2, -2));  // bottom right corner: true
+    assertTrue(poly.contains(-2, 2));  // top left corner: true
     assertTrue(poly.contains(2,  2));  // top right corner: true
-    assertTrue(poly.contains(-2, -1)); // bottom side: true
-    assertTrue(poly.contains(-2, 0));  // bottom side: true
-    assertTrue(poly.contains(-2, 1));  // bottom side: true
-    assertTrue(poly.contains(2, -1));  // top side: true
-    assertTrue(poly.contains(2, 0));   // top side: true
-    assertTrue(poly.contains(2, 1));   // top side: true
-    assertTrue(poly.contains(-1, 2));  // right side: true
-    assertTrue(poly.contains(0, 2));   // right side: true
-    assertTrue(poly.contains(1, 2));   // right side: true
-    assertTrue(poly.contains(-1, -2)); // left side: true
-    assertTrue(poly.contains(0, -2));  // left side: true
-    assertTrue(poly.contains(1, -2));  // left side: true
+    assertTrue(poly.contains(-1, -2)); // bottom side: true
+    assertTrue(poly.contains(0, -2));  // bottom side: true
+    assertTrue(poly.contains(1, -2));  // bottom side: true
+    assertTrue(poly.contains(-1, 2));  // top side: true
+    assertTrue(poly.contains(0, 2));   // top side: true
+    assertTrue(poly.contains(1, 2));   // top side: true
+    assertTrue(poly.contains(2, -1));  // right side: true
+    assertTrue(poly.contains(2, 0));   // right side: true
+    assertTrue(poly.contains(2, 1));   // right side: true
+    assertTrue(poly.contains(-2, -1)); // left side: true
+    assertTrue(poly.contains(-2, 0));  // left side: true
+    assertTrue(poly.contains(-2, 1));  // left side: true
+  }
+
+  /** Tests edge case behavior with respect to insideness */
+  public void testIntersectsSameEdge() {
+    Component2D poly = Polygon2D.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
+    // line inside edge
+    assertTrue(poly.containsTriangle(-1, -1, 1, 1, -1, -1));
+    assertTrue(poly.containsTriangle(-2, -2, 2, 2, -2, -2));
+    assertTrue(poly.intersectsTriangle(-1, -1, 1, 1, -1, -1));
+    assertTrue(poly.intersectsTriangle(-2, -2, 2, 2, -2, -2));
+    // line over edge
+    assertFalse(poly.containsTriangle(-4, -4, 4, 4, -4, -4));
+    assertFalse(poly.containsTriangle(-2, -2, 4, 4, 4, 4));
+    assertTrue(poly.intersectsTriangle(-4, -4, 4, 4, -4, -4));
+    assertTrue(poly.intersectsTriangle(-2, -2, 4, 4, 4, 4));
+    // line inside edge
+    assertFalse(poly.containsTriangle(-1, -1, 3, 3, 1, 1));
+    assertFalse(poly.containsTriangle(-2, -2, 3, 3, 2, 2));
+    assertTrue(poly.intersectsTriangle(-1, -1, 3, 3, 1, 1));
+    assertTrue(poly.intersectsTriangle(-2, -2, 3, 3, 2, 2));
+    // line over edge
+    assertFalse(poly.containsTriangle(-4, -4, 7, 7, 4, 4));
+    assertFalse(poly.containsTriangle(-2, -2, 7, 7, 4, 4));
+    assertTrue(poly.intersectsTriangle(-4, -4, 7, 7, 4, 4));
+    assertTrue(poly.intersectsTriangle(-2, -2, 7, 7, 4, 4));
   }
   
   /** Tests current impl against original algorithm */
@@ -281,14 +307,14 @@ public class TestPolygon2D extends LuceneTestCase {
       while (polygon.getHoles().length > 0) {
         polygon = nextPolygon();
       }
-      Polygon2D impl = Polygon2D.create(polygon);
+      Component2D impl = Polygon2D.create(polygon);
       
       // random lat/lons against polygon
       for (int j = 0; j < 1000; j++) {
         double point[] = GeoTestUtil.nextPointNear(polygon);
         double latitude = point[0];
         double longitude = point[1];
-        boolean expected = GeoTestUtil.containsSlowly(polygon, latitude, longitude);
+        boolean expected = GeoTestUtil.containsSlowly(polygon, longitude, latitude);
         assertEquals(expected, impl.contains(latitude, longitude));
       }
     }
@@ -298,7 +324,7 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testRelateTriangle() {
     for (int i = 0; i < 100; ++i) {
       Polygon polygon = nextPolygon();
-      Polygon2D impl = Polygon2D.create(polygon);
+      Component2D impl = Polygon2D.create(polygon);
 
       for (int j = 0; j < 100; j++) {
         double[] a = nextPointNear(polygon);
@@ -306,8 +332,8 @@ public class TestPolygon2D extends LuceneTestCase {
         double[] c = nextPointNear(polygon);
 
         // if the point is within poly, then triangle should not intersect
-        if (impl.contains(a[0], a[1]) || impl.contains(b[0], b[1]) || impl.contains(c[0], c[1])) {
-          assertTrue(impl.relateTriangle(a[1], a[0], b[1], b[0], c[1], c[0]) != Relation.CELL_OUTSIDE_QUERY);
+        if (impl.contains(a[1], a[0]) || impl.contains(b[1], b[0]) || impl.contains(c[1], c[0])) {
+          assertTrue(impl.intersectsTriangle(a[1], a[0], b[1], b[0], c[1], c[0]));
         }
       }
     }
@@ -315,8 +341,8 @@ public class TestPolygon2D extends LuceneTestCase {
 
   public void testRelateTriangleContainsPolygon() {
     Polygon polygon = new Polygon(new double[]{0, 0, 1, 1, 0}, new double[]{0, 1, 1, 0, 0});
-    Polygon2D impl = Polygon2D.create(polygon);
-    assertEquals(Relation.CELL_CROSSES_QUERY, impl.relateTriangle(-10 , -1, 2, -1, 10, 10));
+    Component2D impl = Polygon2D.create(polygon);
+    assertTrue(impl.intersectsTriangle(-10 , -1, 2, -1, 10, 10));
   }
 
   // test
@@ -327,7 +353,7 @@ public class TestPolygon2D extends LuceneTestCase {
       // random number of vertices
       int numVertices = RandomNumbers.randomIntBetween(random(), 100, 1000);
       Polygon polygon = createRegularPolygon(0, 0, randomRadius, numVertices);
-      Polygon2D impl = Polygon2D.create(polygon);
+      Component2D impl = Polygon2D.create(polygon);
 
       // create and test a simple tessellation
       for (int j = 1; j < numVertices; ++j) {
@@ -335,37 +361,37 @@ public class TestPolygon2D extends LuceneTestCase {
         double[] b = new double[] {polygon.getPolyLat(j - 1), polygon.getPolyLon(j - 1)};
         // occassionally test pancake triangles
         double[] c = random().nextBoolean() ? new double[] {polygon.getPolyLat(j), polygon.getPolyLon(j)} : new double[] {a[0], a[1]};
-        assertTrue(impl.relateTriangle(a[0], a[1], b[0], b[1], c[0], c[1]) != Relation.CELL_OUTSIDE_QUERY);
+        assertTrue(impl.intersectsTriangle(a[0], a[1], b[0], b[1], c[0], c[1]));
       }
     }
   }
 
   public void testLineCrossingPolygonPoints() {
     Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
-    Polygon2D polygon2D = Polygon2D.create(p);
-    Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
+    Component2D polygon2D = Polygon2D.create(p);
+    boolean intersects = polygon2D.intersectsTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)));
-    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
+    assertTrue(intersects);
   }
 
   public void testRandomLineCrossingPolygon() {
     Polygon p = GeoTestUtil.createRegularPolygon(0, 0, 1000, TestUtil.nextInt(random(), 100, 10000));
-    Polygon2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = Polygon2D.create(p);
     for (int i=0; i < 1000; i ++) {
       double longitude = GeoTestUtil.nextLongitude();
       double latitude = GeoTestUtil.nextLatitude();
-      Relation rel = polygon2D.relateTriangle(
+      boolean intersects =  polygon2D.intersectsTriangle(
           GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-longitude)),
           GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)),
           GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(longitude)),
           GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(latitude)),
           GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-longitude)),
           GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)));
-      assertNotEquals(Relation.CELL_OUTSIDE_QUERY, rel);
+      assertTrue(intersects);
     }
   }
 }

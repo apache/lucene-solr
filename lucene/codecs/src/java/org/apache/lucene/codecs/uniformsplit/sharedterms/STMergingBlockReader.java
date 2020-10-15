@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.uniformsplit.sharedterms;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
@@ -44,7 +43,7 @@ import org.apache.lucene.util.BytesRef;
 public class STMergingBlockReader extends STBlockReader {
 
   public STMergingBlockReader(
-      Supplier<IndexDictionary.Browser> dictionaryBrowserSupplier,
+      IndexDictionary.BrowserSupplier dictionaryBrowserSupplier,
       IndexInput blockInput,
       PostingsReaderBase postingsReader,
       FieldMetadata fieldMetadata,
@@ -99,7 +98,7 @@ public class STMergingBlockReader extends STBlockReader {
   public void readFieldTermStatesMap(Map<String, BlockTermState> fieldTermStatesMap) throws IOException {
     if (term() != null) {
       termStatesReadBuffer.setPosition(blockFirstLineStart + blockHeader.getTermStatesBaseOffset() + blockLine.getTermStateRelativeOffset());
-      STBlockLine.Serializer.readFieldTermStatesMap(
+      ((STBlockLine.Serializer) blockLineReader).readFieldTermStatesMap(
           termStatesReadBuffer,
           termStateSerializer,
           blockHeader,

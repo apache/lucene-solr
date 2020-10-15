@@ -51,10 +51,10 @@
  *       </ul>
  *     </li>
  *   </ol>
- * <a name="index"></a>
+ * <a id="index"></a>
  * <h2>Index APIs</h2>
 
- * <a name="writer"></a>
+ * <a id="writer"></a>
  * <h3>IndexWriter</h3>
 
  * <p>{@link org.apache.lucene.index.IndexWriter} is used to create an index, and to add, update and
@@ -66,7 +66,7 @@
  * org.apache.lucene.store.FSDirectory}), but it may also stand for some other storage, such as
  * RAM.</p>
 
- * <a name="reader"></a>
+ * <a id="reader"></a>
  * <h3>IndexReader</h3>
 
  * <p>{@link org.apache.lucene.index.IndexReader} is used to read data from the index, and supports
@@ -76,7 +76,7 @@
  * org.apache.lucene.index.DirectoryReader#openIfChanged}) in order to incorporate writes that may
  * occur after it is opened.</p>
 
- * <a name="segments"></a>
+ * <a id="segments"></a>
  * <h3>Segments and docids</h3>
 
  * <p>Lucene's index is composed of segments, each of which contains a subset of all the documents
@@ -101,10 +101,10 @@
  * not exposed as part of an application, nor stored or referenced outside of Lucene's internal
  * APIs.</p>
 
- * <a name="field_types"></a>
+ * <a id="field_types"></a>
  * <h2>Field Types</h2>
  *
- * <a name="postings-desc"></a>
+ * <a id="postings-desc"></a>
  *
  * <p>Lucene supports a variety of different document field data structures. Lucene's core, the
  * inverted index, is comprised of "postings." The postings, with their term dictionary, can be
@@ -115,14 +115,14 @@
  * able to skip over low-scoring documents at search time. Postings do not provide any way of
  * retrieving terms given a document, short of scanning the entire index.</p>
  *
- * <a name="stored-fields"></a>
+ * <a id="stored-fields"></a>
  * <p>Stored fields are essentially the opposite of postings, providing efficient retrieval of field
  * values given a docid.  All stored field values for a document are stored together in a
  * block. Different types of stored field provide high-level datatypes such as strings and numbers
  * on top of the underlying bytes. Stored field values are usually retrieved by the searcher using
  * an implementation of {@link org.apache.lucene.index.StoredFieldVisitor}.</p>
 
- * <a name="docvalues"></a>
+ * <a id="docvalues"></a>
  * <p>{@link org.apache.lucene.index.DocValues} fields are what are sometimes referred to as
  * columnar, or column-stride fields, by analogy to relational database terminology, in which
  * documents are considered as rows, and fields, columns. DocValues fields store values per-field: a
@@ -130,14 +130,14 @@
  * lookup of a field-value given a docid. These fields are used for efficient value-based sorting,
  * and for faceting, but they are not useful for filtering.</p>
 
- * <a name="points"></a>
+ * <a id="points"></a>
  * <p>{@link org.apache.lucene.index.PointValues} represent numeric values using a kd-tree data
  * structure. Efficient 1- and higher dimensional implementations make these the choice for numeric
  * range and interval queries, and geo-spatial queries.</p>
 
- * <a name="postings"></a>
+ * <a id="postings"></a>
  * <h2>Postings APIs</h2>
- * <a name="fields"></a>
+ * <a id="fields"></a>
  * <h3>
  *   Fields
  * </h3>
@@ -159,7 +159,7 @@
  *   Terms terms = fields.terms(field);
  * }
  * </pre>
- * <a name="terms"></a>
+ * <a id="terms"></a>
  * <h3>
  *   Terms
  * </h3>
@@ -195,7 +195,7 @@
  *   PostingsEnum docsAndPositions = termsEnum.postings(null, null, PostingsEnum.FLAG_POSITIONS);
  * }
  * </pre>
- * <a name="documents"></a>
+ * <a id="documents"></a>
  * <h3>
  *   Documents
  * </h3>
@@ -210,7 +210,7 @@
  *   System.out.println(docsEnum.freq());
  *  }
  * </pre>
- * <a name="positions"></a>
+ * <a id="positions"></a>
  * <h3>
  *   Positions
  * </h3>
@@ -233,9 +233,9 @@
  *   }
  * }
  * </pre>
- * <a name="stats"></a>
+ * <a id="stats"></a>
  * <h2>Index Statistics</h2>
- * <a name="termstats"></a>
+ * <a id="termstats"></a>
  * <h3>
  *   Term statistics
  * </h3>
@@ -249,7 +249,7 @@
  *            of occurrences of this term across all documents. Like docFreq(), it will
  *            also count occurrences that appear in deleted documents.
  *     </ul>
- * <a name="fieldstats"></a>
+ * <a id="fieldstats"></a>
  * <h3>
  *   Field statistics
  * </h3>
@@ -276,7 +276,7 @@
  *      field, and like totalTermFreq() it will also count occurrences that appear in
  *      deleted documents.
  *   </ul>
- * <a name="segmentstats"></a>
+ * <a id="segmentstats"></a>
  * <h3>
  *   Segment statistics
  * </h3>
@@ -290,7 +290,7 @@
  *    <li>{@link org.apache.lucene.index.Fields#size}: Returns the number of indexed
  *      fields.
  *   </ul>
- * <a name="documentstats"></a>
+ * <a id="documentstats"></a>
  * <h3>
  *   Document statistics
  * </h3>

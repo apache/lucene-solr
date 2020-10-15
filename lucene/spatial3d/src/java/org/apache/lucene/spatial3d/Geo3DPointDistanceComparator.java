@@ -42,6 +42,7 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
   final String field;
   
   final GeoDistanceShape distanceShape;
+  final private PlanetModel planetModel;
 
   final double[] values;
   double bottomDistance;
@@ -53,9 +54,10 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
   // the number of times setBottom has been called (adversary protection)
   int setBottomCounter = 0;
 
-  public Geo3DPointDistanceComparator(String field, final GeoDistanceShape distanceShape, int numHits) {
+  public Geo3DPointDistanceComparator(String field, final PlanetModel planetModel, final GeoDistanceShape distanceShape, int numHits) {
     this.field = field;
     this.distanceShape = distanceShape;
+    this.planetModel = planetModel;
     this.values = new double[numHits];
   }
   
@@ -105,9 +107,9 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
 
       // Test against bounds.
       // First we need to decode...
-      final double x = Geo3DDocValuesField.decodeXValue(encoded);
-      final double y = Geo3DDocValuesField.decodeYValue(encoded);
-      final double z = Geo3DDocValuesField.decodeZValue(encoded);
+      final double x = planetModel.getDocValueEncoder().decodeXValue(encoded);
+      final double y = planetModel.getDocValueEncoder().decodeYValue(encoded);
+      final double z = planetModel.getDocValueEncoder().decodeZValue(encoded);
       
       if (x > priorityQueueBounds.getMaximumX() ||
         x < priorityQueueBounds.getMinimumX() ||
@@ -142,7 +144,7 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
   @Override
   public Double value(int slot) {
     // Return the arc distance
-    return Double.valueOf(values[slot] * PlanetModel.WGS84_MEAN);
+    return Double.valueOf(values[slot] * planetModel.getMeanRadius());
   }
   
   @Override
@@ -160,9 +162,9 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
       for (int i = 0; i < numValues; i++) {
         final long encoded = currentDocs.nextValue();
         final double distance = distanceShape.computeDistance(DistanceStyle.ARC,
-                                                              Geo3DDocValuesField.decodeXValue(encoded),
-                                                              Geo3DDocValuesField.decodeYValue(encoded),
-                                                              Geo3DDocValuesField.decodeZValue(encoded));
+                                                              planetModel.getDocValueEncoder().decodeXValue(encoded),
+                                                              planetModel.getDocValueEncoder().decodeYValue(encoded),
+                                                              planetModel.getDocValueEncoder().decodeZValue(encoded));
         minValue = Math.min(minValue, distance);
       }
     }

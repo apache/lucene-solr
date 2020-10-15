@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +53,7 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   private ResourceLoader loader;
   List<AuditLoggerPlugin> plugins = new ArrayList<>();
   List<String> pluginNames = new ArrayList<>();
+  SolrMetricsContext solrMetricsContext;
 
   /**
    * Passes the AuditEvent to all sub plugins in parallel. The event should be a {@link AuditEvent} to be able to pull context info.
@@ -87,7 +88,9 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
     if (pluginConfig.size() > 0) {
       log.error("Plugin config was not fully consumed. Remaining parameters are {}", pluginConfig);
     }
-    log.info("Initialized {} audit plugins: {}", plugins.size(), pluginNames);
+    if (log.isInfoEnabled()) {
+      log.info("Initialized {} audit plugins: {}", plugins.size(), pluginNames);
+    }
   }
 
   @Override
@@ -101,7 +104,7 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
       if (klas == null) {
         throw new SolrException(SERVER_ERROR, "class is required for auditlogger plugin");
       }
-      log.info("Initializing auditlogger plugin: " + klas);
+      log.info("Initializing auditlogger plugin: {}", klas);
       AuditLoggerPlugin p = loader.newInstance(klas, AuditLoggerPlugin.class);
       if (p.getClass().equals(this.getClass())) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot nest MultiDestinationAuditLogger");
@@ -118,10 +121,11 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
     this.loader = loader;
   }
 
+
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    super.initializeMetrics(manager, registryName, tag, scope);
-    plugins.forEach(p -> p.initializeMetrics(manager, registryName, tag, scope));
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    plugins.forEach(p -> p.initializeMetrics(solrMetricsContext, scope));
   }
 
   @Override

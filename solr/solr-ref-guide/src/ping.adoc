@@ -69,7 +69,7 @@ This command will ping all replicas of the given collection name for a response:
 
 Both API calls have the same output. A status=OK indicates that the nodes are responding.
 
-*SolrJ Example*
+*SolrJ Example with SolrPing*
 
 [source,java]
 ----
@@ -77,4 +77,13 @@ SolrPing ping = new SolrPing();
 ping.getParams().add("distrib", "true"); //To make it a distributed request against a collection
 rsp = ping.process(solrClient, collectionName);
 int status = rsp.getStatus();
+----
+
+*SolrJ Example with SolrClient*
+
+[source,java]
+----
+SolrClient client = new HttpSolrClient.Builder(solrUrl).build();
+SolrPingResponse pingResponse = client.ping(collectionName);
+int status = pingResponse.getStatus();
 ----

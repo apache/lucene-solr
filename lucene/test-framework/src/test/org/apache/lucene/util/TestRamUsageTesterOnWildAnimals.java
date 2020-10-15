@@ -27,7 +27,7 @@ public class TestRamUsageTesterOnWildAnimals extends LuceneTestCase {
   }
 
   public void testOverflowMaxChainLength() {
-    int UPPERLIMIT = 100000;
+    int UPPERLIMIT = atLeast(10000);
     int lower = 0;
     int upper = UPPERLIMIT;
     

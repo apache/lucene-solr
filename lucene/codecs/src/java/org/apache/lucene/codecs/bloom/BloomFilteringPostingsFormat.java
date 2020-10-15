@@ -392,8 +392,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
 
     @Override
     public Collection<Accountable> getChildResources() {
-      List<Accountable> resources = new ArrayList<>();
-      resources.addAll(Accountables.namedAccountables("field", bloomsByFieldName));
+      List<Accountable> resources = new ArrayList<>(Accountables.namedAccountables("field", bloomsByFieldName));
       if (delegateFieldsProducer != null) {
         resources.add(Accountables.namedAccountable("delegate", delegateFieldsProducer));
       }
@@ -455,7 +454,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
               // Field not bloom'd
               break;
             }
-            assert bloomFilters.containsKey(field) == false;
+            assert bloomFilters.containsKey(fieldInfo) == false;
             bloomFilters.put(fieldInfo, bloomFilter);
           }
           // Make sure there's at least one doc for this term:

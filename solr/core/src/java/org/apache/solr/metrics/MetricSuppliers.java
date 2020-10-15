@@ -147,6 +147,7 @@ public class MetricSuppliers {
   private static final double DEFAULT_ALPHA = 0.015;
   private static final long DEFAULT_WINDOW = 300;
 
+  @SuppressWarnings({"unchecked"})
   private static final Reservoir getReservoir(SolrResourceLoader loader, PluginInfo info) {
     if (info == null) {
       return new ExponentiallyDecayingReservoir();
@@ -205,7 +206,7 @@ public class MetricSuppliers {
         }
         return reservoir;
       } catch (Exception e) {
-        log.warn("Error initializing custom Reservoir implementation (will use default): " + info, e);
+        log.warn("Error initializing custom Reservoir implementation (will use default): {}", info, e);
         return new ExponentiallyDecayingReservoir(size, alpha, clk);
       }
     }
@@ -276,6 +277,7 @@ public class MetricSuppliers {
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
+  @SuppressWarnings({"unchecked"})
   public static MetricRegistry.MetricSupplier<Counter> counterSupplier(SolrResourceLoader loader, PluginInfo info) {
     if (info == null || info.className == null || info.className.trim().isEmpty()) {
       return new DefaultCounterSupplier();
@@ -285,7 +287,7 @@ public class MetricSuppliers {
     try {
       supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
     } catch (Exception e) {
-      log.warn("Error creating custom Counter supplier (will use default): " + info, e);
+      log.warn("Error creating custom Counter supplier (will use default): {}", info, e);
       supplier = new DefaultCounterSupplier();
     }
     if (supplier instanceof PluginInfoInitialized) {
@@ -302,6 +304,7 @@ public class MetricSuppliers {
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
+  @SuppressWarnings({"unchecked"})
   public static MetricRegistry.MetricSupplier<Meter> meterSupplier(SolrResourceLoader loader, PluginInfo info) {
     MetricRegistry.MetricSupplier<Meter> supplier;
     if (info == null || info.className == null || info.className.isEmpty()) {
@@ -310,7 +313,7 @@ public class MetricSuppliers {
       try {
         supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
-        log.warn("Error creating custom Meter supplier (will use default): " + info, e);
+        log.warn("Error creating custom Meter supplier (will use default): {}",info, e);
         supplier = new DefaultMeterSupplier();
       }
     }
@@ -328,6 +331,7 @@ public class MetricSuppliers {
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
+  @SuppressWarnings({"unchecked"})
   public static MetricRegistry.MetricSupplier<Timer> timerSupplier(SolrResourceLoader loader, PluginInfo info) {
     MetricRegistry.MetricSupplier<Timer> supplier;
     if (info == null || info.className == null || info.className.isEmpty()) {
@@ -336,7 +340,7 @@ public class MetricSuppliers {
       try {
         supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
-        log.warn("Error creating custom Timer supplier (will use default): " + info, e);
+        log.warn("Error creating custom Timer supplier (will use default): {}", info, e);
         supplier = new DefaultTimerSupplier(loader);
       }
     }
@@ -353,6 +357,7 @@ public class MetricSuppliers {
    * @param info plugin configuration, or null for default
    * @return configured supplier instance, or default instance if configuration was invalid
    */
+  @SuppressWarnings({"unchecked"})
   public static MetricRegistry.MetricSupplier<Histogram> histogramSupplier(SolrResourceLoader loader, PluginInfo info) {
     MetricRegistry.MetricSupplier<Histogram> supplier;
     if (info == null || info.className == null || info.className.isEmpty()) {
@@ -361,7 +366,7 @@ public class MetricSuppliers {
       try {
         supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
-        log.warn("Error creating custom Histogram supplier (will use default): " + info, e);
+        log.warn("Error creating custom Histogram supplier (will use default): {}", info, e);
         supplier = new DefaultHistogramSupplier(loader);
       }
     }

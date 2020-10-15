@@ -32,4 +32,6 @@
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
   </fieldType>
+
+  <similarity class="${solr.similarity:solr.SchemaSimilarityFactory}"/>
 </schema>

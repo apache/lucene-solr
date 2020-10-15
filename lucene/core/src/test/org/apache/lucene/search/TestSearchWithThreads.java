@@ -27,34 +27,22 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-@SuppressCodecs({ "SimpleText", "Direct" })
 public class TestSearchWithThreads extends LuceneTestCase {
-  int NUM_DOCS;
-  static final int NUM_SEARCH_THREADS = 5;
-  int RUN_TIME_MSEC;
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    NUM_DOCS = atLeast(10000);
-    RUN_TIME_MSEC = atLeast(1000);
-  }
 
   public void test() throws Exception {
+    final int numThreads = TEST_NIGHTLY ? 5 : 2;
+    final int numSearches = TEST_NIGHTLY ? atLeast(2000) : atLeast(500);
+    final int numDocs = TEST_NIGHTLY ? atLeast(10000) : atLeast(200);
+
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final long startTime = System.currentTimeMillis();
-
-    // TODO: replace w/ the @nightly test data; make this
-    // into an optional @nightly stress test
     final Document doc = new Document();
     final Field body = newTextField("body", "", Field.Store.NO);
     doc.add(body);
     final StringBuilder sb = new StringBuilder();
-    for(int docCount=0;docCount<NUM_DOCS;docCount++) {
+    for(int docCount=0;docCount<numDocs;docCount++) {
       final int numTerms = random().nextInt(10);
       for(int termCount=0;termCount<numTerms;termCount++) {
         sb.append(random().nextBoolean() ? "aaa" : "bbb");
@@ -67,16 +55,13 @@ public class TestSearchWithThreads extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final long endTime = System.currentTimeMillis();
-    if (VERBOSE) System.out.println("BUILD took " + (endTime-startTime));
-
     final IndexSearcher s = newSearcher(r);
 
     final AtomicBoolean failed = new AtomicBoolean();
     final AtomicLong netSearch = new AtomicLong();
 
-    Thread[] threads = new Thread[NUM_SEARCH_THREADS];
-    for (int threadID = 0; threadID < NUM_SEARCH_THREADS; threadID++) {
+    Thread[] threads = new Thread[numThreads];
+    for (int threadID = 0; threadID < numThreads; threadID++) {
       threads[threadID] = new Thread() {
         TotalHitCountCollector col = new TotalHitCountCollector();
           @Override
@@ -84,13 +69,11 @@ public class TestSearchWithThreads extends LuceneTestCase {
             try {
               long totHits = 0;
               long totSearch = 0;
-              long stopAt = System.currentTimeMillis() + RUN_TIME_MSEC;
-              while(System.currentTimeMillis() < stopAt && !failed.get()) {
+              for (; totSearch < numSearches & !failed.get(); totSearch++) {
                 s.search(new TermQuery(new Term("body", "aaa")), col);
                 totHits += col.getTotalHits();
                 s.search(new TermQuery(new Term("body", "bbb")), col);
                 totHits += col.getTotalHits();
-                totSearch++;
               }
               assertTrue(totSearch > 0 && totHits > 0);
               netSearch.addAndGet(totSearch);
@@ -111,7 +94,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
       t.join();
     }
     
-    if (VERBOSE) System.out.println(NUM_SEARCH_THREADS + " threads did " + netSearch.get() + " searches");
+    if (VERBOSE) System.out.println(numThreads + " threads did " + netSearch.get() + " searches");
 
     r.close();
     dir.close();

@@ -47,23 +47,14 @@ public class UniformSplitTerms extends Terms implements Accountable {
   protected final FieldMetadata fieldMetadata;
   protected final PostingsReaderBase postingsReader;
   protected final BlockDecoder blockDecoder;
-  protected final DictionaryBrowserSupplier dictionaryBrowserSupplier;
-
-  /**
-   * @param blockDecoder Optional block decoder, may be null if none. It can be used for decompression or decryption.
-   */
-  protected UniformSplitTerms(IndexInput dictionaryInput, IndexInput blockInput, FieldMetadata fieldMetadata,
-                    PostingsReaderBase postingsReader, BlockDecoder blockDecoder) throws IOException {
-    this(blockInput, fieldMetadata, postingsReader, blockDecoder,
-        new DictionaryBrowserSupplier(dictionaryInput, fieldMetadata.getDictionaryStartFP(), blockDecoder));
-  }
+  protected final IndexDictionary.BrowserSupplier dictionaryBrowserSupplier;
 
   /**
    * @param blockDecoder Optional block decoder, may be null if none. It can be used for decompression or decryption.
    */
   protected UniformSplitTerms(IndexInput blockInput, FieldMetadata fieldMetadata,
                               PostingsReaderBase postingsReader, BlockDecoder blockDecoder,
-                              DictionaryBrowserSupplier dictionaryBrowserSupplier) {
+                              IndexDictionary.BrowserSupplier dictionaryBrowserSupplier) {
     assert fieldMetadata != null;
     assert fieldMetadata.getFieldInfo() != null;
     assert fieldMetadata.getLastTerm() != null;

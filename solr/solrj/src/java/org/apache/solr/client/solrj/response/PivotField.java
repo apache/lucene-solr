@@ -29,9 +29,11 @@ public class PivotField implements Serializable
   final List<PivotField> _pivot;
   final Map<String,FieldStatsInfo> _statsInfo;
   final Map<String,Integer> _querycounts;
+  @SuppressWarnings({"rawtypes"})
   final List<RangeFacet> _ranges;
 
-  public PivotField( String f, Object v, int count, List<PivotField> pivot, Map<String,FieldStatsInfo> statsInfo, Map<String,Integer> queryCounts, List<RangeFacet> ranges)
+  public PivotField( String f, Object v, int count, List<PivotField> pivot, Map<String,FieldStatsInfo> statsInfo, Map<String,Integer> queryCounts,
+                     @SuppressWarnings({"rawtypes"})List<RangeFacet> ranges)
   {
     _field = f;
     _value = v;
@@ -66,6 +68,7 @@ public class PivotField implements Serializable
     return _querycounts;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public List<RangeFacet> getFacetRanges() {
     return _ranges;
   }

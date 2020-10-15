@@ -20,6 +20,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.BaseTestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,7 +66,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("partitionKeys", "a_i,a_s,a_i,a_s");
     params.add("wt", "xml");
     String response = h.query(req(params));
-    h.validateXPath(response, "//*[@numFound='0']");
+    BaseTestHarness.validateXPath(response, "//*[@numFound='0']");
 
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
@@ -103,7 +104,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("partitionKeys", "a_s");
     params.add("wt", "xml");
     String response = h.query(req(params));
-    h.validateXPath(response, "//*[@numFound='4']");
+    BaseTestHarness.validateXPath(response, "//*[@numFound='4']");
 
     //Test with int hash
     params = new ModifiableSolrParams();
@@ -112,11 +113,12 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("partitionKeys", "a_i");
     params.add("wt", "xml");
     response = h.query(req(params));
-    h.validateXPath(response, "//*[@numFound='4']");
+    BaseTestHarness.validateXPath(response, "//*[@numFound='4']");
   }
 
 
   @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testHashPartition() throws Exception {
 
 
@@ -153,7 +155,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
+      String results = BaseTestHarness.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set1.add(s);
       }
@@ -172,7 +174,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
+      String results = BaseTestHarness.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set2.add(s);
       }
@@ -192,7 +194,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
+      String results = BaseTestHarness.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set3.add(s);
       }
@@ -223,7 +225,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
+      String results = BaseTestHarness.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set1.add(s);
       }
@@ -242,7 +244,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
+      String results = BaseTestHarness.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set2.add(s);
       }
@@ -270,7 +272,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
+      String results = BaseTestHarness.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set1.add(s);
       }
@@ -289,7 +291,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
 
     while(it.hasNext()) {
       String s = it.next();
-      String results = h.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
+      String results = BaseTestHarness.validateXPath(response, "*[count(//str[@name='id'][.='"+s+"'])=1]");
       if(results == null) {
         set2.add(s);
       }
@@ -302,7 +304,9 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
   }
 
 
-  private void assertNoOverLap(Set setA, Set setB) throws Exception {
+  private void assertNoOverLap(@SuppressWarnings({"rawtypes"})Set setA,
+                               @SuppressWarnings({"rawtypes"})Set setB) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Iterator it =  setA.iterator();
     while(it.hasNext()) {
       Object o = it.next();

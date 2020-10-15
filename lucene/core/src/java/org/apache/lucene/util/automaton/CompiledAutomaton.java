@@ -16,14 +16,17 @@
  */
 package org.apache.lucene.util.automaton;
 
-  
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.SingleTermsEnum;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -273,7 +276,7 @@ public class CompiledAutomaton implements Accountable {
       if (transition.min < leadLabel) {
         maxIndex = i;
       } else {
-        // Transitions are alway sorted
+        // Transitions are always sorted
         break;
       }
     }
@@ -341,6 +344,27 @@ public class CompiledAutomaton implements Accountable {
     default:
       // unreachable
       throw new RuntimeException("unhandled case");
+    }
+  }
+
+  /**
+   * Report back to a QueryVisitor how this automaton matches terms
+   */
+  public void visit(QueryVisitor visitor, Query parent, String field) {
+    if (visitor.acceptField(field)) {
+      switch (type) {
+        case NORMAL:
+          visitor.consumeTermsMatching(parent, field, () -> runAutomaton);
+          break;
+        case NONE:
+          break;
+        case ALL:
+          visitor.consumeTermsMatching(parent, field, () -> new ByteRunAutomaton(Automata.makeAnyString()));
+          break;
+        case SINGLE:
+          visitor.consumeTerms(parent, new Term(field, term));
+          break;
+      }
     }
   }
 

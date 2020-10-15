@@ -24,7 +24,7 @@ import org.apache.lucene.util.AttributeFactory;
  * Tokenizes the input from an edge into n-grams of given size(s).
  * <p>
  * This {@link Tokenizer} create n-grams from the beginning edge of a input token.
- * <p><a name="match_version"></a>As of Lucene 4.4, this class supports
+ * <p><a id="match_version"></a>As of Lucene 4.4, this class supports
  * {@link #isTokenChar(int) pre-tokenization} and correctly handles
  * supplementary characters.
  */

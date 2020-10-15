@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.pattern;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
@@ -80,6 +80,11 @@ public class PatternTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public PatternTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
   /**
    * Split the input using configured pattern
    */

@@ -315,11 +315,13 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
     }
 
-    // remove FILTER clauses that are also MUST clauses
-    // or that match all documents
-    if (clauseSets.get(Occur.MUST).size() > 0 && clauseSets.get(Occur.FILTER).size() > 0) {
-      final Set<Query> filters = new HashSet<Query>(clauseSets.get(Occur.FILTER));
-      boolean modified = filters.remove(new MatchAllDocsQuery());
+    // remove FILTER clauses that are also MUST clauses or that match all documents
+    if (clauseSets.get(Occur.FILTER).size() > 0) {
+      final Set<Query> filters = new HashSet<>(clauseSets.get(Occur.FILTER));
+      boolean modified = false;
+      if (filters.size() > 1 || clauseSets.get(Occur.MUST).isEmpty() == false) {
+        modified = filters.remove(new MatchAllDocsQuery());
+      }
       modified |= filters.removeAll(clauseSets.get(Occur.MUST));
       if (modified) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
@@ -506,11 +508,19 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   @Override
   public void visit(QueryVisitor visitor) {
+    QueryVisitor sub = visitor.getSubVisitor(Occur.MUST, this);
     for (BooleanClause.Occur occur : clauseSets.keySet()) {
       if (clauseSets.get(occur).size() > 0) {
-        QueryVisitor v = visitor.getSubVisitor(occur, this);
-        for (Query q : clauseSets.get(occur)) {
-          q.visit(v);
+        if (occur == Occur.MUST) {
+          for (Query q : clauseSets.get(occur)) {
+            q.visit(sub);
+          }
+        }
+        else {
+          QueryVisitor v = sub.getSubVisitor(occur, this);
+          for (Query q : clauseSets.get(occur)) {
+            q.visit(v);
+          }
         }
       }
     }

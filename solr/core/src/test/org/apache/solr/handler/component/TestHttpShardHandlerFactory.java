@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,19 +27,11 @@ import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
-import org.apache.solr.client.solrj.impl.PreferenceRule;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HttpShardHandlerFactory.WhitelistHostChecker;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,6 +79,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
 
       // test that factory is HttpShardHandlerFactory with expected url reserve fraction
       assertTrue(factory instanceof HttpShardHandlerFactory);
+      @SuppressWarnings("resource")
       final HttpShardHandlerFactory httpShardHandlerFactory = ((HttpShardHandlerFactory)factory);
       assertEquals(expectedLoadBalancerRequestsMinimumAbsolute, httpShardHandlerFactory.permittedLoadBalancerRequestsMinimumAbsolute, 0.0);
       assertEquals(expectedLoadBalancerRequestsMaximumFraction, httpShardHandlerFactory.permittedLoadBalancerRequestsMaximumFraction, 0.0);
@@ -121,208 +113,6 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings("unchecked")
-  public void testNodePreferenceRulesBase() throws Exception {
-    SolrCore testCore = null;
-    HttpShardHandlerFactory fac = new HttpShardHandlerFactory();
-    fac.init(new PluginInfo(null, Collections.EMPTY_MAP));
-    SolrQueryRequestBase req;
-    NamedList<String> params = new NamedList<>();
-    List<Replica> replicas = getBasicReplicaList();
-
-    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
-
-    params.add("routingPreference", "0");
-    params.add(ShardParams.SHARDS_PREFERENCE, rulesParam);
-
-    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
-    ReplicaListTransformer rlt = fac.getReplicaListTransformer(req);
-    rlt.transform(replicas);
-    assertEquals("node1", replicas.get(0).getNodeName());
-    assertEquals("node2", replicas.get(1).getNodeName());
-    assertEquals("node3", replicas.get(2).getNodeName());
-    req.close();
-
-    params.setVal(0, "1");
-    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
-    rlt = fac.getReplicaListTransformer(req);
-    rlt.transform(replicas);
-    assertEquals("node2", replicas.get(0).getNodeName());
-    assertEquals("node3", replicas.get(1).getNodeName());
-    assertEquals("node1", replicas.get(2).getNodeName());
-    req.close();
-
-    params.setVal(0, "2");
-    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
-    rlt = fac.getReplicaListTransformer(req);
-    rlt.transform(replicas);
-    assertEquals("node3", replicas.get(0).getNodeName());
-    assertEquals("node1", replicas.get(1).getNodeName());
-    assertEquals("node2", replicas.get(2).getNodeName());
-    req.close();
-
-    params.setVal(0, "3");
-    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
-    rlt = fac.getReplicaListTransformer(req);
-    rlt.transform(replicas);
-    assertEquals("node1", replicas.get(0).getNodeName());
-    assertEquals("node2", replicas.get(1).getNodeName());
-    assertEquals("node3", replicas.get(2).getNodeName());
-    req.close();
-
-    // Add a replica so that sorting by replicaType:TLOG can cause a tie
-    replicas.add(
-      new Replica(
-        "node4",
-        map(
-          ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
-          ZkStateReader.NODE_NAME_PROP, "node4",
-          ZkStateReader.CORE_NAME_PROP, "collection1",
-          ZkStateReader.REPLICA_TYPE, "TLOG"
-        )
-      )
-    );
-
-    // replicaType and replicaBase combined rule param
-    rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," + 
-      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," + 
-      ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
-
-    params.setVal(0, "0");
-    params.setVal(1, rulesParam);
-    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
-    rlt = fac.getReplicaListTransformer(req);
-    rlt.transform(replicas);
-    assertEquals("node1", replicas.get(0).getNodeName());
-    assertEquals("node2", replicas.get(1).getNodeName());
-    assertEquals("node4", replicas.get(2).getNodeName());
-    assertEquals("node3", replicas.get(3).getNodeName());
-    req.close();
-
-    params.setVal(0, "1");
-    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
-    rlt = fac.getReplicaListTransformer(req);
-    rlt.transform(replicas);
-    assertEquals("node1", replicas.get(0).getNodeName());
-    assertEquals("node4", replicas.get(1).getNodeName());
-    assertEquals("node2", replicas.get(2).getNodeName());
-    assertEquals("node3", replicas.get(3).getNodeName());
-    req.close();
-    fac.close();
-  }
-
-  @SuppressWarnings("unchecked")
-  private static List<Replica> getBasicReplicaList() {
-    List<Replica> replicas = new ArrayList<Replica>();
-    replicas.add(
-      new Replica(
-        "node1",
-        map(
-          ZkStateReader.BASE_URL_PROP, "http://host1:8983/solr",
-          ZkStateReader.NODE_NAME_PROP, "node1",
-          ZkStateReader.CORE_NAME_PROP, "collection1",
-          ZkStateReader.REPLICA_TYPE, "NRT"
-        )
-      )
-    );
-    replicas.add(
-      new Replica(
-        "node2",
-        map(
-          ZkStateReader.BASE_URL_PROP, "http://host2:8983/solr",
-          ZkStateReader.NODE_NAME_PROP, "node2",
-          ZkStateReader.CORE_NAME_PROP, "collection1",
-          ZkStateReader.REPLICA_TYPE, "TLOG"
-        )
-      )
-    );
-    replicas.add(
-      new Replica(
-        "node3",
-        map(
-          ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
-          ZkStateReader.NODE_NAME_PROP, "node3",
-          ZkStateReader.CORE_NAME_PROP, "collection1",
-          ZkStateReader.REPLICA_TYPE, "PULL"
-        )
-      )
-    );
-    return replicas;
-  }
-
-  @SuppressWarnings("unchecked")
-  public void testNodePreferenceRulesComparator() throws Exception {
-    List<Replica> replicas = getBasicReplicaList();
-
-    // Simple replica type rule
-    List<PreferenceRule> rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
-        ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG");
-    HttpShardHandlerFactory.NodePreferenceRulesComparator comparator = 
-      new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
-    replicas.sort(comparator);
-    assertEquals("node1", replicas.get(0).getNodeName());
-    assertEquals("node2", replicas.get(1).getNodeName());
-
-    // Another simple replica type rule
-    rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
-        ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT");
-    comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
-    replicas.sort(comparator);
-    assertEquals("node2", replicas.get(0).getNodeName());
-    assertEquals("node1", replicas.get(1).getNodeName());
-
-    // replicaLocation rule
-    rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2:8983");
-    comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
-    replicas.sort(comparator);
-    assertEquals("node2", replicas.get(0).getNodeName());
-    assertEquals("node1", replicas.get(1).getNodeName());
-
-    // Add a replica so that sorting by replicaType:TLOG can cause a tie
-    replicas.add(
-      new Replica(
-        "node4",
-        map(
-          ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
-          ZkStateReader.NODE_NAME_PROP, "node4",
-          ZkStateReader.CORE_NAME_PROP, "collection1",
-          ZkStateReader.REPLICA_TYPE, "TLOG"
-        )
-      )
-    );
-
-    // replicaType and replicaLocation combined rule
-    rules = PreferenceRule.from(
-      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," + 
-      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," + 
-      ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2_2");
-    comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
-    replicas.sort(comparator);
-    assertEquals("node1", replicas.get(0).getNodeName());
-    assertEquals("node4", replicas.get(1).getNodeName());
-    assertEquals("node2", replicas.get(2).getNodeName());
-    assertEquals("node3", replicas.get(3).getNodeName());
-
-    // Bad rule
-
-    try {
-      rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertEquals("Invalid shards.preference rule: " + ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE, e.getMessage());
-    }
-
-    // Unknown rule
-    rules = PreferenceRule.from("badRule:test");
-    try {
-      comparator = new HttpShardHandlerFactory.NodePreferenceRulesComparator(rules, null);
-      replicas.sort(comparator);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertEquals("Invalid shards.preference type: badRule", e.getMessage());
-    }
-  }
-
   @Test
   public void getShardsWhitelist() throws Exception {
     System.setProperty(SHARDS_WHITELIST, "http://abc:8983/,http://def:8984/,");
@@ -333,6 +123,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       cc = CoreContainer.createAndLoad(home, home.resolve("solr.xml"));
       factory = cc.getShardHandlerFactory();
       assertTrue(factory instanceof HttpShardHandlerFactory);
+      @SuppressWarnings("resource")
       final HttpShardHandlerFactory httpShardHandlerFactory = ((HttpShardHandlerFactory)factory);
       assertThat(httpShardHandlerFactory.getWhitelistHostChecker().getWhitelistHosts().size(), is(2));
       assertThat(httpShardHandlerFactory.getWhitelistHostChecker().getWhitelistHosts(), hasItem("abc:8983"));
@@ -351,7 +142,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
         "1.2.3.4:9000_",
         "1.2.3.4:9001_solr-2",
     }));
-    ClusterState cs = new ClusterState(0, liveNodes, new HashMap<>());
+    ClusterState cs = new ClusterState(liveNodes, new HashMap<>());
     WhitelistHostChecker checker = new WhitelistHostChecker(null, true);
     Set<String> hostSet = checker.generateWhitelistFromLiveNodes(cs);
     assertThat(hostSet.size(), is(3));

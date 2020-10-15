@@ -49,6 +49,7 @@ public class MultiKmeansEvaluator extends RecursiveObjectEvaluator implements Ma
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... values) throws IOException {
 
     if(values.length != 3) {
@@ -81,10 +82,12 @@ public class MultiKmeansEvaluator extends RecursiveObjectEvaluator implements Ma
       throw new IOException("The third parameter for multiKmeans should be trials.");
     }
 
+    @SuppressWarnings({"rawtypes"})
     KMeansPlusPlusClusterer<KmeansEvaluator.ClusterPoint> kmeans = new KMeansPlusPlusClusterer(k, maxIterations);
+    @SuppressWarnings({"rawtypes"})
     MultiKMeansPlusPlusClusterer multiKmeans = new MultiKMeansPlusPlusClusterer(kmeans, trials);
 
-    List<KmeansEvaluator.ClusterPoint> points = new ArrayList();
+    List<KmeansEvaluator.ClusterPoint> points = new ArrayList<>();
     double[][] data = matrix.getData();
 
     List<String> ids = matrix.getRowLabels();
@@ -94,6 +97,7 @@ public class MultiKmeansEvaluator extends RecursiveObjectEvaluator implements Ma
       points.add(new KmeansEvaluator.ClusterPoint(ids.get(i), vec));
     }
 
+    @SuppressWarnings({"rawtypes"})
     Map fields = new HashMap();
 
     fields.put("k", k);

@@ -40,7 +40,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
-/*
+/**
  * This class keeps track of each SegmentInfos instance that
  * is still "live", either because it corresponds to a
  * segments_N file in the Directory (a "commit", i.e. a
@@ -76,7 +76,6 @@ import org.apache.lucene.util.InfoStream;
  * instantiating this class.  It opens segments_N file(s)
  * directly with no retry logic.
  */
-
 final class IndexFileDeleter implements Closeable {
 
   /* Reference count for all files in the index.
@@ -345,8 +344,8 @@ final class IndexFileDeleter implements Closeable {
   void ensureOpen() throws AlreadyClosedException {
     writer.ensureOpen(false);
     // since we allow 'closing' state, we must still check this, we could be closing because we hit e.g. OOM
-    if (writer.tragedy.get() != null) {
-      throw new AlreadyClosedException("refusing to delete any files: this IndexWriter hit an unrecoverable exception", writer.tragedy.get());
+    if (writer.getTragicException() != null) {
+      throw new AlreadyClosedException("refusing to delete any files: this IndexWriter hit an unrecoverable exception", writer.getTragicException());
     }
   }
 

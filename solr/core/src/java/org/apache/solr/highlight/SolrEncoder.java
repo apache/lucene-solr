@@ -30,7 +30,7 @@ public interface SolrEncoder extends SolrInfoBean, NamedListInitializedPlugin {
    * solrconfig.xml
    */
   @Override
-  public void init(NamedList args);
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args);
 
   /**
    * Return an {@link org.apache.lucene.search.highlight.Encoder} appropriate for this field.

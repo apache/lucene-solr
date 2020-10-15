@@ -381,7 +381,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
           nodes[node]['jvmUptimeSec'] = jvmUptime;
 
-          nodes[node]['uptime'] = s.system.uptime.replace(/.*up (.*?,.*?),.*/, "$1");
+          nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
           nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
           nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad);
           nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
@@ -536,10 +536,9 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
           "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count", 
           "zk_packets_sent", "zk_packets_received",
           "tickTime", "maxClientCnxns", "minSessionTimeout", "maxSessionTimeout"];
-        $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort"];
+        $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort", "role"];
         $scope.ensembleDetailKeys = ["peerType", "electionAlg", "initLimit", "syncLimit",
-          "zk_followers", "zk_synced_followers", "zk_pending_syncs",
-          "server.1", "server.2", "server.3", "server.4", "server.5"];
+          "zk_followers", "zk_synced_followers", "zk_pending_syncs"];
         $scope.notEmptyRow = function(key) {
           for (hostId in $scope.zkState.details) {
             if (key in $scope.zkState.details[hostId]) return true;
@@ -651,7 +650,7 @@ var graphSubController = function ($scope, Zookeeper) {
         Zookeeper.liveNodes(function (data) {
             var live_nodes = {};
             for (var c in data.tree[0].children) {
-                live_nodes[data.tree[0].children[c].data.title] = true;
+                live_nodes[data.tree[0].children[c].text] = true;
             }
 
             var params = {view: "graph"};
@@ -668,7 +667,7 @@ var graphSubController = function ($scope, Zookeeper) {
             }
 
             Zookeeper.clusterState(params, function (data) {
-                    eval("var state=" + data.znode.data); // @todo fix horrid means to parse JSON
+                    var state = $.parseJSON(data.znode.data);
 
                     var leaf_count = 0;
                     var graph_data = {
@@ -754,8 +753,6 @@ var graphSubController = function ($scope, Zookeeper) {
                                 pullReplicas: state[c].pullReplicas,
                                 replicationFactor: state[c].replicationFactor,
                                 router: state[c].router.name,
-                                maxShardsPerNode: state[c].maxShardsPerNode,
-                                autoAddReplicas: state[c].autoAddReplicas,
                                 nrtReplicas: state[c].nrtReplicas,
                                 tlogReplicas: state[c].tlogReplicas,
                                 numShards: shards.length
@@ -873,9 +870,7 @@ solrAdminApp.directive('graph', function(Constants) {
                 if (d.data.type == 'collection') {
                   tooltip = d.name + " {<br/> ";
                   tooltip += "numShards: [" + d.data.numShards + "],<br/>";
-                  tooltip += "maxShardsPerNode: [" + d.data.maxShardsPerNode + "],<br/>";
                   tooltip += "router: [" + d.data.router + "],<br/>";
-                  tooltip += "autoAddReplicas: [" + d.data.autoAddReplicas + "],<br/>";
                   tooltip += "replicationFactor: [" + d.data.replicationFactor + "],<br/>";
                   tooltip += "nrtReplicas: [" + d.data.nrtReplicas + "],<br/>";
                   tooltip += "pullReplicas: [" + d.data.pullReplicas + "],<br/>";

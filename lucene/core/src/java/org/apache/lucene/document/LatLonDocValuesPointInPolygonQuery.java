@@ -20,9 +20,10 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -103,8 +104,8 @@ public class LatLonDocValuesPointInPolygonQuery extends Query {
 
     return new ConstantScoreWeight(this, boost) {
 
-      final Polygon2D tree = Polygon2D.create(polygons);
-      final GeoEncodingUtils.PolygonPredicate polygonPredicate = GeoEncodingUtils.createPolygonPredicate(polygons, tree);
+      final Component2D tree = LatLonGeometry.create(polygons);
+      final GeoEncodingUtils.PolygonPredicate polygonPredicate = GeoEncodingUtils.createComponentPredicate(tree);
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {

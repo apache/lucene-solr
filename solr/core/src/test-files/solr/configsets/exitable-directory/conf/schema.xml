@@ -17,9 +17,13 @@
 -->
 <schema name="minimal" version="1.1">
   <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="string_dv"  class="solr.StrField" docValues="true"/>
+  <fieldType name="string_dvs"  class="solr.StrField" docValues="true" multiValued="true"/>
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <dynamicField name="*" type="string" indexed="true" stored="true"/>
+  <dynamicField name="*_dv" type="string_dv" indexed="true" stored="true"/>
+  <dynamicField name="*_dvs" type="string_dvs" indexed="true" stored="true"/>
   <!-- for versioning -->
   <field name="_version_" type="long" indexed="true" stored="true"/>
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>

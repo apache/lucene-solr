@@ -202,7 +202,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   }
   
   public void testRandomRegexes() throws Exception {
-    int num = atLeast(250);
+    int num = atLeast(50);
     for (int i = 0; i < num; i++) {
       assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toAutomaton());
     }

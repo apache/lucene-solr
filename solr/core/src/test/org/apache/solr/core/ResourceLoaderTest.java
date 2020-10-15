@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +33,9 @@ import java.util.jar.JarOutputStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
@@ -42,6 +44,7 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
+import static org.apache.solr.core.SolrResourceLoader.clearCache;
 import static org.hamcrest.core.Is.is;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
@@ -68,11 +71,11 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testAwareCompatibility() throws Exception {
     
     final Class<?> clazz1 = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
-    //noinspection unchecked
     assertAwareCompatibility(clazz1, new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")));
     assertAwareCompatibility(clazz1, new KeywordTokenizerFactory(new HashMap<>()));
     
@@ -95,7 +98,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     assertAwareCompatibility(clazz2, new JSONResponseWriter());
     
     // Make sure it throws an error for invalid objects
-    //noinspection unchecked
     invalid = new Object[] {
         new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")),
         "hello",   12.3f ,
@@ -167,12 +169,13 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     }
 
     SolrResourceLoader loader = new SolrResourceLoader(tmpRoot);
+    loader.addToClassLoader(SolrResourceLoader.getURLs(lib));
 
-    // ./lib is accessible by default
+    // check "lib/aLibFile"
     assertNotNull(loader.getClassLoader().getResource("aLibFile"));
 
     // add inidividual jars from other paths
-    loader.addToClassLoader(otherLib.resolve("jar2.jar").toUri().toURL());
+    loader.addToClassLoader(Collections.singletonList(otherLib.resolve("jar2.jar").toUri().toURL()));
 
     assertNotNull(loader.getClassLoader().getResource("explicitFile"));
     assertNull(loader.getClassLoader().getResource("otherFile"));
@@ -197,13 +200,32 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     
   }
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings({"rawtypes", "deprecation"})
   public void testLoadDeprecatedFactory() throws Exception {
-    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1"));
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1").toAbsolutePath());
     // ensure we get our exception
     loader.newInstance(DeprecatedTokenFilterFactory.class.getName(), TokenFilterFactory.class, null,
         new Class[] { Map.class }, new Object[] { new HashMap<String,String>() });
     // TODO: How to check that a warning was printed to log file?
     loader.close();    
+  }
+
+  public void testCacheWrongType() throws Exception {
+    clearCache();
+
+    SolrResourceLoader loader = new SolrResourceLoader();
+    @SuppressWarnings({"rawtypes"})
+    Class[] params = { Map.class };
+    Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
+    final String className = "solr.NGramTokenizerFactory";
+
+    // We could fail here since the class name and expected type don't match, but instead we try to infer what the user actually meant
+    TokenFilterFactory tff = loader.newInstance(className, TokenFilterFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
+    assertNotNull("Did not load TokenFilter when asking for corresponding Tokenizer", tff);
+
+    // This should work, but won't if earlier call succeeding corrupting the cache
+    TokenizerFactory tf = loader.newInstance(className, TokenizerFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
+    assertNotNull("Did not load Tokenizer after bad call earlier", tf);
+    loader.close();
   }
 }

@@ -55,13 +55,10 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkConfigManager.CONFIGS_ZKNODE;
 
 /**
  * Base class for SolrCloud tests
@@ -90,12 +87,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   private static class Config {
     final String name;
     final Path path;
-    final Map<String, byte[]> extraConfig;
-
-    private Config(String name, Path path, Map<String, byte[]> extraConfig) {
+    private Config(String name, Path path) {
       this.name = name;
       this.path = path;
-      this.extraConfig = extraConfig;
     }
   }
 
@@ -187,12 +181,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @param configPath the path to the config files
      */
     public Builder addConfig(String configName, Path configPath) {
-      this.configs.add(new Config(configName, configPath, null));
-      return this;
-    }
-
-    public Builder addConfig(String configName, Path configPath, Map<String, byte[]> extraConfig) {
-      this.configs.add(new Config(configName, configPath, extraConfig));
+      this.configs.add(new Config(configName, configPath));
       return this;
     }
 
@@ -232,15 +221,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
           null, securityJson, trackJettyMetrics);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
-        ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(config.path, config.name);
-        if (config.extraConfig != null) {
-          for (Map.Entry<String, byte[]> e : config.extraConfig.entrySet()) {
-            ((ZkClientClusterStateProvider) client.getClusterStateProvider()).getZkStateReader().getZkClient()
-                .create(CONFIGS_ZKNODE + "/" + config.name + "/" + e.getKey(), e.getValue(), CreateMode.PERSISTENT, true);
-
-          }
-
-        }
+        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
       }
 
       if (clusterProperties.size() > 0) {
@@ -253,11 +234,13 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     public Builder withDefaultClusterProperty(String key, String value) {
+      @SuppressWarnings({"unchecked"})
       HashMap<String, Object> defaults = (HashMap<String, Object>) this.clusterProperties.get(CollectionAdminParams.DEFAULTS);
       if (defaults == null) {
         defaults = new HashMap<>();
         this.clusterProperties.put(CollectionAdminParams.DEFAULTS, defaults);
       }
+      @SuppressWarnings({"unchecked"})
       HashMap<String, Object> cluster = (HashMap<String, Object>) defaults.get(CollectionAdminParams.CLUSTER);
       if (cluster == null) {
         cluster = new HashMap<>();
@@ -294,9 +277,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   @AfterClass
   public static void shutdownCluster() throws Exception {
     if (cluster != null) {
-      cluster.shutdown();
+      try {
+        cluster.shutdown();
+      } finally {
+        cluster = null;
+      }
     }
-    cluster = null;
   }
 
   @Before
@@ -363,7 +349,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
-      log.info("active slice count: " + collectionState.getActiveSlices().size() + " expected:" + expectedShards);
+      if (log.isInfoEnabled()) {
+        log.info("active slice count: {} expected: {}", collectionState.getActiveSlices().size(), expectedShards);
+      }
       if (collectionState.getActiveSlices().size() != expectedShards)
         return false;
       return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
@@ -405,7 +393,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
 
-    log.info("active replica count: " + activeReplicas + " expected replica count: " + expectedReplicas);
+    log.info("active replica count: {} expected replica count: {}", activeReplicas, expectedReplicas);
 
     return activeReplicas == expectedReplicas;
 
@@ -461,6 +449,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
     log.info("waitForResponse: {}", request);
     int i = 0;
@@ -509,4 +498,21 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     cluster.waitForAllNodes(timeoutSeconds);
   }
 
+  public static Map<String, String> mapReplicasToReplicaType(DocCollection collection) {
+    Map<String, String> replicaTypeMap = new HashMap<>();
+    for (Slice slice : collection.getSlices()) {
+      for (Replica replica : slice.getReplicas()) {
+        String coreUrl = replica.getCoreUrl();
+        // It seems replica reports its core URL with a trailing slash while shard
+        // info returned from the query doesn't. Oh well. We will include both, just in case
+        replicaTypeMap.put(coreUrl, replica.getType().toString());
+        if (coreUrl.endsWith("/")) {
+          replicaTypeMap.put(coreUrl.substring(0, coreUrl.length() - 1), replica.getType().toString());
+        }else {
+          replicaTypeMap.put(coreUrl + "/", replica.getType().toString());
+        }
+      }
+    }
+    return replicaTypeMap;
+  }
 }

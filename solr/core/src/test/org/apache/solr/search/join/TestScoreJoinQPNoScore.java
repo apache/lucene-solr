@@ -78,41 +78,41 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
   //  );
 
     assertJQ(req("q","{!join from=dept_ss to=dept_id_s"+whateverScore()+"}title_s:MTS", "fl","id")
-        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
+        ,"/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
 
     // empty from
     assertJQ(req("q","{!join from=noexist_s to=dept_id_s"+whateverScore()+"}*:*", "fl","id")
-        ,"/response=={'numFound':0,'start':0,'docs':[]}"
+        ,"/response=={'numFound':0,'start':0,'numFoundExact':true,'docs':[]}"
     );
 
     // empty to
     assertJQ(req("q","{!join from=dept_ss to=noexist_s"+whateverScore()+"}*:*", "fl","id")
-        ,"/response=={'numFound':0,'start':0,'docs':[]}"
+        ,"/response=={'numFound':0,'start':0,'numFoundExact':true,'docs':[]}"
     );
 
     // self join... return everyone with she same title as Dave
     assertJQ(req("q","{!join from=title_s to=title_s"+whateverScore()+"}name_s:dave", "fl","id")
-        ,"/response=={'numFound':2,'start':0,'docs':[{'id':'3'},{'id':'4'}]}"
+        ,"/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'3'},{'id':'4'}]}"
     );
 
     // find people that develop stuff
     assertJQ(req("q","{!join from=dept_id_s to=dept_ss"+whateverScore()+"}text_t:develop", "fl","id")
-        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+        ,"/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
     );
 
     // self join on multivalued text_t field
     assertJQ(req("q","{!join from=title_s to=title_s"+whateverScore()+"}name_s:dave", "fl","id")
-        ,"/response=={'numFound':2,'start':0,'docs':[{'id':'3'},{'id':'4'}]}"
+        ,"/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'3'},{'id':'4'}]}"
     );
 
     assertJQ(req("q","{!join from=dept_ss to=dept_id_s"+whateverScore()+"}title_s:MTS", "fl","id", "debugQuery","true")
-        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
+        ,"/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
     
     // expected outcome for a sub query matching dave joined against departments
     final String davesDepartments = 
-      "/response=={'numFound':2,'start':0,'docs':[{'id':'10'},{'id':'13'}]}";
+      "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'10'},{'id':'13'}]}";
 
     // straight forward query
     assertJQ(req("q","{!join from=dept_ss to=dept_id_s"+whateverScore()+"}name_s:dave", 
@@ -144,17 +144,17 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
     // find people that develop stuff - but limit via filter query to a name of "john"
     // this tests filters being pushed down to queries (SOLR-3062)
     assertJQ(req("q","{!join from=dept_id_s to=dept_ss"+whateverScore()+"}text_t:develop", "fl","id", "fq", "name_s:john")
-             ,"/response=={'numFound':1,'start':0,'docs':[{'id':'1'}]}"
+             ,"/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'}]}"
             );
     
 
    assertJQ(req("q","{!join from=dept_ss to=dept_id_s"+whateverScore()+"}title_s:MTS", "fl","id"
           )
-          ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}");
+          ,"/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}");
 
       // find people that develop stuff, even if it's requested as single value
     assertJQ(req("q","{!join from=dept_id_s to=dept_ss"+whateverScore()+"}text_t:develop", "fl","id")
-        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+        ,"/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
     );
 
   }
@@ -206,6 +206,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       return " score="+vals[random().nextInt(vals.length)]+" ";
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
   public void testRandomJoin() throws Exception {
     int indexIter=50 * RANDOM_MULTIPLIER;
@@ -277,6 +278,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
         Map<String,Object> resultSet = new LinkedHashMap<String,Object>();
         resultSet.put("numFound", docList.size());
         resultSet.put("start", 0);
+        resultSet.put("numFoundExact", true);
         resultSet.put("docs", sortedDocs);
 
         // todo: use different join queries for better coverage
@@ -307,13 +309,13 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
                   , "sort", "_docid_ asc"
                   ,"rows","0"
                 );
-            log.error("faceting on from field: "+h.query(f));
+            log.error("faceting on from field: {}", h.query(f));
           }
           {
             final Map<String,String> ps = ((MapSolrParams)req.getParams()).getMap();
             final String q = ps.get("q");
             ps.put("q", q.replaceAll("join score=none", "join"));
-            log.error("plain join: "+h.query(req));
+            log.error("plain join: {}", h.query(req));
             ps.put("q", q);
             
           }
@@ -322,7 +324,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
           final Map<String,String> ps = ((MapSolrParams)req.getParams()).getMap();
           final String q = ps.get("q");
           ps.put("q", q.replaceAll("\\}", " cache=false\\}"));
-          String rsp = h.query(req);
+          h.query(req);
           }
           fail(err);
         }
@@ -331,6 +333,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("rawtypes")
   Map<Comparable, Set<Comparable>> createJoinMap(Map<Comparable, Doc> model, String fromField, String toField) {
     Map<Comparable, Set<Comparable>> id_to_id = new HashMap<Comparable, Set<Comparable>>();
 
@@ -357,6 +360,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings("rawtypes")
   Set<Comparable> join(Collection<Doc> input, Map<Comparable, Set<Comparable>> joinMap) {
     Set<Comparable> ids = new HashSet<Comparable>();
     for (Doc doc : input) {

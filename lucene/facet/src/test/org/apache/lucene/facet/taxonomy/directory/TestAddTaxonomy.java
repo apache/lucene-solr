@@ -29,8 +29,10 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.Memory
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestAddTaxonomy extends FacetTestCase {
 
   private void dotest(int ncats, final int range) throws Exception {

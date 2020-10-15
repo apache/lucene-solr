@@ -23,7 +23,7 @@ import com.ibm.icu.text.FilteredNormalizer2;
 import com.ibm.icu.text.Normalizer2;
 import com.ibm.icu.text.UnicodeSet;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link ICUFoldingFilter}.
@@ -61,6 +61,11 @@ public class ICUFoldingFilterFactory extends TokenFilterFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
     this.normalizer = normalizer;
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ICUFoldingFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

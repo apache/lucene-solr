@@ -39,13 +39,12 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     checkSchema("cluster.security.RuleBasedAuthorization");
     checkSchema("core.config.Commands");
     checkSchema("core.SchemaEdit");
-    checkSchema("cluster.configs.Commands");
-    checkSchema("cluster.Commands");
   }
 
 
   public void testSchemaValidation() {
     ValidatingJsonMap spec = Utils.getSpec("collections.Commands").getSpec();
+    @SuppressWarnings({"rawtypes"})
     Map createSchema = spec.getMap("commands", NOT_NULL).getMap("create-alias", NOT_NULL);
     JsonSchemaValidator validator = new JsonSchemaValidator(createSchema);
     List<String> errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [ c1 , c2]}"));
@@ -172,17 +171,12 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   }
 
-  public void testNullObjectValue() {
-    ValidatingJsonMap spec = Utils.getSpec("cluster.Commands").getSpec();
-    JsonSchemaValidator validator = new JsonSchemaValidator((Map) Utils.getObjectByPath(spec, false, "/commands/set-obj-property"));
-    List<String> object = validator.validateJson(Utils.fromJSONString("{collectionDefaults: null}"));
-    assertNull(object);
-  }
-
   private void checkSchema(String name) {
     ValidatingJsonMap spec = Utils.getSpec(name).getSpec();
+    @SuppressWarnings({"rawtypes"})
     Map commands = (Map) spec.get("commands");
     for (Object o : commands.entrySet()) {
+      @SuppressWarnings({"rawtypes"})
       Map.Entry cmd = (Map.Entry) o;
       try {
         JsonSchemaValidator validator = new JsonSchemaValidator((Map) cmd.getValue());

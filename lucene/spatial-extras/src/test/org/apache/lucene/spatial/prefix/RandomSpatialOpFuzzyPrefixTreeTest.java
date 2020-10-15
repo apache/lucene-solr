@@ -87,7 +87,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
       ((PrefixTreeStrategy) strategy).setPointsOnly(true);
     }
 
-    log.info("Strategy: " + strategy.toString());
+    log.info("Strategy: " +  strategy.toString()); // nowarn
   }
 
   private void setupCtx2D(SpatialContext ctx) {

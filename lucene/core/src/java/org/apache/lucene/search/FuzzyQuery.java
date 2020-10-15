@@ -18,13 +18,14 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /** Implements the fuzzy search query. The similarity measurement
@@ -148,23 +149,23 @@ public class FuzzyQuery extends MultiTermQuery {
   }
 
   /**
-   * Expert: Constructs an equivalent Automaton accepting terms matched by this query
+   * Returns the compiled automata used to match terms
    */
-  public Automaton toAutomaton() {
-    return FuzzyTermsEnum.buildAutomaton(term.text(), prefixLength, transpositions, maxEdits);
+  public CompiledAutomaton getAutomata() {
+    FuzzyAutomatonBuilder builder = new FuzzyAutomatonBuilder(term.text(), maxEdits, prefixLength, transpositions);
+    return builder.buildMaxEditAutomaton();
   }
 
   @Override
   public void visit(QueryVisitor visitor) {
-    // TODO find some way of consuming Automata
-    if (visitor.acceptField(term.field())) {
-      visitor.visitLeaf(this);
+    if (visitor.acceptField(field)) {
+      visitor.consumeTermsMatching(this, term.field(), () -> getAutomata().runAutomaton);
     }
   }
 
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
+    if (maxEdits == 0) { // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(), term.bytes());
     }
     return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, prefixLength, transpositions);
@@ -186,7 +187,7 @@ public class FuzzyQuery extends MultiTermQuery {
     }
     buffer.append(term.text());
     buffer.append('~');
-    buffer.append(Integer.toString(maxEdits));
+    buffer.append(maxEdits);
     return buffer.toString();
   }
 
@@ -211,38 +212,19 @@ public class FuzzyQuery extends MultiTermQuery {
     if (getClass() != obj.getClass())
       return false;
     FuzzyQuery other = (FuzzyQuery) obj;
-    if (maxEdits != other.maxEdits)
-      return false;
-    if (prefixLength != other.prefixLength)
-      return false;
-    if (maxExpansions != other.maxExpansions)
-      return false;
-    if (transpositions != other.transpositions)
-      return false;
-    if (term == null) {
-      if (other.term != null)
-        return false;
-    } else if (!term.equals(other.term))
-      return false;
-    return true;
+    return Objects.equals(maxEdits, other.maxEdits) && Objects.equals(prefixLength, other.prefixLength)
+        && Objects.equals(maxExpansions, other.maxExpansions) && Objects.equals(transpositions, other.transpositions)
+        && Objects.equals(term, other.term);
   }
-  
-  /**
-   * @deprecated pass integer edit distances instead.
-   */
-  @Deprecated
-  public final static float defaultMinSimilarity = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
 
   /**
-   * Helper function to convert from deprecated "minimumSimilarity" fractions
+   * Helper function to convert from "minimumSimilarity" fractions
    * to raw edit distances.
    * 
    * @param minimumSimilarity scaled similarity
    * @param termLen length (in unicode codepoints) of the term.
    * @return equivalent number of maxEdits
-   * @deprecated pass integer edit distances instead.
    */
-  @Deprecated
   public static int floatToEdits(float minimumSimilarity, int termLen) {
     if (minimumSimilarity >= 1f) {
       return (int) Math.min(minimumSimilarity, LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
@@ -253,4 +235,5 @@ public class FuzzyQuery extends MultiTermQuery {
         LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     }
   }
+
 }

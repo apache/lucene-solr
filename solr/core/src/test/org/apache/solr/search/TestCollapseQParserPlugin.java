@@ -33,6 +33,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -206,7 +208,6 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-11974")
   public void testStringCollapse() throws Exception {
     for (final String hint : new String[] {"", " hint="+CollapsingQParserPlugin.HINT_TOP_FC}) {
       testCollapseQueries("group_s", hint, false);
@@ -282,8 +283,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testMergeBoost() throws Exception {
 
-    Set<Integer> boosted = new HashSet();
-    Set<Integer> results = new HashSet();
+    Set<Integer> boosted = new HashSet<>();
+    Set<Integer> results = new HashSet<>();
 
     for(int i=0; i<200; i++) {
       boosted.add(random().nextInt(1000));
@@ -313,7 +314,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     CollapsingQParserPlugin.MergeBoost mergeBoost = new CollapsingQParserPlugin.MergeBoost(boostedArray);
 
-    List<Integer> boostedResults = new ArrayList();
+    List<Integer> boostedResults = new ArrayList<>();
 
     for(int i=0; i<resultsArray.length; i++) {
       int result = resultsArray[i];
@@ -322,7 +323,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       }
     }
 
-    List<Integer> controlResults = new ArrayList();
+    List<Integer> controlResults = new ArrayList<>();
 
     for(int i=0; i<resultsArray.length; i++) {
       int result = resultsArray[i];
@@ -340,6 +341,69 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     } else {
       throw new Exception("boosted results do not match control results, boostedResults size:"+boostedResults.toString()+", controlResults size:"+controlResults.toString());
     }
+  }
+
+  @Test
+  public void testDoubleCollapse() {
+    testDoubleCollapse("group_s", "");
+    testDoubleCollapse("group_i", "");
+  }
+
+
+  /*
+  * SOLR-14073
+  * The double collapse causes a look ahead in the second collapse to a segment that was not visited by
+  * the by finally method of the first collapse. This specific test is meant to confirm that any feature
+  * that causes searches to not visit each segment (such as early query termination) doesn't break collapse.
+  */
+  private void testDoubleCollapse(String group, String hint) {
+    String[] doc = {"id","1", "term_s", "YYYY", group, "1", "test_i", "5", "test_l", "10", "test_f", "2000"};
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {"id","2", "term_s","YYYY", group, "2", "test_i", "50", "test_l", "100", "test_f", "200"};
+    assertU(adoc(doc1));
+
+
+
+    String[] doc2 = {"id","3", "term_s", "YYYY", "test_i", "5000", "test_l", "100", "test_f", "200"};
+    assertU(adoc(doc2));
+    assertU(commit());
+    String[] doc3 = {"id","4", "term_s", "YYYY", "test_i", "500", "test_l", "1000", "test_f", "2000"};
+    assertU(adoc(doc3));
+
+
+    String[] doc4 = {"id","5", "term_s", "YYYN", group, "2", "test_i", "4", "test_l", "10", "test_f", "2000"};
+    assertU(adoc(doc4));
+    assertU(commit());
+    String[] doc5 = {"id","6", "term_s","YYYY", group, "2", "test_i", "10", "test_l", "100", "test_f", "200"};
+    assertU(adoc(doc5));
+    assertU(commit());
+
+    String[] doc6 = {"id","7", "term_s", "YYYY", group, "1", "test_i", "8", "test_l", "50", "test_f", "300"};
+    assertU(adoc(doc6));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "id:(1 2 5)");
+    params.add("fq", "{!collapse cost=200 field=term_s "+hint+"}");
+    params.add("fq", "{!collapse cost=400 field="+group+""+hint+"}");
+
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_i)");
+    assertQ(req(params, "indent", "on"), "*[count(//doc)=1]",
+        "//result/doc[1]/str[@name='id'][.='2']"
+    );
+
+    params = new ModifiableSolrParams();
+    params.add("q", "id:(1 2 5)");
+    params.add("fq", "{!collapse cost=200 max=test_i field=term_s "+hint+"}");
+    params.add("fq", "{!collapse cost=400 max=test_i field="+group+""+hint+"}");
+
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_i)");
+    assertQ(req(params, "indent", "on"), "*[count(//doc)=1]",
+        "//result/doc[1]/str[@name='id'][.='2']"
+    );
   }
 
 
@@ -759,14 +823,12 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("facet.mincount", "1");
     assertQ(req(params), "*[count(//doc)=1]", "*[count(//lst[@name='facet_fields']/lst[@name='test_i']/int)=2]");
 
-    // SOLR-5230 - ensure CollapsingFieldValueCollector.finish() is called
-    params = new ModifiableSolrParams();
-    params.add("q", "*:*");
-    params.add("fq", "{!collapse field="+group+hint+"}");
-    params.add("group", "true");
-    params.add("group.field", "id");
-    assertQ(req(params), "*[count(//doc)=2]");
-
+    // SOLR-13970
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      h.query(req(params("q", "*:*", "fq", "{!collapse field="+group+hint+"}", "group", "true", "group.field", "id")));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertThat(ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
 
     // delete the elevated docs, confirm collapsing still works
     assertU(delI("1"));
@@ -783,7 +845,6 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                          "//result/doc[1]/str[@name='id'][.='3']",
                          "//result/doc[2]/str[@name='id'][.='6']",
                          "//result/doc[3]/str[@name='id'][.='7']");
-
 
   }
 
@@ -977,5 +1038,34 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     assertQEx("Should Fail For collapsing on Date fields", "Collapsing field should be of either String, Int or Float type",
         req("q", "*:*", "fq", "{!collapse field=group_dt}"), SolrException.ErrorCode.BAD_REQUEST);
+  }
+  
+  @Test
+  public void testMinExactCountDisabledByCollapse() throws Exception {
+    int numDocs = 10;
+    String collapseFieldInt = "field_ti_dv";
+    String collapseFieldFloat = "field_tf_dv";
+    String collapseFieldString = "field_s_dv";
+    for (int i = 0 ; i < numDocs ; i ++) {
+      assertU(adoc(
+          "id", String.valueOf(i),
+          "field_s", String.valueOf(i % 2),
+          collapseFieldInt, String.valueOf(i),
+          collapseFieldFloat, String.valueOf(i),
+          collapseFieldString, String.valueOf(i)));
+        assertU(commit());
+    }
+    
+    for (String collapseField : new String[] {collapseFieldInt, collapseFieldFloat, collapseFieldString}) {
+      assertQ(req(
+          "q", "{!cache=false}field_s:1",
+          "rows", "1",
+          "minExactCount", "1",
+          // this collapse will end up matching all docs
+          "fq", "{!collapse field=" + collapseField + " nullPolicy=expand}"// nullPolicy needed due to a bug when val=0
+          ),"//*[@numFoundExact='true']"
+          ,"//*[@numFound='" + (numDocs/2) + "']"
+          );
+    }
   }
 }

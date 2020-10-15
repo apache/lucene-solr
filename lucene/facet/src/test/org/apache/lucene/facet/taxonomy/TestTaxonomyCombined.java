@@ -706,7 +706,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     final int abOrd = trBase.getOrdinal(abPath);
     final int abYoungChildBase1 = ca1.children()[abOrd]; 
     
-    final int numCategories = atLeast(800);
+    final int numCategories = atLeast(200);
     for (int i = 0; i < numCategories; i++) {
       twBase.addCategory(new FacetLabel("a", "b", Integer.toString(i)));
     }
@@ -720,7 +720,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     final ParallelTaxonomyArrays ca2 = trBase.getParallelTaxonomyArrays();
     final int abYoungChildBase2 = ca2.children()[abOrd];
     
-    int numRetries = atLeast(50);
+    int numRetries = atLeast(10);
     for (int retry = 0; retry < numRetries; retry++) {
       assertConsistentYoungestChild(abPath, abOrd, abYoungChildBase1, abYoungChildBase2, retry, numCategories);
     }

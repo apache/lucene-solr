@@ -201,7 +201,7 @@ And create the `myid` file in the `/var/lib/zookeeper` directory:
 Repeat this for servers 4 and 5 if you are creating a 5-node ensemble (a rare case).
 
 
-===  ZooKeeper Environment Configuration
+=== ZooKeeper Environment Configuration
 
 To ease troubleshooting in case of problems with the ensemble later, it's recommended to run ZooKeeper with logging enabled and with proper JVM garbage collection (GC) settings.
 
@@ -269,6 +269,8 @@ When starting Solr, you must provide an address for ZooKeeper or Solr won't know
 
 When referring to the location of ZooKeeper within Solr, it's best to use the addresses of all the servers in the ensemble. If one happens to be down, Solr will automatically be able to send its request to another server in the list.
 
+ZooKeeper version 3.5 and later supports dynamic reconfiguration of server addresses and roles. But note that Solr will only be able to talk to the servers listed in the static ZooKeeper connect string.
+
 === Using a chroot
 
 If your ensemble is or will be shared among other systems besides Solr, you should consider defining application-specific _znodes_, or a hierarchical namespace that will only include Solr's files.
@@ -295,9 +297,9 @@ For example, to point the Solr instance to the ZooKeeper you've started on port 
 bin/solr start -e cloud -z zk1:2181,zk2:2181,zk3:2181/solr
 ----
 
-=== Updating Solr's Include Files
+=== Updating Solr Include Files
 
-If you update Solr's include file (`solr.in.sh` or `solr.in.cmd`), which overrides defaults used with `bin/solr`, you will not have to use the `-z` parameter with `bin/solr` commands.
+If you update Solr include files (`solr.in.sh` or `solr.in.cmd`), which overrides defaults used with `bin/solr`, you will not have to use the `-z` parameter with `bin/solr` commands.
 
 
 [.dynamic-tabs]

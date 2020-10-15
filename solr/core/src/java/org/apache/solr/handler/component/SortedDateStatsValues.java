@@ -29,18 +29,18 @@ import org.apache.solr.common.util.NamedList;
 
 public class SortedDateStatsValues implements StatsValues {
 
-  private final DateStatsValues dsv;
+  private final StatsValuesFactory.DateStatsValues dsv;
   private final String fieldName;
   private SortedNumericDocValues sndv;
 
 
-  public SortedDateStatsValues(DateStatsValues dsv, StatsField field) {
+  public SortedDateStatsValues(StatsValuesFactory.DateStatsValues dsv, StatsField field) {
     this.dsv = dsv;
     this.fieldName = field.getSchemaField().getName();
   }
 
   @Override
-  public void accumulate(NamedList stv) {
+  public void accumulate(@SuppressWarnings({"rawtypes"})NamedList stv) {
     dsv.accumulate(stv);
   }
 

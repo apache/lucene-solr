@@ -38,6 +38,7 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException{
 
     if(values.length == 1) {
@@ -123,6 +124,10 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
         distanceMatrix[i][j] = dist;
       }
     }
-    return new Matrix(distanceMatrix);
+    Matrix m = new Matrix(distanceMatrix);
+    List<String> labels = CorrelationEvaluator.getColumnLabels(matrix.getColumnLabels(), data.length);
+    m.setColumnLabels(labels);
+    m.setRowLabels(labels);
+    return m;
   }
 }

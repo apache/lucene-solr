@@ -259,4 +259,14 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
 
   }
 
+  public void testScriptSandbox() throws Exception  {
+    assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
+    expectThrows(SecurityException.class, () -> {
+      processAdd("evil",
+        doc(f("id", "5"),
+            f("name", " foo "),
+            f("subject", "BAR")));
+    });
+  }
+
 }

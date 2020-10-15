@@ -164,16 +164,16 @@ public class TestFSTsMisc extends LuceneTestCase {
   public void testListOfOutputs() throws Exception {
     PositiveIntOutputs _outputs = PositiveIntOutputs.getSingleton();
     ListOfOutputs<Long> outputs = new ListOfOutputs<>(_outputs);
-    final Builder<Object> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+    final FSTCompiler<Object> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
 
     final IntsRefBuilder scratch = new IntsRefBuilder();
     // Add the same input more than once and the outputs
     // are merged:
-    builder.add(Util.toIntsRef(new BytesRef("a"), scratch), 1L);
-    builder.add(Util.toIntsRef(new BytesRef("a"), scratch), 3L);
-    builder.add(Util.toIntsRef(new BytesRef("a"), scratch), 0L);
-    builder.add(Util.toIntsRef(new BytesRef("b"), scratch), 17L);
-    final FST<Object> fst = builder.finish();
+    fstCompiler.add(Util.toIntsRef(new BytesRef("a"), scratch), 1L);
+    fstCompiler.add(Util.toIntsRef(new BytesRef("a"), scratch), 3L);
+    fstCompiler.add(Util.toIntsRef(new BytesRef("a"), scratch), 0L);
+    fstCompiler.add(Util.toIntsRef(new BytesRef("b"), scratch), 17L);
+    final FST<Object> fst = fstCompiler.compile();
 
     Object output = Util.get(fst, new BytesRef("a"));
     assertNotNull(output);
@@ -193,20 +193,20 @@ public class TestFSTsMisc extends LuceneTestCase {
   public void testListOfOutputsEmptyString() throws Exception {
     PositiveIntOutputs _outputs = PositiveIntOutputs.getSingleton();
     ListOfOutputs<Long> outputs = new ListOfOutputs<>(_outputs);
-    final Builder<Object> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+    final FSTCompiler<Object> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
 
     final IntsRefBuilder scratch = new IntsRefBuilder();
-    builder.add(scratch.get(), 0L);
-    builder.add(scratch.get(), 1L);
-    builder.add(scratch.get(), 17L);
-    builder.add(scratch.get(), 1L);
+    fstCompiler.add(scratch.get(), 0L);
+    fstCompiler.add(scratch.get(), 1L);
+    fstCompiler.add(scratch.get(), 17L);
+    fstCompiler.add(scratch.get(), 1L);
 
-    builder.add(Util.toIntsRef(new BytesRef("a"), scratch), 1L);
-    builder.add(Util.toIntsRef(new BytesRef("a"), scratch), 3L);
-    builder.add(Util.toIntsRef(new BytesRef("a"), scratch), 0L);
-    builder.add(Util.toIntsRef(new BytesRef("b"), scratch), 0L);
+    fstCompiler.add(Util.toIntsRef(new BytesRef("a"), scratch), 1L);
+    fstCompiler.add(Util.toIntsRef(new BytesRef("a"), scratch), 3L);
+    fstCompiler.add(Util.toIntsRef(new BytesRef("a"), scratch), 0L);
+    fstCompiler.add(Util.toIntsRef(new BytesRef("b"), scratch), 0L);
     
-    final FST<Object> fst = builder.finish();
+    final FST<Object> fst = fstCompiler.compile();
 
     Object output = Util.get(fst, new BytesRef(""));
     assertNotNull(output);

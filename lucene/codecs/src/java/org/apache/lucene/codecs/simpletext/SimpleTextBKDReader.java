@@ -40,7 +40,7 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
   final private byte[] splitPackedValues; 
   final long[] leafBlockFPs;
   final private int leafNodeOffset;
-  final int numDataDims;
+  final int numDims;
   final int numIndexDims;
   final int bytesPerDim;
   final int bytesPerIndexEntry;
@@ -54,16 +54,16 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
   protected final int packedBytesLength;
   protected final int packedIndexBytesLength;
 
-  public SimpleTextBKDReader(IndexInput in, int numDataDims, int numIndexDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues,
+  public SimpleTextBKDReader(IndexInput in, int numDims, int numIndexDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues,
                              byte[] minPackedValue, byte[] maxPackedValue, long pointCount, int docCount) throws IOException {
     this.in = in;
-    this.numDataDims = numDataDims;
+    this.numDims = numDims;
     this.numIndexDims = numIndexDims;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.bytesPerDim = bytesPerDim;
     // no version check here because callers of this API (SimpleText) have no back compat:
     bytesPerIndexEntry = numIndexDims == 1 ? bytesPerDim : bytesPerDim + 1;
-    packedBytesLength = numDataDims * bytesPerDim;
+    packedBytesLength = numDims * bytesPerDim;
     packedIndexBytesLength = numIndexDims * bytesPerDim;
     this.leafNodeOffset = leafBlockFPs.length;
     this.leafBlockFPs = leafBlockFPs;
@@ -118,7 +118,7 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
 
   /** Create a new {@link IntersectState} */
   public IntersectState getIntersectState(IntersectVisitor visitor) {
-    return new IntersectState(in.clone(), numDataDims,
+    return new IntersectState(in.clone(), numDims,
                               packedBytesLength,
                               maxPointsInLeafNode,
                               visitor);
@@ -184,7 +184,7 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
       scratchPackedValue[compressedByteOffset] = in.readByte();
       final int runLen = Byte.toUnsignedInt(in.readByte());
       for (int j = 0; j < runLen; ++j) {
-        for(int dim=0;dim<numDataDims;dim++) {
+        for(int dim = 0; dim< numDims; dim++) {
           int prefix = commonPrefixLengths[dim];
           in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
         }
@@ -206,7 +206,7 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
   }
 
   private void readCommonPrefixes(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in) throws IOException {
-    for(int dim=0;dim<numDataDims;dim++) {
+    for(int dim = 0; dim< numDims; dim++) {
       int prefix = in.readVInt();
       commonPrefixLengths[dim] = prefix;
       if (prefix > 0) {
@@ -370,8 +370,8 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
   }
 
   @Override
-  public int getNumDataDimensions() {
-    return numDataDims;
+  public int getNumDimensions() {
+    return numDims;
   }
 
   @Override

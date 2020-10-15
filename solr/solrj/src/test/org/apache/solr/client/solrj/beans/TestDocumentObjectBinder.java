@@ -57,6 +57,7 @@ public class TestDocumentObjectBinder extends SolrTestCase {
     SolrInputField catfield = out.getField("cat");
     assertEquals(3, catfield.getValueCount());
 
+    @SuppressWarnings({"unchecked"})
     List<String> catValues = (List<String>) catfield.getValue();
     assertEquals("aaa", catValues.get(0));
     assertEquals("bbb", catValues.get(1));

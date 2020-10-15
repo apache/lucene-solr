@@ -26,7 +26,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  * The way it works is that the space of bits is divided into blocks of
  * 4096 bits, which is 64 longs. Then for each block, we have:<ul>
  * <li>a long[] which stores the non-zero longs for that block</li>
- * <li>a long so that bit <tt>i</tt> being set means that the <code>i-th</code>
+ * <li>a long so that bit <code>i</code> being set means that the <code>i-th</code>
  *     long of the block is non-null, and its offset in the array of longs is
  *     the number of one bits on the right of the <code>i-th</code> bit.</li></ul>
  *
@@ -132,7 +132,7 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
   }
 
   /**
-   * Set the bit at index <tt>i</tt>.
+   * Set the bit at index <code>i</code>.
    */
   public void set(int i) {
     assert consistent(i);
@@ -189,7 +189,7 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
   }
 
   /**
-   * Clear the bit at index <tt>i</tt>.
+   * Clear the bit at index <code>i</code>.
    */
   public void clear(int i) {
     assert consistent(i);

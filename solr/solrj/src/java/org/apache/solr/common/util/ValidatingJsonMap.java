@@ -30,7 +30,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
+import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
@@ -39,7 +41,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 
-public class ValidatingJsonMap implements Map<String, Object> {
+public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
 
   private static final String INCLUDE = "#include";
   private static final String RESOURCE_EXTENSION = ".json";
@@ -47,6 +49,7 @@ public class ValidatingJsonMap implements Map<String, Object> {
     if (o == null) return " Must not be NULL";
     return null;
   };
+  @SuppressWarnings({"rawtypes"})
   public static final PredicateWithErrMsg<Pair> ENUM_OF = pair -> {
     if (pair.second() instanceof Set) {
       Set set = (Set) pair.second();
@@ -140,7 +143,8 @@ public class ValidatingJsonMap implements Map<String, Object> {
     return delegate.entrySet();
   }
 
-  public Object get(String key, PredicateWithErrMsg predicate) {
+  @SuppressWarnings({"unchecked"})
+  public Object get(String key, @SuppressWarnings({"rawtypes"})PredicateWithErrMsg predicate) {
     Object v = get(key);
     if (predicate != null) {
       String msg = predicate.test(v);
@@ -177,11 +181,12 @@ public class ValidatingJsonMap implements Map<String, Object> {
     return getMap(key, null, null);
   }
 
-  public ValidatingJsonMap getMap(String key, PredicateWithErrMsg predicate) {
+  public ValidatingJsonMap getMap(String key, @SuppressWarnings({"rawtypes"})PredicateWithErrMsg predicate) {
     return getMap(key, predicate, null);
 
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public ValidatingJsonMap getMap(String key, PredicateWithErrMsg predicate, String message) {
     Object v = get(key);
     if (v != null && !(v instanceof Map)) {
@@ -198,10 +203,12 @@ public class ValidatingJsonMap implements Map<String, Object> {
     return wrap((Map) v);
   }
 
+  @SuppressWarnings({"rawtypes"})
   public List getList(String key, PredicateWithErrMsg predicate) {
     return getList(key, predicate, null);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public List getList(String key, PredicateWithErrMsg predicate, Object test) {
     Object v = get(key);
     if (v != null && !(v instanceof List)) {
@@ -218,6 +225,7 @@ public class ValidatingJsonMap implements Map<String, Object> {
     return (List) v;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object get(String key, PredicateWithErrMsg<Pair> predicate, Object arg) {
     Object v = get(key);
     String test = predicate.test(new Pair(v, arg));
@@ -278,6 +286,7 @@ public class ValidatingJsonMap implements Map<String, Object> {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static ValidatingJsonMap getDeepCopy(Map map, int maxDepth, boolean mutable) {
     if (map == null) return null;
     if (maxDepth < 1) return ValidatingJsonMap.wrap(map);
@@ -292,6 +301,7 @@ public class ValidatingJsonMap implements Map<String, Object> {
     return mutable ? copy : new ValidatingJsonMap(Collections.unmodifiableMap(copy));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
     if (c == null || maxDepth < 1) return c;
     Collection result = c instanceof Set ? new HashSet() : new ArrayList();
@@ -338,6 +348,12 @@ public class ValidatingJsonMap implements Map<String, Object> {
     return that instanceof Map && this.delegate.equals(that);
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(delegate);
+  }
+
+  @SuppressWarnings({"unchecked"})
   public static final ValidatingJsonMap EMPTY = new ValidatingJsonMap(Collections.EMPTY_MAP);
 
   public interface PredicateWithErrMsg<T> {

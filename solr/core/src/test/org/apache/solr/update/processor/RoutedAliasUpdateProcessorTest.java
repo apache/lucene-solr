@@ -56,11 +56,12 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Ignore;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13696")
 @Ignore  // don't try too run abstract base class
 public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
@@ -272,7 +273,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
         try {
           exec = ExecutorUtil.newMDCAwareFixedThreadPool(1 + random().nextInt(2),
-              new DefaultSolrThreadFactory(getSaferTestName()));
+              new SolrNamedThreadFactory(getSaferTestName()));
           List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
           for (SolrInputDocument solrInputDocument : solrInputDocuments) {
             String col = collections.get(random().nextInt(collections.size()));
@@ -325,6 +326,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   void assertUpdateResponse(UpdateResponse rsp) {
     // use of TolerantUpdateProcessor can cause non-thrown "errors" that we need to check for
+    @SuppressWarnings({"rawtypes"})
     List errors = (List) rsp.getResponseHeader().get("errors");
     assertTrue("Expected no errors: " + errors,errors == null || errors.isEmpty());
   }

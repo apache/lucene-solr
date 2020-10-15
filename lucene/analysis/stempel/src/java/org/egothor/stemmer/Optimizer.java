@@ -117,7 +117,7 @@ public class Optimizer extends Reduce {
    * 
    * @param master the master Row
    * @param existing the existing Row
-   * @return the resulting Row, or <tt>null</tt> if the operation cannot be
+   * @return the resulting Row, or <code>null</code> if the operation cannot be
    *         realized
    */
   public Row merge(Row master, Row existing) {
@@ -151,7 +151,7 @@ public class Optimizer extends Reduce {
    * 
    * @param m the master Cell
    * @param e the existing Cell
-   * @return the resulting Cell, or <tt>null</tt> if the operation cannot be
+   * @return the resulting Cell, or <code>null</code> if the operation cannot be
    *         realized
    */
   public Cell merge(Cell m, Cell e) {

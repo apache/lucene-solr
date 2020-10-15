@@ -36,7 +36,7 @@ public class TestIntroSelector extends LuceneTestCase {
     final int from = random().nextInt(5);
     final int to = from + TestUtil.nextInt(random(), 1, 10000);
     final int max = random().nextBoolean() ? random().nextInt(100) : random().nextInt(100000);
-    Integer[] arr = new Integer[from + to + random().nextInt(5)];
+    Integer[] arr = new Integer[to + random().nextInt(5)];
     for (int i = 0; i < arr.length; ++i) {
       arr[i] = TestUtil.nextInt(random(), 0, max);
     }

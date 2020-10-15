@@ -22,7 +22,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
 import org.apache.lucene.spatial3d.geom.GeoShape;
-import org.apache.lucene.spatial3d.geom.PlanetModel;
+import org.apache.lucene.spatial3d.geom.PlanetModel.DocValueEncoder;
 import org.apache.lucene.spatial3d.geom.XYZBounds;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
@@ -43,12 +43,13 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
     XYZBounds bounds) {
     this.hits = hits;
     this.shape = shape;
-    this.minimumX = Geo3DDocValuesField.roundDownX(bounds.getMinimumX());
-    this.maximumX = Geo3DDocValuesField.roundUpX(bounds.getMaximumX());
-    this.minimumY = Geo3DDocValuesField.roundDownY(bounds.getMinimumY());
-    this.maximumY = Geo3DDocValuesField.roundUpY(bounds.getMaximumY());
-    this.minimumZ = Geo3DDocValuesField.roundDownZ(bounds.getMinimumZ());
-    this.maximumZ = Geo3DDocValuesField.roundUpZ(bounds.getMaximumZ());
+    DocValueEncoder docValueEncoder = shape.getPlanetModel().getDocValueEncoder();
+    this.minimumX = docValueEncoder.roundDownX(bounds.getMinimumX());
+    this.maximumX = docValueEncoder.roundUpX(bounds.getMaximumX());
+    this.minimumY = docValueEncoder.roundDownY(bounds.getMinimumY());
+    this.maximumY = docValueEncoder.roundUpY(bounds.getMaximumY());
+    this.minimumZ = docValueEncoder.roundDownZ(bounds.getMinimumZ());
+    this.maximumZ = docValueEncoder.roundUpZ(bounds.getMaximumZ());
   }
 
   @Override
@@ -64,9 +65,9 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
   @Override
   public void visit(int docID, byte[] packedValue) {
     assert packedValue.length == 12;
-    double x = Geo3DPoint.decodeDimension(packedValue, 0);
-    double y = Geo3DPoint.decodeDimension(packedValue, Integer.BYTES);
-    double z = Geo3DPoint.decodeDimension(packedValue, 2 * Integer.BYTES);
+    double x = Geo3DPoint.decodeDimension(packedValue, 0, shape.getPlanetModel());
+    double y = Geo3DPoint.decodeDimension(packedValue, Integer.BYTES, shape.getPlanetModel());
+    double z = Geo3DPoint.decodeDimension(packedValue, 2 * Integer.BYTES, shape.getPlanetModel());
     if (x >= minimumX && x <= maximumX &&
       y >= minimumY && y <= maximumY &&
       z >= minimumZ && z <= maximumZ) {
@@ -82,12 +83,12 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
     // here are inclusive, we need to extend the bounds to the largest un-quantized values that
     // could quantize into these bounds.  The encoding (Geo3DUtil.encodeValue) does
     // a Math.round from double to long, so e.g. 1.4 -> 1, and -1.4 -> -1:
-    double xMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 0));
-    double xMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 0));
-    double yMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 1 * Integer.BYTES));
-    double yMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES));
-    double zMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES));
-    double zMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES));
+    double xMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 0), shape.getPlanetModel());
+    double xMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 0), shape.getPlanetModel());
+    double yMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 1 * Integer.BYTES), shape.getPlanetModel());
+    double yMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES), shape.getPlanetModel());
+    double zMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES), shape.getPlanetModel());
+    double zMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES), shape.getPlanetModel());
 
     //System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" + cellYMax + " z=" + cellZMin + "-" + cellZMax);
     assert xMin <= xMax;
@@ -102,7 +103,7 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
     }
 
     // Quick test failed so do slower one...
-    GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84, xMin, xMax, yMin, yMax, zMin, zMax);
+    GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(shape.getPlanetModel(), xMin, xMax, yMin, yMax, zMin, zMax);
 
     switch(xyzSolid.getRelationship(shape)) {
     case GeoArea.CONTAINS:

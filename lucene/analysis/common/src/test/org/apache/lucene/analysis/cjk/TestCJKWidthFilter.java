@@ -74,7 +74,7 @@ public class TestCJKWidthFilter extends BaseTokenStreamTestCase {
   }
   
   public void testRandomData() throws IOException {
-    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {

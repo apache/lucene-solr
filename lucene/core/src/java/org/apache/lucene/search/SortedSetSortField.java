@@ -16,13 +16,17 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexSorter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortFieldProvider;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 
 /** 
  * SortField for {@link SortedSetDocValues}.
@@ -67,6 +71,60 @@ public class SortedSetSortField extends SortField {
       throw new NullPointerException();
     }
     this.selector = selector;
+  }
+
+  /** A SortFieldProvider for this sort */
+  public static final class Provider extends SortFieldProvider {
+
+    /** The name this provider is registered under */
+    public static final String NAME = "SortedSetSortField";
+
+    /** Creates a new Provider */
+    public Provider() {
+      super(NAME);
+    }
+
+    @Override
+    public SortField readSortField(DataInput in) throws IOException {
+      SortField sf = new SortedSetSortField(in.readString(), in.readInt() == 1, readSelectorType(in));
+      int missingValue = in.readInt();
+      if (missingValue == 1) {
+        sf.setMissingValue(SortField.STRING_FIRST);
+      }
+      else if (missingValue == 2) {
+        sf.setMissingValue(SortField.STRING_LAST);
+      }
+      return sf;
+    }
+
+    @Override
+    public void writeSortField(SortField sf, DataOutput out) throws IOException {
+      assert sf instanceof SortedSetSortField;
+      ((SortedSetSortField)sf).serialize(out);
+    }
+  }
+
+  private static SortedSetSelector.Type readSelectorType(DataInput in) throws IOException {
+    int type = in.readInt();
+    if (type >= SortedSetSelector.Type.values().length) {
+      throw new IllegalArgumentException("Cannot deserialize SortedSetSortField: unknown selector type " + type);
+    }
+    return SortedSetSelector.Type.values()[type];
+  }
+
+  private void serialize(DataOutput out) throws IOException {
+    out.writeString(getField());
+    out.writeInt(reverse ? 1 : 0);
+    out.writeInt(selector.ordinal());
+    if (missingValue == SortField.STRING_FIRST) {
+      out.writeInt(1);
+    }
+    else if (missingValue == SortField.STRING_LAST) {
+      out.writeInt(2);
+    }
+    else {
+      out.writeInt(0);
+    }
   }
   
   /** Returns the selector in use for this sort */
@@ -125,5 +183,14 @@ public class SortedSetSortField extends SortField {
         return SortedSetSelector.wrap(DocValues.getSortedSet(context.reader(), field), selector);
       }
     };
+  }
+
+  private SortedDocValues getValues(LeafReader reader) throws IOException {
+    return SortedSetSelector.wrap(DocValues.getSortedSet(reader, getField()), selector);
+  }
+
+  @Override
+  public IndexSorter getIndexSorter() {
+    return new IndexSorter.StringSorter(Provider.NAME, missingValue, reverse, this::getValues);
   }
 }

@@ -35,6 +35,11 @@
     </updateLog>
   </updateHandler>
 
+  <updateRequestProcessorChain default="true">
+    <!-- be tolerant of errors for testing optimistic concurrency of delete() stream -->
+    <processor class="solr.TolerantUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
 
   <requestDispatcher>
     <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />

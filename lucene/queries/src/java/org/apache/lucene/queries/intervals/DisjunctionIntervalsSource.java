@@ -31,7 +31,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
-import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.PriorityQueue;
@@ -82,15 +81,24 @@ class DisjunctionIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
-    List<MatchesIterator> subMatches = new ArrayList<>();
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    List<IntervalMatchesIterator> subMatches = new ArrayList<>();
     for (IntervalsSource subSource : subSources) {
-      MatchesIterator mi = subSource.matches(field, ctx, doc);
+      IntervalMatchesIterator mi = subSource.matches(field, ctx, doc);
       if (mi != null) {
         subMatches.add(mi);
       }
     }
-    return MatchesUtils.disjunction(subMatches);
+    if (subMatches.size() == 0) {
+      return null;
+    }
+    DisjunctionIntervalIterator it = new DisjunctionIntervalIterator(
+        subMatches.stream().map(m -> IntervalMatches.wrapMatches(m, doc)).collect(Collectors.toList())
+    );
+    if (it.advance(doc) != doc) {
+      return null;
+    }
+    return new DisjunctionMatchesIterator(it, subMatches);
   }
 
   @Override
@@ -194,6 +202,16 @@ class DisjunctionIntervalsSource extends IntervalsSource {
         intervalQueue.add(dw.intervals);
       }
       current = EMPTY;
+    }
+
+    int currentOrd() {
+      assert current != EMPTY && current != EXHAUSTED;
+      for (int i = 0; i < iterators.size(); i++) {
+        if (iterators.get(i) == current) {
+          return i;
+        }
+      }
+      throw new IllegalStateException();
     }
 
     @Override
@@ -343,5 +361,65 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       return 0;
     }
   };
+
+  private static class DisjunctionMatchesIterator implements IntervalMatchesIterator {
+
+    final DisjunctionIntervalIterator it;
+    final List<IntervalMatchesIterator> subs;
+
+    private DisjunctionMatchesIterator(DisjunctionIntervalIterator it, List<IntervalMatchesIterator> subs) {
+      this.it = it;
+      this.subs = subs;
+    }
+
+    @Override
+    public boolean next() throws IOException {
+      return it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public int startPosition() {
+      return it.start();
+    }
+
+    @Override
+    public int endPosition() {
+      return it.end();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      int ord = it.currentOrd();
+      return subs.get(ord).startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      int ord = it.currentOrd();
+      return subs.get(ord).endOffset();
+    }
+
+    @Override
+    public MatchesIterator getSubMatches() throws IOException {
+      int ord = it.currentOrd();
+      return subs.get(ord).getSubMatches();
+    }
+
+    @Override
+    public Query getQuery() {
+      int ord = it.currentOrd();
+      return subs.get(ord).getQuery();
+    }
+
+    @Override
+    public int gaps() {
+      return it.gaps();
+    }
+
+    @Override
+    public int width() {
+      return it.width();
+    }
+  }
 
 }

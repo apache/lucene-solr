@@ -32,6 +32,17 @@ import org.junit.Test;
  */
 public class TestCharacterUtils extends LuceneTestCase {
 
+  public void testLowerUpper() throws IOException {
+    Reader reader = new StringReader("ABc");
+    CharacterBuffer buffer = CharacterUtils.newCharacterBuffer(3);
+    assertTrue(CharacterUtils.fill(buffer, reader));
+    assertEquals(3, buffer.getLength());
+    CharacterUtils.toLowerCase(buffer.getBuffer(), 1, 3);
+    assertEquals("Abc", new String(buffer.getBuffer()));
+    CharacterUtils.toUpperCase(buffer.getBuffer(), 1, 3);
+    assertEquals("ABC", new String(buffer.getBuffer()));
+  }
+
   public void testConversions() {
     final char[] orig = TestUtil.randomUnicodeString(random(), 100).toCharArray();
     final int[] buf = new int[orig.length];

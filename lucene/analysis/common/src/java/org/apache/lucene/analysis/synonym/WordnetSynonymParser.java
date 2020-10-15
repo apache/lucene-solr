@@ -30,7 +30,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 /**
  * Parser for wordnet prolog format
  * <p>
- * See http://wordnet.princeton.edu/man/prologdb.5WN.html for a description of the format.
+ * See https://wordnet.princeton.edu/documentation/prologdb5wn for a description of the format.
  * @lucene.experimental
  */
 // TODO: allow you to specify syntactic categories (e.g. just nouns, etc)
@@ -96,7 +96,9 @@ public class WordnetSynonymParser extends SynonymMap.Parser {
     if (expand) {
       for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-          add(synset[i], synset[j], false);
+          if (i != j) {
+            add(synset[i], synset[j], true);
+          }
         }
       }
     } else {

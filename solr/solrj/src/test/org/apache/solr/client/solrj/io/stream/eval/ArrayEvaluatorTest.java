@@ -60,9 +60,9 @@ public class ArrayEvaluatorTest extends SolrTestCase {
     Assert.assertTrue(result instanceof List<?>);
     
     Assert.assertEquals(3, ((List<?>)result).size());
-    Assert.assertEquals(1L, ((List<?>)result).get(0));
-    Assert.assertEquals(2L, ((List<?>)result).get(1));
-    Assert.assertEquals(3L, ((List<?>)result).get(2));
+    Assert.assertEquals(1D, ((List<?>)result).get(0));
+    Assert.assertEquals(2D, ((List<?>)result).get(1));
+    Assert.assertEquals(3D, ((List<?>)result).get(2));
   }
 
   @Test
@@ -81,9 +81,9 @@ public class ArrayEvaluatorTest extends SolrTestCase {
     Assert.assertTrue(result instanceof List<?>);
     
     Assert.assertEquals(3, ((List<?>)result).size());
-    Assert.assertEquals(3L, ((List<?>)result).get(0));
-    Assert.assertEquals(2L, ((List<?>)result).get(1));
-    Assert.assertEquals(1L, ((List<?>)result).get(2));
+    Assert.assertEquals(3D, ((List<?>)result).get(0));
+    Assert.assertEquals(2D, ((List<?>)result).get(1));
+    Assert.assertEquals(1D, ((List<?>)result).get(2));
   }
   
   @Test

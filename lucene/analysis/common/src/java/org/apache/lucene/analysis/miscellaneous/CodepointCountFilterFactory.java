@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link CodepointCountFilter}. 
@@ -54,6 +54,11 @@ public class CodepointCountFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public CodepointCountFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public CodepointCountFilter create(TokenStream input) {
     return new CodepointCountFilter(input, min, max);

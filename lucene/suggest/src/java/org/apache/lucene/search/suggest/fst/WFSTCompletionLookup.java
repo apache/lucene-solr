@@ -40,7 +40,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
@@ -116,7 +116,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
     IntsRefBuilder scratchInts = new IntsRefBuilder();
     BytesRefBuilder previous = null;
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+    FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
     while ((scratch = iter.next()) != null) {
       long cost = iter.weight();
       
@@ -127,11 +127,11 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
                   // added
       }
       Util.toIntsRef(scratch, scratchInts);
-      builder.add(scratchInts.get(), cost);
+      fstCompiler.add(scratchInts.get(), cost);
       previous.copyBytes(scratch);
       count++;
     }
-    fst = builder.finish();
+    fst = fstCompiler.compile();
   }
 
   
@@ -141,14 +141,14 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
     if (fst == null) {
       return false;
     }
-    fst.save(output);
+    fst.save(output, output);
     return true;
   }
 
   @Override
   public boolean load(DataInput input) throws IOException {
     count = input.readVLong();
-    this.fst = new FST<>(input, PositiveIntOutputs.getSingleton());
+    this.fst = new FST<>(input, input, PositiveIntOutputs.getSingleton());
     return true;
   }
 

@@ -80,7 +80,7 @@ import org.apache.lucene.util.PriorityQueue;
  * 
  * Doug
  * </code></pre>
- * <h3>Initial Usage</h3>
+ * <h2>Initial Usage</h2>
  * <p>
  * This class has lots of options to try to make it efficient and flexible.
  * The simplest possible usage is as follows. The bold
@@ -109,7 +109,7 @@ import org.apache.lucene.util.PriorityQueue;
  * <li> call the searcher to find the similar docs
  * </ol>
  * <br>
- * <h3>More Advanced Usage</h3>
+ * <h2>More Advanced Usage</h2>
  * <p>
  * You may want to use {@link #setFieldNames setFieldNames(...)} so you can examine
  * multiple fields (e.g. body and title) for similarity.
@@ -650,12 +650,16 @@ public final class MoreLikeThis {
    */
   private PriorityQueue<ScoreTerm> createQueue(Map<String, Map<String, Int>> perFieldTermFrequencies) throws IOException {
     // have collected all words in doc and their freqs
-    int numDocs = ir.numDocs();
     final int limit = Math.min(maxQueryTerms, this.getTermsCount(perFieldTermFrequencies));
     FreqQ queue = new FreqQ(limit); // will order words by score
     for (Map.Entry<String, Map<String, Int>> entry : perFieldTermFrequencies.entrySet()) {
       Map<String, Int> perWordTermFrequencies = entry.getValue();
       String fieldName = entry.getKey();
+
+      long numDocs = ir.getDocCount(fieldName);
+      if(numDocs == -1) {
+        numDocs = ir.numDocs();
+      }
 
       for (Map.Entry<String, Int> tfEntry : perWordTermFrequencies.entrySet()) { // for every word
         String word = tfEntry.getKey();

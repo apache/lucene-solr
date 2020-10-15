@@ -16,6 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -24,11 +29,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.Utils;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 public class SliceStateTest extends SolrTestCaseJ4 {
   
@@ -41,17 +41,19 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     Map<String, Slice> slices = new HashMap<>();
     Map<String, Replica> sliceToProps = new HashMap<>();
     Map<String, Object> props = new HashMap<>();
+    props.put("node_name", "127.0.0.1:10000_solr");
+    props.put("core", "core1");
 
-    Replica replica = new Replica("node1", props);
+    Replica replica = new Replica("node1", props, "collection1", "shard1");
     sliceToProps.put("node1", replica);
-    Slice slice = new Slice("shard1", sliceToProps, null);
+    Slice slice = new Slice("shard1", sliceToProps, null, "collection1");
     assertSame("Default state not set to active", Slice.State.ACTIVE, slice.getState());
     slices.put("shard1", slice);
     collectionStates.put("collection1", new DocCollection("collection1", slices, null, DocRouter.DEFAULT));
 
-    ClusterState clusterState = new ClusterState(-1,liveNodes, collectionStates);
+    ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     byte[] bytes = Utils.toJSON(clusterState);
-    ClusterState loadedClusterState = ClusterState.load(-1, bytes, liveNodes);
+    ClusterState loadedClusterState = ClusterState.createFromJson(-1, bytes, liveNodes);
 
     assertSame("Default state not set to active", Slice.State.ACTIVE, loadedClusterState.getCollection("collection1").getSlice("shard1").getState());
   }

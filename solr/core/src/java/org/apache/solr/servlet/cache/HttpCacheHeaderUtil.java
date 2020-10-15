@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -54,7 +55,7 @@ public final class HttpCacheHeaderUtil {
    *
    * @see #calcEtag
    */
-  private static WeakIdentityMap<SolrCore, EtagCacheVal> etagCoreCache = WeakIdentityMap.newConcurrentHashMap();
+  private static WeakIdentityMap<UUID, EtagCacheVal> etagCoreCache = WeakIdentityMap.newConcurrentHashMap();
 
   /** @see #etagCoreCache */
   private static class EtagCacheVal {
@@ -89,12 +90,12 @@ public final class HttpCacheHeaderUtil {
     final long currentIndexVersion
       = solrReq.getSearcher().getIndexReader().getVersion();
 
-    EtagCacheVal etagCache = etagCoreCache.get(core);
+    EtagCacheVal etagCache = etagCoreCache.get(core.uniqueId);
     if (null == etagCache) {
       final String etagSeed
         = core.getSolrConfig().getHttpCachingConfig().getEtagSeed();
       etagCache = new EtagCacheVal(etagSeed);
-      etagCoreCache.put(core, etagCache);
+      etagCoreCache.put(core.uniqueId, etagCache);
     }
     
     return etagCache.calcEtag(currentIndexVersion);

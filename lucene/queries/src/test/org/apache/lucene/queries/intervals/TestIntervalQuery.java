@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
@@ -72,7 +73,8 @@ public class TestIntervalQuery extends LuceneTestCase {
       "coordinate genome mapping research",
       "coordinate genome research",
       "greater new york",
-      "x x x x x intend x x x message x x x message x x x addressed x x"
+      "x x x x x intend x x x message x x x message x x x addressed x x",
+      "issue with intervals queries from search engine. So it's a big issue for us as we need to do ordered searches. Thank you to help us concerning that issue"
   };
 
   private void checkHits(Query query, int[] results) throws IOException {
@@ -126,6 +128,25 @@ public class TestIntervalQuery extends LuceneTestCase {
     checkHits(q, new int[]{1, 3, 5});
   }
 
+  public void testFieldInToString() throws IOException {
+    final IntervalQuery fieldW1 = new IntervalQuery(field, Intervals.term("w1"));
+    assertTrue(fieldW1.toString().contains(field));
+    final String field2 = field+"2";
+    final IntervalQuery f2w1 = new IntervalQuery(field2, Intervals.term("w1"));
+    assertTrue(f2w1.toString().contains(field2+":"));
+    assertFalse("suppress default field",f2w1.toString(field2).contains(field2));
+    
+    final Explanation explain = searcher.explain(new IntervalQuery(field, 
+        Intervals.ordered(Intervals.term("w1"), Intervals.term("w2"))), searcher.search(fieldW1, 1).scoreDocs[0].doc);
+    assertTrue(explain.toString().contains(field));
+  }
+  
+  public void testNullConstructorArgs() throws IOException {
+    expectThrows(NullPointerException.class, ()-> new IntervalQuery(null, Intervals.term("z")));
+    expectThrows(NullPointerException.class, ()-> new IntervalQuery("field", null));
+  }
+  
+  
   public void testNotWithinQuery() throws IOException {
     Query q = new IntervalQuery(field, Intervals.notWithin(Intervals.term("w1"), 1, Intervals.term("w2")));
     checkHits(q, new int[]{ 1, 2, 3 });
@@ -240,6 +261,13 @@ public class TestIntervalQuery extends LuceneTestCase {
             Intervals.term("research"))
     ));
     checkHits(q, new int[]{ 6, 7 });
+  }
+
+  public void testOrderedWithGaps() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.maxgaps(1, Intervals.ordered(
+            Intervals.term("issue"), Intervals.term("search"), Intervals.term("ordered")
+    )));
+    checkHits(q, new int[]{});
   }
 
   public void testNestedOrInContainedBy() throws IOException {

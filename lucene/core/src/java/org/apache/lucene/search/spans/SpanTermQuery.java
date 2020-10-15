@@ -91,6 +91,10 @@ public class SpanTermQuery extends SpanQuery {
     }
   }
 
+  /**
+   * Creates SpanTermQuery scorer instances
+   * @lucene.internal
+   */
   public class SpanTermWeight extends SpanWeight {
 
     final TermStates termStates;
