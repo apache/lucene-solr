@@ -542,18 +542,13 @@ This has been observed during collection creation perf testing at Salesforce (no
 
 buildReplicaPositions() gets the list of nodes to which replicas should be assigned by calling `Assign.getLiveOrLiveAndCreateNodeSetList()` (method name is because either all live nodes are used or only those present in message parameter `CREATE_NODE_SET`). It then verifies that there are enough nodes to place the replicas on and delegates to an `Assign.AssignStrategy` the computation of the actual replica distribution.
 
-There are 3 implementations of `AssignStrategy`: `LegacyAssignStrategy`, `RulesBasedAssignStrategy` and `PolicyBasedAssignStrategy`.
+There is a default implementation of `AssignStrategy`: `LegacyAssignStrategy`
 
-The one in use in modern configurations is `PolicyBasedAssignStrategy`. It is unclear to me when `LegacyAssignStrategy` is used.
 
 For a new collection (having no existing replicas), `LegacyAssignStrategy` will round robin over all nodes, sorted by increasing number of cores they already host. A collection with few replicas (compared to the number nodes) will be placed on the nodes having less cores at the time the computation is made. Larger collections will basically be distributed equally over the cluster, regardless of the number of cores already present on each node (since the round robin will assign multiple replicas to each node, the iteration order doesn’t make a big difference). +
 Note when `LegacyAssignStrategy` is assigning replicas for a collection that already exists in the cluster, each core (replica) of that collection on a node counts as 100 cores of other replicas, nodes are ordered by increasing count of cores (and 100x that collection cores) but nodes already having the maximum number of shards of that collection are excluded from the set of candidate nodes for new assignments. Nodes not having reached the max number of cores for that collection might get replica assignments that make them exceed that maximum and exceed the number of cores on the nodes initially excluded, that should instead have been assigned a few cores as well… +
 Given “legacy” in the name, I assume that doesn’t really matter.
 
-With `RulesBasedAssignStrategy`, only NRT replicas can be placed (TLOG and PULL not supported). After some initial set up, the work is delegated to `org.apache.solr.cloud.rule.ReplicaAssigner`. Given that’s not the way things should be done going forward, I will not try to understand how it works.
-
-The modern way to do things is `PolicyBasedAssignStrategy` that will keep its secrets from me for now… Describing the Autoscaling framework might be added later to this doc in a totally separate chapter but I don’t know much about it at this point. +
-See https://issues.apache.org/jira/browse/SOLR-14275[SOLR-14275] “Policy calculations are very slow for large clusters and large operations” for ongoing work.
 
 [[ZkStateWriter,ZkStateWriter]]
 === org.apache.solr.cloud.overseer.ZkStateWriter
