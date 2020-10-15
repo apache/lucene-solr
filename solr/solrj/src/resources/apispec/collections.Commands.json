@@ -76,22 +76,6 @@
           "type": "boolean",
           "description": "Controls whether or not the shard-replicas created for this collection will be assigned to the nodes specified by the nodeSet property in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas. A 'false' value makes the results of a collection creation predictable and gives more exact control over the location of the individual shard-replicas, but 'true' can be a better choice for ensuring replicas are distributed evenly across nodes. This property is ignored if nodeSet is not also specified."
         },
-        "rule": {
-          "type": "array",
-          "documentation": "https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
-          "description": "Defines rules for where replicas should be located in a cluster.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "snitch": {
-          "type": "array",
-          "documentation": "https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
-          "description": "",
-          "items": {
-            "type": "string"
-          }
-        },
         "properties": {
           "type": "object",
           "documentation": "https://lucene.apache.org/solr/guide/defining-core-properties.html",
