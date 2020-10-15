@@ -456,7 +456,6 @@ public class Overseer implements SolrCloseable {
             }
             break;
           case MODIFYCOLLECTION:
-            CollectionsHandler.verifyRuleParams(zkController.getCoreContainer() ,message.getProperties());
             return Collections.singletonList(new CollectionMutator(getSolrCloudManager()).modifyCollection(clusterState,message));
           default:
             throw new RuntimeException("unknown operation:" + operation

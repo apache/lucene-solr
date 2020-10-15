@@ -116,16 +116,6 @@ Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstart
           "description":"Modifies specific attributes of a collection. Multiple attributes can be changed at one time.",
           "type":"object",
           "properties":{
-            "rule":{
-              "type":"array",
-              "documentation":"https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
-              "description":"Modifies the rules for where replicas should be located in a cluster.",
-              "items":{"type":"string"}},
-            "snitch":{
-              "type":"array",
-              "documentation":"https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
-              "description":"Details of the snitch provider",
-              "items":{"type":"string"}},
             "replicationFactor":{
               "type":"string",
               "description":"The number of replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard. Note that changing this value on an existing collection does not automatically add more replicas to the collection. However, it will allow add-replica commands to succeed."}}}}}],

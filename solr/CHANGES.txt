@@ -130,6 +130,8 @@ Other Changes
 
 * SOLR-10370: ReplicationHandler should fetch index at fixed delay instead of fixed rate (Cao Manh Dat)
 
+* SOLR-14930: Removed rule based replica placement (noble)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -161,6 +163,8 @@ New Features
   (Omar Abdelnabi, Christine Poerschke)
 
 * SOLR-14907: Support single file upload/overwrite in configSet API. (Houston Putman)
+
+* SOLR-14914: Add option to disable metrics collection. (ab)
 
 Improvements
 ---------------------
@@ -219,6 +223,8 @@ Optimizations
 Bug Fixes
 ---------------------
 
+* SOLR-14869: ChildDocTransformer should have omitted deleted child documents. (Bar Rotstein, David Smiley)
+
 * SOLR-11656: TLOG replication doesn't work properly after rebalancing leaders. (Yuki Yano via
   Erick Erickson)
 
@@ -257,8 +263,9 @@ Bug Fixes
 * SOLR-14503: Use specified waitForZk value as connection timeout for zookeeper in SolrDispatcherFilter.
   Also, consume specified SOLR_WAIT_FOR_ZK in bin/solr.cmd (Colvin Cowie via Munendra S N)
 
-* SOLR-14483: Fix empty drop down for adding replica in Admin UI (Sayan Das via Eric Pugh)
+* SOLR-14924: Some ReplicationHandler metrics are reported using incorrect types. (ab)
 
+* SOLR-14483: Fix empty drop down for adding replica in Admin UI (Sayan Das via Eric Pugh)
 
 Other Changes
 ---------------------

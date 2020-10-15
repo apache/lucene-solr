@@ -48,6 +48,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.Adler32;
@@ -68,7 +69,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -912,15 +912,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           map.put("downloadSpeed", val / elapsed);
         }
         Properties props = loadReplicationProperties();
-        addVal(map, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
-        addVal(map, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
-        addVal(map, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Date.class);
-        addVal(map, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
-        addVal(map, IndexFetcher.TIMES_FAILED, props, Integer.class);
-        addVal(map, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
-        addVal(map, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
-        addVal(map, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
-        addVal(map, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
+        addReplicationProperties(map::putNoEx, props);
       }
     });
     solrMetricsContext.gauge(fetcherMap, true, "fetcher", getCategory().toString(), scope);
@@ -989,18 +981,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       } else if (isPollingDisabled()) {
         follower.add(NEXT_EXECUTION_AT, "Polling disabled");
       }
-      addVal(follower, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
-      addVal(follower, IndexFetcher.INDEX_REPLICATED_AT_LIST, props, List.class);
-      addVal(follower, IndexFetcher.REPLICATION_FAILED_AT_LIST, props, List.class);
-      addVal(follower, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
-      addVal(follower, IndexFetcher.CONF_FILES_REPLICATED, props, Integer.class);
-      addVal(follower, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
-      addVal(follower, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Integer.class);
-      addVal(follower, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
-      addVal(follower, IndexFetcher.TIMES_FAILED, props, Integer.class);
-      addVal(follower, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
-      addVal(follower, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
-      addVal(follower, IndexFetcher.CLEARED_LOCAL_IDX, props, Long.class);
+      addReplicationProperties(follower::add, props);
 
       follower.add("currentDate", new Date().toString());
       follower.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
@@ -1104,17 +1085,25 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return details;
   }
 
-  private void addVal(NamedList<Object> nl, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
-    Object val = formatVal(key, props, clzz);
-    if (val != null) {
-      nl.add(key, val);
-    }
+  private void addReplicationProperties(BiConsumer<String, Object> consumer, Properties props) {
+    addVal(consumer, IndexFetcher.INDEX_REPLICATED_AT, props, Date.class);
+    addVal(consumer, IndexFetcher.INDEX_REPLICATED_AT_LIST, props, List.class);
+    addVal(consumer, IndexFetcher.REPLICATION_FAILED_AT_LIST, props, List.class);
+    addVal(consumer, IndexFetcher.TIMES_INDEX_REPLICATED, props, Integer.class);
+    addVal(consumer, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
+    addVal(consumer, IndexFetcher.TIMES_CONFIG_REPLICATED, props, Integer.class);
+    addVal(consumer, IndexFetcher.CONF_FILES_REPLICATED_AT, props, Date.class);
+    addVal(consumer, IndexFetcher.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
+    addVal(consumer, IndexFetcher.TIMES_FAILED, props, Integer.class);
+    addVal(consumer, IndexFetcher.REPLICATION_FAILED_AT, props, Date.class);
+    addVal(consumer, IndexFetcher.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+    addVal(consumer, IndexFetcher.CLEARED_LOCAL_IDX, props, Boolean.class);
   }
 
-  private void addVal(MapWriter.EntryWriter ew, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
+  private void addVal(BiConsumer<String, Object> consumer, String key, Properties props, @SuppressWarnings({"rawtypes"})Class clzz) {
     Object val = formatVal(key, props, clzz);
     if (val != null) {
-      ew.putNoEx(key, val);
+      consumer.accept(key, val);
     }
   }
 
@@ -1135,6 +1124,22 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         l.add(new Date(Long.parseLong(s1)).toString());
       }
       return l;
+    } else if (clzz == Long.class) {
+      try {
+        Long l = Long.parseLong(s);
+        return l;
+      } catch (NumberFormatException e) {
+        return null;
+      }
+    } else if (clzz == Integer.class) {
+      try {
+        Integer i = Integer.parseInt(s);
+        return i;
+      } catch (NumberFormatException e) {
+        return null;
+      }
+    } else if (clzz == Boolean.class) {
+      return Boolean.parseBoolean(s);
     } else {
       return s;
     }

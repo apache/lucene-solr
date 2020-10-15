@@ -116,6 +116,18 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     assertNotNull(mockHistogramSupplier.info);
   }
 
+  @Test
+  public void testDisabledMetrics() throws Exception {
+    System.setProperty("metricsEnabled", "false");
+    NodeConfig cfg = loadNodeConfig();
+    SolrMetricManager mgr = new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
+    assertTrue(mgr.getCounterSupplier() instanceof MetricSuppliers.NoOpCounterSupplier);
+    assertTrue(mgr.getMeterSupplier() instanceof MetricSuppliers.NoOpMeterSupplier);
+    assertTrue(mgr.getTimerSupplier() instanceof MetricSuppliers.NoOpTimerSupplier);
+    assertTrue(mgr.getHistogramSupplier() instanceof MetricSuppliers.NoOpHistogramSupplier);
+
+  }
+
   private NodeConfig loadNodeConfig() throws Exception {
     InputStream is = MetricsConfigTest.class.getResourceAsStream("/solr/solr-metricsconfig.xml");
     return SolrXmlConfig.fromInputStream(TEST_PATH(), is, new Properties()); //TODO pass in props

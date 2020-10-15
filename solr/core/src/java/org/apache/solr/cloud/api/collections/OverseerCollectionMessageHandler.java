@@ -91,7 +91,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
@@ -145,8 +144,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       ZkStateReader.NRT_REPLICAS, "1",
       ZkStateReader.TLOG_REPLICAS, "0",
       ZkStateReader.PULL_REPLICAS, "0",
-      DocCollection.RULE, null,
-      SNITCH, null,
       WITH_COLLECTION, null,
       COLOCATED_WITH, null));
 
