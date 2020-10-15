@@ -277,7 +277,7 @@ public class OrdinalMap implements Accountable {
     this.valueCount = globalOrd;
 
     // If the first segment contains all of the global ords, then we can apply a small optimization
-    // and hardcode the first segments and global ord deltas as all zeroes.
+    // and hardcode the first segment indices and global ord deltas as all zeroes.
     if (ordDeltaBits.length > 0 && ordDeltaBits[0] == 0L && ordDeltas[0].size() == this.valueCount) {
       this.firstSegments = LongValues.ZEROES;
       this.globalOrdDeltas = LongValues.ZEROES;
