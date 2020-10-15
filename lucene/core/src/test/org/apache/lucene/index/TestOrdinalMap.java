@@ -46,7 +46,7 @@ public class TestOrdinalMap extends LuceneTestCase {
   private static final RamUsageTester.Accumulator ORDINAL_MAP_ACCUMULATOR = new RamUsageTester.Accumulator() {
 
     public long accumulateObject(Object o, long shallowSize, java.util.Map<Field,Object> fieldValues, java.util.Collection<Object> queue) {
-      if (o == LongValues.IDENTITY) {
+      if (o == LongValues.ZEROES || o == LongValues.IDENTITY) {
         return 0L;
       }
       if (o instanceof OrdinalMap) {

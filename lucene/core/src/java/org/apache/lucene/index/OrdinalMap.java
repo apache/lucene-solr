@@ -281,7 +281,6 @@ public class OrdinalMap implements Accountable {
     if (ordDeltaBits.length > 0 && ordDeltaBits[0] == 0L && ordDeltas[0].size() == this.valueCount) {
       this.firstSegments = LongValues.ZEROES;
       this.globalOrdDeltas = LongValues.ZEROES;
-      ramBytesUsed += RamUsageEstimator.shallowSizeOf(LongValues.ZEROES);
     } else {
       PackedLongValues packedFirstSegments = firstSegments.build();
       PackedLongValues packedGlobalOrdDeltas = globalOrdDeltas.build();
