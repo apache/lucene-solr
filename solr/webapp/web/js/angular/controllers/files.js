@@ -31,9 +31,9 @@ solrAdminApp.controller('FilesController',
 
             var process = function (path, tree) {
                 var params = {core: $routeParams.core};
-                if (path.slice(-1) == '/') {
+                if (path.slice(-1) === '/') {
                     params.file = path.slice(0, -1);
-                } else if (path!='') {
+                } else if (path!=='') {
                     params.file = path;
                 }
 
@@ -48,10 +48,10 @@ solrAdminApp.controller('FilesController',
 
                         if (filedata.directory) {
                             file = file + "/";
-                            if ($scope.file && $scope.file.indexOf(path + file) == 0) {
-                                state = "open";
+                            if ($scope.file && $scope.file.indexOf(path + file) === 0) {
+                                state = {"opened": true};
                             } else {
-                                state = "closed";
+                                state = {"opened": false};
                             }
                             children = [];
                             process(path + file, children);
@@ -68,9 +68,9 @@ solrAdminApp.controller('FilesController',
             $scope.tree = [];
             process("", $scope.tree);
 
-            if ($scope.file && $scope.file != '' && $scope.file.split('').pop()!='/') {
+            if ($scope.file && $scope.file !== '' && $scope.file.split('').pop()!=='/') {
                 var extension;
-                if ($scope.file == "managed-schema") {
+                if ($scope.file === "managed-schema") {
                   extension = contentTypeMap['xml'];
                 } else {
                   extension = $scope.file.match( /\.(\w+)$/)[1] || '';
