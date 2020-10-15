@@ -27,6 +27,8 @@ configure(rootProject) {
   }
 }
 
+def resources = scriptResources(buildscript)
+
 allprojects {
   plugins.withType(JavaPlugin) {
     // Create a [sourceSetName]EcjLint task for each source set
@@ -35,7 +37,7 @@ allprojects {
     def lintTasks = sourceSets.collect { sourceSet ->
       def srcDirs = sourceSet.java.srcDirs.findAll { dir -> dir.exists() }
 
-      tasks.create(sourceSet.getTaskName("ecjLint", null), JavaExec, {
+      tasks.create(sourceSet.getTaskName("ecjLint", null), JavaExec, {task ->
         // This dependency is on a configuration; technically it causes
         // all dependencies to be resolved before this task executes
         // (this includes scheduling tasks that compile the
@@ -44,8 +46,9 @@ allprojects {
 
         // The inputs are all source files from the sourceSet.
         inputs.files sourceSet.allSource.asFileTree
-        // The outputs are always up to date (we don't generate anything).
-        outputs.upToDateWhen { true }
+
+        // This task has no proper outputs.
+        setupDummyOutputs(task)
 
         // We create a task for all source sets but ignore those
         // that don't have any Java source directories.
@@ -69,7 +72,7 @@ allprojects {
         args += [ "-proc:none" ]
         args += [ "-nowarn" ]
         args += [ "-enableJavadoc" ]
-        args += [ "-properties", project(":lucene").file("tools/javadoc/ecj.javadocs.prefs").absolutePath ]
+        args += [ "-properties", file("${resources}/ecj.javadocs.prefs").absolutePath ]
 
         doFirst {
           tmpDst.mkdirs()

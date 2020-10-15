@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 
-import org.apache.solr.core.SolrConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,14 +42,17 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
 
+  private boolean enabled;
   private final long heapMemoryThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking getDebugInfo()
-  private final ThreadLocal<Long> seenMemory = new ThreadLocal<>();
-  private final ThreadLocal<Long> allowedMemory = new ThreadLocal<>();
+  private static final ThreadLocal<Long> seenMemory = ThreadLocal.withInitial(() -> 0L);
+  private static final ThreadLocal<Long> allowedMemory = ThreadLocal.withInitial(() -> 0L);
 
-  public MemoryCircuitBreaker(SolrConfig solrConfig) {
-    super(solrConfig);
+  public MemoryCircuitBreaker(CircuitBreakerConfig config) {
+    super(config);
+
+    this.enabled = config.getMemCBEnabled();
 
     long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
 
@@ -58,7 +60,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
       throw new IllegalArgumentException("Invalid JVM state for the max heap usage");
     }
 
-    int thresholdValueInPercentage = solrConfig.memoryCircuitBreakerThresholdPct;
+    int thresholdValueInPercentage = config.getMemCBThreshold();
     double thresholdInFraction = thresholdValueInPercentage / (double) 100;
     heapMemoryThreshold = (long) (currentMaxHeap * thresholdInFraction);
 
@@ -73,6 +75,10 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   @Override
   public boolean isTripped() {
     if (!isEnabled()) {
+      return false;
+    }
+
+    if (!enabled) {
       return false;
     }
 
@@ -93,6 +99,13 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
     }
 
     return "seenMemory=" + seenMemory.get() + " allowedMemory=" + allowedMemory.get();
+  }
+
+  @Override
+  public String getErrorMessage() {
+    return "Memory Circuit Breaker triggered as JVM heap usage values are greater than allocated threshold." +
+        "Seen JVM heap memory usage " + seenMemory.get() + " and allocated threshold " +
+        allowedMemory.get();
   }
 
   private long getCurrentMemoryThreshold() {

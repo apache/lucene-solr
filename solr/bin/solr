@@ -132,6 +132,9 @@ fi
 if [ -z "$SOLR_STOP_WAIT" ]; then
   SOLR_STOP_WAIT=180
 fi
+if [ -z "$SOLR_START_WAIT" ]; then
+  SOLR_START_WAIT=$SOLR_STOP_WAIT # defaulting to $SOLR_STOP_WAIT for backwards compatibility reasons
+fi
 # test that Java exists, is executable and correct version
 JAVA_VER=$("$JAVA" -version 2>&1)
 if [[ $? -ne 0 ]] ; then
@@ -386,7 +389,6 @@ function print_usage() {
     echo "  -e <example>  Name of the example to run; available examples:"
     echo "      cloud:         SolrCloud example"
     echo "      techproducts:  Comprehensive example illustrating many of Solr's core capabilities"
-    echo "      dih:           Data Import Handler"
     echo "      schemaless:    Schema-less example"
     echo ""
     echo "  -a            Additional parameters to pass to the JVM when starting Solr, such as to setup"
@@ -2038,7 +2040,7 @@ fi
 
 if [ "$SOLR_MODE" == 'solrcloud' ]; then
   if [ -z "$ZK_CLIENT_TIMEOUT" ]; then
-    ZK_CLIENT_TIMEOUT="15000"
+    ZK_CLIENT_TIMEOUT="30000"
   fi
 
   CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")
@@ -2264,7 +2266,7 @@ function start_solr() {
     fi
     # no lsof on cygwin though
     if lsof -v 2>&1 | grep -q revision; then
-      echo -n "Waiting up to $SOLR_STOP_WAIT seconds to see Solr running on port $SOLR_PORT"
+      echo -n "Waiting up to $SOLR_START_WAIT seconds to see Solr running on port $SOLR_PORT"
       # Launch in a subshell to show the spinner
       (loops=0
       while true
@@ -2272,11 +2274,11 @@ function start_solr() {
         running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN)
         if [ -z "$running" ]; then
 	  slept=$((loops * 2))
-          if [ $slept -lt $SOLR_STOP_WAIT ]; then
+          if [ $slept -lt $SOLR_START_WAIT ]; then
             sleep 2
             loops=$[$loops+1]
           else
-            echo -e "Still not seeing Solr listening on $SOLR_PORT after $SOLR_STOP_WAIT seconds!"
+            echo -e "Still not seeing Solr listening on $SOLR_PORT after $SOLR_START_WAIT seconds!"
             tail -30 "$SOLR_LOGS_DIR/solr.log"
             exit # subshell!
           fi

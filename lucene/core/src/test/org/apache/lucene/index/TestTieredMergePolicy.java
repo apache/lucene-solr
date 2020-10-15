@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.MergePolicy.MergeSpecification;
 import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.store.Directory;
@@ -651,7 +652,10 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     for(int i=0;i<15000*RANDOM_MULTIPLIER;i++) {
       Document doc = new Document();
-      doc.add(newTextField("id", random().nextLong() + "" + random().nextLong(), Field.Store.YES));
+      // Uncompressible content so that merging 10 segments of size x creates a segment whose size is about 10x
+      byte[] idBytes = new byte[128];
+      random().nextBytes(idBytes);
+      doc.add(new StoredField("id", idBytes));
       w.addDocument(doc);
     }
     IndexReader r = DirectoryReader.open(w);

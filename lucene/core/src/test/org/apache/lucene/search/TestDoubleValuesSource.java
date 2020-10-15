@@ -284,6 +284,11 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     doTestQueryDoubleValuesSources(approximatingQuery);
   }
 
+  public void testRewriteSame() throws IOException {
+    SortField doubleField = DoubleValuesSource.constant(1.0).getSortField(false);
+    assertSame(doubleField, doubleField.rewrite(searcher));
+  }
+
   private void doTestQueryDoubleValuesSources(Query q) throws Exception {
     DoubleValuesSource vs = DoubleValuesSource.fromQuery(q).rewrite(searcher);
     searcher.search(q, new SimpleCollector() {

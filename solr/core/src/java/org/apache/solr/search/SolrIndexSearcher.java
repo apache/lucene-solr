@@ -2298,8 +2298,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
     // statsCache metrics
     parentContext.gauge(
-        new MetricsMap((detailed, map) -> {
-          statsCache.getCacheMetrics().getSnapshot(map::put);
+        new MetricsMap(map -> {
+          statsCache.getCacheMetrics().getSnapshot(map::putNoEx);
           map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
         }), true, "statsCache", Category.CACHE.toString(), scope);
   }

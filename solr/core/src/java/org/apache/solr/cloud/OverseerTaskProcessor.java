@@ -341,8 +341,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             if (log.isDebugEnabled()) {
               log.debug("{}: Get the message id: {} message: {}", messageHandler.getName(), head.getId(), message);
             }
-            Runner runner = new Runner(messageHandler, message,
-                operation, head, lock);
+            Runner runner = new Runner(messageHandler, message, operation, head, lock);
             tpe.execute(runner);
           }
 
@@ -633,9 +632,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private void printTrackingMaps() {
     if (log.isDebugEnabled()) {
       log.debug("RunningTasks: {}", runningTasks);
-      log.debug("BlockedTasks: {}", blockedTasks.keySet()); // logOk
-      log.debug("CompletedTasks: {}", completedTasks.keySet()); // logOk
-      log.debug("RunningZKTasks: {}", runningZKTasks); // logOk
+      log.debug("BlockedTasks: {}", blockedTasks.keySet()); // nowarn
+      log.debug("CompletedTasks: {}", completedTasks.keySet()); // nowarn
+      log.debug("RunningZKTasks: {}", runningZKTasks); // nowarn
     }
   }
 

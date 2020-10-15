@@ -23,7 +23,17 @@
 //       runner duplicated suite names (much like https://github.com/gradle/test-retry-gradle-plugin)
 // TODO: this is a somewhat related issue: https://github.com/gradle/test-retry-gradle-plugin/issues/29
 
-def beastingMode = gradle.startParameter.taskNames.contains("beast");
+def beastingMode = gradle.startParameter.taskNames.any{ name -> name == 'beast' || name.endsWith(':beast') }
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    ext {
+      testOptions += [
+          [propName: 'tests.dups', value: 0, description: "Reiterate runs of entire test suites ('beast' task)."]
+      ]
+    }
+  }
+}
 
 if (beastingMode) {
   if (rootProject.rootSeedUserProvided) {
@@ -37,7 +47,7 @@ if (beastingMode) {
         group "Verification"
       }
 
-      def dups = Integer.parseInt(propertyOrDefault("tests.dups", "0"))
+      def dups = Integer.parseInt(resolvedTestOption("tests.dups") as String)
       if (dups <= 0) {
         throw new GradleException("Specify -Ptests.dups=[count] for beast task.")
       }

@@ -101,7 +101,7 @@ public abstract class AttributeFactory {
     
     /** <b>Expert</b>: Creates an AttributeFactory returning {@code clazz} as instance for the
      * attributes it implements and for all other attributes calls the given delegate factory. */
-    public StaticImplementationAttributeFactory(AttributeFactory delegate, Class<A> clazz) {
+    protected StaticImplementationAttributeFactory(AttributeFactory delegate, Class<A> clazz) {
       this.delegate = delegate;
       this.clazz = clazz;
     }

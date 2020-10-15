@@ -62,4 +62,15 @@ public class OffsetRange {
   public int hashCode() {
     return Objects.hash(from, to);
   }
+
+  /**
+   * Returns a sub-range of this range (a copy). Subclasses should
+   * override and return an appropriate type covariant so that payloads
+   * are not lost.
+   */
+  public OffsetRange slice(int from, int to) {
+    assert from >= this.from;
+    assert to <= this.to;
+    return new OffsetRange(from, to);
+  }
 }

@@ -17,7 +17,7 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -29,7 +29,7 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.internal 
  */
 final class DocumentsWriterFlushQueue {
-  private final Queue<FlushTicket> queue = new LinkedList<>();
+  private final Queue<FlushTicket> queue = new ArrayDeque<>();
   // we track tickets separately since count must be present even before the ticket is
   // constructed ie. queue.size would not reflect it.
   private final AtomicInteger ticketCount = new AtomicInteger();

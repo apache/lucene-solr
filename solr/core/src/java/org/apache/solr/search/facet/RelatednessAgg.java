@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -652,10 +651,10 @@ public class RelatednessAgg extends AggValueSource {
     public void merge(Object facetResult, Context mcontext) {
       @SuppressWarnings({"unchecked"})
       final NamedList<Object> shardData = (NamedList<Object>)facetResult;
+
+      final boolean shardImplied = Objects.requireNonNullElse((Boolean)shardData.remove(IMPLIED_KEY), false);
       
-      final boolean shardImplied = Optional.ofNullable((Boolean)shardData.remove(IMPLIED_KEY)).orElse(false);
-      
-      // regardless of wether this shard is implied, we want to know it's size info...
+      // regardless of whether this shard is implied, we want to know its size info...
       mergedData.incSizes((Long)shardData.remove(FG_SIZE), (Long)shardData.remove(BG_SIZE));
 
       if (! shardImplied) {
