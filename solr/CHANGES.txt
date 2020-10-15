@@ -274,6 +274,8 @@ Bug Fixes
 
 * SOLR-14483: Fix empty drop down for adding replica in Admin UI (Sayan Das via Eric Pugh)
 
+* SOLR-14549: Fix listing of Files in a Directory on Solr Admin UI (Kevin Risden)
+
 Other Changes
 ---------------------
 
