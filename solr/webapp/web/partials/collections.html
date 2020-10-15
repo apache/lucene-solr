@@ -335,7 +335,7 @@ limitations under the License.
                       <select chosen ng-model="shard.replicaNodeName" ng-options="node for node in nodes" class="other">
                           <option value="">No specified node</option>
                       </select>
-                          node: {{shard.replicaNodeName}}
+                          <span ng-if="shard.replicaNodeName">node: {{shard.replicaNodeName}}</span>
                       </p>
 
                       <p class="clearfix note error" ng-show="createReplicaMessage">

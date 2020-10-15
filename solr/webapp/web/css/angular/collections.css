@@ -123,6 +123,11 @@ limitations under the License.
   padding-right: 3px;
 }
 
+#content #collections  .chosen-container.chosen-container-single
+{
+  width: 100% !important;
+}
+
 #content #collections .actions form .buttons
 {
   padding-top: 10px;
