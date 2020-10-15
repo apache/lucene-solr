@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.document;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
