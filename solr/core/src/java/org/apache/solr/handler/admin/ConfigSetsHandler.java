@@ -68,6 +68,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.DELETE;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.LIST;
+import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.UPLOAD;
 
 /**
  * A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests.
@@ -173,7 +174,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     boolean requestIsTrusted = isTrusted(req, coreContainer.getAuthenticationPlugin());
 
     // Get upload parameters
-    String singleFilePath = req.getParams().get(ConfigSetParams.FILE_PATH, "");
+    String singleFilePath = req.getParams().get(ConfigSetParams.PATH, req.getParams().get(ConfigSetParams.FILE_PATH, ""));
     boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
     boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
 
@@ -193,10 +194,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         fixedSingleFilePath = fixedSingleFilePath.substring(1);
       }
       if (fixedSingleFilePath.isEmpty()) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "The filePath provided for upload, '" + singleFilePath + "', is not valid.");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "The file path provided for upload, '" + singleFilePath + "', is not valid.");
       } else if (cleanup) {
         // Cleanup is not allowed while using singleFilePath upload
-        throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet uploads do not allow cleanup=true when filePath is used.");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet uploads do not allow cleanup=true when file path is used.");
       } else {
         try {
           // Create a node for the configuration in zookeeper
@@ -400,6 +401,13 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   }
 
   public enum ConfigSetOperation {
+    UPLOAD_OP(UPLOAD) {
+      @Override
+      public Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
+        h.handleConfigUploadRequest(req, rsp);
+        return null;
+      }
+    },
     CREATE_OP(CREATE) {
       @Override
       public Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {

@@ -210,6 +210,8 @@ New Features
 
 * SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
 
+* SOLR-14907: Add v2 API for configSet upload, including single-file insertion. (Houston Putman)
+
 Improvements
 ---------------------
 

@@ -47,6 +47,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
@@ -131,6 +132,62 @@ public class ClusterAPI {
       configSetsHandler.handleRequestBody(wrapParams(obj.getRequest(), mapVals), obj.getResponse());
     }
 
+  }
+
+  @EndPoint(method = POST,
+      path =   "/cluster/configs/{name}",
+      permission = CONFIG_EDIT_PERM
+  )
+  public void uploadConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    req = wrapParams(req,
+            "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
+            CommonParams.NAME, req.getPathTemplateValues().get("name"));
+    configSetsHandler.handleRequestBody(req, rsp);
+  }
+
+  @EndPoint(method = PUT,
+      path =   "/cluster/configs/{name}",
+      permission = CONFIG_EDIT_PERM
+  )
+  public void uploadConfigSetWithOverwrite(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    req = wrapParams(req,
+            "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
+            CommonParams.NAME, req.getPathTemplateValues().get("name"),
+            ConfigSetParams.OVERWRITE, true,
+            ConfigSetParams.CLEANUP, req.getParams().getBool(ConfigSetParams.CLEANUP, false));
+    configSetsHandler.handleRequestBody(req, rsp);
+  }
+
+  @EndPoint(method = POST,
+      path =   "/cluster/configs/{name}/file",
+      permission = CONFIG_EDIT_PERM
+  )
+  public void insertIntoConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    String path = req.getParams().get(ConfigSetParams.PATH);
+    if (path == null || path.isBlank()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "In order to insert a file into a configSet, a valid 'path' parameter must be provided.");
+    }
+    req = wrapParams(req,
+            "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
+            CommonParams.NAME, req.getPathTemplateValues().get("name"));
+    configSetsHandler.handleRequestBody(req, rsp);
+  }
+
+  @EndPoint(method = PUT,
+      path =   "/cluster/configs/{name}/file",
+      permission = CONFIG_EDIT_PERM
+  )
+  public void insertIntoConfigSetWithOverwrite(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    String path = req.getParams().get(ConfigSetParams.PATH);
+    if (path == null || path.isBlank()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "In order to insert a file into a configSet, a valid 'path' parameter must be provided.");
+    }
+    req = wrapParams(req,
+            "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
+            CommonParams.NAME, req.getPathTemplateValues().get("name"),
+            ConfigSetParams.OVERWRITE, true,
+            ConfigSetParams.CLEANUP, false);
+    configSetsHandler.handleRequestBody(req, rsp);
   }
 
   @SuppressWarnings({"rawtypes"})
