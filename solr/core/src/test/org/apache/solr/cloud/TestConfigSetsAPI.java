@@ -510,12 +510,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
 
       // Was untrusted, overwrite with trusted with cleanup but fail on unzipping.
-      // Should not set trusted=true
-      assertEquals(500, uploadBadConfigSet(configsetName, configsetSuffix, "solr", true, true, v2));
+      // Should not set trusted=true in configSet
+      ignoreException("Either empty zipped data, or non-zipped data was passed. In order to upload a configSet, you must zip a non-empty directory to upload.");
+      assertEquals(400, uploadBadConfigSet(configsetName, configsetSuffix, "solr", true, true, v2));
       assertEquals("Expecting version bump",
               solrconfigZkVersion,  getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml"));
       assertFalse(isTrusted(zkClient, configsetName, configsetSuffix));
       solrconfigZkVersion = getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "solrconfig.xml");
+      ignoreException("Either empty zipped data, or non-zipped data was passed. In order to upload a configSet, you must zip a non-empty directory to upload.");
 
       // Was untrusted, overwrite with trusted with cleanup
       assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, "solr", true, true, v2));

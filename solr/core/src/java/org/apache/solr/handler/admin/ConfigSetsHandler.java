@@ -231,7 +231,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
     ZipEntry zipEntry = null;
+    int entryCount = 0;
     while ((zipEntry = zis.getNextEntry()) != null) {
+      entryCount++;
       String filePathInZk = configPathInZk + "/" + zipEntry.getName();
       if (filePathInZk.endsWith("/")) {
         filesToDelete.remove(filePathInZk.substring(0, filePathInZk.length() -1));
@@ -244,6 +246,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         createZkNodeIfNotExistsAndSetData(zkClient, filePathInZk,
             IOUtils.toByteArray(zis));
       }
+    }
+    if (entryCount == 0) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+              "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
     }
     zis.close();
     deleteUnusedFiles(zkClient, filesToDelete);
