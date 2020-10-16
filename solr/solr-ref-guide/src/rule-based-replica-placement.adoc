@@ -16,6 +16,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
+[WARNING]
+.Rule-Based Replica Placement is deprecated
+====
+The autoscaling framework in its current form is deprecated and will be removed in Solr 9.0.
+A new design for this feature is currently under development in SOLR-14613 with a goal for release with Solr 9.0.
+====
+
 When Solr needs to assign nodes to collections, it can either automatically assign them randomly or the user can specify a set of nodes where it should create the replicas.
 
 With very large clusters, it is hard to specify exact node names and it still does not give you fine grained control over how nodes are chosen for a shard. The user should be in complete control of where the nodes are allocated for each collection, shard and replica. This helps to optimally allocate hardware resources across the cluster.

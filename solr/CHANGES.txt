@@ -16,6 +16,8 @@ Upgrade Notes
   Deprecations include: autoscaling policy, triggers, withCollection handling, simulation framework,
   autoscaling suggestions tab in the UI, autoAddReplicas and UTILIZENODE command.
 
+ * SOLR-14930: Rule based replica placement strategy is deprecated and will be replaced in
+    Solr 9.0 by APIs for replica placement and cluster events, with plugin-based implementations.
 
 New Features
 ---------------------

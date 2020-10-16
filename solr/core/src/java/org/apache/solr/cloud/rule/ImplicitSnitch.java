@@ -32,6 +32,10 @@ import static org.apache.solr.common.cloud.rule.ImplicitSnitch.DISK;
 import static org.apache.solr.common.cloud.rule.ImplicitSnitch.SYSPROP;
 
 //this is the server-side component which provides the tag values
+
+/** @deprecated to be removed in Solr 9.0 (see SOLR-14930)
+ *
+ */
 public class ImplicitSnitch implements CoreAdminHandler.Invocable {
 
   static long getUsableSpaceInGB(Path path) throws IOException {
