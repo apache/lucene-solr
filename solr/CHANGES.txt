@@ -25,6 +25,8 @@ New Features
 
 * SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
 
+* SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -37,12 +39,6 @@ Improvements
 * SOLR-14387: SolrClient.getById() will escape comma separater within ids (Markus Schuch via Mike Drob)
 
 * SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
-
-* SOLR-7683 Introduce support to identify Solr internal request types (Atri Sharma, Hrishikesh Gadre)
-
-* SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
-
-* SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
 
 Other Changes
 ----------------------
