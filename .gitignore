@@ -1,42 +1,30 @@
-# .
-/eclipse-build
-/maven-build
-/classes
-build
-/idea-build
-dist
-lib
-test-lib
-/*~
-/build.properties
-/.idea
-lucene/**/*.iml
-parent.iml
-*.ipr
-*.iws
-/*.iml
-.project
-.classpath
-.settings
-/.caches
-/prj.el
-bin
-/bin
-/bin.*
-pom.xml
-/nbproject
-/nb-build
-.pydevproject
-__pycache__
-/dev-tools/scripts/scripts.iml
-.DS_Store
+### At the root
+
+/.gradle/
+/.idea/
+# Ignore the generated local settings file.
+/gradle.properties
+/*~ # TODO?
+/prj.el # TODO?
+
+# Eclipse
+/.project
+/.classpath
+/.settings/
+
+### Any dir
 
 build/
-.gradle/
-.idea/
 
-# Ignore the generated local settings file.
-gradle.properties
+# macOS
+.DS_Store
+
+# Eclipse Gradle oddity
+**/bin/default/
+
+# Python
+.pydevproject
+__pycache__
 
 # IntelliJ creates this folder, ignore.
-dev-tools/missing-doclet/out/
+/dev-tools/missing-doclet/out/
