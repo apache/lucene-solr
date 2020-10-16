@@ -1733,6 +1733,20 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
+   * Remove a close callback hook
+   */
+  public void removeCloseHook(CloseHook hook) {
+    if (closeHooks != null) {
+      closeHooks.remove(hook);
+    }
+  }
+
+  // Visible for testing
+  public Collection<CloseHook> getCloseHooks() {
+    return Collections.unmodifiableCollection(closeHooks);
+  }
+
+  /**
    * @lucene.internal Debugging aid only.  No non-test code should be released with uncommented verbose() calls.
    */
   public static boolean VERBOSE = Boolean.parseBoolean(System.getProperty("tests.verbose", "false"));

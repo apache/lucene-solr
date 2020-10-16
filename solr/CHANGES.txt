@@ -160,10 +160,12 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-14940: ReplicationHandler memory leak through SolrCore.closeHooks with unstable ZK connection. (Anver Sotnikov, Mike Drob)
 
 Other Changes
 ---------------------
+
 * SOLR-14954: Heavily edit reindexing.adoc (Sameul García Martínez and Erick Erickson)
 
 ==================  8.7.0 ==================

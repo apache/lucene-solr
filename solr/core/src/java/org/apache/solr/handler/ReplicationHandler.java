@@ -1372,55 +1372,55 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return Boolean.TRUE.equals( enable );
   }
 
+  private final CloseHook startShutdownHook = new CloseHook() {
+    @Override
+    public void preClose(SolrCore core) {
+      if (executorService != null)
+        executorService.shutdown(); // we don't wait for shutdown - this can deadlock core reload
+    }
+
+    @Override
+    public void postClose(SolrCore core) {
+      if (pollingIndexFetcher != null) {
+        pollingIndexFetcher.destroy();
+      }
+      if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
+        currentIndexFetcher.destroy();
+      }
+    }
+  };
+  private final CloseHook finishShutdownHook = new CloseHook() {
+    @Override
+    public void preClose(SolrCore core) {
+      ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
+      if (restoreFuture != null) {
+        restoreFuture.cancel(false);
+      }
+    }
+
+    @Override
+    public void postClose(SolrCore core) {
+    }
+  };
+
   /**
    * register a closehook
    */
   private void registerCloseHook() {
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        if (executorService != null) executorService.shutdown(); // we don't wait for shutdown - this can deadlock core reload
-      }
-
-      @Override
-      public void postClose(SolrCore core) {
-        if (pollingIndexFetcher != null) {
-          pollingIndexFetcher.destroy();
-        }
-        if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
-          currentIndexFetcher.destroy();
-        }
-      }
-    });
-
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
-        if (restoreFuture != null) {
-          restoreFuture.cancel(false);
-        }
-      }
-
-      @Override
-      public void postClose(SolrCore core) {}
-    });
+    core.addCloseHook(startShutdownHook);
+    core.addCloseHook(finishShutdownHook);
   }
 
   public void shutdown() {
-    if (executorService != null) executorService.shutdown();
-    if (pollingIndexFetcher != null) {
-      pollingIndexFetcher.destroy();
-    }
-    if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
-      currentIndexFetcher.destroy();
-    }
-    ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
-    if (restoreFuture != null) {
-      restoreFuture.cancel(false);
-    }
-    
+    startShutdownHook.preClose(core);
+    startShutdownHook.postClose(core);
+    finishShutdownHook.preClose(core);
+    finishShutdownHook.postClose(core);
+
     ExecutorUtil.shutdownAndAwaitTermination(executorService);
+
+    core.removeCloseHook(startShutdownHook);
+    core.removeCloseHook(finishShutdownHook);
   }
 
   /**

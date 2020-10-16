@@ -1302,7 +1302,7 @@ public class ZkController implements Closeable {
     return replica;
   }
 
-  public void startReplicationFromLeader(String coreName, boolean switchTransactionLog) throws InterruptedException {
+  public void startReplicationFromLeader(String coreName, boolean switchTransactionLog) {
     log.info("{} starting background replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = new ReplicateFromLeader(cc, coreName);
     synchronized (replicateFromLeader) { // synchronize to prevent any stop before we finish the start

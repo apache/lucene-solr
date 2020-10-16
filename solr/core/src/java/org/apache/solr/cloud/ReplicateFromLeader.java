@@ -52,10 +52,18 @@ public class ReplicateFromLeader {
 
   /**
    * Start a replication handler thread that will periodically pull indices from the shard leader
+   *
+   * <p>This is separate from the ReplicationHandler that listens at /replication, used for recovery
+   * and leader actions. It is simpler to discard the entire polling ReplicationHandler rather then
+   * worrying about disabling polling and correctly setting all of the leader bits if we need to reset.
+   *
+   * <p>TODO: It may be cleaner to extract the polling logic use that directly instead of creating
+   * what might be a fairly heavyweight instance here.
+   *
    * @param switchTransactionLog if true, ReplicationHandler will rotate the transaction log once
    * the replication is done
    */
-  public void startReplication(boolean switchTransactionLog) throws InterruptedException {
+  public void startReplication(boolean switchTransactionLog) {
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         if (cc.isShutDown()) {
