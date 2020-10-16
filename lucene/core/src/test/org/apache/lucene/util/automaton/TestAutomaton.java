@@ -1370,7 +1370,7 @@ public class TestAutomaton extends LuceneTestCase {
   }
 
   public void testMakeBinaryExceptEmpty() throws Exception {
-    Automaton a = Automata.makeAnyBinaryExceptEmpty();
+    Automaton a = Automata.makeNonEmptyBinary();
     assertFalse(Operations.run(a, intsRef("")));
     assertTrue(Operations.run(a, intsRef(TestUtil.randomRealisticUnicodeString(random(), 1, 10))));
   }

@@ -90,7 +90,7 @@ final public class Automata {
    * Returns a new (deterministic) automaton that accepts all binary terms except
    * the empty string.
    */
-  public static Automaton makeAnyBinaryExceptEmpty() {
+  public static Automaton makeNonEmptyBinary() {
     Automaton a = new Automaton();
     int s1 = a.createState();
     int s2 = a.createState();
@@ -273,7 +273,7 @@ final public class Automata {
         if (minInclusive) {
           return makeAnyBinary();
         } else {
-          return makeAnyBinaryExceptEmpty();
+          return makeNonEmptyBinary();
         }
       }
     }
