@@ -111,6 +111,11 @@ Bug Fixes
 
 * LUCENE-9401: Include field in ComplexPhraseQuery's toString() (Thomas Hecker via Munendra S N)
 
+* LUCENE-9578: Fix TermRangeQuery when there is no upper bound and the lower
+  bound is the empty string excluded. This would previously match no strings at
+  all while it should match all non-empty strings.
+  (Christoph Buescher via Adrien Grand)
+
 Documentation
 ---------------------
 
