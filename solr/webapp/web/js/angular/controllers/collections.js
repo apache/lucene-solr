@@ -252,6 +252,7 @@ solrAdminApp.controller('CollectionsController',
         var params = {
           collection: shard.collection,
           shard: shard.name,
+          type: shard.replicaType
         }
         if (shard.replicaNodeName && shard.replicaNodeName != "") {
           params.node = shard.replicaNodeName;

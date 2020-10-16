@@ -188,6 +188,8 @@ Improvements
 
 * SOLR-14691: Metrics reporting should avoid creating objects. (ab, noble)
 
+* SOLR-14933: Ability to add T and P type replica from admin UI (Sayan Das via Eric Pugh)
+
 Optimizations
 ---------------------
 
