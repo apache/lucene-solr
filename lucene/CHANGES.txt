@@ -161,9 +161,6 @@ Bug fixes
 * LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
   (Mark Harwood, Mike Drob)
 
-* LUCENE-9524: Fix NPE in SpanWeight#explain when no scoring is required and SpanWeight has null Similarity.SimScorer.
-  (Zach Chen)
-
 Other
 
 * LUCENE-9312: Allow gradle builds against arbitrary JVMs. (Tomoko Uchida, Dawid Weiss)
@@ -304,6 +301,9 @@ Bug Fixes
   bound is the empty string excluded. This would previously match no strings at
   all while it should match all non-empty strings.
   (Christoph Buescher via Adrien Grand)
+
+* LUCENE-9524: Fix NPE in SpanWeight#explain when no scoring is required and
+  SpanWeight has null Similarity.SimScorer. (Zach Chen)
 
 Documentation
 ---------------------
