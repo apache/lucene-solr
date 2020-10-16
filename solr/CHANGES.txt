@@ -14,7 +14,7 @@ New Features
 
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
-* SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
+* SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
 
 Improvements
 ----------------------
@@ -30,10 +30,6 @@ Improvements
 * SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
 
 * SOLR-7683 Introduce support to identify Solr internal request types (Atri Sharma, Hrishikesh Gadre)
-
-* SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
-
-* SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
 
 * SOLR-14799: JWT authentication plugin only requires "sub" claim when principalClaim=sub. (Erik Hatcher)
 
@@ -165,6 +161,10 @@ New Features
 * SOLR-14907: Support single file upload/overwrite in configSet API. (Houston Putman)
 
 * SOLR-14914: Add option to disable metrics collection. (ab)
+
+* SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
+
+* SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
 
 Improvements
 ---------------------
