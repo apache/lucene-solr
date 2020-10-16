@@ -415,15 +415,19 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   static Long getCheckSum(Checksum checksum, File f) {
+    FileInputStream fis = null;
     checksum.reset();
     byte[] buffer = new byte[1024 * 1024];
     int bytesRead;
-    try (final FileInputStream fis = new FileInputStream(f)) {
+    try {
+      fis = new FileInputStream(f);
       while ((bytesRead = fis.read(buffer)) >= 0)
         checksum.update(buffer, 0, bytesRead);
       return checksum.getValue();
     } catch (Exception e) {
       log.warn("Exception in finding checksum of {}", f, e);
+    } finally {
+      IOUtils.closeQuietly(fis);
     }
     return null;
   }
@@ -1408,15 +1412,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   public void shutdown() {
-    core.removeCloseHook(startShutdownHook);
-    core.removeCloseHook(finishShutdownHook);
-
     startShutdownHook.preClose(core);
     startShutdownHook.postClose(core);
     finishShutdownHook.preClose(core);
     finishShutdownHook.postClose(core);
 
     ExecutorUtil.shutdownAndAwaitTermination(executorService);
+
+    core.removeCloseHook(startShutdownHook);
+    core.removeCloseHook(finishShutdownHook);
   }
 
   /**
