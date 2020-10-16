@@ -236,9 +236,9 @@ class VectorValuesWriter {
     DocIdSetIterator docsWithFieldIter;
     int ord = -1;
 
-    BufferedVectorValues(DocsWithFieldSet docsWithField, List<float[]> vectorsArray, int dimension, VectorValues.ScoreFunction scoreFunction) {
+    BufferedVectorValues(DocsWithFieldSet docsWithField, List<float[]> vectors, int dimension, VectorValues.ScoreFunction scoreFunction) {
       this.docsWithField = docsWithField;
-      this.vectors = vectorsArray;
+      this.vectors = vectors;
       this.dimension = dimension;
       this.scoreFunction = scoreFunction;
       buffer = ByteBuffer.allocate(dimension * Float.BYTES);

@@ -35,6 +35,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * Writes vector values and knn graphs to index segments.
+ * @lucene.experimental
  */
 public final class Lucene90VectorWriter extends VectorWriter {
 

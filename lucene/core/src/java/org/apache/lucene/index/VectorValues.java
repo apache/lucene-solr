@@ -26,6 +26,8 @@ import org.apache.lucene.util.BytesRef;
 /**
  * This class provides access to per-document floating point vector values indexed as {@link
  * org.apache.lucene.document.VectorField}.
+ *
+ * @lucene.experimental
  */
 public abstract class VectorValues extends DocIdSetIterator {
 
@@ -62,10 +64,10 @@ public abstract class VectorValues extends DocIdSetIterator {
   public abstract float[] vectorValue() throws IOException;
 
   /**
-   * Return the binary encoded vector value for the current document ID. These are the bytes corresponding to the float array
-   * in IEEE 754 standard encoding, encoded using little-endian byte order.
-   * It is illegal to call this method when the iterator is not positioned: before advancing, or after failing to advance.
-   * The returned storage may be shared across calls, re-used and modified as the iterator advances.
+   * Return the binary encoded vector value for the current document ID. These are the bytes
+   * corresponding to the float array return by {@link #vectorValue}.  It is illegal to call this
+   * method when the iterator is not positioned: before advancing, or after failing to advance.  The
+   * returned storage may be shared across calls, re-used and modified as the iterator advances.
    * @return the binary value
    */
   public BytesRef binaryValue() throws IOException {
@@ -81,6 +83,8 @@ public abstract class VectorValues extends DocIdSetIterator {
 
   /**
    * Provides random access to vectors by dense ordinal.
+   *
+   * @lucene.experimental
    */
   public interface RandomAccess {
 
@@ -114,6 +118,14 @@ public abstract class VectorValues extends DocIdSetIterator {
      * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
      */
     BytesRef binaryValue(int targetOrd) throws IOException;
+
+    /**
+     * Return the dense ordinal of the document if it has a vector. This ordinal ranges from 0 to the one less than the number
+     * of documents having a vector in this iterator, and it is guaranteed to increase with increasing docid.
+     * @param docId the document whose ordinal is returned
+     * @return the ordinal of the given document, or -1 if the document has no vector value
+     */
+    //int ordinal(int docId);
 
     /**
      * Return the k nearest neighbor documents as determined by comparison of their vector values

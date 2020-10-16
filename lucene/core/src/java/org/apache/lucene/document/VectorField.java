@@ -88,6 +88,9 @@ public class VectorField extends Field {
    * @param value the value to set; must not be null, and length must match the field type
    */
   public void setVectorValue(float[] value) {
+    if (value == null) {
+      throw new IllegalArgumentException("value must not be null");
+    }
     if (value.length != type.vectorDimension()) {
       throw new IllegalArgumentException("value length " + value.length + " must match field dimension " + type.vectorDimension());
     }

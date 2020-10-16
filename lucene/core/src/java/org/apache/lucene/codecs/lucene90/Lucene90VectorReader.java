@@ -40,6 +40,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Reads vectors from the index segments.
+ * @lucene.experimental
  */
 public final class Lucene90VectorReader extends VectorReader {
 
