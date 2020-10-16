@@ -178,7 +178,9 @@ curl -X POST -H 'Content-type: application/json' -d '{
   "create":{
     "name": "myConfigSet",
     "baseConfigSet": "predefinedTemplate",
-    "configSetProp.immutable": "false"}}'
+    "properties": {
+      "immutable": "false"
+    }}}'
     http://localhost:8983/api/cluster/configs?omitHeader=true
 ----
 ====
