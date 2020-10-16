@@ -126,6 +126,7 @@ public class FacetModule extends SearchComponent {
     FacetComponentState facetState = getFacetComponentState(rb);
     if (facetState == null) return;
 
+    boolean cache = rb.req.getParams().getBool(CommonParams.CACHE, true);
     boolean isShard = rb.req.getParams().getBool(ShardParams.IS_SHARD, false);
 
     FacetContext fcontext = new FacetContext();
@@ -133,6 +134,7 @@ public class FacetModule extends SearchComponent {
     fcontext.req = rb.req;
     fcontext.searcher = rb.req.getSearcher();
     fcontext.qcontext = QueryContext.newContext(fcontext.searcher);
+    fcontext.cache = cache;
     if (isShard) {
       fcontext.flags |= FacetContext.IS_SHARD;
       fcontext.facetInfo = facetState.facetInfo.isEmpty() ? null : (Map<String, Object>) facetState.facetInfo.get(FACET_REFINE);
