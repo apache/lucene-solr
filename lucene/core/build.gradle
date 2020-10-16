@@ -22,5 +22,4 @@ description = 'Lucene core library'
 dependencies {
   testImplementation project(':lucene:codecs')
   testImplementation project(':lucene:test-framework')
-  testImplementation project(':lucene:queryparser')
 }
