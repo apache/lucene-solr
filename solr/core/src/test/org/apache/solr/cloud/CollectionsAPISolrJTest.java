@@ -82,10 +82,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeCollectionsAPISolrJTest() throws Exception {
-    //System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
-
-    // clear any persisted auto scaling configuration
-    //zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
 
     // this class deletes all the collections between each test and so really
     // stresses a difficult code path - give a higher so timeout for low end hardware to make it through
@@ -116,7 +113,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
    * be used.
    */
   @Test
-  @Ignore // we upload and copy a conf set just for this when it's tested lots of places
   public void testCreateWithDefaultConfigSet() throws Exception {
     String collectionName = "solrj_default_configset";
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, 2, 2)
@@ -580,7 +576,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // nocommit alias work:  Collection: catAlias operation: createalias failed org.apache.solr.common.SolrException: shards is a required param
   public void testRenameCollection() throws Exception {
     doTestRenameCollection(true);
     CollectionAdminRequest.deleteAlias("col1").process(cluster.getSolrClient());
@@ -822,8 +818,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  // nocommit
-  @Ignore
   public void testModifyCollectionAttribute() throws IOException, SolrServerException {
     final String collection = "testAddAndDeleteCollectionAttribute";
     CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
