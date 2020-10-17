@@ -148,7 +148,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit we were not failing on all errors in the http2 solr client - this weirdly keeps failing, saying an asyncid that should be free is already claimed.
+  //@Ignore // nocommit we were not failing on all errors in the http2 solr client - this weirdly keeps failing, saying an asyncid that should be free is already claimed.
   public void test() throws Exception {
     
     String collection = "addreplicatest_coll";
@@ -158,8 +158,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 2, 1);
     create.setMaxShardsPerNode(2);
     cloudClient.request(create);
-
-    cluster.waitForActiveCollection(collection, 0, TimeUnit.MILLISECONDS, 2, 2);
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocCollection coll = clusterState.getCollection(collection);
@@ -194,7 +192,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     // use waitForFinalState - doesn't exist, just dont do async
    // addReplica.setWaitForFinalState(true);
     int aid2 = asyncId.incrementAndGet();
-    addReplica.process(cloudClient);
+    addReplica.processAsync(Integer.toString(aid2), cloudClient);
     requestStatus = CollectionAdminRequest.requestStatus(Integer.toString(aid2));
     rsp = requestStatus.process(cloudClient);
 
