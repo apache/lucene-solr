@@ -100,7 +100,7 @@ public class SolrZkClient implements Closeable {
   private ZkCmdExecutor zkCmdExecutor;
 
   // what about ensuring order of state updates per collection??
-  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 10, 60000, new BlockingArrayQueue());
+  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 1, 10000, new BlockingArrayQueue());
 
   final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService("zkConnManagerCallbackExecutor",1, 1, 60000, new BlockingArrayQueue());
 

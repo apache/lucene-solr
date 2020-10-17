@@ -42,6 +42,7 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
   }
 
   @Test
+  // this is a flakey test, can rarely fail on collection create
   public void testModifyColl() throws Exception {
 
     final String collName = "modifyColl";

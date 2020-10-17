@@ -311,7 +311,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     }
   }
 
-  @Ignore // nocommit flakey
+  @Nightly
   public void testRandom() throws Exception {
 
     // since the "cost" of verifying the stats for each bucket is so high (see TODO in verifySKGResults())

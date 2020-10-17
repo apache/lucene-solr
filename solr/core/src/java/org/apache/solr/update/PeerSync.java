@@ -199,8 +199,8 @@ public class PeerSync implements SolrMetricProducer {
       ourUpdates.sort(absComparator);
 
       if (ourUpdates.size() > 0) {
-        ourLowThreshold = percentile(ourUpdates, 0.9f);
-        ourHighThreshold = percentile(ourUpdates, 0.1f);
+        ourLowThreshold = percentile(ourUpdates, 0.8f);
+        ourHighThreshold = percentile(ourUpdates, 0.2f);
       } else {
         // we have no versions and hence no frame of reference to tell if we can use a peers
         // updates to bring us into sync

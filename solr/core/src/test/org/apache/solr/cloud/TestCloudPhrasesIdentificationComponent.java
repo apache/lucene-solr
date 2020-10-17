@@ -118,7 +118,6 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     CLIENTS.clear();
   }
 
-  @AwaitsFix(bugUrl = "Test can fail with brow FOX perniciously jump ove the lazy dog does not match")
   public void testBasicPhrases() throws Exception {
     final String input = " did  a Quick    brown FOX perniciously jump over the lazy dog";
     final String expected = " did  a Quick    {brown FOX} perniciously jump over {the lazy dog}";
