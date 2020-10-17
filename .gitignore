@@ -1,10 +1,9 @@
 ### At the root
 
-/.gradle/
 /.idea/
 # Ignore the generated local settings file.
 /gradle.properties
-/*~ # TODO?
+
 /prj.el # TODO?
 
 # Eclipse
@@ -14,6 +13,7 @@
 
 ### Any dir
 
+.gradle/
 build/
 
 # macOS
@@ -28,3 +28,6 @@ __pycache__
 
 # IntelliJ creates this folder, ignore.
 /dev-tools/missing-doclet/out/
+
+# Emacs backup
+*~
