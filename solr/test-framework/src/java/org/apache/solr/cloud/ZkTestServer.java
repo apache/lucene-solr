@@ -459,7 +459,7 @@ public class ZkTestServer implements Closeable {
   }
 
   private void init(boolean solrFormat) throws Exception {
-    chRootClient = new SolrZkClient(getZkHost(), AbstractZkTestCase.TIMEOUT, 10000);
+    chRootClient = new SolrZkClient(getZkHost(), AbstractZkTestCase.TIMEOUT, 15000);
     chRootClient.start();
     if (solrFormat) {
       makeSolrZkNode();
