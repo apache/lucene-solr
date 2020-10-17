@@ -27,7 +27,6 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
@@ -181,12 +180,12 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
     Gauge<?> g = (Gauge<?>)metrics.get("CONTAINER.fs.path");
     assertEquals(g.getValue(), cc.getSolrHome());
-    boolean spins = IOUtils.spins(cc.getCoreRootDirectory());
+    boolean spins = false;
     g = (Gauge<?>)metrics.get("CONTAINER.fs.coreRoot.spins");
     assertEquals(spins, g.getValue());
     g = (Gauge<?>)metrics.get("CONTAINER.fs.spins");
     if (cc.getConfig().getSolrDataHome() != null) {
-      spins = IOUtils.spins(cc.getConfig().getSolrDataHome());
+      spins = false;
       assertEquals(spins, g.getValue());
     } else {
       assertEquals(spins, g.getValue());
