@@ -303,10 +303,6 @@ public class JettySolrRunner implements Closeable {
 
     server = new Server(qtp);
 
-    if (config.qtp == null) {
-      server.manage(qtp);
-    }
-
     server.setStopTimeout(30000); // will wait gracefull for stoptime / 2, then interrupts
     assert config.stopAtShutdown;
     server.setStopAtShutdown(config.stopAtShutdown);
@@ -705,6 +701,10 @@ public class JettySolrRunner implements Closeable {
         server.stop();
       } catch (Exception e) {
         log.error("Error stopping jetty server", e);
+      }
+
+      if (config.qtp == null) {
+        qtp.close();
       }
 
       try {

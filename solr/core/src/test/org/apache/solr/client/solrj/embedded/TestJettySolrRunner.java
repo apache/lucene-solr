@@ -77,7 +77,6 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
 
   @SuppressWarnings("ThrowableNotThrown")
   @Test
-  @Ignore // nocommit look at this test again, should prob be nightly in the end
   public void testLookForBindException() throws IOException {
     Path solrHome = createTempDir();
     Files.write(solrHome.resolve("solr.xml"), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.getBytes(Charset.defaultCharset()));
