@@ -55,7 +55,6 @@ import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchTrace;
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 
 */
-@Ignore // nocommit
 public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -235,6 +234,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
 
   @Test 
   @Repeat(iterations=5)
+  @Ignore // nocommit
   public void testCreepThenBite() throws Exception {
     int creep=100;
     ModifiableSolrParams params = params("q", "{!cache=false}name:a*");
