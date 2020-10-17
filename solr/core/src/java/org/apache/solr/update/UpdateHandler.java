@@ -38,6 +38,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Vector;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * <code>UpdateHandler</code> handles requests to change the index
@@ -55,9 +56,9 @@ UpdateHandler implements SolrInfoBean, Closeable {
   protected final SchemaField idField;
   protected final FieldType idFieldType;
 
-  protected Vector<SolrEventListener> commitCallbacks = new Vector<>();
-  protected Vector<SolrEventListener> softCommitCallbacks = new Vector<>();
-  protected Vector<SolrEventListener> optimizeCallbacks = new Vector<>();
+  protected CopyOnWriteArrayList<SolrEventListener> commitCallbacks = new CopyOnWriteArrayList<>();
+  protected CopyOnWriteArrayList<SolrEventListener> softCommitCallbacks = new CopyOnWriteArrayList<>();
+  protected CopyOnWriteArrayList<SolrEventListener> optimizeCallbacks = new CopyOnWriteArrayList<>();
 
   protected final UpdateLog ulog;
 
