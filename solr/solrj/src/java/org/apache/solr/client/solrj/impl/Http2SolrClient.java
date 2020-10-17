@@ -823,6 +823,10 @@ public class Http2SolrClient extends SolrClient {
 
       Object error = rsp == null ? null : rsp.get("error");
 
+      if (error != null) {
+        throw RemoteExecutionException.create(serverBaseUrl, rsp);
+      }
+
       if (httpStatus != HttpStatus.SC_OK && !isV2Api) {
         NamedList<String> metadata = null;
         String reason = null;
@@ -860,9 +864,6 @@ public class Http2SolrClient extends SolrClient {
         throw rss;
       }
 
-      if (error != null) {
-        throw RemoteExecutionException.create(serverBaseUrl, rsp);
-      }
       return rsp;
     } finally {
       if (shouldClose) {
