@@ -25,7 +25,6 @@ import org.junit.Test;
  * SOLR-1730, tests what happens when a component fails to initialize properly
  *
  **/
-@Ignore // nocommit debug
 public class BadComponentTest extends SolrTestCaseJ4{
   @Test
   public void testBadElevate() throws Exception {
