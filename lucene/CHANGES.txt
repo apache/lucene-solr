@@ -74,6 +74,14 @@ API Changes
 
 Improvements
 
+* LUCENE-9576: Improve ConcurrentMergeScheduler settings by default, assuming modern I/O.
+  Previously Lucene was too conservative, jumping through hoops to detect if disks were SSD-backed.
+  In many common modern cases (VMs, RAID arrays, containers, encrypted mounts, non-Linux OS),
+  the pessimistic heuristics were wrong, resulting in slower indexing performance. Heuristics were
+  also complex and would trigger JDK issues even on unrelated mount points. Merge scheduler defaults
+  are now modernized and the heuristics removed. Users with spinning disks that want to maximize I/O
+  performance should tweak ConcurrentMergeScheduler. (Robert Muir)
+
 * LUCENE-9463: Query match region retrieval component, passage scoring and formatting
   for building custom highlighters. (Alan Woodward, Dawid Weiss)
 
