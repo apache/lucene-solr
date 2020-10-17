@@ -52,7 +52,6 @@ import org.junit.Test;
 //   TestJsonRangeFacets for range facet tests
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
-@Ignore // nocommit - need to look into - the test itself is fast and the surrounding can be 30-40 seconds - whats up doc
 public class TestJsonFacets extends SolrTestCaseHS {
   
   private static SolrInstances servers;  // for distributed testing

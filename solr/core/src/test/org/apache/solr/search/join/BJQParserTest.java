@@ -289,13 +289,12 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit we probably have to add a wait for this to be populated
   public void testCacheHit() throws IOException {
 
-    MetricsMap parentFilterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.perSegFilter")).getGauge();
-    MetricsMap filterCache = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.filterCache")).getGauge();
+    MetricsMap parentFilterCache = (MetricsMap)(h.getCore().getCoreMetricManager().getRegistry()
+        .getMetrics().get("CACHE.searcher.perSegFilter"));
+    MetricsMap filterCache = (MetricsMap)(h.getCore().getCoreMetricManager().getRegistry()
+        .getMetrics().get("CACHE.searcher.filterCache"));
 
     Map<String,Object> parentsBefore = parentFilterCache.getValue();
 

@@ -264,7 +264,6 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
    * easier to trace/debug then a pure random monstrosity.
    * (ie: if something obvious gets broken, this test may fail faster and in a more obvious way then testRandom)
    */
-  @Ignore // nocommit - this is flakey, sometimes it's off a bit
   public void testBespoke() throws Exception {
     { // trivial single level facet
       Map<String,TermFacet> facets = new LinkedHashMap<>();

@@ -80,7 +80,6 @@ import org.slf4j.LoggerFactory;
  * 
  * @see TestCloudJSONFacetSKG
  */
-@Ignore // nocommit
 public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -374,7 +373,6 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     }
   }
 
-  @Ignore // nocommit - needs debugging - a slow thing of some kind or leak?
   public void testBespokeAllBuckets() throws Exception {
     { // single level facet w/sorting on skg and allBuckets
       Map<String,TermFacet> facets = new LinkedHashMap<>();
