@@ -153,43 +153,13 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     assertTrue(success);
     assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name()));
     assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
+
+    Thread.sleep(500);
+
     // wait for recovery
-    boolean recovered = false;
-    for (int i = 0; i < 300; i++) {
-      DocCollection collState = getCollectionState(coll);
-      log.debug("###### {}", collState);
-      Collection<Replica> replicas = collState.getSlice(shardId).getReplicas();
-      boolean allActive = true;
-      boolean hasLeaders = true;
-      if (replicas != null && !replicas.isEmpty()) {
-        for (Replica r : replicas) {
-          if (!r.getNodeName().equals(targetNode)) {
-            continue;
-          }
-          if (!r.isActive(Collections.singleton(targetNode))) {
-            log.info("Not active: {}", r);
-            allActive = false;
-          }
-        }
-      } else {
-        allActive = false;
-      }
-      for (Slice slice : collState.getSlices()) {
-        if (slice.getLeader() == null) {
-          hasLeaders = false;
-        }
-      }
-      if (allActive && hasLeaders) {
-        // check the number of active replicas
-        assertEquals("total number of replicas", REPLICATION, replicas.size());
-        recovered = true;
-        break;
-      } else {
-        log.info("--- waiting, allActive={}, hasLeaders={}", allActive, hasLeaders);
-        Thread.sleep(1000);
-      }
-    }
-    assertTrue("replica never fully recovered", recovered);
+    cluster.waitForActiveCollection(coll, 2, 4);
+
+    Thread.sleep(500);
 
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
 

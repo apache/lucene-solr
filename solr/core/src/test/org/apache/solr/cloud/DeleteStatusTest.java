@@ -105,7 +105,6 @@ public class DeleteStatusTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testDeleteStatusFlush() throws Exception {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();

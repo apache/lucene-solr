@@ -67,7 +67,6 @@ import static org.apache.solr.common.cloud.ZkConfigManager.CONFIGS_ZKNODE;
  * if create fails, ensure proper cleanup occurs so we aren't
  * left with a partially created ConfigSet.
  */
-@Ignore // nocommit we have to handle the sessiontracker specifically in this fail
 public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   private MiniSolrCloudCluster solrCluster;
   private ZkTestServer zkTestServer;
@@ -102,6 +101,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "fragile")
   public void testCreateZkFailure() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);

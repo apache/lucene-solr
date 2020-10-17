@@ -500,6 +500,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         call.destroy();
         ExecutorUtil.setServerThreadFlag(null);
       }
+    } catch(Exception e) {
+      log.error("", e);
+      response.sendError(500, e.getMessage());
     } finally {
       if (span != null) span.finish();
       if (scope != null) scope.close();

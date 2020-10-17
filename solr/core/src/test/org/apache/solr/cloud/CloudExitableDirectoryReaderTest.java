@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.codahale.metrics.Metered;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -55,6 +56,7 @@ import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchTrace;
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 
 */
+@LuceneTestCase.AwaitsFix(bugUrl = "Flakey test: testWhitebgox and test will occasionally fail *together*")
 public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

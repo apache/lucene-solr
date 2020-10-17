@@ -60,7 +60,6 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     initCore(SOLRCONFIG_XML, SCHEMA_XML, tmpSolrHome.getPath());
   }
 
-  @Ignore // disabled this validation for perf nocommit
   public void testEmptyValue() {
     IndexSchema schema = h.getCore().getLatestSchema();
     final String fieldName = "newFieldABC";

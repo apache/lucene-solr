@@ -263,6 +263,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    * easier to trace/debug then a pure random monstrosity.
    * (ie: if something obvious gets broken, this test may fail faster and in a more obvious way then testRandom)
    */
+  @Nightly // needs larger docs counts and such
   public void testBespoke() throws Exception {
 
     { // sanity check our test methods can handle a query matching no docs
