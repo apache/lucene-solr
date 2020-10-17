@@ -19,6 +19,7 @@ package org.apache.solr.store.blockcache;
 import java.math.BigDecimal;
 import java.util.Map;
 
+import com.codahale.metrics.Gauge;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
@@ -33,9 +34,10 @@ public class BufferStoreTest extends SolrTestCase {
   private final static int blockSize = 1024;
 
   private Metrics metrics;
-  private MetricsMap metricsMap;
+ // private MetricsMap metricsMap;
 
   private Store store;
+  private Gauge metricsMap;
 
   @Before
   public void setup() {
@@ -45,7 +47,7 @@ public class BufferStoreTest extends SolrTestCase {
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     metrics.initializeMetrics(solrMetricsContext, scope);
-    metricsMap = (MetricsMap) ((SolrMetricManager.GaugeWrapper)metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache")).getGauge();
+    metricsMap = ((MetricsMap)metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache"));
     BufferStore.initNewBuffer(blockSize, blockSize, metrics);
     store = BufferStore.instance(blockSize);
   }
@@ -56,7 +58,7 @@ public class BufferStoreTest extends SolrTestCase {
   }
   
   @Test
-  @Ignore // these are on a 3 second cache now
+  //@Ignore // these are on a 3 second cache now
   public void testBufferTakePut() {
     byte[] b1 = store.takeBuffer(blockSize);
 
@@ -96,7 +98,7 @@ public class BufferStoreTest extends SolrTestCase {
    *          whether buffers should have been lost since the last call
    */
   private void assertGaugeMetricsChanged(boolean allocated, boolean lost) {
-    Map<String,Object> stats = metricsMap.getValue();
+    Map<String,Object> stats = (Map<String,Object>) metricsMap.getValue();
 
     assertEquals("Buffer allocation metric not updating correctly.",
         allocated, isMetricPositive(stats, "buffercache.allocations"));
