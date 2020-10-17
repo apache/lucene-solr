@@ -487,8 +487,7 @@ public class ZkDistributedQueue implements DistributedQueue {
               ParWork.propagateInterrupt(e);
               throw new AlreadyClosedException();
             }
-            if (timeout.hasTimedOut()) {
-              //throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout");
+            if (timeout.hasTimedOut() || zookeeper.isClosed() || !zookeeper.isConnected()) {
               return Collections.emptyList();
             }
           }

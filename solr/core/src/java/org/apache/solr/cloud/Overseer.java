@@ -748,7 +748,7 @@ public class Overseer implements SolrCloseable {
 
     systemCollectionCompatCheck(new StringBiConsumer());
 
-    // TODO: don't track for a moment, can leak out of collection api tests 
+    // TODO: don't track for a moment, can leak out of collection api tests
     // assert ObjectReleaseTracker.track(this);
   }
 
