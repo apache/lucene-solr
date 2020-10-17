@@ -95,7 +95,7 @@ The port where Prometheus will listen for new data. This port will be used to co
 The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in Standalone mode. If you are running Solr in SolrCloud mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
 
 `-z`, `--zkhost`::
-The ZooKeeper connect string (such as `localhost:8983`, or `localhost:2181/solr`) when Solr is running in SolrCloud mode. If you are running Solr in Standalone mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
+The ZooKeeper connect string (such as `localhost:9983`, or `localhost:2181/solr`) when Solr is running in SolrCloud mode. If you are running Solr in Standalone mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
 
 `-f`, `--config-file`::
 The path to the configuration file that defines the Solr metrics to read. The default is `contrib/prometheus-exporter/conf/solr-exporter-config.xml`.
@@ -378,7 +378,9 @@ solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
 
 == Prometheus Configuration
 
-In order for Prometheus to know about the `solr-exporter`, the listen address must be added to `prometheus.yml`, as in this example:
+Prometheus is a separate server that you need to download and deploy.   More information can be found at on the Prometheus https://prometheus.io/docs/prometheus/latest/getting_started/[Getting Started] page.
+
+In order for Prometheus to know about the `solr-exporter`, the listen address must be added to the Prometheus server's `prometheus.yml` configuration file, as in this example:
 
 [source,plain]
 ----
@@ -391,6 +393,14 @@ scrape_configs:
 If you already have a section for `scrape_configs`, you can add the `job_name` and other values in the same section.
 
 When you apply the settings to Prometheus, it will start to pull Solr's metrics from `solr-exporter`.
+
+You can test that the Prometheus server, `solr-exporter`, and Solr are working together by browsing to http://localhost:9090 and
+doing a query for `solr_ping` metric in the Prometheus GUI.
+
+.Prometheus Solr Ping expression
+image::images/monitoring-solr-with-prometheus-and-grafana/prometheus-solr-ping.png[image,width=800]
+
+
 
 == Sample Grafana Dashboard
 
