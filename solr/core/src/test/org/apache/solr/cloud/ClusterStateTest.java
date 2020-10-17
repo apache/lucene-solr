@@ -31,7 +31,6 @@ import org.apache.solr.common.util.Utils;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // counts on stateFormat=1 collections
 public class ClusterStateTest extends SolrTestCaseJ4 {
 
   @Test
