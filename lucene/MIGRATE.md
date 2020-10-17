@@ -1,5 +1,9 @@
 # Apache Lucene Migration Guide
 
+## Backward codecs are renamed (LUCENE-9318)
+
+o.a.l.codecs package in `lucene-backward-codecs` module is renamed to o.a.l.backward_codecs.
+
 ## JapanesePartOfSpeechStopFilterFactory loads default stop tags if "tags" argument not specified (LUCENE-9567)
 
 Previously, JapanesePartOfSpeechStopFilterFactory added no filter if `args` didn't include "tags". Now, it will load 
