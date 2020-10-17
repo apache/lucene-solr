@@ -378,7 +378,7 @@ solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
 
 == Prometheus Configuration
 
-Prometheus is a separate server that you need to download and deploy.   More information can be found at on the Prometheus https://prometheus.io/docs/prometheus/latest/getting_started/[Getting Started] page.
+Prometheus is a separate server that you need to download and deploy.   More information can be found at the Prometheus https://prometheus.io/docs/prometheus/latest/getting_started/[Getting Started] page.
 
 In order for Prometheus to know about the `solr-exporter`, the listen address must be added to the Prometheus server's `prometheus.yml` configuration file, as in this example:
 
@@ -395,7 +395,7 @@ If you already have a section for `scrape_configs`, you can add the `job_name` a
 When you apply the settings to Prometheus, it will start to pull Solr's metrics from `solr-exporter`.
 
 You can test that the Prometheus server, `solr-exporter`, and Solr are working together by browsing to http://localhost:9090 and
-doing a query for `solr_ping` metric in the Prometheus GUI.
+doing a query for `solr_ping` metric in the Prometheus GUI:
 
 .Prometheus Solr Ping expression
 image::images/monitoring-solr-with-prometheus-and-grafana/prometheus-solr-ping.png[image,width=800]
@@ -404,8 +404,13 @@ image::images/monitoring-solr-with-prometheus-and-grafana/prometheus-solr-ping.p
 
 == Sample Grafana Dashboard
 
+Grafana is another separate server that you need to download and deploy.   More information can be found on the Grafana https://grafana.com/docs/grafana/latest/[Documentation] site.
+Grafana consumes data from many sources, including the Prometheus server that you previously set up.
+
 A Grafana sample dashboard is provided in the following JSON file: `contrib/prometheus-exporter/conf/grafana-solr-dashboard.json`.
 You can place this with your other Grafana dashboard configurations and modify it as necessary depending on any customization you've done for the `solr-exporter` configuration.
+
+TIP: You can directly import the Solr dashboard https://grafana.com/grafana/dashboards/12456[via grafana.com] by using the Import function with the dashboard id `12456`.
 
 This screenshot shows what it might look like:
 
