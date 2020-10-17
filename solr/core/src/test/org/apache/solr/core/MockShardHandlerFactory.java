@@ -28,7 +28,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 /** a fake shardhandler factory that does nothing. */
 public class MockShardHandlerFactory extends ShardHandlerFactory implements PluginInfoInitialized {
   NamedList args;
-  
+  private volatile boolean closed;
+
   @Override
   public void init(PluginInfo info) {
     args = info.initArgs;
@@ -65,5 +66,12 @@ public class MockShardHandlerFactory extends ShardHandlerFactory implements Plug
   }
 
   @Override
-  public void close() {}
+  public void close() {
+    this.closed = true;
+  }
+
+  @Override
+  public boolean isClosed() {
+    return isClosed();
+  }
 }

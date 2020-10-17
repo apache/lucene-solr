@@ -131,6 +131,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   static final String INIT_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable." + INIT_SHARDS_WHITELIST;
 
   static final String SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE = " set -D"+INIT_SOLR_DISABLE_SHARDS_WHITELIST+"=true to disable shards whitelist checks";
+  private volatile boolean isClosed;
 
   /**
    * Get {@link ShardHandler} that uses the default http client.
@@ -283,6 +284,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     clientBuilderPlugin.setup(defaultClient);
   }
 
+  @Override
+  public boolean isClosed() {
+    return isClosed;
+  }
+
   protected <T> T getParameter(@SuppressWarnings({"rawtypes"})NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
     T toReturn = defaultValue;
     if (initArgs != null) {
@@ -305,6 +311,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     } catch (Exception e) {
       log.warn("Exception closing.", e);
     }
+    this.isClosed = true;
   }
 
   public void setHttp2Client(Http2SolrClient solrClient) {

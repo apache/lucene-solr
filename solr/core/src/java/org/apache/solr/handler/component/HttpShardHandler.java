@@ -234,6 +234,10 @@ public class HttpShardHandler extends ShardHandler {
   private ShardResponse take(boolean bailOnError) {
     try {
       while (pending.get() > 0) {
+        if (httpShardHandlerFactory.isClosed()) {
+          return null;
+        }
+
         ShardResponse rsp = responses.take();
         responseCancellableMap.remove(rsp);
 

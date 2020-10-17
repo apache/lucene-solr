@@ -68,4 +68,5 @@ public abstract class ShardHandlerFactory implements Closeable {
       new PluginInfo("shardHandlerFactory", ImmutableMap.of("class", HttpShardHandlerFactory.class.getName()),
           null, Collections.<PluginInfo>emptyList());
 
+  public abstract boolean isClosed();
 }

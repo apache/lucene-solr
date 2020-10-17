@@ -20,10 +20,12 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
@@ -47,7 +49,6 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 /**
  * Tests the Multi threaded Collections API.
  */
-@Ignore // nocommit debug
 public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private static final int REQUEST_STATUS_TIMEOUT = 5;
@@ -73,15 +74,16 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     // nocommit debug
     //testDeduplicationOfSubmittedTasks();
     testLongAndShortRunningParallelApiCalls();
-    testFillWorkQueue();
+    // nocommit debug
+    // testFillWorkQueue();
   }
 
   private void testFillWorkQueue() throws Exception {
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((Http2SolrClient) clients.get(0)))) {
       DistributedQueue distributedQueue = new ZkDistributedQueue(cloudClient.getZkStateReader().getZkClient(),
           "/overseer/collection-queue-work", new Stats());
       //fill the work queue with blocked tasks by adding more than the no:of parallel tasks
-      for (int i = 0; i < MAX_PARALLEL_TASKS + 15; i++) {
+      for (int i = 0; i < MAX_PARALLEL_TASKS + 50; i++) {
         distributedQueue.offer(Utils.toJSON(Utils.makeMap(
             "collection", "A_COLL",
             QUEUE_OPERATION, MOCK_COLL_TASK.toLower(),
@@ -148,9 +150,9 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((Http2SolrClient) clients.get(0)))) {
       for(int i = 1 ; i <= NUM_COLLECTIONS ; i++) {
-        CollectionAdminRequest.createCollection("ocptest" + i,"conf1",3,1).processAsync(String.valueOf(i), client);
+        CollectionAdminRequest.createCollection("ocptest" + i,"_default",3,1).processAsync(String.valueOf(i), client);
       }
   
       boolean pass = false;
@@ -185,7 +187,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
     DistributedQueue distributedQueue = new ZkDistributedQueue(cloudClient.getZkStateReader().getZkClient(),
         "/overseer/collection-queue-work", new Stats());
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((Http2SolrClient) clients.get(0)))) {
 
       Create createCollectionRequest = CollectionAdminRequest.createCollection("ocptest_shardsplit","conf1",4,1);
       createCollectionRequest.processAsync("1000",client);
@@ -267,7 +269,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     Thread indexThread = new Thread() {
       @Override
       public void run() {
-        Random random = random();
+        Random random = LuceneTestCase.random();
         int max = atLeast(random, TEST_NIGHTLY ? 200 : 50);
         for (int id = 101; id < max; id++) {
           try {
@@ -279,7 +281,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       }
     };
     indexThread.start();
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((Http2SolrClient) clients.get(0)))) {
 
       SplitShard splitShardRequest = CollectionAdminRequest.splitShard("collection1").setShardName(SHARD1);
       splitShardRequest.processAsync("2000",client);
