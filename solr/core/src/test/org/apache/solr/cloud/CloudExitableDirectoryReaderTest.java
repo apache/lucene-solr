@@ -118,6 +118,8 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
       client.close();
       client = null;
     }
+
+    fiveHundredsByNode = null;
   }
 
   public static void indexDocs() throws Exception {
