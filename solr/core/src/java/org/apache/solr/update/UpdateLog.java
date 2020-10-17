@@ -234,7 +234,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected volatile String[] tlogFiles;
   protected volatile File tlogDir;
   protected volatile Collection<String> globalStrings;
-  private final ReentrantLock gsLock = new ReentrantLock(true);
 
   protected volatile String dataDir;
   protected volatile String lastDataDir;
@@ -405,7 +404,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       for (String oldLogName : tlogFiles) {
         File f = new File(tlogDir, oldLogName);
         try {
-          oldLog = newTransactionLog(f, null, true, new byte[8192]);
+          oldLog = newTransactionLog(f, null, true);
           addOldLog(oldLog, false);  // don't remove old logs on startup since more than one may be uncapped.
         } catch (Exception e) {
           SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);
@@ -497,7 +496,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * Returns a new {@link org.apache.solr.update.TransactionLog}. Sub-classes can override this method to
    * change the implementation of the transaction log.
    */
-  public TransactionLog newTransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting, byte[] buffer) {
+  public TransactionLog newTransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
     return new TransactionLog(tlogFile, globalStrings, openExisting);
   }
 
@@ -882,12 +881,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     tlogLock.lock();
     try {
       if (prevTlog != null) {
-        gsLock.lock();
-        try {
-          globalStrings = prevTlog.getGlobalStrings();
-        } finally {
-          gsLock.unlock();
-        }
+        globalStrings = prevTlog.getGlobalStrings();
 
         // since document additions can happen concurrently with commit, create
         // a new transaction log first so that we know the old one is definitely
@@ -1417,12 +1411,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected void ensureBufferTlog() {
     if (bufferTlog != null) return;
     String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, BUFFER_TLOG_NAME, System.nanoTime());
-    gsLock.lock();
-    try {
-      bufferTlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false, new byte[4096]);
-    } finally {
-      gsLock.unlock();
-    }
+    bufferTlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false);
     bufferTlog.isBuffer = true;
   }
 
@@ -1441,21 +1430,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     if (tlog == null) {
       tlogLock.lock();
       try {
-        gsLock.lock();
-        try {
           if (tlog == null) {
             String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
-            tlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false, new byte[4096]);
+            tlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false);
           }
-        } finally {
-          gsLock.unlock();
-        }
       } finally {
         tlogLock.unlock();
       }
     }
   }
-
 
   private void doClose(TransactionLog theLog, boolean writeCommit) {
     if (theLog != null) {
