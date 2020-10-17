@@ -24,7 +24,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
@@ -360,7 +363,19 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     isClosed = true;
     if (closeAndDone) {
       for (Future future : taskFutures.values()) {
-        future.cancel(true);
+        future.cancel(false);
+      }
+      for (Future future : taskFutures.values()) {
+        try {
+          future.get(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (ExecutionException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (TimeoutException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
       }
     }
 
