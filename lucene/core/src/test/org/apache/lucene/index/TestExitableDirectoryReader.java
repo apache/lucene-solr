@@ -163,6 +163,17 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     searcher.search(query, 10);
     reader.close();
 
+    // Set a fairly high timeout value (infinite) and expect the query to complete in that time frame.
+    // Not checking the validity of the result, but checking the sampling kicks in to reduce the number of timeout check
+    CountingQueryTimeout queryTimeout = new CountingQueryTimeout();
+    directoryReader = DirectoryReader.open(directory);
+    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, queryTimeout);
+    reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
+    searcher = new IndexSearcher(reader);
+    searcher.search(query, 10);
+    reader.close();
+    assertEquals(3, queryTimeout.getShouldExitCallCount());
+
     directory.close();
   }
 
@@ -266,6 +277,25 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
         return true;
       }
     };
+  }
+
+  private class CountingQueryTimeout implements QueryTimeout {
+    private int counter = 0;
+
+    @Override
+    public boolean shouldExit() {
+      counter++;
+      return false;
+    }
+
+    @Override
+    public boolean isTimeoutEnabled() {
+      return true;
+    }
+
+    public int getShouldExitCallCount() {
+      return counter;
+    }
   }
 
   private static QueryTimeout immediateQueryTimeout() {
