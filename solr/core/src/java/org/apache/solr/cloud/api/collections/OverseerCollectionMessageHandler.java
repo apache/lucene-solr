@@ -926,7 +926,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     } finally {
       if (tpe != null) {
         if (!tpe.isShutdown()) {
-          ExecutorUtil.shutdownAndAwaitTermination(tpe);
+          tpe.shutdown();
+          try {
+            tpe.awaitTermination(3, TimeUnit.SECONDS);
+          } catch (InterruptedException e) {
+            ParWork.propagateInterrupt(e);
+          }
         }
       }
     }
