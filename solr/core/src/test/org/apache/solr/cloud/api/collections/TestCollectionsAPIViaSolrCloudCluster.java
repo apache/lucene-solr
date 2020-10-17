@@ -225,7 +225,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
+  @Nightly
   public void testStopAllStartAll() throws Exception {
 
     final String collectionName = "testStopAllStartAllCollection";
@@ -287,55 +287,19 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     final List<Integer> leaderIndicesList = new ArrayList<>(leaderIndices);
     final List<Integer> followerIndicesList = new ArrayList<>(followerIndices);
 
-    if (TEST_NIGHTLY) {
-      // first stop the followers (in no particular order)
-      Collections.shuffle(followerIndicesList, random());
-      for (Integer ii : followerIndicesList) {
-        if (!leaderIndices.contains(ii)) {
-          cluster.stopJettySolrRunner(jettys.get(ii));
-        }
-      }
-    } else {
-      try (ParWork worker = new ParWork(this)) {
-
-        // first stop the followers (in no particular order)
-        Collections.shuffle(followerIndicesList, random());
-        for (Integer ii : followerIndicesList) {
-          if (!leaderIndices.contains(ii)) {
-            worker.collect("stopJettyFollowers", () -> {
-              try {
-                cluster.stopJettySolrRunner(jettys.get(ii));
-              } catch (Exception e) {
-                throw new RuntimeException(e);
-              }
-            });
-          }
-        }
-      }
-    }
-    if (TEST_NIGHTLY) {
-      // then stop the leaders (again in no particular order)
-      Collections.shuffle(leaderIndicesList, random());
-      for (Integer ii : leaderIndicesList) {
+    // first stop the followers (in no particular order)
+    Collections.shuffle(followerIndicesList, random());
+    for (Integer ii : followerIndicesList) {
+      if (!leaderIndices.contains(ii)) {
         cluster.stopJettySolrRunner(jettys.get(ii));
       }
-    } else {
-      try (ParWork worker = new ParWork(this)) {
-        // first stop the followers (in no particular order)
-        Collections.shuffle(leaderIndicesList, random());
-        for (Integer ii : leaderIndicesList) {
-          worker.collect("stopJettyFollowers", () -> {
-            try {
-              cluster.stopJettySolrRunner(jettys.get(ii));
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
-          });
-        }
-      }
-
     }
 
+    // then stop the leaders (again in no particular order)
+    Collections.shuffle(leaderIndicesList, random());
+    for (Integer ii : leaderIndicesList) {
+      cluster.stopJettySolrRunner(jettys.get(ii));
+    }
 
     // calculate restart order
     final List<Integer> restartIndicesList = new ArrayList<>();
@@ -345,29 +309,15 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     restartIndicesList.addAll(followerIndicesList);
     if (random().nextBoolean()) Collections.shuffle(restartIndicesList, random());
 
-    if (TEST_NIGHTLY) {
-      // and then restart jettys in that order
-      for (Integer ii : restartIndicesList) {
-        final JettySolrRunner jetty = jettys.get(ii);
-        if (!jetty.isRunning()) {
-          cluster.startJettySolrRunner(jetty);
-          assertTrue(jetty.isRunning());
-        }
-      }
-    } else {
-      log.info("START JETTY'S BACK UP");
-      try (ParWork worker = new ParWork(this)) {
-        for (JettySolrRunner jetty : jettys) {
-            worker.collect("startJetties", () -> {
-              try {
-                cluster.startJettySolrRunner(jetty);
-              } catch (Exception e) {
-                throw new RuntimeException(e);
-              }
-            });
-        }
+    // and then restart jettys in that order
+    for (Integer ii : restartIndicesList) {
+      final JettySolrRunner jetty = jettys.get(ii);
+      if (!jetty.isRunning()) {
+        cluster.startJettySolrRunner(jetty);
+        assertTrue(jetty.isRunning());
       }
     }
+
     cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
 
     // re-query collection

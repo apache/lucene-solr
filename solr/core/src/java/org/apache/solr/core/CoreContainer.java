@@ -1015,6 +1015,11 @@ public class CoreContainer implements Closeable {
        solrCores.closing();
      }
 
+    log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
+
+    if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null && !zkSys.getZkController().isDcCalled()) {
+      zkSys.zkController.disconnect();
+    }
 
     // must do before isShutDown=true
     if (isZooKeeperAware()) {
@@ -1027,11 +1032,6 @@ public class CoreContainer implements Closeable {
       }
     }
 
-    log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
-
-    if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null && !zkSys.getZkController().isDcCalled()) {
-      zkSys.zkController.disconnect();
-    }
 
     try (ParWork closer = new ParWork(this, true)) {
 
