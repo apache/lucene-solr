@@ -62,6 +62,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
   @Before
   public void beforeTest() throws Exception {
+    useFactory(null);
     inPlaceMove = true;
 
     configureCluster(4)

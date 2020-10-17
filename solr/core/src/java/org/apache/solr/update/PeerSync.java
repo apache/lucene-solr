@@ -199,8 +199,8 @@ public class PeerSync implements SolrMetricProducer {
       ourUpdates.sort(absComparator);
 
       if (ourUpdates.size() > 0) {
-        ourLowThreshold = percentile(ourUpdates, 0.8f);
-        ourHighThreshold = percentile(ourUpdates, 0.2f);
+        ourLowThreshold = percentile(ourUpdates, 0.9f);
+        ourHighThreshold = percentile(ourUpdates, 0.1f);
       } else {
         // we have no versions and hence no frame of reference to tell if we can use a peers
         // updates to bring us into sync
@@ -338,7 +338,6 @@ public class PeerSync implements SolrMetricProducer {
     ShardRequest sreq = srsp.getShardRequest();
 
     if (srsp.getException() != null) {
-
       // TODO: look at this more thoroughly - we don't want
       // to fail on connection exceptions, but it may make sense
       // to determine this based on the number of fails
@@ -457,6 +456,7 @@ public class PeerSync implements SolrMetricProducer {
     if (updatesRequest == MissedUpdatesRequest.ALREADY_IN_SYNC) {
       return true;
     } else if (updatesRequest == MissedUpdatesRequest.UNABLE_TO_SYNC) {
+      log.info("Unable to sync return from remote on versions check");
       return false;
     } else if (updatesRequest == MissedUpdatesRequest.EMPTY) {
       // If we requested updates from another replica, we can't compare fingerprints yet with this replica, we need to defer
@@ -535,6 +535,7 @@ public class PeerSync implements SolrMetricProducer {
     try {
       this.updater.applyUpdates(updates, sreq.shards);
     } catch (Exception e) {
+      log.warn("{} exception applying updates from {}, failed", msg(), srsp.getException(), srsp.getShardAddress());
       sreq.updateException = e;
       return false;
     }

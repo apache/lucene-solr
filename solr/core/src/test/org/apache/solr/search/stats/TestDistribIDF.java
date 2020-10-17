@@ -145,6 +145,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   @Test
   // commented 4-Sep-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // TODO: this test is flakey, can fail on one of the later collection creates on start
   public void testMultiCollectionQuery() throws Exception {
     // collection1 and collection2 are collections which have distributed idf enabled
     // collection1_local and collection2_local don't have distributed idf available
