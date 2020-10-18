@@ -59,7 +59,6 @@ import org.slf4j.LoggerFactory;
  *
  * @deprecated since 8.6
  */
-@Deprecated
 public class HdfsTransactionLog extends TransactionLog {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static boolean debug = log.isDebugEnabled();

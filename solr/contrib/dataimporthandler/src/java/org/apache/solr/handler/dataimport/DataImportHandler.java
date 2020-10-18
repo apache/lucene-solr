@@ -66,7 +66,6 @@ import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
  * @deprecated since 8.6
  * @since solr 1.3
  */
-@Deprecated
 public class DataImportHandler extends RequestHandlerBase implements
         SolrCoreAware {
 

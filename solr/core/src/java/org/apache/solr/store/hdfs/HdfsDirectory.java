@@ -47,8 +47,6 @@ import org.slf4j.LoggerFactory;
 /**
  * @deprecated since 8.6
  */
-
-@Deprecated
 public class HdfsDirectory extends BaseDirectory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final int DEFAULT_BUFFER_SIZE = 4096;

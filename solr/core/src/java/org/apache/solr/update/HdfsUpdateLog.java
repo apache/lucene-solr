@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
  * @lucene.experimental
  * @deprecated since 8.6
  */
-@Deprecated
 public class HdfsUpdateLog extends UpdateLog {
   
   private final Object fsLock = new Object();

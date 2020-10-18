@@ -65,6 +65,9 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
+/**
+ * @deprecated since 8.4
+ */
 public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAware {
   // init param names, these are _only_ loaded at init time (no per-request control of these)
   //   - multiple different named writers could be created with different init params

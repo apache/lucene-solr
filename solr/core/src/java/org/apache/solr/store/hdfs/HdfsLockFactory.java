@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 /**
  * @deprecated since 8.6
  */
-@Deprecated
 public class HdfsLockFactory extends LockFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   

@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 /**
  * @deprecated since 8.6
  */
-@Deprecated
 public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
   public static final String LOCALITY_BYTES_TOTAL = "locality.bytes.total";
   public static final String LOCALITY_BYTES_LOCAL = "locality.bytes.local";
