@@ -70,6 +70,10 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.XMLWriter;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -125,6 +129,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         throws ServletException, IOException {
       lastMethod = "delete";
       recordRequest(req, resp);
+      writeMockResponse(resp);
     }
     
     @Override
@@ -132,6 +137,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         throws ServletException, IOException {
       lastMethod = "get";
       recordRequest(req, resp);
+      writeMockResponse(resp);
     }
     
     @Override
@@ -139,6 +145,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         throws ServletException, IOException {
       lastMethod = "head";
       recordRequest(req, resp);
+      writeMockResponse(resp);
     }
     
     private void setHeaders(HttpServletRequest req) {
@@ -160,7 +167,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
 
     private void setCookies(HttpServletRequest req) {
-      javax.servlet.http.Cookie[] ck = req.getCookies();
       cookies = req.getCookies();
     }
 
@@ -169,6 +175,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         throws ServletException, IOException {
       lastMethod = "post";
       recordRequest(req, resp);
+      writeMockResponse(resp);
     }
 
     @Override
@@ -176,6 +183,26 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         throws ServletException, IOException {
       lastMethod = "put";
       recordRequest(req, resp);
+      writeMockResponse(resp);
+    }
+
+    // see SOLR-14844: after upgrading Jetty to 9.4.32.v20200930, empty responses are actually empty, without the gzip
+    // headers. To prevent the brittle client behaviour regarding compressed responses, it returns a mocked response.
+    private void writeMockResponse(HttpServletResponse httpResp) throws IOException {
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrQueryRequest req = new SolrQueryRequestBase(null, new ModifiableSolrParams()) {
+      };
+
+      rsp.add("mockField1", "mockValue1");
+      rsp.add("mockField2", "mockValue2");
+
+      XMLWriter writer = null;
+      try {
+        writer = new XMLWriter(httpResp.getWriter(), req, rsp);
+        writer.writeResponse();
+      } finally {
+        writer.close();
+      }
     }
     
     private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
@@ -327,6 +354,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       assertEquals("keep-alive", DebugServlet.headers.get("Connection"));
       assertEquals("application/x-www-form-urlencoded; charset=UTF-8", DebugServlet.headers.get("Content-Type"));
 
+      //XML/PUT
       client.setParser(new XMLResponseParser());
       DebugServlet.clear();
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, METHOD.PUT));
