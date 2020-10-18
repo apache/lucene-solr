@@ -99,7 +99,8 @@ public class SolrZkClient implements Closeable {
 
   private ZkCmdExecutor zkCmdExecutor;
 
-  // what about ensuring order of state updates per collection??
+  // TODO: this is less efficient now, only using a single thread - allowing multiple threads leaves room for out of order cluster state updates
+  // TODO: could allow parallel by collection?
   final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 1, 10000, new BlockingArrayQueue());
 
   final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService("zkConnManagerCallbackExecutor",1, 1, 60000, new BlockingArrayQueue());
