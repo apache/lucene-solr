@@ -112,20 +112,11 @@ public abstract class VectorValues extends DocIdSetIterator {
 
     /**
      * Return the vector indexed at the given ordinal value as an array of bytes in a BytesRef;
-     * these are the bytes corresponding to the float array in IEEE 754 standard encoding, encoded
-     * using little-endian byte order. The provided bytes may be shared and overwritten by subsequent
-     * calls to this method and {@link #vectorValue(int)}.
+     * these are the bytes corresponding to the float array. The provided bytes may be shared and overwritten 
+     * by subsequent calls to this method and {@link #vectorValue(int)}.
      * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
      */
     BytesRef binaryValue(int targetOrd) throws IOException;
-
-    /**
-     * Return the dense ordinal of the document if it has a vector. This ordinal ranges from 0 to the one less than the number
-     * of documents having a vector in this iterator, and it is guaranteed to increase with increasing docid.
-     * @param docId the document whose ordinal is returned
-     * @return the ordinal of the given document, or -1 if the document has no vector value
-     */
-    //int ordinal(int docId);
 
     /**
      * Return the k nearest neighbor documents as determined by comparison of their vector values
