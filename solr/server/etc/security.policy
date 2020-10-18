@@ -73,6 +73,8 @@ grant {
   permission java.lang.RuntimePermission "getStackTrace";
   // needed for mock filesystems in tests
   permission java.lang.RuntimePermission "fileSystemProvider";
+  // needed by IndexFetcher
+  permission java.lang.RuntimePermission "getFileStoreAttributes";
   // analyzers/uima: needed by lucene expressions' JavascriptCompiler
   permission java.lang.RuntimePermission "createClassLoader";
   // needed to test unmap hack on platforms that support it
