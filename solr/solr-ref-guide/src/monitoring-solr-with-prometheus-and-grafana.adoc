@@ -25,8 +25,6 @@ This graphic provides a more detailed view:
 .solr-exporter Diagram
 image::images/monitoring-solr-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
 
-NOTE: This feature is considered experimental, meaning future improvements may break compatibility.
-
 The Prometheus exporter is included in Solr as a contrib, and is located in `contrib/prometheus-exporter` in your Solr instance.
 
 There are three aspects to running `solr-exporter`:
