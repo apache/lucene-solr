@@ -39,8 +39,10 @@ public abstract class CircuitBreaker {
     this.config = config;
   }
 
-  // Global config for all circuit breakers. For specific circuit breaker configs, define
-  // your own config.
+  /**
+   * Global config for all circuit breakers. For specific circuit breaker configs, define
+   * your own config.
+   */
   protected boolean isEnabled() {
     return config.isEnabled();
   }
@@ -60,6 +62,9 @@ public abstract class CircuitBreaker {
    */
   public abstract String getErrorMessage();
 
+  /**
+   * Represents the configuration for a circuit breaker
+   */
   public static class CircuitBreakerConfig {
     private final boolean enabled;
     private final boolean memCBEnabled;
