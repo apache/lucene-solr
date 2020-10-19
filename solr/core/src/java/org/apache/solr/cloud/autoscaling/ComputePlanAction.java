@@ -129,6 +129,7 @@ public class ComputePlanAction extends TriggerActionBase {
         int opCount = 0;
         int opLimit = maxOperations;
         if (requestedOperations > 0) {
+          log.debug("-- adjusting limit due to explicitly requested number of ops={}", requestedOperations);
           opLimit = requestedOperations;
         }
         do {
@@ -156,6 +157,7 @@ public class ComputePlanAction extends TriggerActionBase {
             if (requestedOperations < 0) {
               //uncomment the following to log zero operations
 //              PolicyHelper.logState(cloudManager, initialSuggester);
+              log.debug("-- no more operations suggested, stopping after {} ops...", (opCount - 1));
               break;
             } else {
               log.info("Computed plan empty, remained {} requested ops to try.", opCount - opLimit);
@@ -173,7 +175,10 @@ public class ComputePlanAction extends TriggerActionBase {
             operations.add(operation);
             return operations;
           });
-        } while (opCount < opLimit);
+          if (opCount > opLimit) {
+            log.debug("-- reached limit of maxOps={}, stopping.", opLimit);
+          }
+        } while (opCount <= opLimit);
       } finally {
         releasePolicySession(sessionWrapper, session);
       }
@@ -205,14 +210,22 @@ public class ComputePlanAction extends TriggerActionBase {
       totalRF.addAndGet(rf * coll.getSlices().size());
     });
     int totalMax = clusterState.getLiveNodes().size() * totalRF.get() * 3;
-    int maxOp = (Integer) autoScalingConfig.getProperties().getOrDefault(AutoScalingParams.MAX_COMPUTE_OPERATIONS, totalMax);
+    int maxOp = ((Number) autoScalingConfig.getProperties().getOrDefault(AutoScalingParams.MAX_COMPUTE_OPERATIONS, totalMax)).intValue();
     Object o = event.getProperty(AutoScalingParams.MAX_COMPUTE_OPERATIONS, maxOp);
-    try {
-      return Integer.parseInt(String.valueOf(o));
-    } catch (Exception e) {
-      log.warn("Invalid '{}' event property: {}, using default {}", AutoScalingParams.MAX_COMPUTE_OPERATIONS, o, maxOp);
-      return maxOp;
+    if (o != null) {
+      try {
+        maxOp = Integer.parseInt(String.valueOf(o));
+      } catch (Exception e) {
+        log.warn("Invalid '{}' event property: {}, using default {}", AutoScalingParams.MAX_COMPUTE_OPERATIONS, o, maxOp);
+      }
     }
+    // try at least one operation
+    if (maxOp < 1) {
+      log.debug("-- estimated maxOp={}, resetting to 1...", maxOp);
+      maxOp = 1;
+    }
+    log.debug("-- estimated total max ops={}, effective maxOps={}", totalMax, maxOp);
+    return maxOp;
   }
 
   protected int getRequestedNumOps(TriggerEvent event) {
@@ -290,7 +303,10 @@ public class ComputePlanAction extends TriggerActionBase {
         String sourceNode = srcNodes.get(start);
         s = session.getSuggester(action)
                 .hint(Suggester.Hint.SRC_NODE, event.getProperty(NODE_NAMES));
-        if (applyCollectionHints(cloudManager, s) == 0) return NoneSuggester.get(session);
+        if (applyCollectionHints(cloudManager, s) == 0) {
+          log.debug("-- no relevant collections on {}, no operations computed.", srcNodes);
+          return NoneSuggester.get(session);
+        }
         s.hint(Suggester.Hint.SRC_NODE, Collections.singletonList(sourceNode));
         event.getProperties().put(START, ++start);
         return s;
@@ -342,11 +358,15 @@ public class ComputePlanAction extends TriggerActionBase {
                             .forEach(collShards::add);
                   }
                 });
+        log.debug("-- NODE_ADDED: ADDREPLICA suggester configured with {} collection/shard hints.", collShards.size());
         suggester.hint(Suggester.Hint.COLL_SHARD, collShards);
         suggester.hint(Suggester.Hint.REPLICATYPE, replicaType);
         break;
       case MOVEREPLICA:
+        log.debug("-- NODE_ADDED event specified MOVEREPLICA - no hints added.");
+        break;
       case NONE:
+        log.debug("-- NODE_ADDED event specified NONE - no operations suggested.");
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
