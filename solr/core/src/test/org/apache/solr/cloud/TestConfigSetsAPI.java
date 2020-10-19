@@ -627,7 +627,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     try (SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(),
             AbstractZkTestCase.TIMEOUT, 45000, null)) {
       ignoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
-      assertEquals(400, uploadSingleConfigSetFile(configsetName, configsetSuffix, null, "solr/configsets/upload/regular/solrconfig.xml", "/test/upload/path/solrconfig.xml", false, true, v2));
+      assertEquals(400, uploadSingleConfigSetFile(configsetName, configsetSuffix, null, "solr/configsets/upload/regular/solrconfig.xml", "/test/upload/path/solrconfig.xml", true, true, v2));
       assertFalse("New file should not exist, since the trust check did not succeed.", zkClient.exists("/configs/"+configsetName+configsetSuffix+"/test/upload/path/solrconfig.xml", true));
       assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
       unIgnoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
@@ -910,8 +910,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String uriEnding;
     boolean usePut = false;
     if (v2) {
-      uriEnding = "/api/cluster/configs/"+configSetName+suffix + (cleanup? "?cleanup=true" : "");
-      usePut = overwrite;
+      uriEnding = "/api/cluster/configs/" + configSetName+suffix + (!overwrite? "?overwrite=false" : "") + (cleanup? "?cleanup=true" : "");
+      usePut = true;
     } else {
       uriEnding = "/solr/admin/configs?action=UPLOAD&name="+configSetName+suffix + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : "");
     }
@@ -933,8 +933,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String uriEnding;
     boolean usePut = false;
     if (v2) {
-      uriEnding = "/api/cluster/configs/" + configSetName+suffix + "/files/" + uploadPath + (cleanup? "?cleanup=true" : "");
-      usePut = overwrite;
+      uriEnding = "/api/cluster/configs/" + configSetName+suffix + "/files/" + uploadPath + (!overwrite? "?overwrite=false" : "") + (cleanup? "?cleanup=true" : "");
+      usePut = true;
     } else {
       uriEnding = "/solr/admin/configs?action=UPLOAD&name="+configSetName+suffix+"&filePath="+uploadPath + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : "");
     }

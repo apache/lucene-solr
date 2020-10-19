@@ -101,18 +101,18 @@ The configset to be created when the upload is complete. This parameter is requi
 `overwrite`::
 If set to `true`, Solr will overwrite an existing configset with the same name (if false, the request will fail).
 If `filePath` is provided, then this option specifies whether the specified file within the configSet should be overwritten if it already exists.
-Default is `false`.
+Default is `false` when using the v1 API, but `true` when using the v2 API.
 
 `cleanup`::
 When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files in ZooKeeper that existed in the old configset but not in the one being uploaded. Default is `false`.
 This parameter cannot be set to true when `filePath` is used.
 
-filePath::
+`filePath`::
 This parameter allows the uploading of a single, non-zipped file to the given path under the configSet in ZooKeeper.
 This functionality respects the `overwrite` parameter, so a request will fail if the given file path already exists in the configSet and overwrite is set to `false`.
 The `cleanup` parameter cannot be set to true when `filePath` is used.
 
-The body of the request should be a zip file that contains the configset. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
+If uploading an entire configSet, the body of the request should be a zip file that contains the configset. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
 
 Here is an example on how to create the zip file named "myconfig.zip" and upload it as a configset named "myConfigSet":
 
@@ -149,20 +149,12 @@ With the v2 API, the name of the configset to upload is provided as a path param
 ----
 $ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) > myconfigset.zip
 
-$ curl -X POST --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip
+$ curl -X PUT --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip
     "http://localhost:8983/api/cluster/configs/myConfigSet"
 ----
 
-In order to upload and overwrite existing configSets using the v2 API, use the HTTP PUT method, instead of POST.
-Providing the `overwrite` property is unnecessary with the v2 API.
-
-[source,bash]
-----
-$ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) > myconfigset.zip
-
-$ curl -X PUT --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip
-    "http://localhost:8983/api/cluster/configs/myConfigSet?cleanup=true"
-----
+With this REST API, the default behavior is to overwrite the configSet if it already exists.
+This behavior can be disabled by providing the URL param `overwrite=false`, in which case the request will fail if the configSet already exists.
 ====
 --
 
@@ -189,24 +181,18 @@ curl -X POST --header "Content-Type:application/octet-stream"
 ====
 [.tab-label]*V2 API*
 
-With the v2 API, the name of the configset and file are both provided in the URL. They can be substituted in `/cluster/configs/{config_name}/files/{file_name}`:
-
-[source,bash]
-----
-curl -X POST --header "Content-Type:application/octet-stream"
-    --data-binary @solr/server/solr/configsets/sample_techproducts_configs/conf/solrconfig.xml
-    "http://localhost:8983/api/cluster/configs/myConfigSet/files/solrconfig-2.xml"
-----
-
-In order to upload and overwrite an existing file using the v2 API, use the HTTP PUT method, instead of POST.
-Providing the `overwrite` property is unnecessary with the v2 API.
+With the v2 API, the name of the configset and file are both provided in the URL.
+They can be substituted in `/cluster/configs/{config_name}/files/{file_name}`:
 
 [source,bash]
 ----
 curl -X PUT --header "Content-Type:application/octet-stream"
     --data-binary @solr/server/solr/configsets/sample_techproducts_configs/conf/solrconfig.xml
-    "http://localhost:8983/api/cluster/configs/myConfigSet/files/solrconfig.xml"
+    "http://localhost:8983/api/cluster/configs/myConfigSet/files/solrconfig-2.xml"
 ----
+
+With this REST API, the default behavior is to overwrite the file if it already exists within the configSet.
+This behavior can be disabled by providing the URL param `overwrite=false`, in which case the request will fail if the file already exists within the configSet.
 ====
 --
 
