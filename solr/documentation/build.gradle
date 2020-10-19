@@ -15,4 +15,17 @@
  * limitations under the License.
  */
 
+package my.pkg;
+
+import java.util.Map;
+
+import org.apache.solr.pkg.TestPackages;
+
+public class MyPatternReplaceCharFilterFactory extends TestPackages.BasePatternReplaceCharFilterFactory {
+
+  public MyPatternReplaceCharFilterFactory(Map<String, String> args) {
+    super(args);
+  }
+}
+
 description = 'Solr HTML documentation'
