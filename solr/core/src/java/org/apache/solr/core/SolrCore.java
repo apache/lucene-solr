@@ -3275,25 +3275,4 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
     }
   }
-
-  /**
-   * Registers in-flight update requests to this core. The caller of this method should
-   * disallow update request to this core if this method returns false.
-   *
-   * @return true if request was registered, false if update requests are paused
-   */
-  public boolean registerInFlightUpdate() {
-    // make sure we pay the price of the phaser only for leader cores
-    if (coreDescriptor.getCloudDescriptor().isLeader()) {
-      return solrCoreState.registerInFlightUpdate();
-    }
-    return true;
-  }
-
-  /**
-   * De-registers in-flight update requests to this core (marks them as completed)
-   */
-  public void deregisterInFlightUpdate() {
-    solrCoreState.deregisterInFlightUpdate();
-  }
 }
