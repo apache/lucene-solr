@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -45,12 +46,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slow
-@Ignore
+@LuceneTestCase.AwaitsFix(bugUrl = "This an experimental test class")
 public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    useFactory(null);
     configureCluster(5)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();

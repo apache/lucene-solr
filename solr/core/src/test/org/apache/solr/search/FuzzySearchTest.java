@@ -34,7 +34,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Slow
-@Ignore // switched to http2client and I guess it doesn't have this too complex processing
 public class FuzzySearchTest extends SolrCloudTestCase {
   private final static String COLLECTION = "c1";
   private CloudHttp2SolrClient client;

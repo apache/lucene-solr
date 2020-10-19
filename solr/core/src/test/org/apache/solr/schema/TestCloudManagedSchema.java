@@ -16,7 +16,7 @@
  */
 package org.apache.solr.schema;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-@Ignore // nocommit debug
+@Ignore // nocommit - debug - update from schema.xml to managed-schema file in zk does not appear to happen? Or is it a race?
 public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
 
   public TestCloudManagedSchema() {
@@ -50,6 +50,11 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     return "solrconfig-managed-schema.xml";
   }
 
+  @Override
+  public String getCloudSchemaFile() {
+    return "managed-schema";
+  }
+
   @Test
   public void test() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -57,12 +62,12 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/cores");
     int which = r.nextInt(clients.size());
-    HttpSolrClient client = (HttpSolrClient)clients.get(which);
+    Http2SolrClient client = (Http2SolrClient)clients.get(which);
     String previousBaseURL = client.getBaseURL();
     // Strip /collection1 step from baseURL - requests fail otherwise
-    client.setBaseURL(previousBaseURL.substring(0, previousBaseURL.lastIndexOf("/")));
+    client.setBaseUrl(previousBaseURL.substring(0, previousBaseURL.lastIndexOf("/")));
     NamedList namedListResponse = client.request(request);
-    client.setBaseURL(previousBaseURL); // Restore baseURL 
+    client.setBaseUrl(previousBaseURL); // Restore baseURL
     NamedList status = (NamedList)namedListResponse.get("status");
     NamedList collectionStatus = (NamedList)status.getVal(0);
     String collectionSchema = (String)collectionStatus.get(CoreAdminParams.SCHEMA);
@@ -72,14 +77,14 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     SolrZkClient zkClient = zkServer.getZkClient();
 
     // Make sure "DO NOT EDIT" is in the content of the managed schema
-    String fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema");
+    String fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/_default/managed-schema");
     assertTrue("Managed schema is missing", fileContent.contains("DO NOT EDIT"));
 
     // Make sure the original non-managed schema is no longer in ZooKeeper
-    assertFileNotInZooKeeper(zkClient, "/solr/configs/conf1", "schema.xml");
+    assertFileNotInZooKeeper(zkClient, "/solr/configs/_default", "schema.xml");
 
     // Make sure the renamed non-managed schema is present in ZooKeeper
-    fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/schema.xml.bak");
+    fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/_default/schema.xml.bak");
     assertTrue("schema file doesn't contain '<schema'", fileContent.contains("<schema"));
   }
   

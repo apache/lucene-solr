@@ -464,7 +464,6 @@ public class TestRealTimeGet extends TestRTGBase {
 
 
   @Test
-  @Ignore // nocommit I BROKE REALTIME GET, I KNOW, FINISH ADDRESSING
   public void testStressGetRealtime() throws Exception {
     clearIndex();
     assertU(commit());

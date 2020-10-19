@@ -46,7 +46,6 @@ import org.apache.solr.common.util.JsonRecordReader;
 import org.junit.Ignore;
 
 @SolrTestCaseJ4.SuppressSSL
-@Ignore // nocommit flakey
 public class TestExportTool extends SolrCloudTestCase {
 
   public void testBasic() throws Exception {
