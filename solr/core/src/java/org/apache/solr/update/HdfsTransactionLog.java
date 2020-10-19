@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  *  This would also allow to not log document data for requests with commit=true
  *  in them (since we know that if the request succeeds, all docs will be committed)
  *
- * @deprecated since 8.6
+ * @deprecated since 8.6; see <a href="https://cwiki.apache.org/confluence/display/SOLR/Deprecations">Deprecations</a>
  */
 public class HdfsTransactionLog extends TransactionLog {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

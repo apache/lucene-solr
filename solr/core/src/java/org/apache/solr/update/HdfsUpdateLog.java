@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @lucene.experimental
- * @deprecated since 8.6
+ * @deprecated since 8.6; see <a href="https://cwiki.apache.org/confluence/display/SOLR/Deprecations">Deprecations</a>
  */
 public class HdfsUpdateLog extends UpdateLog {
   

@@ -63,7 +63,7 @@ import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
  * <p>
  * <b>This API is experimental and subject to change</b>
  *
- * @deprecated since 8.6
+ * @deprecated since 8.6; see <a href="https://cwiki.apache.org/confluence/display/SOLR/Deprecations">Deprecations</a>
  * @since solr 1.3
  */
 public class DataImportHandler extends RequestHandlerBase implements
