@@ -1838,6 +1838,22 @@ public class ZkController implements Closeable {
     }
   }
 
+  public void tryCancelAllElections() {
+    if (zkClient.isClosed()) {
+      return;
+    }
+    electionContexts.values().parallelStream().forEach(context -> {
+      try {
+        context.cancelElection();
+        context.close();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } catch (KeeperException e) {
+        log.error("Error on cancelling elections of {}", context.leaderPath, e);
+      }
+    });
+  }
+
   private ZkCoreNodeProps waitForLeaderToSeeDownState(
       CoreDescriptor descriptor, final String coreZkNodeName) throws SessionExpiredException {
     // try not to wait too long here - if we are waiting too long, we should probably

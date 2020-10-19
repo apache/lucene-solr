@@ -999,6 +999,9 @@ public class CoreContainer {
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
         zkSys.zkController.preClose();
+        // doesn't need to unpause here since we are shutting down
+        getCores().parallelStream().map(SolrCore::getSolrCoreState).forEach(SolrCoreState::pauseUpdatesAndAwaitInflightRequests);
+        zkSys.zkController.tryCancelAllElections();
       }
 
       ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);

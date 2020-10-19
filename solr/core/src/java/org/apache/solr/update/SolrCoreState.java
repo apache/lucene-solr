@@ -16,10 +16,6 @@
  */
 package org.apache.solr.update;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.locks.Lock;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
@@ -33,6 +29,12 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+
 /**
  * The state in this class can be easily shared between SolrCores across
  * SolrCore reloads.
@@ -44,7 +46,22 @@ public abstract class SolrCoreState {
   protected boolean closed = false;
   private final Object updateLock = new Object();
   private final Object reloadLock = new Object();
-  
+
+  /**
+   * If true then all update requests will be refused
+   */
+  private final AtomicBoolean pauseUpdateRequests = new AtomicBoolean();
+
+  /**
+   * Phaser is used to track in flight update requests and can be used
+   * to wait for all in-flight requests to finish.
+   *
+   * @see #registerInFlightUpdate()
+   * @see #deregisterInFlightUpdate()
+   * @see #pauseUpdatesAndAwaitInflightRequests()
+   */
+  private final Phaser inflightUpdatesCounter = new Phaser();
+
   public Object getUpdateLock() {
     return updateLock;
   }
@@ -86,7 +103,46 @@ public abstract class SolrCoreState {
     }
     return close;
   }
-  
+
+  /**
+   * Pauses all update requests to this core and waits (indefinitely) for all in-flight
+   * update requests to finish
+   */
+  public void pauseUpdatesAndAwaitInflightRequests() {
+    if (pauseUpdateRequests.compareAndSet(false, true)) {
+      inflightUpdatesCounter.register();
+      inflightUpdatesCounter.arriveAndAwaitAdvance();
+    }
+  }
+
+  /**
+   * Unpauses update requests to this core
+   */
+  public void unpauseUpdates() {
+    this.pauseUpdateRequests.set(false);
+  }
+
+  /**
+   * Registers in-flight update requests to this core. The caller of this method should
+   * disallow update request to this core if this method returns false.
+   *
+   * @return true if request was registered, false if update requests are paused
+   */
+  public boolean registerInFlightUpdate() {
+    if (pauseUpdateRequests.get()) {
+      return false;
+    }
+    inflightUpdatesCounter.register();
+    return true;
+  }
+
+  /**
+   * De-registers in-flight update requests to this core (marks them as completed)
+   */
+  public void deregisterInFlightUpdate() {
+    inflightUpdatesCounter.arriveAndDeregister();
+  }
+
   public abstract Lock getCommitLock();
   
   /**
