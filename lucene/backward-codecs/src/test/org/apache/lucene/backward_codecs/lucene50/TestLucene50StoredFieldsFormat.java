@@ -14,17 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.backward_codecs.lucene50;
 
-package my.pkg;
 
-import java.util.Map;
+import org.apache.lucene.backward_codecs.lucene86.Lucene86RWCodec;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
 
-import org.apache.solr.pkg.TestPackages;
-
-public class MyPatternReplaceCharFilterFactory extends TestPackages.BasePatternReplaceCharFilterFactory {
-
-  public MyPatternReplaceCharFilterFactory(Map<String, String> args) {
-    super(args);
+public class TestLucene50StoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
+  @Override
+  protected Codec getCodec() {
+    return new Lucene86RWCodec();
   }
 }
-

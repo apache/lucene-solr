@@ -20,11 +20,11 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Locale;
 
+import org.apache.lucene.backward_codecs.lucene87.Lucene87Codec;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat.Mode;
-import org.apache.lucene.codecs.lucene87.Lucene87Codec;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;

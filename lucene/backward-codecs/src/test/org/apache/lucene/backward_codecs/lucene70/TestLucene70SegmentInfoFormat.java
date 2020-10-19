@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-package my.pkg;
+package org.apache.lucene.backward_codecs.lucene70;
 
-import java.util.Map;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.backward_codecs.lucene84.Lucene84RWCodec;
+import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
+import org.apache.lucene.util.Version;
 
-import org.apache.solr.pkg.TestPackages;
+public class TestLucene70SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
 
-public class MyPatternReplaceCharFilterFactory extends TestPackages.BasePatternReplaceCharFilterFactory {
+  @Override
+  protected Version[] getVersions() {
+    return new Version[] { Version.LUCENE_8_4_0 };
+  }
 
-  public MyPatternReplaceCharFilterFactory(Map<String, String> args) {
-    super(args);
+  @Override
+  protected Codec getCodec() {
+    return new Lucene84RWCodec();
   }
 }
-
