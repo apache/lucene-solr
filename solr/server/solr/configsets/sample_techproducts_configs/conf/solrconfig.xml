@@ -420,7 +420,7 @@
            initialSize - the initial capacity (number of entries) of
                the cache.  (see java.util.HashMap)
            autowarmCount - the number of entries to prepopulate from
-               and old cache.
+               an old cache.
            maxRamMB - the maximum amount of RAM (in MB) that this cache is allowed
                       to occupy. Note that when this option is specified, the size
                       and initialSize parameters are ignored.
