@@ -193,7 +193,7 @@ public class TestSpanExplanations extends BaseExplanationTestCase {
         IndexSearcher indexSearcher = newSearcher(reader);
         SpanWeight spanWeight = query.createWeight(indexSearcher, ScoreMode.COMPLETE_NO_SCORES, 1f);
 
-        final LeafReaderContext ctx = reader.leaves().get(0);
+        final LeafReaderContext ctx = indexSearcher.getIndexReader().leaves().get(0);
         Explanation explanation = spanWeight.explain(ctx, 0);
 
         assertEquals(0f, explanation.getValue());
