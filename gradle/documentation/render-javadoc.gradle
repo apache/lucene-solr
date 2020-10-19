@@ -157,7 +157,8 @@ configure(project(":lucene:backward-codecs")) {
         "org.apache.lucene.backward_codecs.lucene60",
         "org.apache.lucene.backward_codecs.lucene80",
         "org.apache.lucene.backward_codecs.lucene84",
-        "org.apache.lucene.backward_codecs.lucene86"
+        "org.apache.lucene.backward_codecs.lucene86",
+        "org.apache.lucene.backward_codecs.lucene87"
     ]
   }
 }

@@ -21,6 +21,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PointsFormat;
@@ -128,5 +129,10 @@ public class Lucene80Codec extends Codec {
   @Override
   public final NormsFormat normsFormat() {
     return normsFormat;
+  }
+
+  @Override
+  public final VectorFormat vectorFormat() {
+    return VectorFormat.EMPTY;
   }
 }

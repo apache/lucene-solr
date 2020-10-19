@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.codecs.lucene87;
+package org.apache.lucene.backward_codecs.lucene87;
 
 import java.util.Objects;
 
@@ -31,6 +31,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
@@ -39,6 +40,7 @@ import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86PointsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
@@ -136,6 +138,9 @@ public class Lucene87Codec extends Codec {
   public final PointsFormat pointsFormat() {
     return pointsFormat;
   }
+
+  @Override
+  public final VectorFormat vectorFormat() { return VectorFormat.EMPTY; }
 
   /** Returns the postings format that should be used for writing
    *  new segments of <code>field</code>.
