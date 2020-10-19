@@ -110,7 +110,7 @@ Other Changes
 
 * SOLR-14654: Remove plugin loading from .system collection (for 9.0) (noble)
 
-* SOLR-14702: All references to "master" and "slave" replaced with "leader" and "follower" (MarcusSorealheis, 
+* SOLR-14702: All references to "master" and "slave" replaced with "leader" and "follower" (MarcusSorealheis,
   Erick Erickson, Tomás Fernández Löbbe)
 
 Bug Fixes
@@ -207,7 +207,7 @@ Optimizations
 
 * SOLR-14819: Fix inefficient iterator pattern in JsonSchemaValidator. (Thomas DuBuisson via Bruno Roustant)
 
-* SOLR-14658: SolrJ's CollectionAdminRequest.collectionStatus(collection) would internally get 
+* SOLR-14658: SolrJ's CollectionAdminRequest.collectionStatus(collection) would internally get
   all collection statuses instead of just the specified collection. (Andy Vuong)
 
 * SOLR-14576 : Do not use SolrCore as keys in a WeakHashMap (noble)
@@ -267,6 +267,8 @@ Bug Fixes
 * SOLR-14897: Fix unlimited number of forwarding the request from one node to another node. (hossman, Munendra S N)
 
 * SOLR-14898: Stop returning duplicate HTTP response headers when requests are forward to another node. (hossman)
+
+* SOLR-14936: Fixed Grafana dashboard filters for collection, shard, replica and core (janhoy)
 
 * SOLR-14924: Some ReplicationHandler metrics are reported using incorrect types. (ab)
 
