@@ -228,9 +228,12 @@ public class TestVectorValues extends LuceneTestCase {
           LeafReader r = reader.leaves().get(0).reader();
           VectorValues vectorValues = r.getVectorValues(fieldName);
           assertEquals(0, vectorValues.nextDoc());
-          assertEquals(1, vectorValues.vectorValue()[0], 0);
+          // The merge order is randomized, we might get 0 first, or 1
+          float value = vectorValues.vectorValue()[0];
+          assertTrue(value == 0 || value == 1);
           assertEquals(1, vectorValues.nextDoc());
-          assertEquals(0, vectorValues.vectorValue()[0], 0);
+          value += vectorValues.vectorValue()[0];
+          assertEquals(1, value, 0);
         }
       }
     }
