@@ -25,8 +25,6 @@ This graphic provides a more detailed view:
 .solr-exporter Diagram
 image::images/monitoring-solr-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
 
-NOTE: This feature is considered experimental, meaning future improvements may break compatibility.
-
 The Prometheus exporter is included in Solr as a contrib, and is located in `contrib/prometheus-exporter` in your Solr instance.
 
 There are three aspects to running `solr-exporter`:
@@ -95,7 +93,7 @@ The port where Prometheus will listen for new data. This port will be used to co
 The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in Standalone mode. If you are running Solr in SolrCloud mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
 
 `-z`, `--zkhost`::
-The ZooKeeper connect string (such as `localhost:8983`, or `localhost:2181/solr`) when Solr is running in SolrCloud mode. If you are running Solr in Standalone mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
+The ZooKeeper connect string (such as `localhost:9983`, or `localhost:2181/solr`) when Solr is running in SolrCloud mode. If you are running Solr in Standalone mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
 
 `-f`, `--config-file`::
 The path to the configuration file that defines the Solr metrics to read. The default is `contrib/prometheus-exporter/conf/solr-exporter-config.xml`.
@@ -106,7 +104,7 @@ The number of threads. The `solr-exporter` creates thread pools for requests to 
 `-s`, `--scrape-interval`::
 The number of seconds between collecting metrics from Solr. The `solr-exporter` collects metrics from Solr every few seconds controlled by this setting. These metrics are cached and returned regardless of how frequently prometheus is configured to pull metrics from this tool. The freshness of the metrics can be improved by reducing the scrape interval but do not set it to a very low value because metrics collection can be expensive and can execute arbitrary searches to ping Solr. The default value is 60 seconds.
 
-The Solr's metrics exposed by `solr-exporter` can be seen at: `\http://localhost:9983/solr/admin/metrics`.
+The Solr's metrics exposed by `solr-exporter` can be seen at: `\http://localhost:8983/solr/admin/metrics`.
 
 === Environment Variable Options
 
@@ -155,7 +153,7 @@ Note: The Exporter needs the `commons-codec` library for SSL/BasicAuth, but does
 == Exporter Configuration
 The configuration for the `solr-exporter` defines the data to get from Solr. This includes the metrics, but can also include queries to the PingRequestHandler, the Collections API, and a query to any query request handler.
 
-A default example configuration is in `contrib/prometheus-exporter/config/solr-exporter-config.xml`. Below is a slightly shortened version of it:
+A default example configuration is in `contrib/prometheus-exporter/conf/solr-exporter-config.xml`. Below is a slightly shortened version of it:
 
 [source,xml]
 ----
@@ -378,7 +376,9 @@ solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
 
 == Prometheus Configuration
 
-In order for Prometheus to know about the `solr-exporter`, the listen address must be added to `prometheus.yml`, as in this example:
+Prometheus is a separate server that you need to download and deploy.   More information can be found at the Prometheus https://prometheus.io/docs/prometheus/latest/getting_started/[Getting Started] page.
+
+In order for Prometheus to know about the `solr-exporter`, the listen address must be added to the Prometheus server's `prometheus.yml` configuration file, as in this example:
 
 [source,plain]
 ----
@@ -392,10 +392,23 @@ If you already have a section for `scrape_configs`, you can add the `job_name` a
 
 When you apply the settings to Prometheus, it will start to pull Solr's metrics from `solr-exporter`.
 
+You can test that the Prometheus server, `solr-exporter`, and Solr are working together by browsing to http://localhost:9090 and
+doing a query for `solr_ping` metric in the Prometheus GUI:
+
+.Prometheus Solr Ping expression
+image::images/monitoring-solr-with-prometheus-and-grafana/prometheus-solr-ping.png[image,width=800]
+
+
+
 == Sample Grafana Dashboard
+
+Grafana is another separate server that you need to download and deploy.   More information can be found on the Grafana https://grafana.com/docs/grafana/latest/[Documentation] site.
+Grafana consumes data from many sources, including the Prometheus server that you previously set up.
 
 A Grafana sample dashboard is provided in the following JSON file: `contrib/prometheus-exporter/conf/grafana-solr-dashboard.json`.
 You can place this with your other Grafana dashboard configurations and modify it as necessary depending on any customization you've done for the `solr-exporter` configuration.
+
+TIP: You can directly import the Solr dashboard https://grafana.com/grafana/dashboards/12456[via grafana.com] by using the Import function with the dashboard id `12456`.
 
 This screenshot shows what it might look like:
 
