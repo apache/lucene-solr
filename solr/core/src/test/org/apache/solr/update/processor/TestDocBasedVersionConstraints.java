@@ -448,44 +448,46 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
    * Constantly hammer the same doc with multiple concurrent threads and diff versions,
    * confirm that the highest version wins.
    */
-  @Ignore // nocommit debug
+  @Ignore // nocommit - something not air tight about DocBasedVersionConstraintsProcessor?
   public void testConcurrentAdds() throws Exception {
     final int NUM_DOCS = atLeast(50);
     final int MAX_CONCURENT = atLeast(10);
-    ExecutorService runner = testExecutor;
+    ExecutorService runner = ExecutorUtil.newMDCAwareFixedThreadPool(MAX_CONCURENT, new SolrNamedThreadFactory("TestDocBasedVersionConstraints"));
     // runner = Executors.newFixedThreadPool(1);    // to test single threaded
-
-    for (int id = 0; id < NUM_DOCS; id++) {
-      final int numAdds = TestUtil.nextInt(random(), 3, MAX_CONCURENT);
-      final int winner = TestUtil.nextInt(random(), 0, numAdds - 1);
-      final int winnerVersion = atLeast(100);
-      final boolean winnerIsDeleted = (0 == TestUtil.nextInt(random(), 0, 4));
-      List<Callable<Object>> tasks = new ArrayList<>(numAdds);
-      for (int variant = 0; variant < numAdds; variant++) {
-        final boolean iShouldWin = (variant == winner);
-        final long version = (iShouldWin ? winnerVersion
-                : TestUtil.nextInt(random(), 1, winnerVersion - 1));
-        if ((iShouldWin && winnerIsDeleted)
-                || (!iShouldWin && 0 == TestUtil.nextInt(random(), 0, 4))) {
-          tasks.add(delayedDelete("" + id, "" + version));
-        } else {
-          tasks.add(delayedAdd("id", "" + id, "name", "name" + id + "_" + variant,
-                  "my_version_l", "" + version));
+    try {
+      for (int id = 0; id < NUM_DOCS; id++) {
+        final int numAdds = TestUtil.nextInt(random(), 3, MAX_CONCURENT);
+        final int winner = TestUtil.nextInt(random(), 0, numAdds - 1);
+        final int winnerVersion = atLeast(100);
+        final boolean winnerIsDeleted = (0 == TestUtil.nextInt(random(), 0, 4));
+        List<Callable<Object>> tasks = new ArrayList<>(numAdds);
+        for (int variant = 0; variant < numAdds; variant++) {
+          final boolean iShouldWin = (variant==winner);
+          final long version = (iShouldWin ? winnerVersion
+                                : TestUtil.nextInt(random(), 1, winnerVersion - 1));
+          if ((iShouldWin && winnerIsDeleted)
+              || (!iShouldWin && 0 == TestUtil.nextInt(random(), 0, 4))) {
+            tasks.add(delayedDelete(""+id, ""+version));
+          } else {
+            tasks.add(delayedAdd("id",""+id,"name","name"+id+"_"+variant,
+                                 "my_version_l", ""+ version));
+          }
         }
+        runner.invokeAll(tasks);
+        final String expectedDoc = "{'id':'"+id+"','my_version_l':"+winnerVersion +
+          ( ! winnerIsDeleted ? ",'name':'name"+id+"_"+winner+"'}" : "}");
+
+        assertJQ(req("qt","/get", "id",""+id, "fl","id,name,my_version_l")
+                 , "=={'doc':" + expectedDoc + "}");
+        assertU(commit());
+        assertJQ(req("q","id:"+id,
+                     "fl","id,name,my_version_l")
+                 ,"/response/numFound==1"
+                 ,"/response/docs==["+expectedDoc+"]");
       }
-      runner.invokeAll(tasks);
-      final String expectedDoc = "{'id':'" + id + "','my_version_l':" + winnerVersion +
-              (!winnerIsDeleted ? ",'name':'name" + id + "_" + winner + "'}" : "}");
-
-      assertJQ(req("qt", "/get", "id", "" + id, "fl", "id,name,my_version_l")
-              , "=={'doc':" + expectedDoc + "}");
-      assertU(commit());
-      assertJQ(req("q", "id:" + id,
-              "fl", "id,name,my_version_l")
-              , "/response/numFound==1"
-              , "/response/docs==[" + expectedDoc + "]");
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(runner);
     }
-
   }
 
   public void testMissingVersionOnOldDocs() throws Exception {

@@ -465,7 +465,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     String collectionName = "addReplicaColl";
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-        .setMaxShardsPerNode(4)
+        .setMaxShardsPerNode(6)
         .process(cluster.getSolrClient());
 
     ArrayList<String> nodeList

@@ -17,7 +17,6 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -33,15 +32,14 @@ import org.apache.solr.common.ParWork;
  * It uses less memory but ignores the <code>lockTimeoutMs</code>.
  */
 public class VersionBucket {
-  public volatile long highest;
+  public long highest;
 
   private final ReentrantLock lock = new ReentrantLock(true);
   private final Condition lockCondition = lock.newCondition();
 
-  public synchronized void updateHighest(long val) {
-    long fhighest = highest;
-    if (fhighest != 0) {
-      highest = Math.max(fhighest, Math.abs(val));
+  public void updateHighest(long val) {
+    if (highest != 0) {
+      highest = Math.max(highest, Math.abs(val));
     }
   }
   

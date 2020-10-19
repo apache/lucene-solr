@@ -257,7 +257,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           try {
 
             // TODO: possibly set checkDeleteByQueries as a flag on the command?
-            if (log.isDebugEnabled()) log.debug("Local add cmd");
+            if (log.isDebugEnabled()) log.debug("Local add cmd {}", cmd.solrDoc);
             doLocalAdd(cmd);
 
             // if the update updates a doc that is part of a nested structure,

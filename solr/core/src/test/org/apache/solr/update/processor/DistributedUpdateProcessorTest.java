@@ -52,7 +52,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doReturn;
 
-@Ignore // nocommit debug
 public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @Rule 
@@ -69,9 +68,6 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void AfterClass() {
-    if (null != executor) { // may not have inited due to lack of mockito 
-      executor.shutdown();
-    }
     System.clearProperty("enable.update.log");
   }
 
@@ -106,7 +102,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         throw new RuntimeException(e);
       }
     };
-    int succeeded = runCommands(threads, 1000, req, versionAddFunc);
+    int succeeded = runCommands(threads, 500, req, versionAddFunc);
     // only one should succeed
     assertThat(succeeded, is(1));
 

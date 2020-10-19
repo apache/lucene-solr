@@ -38,7 +38,6 @@ import static org.hamcrest.core.Is.is;
 /**
  * Tests for {@link ClassificationUpdateProcessor} and {@link ClassificationUpdateProcessorFactory}
  */
-@Ignore // nocommit leaks update procs in strange way
 public class ClassificationUpdateProcessorIntegrationTest extends SolrTestCaseJ4 {
   /* field names are used in accordance with the solrconfig and schema supplied */
   private static final String ID = "id";
