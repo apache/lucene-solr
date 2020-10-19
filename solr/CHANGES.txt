@@ -16,8 +16,11 @@ Upgrade Notes
   Deprecations include: autoscaling policy, triggers, withCollection handling, simulation framework,
   autoscaling suggestions tab in the UI, autoAddReplicas and UTILIZENODE command.
 
- * SOLR-14930: Rule based replica placement strategy is deprecated and will be replaced in
-    Solr 9.0 by APIs for replica placement and cluster events, with plugin-based implementations.
+* SOLR-14930: Rule based replica placement strategy is deprecated and will be replaced in
+  Solr 9.0 by APIs for replica placement and cluster events, with plugin-based implementations.
+
+* SOLR-14944: Support for detecting spinning disks has been removed in LUCENE-9576. Corresponding
+  "spins" metrics in Solr still exist but now they always return "false" and will be removed in 9.0.
 
 New Features
 ---------------------
