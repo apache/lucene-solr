@@ -128,6 +128,9 @@ Other Changes
 
 * SOLR-14930: Removed rule based replica placement (noble)
 
+* SOLR-14944: Remove the "spins" metrics - support for detection of spinning disks has been
+  removed in LUCENE-9576. (ab)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution

@@ -1228,7 +1228,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     parentContext.gauge(() -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
     parentContext.gauge(() -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
     parentContext.gauge(() -> dataDirPath.toAbsolutePath().toString(), true, "path", Category.CORE.toString(), "fs");
-    parentContext.gauge(() -> false, true, "spins", Category.CORE.toString(), "fs");
   }
 
   public String getMetricTag() {
