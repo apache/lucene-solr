@@ -80,7 +80,7 @@ public final class IndexUpgrader {
 
   /** Parse arguments. */
   @SuppressForbidden(reason = "System.out required: command line tool")
-  public static IndexUpgrader parseArgs(String[] args) throws IOException {
+  static IndexUpgrader parseArgs(String[] args) throws IOException {
     String path = null;
     boolean deletePriorCommits = false;
     InfoStream out = null;

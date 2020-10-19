@@ -1522,14 +1522,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           args.add(dirImpl.getName());
         }
         args.add(path);
-        
-        IndexUpgrader upgrader = null;
-        try {
-          upgrader = IndexUpgrader.parseArgs(args.toArray(new String[0]));
-        } catch (Exception e) {
-          throw new AssertionError("unable to parse args: " + args, e);
-        }
-        upgrader.upgrade();
+
+        IndexUpgrader.main(args.toArray(new String[0]));
         
         Directory upgradedDir = newFSDirectory(dir);
         try {
