@@ -232,7 +232,7 @@ public class PackageManager implements Closeable {
       }
     }
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> clusterPlugins = (Map<String, Object>) result.getOrDefault(ContainerPluginsApi.PLUGINS, Collections.emptyMap());
+    Map<String, Object> clusterPlugins = (Map<String, Object>) result.getOrDefault(ContainerPluginsApi.PLUGIN, Collections.emptyMap());
     for (String key : clusterPlugins.keySet()) {
       // Map<String, String> pluginMeta = (Map<String, String>) clusterPlugins.get(key);
       PluginMeta pluginMeta;
