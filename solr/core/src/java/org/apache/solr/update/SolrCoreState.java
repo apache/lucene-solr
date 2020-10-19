@@ -123,8 +123,7 @@ public abstract class SolrCoreState {
   }
 
   /**
-   * Registers in-flight update requests to this core. This method should only be called
-   * for leader cores.
+   * Registers in-flight update requests to this core.
    *
    * @return true if request was registered, false if update requests are paused
    */
