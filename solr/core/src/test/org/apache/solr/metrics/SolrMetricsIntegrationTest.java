@@ -171,24 +171,12 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertTrue(metrics.containsKey("CONTAINER.fs.totalSpace"));
     assertTrue(metrics.containsKey("CONTAINER.fs.usableSpace"));
     assertTrue(metrics.containsKey("CONTAINER.fs.path"));
-    assertTrue(metrics.containsKey("CONTAINER.fs.spins"));
     assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.totalSpace"));
     assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.usableSpace"));
     assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.path"));
-    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.spins"));
     assertTrue(metrics.containsKey("CONTAINER.version.specification"));
     assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
     Gauge<?> g = (Gauge<?>)metrics.get("CONTAINER.fs.path");
     assertEquals(g.getValue(), cc.getSolrHome());
-    boolean spins = false;
-    g = (Gauge<?>)metrics.get("CONTAINER.fs.coreRoot.spins");
-    assertEquals(spins, g.getValue());
-    g = (Gauge<?>)metrics.get("CONTAINER.fs.spins");
-    if (cc.getConfig().getSolrDataHome() != null) {
-      spins = false;
-      assertEquals(spins, g.getValue());
-    } else {
-      assertEquals(spins, g.getValue());
-    }
   }
 }
