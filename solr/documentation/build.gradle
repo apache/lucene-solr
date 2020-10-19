@@ -15,6 +15,5 @@
  * limitations under the License.
  */
 
-package my.pkg;
 
 description = 'Solr HTML documentation'
