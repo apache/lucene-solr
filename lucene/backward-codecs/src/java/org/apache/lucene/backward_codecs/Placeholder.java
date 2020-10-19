@@ -14,17 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.backward_codecs;
 
-package my.pkg;
-
-import java.util.Map;
-
-import org.apache.solr.pkg.TestPackages;
-
-public class MyPatternReplaceCharFilterFactory extends TestPackages.BasePatternReplaceCharFilterFactory {
-
-  public MyPatternReplaceCharFilterFactory(Map<String, String> args) {
-    super(args);
-  }
+/** Remove this file when adding back compat codecs */
+public class Placeholder {
+  // no instance
+  private Placeholder() {}
 }
-

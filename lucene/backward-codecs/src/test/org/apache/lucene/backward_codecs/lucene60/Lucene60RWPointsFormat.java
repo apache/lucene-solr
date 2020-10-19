@@ -14,17 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.backward_codecs.lucene60;
 
-package my.pkg;
+import java.io.IOException;
 
-import java.util.Map;
+import org.apache.lucene.codecs.PointsWriter;
+import org.apache.lucene.index.SegmentWriteState;
 
-import org.apache.solr.pkg.TestPackages;
+/** RW variant of Lucene60PointsFormat */
+public class Lucene60RWPointsFormat extends Lucene60PointsFormat {
 
-public class MyPatternReplaceCharFilterFactory extends TestPackages.BasePatternReplaceCharFilterFactory {
+  /** Sole constructor. */
+  public Lucene60RWPointsFormat() {}
 
-  public MyPatternReplaceCharFilterFactory(Map<String, String> args) {
-    super(args);
+  @Override
+  public PointsWriter fieldsWriter(SegmentWriteState state) throws IOException {
+    return new Lucene60PointsWriter(state);
   }
-}
 
+}
