@@ -15,16 +15,8 @@
  * limitations under the License.
  */
 
-package my.pkg;
-
-import java.util.Map;
-
-import org.apache.solr.pkg.TestPackages;
-
-public class MyPatternReplaceCharFilterFactory extends TestPackages.BasePatternReplaceCharFilterFactory {
-
-  public MyPatternReplaceCharFilterFactory(Map<String, String> args) {
-    super(args);
-  }
-}
-
+/**
+ * Components from the Lucene 7.0 index format.  See {@link org.apache.lucene.codecs.lucene86}
+ * for an overview of the current index format.
+ */
+package org.apache.lucene.backward_codecs.lucene70;

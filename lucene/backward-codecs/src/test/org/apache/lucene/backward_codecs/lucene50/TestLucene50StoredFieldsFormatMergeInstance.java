@@ -14,17 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.backward_codecs.lucene50;
 
-package my.pkg;
+/**
+ * Test the merge instance of the Lucene50 stored fields format.
+ */
+public class TestLucene50StoredFieldsFormatMergeInstance extends TestLucene50StoredFieldsFormat {
 
-import java.util.Map;
-
-import org.apache.solr.pkg.TestPackages;
-
-public class MyPatternReplaceCharFilterFactory extends TestPackages.BasePatternReplaceCharFilterFactory {
-
-  public MyPatternReplaceCharFilterFactory(Map<String, String> args) {
-    super(args);
+  @Override
+  protected boolean shouldTestMergeInstance() {
+    return true;
   }
-}
 
+}
