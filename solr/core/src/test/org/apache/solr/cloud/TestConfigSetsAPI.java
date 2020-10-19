@@ -933,7 +933,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String uriEnding;
     boolean usePut = false;
     if (v2) {
-      uriEnding = "/api/cluster/configs/" + configSetName+suffix + "/file?path=" + uploadPath + (cleanup? "&cleanup=true" : "");
+      uriEnding = "/api/cluster/configs/" + configSetName+suffix + "/files/" + uploadPath + (cleanup? "?cleanup=true" : "");
       usePut = overwrite;
     } else {
       uriEnding = "/solr/admin/configs?action=UPLOAD&name="+configSetName+suffix+"&filePath="+uploadPath + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : "");

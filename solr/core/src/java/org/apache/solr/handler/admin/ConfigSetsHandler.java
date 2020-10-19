@@ -174,7 +174,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     boolean requestIsTrusted = isTrusted(req, coreContainer.getAuthenticationPlugin());
 
     // Get upload parameters
-    String singleFilePath = req.getParams().get(ConfigSetParams.PATH, req.getParams().get(ConfigSetParams.FILE_PATH, ""));
+    String singleFilePath = req.getParams().get(ConfigSetParams.FILE_PATH, "");
     boolean allowOverwrite = req.getParams().getBool(ConfigSetParams.OVERWRITE, false);
     boolean cleanup = req.getParams().getBool(ConfigSetParams.CLEANUP, false);
 
@@ -207,7 +207,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
           zkClient.makePath(filePathInZk, IOUtils.toByteArray(inputStream), CreateMode.PERSISTENT, null, !allowOverwrite, true);
         } catch(KeeperException.NodeExistsException nodeExistsException) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
-                  "The path " + singleFilePath + " for configSet " + configSetName + " already exists. In order to overwrite, provide overwrite=true.");
+                  "The path " + singleFilePath + " for configSet " + configSetName + " already exists. In order to overwrite, provide overwrite=true or use an HTTP PUT with the V2 API.");
         }
       }
       return;

@@ -159,32 +159,34 @@ public class ClusterAPI {
   }
 
   @EndPoint(method = POST,
-      path =   "/cluster/configs/{name}/file",
+      path =   "/cluster/configs/{name}/files/*",
       permission = CONFIG_EDIT_PERM
   )
   public void insertIntoConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    String path = req.getParams().get(ConfigSetParams.PATH);
+    String path = req.getPathTemplateValues().get("*");
     if (path == null || path.isBlank()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "In order to insert a file into a configSet, a valid 'path' parameter must be provided.");
-    }
-    req = wrapParams(req,
-            "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
-            CommonParams.NAME, req.getPathTemplateValues().get("name"));
-    configSetsHandler.handleRequestBody(req, rsp);
-  }
-
-  @EndPoint(method = PUT,
-      path =   "/cluster/configs/{name}/file",
-      permission = CONFIG_EDIT_PERM
-  )
-  public void insertIntoConfigSetWithOverwrite(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    String path = req.getParams().get(ConfigSetParams.PATH);
-    if (path == null || path.isBlank()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "In order to insert a file into a configSet, a valid 'path' parameter must be provided.");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "In order to insert a file into a configSet, a filePath must be provided in the url after files/.");
     }
     req = wrapParams(req,
             "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
             CommonParams.NAME, req.getPathTemplateValues().get("name"),
+            ConfigSetParams.FILE_PATH, path);
+    configSetsHandler.handleRequestBody(req, rsp);
+  }
+
+  @EndPoint(method = PUT,
+      path =   "/cluster/configs/{name}/files/*",
+      permission = CONFIG_EDIT_PERM
+  )
+  public void insertIntoConfigSetWithOverwrite(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    String path = req.getPathTemplateValues().get("*");
+    if (path == null || path.isBlank()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "In order to overwrite a file in a configSet, a filePath must be provided in the url after files/.");
+    }
+    req = wrapParams(req,
+            "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
+            CommonParams.NAME, req.getPathTemplateValues().get("name"),
+            ConfigSetParams.FILE_PATH, path,
             ConfigSetParams.OVERWRITE, true,
             ConfigSetParams.CLEANUP, false);
     configSetsHandler.handleRequestBody(req, rsp);
