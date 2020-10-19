@@ -47,6 +47,7 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -277,6 +278,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   }
   
   @Test
+  @Ignore // nocommit - causes an updatelog leak
   public void testReloadCoreAfterFailure() throws Exception {
     cores.shutdown();
     useFactory(null); // use FS factory
