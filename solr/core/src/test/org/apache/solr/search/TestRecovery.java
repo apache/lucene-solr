@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.search.TestRecovery.VersionProvider.getNextVersion;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-@LuceneTestCase.Nightly // nocommit speedup
+@LuceneTestCase.Nightly // nocommit speedup / debug due to changes
 public class TestRecovery extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -77,7 +77,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   @Before
   public void beforeTest() throws Exception {
-    System.clearProperty("solr.skipCommitOnClose");
+    System.setProperty("solr.skipCommitOnClose", "false");
     savedFactory = System.getProperty("solr.DirectoryFactory");
     // mockdir will say files are left open
     // System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
@@ -380,7 +380,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testLogReplayWithReorderedDBQ() throws Exception {
     testLogReplayWithReorderedDBQWrapper(() -> {
           String v1010 = getNextVersion();

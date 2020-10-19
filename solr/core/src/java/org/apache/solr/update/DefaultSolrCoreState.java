@@ -109,12 +109,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         // indexWriter may be null if there was a failure in opening the search during core init,
         // such as from an index corruption issue (see TestCoreAdmin#testReloadCoreAfterFailure)
         if (indexWriter != null) {
-          indexWriter.commit();
+          closer.closeWriter(indexWriter);
         }
-        closer.closeWriter(indexWriter);
       } else if (indexWriter != null) {
         log.debug("closing IndexWriter...");
-        indexWriter.commit();
         indexWriter.close();
       }
       indexWriter = null;
