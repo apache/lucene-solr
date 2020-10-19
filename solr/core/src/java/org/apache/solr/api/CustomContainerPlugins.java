@@ -34,7 +34,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
-import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -57,8 +56,9 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 import static org.apache.solr.common.util.Utils.makeMap;
 
 public class CustomContainerPlugins implements ClusterPropertiesListener, MapWriter {
-  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
 
   private final List<PluginRegistryListener> listeners = new CopyOnWriteArrayList<>();
 
@@ -124,7 +124,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
         ApiInfo apiInfo = currentPlugins.remove(e.getKey());
         if (apiInfo == null) continue;
         listeners.forEach(listener -> listener.deleted(apiInfo));
-        handleClusterSingleton(null, apiInfo);
         for (ApiHolder holder : apiInfo.holders) {
           Api old = containerApiBag.unregister(holder.api.getEndPoint().method()[0],
               getActualPath(apiInfo, holder.api.getEndPoint().path()[0]));
@@ -156,7 +155,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
           currentPlugins.put(e.getKey(), apiInfo);
           final ApiInfo apiInfoFinal = apiInfo;
           listeners.forEach(listener -> listener.added(apiInfoFinal));
-          handleClusterSingleton(apiInfo, null);
         } else {
           //this plugin is being updated
           ApiInfo old = currentPlugins.put(e.getKey(), apiInfo);
@@ -166,7 +164,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
           }
           final ApiInfo apiInfoFinal = apiInfo;
           listeners.forEach(listener -> listener.modified(old, apiInfoFinal));
-          handleClusterSingleton(apiInfo, old);
           if (old != null) {
             //this is an update of the plugin. But, it is possible that
             // some paths are remved in the newer version of the plugin
@@ -184,36 +181,6 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
         }
       }
 
-    }
-  }
-
-  private void handleClusterSingleton(ApiInfo newApiInfo, ApiInfo oldApiInfo) {
-    if (newApiInfo != null) {
-      // register new api
-      Object instance = newApiInfo.getInstance();
-      if (instance instanceof ClusterSingleton) {
-        ClusterSingleton singleton = (ClusterSingleton) instance;
-        coreContainer.getClusterSingletons().getSingletons().put(singleton.getName(), singleton);
-        // check to see if we should immediately start this singleton
-        if (coreContainer.getZkController() != null &&
-            coreContainer.getZkController().getOverseer() != null &&
-            !coreContainer.getZkController().getOverseer().isClosed()) {
-          try {
-            singleton.start();
-          } catch (Exception exc) {
-            log.warn("Exception starting ClusterSingleton {}: {}", newApiInfo, exc);
-          }
-        }
-      }
-    }
-    if (oldApiInfo != null) {
-      // stop & unregister the old api
-      Object instance = oldApiInfo.getInstance();
-      if (instance instanceof ClusterSingleton) {
-        ClusterSingleton singleton = (ClusterSingleton) instance;
-        singleton.stop();
-        coreContainer.getClusterSingletons().getSingletons().remove(singleton.getName());
-      }
     }
   }
 
@@ -329,7 +296,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       }
 
       try {
-        List<Api> apis = AnnotatedApi.getApis(klas, null, false);
+        List<Api> apis = AnnotatedApi.getApis(klas, null, true);
         for (Object api : apis) {
           EndPoint endPoint = ((AnnotatedApi) api).getEndPoint();
           if (endPoint.path().length > 1 || endPoint.method().length > 1) {
@@ -381,7 +348,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
         }
       }
       this.holders = new ArrayList<>();
-      for (Api api : AnnotatedApi.getApis(instance.getClass(), instance, false)) {
+      for (Api api : AnnotatedApi.getApis(instance.getClass(), instance, true)) {
         holders.add(new ApiHolder((AnnotatedApi) api));
       }
     }
@@ -421,12 +388,18 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     return null;
   }
 
-  interface PluginRegistryListener {
+  /**
+   * Listener for notifications about added / deleted / modified plugins.
+   */
+  public interface PluginRegistryListener {
 
+    /** Called when a new plugin is added. */
     void added(ApiInfo plugin);
 
+    /** Called when an existing plugin is deleted. */
     void deleted(ApiInfo plugin);
 
+    /** Called when an existing plugin is replaced. */
     void modified(ApiInfo old, ApiInfo replacement);
 
   }

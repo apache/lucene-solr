@@ -39,12 +39,9 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -172,33 +169,6 @@ public class CoreContainer {
     }
   }
 
-  public static class ClusterSingletons {
-    private Map<String, ClusterSingleton> singletonMap = new ConcurrentHashMap<>();
-    // we use this latch to delay the initial startup of singletons, due to
-    // the leader election occurring in parallel with the rest of the load() method.
-    private CountDownLatch readyLatch = new CountDownLatch(1);
-
-    public Map<String, ClusterSingleton> getSingletons() {
-      return singletonMap;
-    }
-
-    public boolean isReady() {
-      return readyLatch.getCount() > 0;
-    }
-
-    public void setReady() {
-      readyLatch.countDown();
-    }
-
-    public void waitUntilReady(long timeout, TimeUnit timeUnit)
-        throws InterruptedException, TimeoutException {
-      boolean await = readyLatch.await(timeout, timeUnit);
-      if (!await) {
-        throw new TimeoutException("Timed out waiting for ClusterSingletons to become ready.");
-      }
-    }
-  }
-
   private volatile PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
   /**
@@ -276,7 +246,11 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
-  private final ClusterSingletons clusterSingletons = new ClusterSingletons();
+  private final ClusterSingletons clusterSingletons = new ClusterSingletons(
+      () -> getZkController() != null &&
+          getZkController().getOverseer() != null &&
+          !getZkController().getOverseer().isClosed(),
+      (r) -> this.runAsync(r));
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 
@@ -695,6 +669,8 @@ public class CoreContainer {
       loader.reloadLuceneSPI();
     }
 
+    customContainerPlugins.registerListener(clusterSingletons.getPluginRegistryListener());
+
     packageStoreAPI = new PackageStoreAPI(this);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
@@ -915,7 +891,8 @@ public class CoreContainer {
       containerHandlers.keySet().forEach(handlerName -> {
         SolrRequestHandler handler = containerHandlers.get(handlerName);
         if (handler instanceof ClusterSingleton) {
-          clusterSingletons.singletonMap.put(handlerName, (ClusterSingleton) handler);
+          ClusterSingleton singleton = (ClusterSingleton) handler;
+          clusterSingletons.getSingletons().put(singleton.getName(), singleton);
         }
       });
 
