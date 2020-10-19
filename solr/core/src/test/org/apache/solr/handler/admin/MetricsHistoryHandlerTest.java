@@ -58,6 +58,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     Map<String, Object> args = new HashMap<>();
     args.put(MetricsHistoryHandler.SYNC_PERIOD_PROP, 1);
     args.put(MetricsHistoryHandler.COLLECT_PERIOD_PROP, 1);

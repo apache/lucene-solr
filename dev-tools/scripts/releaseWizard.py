@@ -150,11 +150,8 @@ def replace_templates(text):
             tpl_lines.append(line)
     return "\n".join(tpl_lines)
 
-
 def getScriptVersion():
-    topLevelDir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
-    reBaseVersion = re.compile(r'version\.base\s*=\s*(\d+\.\d+\.\d+)')
-    return reBaseVersion.search(open('%s/lucene/version.properties' % topLevelDir).read()).group(1)
+    return scriptutil.find_current_version()
 
 
 def get_editor():

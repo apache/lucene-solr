@@ -1,17 +1,28 @@
 # Apache Lucene Migration Guide
 
+## JapanesePartOfSpeechStopFilterFactory loads default stop tags if "tags" argument not specified (LUCENE-9567)
+
+Previously, JapanesePartOfSpeechStopFilterFactory added no filter if `args` didn't include "tags". Now, it will load 
+the default stop tags returned by `JapaneseAnalyzer.getDefaultStopTags()` (i.e. the tags from`stoptags.txt` in the 
+`lucene-analyzers-kuromoji` jar.)
+
 ## ICUCollationKeyAnalyzer is renamed (LUCENE-9558)
 
 o.a.l.collation.ICUCollationAnalyzer is renamed to o.a.l.a.icu.ICUCollationKeyAnalyzer.
 Also, its dependant classes are renamed in the same way.
 
+## Rename of binary artifacts from '**-analyzers-**' to '**-analysis-**' (LUCENE-9562)
+
+All binary analysis packages (and corresponding Maven artifacts) have been renamed and are
+now consistent with repository module 'analysis'. 
+
 ## Base and concrete analysis factories are moved / package renamed (LUCENE-9317)
 
 1. Base analysis factories are moved to `lucene-core`, also their package names are renamed.
 
-- o.a.l.a.util.TokenizerFactory (lucene-analyzers-common) is moved to o.a.l.a.TokenizerFactory (lucene-core)
-- o.a.l.a.util.CharFilterFactory (lucene-analyzers-common) is moved to o.a.l.a.CharFilterFactory (lucene-core)
-- o.a.l.a.util.TokenFilterFactory (lucene-analyzers-common) is moved to o.a.l.a.TokenFilterFactory (lucene-core)
+- o.a.l.a.util.TokenizerFactory (lucene-analysis-common) is moved to o.a.l.a.TokenizerFactory (lucene-core)
+- o.a.l.a.util.CharFilterFactory (lucene-analysis-common) is moved to o.a.l.a.CharFilterFactory (lucene-core)
+- o.a.l.a.util.TokenFilterFactory (lucene-analysis-common) is moved to o.a.l.a.TokenFilterFactory (lucene-core)
 
 The service provider files placed in `META-INF/services` for custom analysis factories should be renamed as follows:
 
@@ -21,7 +32,7 @@ The service provider files placed in `META-INF/services` for custom analysis fac
 
 2. o.a.l.a.standard.StandardTokenizerFactory is moved to `lucene-core` module.
 
-3. o.a.l.a.standard package in `lucene-analyzers-common` module is split into o.a.l.a.classic and o.a.l.a.email.
+3. o.a.l.a.standard package in `lucene-analysis-common` module is split into o.a.l.a.classic and o.a.l.a.email.
 
 ## RegExpQuery now rejects invalid backslashes (LUCENE-9370)
 

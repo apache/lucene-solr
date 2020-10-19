@@ -774,9 +774,11 @@ public class CoreContainer {
 
     createMetricsHistoryHandler();
 
-    metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
-    // may want to add some configuration here in the future
-    metricsCollectorHandler.init(null);
+    if (cfg.getMetricsConfig().isEnabled()) {
+      metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
+      // may want to add some configuration here in the future
+      metricsCollectorHandler.init(null);
+    }
 
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
     securityConfHandler.initializeMetrics(solrMetricsContext, AUTHZ_PATH);
@@ -807,30 +809,12 @@ public class CoreContainer {
         true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(() -> dataHome.toString(),
         true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    solrMetricsContext.gauge(() -> {
-          try {
-            return org.apache.lucene.util.IOUtils.spins(dataHome);
-          } catch (IOException e) {
-            // default to spinning
-            return true;
-          }
-        },
-        true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
         true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
         true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toString(),
         true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-    solrMetricsContext.gauge(() -> {
-          try {
-            return org.apache.lucene.util.IOUtils.spins(cfg.getCoreRootDirectory());
-          } catch (IOException e) {
-            // default to spinning
-            return true;
-          }
-        },
-        true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     // add version information
     solrMetricsContext.gauge(() -> this.getClass().getPackage().getSpecificationVersion(),
         true, "specification", SolrInfoBean.Category.CONTAINER.toString(), "version");
@@ -947,6 +931,10 @@ public class CoreContainer {
   @SuppressWarnings({"unchecked"})
   private void createMetricsHistoryHandler() {
     PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
+    if (plugin != null && MetricsConfig.NOOP_IMPL_CLASS.equals(plugin.className)) {
+      // still create the handler but it will be disabled
+      plugin = null;
+    }
     Map<String, Object> initArgs;
     if (plugin != null && plugin.initArgs != null) {
       initArgs = plugin.initArgs.asMap(5);

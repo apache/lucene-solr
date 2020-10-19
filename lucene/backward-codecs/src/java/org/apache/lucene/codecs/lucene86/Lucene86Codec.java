@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PointsFormat;
@@ -134,6 +135,11 @@ public class Lucene86Codec extends Codec {
   @Override
   public final PointsFormat pointsFormat() {
     return pointsFormat;
+  }
+
+  @Override
+  public final VectorFormat vectorFormat() {
+    return VectorFormat.EMPTY;
   }
 
   /** Returns the postings format that should be used for writing

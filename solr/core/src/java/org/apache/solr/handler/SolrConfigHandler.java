@@ -598,26 +598,23 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     @SuppressWarnings({"unchecked"})
     private boolean verifyClass(CommandOperation op, String clz, @SuppressWarnings({"rawtypes"})Class expected) {
       if (clz == null) return true;
-      if (!"true".equals(String.valueOf(op.getStr("runtimeLib", null)))) {
-        PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
-        //this is not dynamically loaded so we can verify the class right away
-        try {
-          if(expected == Expressible.class) {
-            @SuppressWarnings("resource")
-            SolrResourceLoader resourceLoader = info.pkgName == null ?
-                req.getCore().getResourceLoader() :
-                req.getCore().getResourceLoader(info.pkgName);
-            resourceLoader.findClass(info.className, expected);
-          } else {
-            req.getCore().createInitInstance(info, expected, clz, "");
-          }
-        } catch (Exception e) {
-          log.error("Error checking plugin : ", e);
-          op.addError(e.getMessage());
-          return false;
+      PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
+      try {
+        if (expected == Expressible.class) {
+          @SuppressWarnings("resource")
+          SolrResourceLoader resourceLoader = info.pkgName == null ?
+              req.getCore().getResourceLoader() :
+              req.getCore().getResourceLoader(info.pkgName);
+          resourceLoader.findClass(info.className, expected);
+        } else {
+          req.getCore().createInitInstance(info, expected, clz, "");
         }
-
+      } catch (Exception e) {
+        log.error("Error checking plugin : ", e);
+        op.addError(e.getMessage());
+        return false;
       }
+
       return true;
     }
 

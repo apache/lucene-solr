@@ -165,14 +165,14 @@ CAUTION: This chain definition will make a number of copy field rules for string
 
 If you're interested in more information about the classes used in this chain, here are links to the Javadocs for update processor factories mentioned above:
 
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/UUIDUpdateProcessorFactory.html[UUIDUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/FieldNameMutatingUpdateProcessorFactory.html[FieldNameMutatingUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseBooleanFieldUpdateProcessorFactory.html[ParseBooleanFieldUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseLongFieldUpdateProcessorFactory.html[ParseLongFieldUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDoubleFieldUpdateProcessorFactory.html[ParseDoubleFieldUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]
-* {solr-javadocs}/solr-core/org/apache/solr/update/processor/AddSchemaFieldsUpdateProcessorFactory.html[AddSchemaFieldsUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/UUIDUpdateProcessorFactory.html[UUIDUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/FieldNameMutatingUpdateProcessorFactory.html[FieldNameMutatingUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/ParseBooleanFieldUpdateProcessorFactory.html[ParseBooleanFieldUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/ParseLongFieldUpdateProcessorFactory.html[ParseLongFieldUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/ParseDoubleFieldUpdateProcessorFactory.html[ParseDoubleFieldUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]
+* {solr-javadocs}/core/org/apache/solr/update/processor/AddSchemaFieldsUpdateProcessorFactory.html[AddSchemaFieldsUpdateProcessorFactory]
 
 === Set the Default UpdateRequestProcessorChain
 

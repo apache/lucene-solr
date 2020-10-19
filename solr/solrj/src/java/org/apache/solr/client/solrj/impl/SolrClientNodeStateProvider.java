@@ -267,31 +267,33 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       try {
         SimpleSolrResponse rsp = snitchContext.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
         NamedList<?> metrics = (NamedList<?>) rsp.nl.get("metrics");
-
-        if (requestedTags.contains(Variable.FREEDISK.tagName)) {
-          Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.usableSpace");
-          if (n != null) ctx.getTags().put(Variable.FREEDISK.tagName, Variable.FREEDISK.convertVal(n));
-        }
-        if (requestedTags.contains(Variable.TOTALDISK.tagName)) {
-          Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.totalSpace");
-          if (n != null) ctx.getTags().put(Variable.TOTALDISK.tagName, Variable.TOTALDISK.convertVal(n));
-        }
-        if (requestedTags.contains(CORES)) {
-          NamedList<?> node = (NamedList<?>) metrics.get("solr.node");
-          int count = 0;
-          for (String leafCoreMetricName : new String[]{"lazy", "loaded", "unloaded"}) {
-            Number n = (Number) node.get("CONTAINER.cores." + leafCoreMetricName);
-            if (n != null) count += n.intValue();
+        if (metrics != null) {
+          // metrics enabled
+          if (requestedTags.contains(Variable.FREEDISK.tagName)) {
+            Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.usableSpace");
+            if (n != null) ctx.getTags().put(Variable.FREEDISK.tagName, Variable.FREEDISK.convertVal(n));
           }
-          ctx.getTags().put(CORES, count);
-        }
-        if (requestedTags.contains(SYSLOADAVG)) {
-          Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/os.systemLoadAverage");
-          if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue() * 100.0d);
-        }
-        if (requestedTags.contains(HEAPUSAGE)) {
-          Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/memory.heap.usage");
-          if (n != null) ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
+          if (requestedTags.contains(Variable.TOTALDISK.tagName)) {
+            Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.totalSpace");
+            if (n != null) ctx.getTags().put(Variable.TOTALDISK.tagName, Variable.TOTALDISK.convertVal(n));
+          }
+          if (requestedTags.contains(CORES)) {
+            NamedList<?> node = (NamedList<?>) metrics.get("solr.node");
+            int count = 0;
+            for (String leafCoreMetricName : new String[]{"lazy", "loaded", "unloaded"}) {
+              Number n = (Number) node.get("CONTAINER.cores." + leafCoreMetricName);
+              if (n != null) count += n.intValue();
+            }
+            ctx.getTags().put(CORES, count);
+          }
+          if (requestedTags.contains(SYSLOADAVG)) {
+            Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/os.systemLoadAverage");
+            if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue() * 100.0d);
+          }
+          if (requestedTags.contains(HEAPUSAGE)) {
+            Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/memory.heap.usage");
+            if (n != null) ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
+          }
         }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting remote info", e);
