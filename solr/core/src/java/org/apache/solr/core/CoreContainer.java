@@ -38,10 +38,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -1000,7 +997,16 @@ public class CoreContainer {
         cancelCoreRecoveries();
         zkSys.zkController.preClose();
         // doesn't need to unpause here since we are shutting down
-        getCores().parallelStream().map(SolrCore::getSolrCoreState).forEach(SolrCoreState::pauseUpdatesAndAwaitInflightRequests);
+        getCores().parallelStream().forEach(solrCore -> {
+          SolrCoreState solrCoreState = solrCore.getSolrCoreState();
+          try {
+            solrCoreState.pauseUpdatesAndAwaitInflightRequests();
+          } catch (TimeoutException e) {
+            log.warn("Timed out waiting for in-flight update requests to complete for core: {}", solrCore.getName());
+          } catch (InterruptedException e) {
+            log.warn("Interrupted while waiting for in-flight update requests to complete for core: {}", solrCore.getName());
+          }
+        });
         zkSys.zkController.tryCancelAllElections();
       }
 

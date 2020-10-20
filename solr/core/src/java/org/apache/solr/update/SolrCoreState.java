@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
@@ -42,6 +44,8 @@ import java.util.concurrent.locks.Lock;
  */
 public abstract class SolrCoreState {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final int PAUSE_UPDATES_TIMEOUT_MILLIS = Integer.getInteger("solr.cloud.wait-for-updates-on-shutdown-millis", 2500);
   
   protected boolean closed = false;
   private final Object updateLock = new Object();
@@ -108,18 +112,13 @@ public abstract class SolrCoreState {
    * Pauses all update requests to this core and waits (indefinitely) for all in-flight
    * update requests to finish
    */
-  public void pauseUpdatesAndAwaitInflightRequests() {
+  public void pauseUpdatesAndAwaitInflightRequests() throws TimeoutException, InterruptedException {
     if (pauseUpdateRequests.compareAndSet(false, true)) {
-      inflightUpdatesCounter.register();
-      inflightUpdatesCounter.arriveAndAwaitAdvance();
+      int arrivalNumber = inflightUpdatesCounter.register();
+      if (arrivalNumber != -1) {
+        inflightUpdatesCounter.awaitAdvanceInterruptibly(inflightUpdatesCounter.arrive(), PAUSE_UPDATES_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+      }
     }
-  }
-
-  /**
-   * Unpauses update requests to this core
-   */
-  public void unpauseUpdates() {
-    this.pauseUpdateRequests.set(false);
   }
 
   /**

@@ -653,7 +653,12 @@ public class ZkController implements Closeable {
     customThreadPool.submit(() -> Collections.singleton(overseer).parallelStream().forEach(IOUtils::closeQuietly));
 
     try {
-      customThreadPool.submit(() -> electionContexts.values().parallelStream().forEach(IOUtils::closeQuietly));
+      customThreadPool.submit(() -> {
+        Collection<ElectionContext> values = electionContexts.values();
+        synchronized (electionContexts) {
+          values.forEach(IOUtils::closeQuietly);
+        }
+      });
 
     } finally {
 
@@ -1838,20 +1843,26 @@ public class ZkController implements Closeable {
     }
   }
 
+  /**
+   * Attempts to cancel all leader elections. This method should be called on node shutdown.
+   */
   public void tryCancelAllElections() {
     if (zkClient.isClosed()) {
       return;
     }
-    electionContexts.values().parallelStream().forEach(context -> {
-      try {
-        context.cancelElection();
-        context.close();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      } catch (KeeperException e) {
-        log.error("Error on cancelling elections of {}", context.leaderPath, e);
-      }
-    });
+    Collection<ElectionContext> values = electionContexts.values();
+    synchronized (electionContexts) {
+      values.forEach(context -> {
+        try {
+          context.cancelElection();
+          context.close();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        } catch (KeeperException e) {
+          log.warn("Error on cancelling elections of {}", context.leaderPath, e);
+        }
+      });
+    }
   }
 
   private ZkCoreNodeProps waitForLeaderToSeeDownState(
