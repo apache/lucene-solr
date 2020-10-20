@@ -53,6 +53,8 @@ import static org.apache.solr.cloud.autoscaling.TriggerEvent.NODE_NAMES;
 public class ComputePlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String DIAGNOSTICS = "__compute_diag__";
+
   // accept all collections by default
   Predicate<String> collectionsPredicate = s -> true;
 
@@ -132,6 +134,9 @@ public class ComputePlanAction extends TriggerActionBase {
           log.debug("-- adjusting limit due to explicitly requested number of ops={}", requestedOperations);
           opLimit = requestedOperations;
         }
+        addDiagnostics(event, "maxOperations", maxOperations);
+        addDiagnostics(event, "requestedOperations", requestedOperations);
+        addDiagnostics(event, "opLimit", opLimit);
         do {
           // computing changes in large clusters may take a long time
           if (Thread.currentThread().isInterrupted()) {
@@ -158,6 +163,7 @@ public class ComputePlanAction extends TriggerActionBase {
               //uncomment the following to log zero operations
 //              PolicyHelper.logState(cloudManager, initialSuggester);
               log.debug("-- no more operations suggested, stopping after {} ops...", (opCount - 1));
+              addDiagnostics(event, "noSuggestionsStopAfter", (opCount - 1));
               break;
             } else {
               log.info("Computed plan empty, remained {} requested ops to try.", opCount - opLimit);
@@ -175,10 +181,11 @@ public class ComputePlanAction extends TriggerActionBase {
             operations.add(operation);
             return operations;
           });
-          if (opCount > opLimit) {
+          if (opCount >= opLimit) {
             log.debug("-- reached limit of maxOps={}, stopping.", opLimit);
+            addDiagnostics(event, "opLimitReached", true);
           }
-        } while (opCount <= opLimit);
+        } while (opCount < opLimit);
       } finally {
         releasePolicySession(sessionWrapper, session);
       }
@@ -192,6 +199,14 @@ public class ComputePlanAction extends TriggerActionBase {
     sessionWrapper.returnSession(session);
     sessionWrapper.release();
 
+  }
+
+  private void addDiagnostics(TriggerEvent event, String key, Object value) {
+    if (log.isDebugEnabled()) {
+      Map<String, Object> diag = (Map<String, Object>) event.getProperties()
+          .computeIfAbsent(DIAGNOSTICS, n -> new HashMap<>());
+      diag.put(key, value);
+    }
   }
 
   protected int getMaxNumOps(TriggerEvent event, AutoScalingConfig autoScalingConfig, ClusterState clusterState) {
@@ -210,6 +225,7 @@ public class ComputePlanAction extends TriggerActionBase {
       totalRF.addAndGet(rf * coll.getSlices().size());
     });
     int totalMax = clusterState.getLiveNodes().size() * totalRF.get() * 3;
+    addDiagnostics(event, "estimatedMaxOps", totalMax);
     int maxOp = ((Number) autoScalingConfig.getProperties().getOrDefault(AutoScalingParams.MAX_COMPUTE_OPERATIONS, totalMax)).intValue();
     Object o = event.getProperty(AutoScalingParams.MAX_COMPUTE_OPERATIONS, maxOp);
     if (o != null) {
@@ -219,8 +235,11 @@ public class ComputePlanAction extends TriggerActionBase {
         log.warn("Invalid '{}' event property: {}, using default {}", AutoScalingParams.MAX_COMPUTE_OPERATIONS, o, maxOp);
       }
     }
-    // try at least one operation
-    if (maxOp < 1) {
+    if (maxOp < 0) {
+      // unlimited
+      maxOp = Integer.MAX_VALUE;
+    } else if (maxOp < 1) {
+      // try at least one operation
       log.debug("-- estimated maxOp={}, resetting to 1...", maxOp);
       maxOp = 1;
     }
@@ -291,13 +310,17 @@ public class ComputePlanAction extends TriggerActionBase {
       case MOVEREPLICA:
         Suggester s = session.getSuggester(action)
                 .hint(Suggester.Hint.SRC_NODE, event.getProperty(NODE_NAMES));
-        if (applyCollectionHints(cloudManager, s) == 0) return NoneSuggester.get(session);
+        if (applyCollectionHints(cloudManager, s) == 0) {
+          addDiagnostics(event, "noRelevantCollections", true);
+          return NoneSuggester.get(session);
+        }
         return s;
       case DELETENODE:
         int start = (Integer)event.getProperty(START, 0);
         @SuppressWarnings({"unchecked"})
         List<String> srcNodes = (List<String>) event.getProperty(NODE_NAMES);
         if (srcNodes.isEmpty() || start >= srcNodes.size()) {
+          addDiagnostics(event, "noSourceNodes", true);
           return NoneSuggester.get(session);
         }
         String sourceNode = srcNodes.get(start);
@@ -305,6 +328,7 @@ public class ComputePlanAction extends TriggerActionBase {
                 .hint(Suggester.Hint.SRC_NODE, event.getProperty(NODE_NAMES));
         if (applyCollectionHints(cloudManager, s) == 0) {
           log.debug("-- no relevant collections on {}, no operations computed.", srcNodes);
+          addDiagnostics(event, "noRelevantCollections", true);
           return NoneSuggester.get(session);
         }
         s.hint(Suggester.Hint.SRC_NODE, Collections.singletonList(sourceNode));
@@ -359,6 +383,7 @@ public class ComputePlanAction extends TriggerActionBase {
                   }
                 });
         log.debug("-- NODE_ADDED: ADDREPLICA suggester configured with {} collection/shard hints.", collShards.size());
+        addDiagnostics(event, "relevantCollShard", collShards);
         suggester.hint(Suggester.Hint.COLL_SHARD, collShards);
         suggester.hint(Suggester.Hint.REPLICATYPE, replicaType);
         break;
