@@ -42,7 +42,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.Test;
 
-import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
