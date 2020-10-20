@@ -16,10 +16,15 @@
  */
 package org.apache.solr.cloud;
 
-  
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -37,12 +42,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-
+import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
@@ -52,7 +52,6 @@ import static org.apache.solr.common.util.Utils.makeMap;
  */
 @Slow
 @SuppressSSL
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
 
   @Test
@@ -63,7 +62,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     testMigrateSSL(new SSLTestConfig(false, false));
   }
   
-  public void testMigrateSSL(SSLTestConfig sslConfig) throws Exception {
+  private void testMigrateSSL(SSLTestConfig sslConfig) throws Exception {
     String urlScheme = sslConfig.isSSLMode() ? "https" : "http";
     setUrlScheme(urlScheme);
     
@@ -103,7 +102,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     assertEquals("Wrong number of replicas found", 4, replicas.size());
     for(Replica replica : replicas) {
       assertTrue("Replica didn't have the proper urlScheme in the ClusterState",
-          StringUtils.startsWith(replica.getStr(ZkStateReader.BASE_URL_PROP), urlScheme));
+          StringUtils.startsWith(replica.getBaseUrl(), urlScheme));
     }
   }
   
@@ -118,6 +117,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   }
   
   private void setUrlScheme(String value) throws Exception {
+    //System.clearProperty(URL_SCHEME);
     @SuppressWarnings("rawtypes")
     Map m = makeMap("action", CollectionAction.CLUSTERPROP.toString()
         .toLowerCase(Locale.ROOT), "name", "urlScheme", "val", value);

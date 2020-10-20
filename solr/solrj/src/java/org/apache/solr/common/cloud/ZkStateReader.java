@@ -44,6 +44,7 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrCloseable;
@@ -63,6 +64,8 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptySortedSet;
+import static org.apache.solr.common.cloud.GlobalStateVars.HTTP;
+import static org.apache.solr.common.cloud.GlobalStateVars.HTTPS_PORT_PROP;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements SolrCloseable {
@@ -798,7 +801,11 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException {
-    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderRetry(collection, shard, timeout));
+    Replica replica = getLeaderRetry(collection, shard, timeout);
+    if (replica == null) {
+      return null;
+    }
+    ZkCoreNodeProps props = new ZkCoreNodeProps(replica);
     return props.getCoreUrl();
   }
 
@@ -1002,6 +1009,10 @@ public class ZkStateReader implements SolrCloseable {
           byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
           this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat((Map<String, Object>) Utils.fromJSON(data));
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
+
+          // make sure the urlScheme is set on the client side ... server-side handled in ZkContainer
+          GlobalStateVars.singleton().setUrlScheme(
+              getClusterProperty(ZkStateReader.URL_SCHEME, System.getProperty(ZkStateReader.URL_SCHEME, HTTP)));
 
           for (ClusterPropertiesListener listener : clusterPropertiesListeners) {
             listener.onChange(getClusterProperties());

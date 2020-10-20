@@ -76,7 +76,7 @@ public class CloudUtil {
         for (Replica replica : slice.getReplicas()) {
 
           String cnn = replica.getName();
-          String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+          String baseUrl = replica.getBaseUrl();
           log.debug("compare against coreNodeName={} baseUrl={}", cnn, baseUrl);
 
           if (thisCnn != null && thisCnn.equals(cnn)

@@ -17,12 +17,18 @@
 package org.apache.solr.common.cloud;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 
+import static org.apache.solr.common.cloud.GlobalStateVars.SCHEME_VAR;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
@@ -36,7 +42,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Construct ZKNodeProps from map.
    */
   public ZkNodeProps(Map<String,Object> propMap) {
-    this.propMap = propMap;
+    this.propMap = updateGlobalStateVars(propMap);
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
   }
@@ -105,6 +111,17 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
   @Override
   public void write(JSONWriter jsonWriter) {
+    final String baseUrl = (String)propMap.get(ZkStateReader.BASE_URL_PROP);
+    if (baseUrl != null && !baseUrl.startsWith(SCHEME_VAR)) {
+      final int at = baseUrl.indexOf("://");
+      if (at != -1) {
+        final String updatedUrl = SCHEME_VAR + baseUrl.substring(at+3);
+        Map<String,Object> modMap = new LinkedHashMap<>(propMap);
+        modMap.put(ZkStateReader.BASE_URL_PROP, updatedUrl);
+        jsonWriter.write(modMap);
+        return;
+      }
+    }
     jsonWriter.write(propMap);
   }
   
@@ -139,14 +156,6 @@ public class ZkNodeProps implements JSONWriter.Writable {
   @Override
   public String toString() {
     return toJSONString(this);
-    /***
-    StringBuilder sb = new StringBuilder();
-    Set<Entry<String,Object>> entries = propMap.entrySet();
-    for(Entry<String,Object> entry : entries) {
-      sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
-    }
-    return sb.toString();
-    ***/
   }
 
   /**
@@ -154,6 +163,24 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public boolean containsKey(String key) {
     return propMap.containsKey(key);
+  }
+
+  protected Map<String,Object> updateGlobalStateVars(Map<String,Object> map) {
+    final String baseUrl = (String)map.get(ZkStateReader.BASE_URL_PROP);
+    if (baseUrl != null) {
+      final String updatedUrl = GlobalStateVars.singleton().applyUrlSchemeIfChanged(baseUrl);
+      if (updatedUrl != null) {
+        if (map instanceof HashMap) {
+          map.put(ZkStateReader.BASE_URL_PROP, updatedUrl);
+        } else {
+          // assume map is not mutable, so copy it over to the return value
+          Map<String,Object> modMap = new LinkedHashMap<>(map);
+          modMap.put(ZkStateReader.BASE_URL_PROP, updatedUrl);
+          return modMap;
+        }
+      } // else url didn't change, no update to the map needed
+    }
+    return map;
   }
 
   public boolean getBool(String key, boolean b) {

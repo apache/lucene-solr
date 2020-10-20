@@ -21,11 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.GlobalStateVars;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.Test;
 
+@SolrTestCaseJ4.SuppressSSL // this test is all about http://
 public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
 
   @Test
@@ -116,6 +118,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings("unchecked")
   private static List<Replica> getBasicReplicaList() {
+    GlobalStateVars.singleton().setUrlScheme("http");
     List<Replica> replicas = new ArrayList<Replica>();
     replicas.add(
         new Replica(

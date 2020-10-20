@@ -1058,7 +1058,7 @@ public class HttpSolrCall {
           }
 
           if (origCorename != null) {
-            coreUrl = replica.getStr(BASE_URL_PROP) + "/" + origCorename;
+            coreUrl = replica.getBaseUrl() + "/" + origCorename;
           } else {
             coreUrl = replica.getCoreUrl();
             if (coreUrl.endsWith("/")) {

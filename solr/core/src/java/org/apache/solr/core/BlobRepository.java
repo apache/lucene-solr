@@ -205,7 +205,7 @@ public class BlobRepository {
    */
   ByteBuffer fetchBlob(String key) {
     Replica replica = getSystemCollReplica();
-    String url = replica.getStr(BASE_URL_PROP) + "/" + CollectionAdminParams.SYSTEM_COLL + "/blob/" + key + "?wt=filestream";
+    String url = replica.getBaseUrl() + "/" + CollectionAdminParams.SYSTEM_COLL + "/blob/" + key + "?wt=filestream";
     return fetchFromUrl(key, url);
   }
 
