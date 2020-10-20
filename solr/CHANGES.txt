@@ -280,6 +280,8 @@ Other Changes
 
 * SOLR-14958: Refactor zkHost config logic to make testing easier and reduce risk of incorrect value being used (hossman)
 
+* SOLR-14951: Upgrade Angular JS 1.7.9 to 1.8.0 (Kevin Risden)
+
 ==================  8.7.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
