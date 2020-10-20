@@ -167,15 +167,9 @@ If the `status` command is not successful, look for error messages in `/var/solr
 
 The Merge Scheduler is configured in `solrconfig.xml` and defaults to `ConcurrentMergeScheduler`. This scheduler uses multiple threads to merge Lucene segments in the background.
 
-By default, the `ConcurrentMergeScheduler` auto-detects whether the underlying disk drive is rotational or a SSD and sets defaults for `maxThreadCount` and `maxMergeCount` accordingly. If the disk drive is determined to be rotational then the `maxThreadCount` is set to 1 and `maxMergeCount` is set to 6. Otherwise, `maxThreadCount` is set to 4 or half the number of processors available to the JVM whichever is greater and `maxMergeCount` is set to `maxThreadCount+5`.
+By default, the `ConcurrentMergeScheduler` auto-detects defaults for `maxThreadCount` and `maxMergeCount` accordingly. `maxThreadCount` is set to 4 or half the number of processors available to the JVM whichever is greater and `maxMergeCount` is set to `maxThreadCount+5`.
 
-This auto-detection works only on Linux and even then it is not guaranteed to be correct. On all other platforms, the disk is assumed to be rotational. Therefore, if the auto-detection fails or is incorrect then indexing performance can suffer badly due to the wrong defaults.
-
-The auto-detected value is exposed by the <<metrics-reporting.adoc#metrics-api, Metrics API>> with the key `solr.node:CONTAINER.fs.coreRoot.spins`. A value of `true` denotes that the disk is detected to be a rotational or spinning disk.
-
-It is safer to explicitly set values for `maxThreadCount` and `maxMergeCount` in the <<indexconfig-in-solrconfig.adoc#mergescheduler, IndexConfig section of SolrConfig.xml>> so that values appropriate to your hardware are used.
-
-Alternatively, the boolean system property `lucene.cms.override_spins` can be set in the `SOLR_OPTS` variable in the include file to override the auto-detected value. Similarly, the system property `lucene.cms.override_core_count` can be set to the number of CPU cores to override the auto-detected processor count.
+If you have a spinning disk, it is best to explicitly set values for `maxThreadCount` and `maxMergeCount` in the <<indexconfig-in-solrconfig.adoc#mergescheduler, IndexConfig section of SolrConfig.xml>> so that values appropriate to your hardware are used.
 
 === Memory and GC Settings
 

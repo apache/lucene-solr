@@ -85,7 +85,7 @@
          initialSize - the initial capacity (number of entries) of
            the cache.  (seel java.util.HashMap)
          autowarmCount - the number of entries to prepopulate from
-           and old cache.
+           an old cache.
          -->
     <filterCache
       class="solr.CaffeineCache"
