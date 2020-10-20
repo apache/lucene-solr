@@ -16,18 +16,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-There are several types of changes to Solr configuration that require you to reindex your data.
+There are several types of changes to Solr configuration that require you to reindex your data, particularly changes to your schema.
 
-These changes include editing properties of fields or field types; adding fields, field types, or copy field rules;
-upgrading Solr; and some system configuration properties.
+These changes include editing properties of fields or field types; adding fields, or copy field rules; upgrading Solr; and changing certain system configuration properties.
 
-It's important to be aware that many changes require reindexing, because failing to reindex can have both obvious and subtle consequences for Solr or for the ability of your users to find what they are looking for.
+It's important to be aware that failing to reindex can have both obvious and subtle consequences for Solr or for users finding what they are looking for.
 
-"Reindex" in this context means _first delete the existing index and repeat the process you used to ingest the entire corpus from the system-of-record_. It is strongly recommended that Solr users index their data in a repeatable, consistent way, so that the process can be easily repeated when the need for reindexing arises.
+"Reindex" in this context means _first delete the existing index and repeat the process you used to ingest the entire corpus from the system-of-record_. It is strongly recommended that Solr users have a consistent, repeatable process for indexing so that the indexes can be recreated as the need arises.
 
 [CAUTION]
 ====
-Re-ingesting all the documents in your corpus without first insuring that all documents and Lucene segments have been deleted is *not* sufficient, see the section below <<reindexing.adoc#reindexing-strategies,Reindexing Strategies>>.
+Re-ingesting all the documents in your corpus without first insuring that all documents and Lucene segments have been deleted is *not* sufficient, see the section <<reindexing.adoc#reindexing-strategies,Reindexing Strategies>>.
 ====
 
 Reindexing is recommended during major upgrades, so in addition to covering what types of configuration changes should trigger a reindex, this section will also cover strategies for reindexing.
@@ -36,29 +35,23 @@ Reindexing is recommended during major upgrades, so in addition to covering what
 
 === Schema Changes
 
-With very few exceptions, changes to a collection's schema require reindexing. This is because many of the available options are only
-applied during the indexing process. Solr simply has no way to implement the desired change without reindexing the data.
+With very few exceptions, changes to a collection's schema require reindexing. This is because many of the available options are only applied during the indexing process. Solr has no way to implement the desired change without reindexing the data.
 
-To understand the general reason why reindexing is ever required, it's helpful to understand the relationship between Solr's schema and the underlying Lucene index. Lucene does not use a schema, schemas a Solr-only concept. When you change Solr's schema, the Lucene's index is not modified in any way.
+To understand the general reason why reindexing is ever required, it's helpful to understand the relationship between Solr's schema and the underlying Lucene index. Lucene does not use a schema, schemas a Solr-only concept. When you change Solr's schema, the Lucene index is not modified in any way.
 
-This means that there are many types of schema changes that cannot be reflected in the index simply by modifying
-Solr's schema. This is different from most database models where schemas are used. With regard to indexing, Solr's
-schema acts like a rulebook for indexing documents by telling Lucene how to interpret the data being sent. Once the
-documents are in Lucene, Solr's schema has no control over the underlying data structure.
+This means that there are many types of schema changes that cannot be reflected in the index simply by modifying Solr's schema. This is different from most database models where schemas are used. When indexing, Solr's schema acts like a rulebook for indexing documents by telling Lucene how to interpret the data being sent. Once the documents are in Lucene, Solr's schema has no control over the underlying data structure.
 
 In addition, changing the schema `version` property is equivalent to changing field type properties. This type of change is usually only made during or because of a major upgrade.
 
 ==== Changing Field and Field Type Properties
 
-When you change your schema by adding fields, removing fields, or changing the field or field type definitions you generally do so with the intent use those changes in some way.
+When you change your schema by adding fields, removing fields, or changing the field or field type definitions you generally do so with the intent that those changes alter how documents are searched. The full effects of those changes are not reflected in the corpus as a whole until all documents are reindexed.
 
 Changes to *any* field/field type property described in <<field-type-definitions-and-properties.adoc#field-type-properties,Field Type Properties>> must be reindexed in order for the change to be reflected in _all_ documents.
 
 [CAUTION]
 ====
-Changing any field properties without reindexing is _never_ recommended. This should only be attempted with a thorough understanding of the consequences. Negative impacts on the user may not be immediately apparent.
-
-As an example, consider adding a new searchable field to the schema. Until all documents have been reindexed, any search against this new field can find a varying number of documents depending on how far along the reindex process has progressed.
+Changing field properties that affect indexing without reindexing is not recommended. This should only be attempted with a thorough understanding of the consequences. Negative impacts on the user may not be immediately apparent.
 
 ====
 
@@ -71,8 +64,9 @@ If separate analysis chains are defined for query and indexing events for a fiel
 Any change to the index-time analysis chain requires reindexing in almost all cases.
 
 === Solrconfig Changes
+Identifying changes to solrconfig.xml that alter how data is ingested and thus require reindexing is less straightforward. The general rule is "anything that changes what gets stored in the index requires reindexing". Here are several known examples.
 
-Only one parameter change to Solr's `solrconfig.xml` requires reindexing. That parameter is the `luceneMatchVersion`, which controls the compatibility of Solr with Lucene changes. Since this parameter can change the rules for analysis behind the scenes, it's always recommended to reindex when changing this value. Usually, however, this is only changed in conjunction with a major upgrade.
+The parameter `luceneMatchVersion` in solrconfig.xml controls the compatibility of Solr with Lucene. Since this parameter can change the rules for analysis behind the scenes, it's always recommended to reindex when changing it. Usually this is only changed in conjunction with a major upgrade.
 
 If you make a change to Solr's <<update-request-processors.adoc#update-request-processors,Update Request Processors>>, it's generally because you want to change something about how _update requests_ (documents) are _processed_ (indexed). In this case, we recommend that you reindex your documents to implement the changes you've made just as if you had changed the schema.
 
@@ -83,16 +77,13 @@ plan to reindex your documents to avoid unintended behavior.
 
 When upgrading between major versions (for example, from a 7.x release to 8.x), a best practice is to always reindex your data. The reason for this is that subtle changes may occur in default field type definitions or the underlying code.
 
-Lucene works hard to insure one major version back-compatability, thus Solr 8x can read indexes created with Solr 7x. However, given that this guarantee does _not_ apply to Solr X-2 (Solr 6x in this example) we still recommend completely reindexing when moving from Solr X-1 to Solr X.
+Lucene works hard to insure one major version back-compatability, thus Solr 8x functions with indexes created with Solr 7x. However, given that this guarantee does _not_ apply to Solr X-2 (Solr 6x in this example) we still recommend completely reindexing when moving from Solr X-1 to Solr X.
 
 [NOTE]
-If you have *not* changed your schema as part of an upgrade from one minor release to another (such as, from 7.x
-to a later 7.x release), you can often skip reindexing your documents.
-However, when upgrading to a major release, you should plan to reindex your documents because of the likelihood of
-changes that break back-compatibility.
+If you have *not* changed your schema as part of an upgrade from one minor release to another (such as, from 7.x to a later 7.x release), you can often skip reindexing your documents. However, when upgrading to a major release, you should plan to reindex your documents.
 
 [NOTE]
-You must always re-index your corpus when upgrading an index produced with a Solr version more than X-1 old. For instance, if you're upgrading to Solr 8x, any index ever used by Solr 6x must be deleted and re-ingested as outlined below. A marker is written identifying the version of Lucene used to ingest the first document. That marker is preserved in the index forever unless the index is entirely deleted. If Lucene finds a marker more than X-1 major versions old, it will refuse to open the index.
+You must always re-index your corpus when upgrading an index produced with a Solr version more than X-1 old. For instance, if you're upgrading to Solr 8x, an index ever used by Solr 6x must be deleted and re-ingested as outlined below. A marker is written identifying the version of Lucene used to ingest the first document. That marker is preserved in the index forever unless the index is entirely deleted. If Lucene finds a marker more than X-1 major versions old, it will refuse to open the index.
 
 == Reindexing Strategies
 
@@ -107,7 +98,7 @@ A Lucene index is a _lossy abstraction designed for fast search_. Once a documen
 
 There are a number of technical reasons that make re-ingesting all documents correctly without deleting the entire corpus first difficult and error-prone to code and maintain.
 
-Therefore, since all documents have to be re-ingested to insure the abstraction faithfully reflects the new schema for all documents, we recommend deleting all documents or reindexing to a new collection.
+Therefore, since all documents have to be re-ingested to insure the abstraction faithfully reflects the new schema for all documents, we recommend deleting all documents after insuring that there are no old Lucene segments or reindexing to a new collection.
 ====
 
 === Delete All Documents
@@ -121,7 +112,7 @@ curl -X POST -H 'Content-Type: application/json' --data-binary '{"delete":{"quer
 It's important to verify that *all* documents have been deleted, as that ensures the Lucene index segments have been
 deleted as well.
 
-To verify that there are no segments in your index, look in the data/index directory and confirm it has no segments files.  Since the data directory can be customized, see the section <<datadir-and-directoryfactory-in-solrconfig.adoc#specifying-a-location-for-index-data-with-the-datadir-parameter,Specifying a Location for Index Data with the dataDir Parameter>> for where to look to find the index files.
+To verify that there are no segments in your index, look in the data/index directory and confirm it has no segments files.  Since the data directory can be customized, see the section <<datadir-and-directoryfactory-in-solrconfig.adoc#specifying-a-location-for-index-data-with-the-datadir-parameter,Specifying a Location for Index Data with the dataDir Parameter>> for the location of your index files.
 
 Note you will need to verify the indexes have been removed in every shard and every replica on every node of a cluster.
 It is not sufficient to only query for the number of documents because you may have no documents but still have index
@@ -129,18 +120,21 @@ segments.
 
 Once the indexes have been cleared, you can start reindexing by re-running the original index process.
 
+[NOTE]
+A variation on this approch is to delete and recreate your collection using the updated schema, then reindex if you can afford to have your collection offline for the duration of the reindexing process.
+
 === Index to Another Collection
 
 Another approach is to use index to a new collection and use Solr's <<collection-aliasing.adoc#createalias,collection alias>> feature to seamlessly point the application to a new collection without downtime.
 
 This option is only available for Solr installations running in SolrCloud mode.
 
-With this approach, you will index your documents into a new collection that uses your changes and, once indexing and testing are complete, create an alias for the collection that points your front-end at the collection alias. Queries and updates will be routed to the new collection seamlessly.
+With this approach, you will index your documents into a new collection that uses your changes and, once indexing and testing are complete, create an alias that points your front-end at the new collection. From that point, new queries and updates will be routed to the new collection seamlessly.
 
-Once the alias is in place and you are satisfied you no longer need the old data, you can delete the old collection with the <<collection-management.adoc#delete,DELETE command>> of the Collections API.
+Once the alias is in place and you are satisfied you no longer need the old data, you can delete the old collection with the Collections API <<collection-management.adoc#delete,DELETE command>>.
 
 [NOTE]
-One advantage of this option is that if, for some reason, your testing did not uncover a problem you can switch back to the old collection until you fix the new one. Of course this option can require more resources until the old collection can be deleted.
+One advantage of this option is that if you you can switch back to the old collection if you discover problems our testing did not uncover. Of course this option can require more resources until the old collection can be deleted.
 
 == Changes that Do Not Require Reindex
 
