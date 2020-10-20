@@ -100,4 +100,9 @@ final class MultiLeafFieldComparator implements LeafFieldComparator {
     // this is needed for skipping functionality that is only relevant for the 1st comparator
     return firstComparator.competitiveIterator();
   }
+
+  @Override
+  public void usesIndexSort() {
+    firstComparator.usesIndexSort();
+  }
 }

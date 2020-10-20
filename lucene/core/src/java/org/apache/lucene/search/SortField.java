@@ -29,6 +29,8 @@ import org.apache.lucene.search.comparators.DoubleComparator;
 import org.apache.lucene.search.comparators.FloatComparator;
 import org.apache.lucene.search.comparators.IntComparator;
 import org.apache.lucene.search.comparators.LongComparator;
+import org.apache.lucene.search.comparators.TermOrdValComparator;
+import org.apache.lucene.search.comparators.TermValComparator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
@@ -476,10 +478,10 @@ public class SortField {
       return comparatorSource.newComparator(field, numHits, sortPos, reverse);
 
     case STRING:
-      return new FieldComparator.TermOrdValComparator(numHits, field, missingValue == STRING_LAST);
+      return new TermOrdValComparator(numHits, field, missingValue == STRING_LAST, reverse);
 
     case STRING_VAL:
-      return new FieldComparator.TermValComparator(numHits, field, missingValue == STRING_LAST);
+      return new TermValComparator(numHits, field, missingValue == STRING_LAST);
 
     case REWRITEABLE:
       throw new IllegalStateException("SortField needs to be rewritten through Sort.rewrite(..) and SortField.rewrite(..)");

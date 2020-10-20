@@ -32,6 +32,7 @@ import org.apache.lucene.search.comparators.DoubleComparator;
 import org.apache.lucene.search.comparators.FloatComparator;
 import org.apache.lucene.search.comparators.IntComparator;
 import org.apache.lucene.search.comparators.LongComparator;
+import org.apache.lucene.search.comparators.TermOrdValComparator;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.NumericUtils;
 
@@ -112,22 +113,25 @@ public class ToParentBlockJoinSortField extends SortField {
   }
 
   private FieldComparator<?> getStringComparator(int numHits) {
-    return new FieldComparator.TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST) {
-
+    return new TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST, getReverse()) {
       @Override
-      protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
-        SortedSetDocValues sortedSet = DocValues.getSortedSet(context.reader(), field);
-        final BlockJoinSelector.Type type = order
-            ? BlockJoinSelector.Type.MAX
-            : BlockJoinSelector.Type.MIN;
-        final BitSet parents = parentFilter.getBitSet(context);
-        final BitSet children = childFilter.getBitSet(context);
-        if (children == null) {
-          return DocValues.emptySorted();
-        }
-        return BlockJoinSelector.wrap(sortedSet, type, parents, toIter(children));
+      public TermOrdValLeafComparator getLeafComparator(LeafReaderContext context) throws IOException {
+        return new TermOrdValComparator.TermOrdValLeafComparator(context) {
+          @Override
+          protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
+            SortedSetDocValues sortedSet = DocValues.getSortedSet(context.reader(), field);
+            final BlockJoinSelector.Type type = order
+                    ? BlockJoinSelector.Type.MAX
+                    : BlockJoinSelector.Type.MIN;
+            final BitSet parents = parentFilter.getBitSet(context);
+            final BitSet children = childFilter.getBitSet(context);
+            if (children == null) {
+              return DocValues.emptySorted();
+            }
+            return BlockJoinSelector.wrap(sortedSet, type, parents, toIter(children));
+          }
+        };
       }
-
     };
   }
 

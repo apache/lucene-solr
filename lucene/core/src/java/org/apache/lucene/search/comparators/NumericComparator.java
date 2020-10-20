@@ -76,7 +76,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         private final byte[] minValueAsBytes;
         private final byte[] maxValueAsBytes;
 
+        boolean indexSort = false; // true if a query sort is a part of the index sort
         private DocIdSetIterator competitiveIterator;
+        private boolean collectedAllCompetitiveHits = false;
         private long iteratorCost;
         private int maxDocVisited = 0;
         private int updateCounter = 0;
@@ -84,19 +86,23 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         public NumericLeafComparator(LeafReaderContext context) throws IOException {
             this.docValues = getNumericDocValues(context, field);
             this.pointValues = primarySort ? context.reader().getPointValues(field) : null;
+            this.maxDoc = context.reader().maxDoc();
+            this.competitiveIterator = DocIdSetIterator.all(maxDoc);
             if (pointValues != null) {
                 this.enableSkipping = true; // skipping is enabled on primarySort and when points are available
-                this.maxDoc = context.reader().maxDoc();
                 this.maxValueAsBytes = reverse == false ? new byte[bytesCount] : topValueSet ? new byte[bytesCount] : null;
                 this.minValueAsBytes = reverse ? new byte[bytesCount] : topValueSet ? new byte[bytesCount] : null;
-                this.competitiveIterator = DocIdSetIterator.all(maxDoc);
                 this.iteratorCost = maxDoc;
             } else {
                 this.enableSkipping = false;
-                this.maxDoc = 0;
                 this.maxValueAsBytes = null;
                 this.minValueAsBytes = null;
             }
+        }
+
+        @Override
+        public void usesIndexSort() {
+            indexSort = true;
         }
 
         /** Retrieves the NumericDocValues for the field in this segment */
@@ -108,6 +114,11 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         public void setBottom(int slot) throws IOException {
             queueFull = true; // if we are setting bottom, it means that we have collected enough hits
             updateCompetitiveIterator(); // update an iterator if we set a new bottom
+        }
+
+        protected final void setCollectedAllCompetitiveHits() throws IOException {
+            collectedAllCompetitiveHits = true;
+            updateCompetitiveIterator();
         }
 
         @Override
@@ -131,8 +142,16 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
         // update its iterator to include possibly only docs that are "stronger" than the current bottom entry
         private void updateCompetitiveIterator() throws IOException {
-            if (enableSkipping == false || hitsThresholdReached == false || queueFull == false) return;
-            // if some documents have missing points, check that missing values prohibits optimization
+            if (hitsThresholdReached == false || queueFull == false) return;
+
+            // for the index sort case, if we've collected all competitive hits, we can early terminate
+            if (indexSort && collectedAllCompetitiveHits) {
+                competitiveIterator = DocIdSetIterator.empty();
+                return;
+            }
+
+            if (enableSkipping == false) return;
+            // if some documents have missing points, check that missing values prevents optimization
             if ((pointValues.getDocCount() < maxDoc) && isMissingValueCompetitive()) {
                 return; // we can't filter out documents, as documents with missing values are competitive
             }
@@ -218,7 +237,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
         @Override
         public DocIdSetIterator competitiveIterator() {
-            if (enableSkipping == false) return null;
+            if (enableSkipping == false && indexSort == false) return null;
             return new DocIdSetIterator() {
                 private int docID = -1;
 

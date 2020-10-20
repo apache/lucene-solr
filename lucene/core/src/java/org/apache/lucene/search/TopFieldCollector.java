@@ -100,6 +100,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         // since docs are visited in doc Id order, if compare is 0, it means
         // this document is largest than anything else in the queue, and
         // therefore not competitive.
+        // TODO: remove early termination in TopFieldCollector, as this should be managed by comparators
         if (canEarlyTerminate) {
           if (hitsThresholdChecker.isThresholdReached()) {
             totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
@@ -139,6 +140,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     @Override
     public void setScorer(Scorable scorer) throws IOException {
+      if (canEarlyTerminate) comparator.usesIndexSort();
       super.setScorer(scorer);
       minCompetitiveScore = 0f;
       updateMinCompetitiveScore(scorer);

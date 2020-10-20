@@ -25,6 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortFieldProvider;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.search.comparators.TermOrdValComparator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 
@@ -177,10 +178,15 @@ public class SortedSetSortField extends SortField {
   
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    return new FieldComparator.TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST) {
+    return new TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST, reverse) {
       @Override
-      protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
-        return SortedSetSelector.wrap(DocValues.getSortedSet(context.reader(), field), selector);
+      public TermOrdValLeafComparator getLeafComparator(LeafReaderContext context) throws IOException {
+        return new TermOrdValComparator.TermOrdValLeafComparator(context) {
+          @Override
+          protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
+            return SortedSetSelector.wrap(DocValues.getSortedSet(context.reader(), field), selector);
+          }
+        };
       }
     };
   }

@@ -83,7 +83,11 @@ public class IntComparator extends NumericComparator<Integer> {
 
         @Override
         public int compareBottom(int doc) throws IOException {
-            return Integer.compare(bottom, getValueForDoc(doc));
+            int result = Integer.compare(bottom, getValueForDoc(doc));
+            if (indexSort && (reverse ? result >= 0 : result <= 0)) {
+                setCollectedAllCompetitiveHits();
+            }
+            return result;
         }
 
         @Override

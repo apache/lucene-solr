@@ -83,7 +83,11 @@ public class LongComparator extends NumericComparator<Long> {
 
         @Override
         public int compareBottom(int doc) throws IOException {
-            return Long.compare(bottom, getValueForDoc(doc));
+            int result = Long.compare(bottom, getValueForDoc(doc));
+            if (indexSort && (reverse ? result >= 0 : result <= 0)) {
+                setCollectedAllCompetitiveHits();
+            }
+            return result;
         }
 
         @Override

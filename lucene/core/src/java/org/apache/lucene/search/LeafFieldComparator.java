@@ -132,4 +132,13 @@ public interface LeafFieldComparator {
   default void setHitsThresholdReached() throws IOException{
   }
 
+
+  /**
+   * Informs this leaf comparator that sort uses index sorting.
+   * If index sorting is used, we can update competitive iterator to the empty iterator
+   * as soon as the needed number of documents are collected.
+   */
+  default void usesIndexSort() {
+  }
+
 }

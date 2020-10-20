@@ -83,7 +83,11 @@ public class DoubleComparator extends NumericComparator<Double> {
 
         @Override
         public int compareBottom(int doc) throws IOException {
-            return Double.compare(bottom, getValueForDoc(doc));
+            int result = Double.compare(bottom, getValueForDoc(doc));
+            if (indexSort && (reverse ? result >= 0 : result <= 0)) {
+                setCollectedAllCompetitiveHits();
+            }
+            return result;
         }
 
         @Override

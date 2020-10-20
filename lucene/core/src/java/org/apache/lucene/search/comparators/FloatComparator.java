@@ -83,7 +83,11 @@ public class FloatComparator extends NumericComparator<Float> {
 
         @Override
         public int compareBottom(int doc) throws IOException {
-            return Float.compare(bottom, getValueForDoc(doc));
+            int result = Float.compare(bottom, getValueForDoc(doc));
+            if (indexSort && (reverse ? result >= 0 : result <= 0)) {
+                setCollectedAllCompetitiveHits();
+            }
+            return result;
         }
 
         @Override
