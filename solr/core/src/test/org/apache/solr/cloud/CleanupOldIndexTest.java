@@ -41,6 +41,18 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     // we restart jetty and expect to find on disk data - need a local fs directory
+    System.setProperty("solr.skipCommitOnClose", "false");
+
+    System.setProperty("solr.http2solrclient.default.idletimeout", "4000");
+    System.setProperty("distribUpdateSoTimeout", "4000");
+    System.setProperty("socketTimeout", "4000");
+    System.setProperty("connTimeout", "4000");
+    System.setProperty("solr.test.socketTimeout.default", "4000");
+    System.setProperty("solr.connect_timeout.default", "4000");
+    System.setProperty("solr.so_commit_timeout.default", "4000");
+    System.setProperty("solr.httpclient.defaultConnectTimeout", "4000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "4000");
+
     useFactory(null);
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
