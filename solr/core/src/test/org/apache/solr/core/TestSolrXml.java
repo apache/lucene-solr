@@ -150,7 +150,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals(ok, cfg.getTransientCacheSize());
   }
 
-  @Ignore // nocommir - still evaluating these, they seem expensive, may be okay after other fixes
   public void testMultiCloudSectionError() {
     String solrXml = "<solr>"
       + "<solrcloud><bool name=\"genericCoreNodeNames\">true</bool></solrcloud>"
@@ -161,7 +160,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
   }
 
-  @Ignore // nocommir - still evaluating these, they seem expensive, may be okay after other fixes
   public void testMultiLoggingSectionError() {
     String solrXml = "<solr>"
       + "<logging><str name=\"class\">foo</str></logging>"
@@ -172,7 +170,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
   }
 
-  @Ignore // nocommir - still evaluating these, they seem expensive, may be okay after other fixes
   public void testMultiLoggingWatcherSectionError() {
     String solrXml = "<solr><logging>"
       + "<watcher><int name=\"threshold\">42</int></watcher>"
@@ -290,7 +287,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
   }
 
-  @Ignore
+  @Ignore // nocommit - this check does not seem to be enabled currently
   public void testFailAtConfigParseTimeWhenSolrConfigParamsAreDuplicated() {
     String v1 = ""+random().nextInt();
     String v2 = ""+random().nextInt();
@@ -328,7 +325,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     SolrXmlConfig.fromString(solrHome, "<solr><solrcloud><str name=\"host\">host</str><int name=\"hostPort\">8983</int></solrcloud></solr>");
   }
 
-  @Ignore // nocommir - still evaluating these, they seem expensive, may be okay after other fixes
   public void testMultiBackupSectionError() {
     String solrXml = "<solr><backup></backup><backup></backup></solr>";
     expectedException.expect(SolrException.class);
