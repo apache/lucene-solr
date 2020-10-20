@@ -46,7 +46,6 @@ import static org.apache.solr.core.CoreContainer.LOAD_COMPLETE;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.StringContains.containsString;
 
-@Ignore // nocommit debug
 public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @BeforeClass
