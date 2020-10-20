@@ -35,7 +35,7 @@ import org.junit.Test;
 /**
  *
  */
-// TODO: this test is flakey, fails too easily
+  @LuceneTestCase.AwaitsFix(bugUrl = "TODO: this test is flakey, fails too easily")
 public class TestSolrCachePerf extends SolrTestCaseJ4 {
 
   private static final Class<? extends SolrCache>[] IMPLS = new Class[] {
