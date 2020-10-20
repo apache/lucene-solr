@@ -116,7 +116,6 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   }
   
   private void setUrlScheme(String value) throws Exception {
-    //System.clearProperty(URL_SCHEME);
     @SuppressWarnings("rawtypes")
     Map m = makeMap("action", CollectionAction.CLUSTERPROP.toString()
         .toLowerCase(Locale.ROOT), "name", "urlScheme", "val", value);

@@ -322,7 +322,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
       // store the base_url with a replaceable parameter for the scheme
       if (propMap.containsKey(BASE_URL_PROP)) {
         String baseUrl = (String)propMap.get(BASE_URL_PROP);
-        final int at = baseUrl.indexOf("://");
+        final int at = baseUrl != null ? baseUrl.indexOf("://") : -1;
         if (at != -1) {
           writer.put(BASE_URL_PROP, SCHEME_VAR + baseUrl.substring(at+3)); // +3 for the ://
         }
