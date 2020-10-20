@@ -1410,9 +1410,19 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   protected void ensureBufferTlog() {
     if (bufferTlog != null) return;
-    String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, BUFFER_TLOG_NAME, System.nanoTime());
-    bufferTlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false);
-    bufferTlog.isBuffer = true;
+
+    if (bufferTlog == null) {
+      tlogLock.lock();
+      try {
+        if (bufferTlog == null) {
+          String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, BUFFER_TLOG_NAME, System.nanoTime());
+          bufferTlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false);
+          bufferTlog.isBuffer = true;
+        }
+      } finally {
+        tlogLock.unlock();
+      }
+    }
   }
 
   // Cleanup old buffer tlogs
