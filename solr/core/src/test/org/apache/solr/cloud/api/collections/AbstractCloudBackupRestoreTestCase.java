@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,9 +115,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         CollectionAdminRequest.createCollectionWithImplicitRouter(getCollectionName(), "_default", "shard1,shard2", replFactor, numTlogReplicas, numPullReplicas) :
         CollectionAdminRequest.createCollection(getCollectionName(), "_default", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
 
-    if (random().nextBoolean()) {
-      create.setMaxShardsPerNode(3);
-    } else if (doSplitShardOperation) {
+    if (doSplitShardOperation) {
       create.setMaxShardsPerNode((int) Math.ceil(NUM_SPLIT_SHARDS * backupReplFactor / (double) cluster.getJettySolrRunners().size()));
     } else if (NUM_SHARDS * (backupReplFactor) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
       create.setMaxShardsPerNode((int) Math.ceil(NUM_SHARDS * backupReplFactor / (double) cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
@@ -159,6 +158,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testRestoreFailure() throws Exception {
     setTestSuffix("testfailure");
     replFactor = TestUtil.nextInt(random(), 1, 2);

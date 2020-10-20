@@ -314,6 +314,9 @@ public class ZkShardTerms implements AutoCloseable{
    */
   private synchronized boolean saveTerms(ShardTerms newTerms) throws KeeperException.NoNodeException {
     log.info("Save terms={}", newTerms);
+    if (newTerms.getVersion() == -1) {
+      return false;
+    }
     byte[] znodeData = Utils.toJSON(newTerms);
     try {
       Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion(), true);
