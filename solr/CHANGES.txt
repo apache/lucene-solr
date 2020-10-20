@@ -10,7 +10,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-14948: Autoscaling maxComputeOperations override causes exceptions. (ab)
 
 ==================  8.6.3 ==================
 
