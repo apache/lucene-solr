@@ -182,13 +182,14 @@ curl -X POST --header "Content-Type:application/octet-stream"
 [.tab-label]*V2 API*
 
 With the v2 API, the name of the configset and file are both provided in the URL.
-They can be substituted in `/cluster/configs/{config_name}/files/{file_name}`:
+They can be substituted in `/cluster/configs/{config_name}/{file_name}`.
+The filename may be nested and include `/` characters.
 
 [source,bash]
 ----
 curl -X PUT --header "Content-Type:application/octet-stream"
     --data-binary @solr/server/solr/configsets/sample_techproducts_configs/conf/solrconfig.xml
-    "http://localhost:8983/api/cluster/configs/myConfigSet/files/solrconfig-2.xml"
+    "http://localhost:8983/api/cluster/configs/myConfigSet/solrconfig.xml"
 ----
 
 With this REST API, the default behavior is to overwrite the file if it already exists within the configSet.

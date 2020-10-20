@@ -148,13 +148,13 @@ public class ClusterAPI {
   }
 
   @EndPoint(method = PUT,
-      path =   "/cluster/configs/{name}/files/*",
+      path =   "/cluster/configs/{name}/*",
       permission = CONFIG_EDIT_PERM
   )
   public void insertIntoConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     String path = req.getPathTemplateValues().get("*");
     if (path == null || path.isBlank()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "In order to insert a file in a configSet, a filePath must be provided in the url after files/.");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "In order to insert a file in a configSet, a filePath must be provided in the url after the name of the configSet.");
     }
     req = wrapParams(req,
             "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
