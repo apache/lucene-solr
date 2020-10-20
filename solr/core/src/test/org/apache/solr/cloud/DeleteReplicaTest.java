@@ -61,6 +61,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.Replica.State.DOWN;
 
+// TODO: this is flakey, can rarely leak a Directory
 public class DeleteReplicaTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
