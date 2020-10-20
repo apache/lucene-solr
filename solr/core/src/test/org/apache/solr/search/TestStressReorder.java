@@ -63,35 +63,19 @@ public class TestStressReorder extends TestRTGBase {
     clearIndex();
     assertU(commit());
 
-    final int commitPercent = 5 + random().nextInt(TEST_NIGHTLY ? 20 : 3);
+    final int commitPercent = 5 + random().nextInt(20);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
-    final int deletePercent = 4+random().nextInt(TEST_NIGHTLY ? 25 : 5);
+    final int deletePercent = 4+random().nextInt(25);
     final int deleteByQueryPercent = random().nextInt(8);
-    int ndocs;
-    if (TEST_NIGHTLY) {
-      ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
-    } else {
-      ndocs = 50;
-    }
-
-    int nWriteThreads;
-    if (TEST_NIGHTLY) {
-      nWriteThreads = 5 + random().nextInt(6);
-    } else {
-      nWriteThreads = 3;
-    }
+    final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
+    int nWriteThreads = 5 + random().nextInt(25);
 
     final int maxConcurrentCommits = nWriteThreads;
         // query variables
     final int percentRealtimeQuery = 75;
-    final AtomicLong operations = new AtomicLong(TEST_NIGHTLY ? 50000 : 500);  // number of query operations to perform in total
+    final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
+    int nReadThreads = 5 + random().nextInt(25);
 
-    int nReadThreads;
-    if (TEST_NIGHTLY) {
-      nReadThreads = 5 + random().nextInt(25);
-    } else {
-      nReadThreads = 3;
-    }
 
     /** // testing
     final int commitPercent = 5;
@@ -192,6 +176,9 @@ public class TestStressReorder extends TestRTGBase {
             // These versions are not derived from the actual leader update handler hand hence this
             // test may need to change depending on how we handle version numbers.
             long version = testVersion.incrementAndGet();
+
+            // yield after getting the next version to increase the odds of updates happening out of order
+            if (rand.nextBoolean()) Thread.yield();
 
               if (oper < commitPercent + deletePercent) {
                 verbose("deleting id",id,"val=",nextVal,"version",version);
@@ -327,7 +314,7 @@ public class TestStressReorder extends TestRTGBase {
             }
           } catch (Throwable e) {
             operations.set(-1L);
-            log.error("",e);
+            log.error("Fail",e);
             throw new RuntimeException(e);
           }
         }

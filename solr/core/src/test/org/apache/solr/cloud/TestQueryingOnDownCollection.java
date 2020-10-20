@@ -57,6 +57,8 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
    * Assert that requests to "down collection", i.e. a collection which has all replicas in down state
    * (but are hosted on nodes that are live), fail fast and throw meaningful exceptions
    */
+
+  // TODO: this is rarely flakey, fails at  Without the SOLR-13793 fix,
   public void testQueryToDownCollectionShouldFailFast() throws Exception {
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)

@@ -35,7 +35,6 @@ import org.junit.Test;
 /**
  *
  */
-@Ignore // nocommit flakey
 public class TestSolrCachePerf extends SolrTestCaseJ4 {
 
   private static final Class<? extends SolrCache>[] IMPLS = new Class[] {
