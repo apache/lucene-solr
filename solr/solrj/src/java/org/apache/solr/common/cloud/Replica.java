@@ -30,7 +30,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 
-import static org.apache.solr.common.cloud.GlobalStateVars.SCHEME_VAR;
+import static org.apache.solr.common.cloud.UrlScheme.SCHEME_VAR;
 import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
 import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;

@@ -16,13 +16,13 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.util.Objects;
+
 public class ZkCoreNodeProps {
   private ZkNodeProps nodeProps;
   
   public ZkCoreNodeProps(ZkNodeProps nodeProps) {
-    if (nodeProps == null) {
-      throw new IllegalArgumentException("Supplied ZkNodeProps cannot be null!");
-    }
+    Objects.requireNonNull(nodeProps, "nodeProps should not be null");
     this.nodeProps = nodeProps;
   }
   

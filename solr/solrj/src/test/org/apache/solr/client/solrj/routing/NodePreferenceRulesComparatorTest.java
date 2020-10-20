@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.GlobalStateVars;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
@@ -118,7 +118,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings("unchecked")
   private static List<Replica> getBasicReplicaList() {
-    GlobalStateVars.singleton().setUrlScheme("http");
+    UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
     List<Replica> replicas = new ArrayList<Replica>();
     replicas.add(
         new Replica(

@@ -63,7 +63,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptySortedSet;
-import static org.apache.solr.common.cloud.GlobalStateVars.HTTP;
+import static org.apache.solr.common.cloud.UrlScheme.HTTP;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements SolrCloseable {
@@ -1009,7 +1009,7 @@ public class ZkStateReader implements SolrCloseable {
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
 
           // make sure the urlScheme is set on the client side ... server-side handled in ZkContainer
-          GlobalStateVars.singleton().setUrlScheme(
+          UrlScheme.INSTANCE.setUrlScheme(
               getClusterProperty(ZkStateReader.URL_SCHEME, System.getProperty(ZkStateReader.URL_SCHEME, HTTP)));
 
           for (ClusterPropertiesListener listener : clusterPropertiesListeners) {

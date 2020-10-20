@@ -57,11 +57,11 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   public void test() throws Exception {
     //Migrate from HTTP -> HTTPS -> HTTP
     assertReplicaInformation("http");
-    testMigrateSSL(new SSLTestConfig(true, false));
-    testMigrateSSL(new SSLTestConfig(false, false));
+    doTestMigrateSSL(new SSLTestConfig(true, false));
+    doTestMigrateSSL(new SSLTestConfig(false, false));
   }
   
-  private void testMigrateSSL(SSLTestConfig sslConfig) throws Exception {
+  private void doTestMigrateSSL(SSLTestConfig sslConfig) throws Exception {
     String urlScheme = sslConfig.isSSLMode() ? "https" : "http";
     setUrlScheme(urlScheme);
     

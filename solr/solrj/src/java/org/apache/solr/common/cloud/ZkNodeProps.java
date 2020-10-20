@@ -22,13 +22,14 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 
-import static org.apache.solr.common.cloud.GlobalStateVars.SCHEME_VAR;
+import static org.apache.solr.common.cloud.UrlScheme.SCHEME_VAR;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
@@ -168,15 +169,15 @@ public class ZkNodeProps implements JSONWriter.Writable {
   protected Map<String,Object> updateGlobalStateVars(Map<String,Object> map) {
     final String baseUrl = (String)map.get(ZkStateReader.BASE_URL_PROP);
     if (baseUrl != null) {
-      final String updatedUrl = GlobalStateVars.singleton().applyUrlSchemeIfChanged(baseUrl);
-      if (updatedUrl != null) {
+      Optional<String> maybeUpdatedUrl = UrlScheme.INSTANCE.applyUrlScheme(baseUrl);
+      if (maybeUpdatedUrl.isPresent()) {
         if (map instanceof HashMap) {
-          map.put(ZkStateReader.BASE_URL_PROP, updatedUrl);
+          map.put(ZkStateReader.BASE_URL_PROP, maybeUpdatedUrl.get());
         } else {
           // assume map is not mutable, so copy it over to the return value
           Map<String,Object> modMap = new LinkedHashMap<>(map);
-          modMap.put(ZkStateReader.BASE_URL_PROP, updatedUrl);
-          return modMap;
+          modMap.put(ZkStateReader.BASE_URL_PROP, maybeUpdatedUrl.get());
+          map = modMap;
         }
       } // else url didn't change, no update to the map needed
     }

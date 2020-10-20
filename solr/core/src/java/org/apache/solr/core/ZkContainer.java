@@ -31,26 +31,26 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.common.cloud.GlobalStateVars;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.GlobalStateVars.HTTP;
-import static org.apache.solr.common.cloud.GlobalStateVars.HTTPS;
-import static org.apache.solr.common.cloud.GlobalStateVars.HTTPS_PORT_PROP;
+import static org.apache.solr.common.cloud.UrlScheme.HTTP;
+import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
+import static org.apache.solr.common.cloud.UrlScheme.HTTPS_PORT_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
 /**
@@ -146,9 +146,9 @@ public class ZkContainer {
           if (StringUtils.isNotEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient()).setClusterProperty(ZkStateReader.URL_SCHEME, HTTPS);
-            GlobalStateVars.singleton().setUrlScheme(HTTPS);
+            UrlScheme.INSTANCE.setUrlScheme(HTTPS);
           } else {
-            GlobalStateVars.singleton().setUrlScheme(System.getProperty(URL_SCHEME, HTTP));
+            UrlScheme.INSTANCE.setUrlScheme(System.getProperty(URL_SCHEME, HTTP));
           }
 
           if (zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
@@ -281,21 +281,13 @@ public class ZkContainer {
     final String urlScheme = zkCtrl.getZkStateReader().getClusterProperty(ZkStateReader.URL_SCHEME, null);
     if (StringUtils.isNotEmpty(urlScheme)) {
       // track the urlScheme in a global so we can use it during ZK read / write operations for cluster state objects
-      GlobalStateVars.singleton().setUrlScheme(urlScheme);
+      UrlScheme.INSTANCE.setUrlScheme(urlScheme);
     } else {
       final String urlSchemeFromSysProp = System.getProperty(URL_SCHEME, HTTP);
       if (HTTPS.equals(urlSchemeFromSysProp)) {
-        // it's OK to set the cluster prop to https b/c we're making the cluster more secure, not less
-        // wouldn't do this for http though
-        log.warn("Cluster property 'urlScheme' not set but system property is set to 'https'. Updating the cluster property to match.");
-        try {
-          new ClusterProperties(zkCtrl.getZkClient()).setClusterProperty(ZkStateReader.URL_SCHEME, HTTPS);
-        } catch (IOException ioExc) {
-          // no reason to fail in this case as we're just trying to be thorough
-          log.warn("Failed to set cluster prop 'urlScheme' to 'https'", ioExc);
-        }
+        log.warn("Cluster property 'urlScheme' not set but system property is set to 'https'.");
       }
-      GlobalStateVars.singleton().setUrlScheme(urlSchemeFromSysProp);
+      UrlScheme.INSTANCE.setUrlScheme(urlSchemeFromSysProp);
     }
   }
 }
