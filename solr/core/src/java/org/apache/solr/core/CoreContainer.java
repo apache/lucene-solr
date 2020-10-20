@@ -1756,7 +1756,7 @@ public class CoreContainer implements Closeable {
    * @param deleteInstanceDir if true, delete the core's instance directory on close
    */
   public void unload(String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
-
+    log.info("Unload SolrCore {} deleteIndexDir={} deleteDataDir={} deleteInstanceDir={}", name, deleteIndexDir, deleteDataDir, deleteInstanceDir);
     CoreDescriptor cd = solrCores.getCoreDescriptor(name);
 
     if (name != null) {
@@ -1790,7 +1790,7 @@ public class CoreContainer implements Closeable {
       if (cd == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
       }
-
+      SolrCore.deleteUnloadedCore(cd, deleteDataDir, deleteInstanceDir);
       solrCores.removeCoreDescriptor(cd);
       coresLocator.delete(this, cd);
       if (core == null) {

@@ -123,7 +123,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testCoreAdminHandler() throws Exception {
     final File workDir = createTempDir().toFile();
     
@@ -251,7 +250,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testDeleteInstanceDir() throws Exception  {
     File solrHomeDirectory = createTempDir("solr-home").toFile();
     copySolrHomeToTemp(solrHomeDirectory, "corex");
@@ -356,7 +354,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit debug - probably delete dirs ...
+  @AwaitsFix(bugUrl = "When the core reload fails, an indexwriter is leaked, must not cleanup defaultcorestate correctly")
   public void testDeleteInstanceDirAfterCreateFailure() throws Exception  {
     assumeFalse("Ignore test on windows because it does not delete data directory immediately after unload", Constants.WINDOWS);
     File solrHomeDirectory = createTempDir("solr-home").toFile();

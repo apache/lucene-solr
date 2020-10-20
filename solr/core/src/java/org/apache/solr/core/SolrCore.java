@@ -3095,6 +3095,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   public static void deleteUnloadedCore(CoreDescriptor cd, boolean deleteDataDir, boolean deleteInstanceDir) {
     if (deleteDataDir) {
+      log.info("Removing SolrCore dataDir on unload {}", cd.getInstanceDir().resolve(cd.getDataDir()));
       File dataDir = cd.getInstanceDir().resolve(cd.getDataDir()).toFile();
       try {
         FileUtils.deleteDirectory(dataDir);
