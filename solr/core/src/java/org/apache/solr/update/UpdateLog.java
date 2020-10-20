@@ -1475,20 +1475,16 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         log.decref();
         log.forceClose();
       }
-    } finally {
-      tlogLock.unlock();
-    }
 
-    if (bufferTlog != null) {
-      tlogLock.lock();
-      try {
+      if (bufferTlog != null) {
+
         // should not delete bufferTlog on close, existing bufferTlog is a sign for skip peerSync
         bufferTlog.deleteOnClose = false;
         bufferTlog.decref();
         bufferTlog.forceClose();
-      } finally {
-        tlogLock.unlock();
       }
+    } finally {
+      tlogLock.unlock();
     }
     try {
       this.close();
@@ -1715,11 +1711,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         tlog.incref();
         logList.addFirst(tlog);
       }
-    } finally {
-      tlogLock.unlock();
-    }
-    tlogLock.lock();
-    try {
       if (bufferTlog != null) {
         bufferTlog.incref();
         logList.addFirst(bufferTlog);
@@ -1907,7 +1898,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
           // after replay, update the max from the index
           log.info("Re-computing max version from index after log re-play.");
-//        /  maxVersionFromIndex = null;
+          maxVersionFromIndex = null;
           getMaxVersionFromIndex();
 
           versionInfo.unblockUpdates();
