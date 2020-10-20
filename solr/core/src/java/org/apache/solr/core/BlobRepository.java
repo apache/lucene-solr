@@ -54,7 +54,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 /**
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.

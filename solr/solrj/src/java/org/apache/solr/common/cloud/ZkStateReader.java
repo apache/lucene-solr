@@ -44,7 +44,6 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrCloseable;
@@ -65,7 +64,6 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptySortedSet;
 import static org.apache.solr.common.cloud.GlobalStateVars.HTTP;
-import static org.apache.solr.common.cloud.GlobalStateVars.HTTPS_PORT_PROP;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements SolrCloseable {
