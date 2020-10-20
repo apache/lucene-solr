@@ -42,7 +42,6 @@ import org.junit.Test;
  * @see org.apache.solr.handler.component.MoreLikeThisComponent
  */
 @Slow
-@Ignore // nocommit - debug
 public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
   
   private String requestHandlerName;

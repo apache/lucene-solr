@@ -88,7 +88,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
   public ShardHandler getShardHandler() {
     final ShardHandlerFactory factory = this;
     final ShardHandler wrapped = super.getShardHandler();
-    return new ShardHandler() {
+    return new HttpShardHandler((HttpShardHandlerFactory) factory) {
       @Override
       public void prepDistributed(ResponseBuilder rb) {
         wrapped.prepDistributed(rb);

@@ -43,7 +43,6 @@ import org.junit.Test;
  */
 @Slow
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
-@Ignore // nocommit debug
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
   
   public DistributedSpellCheckComponentTest()

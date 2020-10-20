@@ -48,7 +48,6 @@ import org.junit.Test;
  *
  * @see QueryComponent
  */
-@Ignore // nocommit
 public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "optimize";
