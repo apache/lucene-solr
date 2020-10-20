@@ -1409,8 +1409,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   protected void ensureBufferTlog() {
-    if (bufferTlog != null) return;
-
     if (bufferTlog == null) {
       tlogLock.lock();
       try {

@@ -49,6 +49,7 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 /**
  * Tests the Multi threaded Collections API.
  */
+@LuceneTestCase.Nightly // can be very slow
 public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private static final int REQUEST_STATUS_TIMEOUT = 5;
