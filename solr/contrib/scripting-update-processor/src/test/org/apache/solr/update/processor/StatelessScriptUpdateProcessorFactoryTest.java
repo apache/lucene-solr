@@ -38,7 +38,7 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
   @BeforeClass
   public static void beforeClass() throws Exception {
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
-    initCore("stateless-solrconfig-script-updateprocessor.xml", "schema.xml");
+    initCore("solrconfig-script-updateprocessor.xml", "schema.xml");
   }
 
   /**
