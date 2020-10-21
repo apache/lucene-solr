@@ -37,7 +37,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
-import static org.apache.lucene.index.VectorValues.ScoreFunction.NONE;
+import static org.apache.lucene.index.VectorValues.SearchStrategy.NONE;
 
 public class TestPendingSoftDeletes extends TestPendingDeletes {
 

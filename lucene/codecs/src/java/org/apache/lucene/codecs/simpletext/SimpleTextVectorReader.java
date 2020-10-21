@@ -63,7 +63,7 @@ public class SimpleTextVectorReader extends VectorReader {
       while (fieldNumber != -1) {
         String fieldName = readString(in, FIELD_NAME);
         String scoreFunctionName = readString(in, SCORE_FUNCTION);
-        VectorValues.ScoreFunction scoreFunction = VectorValues.ScoreFunction.valueOf(scoreFunctionName);
+        VectorValues.SearchStrategy searchStrategy = VectorValues.SearchStrategy.valueOf(scoreFunctionName);
         long vectorDataOffset = readLong(in, VECTOR_DATA_OFFSET);
         long vectorDataLength = readLong(in, VECTOR_DATA_LENGTH);
         int dimension = readInt(in, VECTOR_DIMENSION);
@@ -73,7 +73,7 @@ public class SimpleTextVectorReader extends VectorReader {
           docIds[i] = readInt(in, EMPTY);
         }
         assert fieldEntries.containsKey(fieldName) == false;
-        fieldEntries.put(fieldName, new FieldEntry(dimension, scoreFunction, vectorDataOffset, vectorDataLength, docIds));
+        fieldEntries.put(fieldName, new FieldEntry(dimension, searchStrategy, vectorDataOffset, vectorDataLength, docIds));
         fieldNumber = readInt(in, FIELD_NUMBER);
       }
       SimpleTextUtil.checkFooter(in);
@@ -138,16 +138,16 @@ public class SimpleTextVectorReader extends VectorReader {
   private static class FieldEntry {
 
     final int dimension;
-    final VectorValues.ScoreFunction scoreFunction;
+    final VectorValues.SearchStrategy searchStrategy;
 
     final long vectorDataOffset;
     final long vectorDataLength;
     final int[] ordToDoc;
 
-    FieldEntry(int dimension, VectorValues.ScoreFunction scoreFunction,
+    FieldEntry(int dimension, VectorValues.SearchStrategy searchStrategy,
                long vectorDataOffset, long vectorDataLength, int[] ordToDoc) {
       this.dimension = dimension;
-      this.scoreFunction = scoreFunction;
+      this.searchStrategy = searchStrategy;
       this.vectorDataOffset = vectorDataOffset;
       this.vectorDataLength = vectorDataLength;
       this.ordToDoc = ordToDoc;
@@ -189,8 +189,8 @@ public class SimpleTextVectorReader extends VectorReader {
     }
 
     @Override
-    public ScoreFunction scoreFunction() {
-      return entry.scoreFunction;
+    public SearchStrategy searchStrategy() {
+      return entry.searchStrategy;
     }
 
     @Override
