@@ -67,7 +67,7 @@ public class HnswTest extends LuceneTestCase {
                         indexedDoc++;
                     }
                     Document doc = new Document();
-                    doc.add(new VectorField("field", v2.vectorValue(), v2.scoreFunction));
+                    doc.add(new VectorField("field", v2.vectorValue(), v2.searchStrategy));
                     doc.add(new StoredField("id", v2.docID()));
                     iw.addDocument(doc);
                     nVec++;
@@ -77,7 +77,7 @@ public class HnswTest extends LuceneTestCase {
             try (IndexReader reader = DirectoryReader.open(dir)) {
                 for (LeafReaderContext ctx : reader.leaves()) {
                     VectorValues values = ctx.reader().getVectorValues("field");
-                    assertEquals(vectors.scoreFunction, values.scoreFunction());
+                    assertEquals(vectors.searchStrategy, values.searchStrategy());
                     assertEquals(dim, values.dimension());
                     assertEquals(nVec, values.size());
                     assertEquals(indexedDoc, ctx.reader().maxDoc());
@@ -125,8 +125,8 @@ public class HnswTest extends LuceneTestCase {
         }
 
         @Override
-        public ScoreFunction scoreFunction() {
-            return ScoreFunction.DOT_PRODUCT;
+        public SearchStrategy searchStrategy() {
+            return SearchStrategy.DOT_PRODUCT_HNSW;
         }
 
         @Override
@@ -268,7 +268,7 @@ public class HnswTest extends LuceneTestCase {
         private final int dimension;
         private final float[][] denseValues;
         private final float[][] values;
-        private final ScoreFunction scoreFunction;
+        private final SearchStrategy searchStrategy;
 
         final int numVectors;
         final int maxDoc;
@@ -288,13 +288,13 @@ public class HnswTest extends LuceneTestCase {
             }
             numVectors = sz;
             maxDoc = md;
-            // get a random ScoreFunction other than NONE (0)
-            scoreFunction = ScoreFunction.values()[random.nextInt(ScoreFunction.values().length - 1) + 1];
+            // get a random SearchStrategy other than NONE (0)
+            searchStrategy = SearchStrategy.values()[random.nextInt(SearchStrategy.values().length - 1) + 1];
         }
 
-        private RandomVectorValues(int dimension, ScoreFunction scoreFunction, float[][] denseValues, float[][] values, int size) {
+        private RandomVectorValues(int dimension, SearchStrategy searchStrategy, float[][] denseValues, float[][] values, int size) {
             this.dimension = dimension;
-            this.scoreFunction = scoreFunction;
+            this.searchStrategy = searchStrategy;
             this.values = values;
             this.denseValues = denseValues;
             numVectors = size;
@@ -302,7 +302,7 @@ public class HnswTest extends LuceneTestCase {
         }
 
         public RandomVectorValues copy() {
-            return new RandomVectorValues(dimension, scoreFunction, denseValues, values, numVectors);
+            return new RandomVectorValues(dimension, searchStrategy, denseValues, values, numVectors);
         }
 
         @Override
@@ -311,8 +311,8 @@ public class HnswTest extends LuceneTestCase {
         }
 
         @Override
-        public ScoreFunction scoreFunction() {
-            return scoreFunction;
+        public SearchStrategy searchStrategy() {
+            return searchStrategy;
         }
 
         @Override

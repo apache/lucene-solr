@@ -33,7 +33,7 @@ import org.apache.lucene.util.hnsw.HnswGraphBuilder;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
-// nocommit - separate out graph writer. switch based on score function. store in an extensible way so we can add vector index structures
+// nocommit - separate out graph writer. switch based on search strategy. store in an extensible way so we can add vector index structures
 /**
  * Writes vector values and knn graphs to index segments.
  * @lucene.experimental

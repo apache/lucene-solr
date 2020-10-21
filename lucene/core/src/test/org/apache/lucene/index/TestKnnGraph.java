@@ -328,8 +328,8 @@ public class TestKnnGraph extends LuceneTestCase {
   private void add(IndexWriter iw, int id, float[] vector) throws IOException {
     Document doc = new Document();
     if (vector != null) {
-      // TODO: choose random score function
-      doc.add(new VectorField(KNN_GRAPH_FIELD, vector, VectorValues.ScoreFunction.EUCLIDEAN));
+      // TODO: choose random search strategy
+      doc.add(new VectorField(KNN_GRAPH_FIELD, vector, VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
     }
     doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));
     //System.out.println("add " + id + " " + Arrays.toString(vector));

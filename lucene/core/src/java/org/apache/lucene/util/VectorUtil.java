@@ -16,7 +16,7 @@
  */
 
 package org.apache.lucene.util;
- 
+
 /**
  * Utilities for computations with numeric arrays
  */

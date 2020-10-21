@@ -64,7 +64,7 @@ public class KnnGraphTester {
 
   private final static String KNN_FIELD = "knn";
   private final static String ID_FIELD = "id";
-  private final static VectorValues.ScoreFunction scoreFunction = VectorValues.ScoreFunction.DOT_PRODUCT;
+  private final static VectorValues.SearchStrategy SEARCH_STRATEGY = VectorValues.SearchStrategy.DOT_PRODUCT_HNSW;
 
   private Random random;
   private int numDocs;
@@ -423,10 +423,10 @@ public class KnnGraphTester {
             .order(ByteOrder.LITTLE_ENDIAN)
             .asFloatBuffer();
           offset += blockSize;
-          Neighbors queue = Neighbors.create(topK, scoreFunction.reversed);
+          Neighbors queue = Neighbors.create(topK, HnswGraph.isReversed(SEARCH_STRATEGY));
           for (; j < numDocs && vectors.hasRemaining(); j++) {
             vectors.get(vector);
-            float d = VectorValues.compare(query, vector, scoreFunction);
+            float d = HnswGraph.compare(query, vector, SEARCH_STRATEGY);
             queue.insertWithOverflow(new Neighbor(j, d));
           }
           result[i] = new int[topK];
@@ -468,7 +468,7 @@ public class KnnGraphTester {
             vectors.get(vector);
             Document doc = new Document();
             //System.out.println("vector=" + vector[0] + "," + vector[1] + "...");
-            doc.add(new VectorField(KNN_FIELD, vector, VectorValues.ScoreFunction.DOT_PRODUCT));
+            doc.add(new VectorField(KNN_FIELD, vector, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
             doc.add(new StoredField(ID_FIELD, i));
             iw.addDocument(doc);
           }

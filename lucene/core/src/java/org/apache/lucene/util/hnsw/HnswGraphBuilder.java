@@ -48,7 +48,7 @@ public final class HnswGraphBuilder {
   private final int maxConn;
   private final int efConst;
   private final BoundedVectorValues boundedVectors;
-  private final VectorValues.ScoreFunction scoreFunction;
+  private final VectorValues.SearchStrategy searchStrategy;
   private final HnswGraph hnsw;
   private final Random random;
 
@@ -59,8 +59,8 @@ public final class HnswGraphBuilder {
 
   /** Full constructor */
   private HnswGraphBuilder(int maxConn, int efConst, long seed, VectorValues.RandomAccess vectors) {
-    scoreFunction = vectors.scoreFunction();
-    if (scoreFunction == VectorValues.ScoreFunction.NONE) {
+    searchStrategy = vectors.searchStrategy();
+    if (searchStrategy == VectorValues.SearchStrategy.NONE) {
       throw new IllegalStateException("No distance function");
     }
     this.maxConn = maxConn;
@@ -83,7 +83,7 @@ public final class HnswGraphBuilder {
     Neighbors results = HnswGraph.search(value, efConst, 2 * efConst, boundedVectors, graphValues, random);
 
     // Get the best maxConn nodes
-    Neighbors nn = Neighbors.create(maxConn, scoreFunction.reversed);
+    Neighbors nn = Neighbors.create(maxConn, HnswGraph.isReversed(searchStrategy));
     for (Neighbor n : results) {
       nn.insertWithOverflow(n);
     }
@@ -130,8 +130,8 @@ public final class HnswGraphBuilder {
     public int dimension() { return raDelegate.dimension(); }
 
     @Override
-    public VectorValues.ScoreFunction scoreFunction() {
-      return raDelegate.scoreFunction();
+    public VectorValues.SearchStrategy searchStrategy() {
+      return raDelegate.searchStrategy();
     }
 
     @Override

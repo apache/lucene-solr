@@ -398,7 +398,7 @@ public final class Lucene90VectorReader extends VectorReader {
         }
         int i = 0;
         ScoreDoc[] scoreDocs = new ScoreDoc[Math.min(results.size(), topK)];
-        boolean reversed = searchStrategy() == null;
+        boolean reversed = HnswGraph.isReversed(searchStrategy());
         while (results.size() > 0) {
           Neighbor n = results.pop();
           float score;

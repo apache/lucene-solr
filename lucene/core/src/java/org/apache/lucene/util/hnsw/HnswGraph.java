@@ -30,6 +30,8 @@ import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.VectorValues;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+import static org.apache.lucene.util.VectorUtil.dotProduct;
+import static org.apache.lucene.util.VectorUtil.squareDistance;
 
 /**
  * Navigable Small-world graph. Provides efficient approximate nearest neighbor search for high
@@ -58,8 +60,8 @@ public final class HnswGraph {
    */
   public static Neighbors search(float[] query, int topK, int fanout, VectorValues.RandomAccess vectors, KnnGraphValues graphValues,
                                  Random random) throws IOException {
-    VectorValues.ScoreFunction scoreFunction = vectors.scoreFunction();
-    boolean scoreReversed = scoreFunction.reversed;
+    VectorValues.SearchStrategy searchStrategy = vectors.searchStrategy();
+    boolean scoreReversed = isReversed(searchStrategy);
     TreeSet<Neighbor> candidates;
     if (scoreReversed) {
       candidates = new TreeSet<>(Comparator.reverseOrder());
@@ -69,7 +71,7 @@ public final class HnswGraph {
     int size = vectors.size();
     for (int i = 0; i < fanout && i < size; i++) {
       int entryPoint = random.nextInt(size);
-      candidates.add(new Neighbor(entryPoint, VectorValues.compare(query, vectors.vectorValue(entryPoint), scoreFunction)));
+      candidates.add(new Neighbor(entryPoint, compare(query, vectors.vectorValue(entryPoint), searchStrategy)));
     }
     // set of ordinals that have been visited by search on this layer, used to avoid backtracking
     //IntHashSet visited = new IntHashSet();
@@ -98,7 +100,7 @@ public final class HnswGraph {
           continue;
         }
         visited.add(friendOrd);
-        float score = VectorValues.compare(query, vectors.vectorValue(friendOrd), scoreFunction);
+        float score = compare(query, vectors.vectorValue(friendOrd), searchStrategy);
         if (results.size() < topK || bound.check(score) == false) {
           //if (results.size() < topK || score > lowerBound) {
           Neighbor n = new Neighbor(friendOrd, score);
@@ -145,6 +147,38 @@ public final class HnswGraph {
       shrink(node2, maxConnections);
     }
      */
+  }
+
+  /**
+   * Calculates a similarity score between the two vectors with a specified function.
+   * @param v1 a vector
+   * @param v2 another vector, of the same dimension
+   * @return the value of the strategy's score function applied to the two vectors
+   */
+  public static float compare(float[] v1, float[] v2, VectorValues.SearchStrategy searchStrategy) {
+    switch (searchStrategy) {
+      case EUCLIDEAN_HNSW:
+        return squareDistance(v1, v2);
+      case DOT_PRODUCT_HNSW:
+        return dotProduct(v1, v2);
+      default:
+        throw new IllegalStateException("invalid search strategy: " + searchStrategy);
+    }
+  }
+
+  /**
+   * Return whether the given strategy returns lower values for nearer vectors
+   * @param searchStrategy the strategy
+   */
+  public static boolean isReversed(VectorValues.SearchStrategy searchStrategy) {
+    switch (searchStrategy) {
+      case EUCLIDEAN_HNSW:
+        return true;
+      case DOT_PRODUCT_HNSW:
+        return false;
+      default:
+        throw new IllegalStateException("invalid search strategy: " + searchStrategy);
+    }
   }
 
   KnnGraphValues getGraphValues() {

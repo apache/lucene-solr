@@ -103,8 +103,13 @@ import org.apache.lucene.store.IndexOutput;
  *   <li>VectorDistFunction: a byte containing distance function used for similarity calculation.
  *     <ul>
  *       <li>0: no distance function is defined for this field.</li>
+<<<<<<< HEAD
  *       <li>1: EUCLIDEAN_HNSW distance. ({@link SearchStrategy#EUCLIDEAN_HNSW})</li>
  *       <li>2: DOT_PRODUCT_HNSW score. ({@link SearchStrategy#DOT_PRODUCT_HNSW})</li>
+=======
+ *       <li>1: EUCLIDEAN_HNSW distance. ({@link VectorValues.SearchStrategy#EUCLIDEAN_HNSW})</li>
+ *       <li>2: DOT_PRODUCT_HNSW score. ({@link VectorValues.SearchStrategy#DOT_PRODUCT_HNSW})</li>
+>>>>>>> rename ScoreFunction to SearchStrategy
  *     </ul>
  *   </li>
  * </ul>
