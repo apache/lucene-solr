@@ -187,7 +187,7 @@ public class HnswTest extends LuceneTestCase {
         }
 
         @Override
-        public TopDocs search(float[] target, int k, int fanout) throws IOException {
+        public TopDocs search(float[] target, int k, int fanout) {
             return null;
         }
 
@@ -288,7 +288,8 @@ public class HnswTest extends LuceneTestCase {
             }
             numVectors = sz;
             maxDoc = md;
-            scoreFunction = ScoreFunction.fromId(random.nextInt(2) + 1);
+            // get a random ScoreFunction other than NONE (0)
+            scoreFunction = ScoreFunction.values()[random.nextInt(ScoreFunction.values().length - 1) + 1];
         }
 
         private RandomVectorValues(int dimension, ScoreFunction scoreFunction, float[][] denseValues, float[][] values, int size) {

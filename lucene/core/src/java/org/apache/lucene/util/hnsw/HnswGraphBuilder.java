@@ -40,7 +40,7 @@ public final class HnswGraphBuilder {
   public static long randSeed = DEFAULT_RAND_SEED;
 
   // default max connections per node
-  public static final int DEFAULT_MAX_CONNECTIONS = 32;
+  public static final int DEFAULT_MAX_CONNECTIONS = 16;
 
   // default candidate list size
   public static final int DEFAULT_EF_CONST = 50;
@@ -51,8 +51,6 @@ public final class HnswGraphBuilder {
   private final VectorValues.ScoreFunction scoreFunction;
   private final HnswGraph hnsw;
   private final Random random;
-
-  private int addedDocs = 0;
 
   /** Construct the builder with default configurations */
   private HnswGraphBuilder(VectorValues.RandomAccess vectors) {

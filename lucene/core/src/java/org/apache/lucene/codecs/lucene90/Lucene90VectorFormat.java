@@ -33,15 +33,16 @@ public final class Lucene90VectorFormat extends VectorFormat {
 
   static final String META_CODEC_NAME = "Lucene90VectorFormatMeta";
   static final String VECTOR_DATA_CODEC_NAME = "Lucene90VectorFormatData";
-
+  static final String GRAPH_DATA_CODEC_NAME = "Lucene90KnnGraphFormat";
   static final String META_EXTENSION = "vem";
   static final String VECTOR_DATA_EXTENSION = "vec";
+  static final String GRAPH_DATA_EXTENSION = "veg";
 
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
   /** Sole constructor */
-  public Lucene90VectorFormat() {
+  Lucene90VectorFormat() {
   }
 
   @Override
