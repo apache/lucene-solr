@@ -30,9 +30,8 @@ import org.apache.lucene.store.OutputStreamIndexOutput;
 
 /**
  * @lucene.experimental
- * @deprecated since 8.6
+ * @deprecated since 8.6; see <a href="https://cwiki.apache.org/confluence/display/SOLR/Deprecations">Deprecations</a>
  */
-@Deprecated
 public class HdfsFileWriter extends OutputStreamIndexOutput {
   
   public static final String HDFS_SYNC_BLOCK = "solr.hdfs.sync.block";
