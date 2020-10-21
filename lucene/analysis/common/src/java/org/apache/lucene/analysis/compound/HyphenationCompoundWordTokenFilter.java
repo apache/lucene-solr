@@ -34,6 +34,9 @@ import org.xml.sax.InputSource;
 public class HyphenationCompoundWordTokenFilter extends
     CompoundWordTokenFilterBase {
   private HyphenationTree hyphenator;
+  private boolean noSubMatches;
+  private boolean noOverlappingMatches;
+  private boolean calcSubMatches;
 
   /**
    * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
@@ -48,7 +51,7 @@ public class HyphenationCompoundWordTokenFilter extends
   public HyphenationCompoundWordTokenFilter(TokenStream input,
                                             HyphenationTree hyphenator, CharArraySet dictionary) {
     this(input, hyphenator, dictionary, DEFAULT_MIN_WORD_SIZE,
-        DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE, false);
+        DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE, false, false, false);
   }
 
   /**
@@ -67,21 +70,54 @@ public class HyphenationCompoundWordTokenFilter extends
    * @param maxSubwordSize
    *          only subwords shorter than this get to the output stream
    * @param onlyLongestMatch
-   *          Add only the longest matching subword to the stream
+   *          Add only the longest matching subword for each hyphenation to the stream
+   */
+  public HyphenationCompoundWordTokenFilter(TokenStream input,
+      HyphenationTree hyphenator, CharArraySet dictionary, int minWordSize,
+      int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
+    this(input, hyphenator, dictionary, minWordSize, minSubwordSize,
+        maxSubwordSize, onlyLongestMatch, false, false);
+  }
+  
+  /**
+   * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
+   *
+   * @param input
+   *          the {@link org.apache.lucene.analysis.TokenStream} to process
+   * @param hyphenator
+   *          the hyphenation pattern tree to use for hyphenation
+   * @param dictionary
+   *          the word dictionary to match against.
+   * @param minWordSize
+   *          only words longer than this get processed
+   * @param minSubwordSize
+   *          only subwords longer than this get to the output stream
+   * @param maxSubwordSize
+   *          only subwords shorter than this get to the output stream
+   * @param onlyLongestMatch
+   *          Add only the longest matching subword for each hyphenation to the stream
+   * @param noSubMatches
+   *          Excludes subwords that are enclosed by an other token
+   * @param noOverlappingMatches
+   *          Excludes subwords that overlap with an other subword
    */
   public HyphenationCompoundWordTokenFilter(TokenStream input,
                                             HyphenationTree hyphenator, CharArraySet dictionary, int minWordSize,
-                                            int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
+                                            int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch,
+                                            boolean noSubMatches, boolean noOverlappingMatches) {
     super(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize,
         onlyLongestMatch);
 
     this.hyphenator = hyphenator;
+    this.noSubMatches = noSubMatches;
+    this.noOverlappingMatches = noOverlappingMatches;
+    this.calcSubMatches = !onlyLongestMatch && !noSubMatches && !noOverlappingMatches;
   }
 
   /**
    * Create a HyphenationCompoundWordTokenFilter with no dictionary.
    * <p>
-   * Calls {@link #HyphenationCompoundWordTokenFilter(org.apache.lucene.analysis.TokenStream, org.apache.lucene.analysis.compound.hyphenation.HyphenationTree, org.apache.lucene.analysis.CharArraySet, int, int, int, boolean)
+   * Calls {@link #HyphenationCompoundWordTokenFilter(org.apache.lucene.analysis.TokenStream, org.apache.lucene.analysis.compound.hyphenation.HyphenationTree, org.apache.lucene.analysis.CharArraySet, int, int, int, boolean, boolean, boolean)
    * HyphenationCompoundWordTokenFilter(matchVersion, input, hyphenator,
    * null, minWordSize, minSubwordSize, maxSubwordSize }
    */
@@ -89,7 +125,7 @@ public class HyphenationCompoundWordTokenFilter extends
                                             HyphenationTree hyphenator, int minWordSize, int minSubwordSize,
                                             int maxSubwordSize) {
     this(input, hyphenator, null, minWordSize, minSubwordSize,
-        maxSubwordSize, false);
+        maxSubwordSize, false, false, false);
   }
 
   /**
@@ -133,26 +169,42 @@ public class HyphenationCompoundWordTokenFilter extends
 
   @Override
   protected void decompose() {
+    //if the token is in the dictionary and we are not interested in subMatches
+    //we can skip decomposing this token (see testNoSubAndTokenInDictionary unit test) 
+    //NOTE: 
+    //we check against token and the token that is one character
+    //shorter to avoid problems with genitive 's characters and other binding characters
+    if(dictionary != null && !this.calcSubMatches && 
+      (dictionary.contains(termAtt.buffer(), 0, termAtt.length()) ||
+          termAtt.length() > 1 && dictionary.contains(termAtt.buffer(), 0, termAtt.length() - 1))){
+      return; //the whole token is in the dictionary - do not decompose
+    }
+    
     // get the hyphenation points
     Hyphenation hyphens = hyphenator.hyphenate(termAtt.buffer(), 0, termAtt.length(), 1, 1);
     // No hyphen points found -> exit
     if (hyphens == null) {
       return;
     }
+    int maxSubwordSize = Math.min(this.maxSubwordSize, termAtt.length()-1);
 
+    int consumed = -1; //hyp of the longest token added (for noSub)
+    
     final int[] hyp = hyphens.getHyphenationPoints();
 
     for (int i = 0; i < hyp.length; ++i) {
-      int remaining = hyp.length - i;
+      if(noOverlappingMatches){ //if we do not want overlapping subwords
+        i = Math.max(i, consumed); //skip over consumed hyp
+      }
       int start = hyp[i];
-      CompoundToken longestMatchToken = null;
-      for (int j = 1; j < remaining; j++) {
-        int partLength = hyp[i + j] - start;
+      int until = noSubMatches ? Math.max(consumed, i) : i;
+      for (int j = hyp.length - 1; j > until; j--) {
+        int partLength = hyp[j] - start;
 
         // if the part is longer than maxSubwordSize we
         // are done with this round
-        if (partLength > this.maxSubwordSize) {
-          break;
+        if (partLength > maxSubwordSize) {
+          continue;
         }
 
         // we only put subwords to the token stream
@@ -160,42 +212,26 @@ public class HyphenationCompoundWordTokenFilter extends
         if (partLength < this.minSubwordSize) {
           // BOGUS/BROKEN/FUNKY/WACKO: somehow we have negative 'parts' according to the 
           // calculation above, and we rely upon minSubwordSize being >=0 to filter them out...
-          continue;
+          break;
         }
 
         // check the dictionary
         if (dictionary == null || dictionary.contains(termAtt.buffer(), start, partLength)) {
-          if (this.onlyLongestMatch) {
-            if (longestMatchToken != null) {
-              if (longestMatchToken.txt.length() < partLength) {
-                longestMatchToken = new CompoundToken(start, partLength);
-              }
-            } else {
-              longestMatchToken = new CompoundToken(start, partLength);
-            }
-          } else {
-            tokens.add(new CompoundToken(start, partLength));
+          tokens.add(new CompoundToken(start, partLength));
+          consumed = j; //mark the current hyp as consumed
+          if(!calcSubMatches){
+            break; //do not search for shorter matches
           }
         } else if (dictionary.contains(termAtt.buffer(), start, partLength - 1)) {
           // check the dictionary again with a word that is one character
-          // shorter
-          // to avoid problems with genitive 's characters and other binding
-          // characters
-          if (this.onlyLongestMatch) {
-            if (longestMatchToken != null) {
-              if (longestMatchToken.txt.length() < partLength - 1) {
-                longestMatchToken = new CompoundToken(start, partLength - 1);
-              }
-            } else {
-              longestMatchToken = new CompoundToken(start, partLength - 1);
-            }
-          } else {
-            tokens.add(new CompoundToken(start, partLength - 1));
+          // shorter to avoid problems with genitive 's characters and
+          // other binding characters
+          tokens.add(new CompoundToken(start, partLength - 1));
+          consumed = j; //mark the current hyp as consumed
+          if(!calcSubMatches){
+            break; //do not search for shorter matches
           }
-        }
-      }
-      if (this.onlyLongestMatch && longestMatchToken!=null) {
-        tokens.add(longestMatchToken);
+        } //else dictionary is present but does not contain the part
       }
     }
   }

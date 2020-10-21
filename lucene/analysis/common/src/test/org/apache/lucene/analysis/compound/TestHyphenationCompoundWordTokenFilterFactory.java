@@ -47,6 +47,27 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
   }
 
   /**
+   * just tests that the two no configuration options are correctly processed
+   * tests for the functionality are part of {@link TestCompoundWordTokenFilter}
+   */
+  public void testLucene8183() throws Exception {
+    Reader reader = new StringReader("basketballkurv");
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
+    stream = tokenFilterFactory("HyphenationCompoundWord", 
+        "hyphenator", "da_UTF8.xml",
+        "dictionary", "compoundDictionary_lucene8183.txt",
+        "onlyLongestMatch", "false",
+        "noSubMatches", "true",
+        "noOverlappingMatches", "false").create(stream);
+    
+    assertTokenStreamContents(stream, 
+        new String[] { "basketballkurv", "basketball", "kurv"},
+        new int[] { 1, 0, 0}
+    );
+  }
+
+  /**
    * Ensure the factory works with no dictionary: using hyphenation grammar only.
    * Also change the min/max subword sizes from the default. When using no dictionary,
    * it's generally necessary to tweak these, or you get lots of expansions.
@@ -61,7 +82,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
         "maxSubwordSize", "4").create(stream);
     
     assertTokenStreamContents(stream,
-        new String[] { "basketballkurv", "ba", "sket", "bal", "ball", "kurv" }
+        new String[] { "basketballkurv", "ba", "sket", "ball", "bal", "kurv" }
     );
   }
   

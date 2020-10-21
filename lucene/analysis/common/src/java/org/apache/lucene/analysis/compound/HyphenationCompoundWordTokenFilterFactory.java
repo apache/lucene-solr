@@ -74,7 +74,9 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
   private final int minSubwordSize;
   private final int maxSubwordSize;
   private final boolean onlyLongestMatch;
-  
+  private final boolean noSubMatches;
+  private final boolean noOverlappingMatches;
+
   /** Creates a new HyphenationCompoundWordTokenFilterFactory */
   public HyphenationCompoundWordTokenFilterFactory(Map<String, String> args) {
     super(args);
@@ -85,6 +87,8 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
     minSubwordSize = getInt(args, "minSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
     maxSubwordSize = getInt(args, "maxSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
     onlyLongestMatch = getBoolean(args, "onlyLongestMatch", false);
+    noSubMatches = getBoolean(args, "noSubMatches", false);
+    noOverlappingMatches = getBoolean(args, "noOverlappingMatches", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -115,6 +119,6 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
   
   @Override
   public TokenFilter create(TokenStream input) {
-    return new HyphenationCompoundWordTokenFilter(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
+    return new HyphenationCompoundWordTokenFilter(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch, noSubMatches, noOverlappingMatches);
   }
 }
