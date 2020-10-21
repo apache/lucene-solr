@@ -17,19 +17,21 @@
 package org.apache.solr.cloud;
 
 /**
- * Intended for plugins that should be enabled only one instance per cluster.
+ * Intended for components that should be enabled only one instance per cluster.
  * <p>Components that implement this interface are always in one of these states:
  * <ul>
  *   <li>STOPPED - the default state. The component is idle and does not perform
  *   any functions. It should also avoid holding any resources.</li>
- *   <li>STARTING - </li>
+ *   <li>STARTING - transitional state, which leads either to RUNNING or STOPPING in
+ *   case of startup failures.</li>
+ *   <li>STOPPING - transitional state, which leads to STOPPED state.</li>
  *   <li>RUNNING - the component is active.</li>
  * </ul>
  * <p>Components must be prepared to change these states multiple times in their
  * life-cycle.</p>
- * <p>Implementation detail: currently these plugins are instantiated on all nodes
+ * <p>Implementation detail: currently these components are instantiated on all nodes
  * but they are started only on the Overseer leader, and stopped when the current
- * node loses its leadership.</p>
+ * node loses its Overseer leadership.</p>
  */
 public interface ClusterSingleton {
 
