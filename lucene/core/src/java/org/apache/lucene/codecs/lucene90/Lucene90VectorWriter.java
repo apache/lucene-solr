@@ -129,22 +129,6 @@ public final class Lucene90VectorWriter extends VectorWriter {
     vectorData.writeBytes(binaryValue.bytes, binaryValue.offset, binaryValue.length);
   }
 
-  private void writeGraph(VectorValues vectorValues, long graphDataOffset, long[] offsets, int count) throws IOException {
-    HnswGraph graph = HnswGraphBuilder.build(vectorValues);
-    for (int ord = 0; ord < count; ord++) {
-      // write graph
-      offsets[ord] = graphData.getFilePointer() - graphDataOffset;
-      int[] arcs = graph.getFriends(ord);
-      graphData.writeInt(arcs.length);
-      int lastArc = -1;         // to make the assertion work?
-      for (int arc : arcs) {
-        assert arc > lastArc : "arcs out of order: " + lastArc + "," + arc;
-        graphData.writeVInt(arc - lastArc);
-        lastArc = arc;
-      }
-    }
-  }
-
   @Override
   public void finish() throws IOException {
     if (finished) {

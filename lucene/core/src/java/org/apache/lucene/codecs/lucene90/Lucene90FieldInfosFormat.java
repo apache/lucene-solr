@@ -104,12 +104,17 @@ import org.apache.lucene.store.IndexOutput;
  *     <ul>
  *       <li>0: no distance function is defined for this field.</li>
 <<<<<<< HEAD
+<<<<<<< HEAD
  *       <li>1: EUCLIDEAN_HNSW distance. ({@link SearchStrategy#EUCLIDEAN_HNSW})</li>
  *       <li>2: DOT_PRODUCT_HNSW score. ({@link SearchStrategy#DOT_PRODUCT_HNSW})</li>
 =======
  *       <li>1: EUCLIDEAN_HNSW distance. ({@link VectorValues.SearchStrategy#EUCLIDEAN_HNSW})</li>
  *       <li>2: DOT_PRODUCT_HNSW score. ({@link VectorValues.SearchStrategy#DOT_PRODUCT_HNSW})</li>
 >>>>>>> rename ScoreFunction to SearchStrategy
+=======
+ *       <li>1: EUCLIDEAN_HNSW distance. ({@link SearchStrategy#EUCLIDEAN_HNSW})</li>
+ *       <li>2: DOT_PRODUCT_HNSW score. ({@link SearchStrategy#DOT_PRODUCT_HNSW})</li>
+>>>>>>> LUCENE-9582: rename VectorValues.ScoreFunction to SearchStrategy
  *     </ul>
  *   </li>
  * </ul>

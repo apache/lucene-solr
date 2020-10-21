@@ -139,11 +139,8 @@ public final class Lucene90VectorReader extends VectorReader {
         int doc = meta.readVInt();
         ordToDoc[i] = doc;
       }
-      for (int i = 0; i < size; i++) {
-        ordOffsets[i] = meta.readVLong();
-      }
-      FieldEntry fieldEntry = new FieldEntry(info.name, dimension, searchStrategy, maxDoc, vectorDataOffset, vectorDataLength,
-                                             graphDataOffset, graphDataLength, ordToDoc, ordOffsets);
+      FieldEntry fieldEntry = new FieldEntry(dimension, searchStrategy, maxDoc, vectorDataOffset, vectorDataLength,
+                                              ordToDoc);
       fields.put(info.name, fieldEntry);
     }
   }
@@ -231,10 +228,8 @@ public final class Lucene90VectorReader extends VectorReader {
     final int[] ordToDoc;
     final long[] ordOffsets;
 
-    FieldEntry(String name, int dimension, VectorValues.SearchStrategy searchStrategy, int maxDoc,
-               long vectorDataOffset, long vectorDataLength, long graphDataOffset, long graphDataLength,
-               int[] ordToDoc, long[] ordOffsets) {
-      this.name = name;
+    FieldEntry(int dimension, VectorValues.SearchStrategy searchStrategy, int maxDoc,
+               long vectorDataOffset, long vectorDataLength, int[] ordToDoc) {
       this.dimension = dimension;
       this.searchStrategy = searchStrategy;
       this.maxDoc = maxDoc;
