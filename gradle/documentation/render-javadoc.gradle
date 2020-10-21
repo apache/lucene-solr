@@ -278,6 +278,13 @@ configure(project(":solr:contrib:langid")) {
   }
 }
 
+configure(project(":solr:contrib:scripting-update-processor")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [ "org.apache.solr.update.processor" ]
+  }
+}
+
 configure(project(":solr:solrj")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
@@ -350,7 +357,7 @@ class RenderJavadocTask extends DefaultTask {
   @InputFiles
   @SkipWhenEmpty
   SourceDirectorySet srcDirSet;
-  
+
   @OutputDirectory
   File outputDir
 
@@ -415,10 +422,10 @@ class RenderJavadocTask extends DefaultTask {
   public void render() {
     def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
     def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
-    
+
     // create the directory, so relative link calculation knows that it's a directory:
     outputDir.mkdirs();
-    
+
     def opts = []
     opts << [ '-overview', project.file("${srcDirs[0]}/overview.html") ]
     opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
@@ -488,7 +495,7 @@ class RenderJavadocTask extends DefaultTask {
           }
         }
     }
-    
+
     // Add offline links.
     allOfflineLinks.each { url, dir ->
       // Some sanity check/ validation here to ensure dir/package-list or dir/element-list is present.
@@ -550,7 +557,7 @@ class RenderJavadocTask extends DefaultTask {
     }
 
     if (result.getExitValue() != 0) {
-      // Pipe the output to console. Intentionally skips any encoding conversion 
+      // Pipe the output to console. Intentionally skips any encoding conversion
       // and pumps raw bytes.
       System.out.write(outputFile.bytes)
 
