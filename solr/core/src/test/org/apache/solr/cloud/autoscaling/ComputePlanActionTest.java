@@ -583,7 +583,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     int numShards = 1;
     int numCollections = 5;
 
-    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections);
+    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, null);
   }
 
   @Test
@@ -592,7 +592,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     int numShards = 1;
     int numCollections = 5;
 
-    nodeAddedTriggerWithAddReplicaPreferredOpReplicaType(collectionNamePrefix, numShards, numCollections);
+    nodeAddedTriggerWithAddReplicaPreferredOpReplicaType(collectionNamePrefix, numShards, numCollections, null);
   }
 
   @Test
@@ -602,9 +602,19 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     int numShards = 2;
     int numCollections = 5;
 
-    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections);
+    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, null);
   }
-  private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections) throws Exception {
+
+  @Test
+  public void testNodeAddedTriggerWithAddReplicaPreferredOp_2Shard_OpLimit() throws Exception {
+    String collectionNamePrefix = "testNodeAddedTriggerWithAddReplicaPreferredOp_2Shard";
+    int numShards = 2;
+    int numCollections = 5;
+
+    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, 1);
+  }
+
+  private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections, Integer maxOps) throws Exception {
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_added_trigger'," +
@@ -624,10 +634,10 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "    ]" +
         "}";
 
-    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, setTriggerCommand, setClusterPolicyCommand);
+    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, setTriggerCommand, setClusterPolicyCommand, maxOps);
   }
 
-  private void nodeAddedTriggerWithAddReplicaPreferredOpReplicaType(String collectionNamePrefix, int numShards, int numCollections) throws Exception {
+  private void nodeAddedTriggerWithAddReplicaPreferredOpReplicaType(String collectionNamePrefix, int numShards, int numCollections, Integer maxOps) throws Exception {
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_added_trigger'," +
@@ -648,13 +658,15 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "    ]" +
         "}";
 
-    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, setTriggerCommand, setClusterPolicyCommand, 0, 1, 0);
+    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, setTriggerCommand, setClusterPolicyCommand, maxOps, 0, 1, 0);
   }
 
-  private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections, String setTriggerCommand, String setClusterPolicyCommand) throws Exception {
-    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, setTriggerCommand, setClusterPolicyCommand, 1, null, null);
+  private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections, String setTriggerCommand, String setClusterPolicyCommand, Integer maxOps) throws Exception {
+    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, setTriggerCommand, setClusterPolicyCommand, maxOps, 1, null, null);
   }
-  private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections, String setTriggerCommand, String setClusterPolicyCommand, Integer nNrtReplicas, Integer nTlogReplicas, Integer nPullReplicas) throws Exception {
+  private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections, String setTriggerCommand, String setClusterPolicyCommand,
+                                                         Integer maxOps,
+                                                         Integer nNrtReplicas, Integer nTlogReplicas, Integer nPullReplicas) throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     @SuppressWarnings({"rawtypes"})
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
@@ -665,6 +677,16 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+    if (maxOps != null) {
+      String setMaxOpsCommand = "{" +
+          " 'set-properties': {" +
+          "   'maxComputeOperations': " + maxOps +
+          "  }" +
+          "}";
+      req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setMaxOpsCommand);
+      response = solrClient.request(req);
+      assertEquals(response.get("result").toString(), "success");
+    }
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
         "conf", numShards, nNrtReplicas, nTlogReplicas, nPullReplicas).setMaxShardsPerNode(2);
@@ -683,7 +705,13 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     @SuppressWarnings({"rawtypes"})
     List operations = (List) actionContext.get("operations");
     assertNotNull(operations);
-    assertEquals(numShards, operations.size());
+    int numExpectedOps;
+    if (maxOps != null && maxOps > 0) {
+      numExpectedOps = maxOps;
+    } else {
+      numExpectedOps = numShards;
+    }
+    assertEquals(numExpectedOps, operations.size());
     Set<String> affectedShards = new HashSet<>(2);
     for (Object operation : operations) {
       assertTrue(operation instanceof CollectionAdminRequest.AddReplica);
@@ -692,7 +720,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
       assertEquals(collectionNamePrefix + "_0", addReplica.getCollection());
       affectedShards.add(addReplica.getShard());
     }
-    assertEquals(numShards, affectedShards.size());
+    assertEquals(numExpectedOps, affectedShards.size());
 
     for (int i = 1; i < numCollections; i++) {
       create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_" + i,
@@ -712,7 +740,12 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     actionContext = actionContextPropsRef.get();
     operations = (List) actionContext.get("operations");
     assertNotNull(operations);
-    assertEquals(numCollections * numShards, operations.size());
+    if (maxOps != null && maxOps > 0) {
+      numExpectedOps = maxOps;
+    } else {
+      numExpectedOps = numCollections * numShards;
+    }
+    assertEquals(numExpectedOps, operations.size());
     Set<String> affectedCollections = new HashSet<>(numCollections);
     affectedShards = new HashSet<>(numShards);
     Set<Pair<String, String>> affectedCollShards = new HashSet<>(numCollections * numShards);
@@ -724,9 +757,15 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
       affectedShards.add(addReplica.getShard());
       affectedCollShards.add(new Pair<>(addReplica.getCollection(), addReplica.getShard()));
     }
-    assertEquals(numCollections, affectedCollections.size());
-    assertEquals(numShards, affectedShards.size());
-    assertEquals(numCollections * numShards, affectedCollShards.size());
+    if (maxOps != null && maxOps > 0) {
+      assertEquals(numExpectedOps, affectedCollections.size());
+      assertEquals(numExpectedOps, affectedShards.size());
+      assertEquals(numExpectedOps, affectedCollShards.size());
+    } else {
+      assertEquals(numCollections, affectedCollections.size());
+      assertEquals(numShards, affectedShards.size());
+      assertEquals(numCollections * numShards, affectedCollShards.size());
+    }
   }
 
   @Test
