@@ -655,6 +655,8 @@ public class Overseer implements SolrCloseable {
       }
     });
 
+    getCoreContainer().getClusterSingletons().startClusterSingletons();
+
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -774,6 +776,13 @@ public class Overseer implements SolrCloseable {
     }
   }
 
+  /**
+   * Start {@link ClusterSingleton} plugins when we become the leader.
+   */
+
+  /**
+   * Stop {@link ClusterSingleton} plugins when we lose leadership.
+   */
   public Stats getStats() {
     return stats;
   }
@@ -813,8 +822,13 @@ public class Overseer implements SolrCloseable {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);
     }
+    // stop singletons only on the leader
+    if (!this.closed) {
+      getCoreContainer().getClusterSingletons().stopClusterSingletons();
+    }
     this.closed = true;
     doClose();
+
 
     assert ObjectReleaseTracker.release(this);
   }
