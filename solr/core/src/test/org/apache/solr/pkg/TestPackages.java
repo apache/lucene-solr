@@ -135,7 +135,7 @@ public class TestPackages extends SolrCloudTestCase {
       add.files = Arrays.asList(new String[]{FILE1, URP1, EXPR1});
       V2Request req = new V2Request.Builder("/cluster/package")
           .forceV2(true)
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload(Collections.singletonMap("add", add))
           .build();
 
@@ -148,8 +148,8 @@ public class TestPackages extends SolrCloudTestCase {
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
       TestDistribPackageStore.assertResponseValues(10,
-          () -> new V2Request.Builder("/cluster/package").
-              withMethod(SolrRequest.METHOD.GET)
+          () -> new V2Request.Builder("/cluster/package")
+              .GET()
               .build().process(cluster.getSolrClient()),
           Utils.makeMap(
               ":result:packages:mypkg[0]:version", "1.0",
@@ -183,7 +183,7 @@ public class TestPackages extends SolrCloudTestCase {
 
 
       V2Request v2r = new V2Request.Builder( "/c/"+COLLECTION_NAME+ "/config")
-              .withMethod(SolrRequest.METHOD.POST)
+              .POST()
               .withPayload(plugins)
               .forceV2(true)
               .build();
@@ -319,7 +319,7 @@ public class TestPackages extends SolrCloudTestCase {
       delVersion.pkg = "mypkg";
       delVersion.version = "1.0";
       V2Request delete = new V2Request.Builder("/cluster/package")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .forceV2(true)
           .withPayload(Collections.singletonMap("delete", delVersion))
           .build();
@@ -393,7 +393,7 @@ public class TestPackages extends SolrCloudTestCase {
       //now, let's force every collection using 'mypkg' to refresh
       //so that it uses version 2.1
       new V2Request.Builder("/cluster/package")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload("{refresh : mypkg}")
           .forceV2(true)
           .build()
@@ -424,7 +424,7 @@ public class TestPackages extends SolrCloudTestCase {
       plugins.put("create-queryparser", p);
 
       v2r = new V2Request.Builder( "/c/"+COLLECTION_NAME+ "/config")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload(plugins)
           .forceV2(true)
           .build();
@@ -500,7 +500,7 @@ public class TestPackages extends SolrCloudTestCase {
       add.files = Arrays.asList(new String[]{FILE1, FILE2});
       V2Request req = new V2Request.Builder("/cluster/package")
           .forceV2(true)
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload(Collections.singletonMap("add", add))
           .build();
 
@@ -569,7 +569,7 @@ public class TestPackages extends SolrCloudTestCase {
       delVersion.pkg = "test_pkg";
       req = new V2Request.Builder("/cluster/package")
           .forceV2(true)
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload(Collections.singletonMap("delete", delVersion))
           .build();
 
@@ -669,14 +669,14 @@ public class TestPackages extends SolrCloudTestCase {
       add.files = Arrays.asList(FILE1,FILE2);
       V2Request req = new V2Request.Builder("/cluster/package")
           .forceV2(true)
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload(Collections.singletonMap("add", add))
           .build();
       req.process(cluster.getSolrClient());
 
       TestDistribPackageStore.assertResponseValues(10,
-          () -> new V2Request.Builder("/cluster/package").
-              withMethod(SolrRequest.METHOD.GET)
+          () -> new V2Request.Builder("/cluster/package")
+              .GET()
               .build().process(cluster.getSolrClient()),
           Utils.makeMap(
               ":result:packages:schemapkg[0]:version", "1.0",
@@ -699,14 +699,14 @@ public class TestPackages extends SolrCloudTestCase {
       add.files = Arrays.asList(FILE1);
       req = new V2Request.Builder("/cluster/package")
           .forceV2(true)
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload(Collections.singletonMap("add", add))
           .build();
       req.process(cluster.getSolrClient());
 
       TestDistribPackageStore.assertResponseValues(10,
-          () -> new V2Request.Builder("/cluster/package").
-              withMethod(SolrRequest.METHOD.GET)
+          () -> new V2Request.Builder("/cluster/package")
+              .GET()
               .build().process(cluster.getSolrClient()),
           Utils.makeMap(
               ":result:packages:schemapkg[0]:version", "2.0",

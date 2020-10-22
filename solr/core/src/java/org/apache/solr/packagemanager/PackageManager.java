@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import org.apache.http.client.methods.HttpDelete;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -129,7 +128,7 @@ public class PackageManager implements Closeable {
 
     V2Request req = new V2Request.Builder(PackageUtils.PACKAGE_PATH)
             .forceV2(true)
-            .withMethod(SolrRequest.METHOD.POST)
+            .POST()
             .withPayload(Collections.singletonMap("delete", del))
             .build();
 

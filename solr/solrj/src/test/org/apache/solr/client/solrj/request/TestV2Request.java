@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -51,7 +50,7 @@ public class TestV2Request extends SolrCloudTestCase {
   public void testApiPathAvailability() throws Exception {
     V2Response rsp = new V2Request.Builder("/cluster/nodes")
         .forceV2(true)
-        .withMethod(SolrRequest.METHOD.GET).build()
+        .GET().build()
         .process(cluster.getSolrClient());
     @SuppressWarnings({"rawtypes"})
     List l = (List) rsp._get("nodes",null);
@@ -98,7 +97,7 @@ public class TestV2Request extends SolrCloudTestCase {
 
   private void doTest(SolrClient client) throws IOException, SolrServerException {
     assertSuccess(client, new V2Request.Builder("/collections")
-        .withMethod(SolrRequest.METHOD.POST)
+        .POST()
         .withPayload("{" +
             "  'create' : {" +
             "    'name' : 'test'," +
@@ -113,12 +112,12 @@ public class TestV2Request extends SolrCloudTestCase {
 
     String requestHandlerName = "/x" + random().nextInt();
     assertSuccess(client, new V2Request.Builder("/c/test/config")
-        .withMethod(SolrRequest.METHOD.POST)
+        .POST()
         .withPayload("{'create-requesthandler' : { 'name' : '" + requestHandlerName + 
             "', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}}")
         .build());
 
-    assertSuccess(client, new V2Request.Builder("/c/test").withMethod(SolrRequest.METHOD.DELETE).build());
+    assertSuccess(client, new V2Request.Builder("/c/test").DELETE().build());
     NamedList<Object> res = client.request(new V2Request.Builder("/c").build());
 
     
@@ -127,7 +126,7 @@ public class TestV2Request extends SolrCloudTestCase {
     // assertFalse( collections.contains("test"));
     try{
       NamedList<Object> res1 = client.request(new V2Request.Builder("/collections")
-              .withMethod(SolrRequest.METHOD.POST)
+              .POST()
               .withPayload("{" +
                   "  'create' : {" +
                   "    'name' : 'jsontailtest'," +
@@ -144,7 +143,7 @@ public class TestV2Request extends SolrCloudTestCase {
   public void testV2Forwarding() throws Exception {
     SolrClient client = cluster.getSolrClient();
     assertSuccess(client, new V2Request.Builder("/collections")
-        .withMethod(SolrRequest.METHOD.POST)
+        .POST()
         .withPayload("{" +
             "  'create' : {" +
             "    'name' : 'v2forward'," +
@@ -168,7 +167,7 @@ public class TestV2Request extends SolrCloudTestCase {
 
     String testServer = cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(testNode[0]);
      V2Request v2r = new V2Request.Builder("/c/v2forward/_introspect")
-        .withMethod(SolrRequest.METHOD.GET).build();
+        .GET().build();
 
     try(HttpSolrClient client1 = new HttpSolrClient.Builder()
         .withBaseSolrUrl(testServer)
