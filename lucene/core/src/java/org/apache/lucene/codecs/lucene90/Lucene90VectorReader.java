@@ -37,6 +37,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -45,6 +46,7 @@ import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.lucene.util.hnsw.Neighbor;
 import org.apache.lucene.util.hnsw.Neighbors;
 
+import static org.apache.lucene.codecs.lucene90.Lucene90VectorFormat.isHnswStrategy;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
@@ -56,16 +58,14 @@ public final class Lucene90VectorReader extends VectorReader {
   private final FieldInfos fieldInfos;
   private final Map<String, FieldEntry> fields = new HashMap<>();
   private final IndexInput vectorData;
-  private final IndexInput graphData;
-  private final int maxDoc;
+  private final IndexInput vectorIndex;
 
   Lucene90VectorReader(SegmentReadState state) throws IOException {
     this.fieldInfos = state.fieldInfos;
-    this.maxDoc = state.segmentInfo.maxDoc();
 
     int versionMeta = readMetadata(state, Lucene90VectorFormat.META_EXTENSION);
     vectorData = openDataInput(state, versionMeta, Lucene90VectorFormat.VECTOR_DATA_EXTENSION, Lucene90VectorFormat.VECTOR_DATA_CODEC_NAME);
-    graphData = openDataInput(state, versionMeta, Lucene90VectorFormat.GRAPH_DATA_EXTENSION, Lucene90VectorFormat.GRAPH_DATA_CODEC_NAME);
+    vectorIndex = openDataInput(state, versionMeta, Lucene90VectorFormat.VECTOR_INDEX_EXTENSION, Lucene90VectorFormat.VECTOR_INDEX_CODEC_NAME);
   }
 
   private int readMetadata(SegmentReadState state, String fileExtension) throws IOException {
@@ -122,26 +122,28 @@ public final class Lucene90VectorReader extends VectorReader {
       if (info == null) {
         throw new CorruptIndexException("Invalid field number: " + fieldNumber, meta);
       }
-      int searchStrategyId = meta.readInt();
-      if (searchStrategyId < 0 || searchStrategyId >= VectorValues.SearchStrategy.values().length) {
-        throw new CorruptIndexException("Invalid search strategy id: " + searchStrategyId, meta);
-      }
-      VectorValues.SearchStrategy searchStrategy = VectorValues.SearchStrategy.values()[searchStrategyId];
-      long vectorDataOffset = meta.readVLong();
-      long vectorDataLength = meta.readVLong();
-      long graphDataOffset = meta.readVLong();
-      long graphDataLength = meta.readVLong();
-      int dimension = meta.readInt();
-      int size = meta.readInt();
-      int[] ordToDoc = new int[size];
-      long[] ordOffsets = new long[size];
-      for (int i = 0; i < size; i++) {
-        int doc = meta.readVInt();
-        ordToDoc[i] = doc;
-      }
-      FieldEntry fieldEntry = new FieldEntry(dimension, searchStrategy, maxDoc, vectorDataOffset, vectorDataLength,
-                                              ordToDoc);
-      fields.put(info.name, fieldEntry);
+      fields.put(info.name, readField(meta));
+    }
+  }
+
+  private VectorValues.SearchStrategy readSearchStrategy(DataInput input) throws IOException {
+    int searchStrategyId = input.readInt();
+    if (searchStrategyId < 0 || searchStrategyId >= VectorValues.SearchStrategy.values().length) {
+      throw new CorruptIndexException("Invalid search strategy id: " + searchStrategyId, input);
+    }
+    return VectorValues.SearchStrategy.values()[searchStrategyId];
+  }
+
+  private FieldEntry readField(DataInput input) throws IOException {
+    VectorValues.SearchStrategy searchStrategy = readSearchStrategy(input);
+    switch(searchStrategy) {
+      case NONE:
+        return new FieldEntry(input, searchStrategy);
+      case DOT_PRODUCT_HNSW:
+      case EUCLIDEAN_HNSW:
+        return new HnswGraphFieldEntry(input, searchStrategy);
+      default:
+        throw new CorruptIndexException("Unknown vector search strategy: " + searchStrategy, input);
     }
   }
 
@@ -158,7 +160,7 @@ public final class Lucene90VectorReader extends VectorReader {
   @Override
   public void checkIntegrity() throws IOException {
     CodecUtil.checksumEntireFile(vectorData);
-    CodecUtil.checksumEntireFile(graphData);
+    CodecUtil.checksumEntireFile(vectorIndex);
   }
 
   @Override
@@ -191,58 +193,76 @@ public final class Lucene90VectorReader extends VectorReader {
 
   // exposed for testing
   public KnnGraphValues getGraphValues(String field) throws IOException {
-
     FieldInfo info = fieldInfos.fieldInfo(field);
-    if (info != null) {
-
-      int numDims = info.getVectorDimension();
-      if (numDims > 0) {
-
-        final FieldEntry entry = fields.get(field);
-        if (entry != null && entry.graphDataLength > 0) {
-
-          IndexInput bytesSlice = graphData.slice("graph-data", entry.graphDataOffset, entry.graphDataLength);
-          return new IndexedKnnGraphReader(entry, bytesSlice);
-        }
-      }
+    if (info == null) {
+      throw new IllegalArgumentException("No such field '" + field + "'");
     }
-    return KnnGraphValues.EMPTY;
+    FieldEntry entry = fields.get(field);
+    if (entry != null && entry.indexDataLength > 0) {
+      return getGraphValues(entry);
+    } else {
+      return KnnGraphValues.EMPTY;
+    }
+  }
+
+  private KnnGraphValues getGraphValues(FieldEntry entry) throws IOException {
+    if (isHnswStrategy(entry.searchStrategy)) {
+      HnswGraphFieldEntry graphEntry = (HnswGraphFieldEntry) entry;
+      IndexInput bytesSlice = vectorIndex.slice("graph-data", entry.indexDataOffset, entry.indexDataLength);
+      return new IndexedKnnGraphReader(graphEntry, bytesSlice);
+    } else {
+      return KnnGraphValues.EMPTY;
+    }
   }
 
   @Override
   public void close() throws IOException {
-    IOUtils.close(vectorData, graphData);
+    IOUtils.close(vectorData, vectorIndex);
   }
 
   private static class FieldEntry {
 
-    final String name;
     final int dimension;
     final VectorValues.SearchStrategy searchStrategy;
-    final int maxDoc;
 
     final long vectorDataOffset;
     final long vectorDataLength;
-    final long graphDataOffset;
-    final long graphDataLength;
+    final long indexDataOffset;
+    final long indexDataLength;
     final int[] ordToDoc;
-    final long[] ordOffsets;
 
-    FieldEntry(int dimension, VectorValues.SearchStrategy searchStrategy, int maxDoc,
-               long vectorDataOffset, long vectorDataLength, int[] ordToDoc) {
-      this.dimension = dimension;
+    FieldEntry(DataInput input, VectorValues.SearchStrategy searchStrategy) throws IOException {
       this.searchStrategy = searchStrategy;
-      this.maxDoc = maxDoc;
-      this.vectorDataOffset = vectorDataOffset;
-      this.vectorDataLength = vectorDataLength;
-      this.graphDataOffset = graphDataOffset;
-      this.graphDataLength = graphDataLength;
-      this.ordToDoc = ordToDoc;
-      this.ordOffsets = ordOffsets;
+      vectorDataOffset = input.readVLong();
+      vectorDataLength = input.readVLong();
+      indexDataOffset = input.readVLong();
+      indexDataLength = input.readVLong();
+      dimension = input.readInt();
+      int size = input.readInt();
+      ordToDoc = new int[size];
+      for (int i = 0; i < size; i++) {
+        int doc = input.readVInt();
+        ordToDoc[i] = doc;
+      }
     }
 
     int size() {
       return ordToDoc.length;
+    }
+  }
+
+  private static class HnswGraphFieldEntry extends FieldEntry {
+
+    final long[] ordOffsets;
+
+    HnswGraphFieldEntry(DataInput input, VectorValues.SearchStrategy searchStrategy) throws IOException {
+      super(input, searchStrategy);
+      ordOffsets = new long[size()];
+      long offset = 0;
+      for (int i = 0; i < ordOffsets.length; i++) {
+        offset += input.readVLong();
+        ordOffsets[i] = offset;
+      }
     }
   }
 
@@ -387,7 +407,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
       @Override
       public TopDocs search(float[] vector, int topK, int fanout) throws IOException {
-        Neighbors results = HnswGraph.search(vector, topK, fanout, this, getGraphValues(fieldEntry.name), random);
+        Neighbors results = HnswGraph.search(vector, topK, fanout, this, getGraphValues(fieldEntry), random);
         while (results.size() > topK) {
           results.pop();
         }
@@ -413,14 +433,14 @@ public final class Lucene90VectorReader extends VectorReader {
   /** Read the nearest-neighbors graph from the index input */
   private final class IndexedKnnGraphReader extends KnnGraphValues {
 
-    final FieldEntry entry;
+    final HnswGraphFieldEntry entry;
     final IndexInput dataIn;
 
     int arcCount;
     int arcUpTo;
     int arc;
 
-    IndexedKnnGraphReader(FieldEntry entry, IndexInput dataIn) {
+    IndexedKnnGraphReader(HnswGraphFieldEntry entry, IndexInput dataIn) {
       this.entry = entry;
       this.dataIn = dataIn;
     }

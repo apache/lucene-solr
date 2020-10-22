@@ -31,33 +31,30 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.lucene.util.hnsw.HnswGraphBuilder;
 
+import static org.apache.lucene.codecs.lucene90.Lucene90VectorFormat.isHnswStrategy;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
-// nocommit - separate out graph writer. switch based on search strategy. store in an extensible way so we can add vector index structures
 /**
  * Writes vector values and knn graphs to index segments.
  * @lucene.experimental
  */
 public final class Lucene90VectorWriter extends VectorWriter {
 
-  private final SegmentWriteState state;
-  private final String vectorDataFileName;
-  private final IndexOutput meta, vectorData, graphData;
+  private final IndexOutput meta, vectorData, vectorIndex;
 
   private boolean finished;
 
   Lucene90VectorWriter(SegmentWriteState state) throws IOException {
     assert state.fieldInfos.hasVectorValues();
-    this.state = state;
 
     String metaFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene90VectorFormat.META_EXTENSION);
     meta = state.directory.createOutput(metaFileName, state.context);
 
-    vectorDataFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene90VectorFormat.VECTOR_DATA_EXTENSION);
+    String vectorDataFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene90VectorFormat.VECTOR_DATA_EXTENSION);
     vectorData = state.directory.createOutput(vectorDataFileName, state.context);
 
-    String graphDataFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene90VectorFormat.GRAPH_DATA_EXTENSION);
-    graphData = state.directory.createOutput(graphDataFileName, state.context);
+    String indexDataFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene90VectorFormat.VECTOR_INDEX_EXTENSION);
+    vectorIndex = state.directory.createOutput(indexDataFileName, state.context);
 
     try {
       CodecUtil.writeIndexHeader(meta,
@@ -68,8 +65,8 @@ public final class Lucene90VectorWriter extends VectorWriter {
           Lucene90VectorFormat.VECTOR_DATA_CODEC_NAME,
           Lucene90VectorFormat.VERSION_CURRENT,
           state.segmentInfo.getId(), state.segmentSuffix);
-      CodecUtil.writeIndexHeader(graphData,
-          Lucene90VectorFormat.GRAPH_DATA_CODEC_NAME,
+      CodecUtil.writeIndexHeader(vectorIndex,
+          Lucene90VectorFormat.VECTOR_INDEX_CODEC_NAME,
           Lucene90VectorFormat.VERSION_CURRENT,
           state.segmentInfo.getId(), state.segmentSuffix);
     } catch (IOException e) {
@@ -89,36 +86,34 @@ public final class Lucene90VectorWriter extends VectorWriter {
       writeVectorValue(vectors);
       docIds[count] = docV;
     }
+    // count may be < vectors.size() e,g, if some documents were deleted
     long[] offsets = new long[count];
     long vectorDataLength = vectorData.getFilePointer() - vectorDataOffset;
-    long graphDataOffset = graphData.getFilePointer();
-    if (vectors.searchStrategy() != VectorValues.SearchStrategy.NONE) {
-      writeGraph(vectors, graphDataOffset, offsets, count);
+    long vectorIndexOffset = vectorIndex.getFilePointer();
+    if (isHnswStrategy(vectors.searchStrategy())) {
+        writeGraph(vectorIndex, vectors, vectorIndexOffset, offsets, count);
     }
-    long graphDataLength = graphData.getFilePointer() - graphDataOffset;
+    long vectorIndexLength = vectorIndex.getFilePointer() - vectorIndexOffset;
     if (vectorDataLength > 0) {
-      writeMeta(fieldInfo, vectorDataOffset, vectorDataLength, graphDataOffset, graphDataLength, docIds, offsets);
+      writeMeta(fieldInfo, vectorDataOffset, vectorDataLength, vectorIndexOffset, vectorIndexLength, count, docIds);
+      if (isHnswStrategy(vectors.searchStrategy())) {
+        writeGraphOffsets(meta, offsets);
+      }
     }
   }
 
-  private void writeMeta(FieldInfo field, long vectorDataOffset, long vectorDataLength, long graphDataOffset, long graphDataLength, int[] docIds, long[] offsets) throws IOException {
+  private void writeMeta(FieldInfo field, long vectorDataOffset, long vectorDataLength, long indexDataOffset, long indexDataLength, int size, int[] docIds) throws IOException {
     meta.writeInt(field.number);
     meta.writeInt(field.getVectorSearchStrategy().ordinal());
     meta.writeVLong(vectorDataOffset);
     meta.writeVLong(vectorDataLength);
-    meta.writeVLong(graphDataOffset);
-    meta.writeVLong(graphDataLength);
+    meta.writeVLong(indexDataOffset);
+    meta.writeVLong(indexDataLength);
     meta.writeInt(field.getVectorDimension());
-    int size = offsets.length;
     meta.writeInt(size);
     for (int i = 0; i < size; i ++) {
       // TODO: delta-encode, or write as bitset
       meta.writeVInt(docIds[i]);
-    }
-    int i = 0;
-    for (long offset : offsets) {
-      // TODO: delta-encode
-      meta.writeVLong(offset);
     }
   }
 
@@ -127,6 +122,30 @@ public final class Lucene90VectorWriter extends VectorWriter {
     BytesRef binaryValue = vectors.binaryValue();
     assert binaryValue.length == vectors.dimension() * Float.BYTES;
     vectorData.writeBytes(binaryValue.bytes, binaryValue.offset, binaryValue.length);
+  }
+
+  private void writeGraphOffsets(IndexOutput out, long[] offsets) throws IOException {
+    long last = 0;
+    for (long offset : offsets) {
+      out.writeVLong(offset - last);
+      last = offset;
+    }
+  }
+
+  private void writeGraph(IndexOutput graphData, VectorValues vectorValues, long graphDataOffset, long[] offsets, int count) throws IOException {
+    HnswGraph graph = HnswGraphBuilder.build(vectorValues);
+    for (int ord = 0; ord < count; ord++) {
+      // write graph
+      offsets[ord] = graphData.getFilePointer() - graphDataOffset;
+      int[] arcs = graph.getFriends(ord);
+      graphData.writeInt(arcs.length);
+      int lastArc = -1;         // to make the assertion work?
+      for (int arc : arcs) {
+        assert arc > lastArc : "arcs out of order: " + lastArc + "," + arc;
+        graphData.writeVInt(arc - lastArc);
+        lastArc = arc;
+      }
+    }
   }
 
   @Override
@@ -143,12 +162,12 @@ public final class Lucene90VectorWriter extends VectorWriter {
     }
     if (vectorData != null) {
       CodecUtil.writeFooter(vectorData);
-      CodecUtil.writeFooter(graphData);
+      CodecUtil.writeFooter(vectorIndex);
     }
   }
 
   @Override
   public void close() throws IOException {
-    IOUtils.close(meta, vectorData, graphData);
+    IOUtils.close(meta, vectorData, vectorIndex);
   }
 }

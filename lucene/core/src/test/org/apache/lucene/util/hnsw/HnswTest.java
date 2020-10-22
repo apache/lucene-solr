@@ -204,7 +204,7 @@ public class HnswTest extends LuceneTestCase {
     }
 
     private void assertVectorsEqual(VectorValues u, VectorValues v) throws IOException {
-        int uDoc, vDoc = -1;
+        int uDoc, vDoc;
         while (true) {
             uDoc = u.nextDoc();
             vDoc = v.nextDoc();

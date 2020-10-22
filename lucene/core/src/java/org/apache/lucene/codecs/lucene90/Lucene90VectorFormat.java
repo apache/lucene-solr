@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.VectorWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.VectorValues;
 
 /**
  * Lucene 9.0 vector format, which encodes dense numeric vector values.
@@ -33,10 +34,10 @@ public final class Lucene90VectorFormat extends VectorFormat {
 
   static final String META_CODEC_NAME = "Lucene90VectorFormatMeta";
   static final String VECTOR_DATA_CODEC_NAME = "Lucene90VectorFormatData";
-  static final String GRAPH_DATA_CODEC_NAME = "Lucene90KnnGraphFormat";
+  static final String VECTOR_INDEX_CODEC_NAME = "Lucene90VectorFormatIndex";
   static final String META_EXTENSION = "vem";
   static final String VECTOR_DATA_EXTENSION = "vec";
-  static final String GRAPH_DATA_EXTENSION = "veg";
+  static final String VECTOR_INDEX_EXTENSION = "vex";
 
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
@@ -54,5 +55,11 @@ public final class Lucene90VectorFormat extends VectorFormat {
   public VectorReader fieldsReader(SegmentReadState state) throws IOException {
     return new Lucene90VectorReader(state);
   }
+
+  static boolean isHnswStrategy(VectorValues.SearchStrategy searchStrategy) {
+    return searchStrategy == VectorValues.SearchStrategy.DOT_PRODUCT_HNSW ||
+        searchStrategy == VectorValues.SearchStrategy.EUCLIDEAN_HNSW;
+  }
+
 
 }
