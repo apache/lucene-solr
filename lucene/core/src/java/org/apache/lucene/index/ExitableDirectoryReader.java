@@ -496,7 +496,8 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
    * exitable enumeration of terms.
    */
   public static class ExitableTermsEnum extends FilterTermsEnum {
-    private static final int MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK = (1 << 4) - 1; // 15
+    // Create bit mask in the form of 0000 1111 for efficient checking
+    private static final int NUM_CALLS_PER_TIMEOUT_CHECK = (1 << 4) - 1; // 15
     private int calls;
     private QueryTimeout queryTimeout;
     
@@ -504,15 +505,15 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     public ExitableTermsEnum(TermsEnum termsEnum, QueryTimeout queryTimeout) {
       super(termsEnum);
       this.queryTimeout = queryTimeout;
-      checkAndThrowWithSampling();
+      checkTimeoutWithSampling();
     }
 
     /**
      * Throws {@link ExitingReaderException} if {@link QueryTimeout#shouldExit()} returns true,
      * or if {@link Thread#interrupted()} returns true.
      */
-    private void checkAndThrowWithSampling() {
-      if ((calls++ & MAX_CALLS_BEFORE_QUERY_TIMEOUT_CHECK) == 0) {
+    private void checkTimeoutWithSampling() {
+      if ((calls++ & NUM_CALLS_PER_TIMEOUT_CHECK) == 0) {
         if (queryTimeout.shouldExit()) {
           throw new ExitingReaderException("The request took too long to iterate over terms. Timeout: "
               + queryTimeout.toString()
@@ -527,7 +528,7 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     @Override
     public BytesRef next() throws IOException {
       // Before every iteration, check if the iteration should exit
-      checkAndThrowWithSampling();
+      checkTimeoutWithSampling();
       return in.next();
     }
   }
