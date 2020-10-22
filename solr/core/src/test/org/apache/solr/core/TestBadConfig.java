@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core;
 
-import org.junit.Assume;
-
 public class TestBadConfig extends AbstractBadConfigTestBase {
 
   public void testUnsetSysProperty() throws Exception {
