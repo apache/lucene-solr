@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
@@ -62,6 +63,11 @@ public class LatLonShape {
 
   // no instance:
   private LatLonShape() {
+  }
+
+  /** create indexable fields for polygon geometry. */
+  public static Field[] createIndexableFields(String fieldName, Polygon polygon) {
+    return createIndexableFields(fieldName, polygon, false);
   }
 
   /** create indexable fields for polygon geometry. If {@code checkSelfIntersections} is set to true, the validity of
