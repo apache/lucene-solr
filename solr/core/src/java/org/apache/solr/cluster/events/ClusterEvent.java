@@ -32,8 +32,6 @@ public interface ClusterEvent {
     COLLECTIONS_ADDED,
     /** One or more collections have been removed. */
     COLLECTIONS_REMOVED,
-    /** One or more replicas went down. */
-    REPLICAS_DOWN,
     /** Cluster properties have changed. */
     CLUSTER_PROPERTIES_CHANGED
     // other types? eg. Overseer leader change, shard leader change,

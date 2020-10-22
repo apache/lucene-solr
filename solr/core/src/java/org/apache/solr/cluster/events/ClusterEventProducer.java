@@ -16,25 +16,33 @@
  */
 package org.apache.solr.cluster.events;
 
+import org.apache.solr.cloud.ClusterSingleton;
+
 /**
  * Component that produces {@link ClusterEvent} instances.
  */
-public interface ClusterEventProducer {
+public interface ClusterEventProducer extends ClusterSingleton {
+
+  /** Unique name for the registration of plugin-based implementation. */
+  String PLUGIN_NAME = "clusterEventProducer";
 
   /**
    * Register an event listener for processing the specified event types.
    * @param listener non-null listener. If the same instance of the listener is
-   *                 already registered it will be ignored.
-   * @param eventTypes non-empty array of event types that this listener
-   *                   is being registered for. If this is null or empty then all types will be used.
+   *                 already registered for some event types then it will be also registered
+   *                 for additional event types specified in this call.
+   * @param eventTypes event types that this listener is being registered for.
+   *                   If this is null or empty then all types will be used.
    */
-  void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) throws Exception;
+  void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes);
 
   /**
    * Unregister an event listener for all event types.
    * @param listener non-null listener.
    */
-  void unregisterListener(ClusterEventListener listener);
+  default void unregisterListener(ClusterEventListener listener) {
+    unregisterListener(listener, ClusterEvent.EventType.values());
+  }
 
   /**
    * Unregister an event listener for specified event types.
@@ -44,9 +52,9 @@ public interface ClusterEventProducer {
    */
   void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes);
 
-  static ClusterEventProducer NO_OP_PRODUCER = new ClusterEventProducer() {
+  ClusterEventProducer NO_OP_PRODUCER = new ClusterEventProducer() {
     @Override
-    public void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) throws Exception {
+    public void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
 
     }
 

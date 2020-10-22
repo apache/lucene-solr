@@ -71,6 +71,9 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cluster.events.ClusterEventProducer;
+import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
+import org.apache.solr.cluster.events.impl.InitialClusterEventProducer;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -251,6 +254,9 @@ public class CoreContainer {
           getZkController().getOverseer() != null &&
           !getZkController().getOverseer().isClosed(),
       (r) -> this.runAsync(r));
+
+  private ClusterEventProducer clusterEventProducer = new InitialClusterEventProducer();
+
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 
@@ -884,6 +890,18 @@ public class CoreContainer {
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
+
+      // init ClusterEventProducer
+      InitialClusterEventProducer initialClusterEventProducer = (InitialClusterEventProducer) clusterEventProducer;
+      CustomContainerPlugins.ApiInfo clusterEventProducerInfo = customContainerPlugins.getPlugin(ClusterEventProducer.PLUGIN_NAME);
+      if (clusterEventProducerInfo != null) {
+        clusterEventProducer = (ClusterEventProducer) clusterEventProducerInfo.getInstance();
+      } else {
+        clusterEventProducer = new DefaultClusterEventProducer(this);
+        clusterSingletons.singletonMap.put(ClusterEventProducer.PLUGIN_NAME, clusterEventProducer);
+      }
+      // transfer those listeners that were already registered to the initial impl
+      initialClusterEventProducer.transferListeners(clusterEventProducer);
 
       // init ClusterSingleton-s
 
@@ -2102,6 +2120,10 @@ public class CoreContainer {
 
   public ClusterSingletons getClusterSingletons() {
     return clusterSingletons;
+  }
+
+  public ClusterEventProducer getClusterEventProducer() {
+    return clusterEventProducer;
   }
 
   static {

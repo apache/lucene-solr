@@ -14,21 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cluster.events;
-
-import org.apache.solr.common.cloud.Replica;
-
-import java.util.Iterator;
-
-/**
- * Event generated when some replicas went down.
+ 
+/** 
+ * Default implementation of {@link org.apache.solr.cluster.events.ClusterEventProducer}.
  */
-public interface ReplicasDownEvent extends ClusterEvent {
+package org.apache.solr.cluster.events.impl;
 
-  @Override
-  default EventType getType() {
-    return EventType.REPLICAS_DOWN;
-  }
 
-  Iterator<Replica> getReplicas();
-}
