@@ -766,15 +766,7 @@ public class Utils {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
 
-    // as of 9.x, the urlScheme may be a prefix of the nodeName like https|
-    int startIdx = 0;
-    final int schemeAt = nodeName.indexOf(UrlScheme.NODE_NAME_SCHEME_DELIM);
-    if (schemeAt != -1) {
-      urlScheme = nodeName.substring(0, schemeAt);
-      startIdx = schemeAt + UrlScheme.NODE_NAME_SCHEME_DELIM.length();
-    }
-
-    final String hostAndPort = nodeName.substring(startIdx, _offset);
+    final String hostAndPort = nodeName.substring(0, _offset);
     final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
     return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2? "api": path)));
   }

@@ -295,6 +295,8 @@ public class ZkController implements Closeable {
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = cloudConfig.getSolrHostPort();
     this.hostName = normalizeHostName(cloudConfig.getHost());
+    this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
+    MDCLoggingContext.setNode(nodeName);
     this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
@@ -449,8 +451,6 @@ public class ZkController implements Closeable {
 
     // setup the scheme before updating cluster state
     setGlobalUrlSchemeFromClusterProps(zkClient);
-    this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
-    MDCLoggingContext.setNode(nodeName);
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
@@ -1110,11 +1110,17 @@ public class ZkController implements Closeable {
       return;
     }
 
+    byte[] schemeData = null;
+    if (UrlScheme.INSTANCE.useLiveNodesUrlScheme()) {
+      String activeUrlScheme = System.getProperty(UrlScheme.HTTPS_PORT_PROP) != null ? HTTPS : HTTP;
+      schemeData = activeUrlScheme.getBytes(StandardCharsets.UTF_8);
+    }
+
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
-    ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+    ops.add(Op.create(nodePath, schemeData, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
     zkClient.multi(ops, true);
   }
 
@@ -2702,6 +2708,7 @@ public class ZkController implements Closeable {
   }
 
   private void setGlobalUrlSchemeFromClusterProps(SolrZkClient client) throws IOException {
+    UrlScheme.INSTANCE.setZkClient(client);
     // Have to go directly to the cluster props b/c this needs to happen before ZkStateReader does its thing
     ClusterProperties clusterProps = new ClusterProperties(client);
     UrlScheme.INSTANCE.setUseLiveNodesUrlScheme(
@@ -2721,7 +2728,7 @@ public class ZkController implements Closeable {
 
       // TODO: We may want this? See: https://issues.apache.org/jira/browse/SOLR-10202
       // Right now, the code only uses the cluster property at startup to determine the urlScheme on the server-side
-      // UrlScheme.INSTANCE.setUrlScheme(urlSchemeFromSysProp);
+      //UrlScheme.INSTANCE.setUrlScheme(urlSchemeFromSysProp);
       UrlScheme.INSTANCE.setUrlScheme(HTTP);
     }
   }

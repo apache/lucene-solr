@@ -1009,7 +1009,9 @@ public class ZkStateReader implements SolrCloseable {
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
 
           // make sure the urlScheme is set on the client side ... server-side handled in ZkContainer
-          UrlScheme.INSTANCE.setUrlScheme(getClusterProperty(ZkStateReader.URL_SCHEME, HTTP));
+          if (!UrlScheme.INSTANCE.isOnServer()) {
+            UrlScheme.INSTANCE.setUrlScheme(getClusterProperty(ZkStateReader.URL_SCHEME, HTTP));
+          }
 
           for (ClusterPropertiesListener listener : clusterPropertiesListeners) {
             listener.onChange(getClusterProperties());

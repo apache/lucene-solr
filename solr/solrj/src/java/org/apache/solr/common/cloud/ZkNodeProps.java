@@ -43,7 +43,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Construct ZKNodeProps from map.
    */
   public ZkNodeProps(Map<String,Object> propMap) {
-    this.propMap = updateGlobalStateVars(propMap);
+    this.propMap = updateUrlScheme(propMap);
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
   }
@@ -112,18 +112,20 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
   @Override
   public void write(JSONWriter jsonWriter) {
+    Map<String,Object> outputMap = propMap;
+
+    // write out the base_url and node_name without the urlScheme
     final String baseUrl = (String)propMap.get(ZkStateReader.BASE_URL_PROP);
     if (baseUrl != null && !baseUrl.startsWith(SCHEME_VAR)) {
       final int at = baseUrl.indexOf("://");
       if (at != -1) {
         final String updatedUrl = SCHEME_VAR + baseUrl.substring(at+3);
-        Map<String,Object> modMap = new LinkedHashMap<>(propMap);
-        modMap.put(ZkStateReader.BASE_URL_PROP, updatedUrl);
-        jsonWriter.write(modMap);
-        return;
+        outputMap = new LinkedHashMap<>(propMap);
+        outputMap.put(ZkStateReader.BASE_URL_PROP, updatedUrl);
       }
     }
-    jsonWriter.write(propMap);
+
+    jsonWriter.write(outputMap);
   }
   
   /**
@@ -166,7 +168,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
     return propMap.containsKey(key);
   }
 
-  protected Map<String,Object> updateGlobalStateVars(Map<String,Object> map) {
+  protected Map<String,Object> updateUrlScheme(Map<String,Object> map) {
     final String baseUrl = (String)map.get(ZkStateReader.BASE_URL_PROP);
     if (baseUrl != null) {
       Optional<String> maybeUpdatedUrl = UrlScheme.INSTANCE.applyUrlScheme(baseUrl);

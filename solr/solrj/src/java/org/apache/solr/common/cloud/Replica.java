@@ -30,9 +30,9 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 
-import static org.apache.solr.common.cloud.UrlScheme.SCHEME_VAR;
 import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
 import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
+import static org.apache.solr.common.cloud.UrlScheme.SCHEME_VAR;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 public class Replica extends ZkNodeProps implements MapWriter {
@@ -132,7 +132,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public Replica(String name, Map<String,Object> map, String collection, String shard) {
     super(new HashMap<>());
     propMap.putAll(map);
-    updateGlobalStateVars(this.propMap);
+    updateUrlScheme(this.propMap);
     this.collection = collection;
     this.shard = shard;
     this.name = name;
@@ -157,7 +157,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.core = core;
     if (props != null) {
       this.propMap.putAll(props);
-      updateGlobalStateVars(this.propMap);
+      updateUrlScheme(this.propMap);
     }
     validate();
   }
@@ -180,7 +180,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     type = Replica.Type.valueOf(String.valueOf(details.getOrDefault(ZkStateReader.REPLICA_TYPE, "NRT")));
     state = State.getState(String.valueOf(details.getOrDefault(ZkStateReader.STATE_PROP, "active")));
     this.propMap.putAll(details);
-    updateGlobalStateVars(this.propMap); // we know propMap is mutable but map may not be
+    updateUrlScheme(this.propMap); // we know propMap is mutable but map may not be
     validate();
   }
 

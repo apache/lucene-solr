@@ -384,7 +384,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       for (int i = 1; i <= numShards; i ++) {
         // if this test fails, getLeaderUrl will more likely throw an exception and fail the test,
         // but add an assertEquals as well for good measure
-        assertEquals("2/", getLeaderUrl("collection1", "parshard" + i));
+        String leaderUrl = getLeaderUrl("collection1", "parshard" + i);
+        int at = leaderUrl.indexOf("://");
+        if (at != -1) {
+          leaderUrl = leaderUrl.substring(at+3);
+        }
+        assertEquals("2/", leaderUrl);
       }
     } finally {
       // cleanup any threads still running
@@ -414,6 +419,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   private int getLeaderThread() throws KeeperException, InterruptedException {
     String leaderUrl = getLeaderUrl("collection1", "shard1");
+    // strip off the scheme
+    final int at = leaderUrl.indexOf("://");
+    if (at != -1) {
+      leaderUrl = leaderUrl.substring(at+3);
+    }
     return Integer.parseInt(leaderUrl.replaceAll("/", ""));
   }
 

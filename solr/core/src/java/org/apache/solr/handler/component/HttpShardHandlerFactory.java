@@ -47,7 +47,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -521,7 +520,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       return clusterState
           .getLiveNodes()
           .stream()
-          .map(UrlScheme::parseHostAndPortFromLiveNode)
+          .map((liveNode) -> liveNode.substring(0, liveNode.indexOf('_')))
           .collect(Collectors.toSet());
     }
     

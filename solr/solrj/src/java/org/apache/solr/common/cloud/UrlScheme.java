@@ -16,11 +16,16 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SortedSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import org.apache.solr.common.SolrException;
+import org.apache.zookeeper.KeeperException;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
@@ -31,18 +36,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   INSTANCE;
 
-  public static final String parseHostAndPortFromLiveNode(String liveNode) {
-    if (liveNode != null) {
-      final int at = liveNode.indexOf(NODE_NAME_SCHEME_DELIM);
-      if (at != -1) {
-        liveNode = liveNode.substring(at+NODE_NAME_SCHEME_DELIM.length());
-      }
-      liveNode = liveNode.substring(0, liveNode.indexOf('_'));
-    }
-    return liveNode;
-  }
-
-  public static final String NODE_NAME_SCHEME_DELIM = "|";
   public static final String HTTP = "http";
   public static final String HTTPS = "https";
   public static final String SCHEME_VAR = "${scheme}://";
@@ -52,6 +45,16 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   private String urlScheme = HTTP;
   private boolean useLiveNodesUrlScheme = false;
   private SortedSet<String> liveNodes = null;
+  private SolrZkClient zkClient;
+  private final ConcurrentMap<String,String> nodeSchemeCache = new ConcurrentHashMap<>();
+
+  public void setZkClient(SolrZkClient client) {
+    this.zkClient = client;
+  }
+
+  public boolean isOnServer() {
+    return zkClient != null;
+  }
 
   /**
    * Set the global urlScheme variable; ideally this should be immutable once set, but some tests rely on changing
@@ -67,12 +70,8 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   }
 
   public String generateNodeName(final String host, final String port, final String context) {
-    final String schemePrefix = HTTPS.equals(urlScheme) ? HTTPS+NODE_NAME_SCHEME_DELIM : "";
-    try {
-      return schemePrefix + host + ':' + port + '_' + URLEncoder.encode(trimLeadingAndTrailingSlashes(context), "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new Error("JVM does not support UTF-8", e);
-    }
+    final String schemePrefix = ""; // HTTPS.equals(urlScheme) ? NODE_NAME_SCHEME_PREFIX : "";
+    return schemePrefix + host + ':' + port + '_' + URLEncoder.encode(trimLeadingAndTrailingSlashes(context), StandardCharsets.UTF_8);
   }
 
   public boolean useLiveNodesUrlScheme() {
@@ -108,8 +107,15 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
     } else {
       // heal an incorrect scheme if needed, otherwise return null indicating no change
       final int at = url.indexOf("://");
-      maybeUpdatedUrl = (at == -1) || urlScheme.equals(url.substring(0,at)) ? Optional.empty() /* no change needed */
-          : Optional.of(urlScheme + url.substring(at));
+      if (at == -1) {
+        maybeUpdatedUrl = Optional.of(urlScheme + "://" + url);
+      } else if (urlScheme.equals(url.substring(0,at))) {
+        // url already has the correct scheme on it, no change
+        maybeUpdatedUrl = Optional.empty();
+      } else {
+        // change the stored scheme to match the global
+        maybeUpdatedUrl = Optional.of(urlScheme + url.substring(at));
+      }
     }
     return maybeUpdatedUrl;
   }
@@ -119,10 +125,9 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   }
 
   @Override
-  public boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
-    if (useLiveNodesUrlScheme) {
-      this.liveNodes = newLiveNodes;
-    }
+  public synchronized boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
+    this.liveNodes = useLiveNodesUrlScheme ? newLiveNodes : null;
+    this.nodeSchemeCache.clear();
     return false;
   }
 
@@ -139,11 +144,8 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
 
   // Gets the urlScheme from the matching live node entry for this URL
   private Optional<String> getSchemeFromLiveNodesEntry(final String nodeNameFromUrl) {
-    return liveNodes.parallelStream().filter(n -> {
-      // strip off the urlScheme on the live node entry for matching ...
-      final int at = n.indexOf(NODE_NAME_SCHEME_DELIM);
-      return at != -1 && nodeNameFromUrl.equals(n.substring(at + NODE_NAME_SCHEME_DELIM.length()));
-    }).map(n -> n.substring(0, n.indexOf(NODE_NAME_SCHEME_DELIM))).findFirst();
+    return (liveNodes != null && liveNodes.contains(nodeNameFromUrl))
+        ? Optional.ofNullable(getSchemeForLiveNode(nodeNameFromUrl)) : Optional.empty();
   }
 
   private String getNodeNameFromUrl(String url) {
@@ -161,12 +163,9 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
         context = url.substring(slashAt + 1);
       }
     }
-    try {
-      context = URLEncoder.encode(trimLeadingAndTrailingSlashes(context), "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
+    if (!context.isEmpty()) {
+      context = URLEncoder.encode(trimLeadingAndTrailingSlashes(context), StandardCharsets.UTF_8);
     }
-
     return hostAndPort + "_" + context;
   }
 
@@ -185,7 +184,35 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   public boolean onChange(Map<String, Object> properties) {
     Object prop = properties.get(USE_LIVENODES_URL_SCHEME);
     useLiveNodesUrlScheme = prop != null && "true".equals(prop.toString());
+    if (!useLiveNodesUrlScheme) {
+      nodeSchemeCache.clear();
+      liveNodes = null;
+    }
     setUrlScheme((String)properties.getOrDefault(URL_SCHEME, HTTP));
     return false;
+  }
+
+  private String getSchemeForLiveNode(String liveNode) {
+    String scheme = nodeSchemeCache.get(liveNode);
+    if (scheme == null) {
+      final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + liveNode;
+      try {
+        byte[] data = zkClient.getData(nodePath, null, null, true);
+        if (data != null) {
+          scheme = new String(data, StandardCharsets.UTF_8);
+        } else {
+          scheme = HTTP;
+        }
+        nodeSchemeCache.put(liveNode, scheme);
+      } catch (KeeperException.NoNodeException e) {
+        // safe to ignore ...
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to read scheme for liveNode: "+liveNode, e);
+      } catch (KeeperException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to read scheme for liveNode: "+liveNode, e);
+      }
+    }
+    return scheme;
   }
 }
