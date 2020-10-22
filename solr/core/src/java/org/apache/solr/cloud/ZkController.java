@@ -648,9 +648,9 @@ public class ZkController implements Closeable {
 
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
-    customThreadPool.submit(() -> Collections.singleton(overseerElector.getContext()).parallelStream().forEach(IOUtils::closeQuietly));
+    customThreadPool.submit(() -> IOUtils.closeQuietly(overseerElector.getContext()));
 
-    customThreadPool.submit(() -> Collections.singleton(overseer).parallelStream().forEach(IOUtils::closeQuietly));
+    customThreadPool.submit(() -> IOUtils.closeQuietly(overseer));
 
     try {
       customThreadPool.submit(() -> {
@@ -663,8 +663,8 @@ public class ZkController implements Closeable {
     } finally {
 
       sysPropsCacher.close();
-      customThreadPool.submit(() -> Collections.singleton(cloudSolrClient).parallelStream().forEach(IOUtils::closeQuietly));
-      customThreadPool.submit(() -> Collections.singleton(cloudManager).parallelStream().forEach(IOUtils::closeQuietly));
+      customThreadPool.submit(() -> IOUtils.closeQuietly(cloudSolrClient));
+      customThreadPool.submit(() -> IOUtils.closeQuietly(cloudManager));
 
       try {
         try {
