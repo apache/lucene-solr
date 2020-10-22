@@ -18,6 +18,7 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.*;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -62,7 +63,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
   private void testException(ResponseParser responseParser, int expectedCode, String path, String payload) throws IOException, SolrServerException {
     V2Request v2Request = new V2Request.Builder(path)
-        .POST()
+        .withMethod(SolrRequest.METHOD.POST)
         .withPayload(payload)
         .build();
     v2Request.setResponseParser(responseParser);
@@ -149,12 +150,10 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   public void testSetPropertyValidationOfCluster() throws IOException, SolrServerException {
     @SuppressWarnings({"rawtypes"})
     NamedList resp = cluster.getSolrClient().request(
-      new V2Request.Builder("/cluster")
-          .POST()
-          .withPayload("{set-property: {name: maxCoresPerNode, val:42}}").build());
+      new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: maxCoresPerNode, val:42}}").build());
     assertTrue(resp.toString().contains("status=0"));
     resp = cluster.getSolrClient().request(
-        new V2Request.Builder("/cluster").POST().withPayload("{set-property: {name: maxCoresPerNode, val:null}}").build());
+        new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: maxCoresPerNode, val:null}}").build());
     assertTrue(resp.toString().contains("status=0"));
   }
 
@@ -175,7 +174,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     backupParams.put("location", tempDir);
     cluster.getJettySolrRunners().forEach(j -> j.getCoreContainer().getAllowPaths().add(Paths.get(tempDir)));
     client.request(new V2Request.Builder("/c")
-        .POST()
+        .withMethod(SolrRequest.METHOD.POST)
         .withPayload(Utils.toJSONString(backupPayload))
         .build());
   }

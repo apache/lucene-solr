@@ -101,7 +101,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       assertResponseValues(10,
           cluster.getSolrClient(),
           new V2Request.Builder("/node/files/package/mypkg/v1.0")
-              .GET()
+              .withMethod(SolrRequest.METHOD.GET)
               .build(),
           Utils.makeMap(
               ":files:/package/mypkg/v1.0[0]:name", "runtimelibs.jar",
@@ -113,7 +113,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       assertResponseValues(10,
           cluster.getSolrClient(),
           new V2Request.Builder("/node/files/package/mypkg")
-              .GET()
+              .withMethod(SolrRequest.METHOD.GET)
               .build(),
           Utils.makeMap(
               ":files:/package/mypkg[0]:name", "v1.0",
@@ -278,7 +278,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("sig", sig);
     V2Response rsp = new V2Request.Builder(resource)
-        .PUT()
+        .withMethod(SolrRequest.METHOD.PUT)
         .withPayload(buffer)
         .forceV2(true)
         .withMimeType("application/octet-stream")
