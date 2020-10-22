@@ -41,7 +41,6 @@ import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -134,7 +133,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String COLL_NAME = "CollWithDefaultClusterProperties";
     try {
       V2Response rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload("{set-obj-property:{collectionDefaults:{numShards : 2 , nrtReplicas : 2}}}")
           .build()
           .process(cluster.getSolrClient());
@@ -167,7 +166,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
       // unset only a single value using old format
       rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload("{\n" +
               "  \"set-obj-property\": {\n" +
               "    \"collectionDefaults\": {\n" +
@@ -190,7 +189,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
       // delete all defaults the old way
       rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload("{set-obj-property:{collectionDefaults:null}}")
           .build()
           .process(cluster.getSolrClient());
@@ -206,7 +205,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     } finally {
       // clean up in case there was an exception during the test
       V2Response rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload("{set-obj-property:{collectionDefaults: null}}")
           .build()
           .process(cluster.getSolrClient());
@@ -219,7 +218,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String COLL_NAME = "CollWithDefaultClusterProperties";
     try {
       V2Response rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload("{set-obj-property:{defaults : {collection:{numShards : 2 , nrtReplicas : 2}}}}")
           .build()
           .process(cluster.getSolrClient());
@@ -251,7 +250,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
       // unset only a single value
       rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload("{\n" +
               "  \"set-obj-property\": {\n" +
               "    \"defaults\" : {\n" +
@@ -272,7 +271,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertNull(clusterProperty);
 
       rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload("{set-obj-property:{defaults: {collection:null}}}")
           .build()
           .process(cluster.getSolrClient());
@@ -287,7 +286,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertNull(clusterProperty);
     } finally {
       V2Response rsp = new V2Request.Builder("/cluster")
-          .withMethod(SolrRequest.METHOD.POST)
+          .POST()
           .withPayload("{set-obj-property:{defaults: null}}")
           .build()
           .process(cluster.getSolrClient());

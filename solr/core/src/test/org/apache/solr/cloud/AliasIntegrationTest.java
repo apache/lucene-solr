@@ -33,7 +33,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -708,7 +707,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     ///////////////
     // use v2 API
     new V2Request.Builder("/collections")
-        .withMethod(SolrRequest.METHOD.POST)
+        .POST()
         .withPayload("{\"create-alias\": {\"name\": \"testalias6\", collections:[\"collection2\",\"collection1\"]}}")
         .build().process(cluster.getSolrClient());
 

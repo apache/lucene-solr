@@ -142,7 +142,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       @SuppressWarnings({"rawtypes"})
       final SolrRequest genericReq;
       if (isUseV2Api) {
-        genericReq = new V2Request.Builder("/cluster/security/authentication").withMethod(SolrRequest.METHOD.POST).build();
+        genericReq = new V2Request.Builder("/cluster/security/authentication").POST().build();
       } else {
         genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
         ((GenericSolrRequest)genericReq).setContentWriter(new StringPayloadContentWriter(command, CommonParams.JSON_MIME));
