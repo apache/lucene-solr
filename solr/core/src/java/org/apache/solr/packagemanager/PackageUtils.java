@@ -31,6 +31,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -95,7 +96,7 @@ public class PackageUtils {
       params.add("sig", sig);
     }
     V2Response rsp = new V2Request.Builder(resource)
-        .PUT()
+        .withMethod(SolrRequest.METHOD.PUT)
         .withPayload(buffer)
         .forceV2(true)
         .withMimeType("application/octet-stream")

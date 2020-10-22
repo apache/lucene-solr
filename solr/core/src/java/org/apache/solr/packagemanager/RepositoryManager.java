@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.Version;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -206,7 +207,7 @@ public class RepositoryManager {
 
       V2Request req = new V2Request.Builder(PackageUtils.PACKAGE_PATH)
           .forceV2(true)
-          .POST()
+          .withMethod(SolrRequest.METHOD.POST)
           .withPayload(Collections.singletonMap("add", add))
           .build();
 
