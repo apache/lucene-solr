@@ -163,18 +163,47 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     searcher.search(query, 10);
     reader.close();
 
-    // Set a fairly high timeout value (infinite) and expect the query to complete in that time frame.
-    // Not checking the validity of the result, but checking the sampling kicks in to reduce the number of timeout check
-    CountingQueryTimeout queryTimeout = new CountingQueryTimeout();
-    directoryReader = DirectoryReader.open(directory);
-    exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, queryTimeout);
-    reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
-    searcher = new IndexSearcher(reader);
-    searcher.search(query, 10);
-    reader.close();
-    assertEquals(3, queryTimeout.getShouldExitCallCount());
-
     directory.close();
+  }
+
+  /**
+   * Tests time out check sampling of TermsEnum iterations
+   * @throws Exception on error
+   */
+  public void testExitableTermsEnumSampleTimeoutCheck() throws Exception {
+    try(Directory directory = newDirectory()) {
+      try(IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())))) {
+        for(int i = 0; i < 50; i++) {
+          Document d1 = new Document();
+          d1.add(newTextField("default", "term" + i, Field.Store.YES));
+          writer.addDocument(d1);
+        }
+
+        writer.forceMerge(1);
+        writer.commit();
+
+        DirectoryReader directoryReader;
+        DirectoryReader exitableDirectoryReader;
+        IndexReader reader;
+        IndexSearcher searcher;
+
+        Query query = new PrefixQuery(new Term("default", "term"));
+
+        // Set a fairly high timeout value (infinite) and expect the query to complete in that time frame.
+        // Not checking the validity of the result, but checking the sampling kicks in to reduce the number of timeout check
+        CountingQueryTimeout queryTimeout = new CountingQueryTimeout();
+        directoryReader = DirectoryReader.open(directory);
+        exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, queryTimeout);
+        reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
+        searcher = new IndexSearcher(reader);
+        searcher.search(query, 300);
+        reader.close();
+        // The number of sampled query time out check here depends on two factors:
+        // 1. ExitableDirectoryReader.ExitableTermsEnum.NUM_CALLS_PER_TIMEOUT_CHECK
+        // 2. MultiTermQueryConstantScoreWrapper.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD
+        assertEquals(5, queryTimeout.getShouldExitCallCount());
+      }
+    }
   }
 
   /**
