@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -2121,7 +2122,7 @@ public class ZkController implements Closeable {
   static String generateNodeName(final String hostName,
                                  final String hostPort,
                                  final String hostContext) {
-    return UrlScheme.INSTANCE.generateNodeName(hostName, hostPort, hostContext);
+    return hostName + ':' + hostPort + '_' + URLEncoder.encode(trimLeadingAndTrailingSlashes(hostContext), StandardCharsets.UTF_8);
   }
 
   /**
@@ -2712,7 +2713,7 @@ public class ZkController implements Closeable {
     // Have to go directly to the cluster props b/c this needs to happen before ZkStateReader does its thing
     ClusterProperties clusterProps = new ClusterProperties(client);
     UrlScheme.INSTANCE.setUseLiveNodesUrlScheme(
-        clusterProps.getClusterProperty(UrlScheme.USE_LIVENODES_URL_SCHEME, false));
+        "true".equals(clusterProps.getClusterProperty(UrlScheme.USE_LIVENODES_URL_SCHEME, "false")));
 
     // Set the global urlScheme from cluster prop or if that is not set, look at the urlScheme sys prop
     final String urlScheme = clusterProps.getClusterProperty(ZkStateReader.URL_SCHEME, null);

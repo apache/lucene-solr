@@ -113,7 +113,7 @@ public class UrlSchemeTest extends SolrTestCase {
     // back to http
     Map<String,Object> clusterProps = new HashMap<>();
     clusterProps.put(URL_SCHEME, "http");
-    clusterProps.put(USE_LIVENODES_URL_SCHEME, true);
+    clusterProps.put(USE_LIVENODES_URL_SCHEME, "true");
     UrlScheme.INSTANCE.onChange(clusterProps);
     liveNodes = new TreeSet<>();
     UrlScheme.INSTANCE.onChange(null, liveNodes);

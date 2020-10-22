@@ -69,11 +69,6 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
     }
   }
 
-  public String generateNodeName(final String host, final String port, final String context) {
-    final String schemePrefix = ""; // HTTPS.equals(urlScheme) ? NODE_NAME_SCHEME_PREFIX : "";
-    return schemePrefix + host + ':' + port + '_' + URLEncoder.encode(trimLeadingAndTrailingSlashes(context), StandardCharsets.UTF_8);
-  }
-
   public boolean useLiveNodesUrlScheme() {
     return useLiveNodesUrlScheme;
   }
@@ -182,8 +177,7 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
-    Object prop = properties.get(USE_LIVENODES_URL_SCHEME);
-    useLiveNodesUrlScheme = prop != null && "true".equals(prop.toString());
+    useLiveNodesUrlScheme = "true".equals(properties.getOrDefault(USE_LIVENODES_URL_SCHEME, "false"));
     if (!useLiveNodesUrlScheme) {
       nodeSchemeCache.clear();
       liveNodes = null;

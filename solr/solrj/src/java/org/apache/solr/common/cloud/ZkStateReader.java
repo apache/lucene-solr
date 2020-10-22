@@ -64,6 +64,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptySortedSet;
 import static org.apache.solr.common.cloud.UrlScheme.HTTP;
+import static org.apache.solr.common.cloud.UrlScheme.USE_LIVENODES_URL_SCHEME;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements SolrCloseable {
@@ -218,6 +219,7 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final Set<String> KNOWN_CLUSTER_PROPS = Set.of(
       URL_SCHEME,
+      USE_LIVENODES_URL_SCHEME,
       CoreAdminParams.BACKUP_LOCATION,
       DEFAULT_SHARD_PREFERENCES,
       MAX_CORES_PER_NODE,
