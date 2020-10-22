@@ -58,13 +58,22 @@ public abstract class SolrCoreState {
 
   /**
    * Phaser is used to track in flight update requests and can be used
-   * to wait for all in-flight requests to finish.
+   * to wait for all in-flight requests to finish. A Phaser terminates
+   * automatically when the number of registered parties reach zero.
+   * Since we track requests with this phaser, we disable the automatic
+   * termination by overriding the onAdvance method to return false.
    *
    * @see #registerInFlightUpdate()
    * @see #deregisterInFlightUpdate()
    * @see #pauseUpdatesAndAwaitInflightRequests()
    */
-  private final Phaser inflightUpdatesCounter = new Phaser();
+  private final Phaser inflightUpdatesCounter = new Phaser()  {
+    @Override
+    protected boolean onAdvance(int phase, int registeredParties) {
+      // disable termination of phaser
+      return false;
+    }
+  };
 
   public Object getUpdateLock() {
     return updateLock;
