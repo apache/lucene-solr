@@ -47,7 +47,9 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 
-
+/**
+ * API to maintain container-level plugin configurations.
+ */
 public class ContainerPluginsApi {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -62,6 +64,9 @@ public class ContainerPluginsApi {
     this.coreContainer = coreContainer;
   }
 
+  /**
+   * API for reading the current plugin configurations.
+   */
   public class Read {
     @EndPoint(method = METHOD.GET,
         path = "/cluster/plugin",
@@ -71,6 +76,9 @@ public class ContainerPluginsApi {
     }
   }
 
+  /**
+   * API for editing the plugin configurations.
+   */
   @EndPoint(method = METHOD.POST,
       path = "/cluster/plugin",
       permission = PermissionNameProvider.Name.COLL_EDIT_PERM)
@@ -146,6 +154,13 @@ public class ContainerPluginsApi {
     }
   }
 
+  /**
+   * Retrieve the current plugin configurations.
+   * @param zkClientSupplier supplier of {@link SolrZkClient}
+   * @return current plugin configurations, where keys are plugin names and values
+   * are {@link PluginMeta} plugin metadata.
+   * @throws IOException on IO errors
+   */
   @SuppressWarnings("unchecked")
   public static Map<String, Object> plugins(Supplier<SolrZkClient> zkClientSupplier) throws IOException {
     SolrZkClient zkClient = zkClientSupplier.get();

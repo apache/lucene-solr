@@ -16,6 +16,9 @@ New Features
 
 * SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
 
+* SOLR-14749: Improve support for arbitrary container-level plugins. Add ClusterSingleton
+  support for plugins that require only one active instance in the cluster. (ab, noble)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
