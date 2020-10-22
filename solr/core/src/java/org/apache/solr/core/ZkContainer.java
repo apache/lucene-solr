@@ -156,8 +156,6 @@ public class ZkContainer {
             // to get up
             Thread.sleep(10000);
           }
-        } else {
-          setGlobalUrlScheme(zkController);
         }
 
         if(confDir != null) {
@@ -274,20 +272,5 @@ public class ZkContainer {
 
   public ExecutorService getCoreZkRegisterExecutorService() {
     return coreZkRegister;
-  }
-
-  private void setGlobalUrlScheme(final ZkController zkCtrl) {
-    // Set the global urlScheme from cluster prop or if that is not set, look at the urlScheme sys prop
-    final String urlScheme = zkCtrl.getZkStateReader().getClusterProperty(ZkStateReader.URL_SCHEME, null);
-    if (StringUtils.isNotEmpty(urlScheme)) {
-      // track the urlScheme in a global so we can use it during ZK read / write operations for cluster state objects
-      UrlScheme.INSTANCE.setUrlScheme(urlScheme);
-    } else {
-      final String urlSchemeFromSysProp = System.getProperty(URL_SCHEME, HTTP);
-      if (HTTPS.equals(urlSchemeFromSysProp)) {
-        log.warn("Cluster property 'urlScheme' not set but system property is set to 'https'.");
-      }
-      UrlScheme.INSTANCE.setUrlScheme(urlSchemeFromSysProp);
-    }
   }
 }

@@ -74,6 +74,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -758,12 +759,22 @@ public class Utils {
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
     return getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
+
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme,  boolean isV2) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
-    final String hostAndPort = nodeName.substring(0, _offset);
+
+    // as of 9.x, the urlScheme may be a prefix of the nodeName like https|
+    int startIdx = 0;
+    final int schemeAt = nodeName.indexOf(UrlScheme.NODE_NAME_SCHEME_DELIM);
+    if (schemeAt != -1) {
+      urlScheme = nodeName.substring(0, schemeAt);
+      startIdx = schemeAt + UrlScheme.NODE_NAME_SCHEME_DELIM.length();
+    }
+
+    final String hostAndPort = nodeName.substring(startIdx, _offset);
     final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
     return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2? "api": path)));
   }

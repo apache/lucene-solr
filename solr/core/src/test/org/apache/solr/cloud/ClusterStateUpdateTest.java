@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -101,7 +102,10 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
 
     assertNotNull(zkProps);
 
-    assertEquals(host + ":" +cluster.getJettySolrRunner(0).getLocalPort()+"_solr", zkProps.getStr(ZkStateReader.NODE_NAME_PROP));
+    String expectedNodeName =
+        UrlScheme.INSTANCE.generateNodeName(host, String.valueOf(cluster.getJettySolrRunner(0).getLocalPort()), "solr");
+
+    assertEquals(expectedNodeName, zkProps.getStr(ZkStateReader.NODE_NAME_PROP));
 
     assertTrue(zkProps.getStr(ZkStateReader.BASE_URL_PROP).contains("http://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr")
       || zkProps.getStr(ZkStateReader.BASE_URL_PROP).contains("https://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr") );

@@ -103,6 +103,8 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.UrlScheme.HTTP;
+import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
@@ -112,6 +114,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
 /**
  * Handle ZooKeeper interactions.
@@ -294,8 +297,6 @@ public class ZkController implements Closeable {
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = cloudConfig.getSolrHostPort();
     this.hostName = normalizeHostName(cloudConfig.getHost());
-    this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
-    MDCLoggingContext.setNode(nodeName);
     this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
@@ -447,6 +448,11 @@ public class ZkController implements Closeable {
       public boolean isClosed() {
         return cc.isShutDown();
       }});
+
+    // setup the scheme before updating cluster state
+    setGlobalUrlSchemeFromClusterProps(zkClient);
+    this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
+    MDCLoggingContext.setNode(nodeName);
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
@@ -919,6 +925,13 @@ public class ZkController implements Closeable {
     try {
       createClusterZkNodes(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
+
+      if (UrlScheme.INSTANCE.useLiveNodesUrlScheme()) {
+        zkStateReader.registerLiveNodesListener(UrlScheme.INSTANCE);
+      } // else we don't want to use url scheme from live nodes ...
+      // TODO: listen for cluster property changes?
+      // zkr.registerClusterPropertiesListener(UrlScheme.INSTANCE);
+
       this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
       checkForExistingEphemeralNode();
@@ -1098,6 +1111,7 @@ public class ZkController implements Closeable {
     if (zkRunOnly) {
       return;
     }
+
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:{}", nodePath);
@@ -2103,12 +2117,7 @@ public class ZkController implements Closeable {
   static String generateNodeName(final String hostName,
                                  final String hostPort,
                                  final String hostContext) {
-    try {
-      return hostName + ':' + hostPort + '_' +
-          URLEncoder.encode(trimLeadingAndTrailingSlashes(hostContext), "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new Error("JVM Does not seem to support UTF-8", e);
-    }
+    return UrlScheme.INSTANCE.generateNodeName(hostName, hostPort, hostContext);
   }
 
   /**
@@ -2691,6 +2700,31 @@ public class ZkController implements Closeable {
         }
         newestSearcher.decref();
       }
+    }
+  }
+
+  private void setGlobalUrlSchemeFromClusterProps(SolrZkClient client) throws IOException {
+    // Have to go directly to the cluster props b/c this needs to happen before ZkStateReader does its thing
+    ClusterProperties clusterProps = new ClusterProperties(client);
+    UrlScheme.INSTANCE.setUseLiveNodesUrlScheme(
+        clusterProps.getClusterProperty(UrlScheme.USE_LIVENODES_URL_SCHEME, false));
+
+    // Set the global urlScheme from cluster prop or if that is not set, look at the urlScheme sys prop
+    final String urlScheme = clusterProps.getClusterProperty(ZkStateReader.URL_SCHEME, null);
+    if (StringUtils.isNotEmpty(urlScheme)) {
+      // track the urlScheme in a global so we can use it during ZK read / write operations for cluster state objects
+      UrlScheme.INSTANCE.setUrlScheme(urlScheme);
+    } else {
+      final String urlSchemeFromSysProp = System.getProperty(URL_SCHEME, HTTP);
+      if (HTTPS.equals(urlSchemeFromSysProp)) {
+        log.warn("Cluster property 'urlScheme' not set but system property is set to 'https'. " +
+            "You should set the cluster property and restart all nodes for consistency.");
+      }
+
+      // TODO: We may want this? See: https://issues.apache.org/jira/browse/SOLR-10202
+      // Right now, the code only uses the cluster property at startup to determine the urlScheme on the server-side
+      // UrlScheme.INSTANCE.setUrlScheme(urlSchemeFromSysProp);
+      UrlScheme.INSTANCE.setUrlScheme(HTTP);
     }
   }
 }
