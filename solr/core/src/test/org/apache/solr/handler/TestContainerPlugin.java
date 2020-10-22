@@ -58,7 +58,6 @@ import org.junit.Test;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 
@@ -88,7 +87,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       //test with an invalid class
       V2Request req = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
-          .withMethod(POST)
+          .POST()
           .withPayload(singletonMap("add", plugin))
           .build();
       expectError(req, cluster.getSolrClient(), errPath, "No method with @Command in class");
@@ -107,7 +106,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       //just check if the plugin is indeed registered
       V2Request readPluginState = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
-          .withMethod(GET)
+          .GET()
           .build();
       V2Response rsp = readPluginState.process(cluster.getSolrClient());
       assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
@@ -116,13 +115,13 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/plugin/my/plugin")
               .forceV2(true)
-              .withMethod(GET)
+              .GET()
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/testkey", "testval"));
 
       //now remove the plugin
       new V2Request.Builder("/cluster/plugin")
-          .withMethod(POST)
+          .POST()
           .forceV2(true)
           .withPayload("{remove : testplugin}")
           .build()
@@ -147,19 +146,19 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/my-random-name/my/plugin")
               .forceV2(true)
-              .withMethod(GET)
+              .GET()
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/method.name", "m1"));
 
   TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/my-random-prefix/their/plugin")
               .forceV2(true)
-              .withMethod(GET)
+              .GET()
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/method.name", "m2"));
       //now remove the plugin
       new V2Request.Builder("/cluster/plugin")
-          .withMethod(POST)
+          .POST()
           .forceV2(true)
           .withPayload("{remove : my-random-name}")
           .build()
@@ -167,12 +166,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       expectFail( () -> new V2Request.Builder("/my-random-prefix/their/plugin")
           .forceV2(true)
-          .withMethod(GET)
+          .GET()
           .build()
           .process(cluster.getSolrClient()));
       expectFail(() -> new V2Request.Builder("/my-random-prefix/their/plugin")
           .forceV2(true)
-          .withMethod(GET)
+          .GET()
           .build()
           .process(cluster.getSolrClient()));
 
@@ -184,7 +183,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       //just check if the plugin is indeed registered
       readPluginState = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
-          .withMethod(GET)
+          .GET()
           .build();
       rsp = readPluginState.process(cluster.getSolrClient());
       assertEquals(C6.class.getName(), rsp._getStr("/plugin/clusterSingleton/class", null));
@@ -241,7 +240,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       add.files = singletonList(FILE1);
       V2Request addPkgVersionReq = new V2Request.Builder("/cluster/package")
           .forceV2(true)
-          .withMethod(POST)
+          .POST()
           .withPayload(singletonMap("add", add))
           .build();
       addPkgVersionReq.process(cluster.getSolrClient());
@@ -258,14 +257,14 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       plugin.version = add.version;
       final V2Request req1 = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
-          .withMethod(POST)
+          .POST()
           .withPayload(singletonMap("add", plugin))
           .build();
       req1.process(cluster.getSolrClient());
       //verify the plugin creation
       TestDistribPackageStore.assertResponseValues(10,
-          () -> new V2Request.Builder("/cluster/plugin").
-              withMethod(GET)
+          () -> new V2Request.Builder("/cluster/plugin")
+              .GET()
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of(
               "/plugin/myplugin/class", plugin.klass,
@@ -274,7 +273,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       //let's test this now
       Callable<NavigableObject> invokePlugin = () -> new V2Request.Builder("/plugin/my/path")
           .forceV2(true)
-          .withMethod(GET)
+          .GET()
           .build().process(cluster.getSolrClient());
       TestDistribPackageStore.assertResponseValues(10,
           invokePlugin,
@@ -289,15 +288,15 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       plugin.version = add.version;
       new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
-          .withMethod(POST)
+          .GET()
           .withPayload(singletonMap("update", plugin))
           .build()
       .process(cluster.getSolrClient());
 
       //now verify if it is indeed updated
       TestDistribPackageStore.assertResponseValues(10,
-          () -> new V2Request.Builder("/cluster/plugin").
-              withMethod(GET)
+          () -> new V2Request.Builder("/cluster/plugin")
+              .GET()
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of(
               "/plugin/myplugin/class", plugin.klass,
