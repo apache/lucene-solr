@@ -37,14 +37,14 @@ public class TestPatternTypingFilterFactory extends BaseTokenStreamFactoryTestCa
 
     TokenStream ts = new CannedTokenStream(tokenA1, tokenA3, tokenB1);
 
-    TokenFilterFactory tokenFilterFactory = tokenFilterFactory("patternTyping",Version.LATEST, new StringMockResourceLoader(
+    TokenFilterFactory tokenFilterFactory = tokenFilterFactory("patternTyping", Version.LATEST, new StringMockResourceLoader(
         "6 \\b(\\d+)-(\\d+) ::: $1_hnum_$2\n" +
             "2 \\b(\\w+)-(\\w+) ::: $1_hword_$2"
-    ),"patternFile", "patterns.txt");
+    ), "patternFile", "patterns.txt");
 
     ts = tokenFilterFactory.create(ts);
     assertTokenStreamContents(ts, new String[]{
-            "One","forty-two", "4-2"}, null, null,
+            "One", "forty-two", "4-2"}, null, null,
         new String[]{"word", "forty_hword_two", "4_hnum_2"},
         null, null, null, null, null, false, null,
         new int[]{0, 2, 6});
