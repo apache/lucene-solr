@@ -50,7 +50,7 @@ public class TestVectorUtil extends LuceneTestCase {
   }
 
   public void testRandomSquareSum() {
-    // the MSE of a vector with its inverse is equal to four times the sum of squares of its components
+    // the square sum of a vector with its inverse is equal to four times the sum of squares of its components
     float[] v = randomVector();
     float[] u = negative(v);
     assertEquals(4 * l2(v), VectorUtil.squareSum(u, v), 1e-5);
