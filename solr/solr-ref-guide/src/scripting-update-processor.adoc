@@ -29,6 +29,24 @@ WARNING: Being able to run a script of your choice as part of the indexing pipel
 _Get out of jail free_ card because you can solve some problems this way that you can't in any other way.  However, you are introducing some
 potential security vulnerabilities.
 
+== Installing the ScriptingUpdateProcessor and Scripting Engines
+
+The scripting update processor lives in the contrib module `/contrib/scripting-update-processor`, and you need to explicitly add it to your Solr setup.
+
+Java 11 and previous versions come with a JavaScript engine called Nashorn, but Java 12 will require you to add your own JavaScript engine.   Other supported scripting engines like
+JRuby, Jython, Groovy, all require you to add JAR files.
+
+
+You can either add the `dist/solr-scripting-update-processor-*.jar` file into Solr’s resource loader in a core `lib/` directory, or via `<lib>` directives in `solrconfig.xml`:
+
+[source,xml]
+----
+<lib dir="${solr.install.dir:../../..}/dist/" regex="solr-scripting-update-processor-\d.*\.jar" />
+----
+
+Likewise you will need to add some JAR files depending on which scripting engines you choose.
+
+
 == Configuration
 
 [source,xml]
@@ -101,9 +119,8 @@ INFO: update-script#processAdd: id=1
 
 === Javascript
 
-Note: There is a JavaScript example (update-script.js) as part of the `techproducts` configset and
-an example collection1 configuration. Check `solrconfig.xml` and uncomment the
-update request processor definition to enable this feature.
+Note: There is a JavaScript example `update-script.js` as part of the `techproducts` configset.
+Check `solrconfig.xml` and uncomment the update request processor definition to enable this feature.
 
 [source,javascript]
 ----
@@ -155,7 +172,7 @@ function finish() {
 
 === JRuby
 
-To use JRuby as the scripting engine, add `jruby.jar` to your system (in a `lib/` directory under a collection, or via `<lib>` directives in `solrconfig.xml`).
+To use JRuby as the scripting engine, add `jruby.jar` to Solr's resource loader.
 
 Here's an example JRuby update processing script (note that all variables passed require prefixing with `$`, such as `$logger`):
 
@@ -205,8 +222,7 @@ The following in JRuby do not work as expected for some reason, though it does w
 
 === Groovy
 
-Put all JARs from a Groovy distro's `lib/` directory into Solr's resource loader
-(core `lib/` directory, `<lib>` directive in `solrconfig.xml`, etc). All JARs from
+Put all JARs from a Groovy distro's `lib/` directory into Solr's resource loader.  All JARs from
 Groovy's distro probably aren't required, but more than just the main `groovy.jar`
 file is needed (at least when this was tested using Groovy 2.0.6)
 
@@ -249,7 +265,7 @@ def finish() {
 
 === Jython
 
-Put the *standalone* `jython.jar` (the JAR that contains all the dependencies) into Solr's resource loader (core `lib/` directory, `<lib>` directive in `solrconfig.xml`, etc).
+Put the *standalone* `jython.jar` (the JAR that contains all the dependencies) into Solr's resource loader.
 
 [source,python]
 ----
