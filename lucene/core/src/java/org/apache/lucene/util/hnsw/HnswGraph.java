@@ -35,15 +35,43 @@ import static org.apache.lucene.util.VectorUtil.squareDistance;
 
 /**
  * Navigable Small-world graph. Provides efficient approximate nearest neighbor search for high
- * dimensional vectors.  This isn't thread-safe.  See <a
- * href="https://arxiv.org/abs/1603.09320">this paper</a> for details.
+ * dimensional vectors.  See <a href="https://doi.org/10.1016/j.is.2013.10.006">Approximate nearest
+ * neighbor algorithm based on navigable small world graphs [2014]</a> and <a
+ * href="https://arxiv.org/abs/1603.09320">this paper [2018]</a> for details.
+ *
+ * This implementation is actually more like the one in the same authors' earlier 2014 paper in that
+ * there is no hierarchy (just one layer), and no fanout restriction on the graph: nodes are allowed to accumulate
+ * an unbounded number of outbound links, but it does incorporate some of the innovations of the later paper, like
+ * using a priority queue to perform a beam search while traversing the graph. The nomenclature is a bit different
+ * here from what's used in those papers:
+ *
+ * <h3>Hyperparameters</h3>
+ * <ul>
+ *   <li><code>numSeed</code> is the equivalent of <code>m</code> in the 2012 paper; it controls the number of random entry points to sample.</li>
+ *   <li><code>beamWidth</code> in {@link HnswGraphBuilder} has the same meaning as <code>efConst</code> in the 2016 paper. It is the number of
+ *   nearest neighbor candidates to track while searching the graph for each newly inserted node.</li>
+ *   <li><code>maxConn</code> has the same meaning as <code>M</code> in the later paper; it controls how many of the <code>efConst</code> neighbors are
+ *   connected to the new node</li>
+ *   <li><code>fanout</code> the fanout parameter of {@link VectorValues.RandomAccess#search(float[], int, int)}
+ *   is used to control the values of <code>numSeed</code> and <code>topK</code> that are passed to this API.
+ *   Thus <code>fanout</code> is like a combination of <code>ef</code> (search beam width) from the 2016 paper and <code>m</code> from the 2014 paper.
+ *   </li>
+ * </ul>
+ *
+ * <h3>Annealing</h3>
+ * <p>Another difference of this algorithm from the papers cited is the addition of a simulated annealing strategy. The idea is to
+ * avoid getting stuck in local minima while traversing the graph by accepting candidates that lie some small delta beyond the maximum distance
+ * of the current top K, reducing delta as iteration progresses. See {@link BoundsChecker}.</p>
+ *
+ * <p>Note: The graph may be searched by multiple threads concurrently, but updates are not thread-safe. Also note: there is no notion of
+ * deletions. Document searching built on top of this must do its own deletion-filtering.</p>
  */
 public final class HnswGraph {
 
   // each entry lists the neighbors of a node, in node order
   private final List<List<Neighbor>> graph;
 
-  public HnswGraph() {
+  HnswGraph() {
     graph = new ArrayList<>();
     graph.add(new ArrayList<>());
   }
@@ -52,13 +80,13 @@ public final class HnswGraph {
    * Searches for the nearest neighbors of a query vector.
    * @param query search query vector
    * @param topK the number of nodes to be returned
-   * @param fanout the number of random entry points to sample
+   * @param numSeed the number of random entry points to sample
    * @param vectors vector values
    * @param graphValues the graph values. May represent the entire graph, or a level in a hierarchical graph.
    * @param random a source of randomness, used for generating entry points to the graph
    * @return a priority queue holding the neighbors found
    */
-  public static Neighbors search(float[] query, int topK, int fanout, VectorValues.RandomAccess vectors, KnnGraphValues graphValues,
+  public static Neighbors search(float[] query, int topK, int numSeed, VectorValues.RandomAccess vectors, KnnGraphValues graphValues,
                                  Random random) throws IOException {
     VectorValues.SearchStrategy searchStrategy = vectors.searchStrategy();
     boolean scoreReversed = isReversed(searchStrategy);
@@ -69,7 +97,7 @@ public final class HnswGraph {
       candidates = new TreeSet<>();
     }
     int size = vectors.size();
-    for (int i = 0; i < fanout && i < size; i++) {
+    for (int i = 0; i < numSeed && i < size; i++) {
       int entryPoint = random.nextInt(size);
       candidates.add(new Neighbor(entryPoint, compare(query, vectors.vectorValue(entryPoint), searchStrategy)));
     }
@@ -102,7 +130,6 @@ public final class HnswGraph {
         visited.add(friendOrd);
         float score = compare(query, vectors.vectorValue(friendOrd), searchStrategy);
         if (results.size() < topK || bound.check(score) == false) {
-          //if (results.size() < topK || score > lowerBound) {
           Neighbor n = new Neighbor(friendOrd, score);
           candidates.add(n);
           results.insertWithOverflow(n);
@@ -113,15 +140,15 @@ public final class HnswGraph {
     return results;
   }
 
-  public boolean isEmpty() {
-    return graph.isEmpty();
-  }
-
-  public int[] getFriends(int node) {
+  /**
+   * Returns the nodes connected to the given node by its outgoing arcs.
+   * @param node the node whose friends are returned
+   */
+  public int[] getNeighbors(int node) {
     return graph.get(node).stream().mapToInt(Neighbor::node).toArray();
   }
 
-  /** Connects two nodes
+  /** Connects two nodes symmetrically.
    * node1 must be less than node2 and must already have been inserted to the graph */
   void connectNodes(int node1, int node2, float score, int maxConnections) {
     assert node1 >= 0 && node2 >= 0;
@@ -196,7 +223,7 @@ public final class HnswGraph {
     @Override
     public void seek(int targetNode) {
       arcUpTo = 0;
-      arcs = HnswGraph.this.getFriends(targetNode);
+      arcs = HnswGraph.this.getNeighbors(targetNode);
     }
 
     @Override

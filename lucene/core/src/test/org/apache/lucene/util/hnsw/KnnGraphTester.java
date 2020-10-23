@@ -66,13 +66,13 @@ public class KnnGraphTester {
   private final static String ID_FIELD = "id";
   private final static VectorValues.SearchStrategy SEARCH_STRATEGY = VectorValues.SearchStrategy.DOT_PRODUCT_HNSW;
 
-  private Random random;
   private int numDocs;
   private int dim;
   private int topK;
-  private int fanout;
   private int numIters;
+  private int fanout;
   private Path indexPath;
+  private boolean quiet;
   private boolean reindex;
 
   @SuppressForbidden(reason="uses Random()")
@@ -82,8 +82,7 @@ public class KnnGraphTester {
     numIters = 1000;
     dim = 256;
     topK = 100;
-    fanout = 50;
-    random = new Random();
+    fanout = topK;
     indexPath = Paths.get("knn_test_index");
   }
 
@@ -118,6 +117,18 @@ public class KnnGraphTester {
           }
           fanout = Integer.parseInt(args[++iarg]);
           break;
+        case "-beamWidthIndex":
+          if (iarg == args.length - 1) {
+            throw new IllegalArgumentException("-beamWidthIndex requires a following number");
+          }
+          HnswGraphBuilder.DEFAULT_BEAM_WIDTH = Integer.parseInt(args[++iarg]);
+          break;
+        case "-maxConn":
+          if (iarg == args.length - 1) {
+            throw new IllegalArgumentException("-maxConn requires a following number");
+          }
+          HnswGraphBuilder.DEFAULT_MAX_CONN = Integer.parseInt(args[++iarg]);
+          break;
         case "-ndoc":
           if (iarg == args.length - 1) {
             throw new IllegalArgumentException("-ndoc requires a following number");
@@ -136,8 +147,11 @@ public class KnnGraphTester {
         case "-forceMerge":
           operation = "-forceMerge";
           break;
+        case "-quiet":
+          quiet = true;
+          break;
         default:
-          throw new IllegalArgumentException("unknown operation " + operation);
+          throw new IllegalArgumentException("unknown argument " + arg);
           //usage();
       }
     }
@@ -154,10 +168,6 @@ public class KnnGraphTester {
       case "-forceMerge":
         forceMerge();
         break;
-      case "-check":
-        throw new UnsupportedOperationException("check TBD");
-        //checkIndex(indexPath);
-        //break;
       case "-stats":
         printFanoutHist(indexPath);
         break;
@@ -196,8 +206,8 @@ public class KnnGraphTester {
     int[] leafHist = new int[numDocs];
     for (int node = 0; node < numDocs; node++) {
       knnValues.seek(node);
-      int n = 0, arc;
-      while ((arc = knnValues.nextArc()) != NO_MORE_DOCS) {
+      int n = 0;
+      while (knnValues.nextArc() != NO_MORE_DOCS) {
         ++n;
       }
       ++leafHist[n];
@@ -227,60 +237,24 @@ public class KnnGraphTester {
         ++ibucket;
       }
     }
-    System.out.println("");
+    System.out.println();
   }
-
-  /*
-  private void checkIndex(Path indexPath, int numIters) throws IOException {
-    float[][] targets = new float[numIters][];
-    TopDocs[] results = new TopDocs[numIters];
-    System.out.println("checking " + numIters + " documents");
-    try (Directory dir = FSDirectory.open(indexPath);
-         DirectoryReader reader = DirectoryReader.open(dir)) {
-      for (int i = 0; i < numIters; i++) {
-        targets[i] = new float[dim];
-        int docid = random.nextInt(reader.maxDoc());
-        int readerOrd = ReaderUtil.subIndex(docid, reader.leaves());
-        LeafReaderContext ctx = reader.leaves().get(readerOrd);
-        int leafDocid = docid - ctx.docBase;
-        KnnGraphValues graphValues = ((Lucene90KnnGraphReader) ((CodecReader) ctx.reader()).getKnnGraphReader()).getGraphValues(KNN_FIELD);
-        VectorValues vectorValues = ctx.reader().getVectorValues(KNN_FIELD);
-        boolean ok = graphValues.advanceExact(leafDocid);
-        if (ok == false) {
-          throw new IllegalStateException("KnnGraphValues failed to advance to docid=" + docid);
-        }
-        int[] friends = graphValues.getFriends(0);
-        // check all the supposed friends for overlap with the true list of closest documents
-        int advanced = vectorValues.advance(leafDocid);
-        if (advanced != leafDocid) {
-          throw new IllegalStateException("VectorValues failed to advance to docid=" + docid
-                                          + "; in leaf=" + readerOrd + " having maxDoc=" + ctx.reader().maxDoc()
-                                          + ", advance(" + leafDocid + ") returned " + advanced);
-        }
-        System.arraycopy(vectorValues.vectorValue(), 0, targets[i], 0, dim);
-        results[i] = new TopDocs(null, new ScoreDoc[friends.length]);
-        for (int j = 0; j < friends.length; j++) {
-          results[i].scoreDocs[j] = new ScoreDoc(ctx.docBase + friends[j], 0);
-        }
-      }
-    }
-    checkResults(targets, results);
-  }
-  */
 
   @SuppressForbidden(reason="Prints stuff")
   private void testSearch(Path indexPath, Path queryPath, int[][] nn) throws IOException {
     TopDocs[] results = new TopDocs[numIters];
+    long elapsed, totalCpuTime;
     try (FileChannel q = FileChannel.open(queryPath)) {
       FloatBuffer targets = q.map(FileChannel.MapMode.READ_ONLY, 0, numIters * dim * Float.BYTES)
         .order(ByteOrder.LITTLE_ENDIAN)
         .asFloatBuffer();
       float[] target = new float[dim];
-      System.out.println("running " + numIters + " targets; topK=" + topK + ", fanout=" + fanout);
+      if (quiet == false) {
+        System.out.println("running " + numIters + " targets; topK=" + topK + ", fanout=" + fanout);
+      }
       long start;
       ThreadMXBean bean = ManagementFactory.getThreadMXBean();
       long cpuTimeStartNs;
-      long elapsed, totalCpuTime;
       try (Directory dir = FSDirectory.open(indexPath);
            DirectoryReader reader = DirectoryReader.open(dir)) {
 
@@ -304,11 +278,19 @@ public class KnnGraphTester {
               }
           }
       }
-      System.out.println("completed " + numIters + " searches in " + elapsed + " ms: " + ((1000 * numIters) / elapsed) + " QPS "
-      + "CPU time=" + totalCpuTime + "ms");
+      if (quiet == false) {
+        System.out.println("completed " + numIters + " searches in " + elapsed + " ms: " + ((1000 * numIters) / elapsed) + " QPS "
+            + "CPU time=" + totalCpuTime + "ms");
+      }
     }
-    System.out.println("checking results");
-    checkResults(results, nn);
+    if (quiet == false) {
+      System.out.println("checking results");
+    }
+    float recall = checkResults(results, nn);
+    if (quiet) {
+      System.out.printf(Locale.ROOT, "%5.3f %5.2f %d %d %d %d\n", recall, totalCpuTime / (float) numIters,
+          numDocs, fanout, HnswGraphBuilder.DEFAULT_MAX_CONN, HnswGraphBuilder.DEFAULT_BEAM_WIDTH);
+    }
   }
 
   private static TopDocs doKnnSearch(IndexReader reader, String field, float[] vector, int k, int fanout) throws IOException {
@@ -323,7 +305,7 @@ public class KnnGraphTester {
     return TopDocs.merge(k, results);
   }
 
-  private void checkResults(TopDocs[] results, int[][] nn) {
+  private float checkResults(TopDocs[] results, int[][] nn) {
     int totalMatches = 0;
     int totalResults = 0;
     for (int i = 0; i < results.length; i++) {
@@ -333,11 +315,14 @@ public class KnnGraphTester {
       //System.out.println(Arrays.toString(results[i].scoreDocs));
       totalMatches += compareNN(nn[i], results[i]);
     }
-    System.out.println("total matches = " + totalMatches + " out of " + totalResults);
-    System.out.printf(Locale.ROOT, "Average overlap = %.2f%%\n", ((100.0 * totalMatches) / totalResults));
+    if (quiet == false) {
+      System.out.println("total matches = " + totalMatches + " out of " + totalResults);
+      System.out.printf(Locale.ROOT, "Average overlap = %.2f%%\n", ((100.0 * totalMatches) / totalResults));
+    }
+    return totalMatches / (float) totalResults;
   }
 
-  int compareNN(int[] expected, TopDocs results) {
+  private int compareNN(int[] expected, TopDocs results) {
     int matched = 0;
     /*
     System.out.print("expected=");
@@ -364,7 +349,7 @@ public class KnnGraphTester {
     return matched;
   }
 
-  int[][] getNN(Path docPath, Path queryPath) throws IOException {
+  private int[][] getNN(Path docPath, Path queryPath) throws IOException {
     // look in working directory for cached nn file
     String nnFileName = "nn-" + numDocs + "-" + numIters + "-" + topK + ".bin";
     Path nnPath = Paths.get(nnFileName);
@@ -377,7 +362,7 @@ public class KnnGraphTester {
     }
   }
 
-  int[][] readNN(Path nnPath) throws IOException {
+  private int[][] readNN(Path nnPath) throws IOException {
     int[][] result = new int[numIters][];
     try (FileChannel in = FileChannel.open(nnPath)) {
       IntBuffer intBuffer = in.map(FileChannel.MapMode.READ_ONLY, 0, numIters * topK * Integer.BYTES)
@@ -391,8 +376,10 @@ public class KnnGraphTester {
     return result;
   }
 
-  void writeNN(int[][] nn, Path nnPath) throws IOException {
-    System.out.println("writing true nearest neighbors to " + nnPath);
+  private void writeNN(int[][] nn, Path nnPath) throws IOException {
+    if (quiet == false) {
+      System.out.println("writing true nearest neighbors to " + nnPath);
+    }
     ByteBuffer tmp = ByteBuffer.allocate(nn[0].length * Integer.BYTES).order(ByteOrder.LITTLE_ENDIAN);
     try (OutputStream out = Files.newOutputStream(nnPath)) {
       for (int i = 0; i < numIters; i++) {
@@ -402,9 +389,11 @@ public class KnnGraphTester {
     }
   }
 
-  int[][] computeNN(Path docPath, Path queryPath) throws IOException {
+  private int[][] computeNN(Path docPath, Path queryPath) throws IOException {
     int[][] result = new int[numIters][];
-    System.out.println("computing true nearest neighbors of " + numIters + " target vectors");
+    if (quiet == false) {
+      System.out.println("computing true nearest neighbors of " + numIters + " target vectors");
+    }
     try (FileChannel in = FileChannel.open(docPath);
          FileChannel qIn = FileChannel.open(queryPath)) {
       FloatBuffer queries = qIn.map(FileChannel.MapMode.READ_ONLY, 0, numIters * dim * Float.BYTES)
@@ -435,7 +424,7 @@ public class KnnGraphTester {
             result[i][k] = n.node;
             //System.out.print(" " + n);
           }
-          if ((i + 1) % 10 == 0) {
+          if (quiet == false && (i + 1) % 10 == 0) {
             System.out.print(" " + (i + 1));
             System.out.flush();
           }
@@ -450,8 +439,10 @@ public class KnnGraphTester {
       .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     // iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     iwc.setRAMBufferSizeMB(1994d);
-    iwc.setInfoStream(new PrintStreamInfoStream(System.out));
-    System.out.println("creating index in " + indexPath);
+    if (quiet == false) {
+      iwc.setInfoStream(new PrintStreamInfoStream(System.out));
+      System.out.println("creating index in " + indexPath);
+    }
     long start = System.nanoTime();
     long totalBytes = (long) numDocs * dim * Float.BYTES, offset = 0;
     try (FSDirectory dir = FSDirectory.open(indexPath); IndexWriter iw = new IndexWriter(dir, iwc)) {
@@ -473,15 +464,19 @@ public class KnnGraphTester {
             iw.addDocument(doc);
           }
         }
-        System.out.println("Done indexing " + numDocs + " documents; now flush");
+        if (quiet == false) {
+          System.out.println("Done indexing " + numDocs + " documents; now flush");
+        }
       }
       long elapsed = System.nanoTime() - start;
-      System.out.println("Indexed " + numDocs + " documents in " + elapsed / 1_000_000_000 + "s");
+      if (quiet == false) {
+        System.out.println("Indexed " + numDocs + " documents in " + elapsed / 1_000_000_000 + "s");
+      }
     }
   }
 
   private static void usage() {
-    String error = "Usage: TestKnnGraph -generate|-search|-stats|-check {datafile} [-fanout N]";
+    String error = "Usage: TestKnnGraph -generate|-search|-stats|-check {datafile} [-beamWidth N]";
     System.err.println(error);
     System.exit(1);
   }

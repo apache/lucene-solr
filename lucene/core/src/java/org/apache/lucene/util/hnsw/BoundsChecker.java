@@ -17,7 +17,7 @@
 
 package org.apache.lucene.util.hnsw;
 
-// Simulated annealing may help avoid getting stuck in local minima
+// Simulated annealing seems to help by avoiding getting stuck in local minima
 abstract class BoundsChecker {
 
     private final static float DELTA = 0.2f;

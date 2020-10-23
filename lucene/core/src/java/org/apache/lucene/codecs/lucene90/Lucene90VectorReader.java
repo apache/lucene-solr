@@ -407,7 +407,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
       @Override
       public TopDocs search(float[] vector, int topK, int fanout) throws IOException {
-        Neighbors results = HnswGraph.search(vector, topK, fanout, this, getGraphValues(fieldEntry), random);
+        Neighbors results = HnswGraph.search(vector, topK + fanout, topK + fanout, this, getGraphValues(fieldEntry), random);
         while (results.size() > topK) {
           results.pop();
         }

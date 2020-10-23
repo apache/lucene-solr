@@ -119,6 +119,8 @@ public abstract class VectorValues extends DocIdSetIterator {
     BytesRef binaryValue(int targetOrd) throws IOException;
 
     /**
+     * nocommit move to VectorValues! the default impl can just create a randomAccess
+     * during indexing we'll want access to random access.search directly
      * Return the k nearest neighbor documents as determined by comparison of their vector values
      * for this field, to the given vector, by the field's search strategy. If the search strategy is
      * reversed, lower values indicate nearer vectors, otherwise higher scores indicate nearer

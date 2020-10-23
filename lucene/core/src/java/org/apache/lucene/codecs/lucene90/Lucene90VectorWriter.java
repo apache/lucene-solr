@@ -137,7 +137,7 @@ public final class Lucene90VectorWriter extends VectorWriter {
     for (int ord = 0; ord < count; ord++) {
       // write graph
       offsets[ord] = graphData.getFilePointer() - graphDataOffset;
-      int[] arcs = graph.getFriends(ord);
+      int[] arcs = graph.getNeighbors(ord);
       graphData.writeInt(arcs.length);
       int lastArc = -1;         // to make the assertion work?
       for (int arc : arcs) {
