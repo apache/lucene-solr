@@ -124,9 +124,8 @@ public abstract class SolrCoreState {
   public void pauseUpdatesAndAwaitInflightRequests() throws TimeoutException, InterruptedException {
     if (pauseUpdateRequests.compareAndSet(false, true)) {
       int arrivalNumber = inflightUpdatesCounter.register();
-      if (arrivalNumber != -1) {
-        inflightUpdatesCounter.awaitAdvanceInterruptibly(inflightUpdatesCounter.arrive(), PAUSE_UPDATES_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-      }
+      assert arrivalNumber >= 0 : "Registration of in-flight request should have succeeded but got arrival phase number < 0";
+      inflightUpdatesCounter.awaitAdvanceInterruptibly(inflightUpdatesCounter.arrive(), PAUSE_UPDATES_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -147,7 +146,8 @@ public abstract class SolrCoreState {
    * De-registers in-flight update requests to this core (marks them as completed)
    */
   public void deregisterInFlightUpdate() {
-    inflightUpdatesCounter.arriveAndDeregister();
+    int arrivalPhaseNumber = inflightUpdatesCounter.arriveAndDeregister();
+    assert arrivalPhaseNumber >= 0 : "inflightUpdatesCounter should not have been terminated";
   }
 
   public abstract Lock getCommitLock();

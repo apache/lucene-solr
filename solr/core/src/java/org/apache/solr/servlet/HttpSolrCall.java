@@ -552,6 +552,14 @@ public class HttpSolrCall {
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
+          /*
+           We track update requests so that we can preserve consistency by waiting for them to complete
+           on a node shutdown and then immediately trigger a leader election without waiting for the core to close.
+           See how the SolrCoreState#pauseUpdatesAndAwaitInflightRequests() method is used in CoreContainer#shutdown()
+
+           Also see https://issues.apache.org/jira/browse/SOLR-14942 for details on why we do not care for
+           other kinds of requests.
+          */
           if (handler instanceof UpdateRequestHandler && !core.getSolrCoreState().registerInFlightUpdate()) {
             throw new SolrException(ErrorCode.SERVER_ERROR, "Updates are temporarily paused for core: " + core.getName());
           }
@@ -591,6 +599,7 @@ public class HttpSolrCall {
             return RETURN;
           } finally {
             if (handler instanceof UpdateRequestHandler) {
+              // every registered request must also be de-registered
               core.getSolrCoreState().deregisterInFlightUpdate();
             }
           }
