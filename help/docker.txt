@@ -6,7 +6,7 @@ Solr docker images are built using Palantir's Docker Gradle plugin, https://gith
 Common Inputs
 -------------
 
-The docker image and it's tag can be customized via the following options, all accepted via both Environment Variables and Gradle Properties.
+The docker image and its tag can be customized via the following options, all accepted via both Environment Variables and Gradle Properties.
 
 Docker Image Repository:
    Default: "apache/solr"
@@ -30,7 +30,7 @@ In order to build the Solr Docker image, run:
 
 gradlew docker
 
-The docker build task (`gradlew docker`) accepts the following inputs, in addition to the common inputs listed above:
+The docker build task accepts the following inputs, in addition to the common inputs listed above:
 
 Base Docker Image: (The docker image used for the "FROM" in the Solr Dockerfile)
    Default: "openjdk:11-jre-slim"
@@ -50,4 +50,4 @@ You can also specify an explicit list of tests to run, or an explicit list of te
 Both inputs are optional, and by default all tests will be run.
 
 gradlew testDocker --tests create_core,demo
-gradlew testDocker --tests demo-tini,initdb
+gradlew testDocker --ignore demo-tini,initdb
