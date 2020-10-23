@@ -41,7 +41,7 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching points within a bounding box.
  *   <li>{@link #newDistanceQuery newDistanceQuery()} for matching points within a specified distance.
  *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching points within an arbitrary polygon.
- *   <li>{@link #newGeometryQuery newGeometryQuery()} for matching points within an arbitrary geometry.
+ *   <li>{@link #newGeometryQuery newGeometryQuery()} for matching points within an arbitrary geometry collection.
  * </ul>
  * <p>
  * If you also need per-document operations such as sort by distance, add a separate {@link XYDocValuesField} instance.
@@ -172,8 +172,12 @@ public class XYPointField extends Field {
     return newGeometryQuery(field, polygons);
   }
 
-  /** create a query to find all indexed geo shapes that intersect a provided geometry collection
-   *  note: Components do not support dateline crossing
+  /** create a query to find all indexed shapes that intersect a provided geometry collection.
+   * @param field field name. must not be null.
+   * @param xyGeometries array of Geometries. must not be null or empty and cannot contain a {@link org.apache.lucene.geo.XYLine} geometry.
+   * @return query matching points within this geometry collection.
+   * @throws IllegalArgumentException if {@code field} is null, {@code polygons} is null or empty or contains a XYLine geometries.
+   * @see XYGeometry
    **/
   public static Query newGeometryQuery(String field, XYGeometry... xyGeometries) {
     return new XYPointInGeometryQuery(field, xyGeometries);

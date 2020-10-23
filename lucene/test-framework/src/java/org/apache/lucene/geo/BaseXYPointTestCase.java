@@ -96,7 +96,7 @@ public abstract class BaseXYPointTestCase extends LuceneTestCase {
     final int len = random().nextInt(4) + 1;
     XYGeometry[] geometries = new XYGeometry[len];
     for (int i = 0; i < len; i++) {
-      switch (2) {
+      switch (random().nextInt(3)) {
         case 0:
           geometries[i] = new XYPoint(nextX(), nextY());
           break;
