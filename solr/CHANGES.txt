@@ -339,6 +339,8 @@ Bug Fixes
 
 * SOLR-14898: Stop returning duplicate HTTP response headers when requests are forward to another node. (hossman)
 
+* SOLR-14844: Upgrade Jetty to 9.4.32.v20200930 (Samuel Garcia Martinez via Erick Erickson)
+
 ==================  8.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
