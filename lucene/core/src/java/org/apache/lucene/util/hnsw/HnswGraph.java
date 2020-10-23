@@ -58,11 +58,6 @@ import static org.apache.lucene.util.VectorUtil.squareDistance;
  *   </li>
  * </ul>
  *
- * <h3>Annealing</h3>
- * <p>Another difference of this algorithm from the papers cited is the addition of a simulated annealing strategy. The idea is to
- * avoid getting stuck in local minima while traversing the graph by accepting candidates that lie some small delta beyond the maximum distance
- * of the current top K, reducing delta as iteration progresses. See {@link BoundsChecker}.</p>
- *
  * <p>Note: The graph may be searched by multiple threads concurrently, but updates are not thread-safe. Also note: there is no notion of
  * deletions. Document searching built on top of this must do its own deletion-filtering.</p>
  */
@@ -104,17 +99,16 @@ public final class HnswGraph {
     // set of ordinals that have been visited by search on this layer, used to avoid backtracking
     //IntHashSet visited = new IntHashSet();
     Set<Integer> visited = new HashSet<>();
+    // TODO: use PriorityQueue's sentinel optimization
     Neighbors results = Neighbors.create(topK, scoreReversed);
-    BoundsChecker bound = BoundsChecker.create(scoreReversed);
     for (Neighbor c :candidates) {
       visited.add(c.node);
       results.insertWithOverflow(c);
-      // gather the best candidate score in the bounds checker
-      bound.update(c.score);
     }
-    // Set the bound to the least, ie "worst" current result, also updating the bound delta according to the
-    // difference between the best and worst candidate.
-    bound.set(results.top().score, bound.bound);
+    // Set the bound to the worst current result and below reject any newly-generated candidates failing
+    // to exceed this bound
+    BoundsChecker bound = BoundsChecker.create(scoreReversed);
+    bound.bound = results.top().score;
     while (candidates.size() > 0) {
       // get the best candidate (closest or best scoring)
       Neighbor c = candidates.pollLast();

@@ -17,15 +17,9 @@
 
 package org.apache.lucene.util.hnsw;
 
-// Simulated annealing seems to help by avoiding getting stuck in local minima
 abstract class BoundsChecker {
 
-    private final static float DELTA = 0.2f;
-    private final static float BETA = 1000f;
-
-    float decay;
     float bound;
-    float delta;
 
     /**
      * Update the bound if sample is better
@@ -36,13 +30,6 @@ abstract class BoundsChecker {
      * Return whether the sample exceeds (is worse than) the bound
      */
     abstract boolean check(float sample);
-
-    /**
-     * Set the bound, and scale the annealing delta according to an estimate of the expected range of values
-     * @param worst the worst value seen so far
-     * @param best the best value seen so far
-     */
-    abstract void set(float worst, float best);
 
     static BoundsChecker create(boolean reversed) {
         if (reversed) {
@@ -55,7 +42,6 @@ abstract class BoundsChecker {
     static class Max extends BoundsChecker {
         Max() {
             bound = -Float.MAX_VALUE;
-            decay = 1f - 1f / BETA;
         }
 
         void update(float sample) {
@@ -64,15 +50,8 @@ abstract class BoundsChecker {
             }
         }
 
-        void set(float worst, float best) {
-            assert worst <= best;
-            delta = (best - worst) * DELTA;
-            bound = worst;
-        }
-
         boolean check(float sample) {
-            delta *= decay;
-            return sample < bound - delta;
+            return sample < bound;
         }
     }
 
@@ -80,7 +59,6 @@ abstract class BoundsChecker {
 
         Min() {
             bound = Float.MAX_VALUE;
-            decay = 1f - 1f / BETA;
         }
 
         void update(float sample) {
@@ -89,15 +67,8 @@ abstract class BoundsChecker {
             }
         }
 
-        void set(float worst, float best) {
-            assert worst >= best;
-            delta = (worst - best) * DELTA;
-            bound = worst;
-        }
-
         boolean check(float sample) {
-            delta *= decay;
-            return sample > bound + delta;
+            return sample > bound;
         }
     }
 }

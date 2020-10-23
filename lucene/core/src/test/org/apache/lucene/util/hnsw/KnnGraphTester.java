@@ -288,7 +288,7 @@ public class KnnGraphTester {
     }
     float recall = checkResults(results, nn);
     if (quiet) {
-      System.out.printf(Locale.ROOT, "%5.3f %5.2f %d %d %d %d\n", recall, totalCpuTime / (float) numIters,
+      System.out.printf(Locale.ROOT, "%5.3f\t%5.2f\t%d\t%d\t%d\t%d\n", recall, totalCpuTime / (float) numIters,
           numDocs, fanout, HnswGraphBuilder.DEFAULT_MAX_CONN, HnswGraphBuilder.DEFAULT_BEAM_WIDTH);
     }
   }
