@@ -37,6 +37,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TotalHits;
@@ -340,6 +341,11 @@ public class TestDocSet extends SolrTestCase {
 
       @Override
       public PointValues getPointValues(String field) {
+        return null;
+      }
+
+      @Override
+      public VectorValues getVectorValues(String field) {
         return null;
       }
 

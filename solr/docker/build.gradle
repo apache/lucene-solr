@@ -31,14 +31,26 @@ dependencies {
   docker dockerPackage
 }
 
+def dockerImageName = "apache/solr:${version}"
+def baseDockerImage = 'openjdk:11-jre-slim'
+
 docker {
-  name = "apache/solr:${version}"
+  name = dockerImageName
   files file('include')
-  buildArgs(['BASE_IMAGE' : 'openjdk:11-jre-slim', 'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package', 'SOLR_VERSION': "${version}"])
+  buildArgs(['BASE_IMAGE' : baseDockerImage, 'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package', 'SOLR_VERSION': "${version}"])
 }
 
-// In order to create the solr docker image, the solr package image must be created first.
-tasks.docker.dependsOn(dockerPackage.tasks.docker)
+tasks.docker {
+  // In order to create the solr docker image, the solr package image must be created first.
+  dependsOn(dockerPackage.tasks.docker)
+
+  // Print information on the image after it has been created
+  doLast {
+    project.logger.lifecycle("Solr Docker Image Created")
+    project.logger.lifecycle("\tName: $dockerImageName")
+    project.logger.lifecycle("\tBase Image: $baseDockerImage")
+  }
+}
 
 abstract class DockerTestSuite extends DefaultTask {
   private List<String> tests = new ArrayList<>();

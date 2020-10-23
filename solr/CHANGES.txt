@@ -14,7 +14,10 @@ New Features
 
 * SOLR-14440: Introduce new Certificate Authentication Plugin to load Principal from certificate subject. (Mike Drob)
 
-* SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
+* SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
+
+* SOLR-14749: Improve support for arbitrary container-level plugins. Add ClusterSingleton
+  support for plugins that require only one active instance in the cluster. (ab, noble)
 
 Improvements
 ----------------------
@@ -30,10 +33,6 @@ Improvements
 * SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
 
 * SOLR-7683 Introduce support to identify Solr internal request types (Atri Sharma, Hrishikesh Gadre)
-
-* SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
-
-* SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
 
 * SOLR-14799: JWT authentication plugin only requires "sub" claim when principalClaim=sub. (Erik Hatcher)
 
@@ -132,6 +131,9 @@ Other Changes
 
 * SOLR-14930: Removed rule based replica placement (noble)
 
+* SOLR-14944: Remove the "spins" metrics - support for detection of spinning disks has been
+  removed in LUCENE-9576. (ab)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -166,6 +168,10 @@ New Features
 
 * SOLR-14914: Add option to disable metrics collection. (ab)
 
+* SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
+
+* SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
+
 Improvements
 ---------------------
 
@@ -197,6 +203,8 @@ Improvements
 * SOLR-14905: Update commons-io version to 2.8.0 due to security vulnerability. (Nazerke Seidan via Bruno Roustant)
 
 * SOLR-14691: Metrics reporting should avoid creating objects. (ab, noble)
+
+* SOLR-14933: Ability to add T and P type replica from admin UI (Sayan Das via Eric Pugh)
 
 Optimizations
 ---------------------
@@ -263,9 +271,13 @@ Bug Fixes
 * SOLR-14503: Use specified waitForZk value as connection timeout for zookeeper in SolrDispatcherFilter.
   Also, consume specified SOLR_WAIT_FOR_ZK in bin/solr.cmd (Colvin Cowie via Munendra S N)
 
+* SOLR-14936: Fixed Grafana dashboard filters for collection, shard, replica and core (janhoy)
+
 * SOLR-14924: Some ReplicationHandler metrics are reported using incorrect types. (ab)
 
 * SOLR-14483: Fix empty drop down for adding replica in Admin UI (Sayan Das via Eric Pugh)
+
+* SOLR-14549: Fix listing of Files in a Directory on Solr Admin UI (Kevin Risden)
 
 Other Changes
 ---------------------

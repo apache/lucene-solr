@@ -50,8 +50,6 @@ grant {
   permission java.lang.RuntimePermission "getStackTrace";
   // needed for mock filesystems in tests
   permission java.lang.RuntimePermission "fileSystemProvider";
-  // needed for test of IOUtils.spins (maybe it can be avoided)
-  permission java.lang.RuntimePermission "getFileStoreAttributes";
   // analyzers/uima: needed by lucene expressions' JavascriptCompiler
   permission java.lang.RuntimePermission "createClassLoader";
   // needed to test unmap hack on platforms that support it
@@ -77,7 +75,6 @@ grant {
 
   // CMS randomization
   permission java.util.PropertyPermission "lucene.cms.override_core_count", "write";
-  permission java.util.PropertyPermission "lucene.cms.override_spins", "write";
 
   // used by nested tests? (e.g. TestLeaveFilesIfTestFails). TODO: look into this
   permission java.util.PropertyPermission "tests.runnested", "write";

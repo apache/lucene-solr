@@ -37,10 +37,12 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
@@ -92,8 +94,11 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       expectError(req, cluster.getSolrClient(), errPath, "No method with @Command in class");
 
       //test with an invalid class
-      plugin.klass = C1.class.getName();
-      expectError(req, cluster.getSolrClient(), errPath, "No @EndPoints");
+      // XXX (ab) in order to support ClusterSingleton we allow adding
+      // plugins without Api EndPoints
+
+//      plugin.klass = C1.class.getName();
+//      expectError(req, cluster.getSolrClient(), errPath, "No @EndPoints");
 
       //test with a valid class. This should succeed now
       plugin.klass = C3.class.getName();
@@ -170,6 +175,31 @@ public class TestContainerPlugin extends SolrCloudTestCase {
           .withMethod(GET)
           .build()
           .process(cluster.getSolrClient()));
+
+      // test ClusterSingleton plugin
+      plugin.name = "clusterSingleton";
+      plugin.klass = C6.class.getName();
+      req.process(cluster.getSolrClient());
+
+      //just check if the plugin is indeed registered
+      readPluginState = new V2Request.Builder("/cluster/plugin")
+          .forceV2(true)
+          .withMethod(GET)
+          .build();
+      rsp = readPluginState.process(cluster.getSolrClient());
+      assertEquals(C6.class.getName(), rsp._getStr("/plugin/clusterSingleton/class", null));
+
+      assertTrue("ccProvided", C6.ccProvided);
+      assertTrue("startCalled", C6.startCalled);
+      assertFalse("stopCalled", C6.stopCalled);
+      // kill the Overseer leader
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+        if (!jetty.getCoreContainer().getZkController().getOverseer().isClosed()) {
+          cluster.stopJettySolrRunner(jetty);
+          cluster.waitForJettyToStop(jetty);
+        }
+      }
+      assertTrue("stopCalled", C6.stopCalled);
     } finally {
       cluster.shutdown();
     }
@@ -288,6 +318,45 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       cluster.shutdown();
     }
   }
+
+  public static class C6 implements ClusterSingleton {
+    static boolean startCalled = false;
+    static boolean stopCalled = false;
+    static boolean ccProvided = false;
+
+    private State state = State.STOPPED;
+
+    public C6(CoreContainer cc) {
+      if (cc != null) {
+        ccProvided = true;
+      }
+    }
+
+    @Override
+    public String getName() {
+      return "C6";
+    }
+
+    @Override
+    public void start() throws Exception {
+      state = State.STARTING;
+      startCalled = true;
+      state = State.RUNNING;
+    }
+
+    @Override
+    public State getState() {
+      return state;
+    }
+
+    @Override
+    public void stop() {
+      state = State.STOPPING;
+      stopCalled = true;
+      state = State.STOPPED;
+    }
+  }
+
 
   public static class C5 implements ResourceLoaderAware {
     static ByteBuffer classData;
