@@ -39,21 +39,21 @@ public class TestVectorUtil extends LuceneTestCase {
     assertEquals(0, VectorUtil.dotProduct(u, v), 1e-5);
   }
 
-  public void testSelfSquareSum() {
+  public void testSelfSquareDistance() {
     // the l2 distance of a vector with itself is zero
     float[] v = randomVector();
-    assertEquals(0, VectorUtil.squareSum(v, v), 1e-5);
+    assertEquals(0, VectorUtil.squareDistance(v, v), 1e-5);
   }
 
-  public void testBasicSquareSum() {
-    assertEquals(12, VectorUtil.squareSum(new float[]{1, 2, 3}, new float[]{-1, 0, 5}), 0);
+  public void testBasicSquareDistance() {
+    assertEquals(12, VectorUtil.squareDistance(new float[]{1, 2, 3}, new float[]{-1, 0, 5}), 0);
   }
 
-  public void testRandomSquareSum() {
-    // the square sum of a vector with its inverse is equal to four times the sum of squares of its components
+  public void testRandomSquareDistance() {
+    // the square distance of a vector with its inverse is equal to four times the sum of squares of its components
     float[] v = randomVector();
     float[] u = negative(v);
-    assertEquals(4 * l2(v), VectorUtil.squareSum(u, v), 1e-5);
+    assertEquals(4 * l2(v), VectorUtil.squareDistance(u, v), 1e-5);
   }
 
   private float l2(float[] v) {

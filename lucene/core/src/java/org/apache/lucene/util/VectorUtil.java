@@ -60,7 +60,7 @@ public final class VectorUtil {
     return res;
   }
 
-  public static float squareSum(float[] v1, float[] v2) {
+  public static float squareDistance(float[] v1, float[] v2) {
     assert v1.length == v2.length;
     float squareSum = 0.0f;
     int dim = v1.length;
