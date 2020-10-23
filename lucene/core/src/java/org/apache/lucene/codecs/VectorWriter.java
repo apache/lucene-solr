@@ -227,6 +227,11 @@ public abstract class VectorWriter implements Closeable {
       return subs.get(0).values.searchStrategy();
     }
 
+    @Override
+    public TopDocs search(float[] target, int k, int fanout) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
     class MergerRandomAccess implements VectorValues.RandomAccess {
 
       private final List<RandomAccess> raSubs;
@@ -272,12 +277,6 @@ public abstract class VectorWriter implements Closeable {
       public BytesRef binaryValue(int targetOrd) throws IOException {
         throw new UnsupportedOperationException();
       }
-
-      @Override
-      public TopDocs search(float[] target, int k, int fanout) throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
     }
   }
 }

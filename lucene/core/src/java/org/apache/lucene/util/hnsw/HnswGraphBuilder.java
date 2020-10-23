@@ -25,7 +25,6 @@ import java.util.Random;
 
 import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.VectorValues;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -179,11 +178,6 @@ public final class HnswGraphBuilder {
 
     @Override
     public BytesRef binaryValue(int targetOrd) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TopDocs search(float[] target, int k, int fanout) throws IOException {
       throw new UnsupportedOperationException();
     }
   }

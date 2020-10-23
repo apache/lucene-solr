@@ -181,7 +181,6 @@ public class TestKnnGraph extends LuceneTestCase {
     TopDocs[] results = new TopDocs[reader.leaves().size()];
     for (LeafReaderContext ctx: reader.leaves()) {
       results[ctx.ord] = ctx.reader().getVectorValues(KNN_GRAPH_FIELD)
-          .randomAccess()
           .search(vector, k, 10);
       if (ctx.docBase > 0) {
         for (ScoreDoc doc : results[ctx.ord].scoreDocs) {

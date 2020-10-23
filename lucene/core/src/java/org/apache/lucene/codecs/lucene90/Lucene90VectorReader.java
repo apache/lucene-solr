@@ -272,6 +272,7 @@ public final class Lucene90VectorReader extends VectorReader {
     final FieldEntry fieldEntry;
     final IndexInput dataIn;
 
+    final Random random = new Random();
     final BytesRef binaryValue;
     final ByteBuffer byteBuffer;
     final FloatBuffer floatBuffer;
@@ -352,10 +353,32 @@ public final class Lucene90VectorReader extends VectorReader {
       return new OffHeapRandomAccess(dataIn.clone());
     }
 
+    @Override
+    public TopDocs search(float[] vector, int topK, int fanout) throws IOException {
+      Neighbors results = HnswGraph.search(vector, topK + fanout, topK + fanout, randomAccess(), getGraphValues(fieldEntry), random);
+      while (results.size() > topK) {
+        results.pop();
+      }
+      int i = 0;
+      ScoreDoc[] scoreDocs = new ScoreDoc[Math.min(results.size(), topK)];
+      boolean reversed = HnswGraph.isReversed(searchStrategy());
+      while (results.size() > 0) {
+        Neighbor n = results.pop();
+        float score;
+        if (reversed) {
+          score = (float) Math.exp(- n.score);
+        } else {
+          score = n.score;
+        }
+        scoreDocs[scoreDocs.length - ++i] = new ScoreDoc(fieldEntry.ordToDoc[n.node], score);
+      }
+      // always return >= the case where we can assert == is only when there are fewer than topK vectors in the index
+      return new TopDocs(new TotalHits(scoreDocs.length, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), scoreDocs);
+    }
+
     class OffHeapRandomAccess implements VectorValues.RandomAccess {
 
       final IndexInput dataIn;
-      final Random random = new Random();
 
       final BytesRef binaryValue;
       final ByteBuffer byteBuffer;
@@ -403,29 +426,6 @@ public final class Lucene90VectorReader extends VectorReader {
         long offset = targetOrd * byteSize;
         dataIn.seek(offset);
         dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
-      }
-
-      @Override
-      public TopDocs search(float[] vector, int topK, int fanout) throws IOException {
-        Neighbors results = HnswGraph.search(vector, topK + fanout, topK + fanout, this, getGraphValues(fieldEntry), random);
-        while (results.size() > topK) {
-          results.pop();
-        }
-        int i = 0;
-        ScoreDoc[] scoreDocs = new ScoreDoc[Math.min(results.size(), topK)];
-        boolean reversed = HnswGraph.isReversed(searchStrategy());
-        while (results.size() > 0) {
-          Neighbor n = results.pop();
-          float score;
-          if (reversed) {
-            score = (float) Math.exp(- n.score);
-          } else {
-            score = n.score;
-          }
-          scoreDocs[scoreDocs.length - ++i] = new ScoreDoc(fieldEntry.ordToDoc[n.node], score);
-        }
-        // always return >= the case where we can assert == is only when there are fewer than topK vectors in the index
-        return new TopDocs(new TotalHits(scoreDocs.length, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), scoreDocs);
       }
     }
   }

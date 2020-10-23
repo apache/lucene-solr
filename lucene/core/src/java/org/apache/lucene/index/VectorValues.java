@@ -75,6 +75,18 @@ public abstract class VectorValues extends DocIdSetIterator {
   }
 
   /**
+   * Return the k nearest neighbor documents as determined by comparison of their vector values
+   * for this field, to the given vector, by the field's search strategy. If the search strategy is
+   * reversed, lower values indicate nearer vectors, otherwise higher scores indicate nearer
+   * vectors. Unlike relevance scores, vector scores may be negative.
+   * @param target the vector-valued query
+   * @param k      the number of docs to return
+   * @param fanout control the accuracy/speed tradeoff - larger values give better recall at higher cost
+   * @return the k nearest neighbor documents, along with their (searchStrategy-specific) scores.
+   */
+  public abstract TopDocs search(float[] target, int k, int fanout) throws IOException;
+
+  /**
    * Return a random access interface over this iterator's vectors. Calling the RandomAccess methods will
    * have no effect on the progress of the iteration or the values returned by this iterator. Successive calls
    * will retrieve independent copies that do not overwrite each others' returned values.
@@ -117,20 +129,6 @@ public abstract class VectorValues extends DocIdSetIterator {
      * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
      */
     BytesRef binaryValue(int targetOrd) throws IOException;
-
-    /**
-     * nocommit move to VectorValues! the default impl can just create a randomAccess
-     * during indexing we'll want access to random access.search directly
-     * Return the k nearest neighbor documents as determined by comparison of their vector values
-     * for this field, to the given vector, by the field's search strategy. If the search strategy is
-     * reversed, lower values indicate nearer vectors, otherwise higher scores indicate nearer
-     * vectors. Unlike relevance scores, vector scores may be negative.
-     * @param target the vector-valued query
-     * @param k      the number of docs to return
-     * @param fanout control the accuracy/speed tradeoff - larger values give better recall at higher cost
-     * @return the k nearest neighbor documents, along with their (searchStrategy-specific) scores.
-     */
-    TopDocs search(float[] target, int k, int fanout) throws IOException;
   }
 
   /**
@@ -173,6 +171,11 @@ public abstract class VectorValues extends DocIdSetIterator {
     @Override
     public float[] vectorValue() {
       throw new IllegalStateException("Attempt to get vectors from EMPTY values (which was not advanced)");
+    }
+
+    @Override
+    public TopDocs search(float[] target, int k, int fanout) {
+      throw new UnsupportedOperationException();
     }
 
     @Override

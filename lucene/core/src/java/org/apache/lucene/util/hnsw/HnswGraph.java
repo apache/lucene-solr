@@ -34,8 +34,8 @@ import static org.apache.lucene.util.VectorUtil.dotProduct;
 import static org.apache.lucene.util.VectorUtil.squareDistance;
 
 /**
- * Navigable Small-world graph. Provides efficient approximate nearest neighbor search for high
- * dimensional vectors.  See <a href="https://doi.org/10.1016/j.is.2013.10.006">Approximate nearest
+ * Navigable Small-world graph. Provides efficient approximate nearest neighbor
+ * search for high dimensional vectors.  See <a href="https://doi.org/10.1016/j.is.2013.10.006">Approximate nearest
  * neighbor algorithm based on navigable small world graphs [2014]</a> and <a
  * href="https://arxiv.org/abs/1603.09320">this paper [2018]</a> for details.
  *
@@ -52,7 +52,7 @@ import static org.apache.lucene.util.VectorUtil.squareDistance;
  *   nearest neighbor candidates to track while searching the graph for each newly inserted node.</li>
  *   <li><code>maxConn</code> has the same meaning as <code>M</code> in the later paper; it controls how many of the <code>efConst</code> neighbors are
  *   connected to the new node</li>
- *   <li><code>fanout</code> the fanout parameter of {@link VectorValues.RandomAccess#search(float[], int, int)}
+ *   <li><code>fanout</code> the fanout parameter of {@link VectorValues#search(float[], int, int)}
  *   is used to control the values of <code>numSeed</code> and <code>topK</code> that are passed to this API.
  *   Thus <code>fanout</code> is like a combination of <code>ef</code> (search beam width) from the 2016 paper and <code>m</code> from the 2014 paper.
  *   </li>

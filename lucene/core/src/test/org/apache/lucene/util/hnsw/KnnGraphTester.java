@@ -17,6 +17,22 @@
 
 package org.apache.lucene.util.hnsw;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
+
 import org.apache.lucene.codecs.lucene90.Lucene90VectorReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
@@ -36,23 +52,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.SuppressForbidden;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadMXBean;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Random;
-import java.util.Set;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -296,7 +295,7 @@ public class KnnGraphTester {
   private static TopDocs doKnnSearch(IndexReader reader, String field, float[] vector, int k, int fanout) throws IOException {
     TopDocs[] results = new TopDocs[reader.leaves().size()];
     for (LeafReaderContext ctx: reader.leaves()) {
-      results[ctx.ord] = ctx.reader().getVectorValues(field).randomAccess().search(vector, k, fanout);
+      results[ctx.ord] = ctx.reader().getVectorValues(field).search(vector, k, fanout);
       int docBase = ctx.docBase;
       for (ScoreDoc scoreDoc : results[ctx.ord].scoreDocs) {
         scoreDoc.doc += docBase;

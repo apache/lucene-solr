@@ -177,6 +177,11 @@ class VectorValuesWriter {
     }
 
     @Override
+    public TopDocs search(float[] target, int k, int fanout) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long cost() {
       return size();
     }
@@ -208,11 +213,6 @@ class VectorValuesWriter {
 
         @Override
         public BytesRef binaryValue(int targetOrd) {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public TopDocs search(float[] target, int k, int fanout) {
           throw new UnsupportedOperationException();
         }
       };
