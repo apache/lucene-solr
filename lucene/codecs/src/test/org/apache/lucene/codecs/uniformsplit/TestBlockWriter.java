@@ -122,7 +122,7 @@ public class TestBlockWriter extends LuceneTestCase {
         0,
         0,
         0,
-        VectorValues.ScoreFunction.NONE,
+        VectorValues.SearchStrategy.NONE,
         true
     );
   }

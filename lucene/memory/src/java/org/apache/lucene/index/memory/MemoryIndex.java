@@ -502,7 +502,7 @@ public class MemoryIndex {
     return new FieldInfo(fieldName, ord, fieldType.storeTermVectors(), fieldType.omitNorms(), storePayloads,
         indexOptions, fieldType.docValuesType(), -1, Collections.emptyMap(),
         fieldType.pointDimensionCount(), fieldType.pointIndexDimensionCount(), fieldType.pointNumBytes(),
-        fieldType.vectorDimension(), fieldType.vectorScoreFunction(), false);
+        fieldType.vectorDimension(), fieldType.vectorSearchStrategy(), false);
   }
 
   private void storePointValues(Info info, BytesRef pointValue) {
@@ -522,7 +522,7 @@ public class MemoryIndex {
           info.fieldInfo.name, info.fieldInfo.number, info.fieldInfo.hasVectors(), info.fieldInfo.hasPayloads(),
           info.fieldInfo.hasPayloads(), info.fieldInfo.getIndexOptions(), docValuesType, -1, info.fieldInfo.attributes(),
           info.fieldInfo.getPointDimensionCount(), info.fieldInfo.getPointIndexDimensionCount(), info.fieldInfo.getPointNumBytes(),
-          info.fieldInfo.getVectorDimension(), info.fieldInfo.getVectorScoreFunction(),
+          info.fieldInfo.getVectorDimension(), info.fieldInfo.getVectorSearchStrategy(),
           info.fieldInfo.isSoftDeletesField()
       );
     } else if (existingDocValuesType != docValuesType) {

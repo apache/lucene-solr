@@ -27,7 +27,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.VectorField;
-import org.apache.lucene.index.VectorValues.ScoreFunction;
+import org.apache.lucene.index.VectorValues.SearchStrategy;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
@@ -57,7 +57,7 @@ public class TestVectorValues extends LuceneTestCase {
       }
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
     }
@@ -67,7 +67,7 @@ public class TestVectorValues extends LuceneTestCase {
     float[] v = new float[1];
     VectorField field = new VectorField("f", v);
     assertEquals(1, field.fieldType().vectorDimension());
-    assertEquals(ScoreFunction.EUCLIDEAN, field.fieldType().vectorScoreFunction());
+    assertEquals(VectorValues.SearchStrategy.EUCLIDEAN_HNSW, field.fieldType().vectorSearchStrategy());
     assertSame(v, field.vectorValue());
   }
 
@@ -94,7 +94,7 @@ public class TestVectorValues extends LuceneTestCase {
     try (Directory dir = newDirectory();
          IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
-      doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+      doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       w.addDocument(doc);
       if (random().nextBoolean()) {
         // sometimes test with two segments
@@ -102,18 +102,18 @@ public class TestVectorValues extends LuceneTestCase {
       }
 
       Document doc2 = new Document();
-      doc2.add(new VectorField("f", new float[3], ScoreFunction.DOT_PRODUCT));
+      doc2.add(new VectorField("f", new float[3], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
           () -> w.addDocument(doc2));
       assertEquals("cannot change vector dimension from 4 to 3 for field=\"f\"", expected.getMessage());
     }
   }
 
-  public void testIllegalScoreFunctionChange() throws Exception {
+  public void testIllegalSearchStrategyChange() throws Exception {
     try (Directory dir = newDirectory();
          IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
-      doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+      doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       w.addDocument(doc);
       if (random().nextBoolean()) {
         // sometimes test with two segments
@@ -121,10 +121,10 @@ public class TestVectorValues extends LuceneTestCase {
       }
 
       Document doc2 = new Document();
-      doc2.add(new VectorField("f", new float[4], ScoreFunction.EUCLIDEAN));
+      doc2.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
       IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
           () -> w.addDocument(doc2));
-      assertEquals("cannot change vector score function from DOT_PRODUCT to EUCLIDEAN for field=\"f\"", expected.getMessage());
+      assertEquals("cannot change vector search strategy from DOT_PRODUCT_HNSW to EUCLIDEAN_HNSW for field=\"f\"", expected.getMessage());
     }
   }
 
@@ -132,13 +132,13 @@ public class TestVectorValues extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
 
       try (IndexWriter w2 = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc2 = new Document();
-        doc2.add(new VectorField("f", new float[1], ScoreFunction.DOT_PRODUCT));
+        doc2.add(new VectorField("f", new float[1], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
             () -> w2.addDocument(doc2));
         assertEquals("cannot change vector dimension from 4 to 1 for field=\"f\"", expected.getMessage());
@@ -146,20 +146,20 @@ public class TestVectorValues extends LuceneTestCase {
     }
   }
 
-  public void testIllegalScoreFunctionChangeTwoWriters() throws Exception {
+  public void testIllegalSearchStrategyChangeTwoWriters() throws Exception {
     try (Directory dir = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
 
       try (IndexWriter w2 = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc2 = new Document();
-        doc2.add(new VectorField("f", new float[4], ScoreFunction.EUCLIDEAN));
+        doc2.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
         IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
             () -> w2.addDocument(doc2));
-        assertEquals("cannot change vector score function from DOT_PRODUCT to EUCLIDEAN for field=\"f\"", expected.getMessage());
+        assertEquals("cannot change vector search strategy from DOT_PRODUCT_HNSW to EUCLIDEAN_HNSW for field=\"f\"", expected.getMessage());
       }
     }
   }
@@ -167,7 +167,7 @@ public class TestVectorValues extends LuceneTestCase {
   public void testAddIndexesDirectory0() throws Exception {
     String fieldName = "field";
     Document doc = new Document();
-    doc.add(new VectorField(fieldName, new float[4], ScoreFunction.DOT_PRODUCT));
+    doc.add(new VectorField(fieldName, new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
     try (Directory dir = newDirectory();
          Directory dir2 = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
@@ -194,7 +194,7 @@ public class TestVectorValues extends LuceneTestCase {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         w.addDocument(doc);
       }
-      doc.add(new VectorField(fieldName, new float[4], ScoreFunction.DOT_PRODUCT)); 
+      doc.add(new VectorField(fieldName, new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         w2.addDocument(doc);
         w2.addIndexes(new Directory[]{dir});
@@ -213,7 +213,7 @@ public class TestVectorValues extends LuceneTestCase {
     String fieldName = "field";
     float[] vector = new float[1];
     Document doc = new Document();
-    doc.add(new VectorField(fieldName, vector, ScoreFunction.DOT_PRODUCT));
+    doc.add(new VectorField(fieldName, vector, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
     try (Directory dir = newDirectory();
          Directory dir2 = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
@@ -244,12 +244,12 @@ public class TestVectorValues extends LuceneTestCase {
          Directory dir2 = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
       try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[5], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[5], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w2.addDocument(doc);
         IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
             () -> w2.addIndexes(new Directory[]{dir}));
@@ -258,21 +258,21 @@ public class TestVectorValues extends LuceneTestCase {
     }
   }
 
-  public void testIllegalScoreFunctionChangeViaAddIndexesDirectory() throws Exception {
+  public void testIllegalSearchStrategyChangeViaAddIndexesDirectory() throws Exception {
     try (Directory dir = newDirectory();
          Directory dir2 = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
       try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.EUCLIDEAN));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
         w2.addDocument(doc);
         IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
             () -> w2.addIndexes(dir));
-        assertEquals("cannot change vector score function from EUCLIDEAN to DOT_PRODUCT for field=\"f\"", expected.getMessage());
+        assertEquals("cannot change vector search strategy from EUCLIDEAN_HNSW to DOT_PRODUCT_HNSW for field=\"f\"", expected.getMessage());
       }
     }
   }
@@ -282,12 +282,12 @@ public class TestVectorValues extends LuceneTestCase {
          Directory dir2 = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
       try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[5], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[5], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w2.addDocument(doc);
         try (DirectoryReader r = DirectoryReader.open(dir)) {
           IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
@@ -298,22 +298,22 @@ public class TestVectorValues extends LuceneTestCase {
     }
   }
 
-  public void testIllegalScoreFunctionChangeViaAddIndexesCodecReader() throws Exception {
+  public void testIllegalSearchStrategyChangeViaAddIndexesCodecReader() throws Exception {
     try (Directory dir = newDirectory();
          Directory dir2 = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
       try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.EUCLIDEAN));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
         w2.addDocument(doc);
         try (DirectoryReader r = DirectoryReader.open(dir)) {
           IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
               () -> w2.addIndexes(new CodecReader[]{(CodecReader) getOnlyLeafReader(r)}));
-          assertEquals("cannot change vector score function from EUCLIDEAN to DOT_PRODUCT for field=\"f\"", expected.getMessage());
+          assertEquals("cannot change vector search strategy from EUCLIDEAN_HNSW to DOT_PRODUCT_HNSW for field=\"f\"", expected.getMessage());
         }
       }
     }
@@ -324,12 +324,12 @@ public class TestVectorValues extends LuceneTestCase {
          Directory dir2 = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
       try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[5], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[5], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w2.addDocument(doc);
         try (DirectoryReader r = DirectoryReader.open(dir)) {
           IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
@@ -340,22 +340,22 @@ public class TestVectorValues extends LuceneTestCase {
     }
   }
 
-  public void testIllegalScoreFunctionChangeViaAddIndexesSlowCodecReader() throws Exception {
+  public void testIllegalSearchStrategyChangeViaAddIndexesSlowCodecReader() throws Exception {
     try (Directory dir = newDirectory();
          Directory dir2 = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
       try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.EUCLIDEAN));
+        doc.add(new VectorField("f", new float[4], SearchStrategy.EUCLIDEAN_HNSW));
         w2.addDocument(doc);
         try (DirectoryReader r = DirectoryReader.open(dir)) {
           IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
               () -> TestUtil.addIndexesSlowly(w2, r));
-          assertEquals("cannot change vector score function from EUCLIDEAN to DOT_PRODUCT for field=\"f\"", expected.getMessage());
+          assertEquals("cannot change vector search strategy from EUCLIDEAN_HNSW to DOT_PRODUCT_HNSW for field=\"f\"", expected.getMessage());
         }
       }
     }
@@ -365,8 +365,8 @@ public class TestVectorValues extends LuceneTestCase {
     try (Directory dir = newDirectory();
          IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
-      doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
-      doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+      doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
+      doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
           () -> w.addDocument(doc));
       assertEquals("VectorValuesField \"f\" appears more than once in this document (only one value is allowed per field)",
@@ -379,10 +379,10 @@ public class TestVectorValues extends LuceneTestCase {
          IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       expectThrows(IllegalArgumentException.class,
-          () -> doc.add(new VectorField("f", new float[VectorValues.MAX_DIMENSIONS + 1], ScoreFunction.DOT_PRODUCT)));
+          () -> doc.add(new VectorField("f", new float[VectorValues.MAX_DIMENSIONS + 1], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW)));
 
       Document doc2 = new Document();
-      doc2.add(new VectorField("f", new float[1], ScoreFunction.EUCLIDEAN));
+      doc2.add(new VectorField("f", new float[1], VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
       w.addDocument(doc2);
     }
   }
@@ -392,11 +392,11 @@ public class TestVectorValues extends LuceneTestCase {
          IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       Exception e = expectThrows(IllegalArgumentException.class,
-          () -> doc.add(new VectorField("f", new float[0], ScoreFunction.NONE)));
+          () -> doc.add(new VectorField("f", new float[0], SearchStrategy.NONE)));
       assertEquals("cannot index an empty vector", e.getMessage());
 
       Document doc2 = new Document();
-      doc2.add(new VectorField("f", new float[1], ScoreFunction.NONE));
+      doc2.add(new VectorField("f", new float[1], VectorValues.SearchStrategy.NONE));
       w.addDocument(doc2);
     }
   }
@@ -406,14 +406,14 @@ public class TestVectorValues extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
       IndexWriterConfig iwc = newIndexWriterConfig();
       iwc.setCodec(Codec.forName("SimpleText"));
       try (IndexWriter w = new IndexWriter(dir, iwc)) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
         w.forceMerge(1);
       }
@@ -427,12 +427,12 @@ public class TestVectorValues extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, iwc)) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], ScoreFunction.DOT_PRODUCT));
+        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
         w.forceMerge(1);
       }
@@ -440,7 +440,7 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testInvalidVectorFieldUsage() {
-    VectorField field = new VectorField("field", new float[2], ScoreFunction.NONE);
+    VectorField field = new VectorField("field", new float[2], VectorValues.SearchStrategy.NONE);
 
     expectThrows(IllegalArgumentException.class, () -> field.setIntValue(14));
 
@@ -454,7 +454,7 @@ public class TestVectorValues extends LuceneTestCase {
          IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(new StringField("id", "0", Store.NO));
-      doc.add(new VectorField("v", new float[]{2, 3, 5}, ScoreFunction.DOT_PRODUCT));
+      doc.add(new VectorField("v", new float[]{2, 3, 5}, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       w.addDocument(doc);
       w.addDocument(new Document());
       w.commit();
@@ -475,12 +475,12 @@ public class TestVectorValues extends LuceneTestCase {
          IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(new StringField("id", "0", Store.NO));
-      doc.add(new VectorField("v0", new float[]{2, 3, 5}, ScoreFunction.DOT_PRODUCT));
+      doc.add(new VectorField("v0", new float[]{2, 3, 5}, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       w.addDocument(doc);
       w.commit();
 
       doc = new Document();
-      doc.add(new VectorField("v1", new float[]{2, 3, 5}, ScoreFunction.DOT_PRODUCT));
+      doc.add(new VectorField("v1", new float[]{2, 3, 5}, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       w.addDocument(doc);
       w.forceMerge(1);
     }
@@ -492,10 +492,10 @@ public class TestVectorValues extends LuceneTestCase {
     int[] fieldDocCounts = new int[numFields];
     float[] fieldTotals= new float[numFields];
     int[] fieldDims = new int[numFields];
-    ScoreFunction[] fieldScoreFunctions = new ScoreFunction[numFields];
+    VectorValues.SearchStrategy[] fieldSearchStrategies = new VectorValues.SearchStrategy[numFields];
     for (int i = 0; i < numFields; i++) {
       fieldDims[i] = random().nextInt(20) + 1;
-      fieldScoreFunctions[i] = ScoreFunction.values()[random().nextInt(ScoreFunction.values().length)];
+      fieldSearchStrategies[i] = VectorValues.SearchStrategy.values()[random().nextInt(VectorValues.SearchStrategy.values().length)];
     }
     try (Directory dir = newDirectory();
          RandomIndexWriter w = new RandomIndexWriter(random(), dir, createIndexWriterConfig())) {
@@ -505,7 +505,7 @@ public class TestVectorValues extends LuceneTestCase {
           String fieldName = "int" + field;
           if (random().nextInt(100) == 17) {
             float[] v = randomVector(fieldDims[field]);
-            doc.add(new VectorField(fieldName, v, fieldScoreFunctions[field]));
+            doc.add(new VectorField(fieldName, v, fieldSearchStrategies[field]));
             fieldDocCounts[field]++;
             fieldTotals[field] += v[0];
           }
@@ -542,15 +542,15 @@ public class TestVectorValues extends LuceneTestCase {
     try (Directory dir = newDirectory();
          IndexWriter iw = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc1 = new Document();
-      doc1.add(new VectorField(fieldName, v, VectorValues.ScoreFunction.EUCLIDEAN));
+      doc1.add(new VectorField(fieldName, v, VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
       v[0] = 1;
       Document doc2 = new Document();
-      doc2.add(new VectorField(fieldName, v, VectorValues.ScoreFunction.EUCLIDEAN));
+      doc2.add(new VectorField(fieldName, v, VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
       iw.addDocument(doc1);
       iw.addDocument(doc2);
       v[0] = 2;
       Document doc3 = new Document();
-      doc3.add(new VectorField(fieldName, v, VectorValues.ScoreFunction.EUCLIDEAN));
+      doc3.add(new VectorField(fieldName, v, VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
       iw.addDocument(doc3);
       try (IndexReader reader = iw.getReader()) {
         LeafReader r = reader.leaves().get(0).reader();
@@ -693,10 +693,10 @@ public class TestVectorValues extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("v1", randomVector(3), ScoreFunction.NONE));
+        doc.add(new VectorField("v1", randomVector(3), VectorValues.SearchStrategy.NONE));
         w.addDocument(doc);
 
-        doc.add(new VectorField("v2", randomVector(3), ScoreFunction.NONE));
+        doc.add(new VectorField("v2", randomVector(3), VectorValues.SearchStrategy.NONE));
         w.addDocument(doc);
       }
 
@@ -714,12 +714,12 @@ public class TestVectorValues extends LuceneTestCase {
     }
   }
 
-  public void testScoreFunctionIdentifiers() throws Exception {
-    // make sure we don't accidentally mess up score function identifiers by re-ordering their enumerators
-    assertEquals(0, ScoreFunction.NONE.ordinal());
-    assertEquals(1, ScoreFunction.EUCLIDEAN.ordinal());
-    assertEquals(2, ScoreFunction.DOT_PRODUCT.ordinal());
-    assertEquals(3, ScoreFunction.values().length);
+  public void testSearchStrategyIdentifiers() throws Exception {
+    // make sure we don't accidentally mess up search strategy identifiers by re-ordering their enumerators
+    assertEquals(0, VectorValues.SearchStrategy.NONE.ordinal());
+    assertEquals(1, VectorValues.SearchStrategy.EUCLIDEAN_HNSW.ordinal());
+    assertEquals(2, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW.ordinal());
+    assertEquals(3, VectorValues.SearchStrategy.values().length);
   }
 
 }

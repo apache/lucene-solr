@@ -120,9 +120,9 @@ public interface IndexableFieldType {
   public int vectorDimension();
 
   /**
-   * The {@link org.apache.lucene.index.VectorValues.ScoreFunction} of the field's vector value
+   * The {@link VectorValues.SearchStrategy} of the field's vector value
    */
-  public VectorValues.ScoreFunction vectorScoreFunction();
+  public VectorValues.SearchStrategy vectorSearchStrategy();
 
   /**
    * Attributes for the field type.
