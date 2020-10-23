@@ -11,7 +11,7 @@ function processAdd(cmd) {
 
   doc = cmd.solrDoc;  // org.apache.solr.common.SolrInputDocument
   id = doc.getFieldValue("id");
-  logger.info("update-script#processAdd: id=" + id);
+  logger.warn("update-script#processAdd: id=" + id);  // WARN level messages will show up in Solr Admin Logging UI
 
 // Set a field value:
 //  doc.setField("foo_s", "whatever");
