@@ -82,7 +82,7 @@ public class TermVectorLeafReader extends LeafReader {
     }
     FieldInfo fieldInfo = new FieldInfo(field, 0,
                                         true, true, terms.hasPayloads(),
-                                        indexOptions, DocValuesType.NONE, -1, Collections.emptyMap(), 0, 0, 0, 0, VectorValues.ScoreFunction.NONE, false);
+                                        indexOptions, DocValuesType.NONE, -1, Collections.emptyMap(), 0, 0, 0, 0, VectorValues.SearchStrategy.NONE, false);
     fieldInfos = new FieldInfos(new FieldInfo[]{fieldInfo});
   }
 

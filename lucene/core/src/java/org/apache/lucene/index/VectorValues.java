@@ -51,9 +51,9 @@ public abstract class VectorValues extends DocIdSetIterator {
   public abstract int size();
 
   /**
-   * Return the score function used to compare these vectors
+   * Return the search strategy used to compare these vectors
    */
-  public abstract ScoreFunction scoreFunction();
+  public abstract SearchStrategy searchStrategy();
 
   /**
    * Return the vector value for the current document ID.
@@ -99,9 +99,9 @@ public abstract class VectorValues extends DocIdSetIterator {
     int dimension();
 
     /**
-     * Return the score function used to compare these vectors
+     * Return the search strategy used to compare these vectors
      */
-    ScoreFunction scoreFunction();
+    SearchStrategy searchStrategy();
 
     /**
      * Return the vector value indexed at the given ordinal. The provided floating point array may
@@ -120,106 +120,31 @@ public abstract class VectorValues extends DocIdSetIterator {
 
     /**
      * Return the k nearest neighbor documents as determined by comparison of their vector values
-     * for this field, to the given vector, by the field's score function. If the score function is
+     * for this field, to the given vector, by the field's search strategy. If the search strategy is
      * reversed, lower values indicate nearer vectors, otherwise higher scores indicate nearer
      * vectors. Unlike relevance scores, vector scores may be negative.
      * @param target the vector-valued query
      * @param k      the number of docs to return
      * @param fanout control the accuracy/speed tradeoff - larger values give better recall at higher cost
-     * @return the k nearest neighbor documents, along with their (scoreFunction-specific) scores.
+     * @return the k nearest neighbor documents, along with their (searchStrategy-specific) scores.
      */
     TopDocs search(float[] target, int k, int fanout) throws IOException;
   }
 
   /**
-   * Score function. This is used during indexing and searching of the vectors to determine the nearest neighbors.
-   * Score values may be negative. By default high scores indicate nearer documents, unless the function is reversed.
+   * Search strategy. This is a label describing the method used during indexing and searching of the vectors in order to
+   * determine the nearest neighbors.
    */
-  public enum ScoreFunction {
-    /** No distance function is used. Note: {@link VectorValues.RandomAccess#search(float[], int, int)}
-     * is not supported for fields specifying this score function. */
+  public enum SearchStrategy {
+    /** No search strategy is provided. Note: {@link VectorValues.RandomAccess#search(float[], int, int)}
+     * is not supported for fields specifying this strategy. */
     NONE,
 
-    /** Euclidean distance */
-    EUCLIDEAN(true) {
-      @Override
-      public float score(float[] v1, float[] v2) {
-        assert v1.length == v2.length;
-        float squareSum = 0.0f;
-        int dim = v1.length;
-        for (int i = 0; i < dim; i++) {
-          float diff = v1[i] - v2[i];
-          squareSum += diff * diff;
-        }
-        return squareSum;
-      }
-    },
+    /** HNSW graph built using Euclidean distance */
+    EUCLIDEAN_HNSW,
 
-    /** dot product - note, may be negative; larger values are better */
-    DOT_PRODUCT() {
-      @Override
-      public float score(float[] a, float[] b) {
-        float res = 0f;
-        /*
-         * If length of vector is larger than 8, we use unrolled dot product to accelerate the
-         * calculation.
-         */
-        int i;
-        for (i = 0; i < a.length % 8; i++) {
-            res += b[i] * a[i];
-        }
-        if (a.length < 8) {
-            return res;
-        }
-        float s0 = 0f;
-        float s1 = 0f;
-        float s2 = 0f;
-        float s3 = 0f;
-        float s4 = 0f;
-        float s5 = 0f;
-        float s6 = 0f;
-        float s7 = 0f;
-        for (; i + 7 < a.length; i += 8) {
-            s0 += b[i] * a[i];
-            s1 += b[i + 1] * a[i + 1];
-            s2 += b[i + 2] * a[i + 2];
-            s3 += b[i + 3] * a[i + 3];
-            s4 += b[i + 4] * a[i + 4];
-            s5 += b[i + 5] * a[i + 5];
-            s6 += b[i + 6] * a[i + 6];
-            s7 += b[i + 7] * a[i + 7];
-        }
-        res += s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7;
-        return res;
-      }
-    };
-
-    /** If reversed, smaller values are better */
-    final public boolean reversed;
-
-    ScoreFunction(boolean reversed) {
-      this.reversed = reversed;
-    }
-
-    ScoreFunction() {
-      this(false);
-    }
-
-    /**
-     * Calculates the score between the specified two vectors.
-     */
-    public float score(float[] v1, float[] v2) {
-      throw new UnsupportedOperationException();
-    }
-
-  }
-
-   /**
-   * Calculates a similarity score between the two vectors with specified function.
-   */
-  public static float compare(float[] v1, float[] v2, ScoreFunction scoreFunction) {
-    assert v1.length == v2.length : "attempt to compare vectors of lengths: " + v1.length + " " + v2.length;
-    return scoreFunction.score(v1, v2);
+    /** HNSW graph buit using dot product */
+    DOT_PRODUCT_HNSW
   }
 
   /**
@@ -239,8 +164,8 @@ public abstract class VectorValues extends DocIdSetIterator {
     }
 
     @Override
-    public ScoreFunction scoreFunction() {
-      return ScoreFunction.NONE;
+    public SearchStrategy searchStrategy() {
+      return SearchStrategy.NONE;
     }
 
     @Override

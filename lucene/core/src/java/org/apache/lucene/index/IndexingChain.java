@@ -783,14 +783,14 @@ final class IndexingChain implements Accountable {
   /** Called from processDocument to index one field's vector value */
   private void indexVector(int docID, PerField fp, IndexableField field) {
     int dimension = field.fieldType().vectorDimension();
-    VectorValues.ScoreFunction scoreFunction = field.fieldType().vectorScoreFunction();
+    VectorValues.SearchStrategy searchStrategy = field.fieldType().vectorSearchStrategy();
 
     // Record dimensions and distance function for this field; this setter will throw IllegalArgExc if
     // the dimensions or distance function were already set to something different:
     if (fp.fieldInfo.getVectorDimension() == 0) {
-      fieldInfos.globalFieldNumbers.setVectorDimensionsAndScoreFunction(fp.fieldInfo.number, fp.fieldInfo.name, dimension, scoreFunction);
+      fieldInfos.globalFieldNumbers.setVectorDimensionsAndSearchStrategy(fp.fieldInfo.number, fp.fieldInfo.name, dimension, searchStrategy);
     }
-    fp.fieldInfo.setVectorDimensionAndScoreFunction(dimension, scoreFunction);
+    fp.fieldInfo.setVectorDimensionAndSearchStrategy(dimension, searchStrategy);
 
     if (fp.vectorValuesWriter == null) {
       fp.vectorValuesWriter = new VectorValuesWriter(fp.fieldInfo, bytesUsed);

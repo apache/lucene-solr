@@ -150,7 +150,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
           try {
             infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
                                      indexOptions, docValuesType, dvGen, attributes, 0, 0, 0,
-                                     0, VectorValues.ScoreFunction.NONE, false);
+                                     0, VectorValues.SearchStrategy.NONE, false);
           } catch (IllegalStateException e) {
             throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
           }
