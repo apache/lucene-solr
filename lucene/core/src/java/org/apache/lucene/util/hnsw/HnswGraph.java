@@ -105,14 +105,16 @@ public final class HnswGraph {
     //IntHashSet visited = new IntHashSet();
     Set<Integer> visited = new HashSet<>();
     Neighbors results = Neighbors.create(topK, scoreReversed);
-    BoundsChecker bound = BoundsChecker.create(scoreReversed, topK);
+    BoundsChecker bound = BoundsChecker.create(scoreReversed);
     for (Neighbor c :candidates) {
       visited.add(c.node);
       results.insertWithOverflow(c);
+      // gather the best candidate score in the bounds checker
       bound.update(c.score);
     }
-    // Remember the least, ie "worst" current result
-    bound.setWorst(results.top().score);
+    // Set the bound to the least, ie "worst" current result, also updating the bound delta according to the
+    // difference between the best and worst candidate.
+    bound.set(results.top().score, bound.bound);
     while (candidates.size() > 0) {
       // get the best candidate (closest or best scoring)
       Neighbor c = candidates.pollLast();

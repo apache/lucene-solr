@@ -41,7 +41,7 @@ import java.util.Random;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** Tests HNSW KNN graphs */
-public class HnswTest extends LuceneTestCase {
+public class TestHnsw extends LuceneTestCase {
 
     // test writing out and reading in a graph gives the same graph
     public void testReadWrite() throws IOException {

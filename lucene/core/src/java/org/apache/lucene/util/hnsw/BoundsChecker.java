@@ -21,30 +21,41 @@ package org.apache.lucene.util.hnsw;
 abstract class BoundsChecker {
 
     private final static float DELTA = 0.2f;
-    private final static float BETA = 10f;
+    private final static float BETA = 1000f;
 
     float decay;
     float bound;
     float delta;
 
+    /**
+     * Update the bound if sample is better
+     */
     abstract void update(float sample);
 
+    /**
+     * Return whether the sample exceeds (is worse than) the bound
+     */
     abstract boolean check(float sample);
 
-    abstract void setWorst(float worst);
+    /**
+     * Set the bound, and scale the annealing delta according to an estimate of the expected range of values
+     * @param worst the worst value seen so far
+     * @param best the best value seen so far
+     */
+    abstract void set(float worst, float best);
 
-    static BoundsChecker create(boolean reversed, int ef) {
+    static BoundsChecker create(boolean reversed) {
         if (reversed) {
-            return new Min(ef);
+            return new Min();
         } else {
-            return new Max(ef);
+            return new Max();
         }
     }
 
     static class Max extends BoundsChecker {
-        Max(int ef) {
+        Max() {
             bound = -Float.MAX_VALUE;
-            decay = 1f - 1f / (BETA * ef);
+            decay = 1f - 1f / BETA;
         }
 
         void update(float sample) {
@@ -53,8 +64,9 @@ abstract class BoundsChecker {
             }
         }
 
-        void setWorst(float worst) {
-            delta = (bound - worst) * DELTA;
+        void set(float worst, float best) {
+            assert worst <= best;
+            delta = (best - worst) * DELTA;
             bound = worst;
         }
 
@@ -66,9 +78,9 @@ abstract class BoundsChecker {
 
     static class Min extends BoundsChecker {
 
-        Min(int ef) {
+        Min() {
             bound = Float.MAX_VALUE;
-            decay = 1f - 1f / (BETA * ef);
+            decay = 1f - 1f / BETA;
         }
 
         void update(float sample) {
@@ -77,8 +89,9 @@ abstract class BoundsChecker {
             }
         }
 
-        void setWorst(float worst) {
-            delta = (worst - bound) * DELTA;
+        void set(float worst, float best) {
+            assert worst >= best;
+            delta = (worst - best) * DELTA;
             bound = worst;
         }
 
