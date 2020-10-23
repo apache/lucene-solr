@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.util.ResourceLoaderAware;
@@ -54,12 +56,24 @@ import org.slf4j.LoggerFactory;
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 import static org.apache.solr.common.util.Utils.makeMap;
 
+/**
+ * This class manages the container-level plugins and their Api-s. It is
+ * responsible for adding / removing / replacing the plugins according to the updated
+ * configuration obtained from {@link ContainerPluginsApi#plugins(Supplier)}.
+ * <p>Plugins instantiated by this class may implement zero or more {@link Api}-s, which
+ * are then registered in the CoreContainer {@link ApiBag}. They may be also post-processed
+ * for additional functionality by {@link PluginRegistryListener}-s registered with
+ * this class.</p>
+ */
 public class CustomContainerPlugins implements ClusterPropertiesListener, MapWriter {
-  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  final CoreContainer coreContainer;
-  final ApiBag containerApiBag;
+  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+
+  private final List<PluginRegistryListener> listeners = new CopyOnWriteArrayList<>();
+
+  private final CoreContainer coreContainer;
+  private final ApiBag containerApiBag;
 
   private final Map<String, ApiInfo> currentPlugins = new HashMap<>();
 
@@ -68,6 +82,14 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     refresh();
     return false;
   }
+
+  public void registerListener(PluginRegistryListener listener) {
+    listeners.add(listener);
+  }
+  public void unregisterListener(PluginRegistryListener listener) {
+    listeners.remove(listener);
+  }
+
   public CustomContainerPlugins(CoreContainer coreContainer, ApiBag apiBag) {
     this.coreContainer = coreContainer;
     this.containerApiBag = apiBag;
@@ -76,6 +98,10 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     currentPlugins.forEach(ew.getBiConsumer());
+  }
+
+  public synchronized ApiInfo getPlugin(String name) {
+    return currentPlugins.get(name);
   }
 
   public synchronized void refresh() {
@@ -107,6 +133,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       if (e.getValue() == Diff.REMOVED) {
         ApiInfo apiInfo = currentPlugins.remove(e.getKey());
         if (apiInfo == null) continue;
+        listeners.forEach(listener -> listener.deleted(apiInfo));
         for (ApiHolder holder : apiInfo.holders) {
           Api old = containerApiBag.unregister(holder.api.getEndPoint().method()[0],
               getActualPath(apiInfo, holder.api.getEndPoint().path()[0]));
@@ -136,6 +163,8 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
             containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
           currentPlugins.put(e.getKey(), apiInfo);
+          final ApiInfo apiInfoFinal = apiInfo;
+          listeners.forEach(listener -> listener.added(apiInfoFinal));
         } else {
           //this plugin is being updated
           ApiInfo old = currentPlugins.put(e.getKey(), apiInfo);
@@ -143,6 +172,8 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
             //register all new paths
             containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
+          final ApiInfo apiInfoFinal = apiInfo;
+          listeners.forEach(listener -> listener.modified(old, apiInfoFinal));
           if (old != null) {
             //this is an update of the plugin. But, it is possible that
             // some paths are remved in the newer version of the plugin
@@ -201,6 +232,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
   @SuppressWarnings({"rawtypes"})
   public class ApiInfo implements ReflectMapWriter {
     List<ApiHolder> holders;
+
     @JsonProperty
     private final PluginMeta info;
 
@@ -222,7 +254,13 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       return null;
     }
 
+    public Object getInstance() {
+      return instance;
+    }
 
+    public PluginMeta getInfo() {
+      return info.copy();
+    }
     @SuppressWarnings({"unchecked","rawtypes"})
     public ApiInfo(PluginMeta info, List<String> errs) {
       this.info = info;
@@ -268,14 +306,14 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       }
 
       try {
-        List<Api> apis = AnnotatedApi.getApis(klas, null);
+        List<Api> apis = AnnotatedApi.getApis(klas, null, true);
         for (Object api : apis) {
           EndPoint endPoint = ((AnnotatedApi) api).getEndPoint();
           if (endPoint.path().length > 1 || endPoint.method().length > 1) {
             errs.add("Only one HTTP method and url supported for each API");
           }
           if (endPoint.method().length != 1 || endPoint.path().length != 1) {
-            errs.add("The @EndPint must have exactly one method and path attributes");
+            errs.add("The @EndPoint must have exactly one method and path attributes");
           }
           List<String> pathSegments = StrUtils.splitSmart(endPoint.path()[0], '/', true);
           PathTrie.replaceTemplates(pathSegments, getTemplateVars(info));
@@ -320,7 +358,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
         }
       }
       this.holders = new ArrayList<>();
-      for (Api api : AnnotatedApi.getApis(instance)) {
+      for (Api api : AnnotatedApi.getApis(instance.getClass(), instance, true)) {
         holders.add(new ApiHolder((AnnotatedApi) api));
       }
     }
@@ -358,5 +396,21 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     }
 
     return null;
+  }
+
+  /**
+   * Listener for notifications about added / deleted / modified plugins.
+   */
+  public interface PluginRegistryListener {
+
+    /** Called when a new plugin is added. */
+    void added(ApiInfo plugin);
+
+    /** Called when an existing plugin is deleted. */
+    void deleted(ApiInfo plugin);
+
+    /** Called when an existing plugin is replaced. */
+    void modified(ApiInfo old, ApiInfo replacement);
+
   }
 }

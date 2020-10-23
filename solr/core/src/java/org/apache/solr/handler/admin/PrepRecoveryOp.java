@@ -135,7 +135,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                       ", live=" + live + ", checkLive=" + checkLive + ", currentState=" + state
                       + ", localState=" + localState + ", nodeName=" + nodeName +
                       ", coreNodeName=" + coreNodeName + ", onlyIfActiveCheckResult=" + onlyIfActiveCheckResult
-                      + ", nodeProps: " + replica); //LOGOK
+                      + ", nodeProps: " + replica); //nowarn
             }
             if (!onlyIfActiveCheckResult && replica != null && (state == waitForState || leaderDoesNotNeedRecovery)) {
               if (checkLive == null) {

@@ -44,11 +44,8 @@ import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
-import org.apache.solr.rest.ManagedResourceStorage;
-import org.apache.solr.rest.SolrSchemaRestApi;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,17 +175,8 @@ public class TestRerankBase extends RestTestBase {
               + "/collection1/conf/schema.xml"));
     }
 
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi",
-        ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application",
-        SolrSchemaRestApi.class.getCanonicalName());
-    solrRestApi.setInitParameter("storageIO",
-        ManagedResourceStorage.InMemoryStorageIO.class.getCanonicalName());
-    extraServlets.put(solrRestApi, PARENT_ENDPOINT);
-
     System.setProperty("managed.schema.mutable", "true");
-
+    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
     return extraServlets;
   }
 

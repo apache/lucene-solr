@@ -17,12 +17,22 @@
 package org.apache.lucene.search.spans;
 
 
+import java.io.IOException;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.store.Directory;
 
 /**
  * TestExplanations subclass focusing on span queries
  */
 public class TestSpanExplanations extends BaseExplanationTestCase {
+  private static final String FIELD_CONTENT = "content";
 
   /* simple SpanTermQueries */
   
@@ -165,4 +175,32 @@ public class TestSpanExplanations extends BaseExplanationTestCase {
     qtest(q, new int[] {0,1,3});
   }
 
+  public void testExplainWithoutScoring() throws IOException {
+    SpanNearQuery query = new SpanNearQuery(new SpanQuery[]{
+        new SpanTermQuery(new Term(FIELD_CONTENT, "dolor")),
+        new SpanTermQuery(new Term(FIELD_CONTENT, "lorem"))},
+        0,
+        true);
+
+    try (Directory rd = newDirectory()) {
+      try (IndexWriter writer = new IndexWriter(rd, newIndexWriterConfig(analyzer))) {
+        Document doc = new Document();
+        doc.add(newTextField(FIELD_CONTENT, "dolor lorem ipsum", Field.Store.YES));
+        writer.addDocument(doc);
+      }
+
+      try (DirectoryReader reader = DirectoryReader.open(rd)) {
+        IndexSearcher indexSearcher = newSearcher(reader);
+        SpanWeight spanWeight = query.createWeight(indexSearcher, ScoreMode.COMPLETE_NO_SCORES, 1f);
+
+        final LeafReaderContext ctx = indexSearcher.getIndexReader().leaves().get(0);
+        Explanation explanation = spanWeight.explain(ctx, 0);
+
+        assertEquals(0f, explanation.getValue());
+        assertEquals("match spanNear([content:dolor, content:lorem], 0, true) in 0 without score",
+            explanation.getDescription());
+
+      }
+    }
+  }
 }

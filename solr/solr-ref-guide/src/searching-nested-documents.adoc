@@ -22,7 +22,6 @@ These features require `\_root_` and `\_nest_path_` to be declared in the schema
 Please refer to the <<indexing-nested-documents.adoc#indexing-nested-documents, Indexing Nested Documents>>
 section for more details about schema and index configuration.
 
-
 [NOTE]
 This section does not show case faceting on nested documents. For nested document faceting, please refer to the
 <<json-facet-api#uniqueblock-and-block-join-counts, Block Join Facet Counts>> section.
@@ -41,7 +40,7 @@ For a detailed explanation of this transformer, and specifics on it's syntax & l
 
 A simple query matching all documents with a description that includes "staplers":
 
-[source,bash]
+[source,curl]
 ----
 $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers'
 {
@@ -56,7 +55,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
 
 The same query with the addition of the `[child]` transformer is shown below.  Note that the `numFound` has not changed, we are still matching the same set of documents, but when returning those documents the nested children are also returned as psuedo-fields.
 
-[source,bash]
+[source,curl]
 ----
 $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=description_t:staplers&fl=*,[child]'
 {
@@ -79,7 +78,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
                 "pages_i":1,
                 "content_t":"...",
                 "_version_":1672933224035123200}]},
-          
+
           {
             "id":"P11!S31",
             "color_s":"BLACK",
@@ -92,7 +91,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
             "pages_i":1,
             "content_t":"How to use your stapler ...",
             "_version_":1672933224035123200},
-          
+
           {
             "id":"P11!D61",
             "name_s":"Warranty Details",
@@ -102,14 +101,13 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
   }}
 ----
 
-
 === Child Query Parser
 
 The `{!child}` query parser can be used to search for the _descendent_ documents of parent documents matching a wrapped query. For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-children-query-parser, Block Join Children Query Parser>>.
 
 Let's consider again the `description_t:staplers` query used above -- if we wrap that query in a `{!child}` query parser then instead of "matching" & returning the product level documents, we instead match all of the _descendent_ child documents of the original query:
 
-[source,bash]
+[source,curl]
 ----
 $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'q={!child of="*:* -_nest_path_:*"}description_t:staplers'
 {
@@ -145,11 +143,12 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
   }}
 ----
 
-In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers#block-mask,`of` parameter>> to indicate we want to consider all documents which don't have a nest path -- ie: all "root" level document -- as the set of possible parents.
+In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers.adoc#block-mask,`of` parameter>> to indicate we want to consider all documents which don't have a nest path -- i.e., all "root" level document -- as the set of possible parents.
 
-By changing the `of` param to match ancestors at specific `\_nest_path_` levels, we can narrow down the list of children we return.  In the query below, we search for all descendents of `skus` (using an `of` param that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) with a `price_i` less then `50`:
+By changing the `of` param to match ancestors at specific `\_nest_path_` levels, we can narrow down the list of children we return.
+In the query below, we search for all descendants of `skus` (using an `of` parameter that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) with a `price_i` less then `50`:
 
-[source,bash]
+[source,curl]
 ----
 $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child of="*:* -_nest_path_:\\/skus\\/*"}(+price_i:[* TO 50] +_nest_path_:\/skus)'
 {
@@ -169,28 +168,26 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 ====
 Note that in the above example, the `/` characters in the `\_nest_path_` were "double escaped" in the `of` parameter:
 
-* One level of `\` escaping is neccessary to prevent the `/` from being interpreted as a {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#Regexp_Searches[Regex Query]
-* An additional level of "escaping the escape character" is neccessary because the `of` local parameter is a quoted string; so we need a second `\` to ensure the first `\` is preserved and passed as is to the query parser.
+* One level of `\` escaping is necessary to prevent the `/` from being interpreted as a {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#Regexp_Searches[Regex Query]
+* An additional level of "escaping the escape character" is necessary because the `of` local parameter is a quoted string; so we need a second `\` to ensure the first `\` is preserved and passed as is to the query parser.
 
 (You can see that only a single level of of `\` escaping is needed in the body of the query string -- to prevent the Regex syntax --  because it's not a quoted string local param)
 
-You may find it more convinient to use <<local-parameters-in-queries#parameter-dereferencing,parameter references>> in conjunction with <<other-parsers#other-parsers,other parsers>> that do not treat `/` as a special character to express the same query in a more verbose form:
+You may find it more convenient to use <<local-parameters-in-queries#parameter-dereferencing,parameter references>> in conjunction with <<other-parsers#other-parsers,other parsers>> that do not treat `/` as a special character to express the same query in a more verbose form:
 
-[source,bash]
+[source,curl]
 ----
 curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child of=$block_mask}(+price_i:[* TO 50] +{!field f="_nest_path_" v="/skus"})' --data-urlencode 'block_mask=(*:* -{!prefix f="_nest_path_" v="/skus/"})'
 ----
-
 ====
-
 
 === Parent Query Parser
 
-The inverse of the `{!child}` query parser is the `{!parent}` query parser, which let's you search for the _ancestor_ documents of some child documents matching a wrapped query.  For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-parent-query-parser,Block Join Parent Query Parser>>.
+The inverse of the `{!child}` query parser is the `{!parent}` query parser, which lets you search for the _ancestor_ documents of some child documents matching a wrapped query. For a detailed explanation of this parser, see the section <<other-parsers.adoc#block-join-parent-query-parser,Block Join Parent Query Parser>>.
 
 Let's first consider this example of searching for all "manual" type documents that have exactly `1` page:
 
-[source,bash]
+[source,curl]
 ----
 $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=pages_i:1'
 {
@@ -218,7 +215,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=pages
 
 We can wrap that query in a `{!parent}` query to return the details of all products that are ancestors of these manuals:
 
-[source,bash]
+[source,curl]
 ----
 $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent which="*:* -_nest_path_:*"}(+_nest_path_:\/skus\/manuals +pages_i:1)'
 {
@@ -236,11 +233,11 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
   }}
 ----
 
-In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers#block-mask,`which` parameter>> to indicate we want to consider all documents which don't have a nest path -- ie: all "root" level document -- as the set of possible parents.
+In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers#block-mask,`which` parameter>> to indicate we want to consider all documents which don't have a nest path -- i.e., all "root" level document -- as the set of possible parents.
 
 By changing the `which` param to match ancestors at specific `\_nest_path_` levels, we can change the type of ancestors we return.  In the query below, we search for `skus` (using an `which` param that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) that are the ancestors of `manuals` with exactly `1` page:
 
-[source,bash]
+[source,curl]
 ----
 $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent which="*:* -_nest_path_:\\/skus\\/*"}(+_nest_path_:\/skus\/manuals +pages_i:1)'
 {
@@ -263,7 +260,6 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 Note that in the above example, the `/` characters in the `\_nest_path_` were "double escaped" in the `which` parameter, for the <<#double-escaping-nest-path-slashes,same reasons discussed above>> regarding the `{!child} pasers `of` parameter.
 ====
 
-
 === Combining Block Join Query Parsers with Child Doc Transformer
 
 The combination of these two parsers with the `[child] transformer enables seamless creation of very powerful queries.
@@ -276,7 +272,7 @@ Here for example is a query where:
 *** "lifetime guarantee" in their content
 * each return (sku) document also includes any descendent (manuals) documents it has
 
-[source,bash]
+[source,curl]
 ----
 $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'fq=color_s:RED' --data-urlencode 'q={!child of="*:* -_nest_path_:*" filters=$parent_fq}' --data-urlencode 'parent_fq={!parent which="*:* -_nest_path_:*"}(+_nest_path_:"/manuals" +content_t:"lifetime guarantee")' -d 'fl=*,[child]'
 {

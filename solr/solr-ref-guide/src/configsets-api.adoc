@@ -81,6 +81,7 @@ The output will look like:
 == Upload a Configset
 
 Upload a configset, which is sent as a zipped file.
+A single, non-zipped file can also be uploaded with the `filePath` parameter.
 
 This functionality is enabled by default, but can be disabled via a runtime parameter `-Dconfigset.upload.enabled=false`. Disabling this feature is advisable if you want to expose Solr installation to untrusted users (even though you should never do that!).
 
@@ -94,14 +95,22 @@ If you use any of these parameters or features, you must have enabled security f
 
 The `upload` command takes the following parameters:
 
-name::
+`name`::
 The configset to be created when the upload is complete. This parameter is required.
 
-overwrite::
-If set to `true`, Solr will overwrite an existing configset with the same name (if false, the request will fail). Default is `false`.
+`overwrite`::
+If set to `true`, Solr will overwrite an existing configset with the same name (if false, the request will fail).
+If `filePath` is provided, then this option specifies whether the specified file within the configSet should be overwritten if it already exists.
+Default is `false`.
 
-cleanup::
+`cleanup`::
 When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files in ZooKeeper that existed in the old configset but not in the one being uploaded. Default is `false`.
+This parameter cannot be set to true when `filePath` is used.
+
+filePath::
+This parameter allows the uploading of a single, non-zipped file to the given path under the configSet in ZooKeeper.
+This functionality respects the `overwrite` parameter, so a request will fail if the given file path already exists in the configSet and overwrite is set to `false`.
+The `cleanup` parameter cannot be set to true when `filePath` is used.
 
 The body of the request should be a zip file that contains the configset. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
 
@@ -132,13 +141,13 @@ If you have not yet uploaded any configsets, see the <<Upload a Configset>> comm
 
 The following parameters are supported when creating a configset.
 
-name::
+`name`::
 The configset to be created. This parameter is required.
 
-baseConfigSet::
+`baseConfigSet`::
 The name of the configset to copy as a base. This defaults to `_default`
 
-configSetProp._property_=_value_::
+`configSetProp._property_=_value_`::
 A configset property from the base configset to override in the copied configset.
 
 For example, to create a configset named "myConfigset" based on a previously defined "predefinedTemplate" configset, overriding the immutable property to false.
@@ -172,6 +181,20 @@ curl -X POST -H 'Content-type: application/json' -d '{
     "configSetProp.immutable": "false"}}'
     http://localhost:8983/api/cluster/configs?omitHeader=true
 ----
+
+With the v2 API, ConfigSet properties can also be provided via the `properties` map:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+  "create":{
+    "name": "myConfigSet",
+    "baseConfigSet": "predefinedTemplate",
+    "properties": {
+      "immutable": "false"
+    }}}'
+    http://localhost:8983/api/cluster/configs?omitHeader=true
+----
 ====
 --
 
@@ -192,7 +215,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
 
 The `delete` command removes a configset. It does not remove any collections that were created with the configset.
 
-name::
+`name`::
 The configset to be deleted. This parameter is required.
 
 To delete a configset named "myConfigSet":

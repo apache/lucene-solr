@@ -83,6 +83,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Before
   public void beforeTest() throws Exception {
+    //System.setProperty("metricsEnabled", "true");
     configureCluster(4)
     .addConfig("conf", configset("cloud-minimal"))
     .addConfig("conf2", configset("cloud-dynamic"))
