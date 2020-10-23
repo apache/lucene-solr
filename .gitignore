@@ -1,33 +1,27 @@
-### At the root
-
-/.idea/
-# Ignore the generated local settings file.
+# Gradle
+#    Ignore the generated local settings file.
 /gradle.properties
+.gradle/
+build/
 
-/prj.el # TODO?
+# IntelliJ IDEA
+/.idea/
+#    IntelliJ creates this folder, ignore.
+/dev-tools/missing-doclet/out/
 
 # Eclipse
 /.project
 /.classpath
 /.settings/
-
-### Any dir
-
-.gradle/
-build/
+#    Eclipse Gradle oddity
+**/bin/default/
 
 # macOS
 .DS_Store
 
-# Eclipse Gradle oddity
-**/bin/default/
-
 # Python
 .pydevproject
 __pycache__
-
-# IntelliJ creates this folder, ignore.
-/dev-tools/missing-doclet/out/
 
 # Emacs backup
 *~
