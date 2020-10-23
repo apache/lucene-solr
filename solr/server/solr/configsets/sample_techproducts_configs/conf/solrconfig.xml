@@ -83,6 +83,8 @@
 
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
 
+  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-scripting-update-processor-\d.*\.jar" />
+
   <!-- an exact 'path' can be used instead of a 'dir' to specify a
        specific jar file.  This will cause a serious error to be logged
        if it can't be loaded.
@@ -656,6 +658,9 @@
          enableRemoteStreaming - enables use of the stream.file
          and stream.url parameters for specifying remote streams.
 
+         enableStreamBody - This attribute controls whether streaming
+         content from the HTTP parameter stream.body is allowed.
+
          multipartUploadLimitInKB - specifies the max size (in KiB) of
          Multipart File Uploads that Solr will allow in a Request.
 
@@ -674,13 +679,13 @@
          *** WARNING ***
          Before enabling remote streaming, you should make sure your
          system has authentication enabled.
-
-    <requestParsers enableRemoteStreaming="false"
+       -->
+    <requestParsers enableRemoteStreaming="true"
+                    enableStreamBody="true"
                     multipartUploadLimitInKB="-1"
                     formdataUploadLimitInKB="-1"
                     addHttpRequestToContext="false"/>
-      -->
-
+    
     <!-- HTTP Caching
 
          Set HTTP caching related parameters (for proxy caches and clients).
@@ -1279,17 +1284,15 @@
 
     See more about script update processor at https://lucene.apache.org/solr/guide/scripting-update-processor.html
   -->
-  <!--
-    <updateRequestProcessorChain name="script">
-      <processor class="solr.StatelessScriptUpdateProcessorFactory">
-        <str name="script">update-script.js</str>
-        <lst name="params">
-          <str name="config_param">example config parameter</str>
-        </lst>
-      </processor>
-      <processor class="solr.RunUpdateProcessorFactory" />
-    </updateRequestProcessorChain>
-  -->
+  <updateRequestProcessorChain name="script">
+    <processor class="solr.StatelessScriptUpdateProcessorFactory">
+      <str name="script">update-script.js</str>
+      <lst name="params">
+        <str name="config_param">example config parameter</str>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
 
   <!-- Response Writers
 

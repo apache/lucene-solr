@@ -108,14 +108,16 @@ The `processAdd()` and the other script methods can return false to skip further
 processing of the document. All methods must be defined, though generally the
 `processAdd()` method is where the action is.
 
-Here's a URL that works with the collection1 example demonstrating specifying
-the "script" update chain: `http://localhost:8983/solr/collection1/update?commit=true&stream.contentType=text/csv&fieldnames=id,description&stream.body=1,foo&update.chain=script`
+Here's a URL that works with the techproducts example setup demonstrating specifying
+the "script" update chain: `http://localhost:8983/solr/techproducts/update?commit=true&stream.contentType=text/csv&fieldnames=id,description&stream.body=1,foo&update.chain=script`
 which logs the following:
 
 [source,text]
 ----
 INFO: update-script#processAdd: id=1
 ----
+
+You can see the message recorded in the Solr logging UI.
 
 === Javascript
 
