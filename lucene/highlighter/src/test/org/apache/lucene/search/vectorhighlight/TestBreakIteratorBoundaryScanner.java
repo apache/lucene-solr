@@ -21,7 +21,7 @@ import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-public class BreakIteratorBoundaryScannerTest extends LuceneTestCase {
+public class TestBreakIteratorBoundaryScanner extends LuceneTestCase {
   static final String TEXT =
     "Apache Lucene(TM) is a high-performance, full-featured text search engine library written entirely in Java." +
     "\nIt is a technology suitable for nearly any application that requires\n" +

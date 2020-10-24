@@ -22,7 +22,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo;
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo.SubInfo;
 
-public class WeightedFragListBuilderTest extends AbstractTestCase {
+public class TestWeightedFragListBuilder extends AbstractTestCase {
   public void test2WeightedFragList() throws Exception {
     testCase( pqF( "the", "both" ), 100,
         "subInfos=(theboth((195,203)))/0.8679108(149,249)",

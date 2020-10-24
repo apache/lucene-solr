@@ -18,7 +18,7 @@ package org.apache.lucene.search.vectorhighlight;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-public class SimpleBoundaryScannerTest extends LuceneTestCase {
+public class TestSimpleBoundaryScanner extends LuceneTestCase {
   static final String TEXT =
     "Apache Lucene(TM) is a high-performance, full-featured\ntext search engine library written entirely in Java.";
 

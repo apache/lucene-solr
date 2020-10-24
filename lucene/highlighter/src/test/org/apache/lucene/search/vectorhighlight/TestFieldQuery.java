@@ -39,7 +39,7 @@ import org.apache.lucene.search.vectorhighlight.FieldQuery.QueryPhraseMap;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 import org.apache.lucene.util.BytesRef;
 
-public class FieldQueryTest extends AbstractTestCase {
+public class TestFieldQuery extends AbstractTestCase {
   private float boost;
 
   /**

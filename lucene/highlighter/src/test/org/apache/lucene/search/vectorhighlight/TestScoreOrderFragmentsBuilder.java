@@ -22,7 +22,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
-public class ScoreOrderFragmentsBuilderTest extends AbstractTestCase {
+public class TestScoreOrderFragmentsBuilder extends AbstractTestCase {
   
   public void test3Frags() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();

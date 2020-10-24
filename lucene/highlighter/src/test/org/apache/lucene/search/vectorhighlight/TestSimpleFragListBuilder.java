@@ -19,7 +19,7 @@ package org.apache.lucene.search.vectorhighlight;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 
-public class SimpleFragListBuilderTest extends AbstractTestCase {
+public class TestSimpleFragListBuilder extends AbstractTestCase {
   
   public void testNullFieldFragList() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();

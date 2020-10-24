@@ -24,7 +24,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 import org.apache.lucene.util.AttributeImpl;
 
-public class IndexTimeSynonymTest extends AbstractTestCase {
+public class TestIndexTimeSynonym extends AbstractTestCase {
   
   public void testFieldTermStackIndex1wSearch1term() throws Exception {
     makeIndex1w();

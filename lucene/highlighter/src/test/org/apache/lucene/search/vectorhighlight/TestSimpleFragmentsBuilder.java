@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class SimpleFragmentsBuilderTest extends AbstractTestCase {
+public class TestSimpleFragmentsBuilder extends AbstractTestCase {
   
   public void test1TermIndex() throws Exception {
     FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "a" );

@@ -20,7 +20,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
-public class SingleFragListBuilderTest extends AbstractTestCase {
+public class TestSingleFragListBuilder extends AbstractTestCase {
   
   public void testNullFieldFragList() throws Exception {
     SingleFragListBuilder sflb = new SingleFragListBuilder();

@@ -58,7 +58,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 
-public class FastVectorHighlighterTest extends LuceneTestCase {
+public class TestFastVectorHighlighter extends LuceneTestCase {
   
   
   public void testSimpleHighlightTest() throws IOException {

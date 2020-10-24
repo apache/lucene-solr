@@ -22,7 +22,7 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 import org.apache.lucene.util.TestUtil;
 
-public class FieldTermStackTest extends AbstractTestCase {
+public class TestFieldTermStack extends AbstractTestCase {
   
   public void test1Term() throws Exception {
     makeIndex();
