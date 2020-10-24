@@ -14,27 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.idversion;
-
-import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.index.TermState;
-
-final class IDVersionTermState extends BlockTermState {
-  long idVersion;
-  int docID;
-
-  @Override
-  public IDVersionTermState clone() {
-    IDVersionTermState other = new IDVersionTermState();
-    other.copyFrom(this);
-    return other;
-  }
-
-  @Override
-  public void copyFrom(TermState _other) {
-    super.copyFrom(_other);
-    IDVersionTermState other = (IDVersionTermState) _other;
-    idVersion = other.idVersion;
-    docID = other.docID;
-  }
-}
+ 
+/** 
+ * A primary-key postings format that associates a version (long) with each term and
+ * can provide fail-fast lookups by ID and version.
+ */
+package org.apache.lucene.sandbox.codecs.idversion;
