@@ -685,7 +685,7 @@
                     multipartUploadLimitInKB="-1"
                     formdataUploadLimitInKB="-1"
                     addHttpRequestToContext="false"/>
-    
+
     <!-- HTTP Caching
 
          Set HTTP caching related parameters (for proxy caches and clients).
@@ -1285,7 +1285,7 @@
     See more about script update processor at https://lucene.apache.org/solr/guide/scripting-update-processor.html
   -->
   <updateRequestProcessorChain name="script">
-    <processor class="solr.StatelessScriptUpdateProcessorFactory">
+    <processor class="solr.ScriptUpdateProcessorFactory">
       <str name="script">update-script.js</str>
       <lst name="params">
         <str name="config_param">example config parameter</str>

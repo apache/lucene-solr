@@ -16,6 +16,10 @@
  */
 package org.apache.solr.update.processor;
 
+/**
+ * @deprecated use {@link ScriptUpdateProcessorFactory} instead.  This class will be removed in an upcoming release.
+ */
+@Deprecated
 public class StatelessScriptUpdateProcessorFactory extends ScriptUpdateProcessorFactory {
 
 }
