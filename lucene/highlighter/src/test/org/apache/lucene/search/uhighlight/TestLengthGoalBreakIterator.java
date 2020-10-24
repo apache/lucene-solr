@@ -27,7 +27,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QueryBuilder;
 
-public class LengthGoalBreakIteratorTest extends LuceneTestCase {
+public class TestLengthGoalBreakIterator extends LuceneTestCase {
   private static final String FIELD = "body";
   private static final float[] ALIGNS = {0.f, 0.5f, 1.f};
 
