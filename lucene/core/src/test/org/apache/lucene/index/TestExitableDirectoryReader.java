@@ -16,18 +16,8 @@
  */
 package org.apache.lucene.index;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.ExitableDirectoryReader.ExitingReaderException;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -36,6 +26,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Test that uses a default/lucene Implementation of {@link QueryTimeout}
@@ -167,6 +160,47 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
   }
 
   /**
+   * Tests time out check sampling of TermsEnum iterations
+   *
+   * @throws Exception on error
+   */
+  public void testExitableTermsEnumSampleTimeoutCheck() throws Exception {
+    try (Directory directory = newDirectory()) {
+      try (IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())))) {
+        for (int i = 0; i < 50; i++) {
+          Document d1 = new Document();
+          d1.add(newTextField("default", "term" + i, Field.Store.YES));
+          writer.addDocument(d1);
+        }
+
+        writer.forceMerge(1);
+        writer.commit();
+
+        DirectoryReader directoryReader;
+        DirectoryReader exitableDirectoryReader;
+        IndexReader reader;
+        IndexSearcher searcher;
+
+        Query query = new PrefixQuery(new Term("default", "term"));
+
+        // Set a fairly high timeout value (infinite) and expect the query to complete in that time frame.
+        // Not checking the validity of the result, but checking the sampling kicks in to reduce the number of timeout check
+        CountingQueryTimeout queryTimeout = new CountingQueryTimeout();
+        directoryReader = DirectoryReader.open(directory);
+        exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, queryTimeout);
+        reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
+        searcher = new IndexSearcher(reader);
+        searcher.search(query, 300);
+        reader.close();
+        // The number of sampled query time out check here depends on two factors:
+        // 1. ExitableDirectoryReader.ExitableTermsEnum.NUM_CALLS_PER_TIMEOUT_CHECK
+        // 2. MultiTermQueryConstantScoreWrapper.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD
+        assertEquals(5, queryTimeout.getShouldExitCallCount());
+      }
+    }
+  }
+
+  /**
    * Tests timing out of PointValues queries
    *
    * @throws Exception on error
@@ -266,6 +300,25 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
         return true;
       }
     };
+  }
+
+  private static class CountingQueryTimeout implements QueryTimeout {
+    private int counter = 0;
+
+    @Override
+    public boolean shouldExit() {
+      counter++;
+      return false;
+    }
+
+    @Override
+    public boolean isTimeoutEnabled() {
+      return true;
+    }
+
+    public int getShouldExitCallCount() {
+      return counter;
+    }
   }
 
   private static QueryTimeout immediateQueryTimeout() {

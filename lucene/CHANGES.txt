@@ -156,6 +156,9 @@ Improvements
 * LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved
   from each query parser package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
 
+* LUCENE-9455: ExitableTermsEnum should sample timeout and interruption
+  check before calling next(). (Zach Chen via Bruno Roustant)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
