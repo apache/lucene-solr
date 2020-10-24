@@ -206,7 +206,8 @@ Improvements
 
 * SOLR-14933: Ability to add T and P type replica from admin UI (Sayan Das via Eric Pugh)
 
-* SOLR-14067: StatelessScriptUpdateProcessor has been moved to a /contrib package instead of shipping as part of Solr due to security concerns. (Eric Pugh)
+* SOLR-14067: StatelessScriptUpdateProcessor moved to it's own /contrib package instead of shipping as part of Solr due to security concerns.  Renamed to
+  ScriptingUpdateProcessor, with StatelessScriptingUpdateProcessor as a deprecated name. (Eric Pugh)
 
 Optimizations
 ---------------------
