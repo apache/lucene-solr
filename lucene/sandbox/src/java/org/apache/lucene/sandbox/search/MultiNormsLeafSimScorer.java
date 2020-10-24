@@ -34,7 +34,7 @@ import static org.apache.lucene.sandbox.search.BM25FQuery.FieldAndWeight;
 /**
  * Copy of {@link LeafSimScorer} that sums document's norms from multiple fields.
  */
-public final class MultiNormsLeafSimScorer {
+final class MultiNormsLeafSimScorer {
   /**
    * Cache of decoded norms.
    */
