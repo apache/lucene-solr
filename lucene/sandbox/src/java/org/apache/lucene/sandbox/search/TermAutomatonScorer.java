@@ -14,13 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
 
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.search.TermAutomatonQuery.EnumAndScorer;
-import org.apache.lucene.search.TermAutomatonQuery.TermAutomatonWeight;
+import org.apache.lucene.sandbox.search.TermAutomatonQuery.EnumAndScorer;
+import org.apache.lucene.sandbox.search.TermAutomatonQuery.TermAutomatonWeight;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.LeafSimScorer;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;

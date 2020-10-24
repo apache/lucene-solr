@@ -194,9 +194,8 @@ configure(project(":lucene:sandbox")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing javadocs
     javadocMissingLevel = "class"
-    // TODO: clean up split packages
     javadocMissingIgnore = [
-        "org.apache.lucene.search",
+        "org.apache.lucene.sandbox.search",
         "org.apache.lucene.sandbox.document"
     ]
   }

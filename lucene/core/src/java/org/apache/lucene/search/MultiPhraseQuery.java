@@ -410,7 +410,7 @@ public class MultiPhraseQuery extends Query {
    * <p>
    * Note: positions are merged during freq()
    */
-  static class UnionPostingsEnum extends PostingsEnum {
+  public static class UnionPostingsEnum extends PostingsEnum {
     /** queue ordered by docid */
     final DocsQueue docsQueue;
     /** cost of this enum: sum of its subs */
@@ -423,7 +423,7 @@ public class MultiPhraseQuery extends Query {
     /** list of subs (unordered) */
     final PostingsEnum[] subs;
 
-    UnionPostingsEnum(Collection<PostingsEnum> subs) {
+    public UnionPostingsEnum(Collection<PostingsEnum> subs) {
       docsQueue = new DocsQueue(subs.size());
       long cost = 0;
       for (PostingsEnum sub : subs) {
@@ -575,9 +575,9 @@ public class MultiPhraseQuery extends Query {
     }
   }
 
-  // Slower version of UnionPostingsEnum that delegates offsets and positions, for
-  // use by MatchesIterator
-  static class UnionFullPostingsEnum extends UnionPostingsEnum {
+  /** Slower version of UnionPostingsEnum that delegates offsets and positions, for
+   use by MatchesIterator */
+  public static class UnionFullPostingsEnum extends UnionPostingsEnum {
 
     int freq = -1;
     boolean started = false;
@@ -585,7 +585,7 @@ public class MultiPhraseQuery extends Query {
     final PriorityQueue<PostingsAndPosition> posQueue;
     final Collection<PostingsAndPosition> subs;
 
-    UnionFullPostingsEnum(List<PostingsEnum> subs) {
+    public UnionFullPostingsEnum(List<PostingsEnum> subs) {
       super(subs);
       this.posQueue = new PriorityQueue<PostingsAndPosition>(subs.size()) {
         @Override

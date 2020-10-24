@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
 
 import java.io.IOException;
 
@@ -24,6 +24,17 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.sandbox.search.LargeNumHitsTopDocsCollector;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -77,7 +88,7 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);
 
-    assertEquals(largeCollector.totalHits, regularCollector.totalHits);
+    assertEquals(largeCollector.totalHits, regularCollector.getTotalHits());
 
     IllegalArgumentException expected  = expectThrows(IllegalArgumentException.class, () -> {
       largeCollector.topDocs(350_000);
@@ -94,7 +105,7 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);
 
-    assertEquals(largeCollector.totalHits, regularCollector.totalHits);
+    assertEquals(largeCollector.totalHits, regularCollector.getTotalHits());
 
     assertEquals(largeCollector.pq, null);
     assertEquals(largeCollector.pqTop, null);
@@ -108,7 +119,7 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);
 
-    assertEquals(largeCollector.totalHits, regularCollector.totalHits);
+    assertEquals(largeCollector.totalHits, regularCollector.getTotalHits());
 
     assertNotEquals(largeCollector.pq, null);
     assertNotEquals(largeCollector.pqTop, null);
@@ -122,7 +133,7 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);
 
-    assertEquals(largeCollector.totalHits, regularCollector.totalHits);
+    assertEquals(largeCollector.totalHits, regularCollector.getTotalHits());
 
     assertEquals(largeCollector.pq, null);
     assertEquals(largeCollector.pqTop, null);
@@ -146,7 +157,7 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);
 
-    assertEquals(largeCollector.totalHits, regularCollector.totalHits);
+    assertEquals(largeCollector.totalHits, regularCollector.getTotalHits());
 
     TopDocs firstTopDocs = largeCollector.topDocs();
     TopDocs secondTopDocs = regularCollector.topDocs();

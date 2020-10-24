@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
 
 import java.io.IOException;
 
@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.sandbox.search.TermAutomatonQuery;
 import org.apache.lucene.util.BytesRef;
 
 /** Consumes a TokenStream and creates an {@link TermAutomatonQuery}

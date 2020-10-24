@@ -35,7 +35,7 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
 
   /** This is used in case topDocs() is called with illegal parameters, or there
    *  simply aren't (enough) results. */
-  protected static final TopDocs EMPTY_TOPDOCS = new TopDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), new ScoreDoc[0]);
+  public static final TopDocs EMPTY_TOPDOCS = new TopDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), new ScoreDoc[0]);
   
   /**
    * The priority queue which holds the top documents. Note that different

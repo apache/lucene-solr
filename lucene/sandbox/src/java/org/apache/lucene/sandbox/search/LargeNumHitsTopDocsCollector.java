@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,6 +24,15 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.HitQueue;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHits;
 
 import static org.apache.lucene.search.TopDocsCollector.EMPTY_TOPDOCS;
 

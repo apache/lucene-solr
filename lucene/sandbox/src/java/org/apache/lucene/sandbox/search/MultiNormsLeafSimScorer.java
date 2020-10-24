@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,15 +24,17 @@ import java.util.Objects;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.SmallFloat;
 
-import static org.apache.lucene.search.BM25FQuery.FieldAndWeight;
+import static org.apache.lucene.sandbox.search.BM25FQuery.FieldAndWeight;
 
 /**
  * Copy of {@link LeafSimScorer} that sums document's norms from multiple fields.
  */
-final class MultiNormsLeafSimScorer {
+public final class MultiNormsLeafSimScorer {
   /**
    * Cache of decoded norms.
    */

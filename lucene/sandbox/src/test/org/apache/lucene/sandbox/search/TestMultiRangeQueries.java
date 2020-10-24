@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
 
 import java.io.IOException;
 
@@ -30,6 +30,8 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.sandbox.document.LongPointMultiRangeBuilder;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;

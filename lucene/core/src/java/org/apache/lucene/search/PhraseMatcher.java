@@ -26,7 +26,7 @@ import java.io.IOException;
  * relevant document, then call {@link #reset()}.  Clients can then call
  * {@link #nextMatch()} to iterate over the matches
  */
-abstract class PhraseMatcher {
+public abstract class PhraseMatcher {
 
   private final float matchCost;
 

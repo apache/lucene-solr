@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,6 +36,24 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.ExactPhraseMatcher;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PhraseMatcher;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PhraseWeight;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SloppyPhraseMatcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermStatistics;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -216,7 +234,7 @@ public class PhraseWildcardQuery extends Query {
   }
 
   PhraseWeight createPhraseWeight(IndexSearcher searcher, ScoreMode scoreMode,
-                                            float boost, TermsData termsData) throws IOException {
+                                  float boost, TermsData termsData) throws IOException {
     return new PhraseWeight(this, field, searcher, scoreMode) {
 
       @Override
@@ -760,7 +778,7 @@ public class PhraseWildcardQuery extends Query {
 
     @Override
     protected void toString(StringBuilder builder) {
-      builder.append(query.toString(query.field));
+      builder.append(query.toString(query.getField()));
     }
 
     @Override

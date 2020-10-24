@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
+import org.apache.lucene.sandbox.search.LongHashSet;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class LongHashSetTests extends LuceneTestCase {

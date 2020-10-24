@@ -14,10 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
@@ -31,7 +34,7 @@ import java.util.List;
 /**
  * A basic unit test for FieldCacheTermsFilter
  *
- * @see org.apache.lucene.search.DocValuesTermsQuery
+ * @see DocValuesTermsQuery
  */
 public class TestFieldCacheTermsFilter extends LuceneTestCase {
   public void testMissingTerms() throws Exception {

@@ -14,7 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
+
+import org.apache.lucene.search.DisiPriorityQueue;
+import org.apache.lucene.search.DisiWrapper;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.LongValues;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.Weight;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,7 +30,7 @@ import java.util.Collection;
 import java.util.List;
 
 /** A {@link Scorer} whose number of matches is per-document. */
-final class CoveringScorer extends Scorer {
+public final class CoveringScorer extends Scorer {
 
   final int numScorers;
   final int maxDoc;
@@ -39,7 +47,7 @@ final class CoveringScorer extends Scorer {
 
   final long cost;
 
-  CoveringScorer(Weight weight, Collection<Scorer> scorers, LongValues minMatchValues, int maxDoc) {
+  public CoveringScorer(Weight weight, Collection<Scorer> scorers, LongValues minMatchValues, int maxDoc) {
     super(weight);
 
     this.numScorers = scorers.size();

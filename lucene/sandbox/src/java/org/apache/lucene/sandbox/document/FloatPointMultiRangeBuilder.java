@@ -17,7 +17,7 @@
 
 package org.apache.lucene.sandbox.document;
 
-import org.apache.lucene.search.MultiRangeQuery;
+import org.apache.lucene.sandbox.search.MultiRangeQuery;
 
 import static org.apache.lucene.document.FloatPoint.decodeDimension;
 import static org.apache.lucene.document.FloatPoint.pack;

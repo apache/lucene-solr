@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.sandbox.search;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.sandbox.document.LatLonBoundingBox;
@@ -22,6 +22,9 @@ import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.BaseRangeFieldQueryTestCase;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
