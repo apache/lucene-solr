@@ -30,7 +30,7 @@ import java.util.Collection;
 import java.util.List;
 
 /** A {@link Scorer} whose number of matches is per-document. */
-public final class CoveringScorer extends Scorer {
+final class CoveringScorer extends Scorer {
 
   final int numScorers;
   final int maxDoc;
@@ -47,7 +47,7 @@ public final class CoveringScorer extends Scorer {
 
   final long cost;
 
-  public CoveringScorer(Weight weight, Collection<Scorer> scorers, LongValues minMatchValues, int maxDoc) {
+  CoveringScorer(Weight weight, Collection<Scorer> scorers, LongValues minMatchValues, int maxDoc) {
     super(weight);
 
     this.numScorers = scorers.size();
