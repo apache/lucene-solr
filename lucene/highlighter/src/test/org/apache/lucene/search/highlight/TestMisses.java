@@ -32,7 +32,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class MissesTest extends LuceneTestCase {
+public class TestMisses extends LuceneTestCase {
   public void testTermQuery() throws IOException, InvalidTokenOffsetsException {
     try (Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)) {
       final Query query = new TermQuery(new Term("test", "foo"));

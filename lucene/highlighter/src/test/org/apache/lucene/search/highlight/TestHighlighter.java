@@ -101,7 +101,7 @@ import org.w3c.dom.NodeList;
  * JUnit Test for Highlighter class.
  *
  */
-public class HighlighterTest extends BaseTokenStreamTestCase implements Formatter {
+public class TestHighlighter extends BaseTokenStreamTestCase implements Formatter {
 
   private IndexReader reader;
   static final String FIELD_NAME = "contents";
@@ -2295,12 +2295,12 @@ final class SynonymTokenizer extends TokenStream {
       for (int i = 0; i < hits.totalHits.value; i++) {
         final int docId = hits.scoreDocs[i].doc;
         final Document doc = searcher.doc(docId);
-        String text = doc.get(HighlighterTest.FIELD_NAME);
+        String text = doc.get(TestHighlighter.FIELD_NAME);
         int maxNumFragmentsRequired = 2;
         String fragmentSeparator = "...";
         Scorer scorer = null;
         TokenStream tokenStream =
-            TokenSources.getTokenStream(HighlighterTest.FIELD_NAME,
+            TokenSources.getTokenStream(TestHighlighter.FIELD_NAME,
                 searcher.getIndexReader().getTermVectors(docId), text, analyzer, -1);
         if (mode == QUERY) {
           scorer = new QueryScorer(query);

@@ -20,7 +20,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.*;
 
-public class OffsetLimitTokenFilterTest extends BaseTokenStreamTestCase {
+public class TestOffsetLimitTokenFilter extends BaseTokenStreamTestCase {
   
   public void testFilter() throws Exception {
     // we disable MockTokenizer checks because we will forcefully limit the 

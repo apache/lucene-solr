@@ -58,7 +58,7 @@ import org.apache.lucene.util.TestUtil;
  *  {@link org.apache.lucene.search.highlight.TokenStreamFromTermVector}
  * indirectly from that.
  */
-public class TokenSourcesTest extends BaseTokenStreamTestCase {
+public class TestTokenSources extends BaseTokenStreamTestCase {
   private static final String FIELD = "text";
 
   private static final class OverlappingTokenStream extends TokenStream {

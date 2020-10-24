@@ -45,7 +45,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * Tests the extensibility of {@link WeightedSpanTermExtractor} and
  * {@link QueryScorer} in a user defined package
  */
-public class HighlightCustomQueryTest extends LuceneTestCase {
+public class TestHighlightCustomQuery extends LuceneTestCase {
 
   private static final String FIELD_NAME = "contents";
 

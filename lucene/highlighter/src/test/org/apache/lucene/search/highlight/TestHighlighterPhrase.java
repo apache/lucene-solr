@@ -50,7 +50,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class HighlighterPhraseTest extends LuceneTestCase {
+public class TestHighlighterPhrase extends LuceneTestCase {
   private static final String FIELD = "text";
 
   public void testConcurrentPhrase() throws IOException, InvalidTokenOffsetsException {

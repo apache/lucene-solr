@@ -45,7 +45,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-public abstract class TestAbstractCase extends LuceneTestCase {
+public abstract class AbstractTestCase extends LuceneTestCase {
 
   protected static final String F = "f";
   protected static final String F1 = "f1";
