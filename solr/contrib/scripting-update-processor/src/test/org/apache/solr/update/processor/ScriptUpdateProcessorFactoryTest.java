@@ -29,11 +29,11 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 
 /**
- * Tests {@link StatelessScriptUpdateProcessorFactory}.
+ * Tests {@link ScriptUpdateProcessorFactory}.
  *
- * TODO: This test, to run from an IDE, requires a working directory of &lt;path-to&gt;/solr/core/src/test-files.  Fix!
+ * TODO: This test, to run from an IDE, requires a working directory of &lt;path-to&gt;/solr/contrib/scripting-update-processor/src/test-files.  Fix!
  */
-public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
+public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -68,7 +68,7 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
   public void testSingleScript() throws Exception {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("single-script");
-    final StatelessScriptUpdateProcessorFactory factory = ((StatelessScriptUpdateProcessorFactory) chained.getProcessors().get(0));
+    final ScriptUpdateProcessorFactory factory = ((ScriptUpdateProcessorFactory) chained.getProcessors().get(0));
     final List<String> functionMessages = new ArrayList<>();
     factory.setScriptEngineCustomizer(new ScriptEngineCustomizer() {
       @Override
@@ -112,8 +112,8 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
                                             "dual-scripts-strs"}) {
 
       UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(chain);
-      final StatelessScriptUpdateProcessorFactory factory =
-        ((StatelessScriptUpdateProcessorFactory) chained.getProcessors().get(0));
+      final ScriptUpdateProcessorFactory factory =
+        ((ScriptUpdateProcessorFactory) chained.getProcessors().get(0));
       final List<String> functionMessages = new ArrayList<>();
       ScriptEngineCustomizer customizer = new ScriptEngineCustomizer() {
           @Override
