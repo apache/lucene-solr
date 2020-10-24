@@ -14,7 +14,8 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-14942: Reduce leader election time on node shutdown by removing election nodes before closing cores.
+  (Cao Manh Dat, Mike Drob, hossman, shalin)
 
 Optimizations
 ---------------------
