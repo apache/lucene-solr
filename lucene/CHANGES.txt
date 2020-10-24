@@ -15,7 +15,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* LUCENE-9455: ExitableTermsEnum should sample timeout and interruption
+  check before calling next(). (Zach Chen via Bruno Roustant)
 
 Optimizations
 ---------------------
