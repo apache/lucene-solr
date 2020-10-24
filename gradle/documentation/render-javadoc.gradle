@@ -197,7 +197,7 @@ configure(project(":lucene:sandbox")) {
     // TODO: clean up split packages
     javadocMissingIgnore = [
         "org.apache.lucene.search",
-        "org.apache.lucene.document"
+        "org.apache.lucene.sandbox.document"
     ]
   }
 }

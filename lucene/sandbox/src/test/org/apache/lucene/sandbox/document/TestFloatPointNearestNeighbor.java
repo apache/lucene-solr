@@ -14,10 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.document;
+package org.apache.lucene.sandbox.document;
 
 import java.util.Arrays;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -25,6 +30,7 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.sandbox.document.FloatPointNearestNeighbor;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LatLonPointPrototypeQueries;
@@ -51,7 +57,7 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
     IndexSearcher s = newSearcher(r, false);
-    FieldDoc hit = (FieldDoc)FloatPointNearestNeighbor.nearest(s, "point", 1, 40.0f, 50.0f).scoreDocs[0];
+    FieldDoc hit = (FieldDoc) FloatPointNearestNeighbor.nearest(s, "point", 1, 40.0f, 50.0f).scoreDocs[0];
     assertEquals("0", r.document(hit.doc).getField("id").stringValue());
     r.close();
 

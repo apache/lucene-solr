@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.document;
+package org.apache.lucene.sandbox.document;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.FieldDoc;

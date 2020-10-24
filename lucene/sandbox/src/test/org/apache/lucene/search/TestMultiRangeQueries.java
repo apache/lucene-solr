@@ -21,13 +21,13 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.DoublePointMultiRangeBuilder;
+import org.apache.lucene.sandbox.document.DoublePointMultiRangeBuilder;
 import org.apache.lucene.document.FloatPoint;
-import org.apache.lucene.document.FloatPointMultiRangeBuilder;
+import org.apache.lucene.sandbox.document.FloatPointMultiRangeBuilder;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.IntPointMultiRangeBuilder;
+import org.apache.lucene.sandbox.document.IntPointMultiRangeBuilder;
 import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.LongPointMultiRangeBuilder;
+import org.apache.lucene.sandbox.document.LongPointMultiRangeBuilder;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;

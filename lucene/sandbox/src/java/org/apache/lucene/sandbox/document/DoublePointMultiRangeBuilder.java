@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.document;
+package org.apache.lucene.sandbox.document;
 
 import org.apache.lucene.search.MultiRangeQuery;
 

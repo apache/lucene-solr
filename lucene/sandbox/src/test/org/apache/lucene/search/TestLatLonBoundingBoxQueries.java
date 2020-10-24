@@ -17,7 +17,7 @@
 package org.apache.lucene.search;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LatLonBoundingBox;
+import org.apache.lucene.sandbox.document.LatLonBoundingBox;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.IndexReader;

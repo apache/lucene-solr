@@ -15,19 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.document;
+package org.apache.lucene.sandbox.document;
 
 import org.apache.lucene.search.MultiRangeQuery;
 
-import static org.apache.lucene.document.FloatPoint.decodeDimension;
-import static org.apache.lucene.document.FloatPoint.pack;
+import static org.apache.lucene.document.IntPoint.decodeDimension;
+import static org.apache.lucene.document.IntPoint.pack;
 
-/**
- * Builder for multi range queries for FloatPoints
- */
-public class FloatPointMultiRangeBuilder extends MultiRangeQuery.Builder {
-  public FloatPointMultiRangeBuilder(String field, int numDims) {
-    super(field, Float.BYTES, numDims);
+/** Builder for multi range queries for IntPoints */
+public class IntPointMultiRangeBuilder extends MultiRangeQuery.Builder {
+  public IntPointMultiRangeBuilder(String field, int numDims) {
+    super(field, Integer.BYTES, numDims);
   }
 
   @Override
@@ -35,12 +33,12 @@ public class FloatPointMultiRangeBuilder extends MultiRangeQuery.Builder {
     return new MultiRangeQuery(field, numDims, bytesPerDim, clauses) {
       @Override
       protected String toString(int dimension, byte[] value) {
-        return Float.toString(decodeDimension(value, 0));
+        return Integer.toString(decodeDimension(value, 0));
       }
     };
   }
 
-  public void add(float[] lowerValue, float[] upperValue) {
+  public void add(int[] lowerValue, int[] upperValue) {
     if (upperValue.length != numDims || lowerValue.length != numDims) {
       throw new IllegalArgumentException("Passed in range does not conform to specified dimensions");
     }
