@@ -139,6 +139,27 @@ Bug Fixes
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
 
+==================  8.8.0 ==================
+
+Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+
+Improvements
+---------------------
+
+Optimizations
+---------------------
+
+Bug Fixes
+---------------------
+
+Other Changes
+---------------------
+
+* SOLR-14844: Upgrade Jetty to 9.4.32.v20200930 (Samuel Garcia Martinez via Erick Erickson)
+
 ==================  8.7.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
