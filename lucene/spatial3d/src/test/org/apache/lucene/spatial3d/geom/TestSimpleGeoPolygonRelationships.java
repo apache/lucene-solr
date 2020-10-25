@@ -30,7 +30,7 @@ import static org.junit.Assert.assertTrue;
  * Check relationship between polygon and GeoShapes of basic polygons. Normally we construct
  * the convex, concave counterpart and the convex polygon as a complex polygon.
  */
-public class SimpleGeoPolygonRelationshipsTest {
+public class TestSimpleGeoPolygonRelationships {
 
   /**
    * Test with two shapes with no crossing edges and no points in common in convex case.

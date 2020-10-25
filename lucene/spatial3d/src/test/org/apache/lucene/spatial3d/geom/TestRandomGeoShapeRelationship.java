@@ -22,7 +22,7 @@ import org.junit.Test;
 /**
  * Random test to check relationship between GeoAreaShapes and GeoShapes.
  */
-public class RandomGeoShapeRelationshipTest extends RandomGeo3dShapeGenerator {
+public class TestRandomGeoShapeRelationship extends RandomGeo3dShapeGenerator {
 
   /**
    * Test for WITHIN points. We build a WITHIN shape with respect the geoAreaShape

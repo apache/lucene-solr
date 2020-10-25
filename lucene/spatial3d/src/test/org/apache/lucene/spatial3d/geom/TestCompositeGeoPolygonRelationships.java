@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
  * Check relationship between polygon and GeoShapes of composite polygons. Normally we construct
  * the composite polygon (when possible) and the complex one.
  */
-public class CompositeGeoPolygonRelationshipsTest {
+public class TestCompositeGeoPolygonRelationships {
 
   @Test
   public void testGeoCompositePolygon1() {

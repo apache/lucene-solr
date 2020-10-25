@@ -23,7 +23,7 @@ import org.junit.Test;
 /**
  * Tests for GeoExactCircle.
  */
-public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
+public class TestGeoExactCircle extends RandomGeo3dShapeGenerator{
 
   @Test
   public void testExactCircle() {

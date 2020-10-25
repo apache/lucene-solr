@@ -26,7 +26,7 @@ import org.junit.Test;
 /**
  * Random test for polygons.
  */
-public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
+public class TestRandomGeoPolygon extends RandomGeo3dShapeGenerator {
 
   @Test
   public void testRandomLUCENE8157() {

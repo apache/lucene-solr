@@ -20,7 +20,7 @@ import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-public class GeoPathTest extends LuceneTestCase {
+public class TestGeoPath extends LuceneTestCase {
 
   @Test
   public void testPathDistance() {

@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Test basic plane functionality.
  */
-public class GeoModelTest {
+public class TestGeoModel {
 
   protected final static PlanetModel scaledModel = new PlanetModel(1.2,1.5);
   

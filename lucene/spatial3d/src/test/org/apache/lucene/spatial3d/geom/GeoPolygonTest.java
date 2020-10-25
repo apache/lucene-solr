@@ -25,7 +25,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.junit.Test;
 
-public class GeoPolygonTest extends LuceneTestCase {
+public class TestGeoPolygon extends LuceneTestCase {
 
   @Test
   public void testPolygonPointFiltering() {

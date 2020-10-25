@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Test basic plane functionality.
  */
-public class PlaneTest {
+public class TestPlane {
 
   @Test
   public void testIdenticalPlanes() {

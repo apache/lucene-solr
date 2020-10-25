@@ -24,7 +24,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomFloat;
 /**
  * Test basic GeoPoint functionality.
  */
-public class GeoPointTest extends LuceneTestCase {
+public class TestGeoPoint extends LuceneTestCase {
   static final double DEGREES_TO_RADIANS =  Math.PI / 180;
 
   @Test

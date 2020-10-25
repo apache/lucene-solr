@@ -19,7 +19,7 @@ package org.apache.lucene.spatial3d.geom;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class GeoCircleTest extends LuceneTestCase {
+public class TestGeoCircle extends LuceneTestCase {
   
   @Test
   public void testCircleDistance() {

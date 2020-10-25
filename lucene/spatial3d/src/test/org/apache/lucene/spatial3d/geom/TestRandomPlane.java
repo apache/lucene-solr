@@ -26,7 +26,7 @@ import org.junit.Test;
 /**
  * Random test for planes.
  */
-public class RandomPlaneTest extends RandomGeo3dShapeGenerator {
+public class TestRandomPlane extends RandomGeo3dShapeGenerator {
 
   @Test
   @Repeat(iterations = 10)

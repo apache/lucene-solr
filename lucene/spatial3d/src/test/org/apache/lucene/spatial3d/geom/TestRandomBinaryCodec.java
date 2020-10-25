@@ -27,7 +27,7 @@ import org.junit.Test;
 /**
  * Test to check Serialization
  */
-public class RandomBinaryCodecTest extends RandomGeo3dShapeGenerator {
+public class TestRandomBinaryCodec extends RandomGeo3dShapeGenerator {
 
   @Test
   @Repeat(iterations = 10)
